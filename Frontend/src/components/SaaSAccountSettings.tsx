@@ -1,0 +1,1112 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Building2, CreditCard, LayoutGrid, Save, 
+  CheckCircle2, AlertCircle, ShieldCheck, 
+  Smartphone, Upload, Globe, ChevronRight,
+  Receipt, Database, Loader2, MessageSquare, Send, X,
+  Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap,
+  Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee
+} from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import { BackupPanel } from './BackupPanel';
+import { CompanySettingsPanel } from './CompanySettingsPanel';
+import axiosInstance from '../lib/axios';
+
+export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: 'profile' | 'billing' | 'modules' | 'backups' }) => {
+  const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'modules' | 'backups'>(initialTab);
+  const [selectedModuleForDetail, setSelectedModuleForDetail] = useState<any | null>(null);
+  const [configuringModule, setConfiguringModule] = useState<any | null>(null);
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+
+  const { currentTier, currentUser, systemSettings, updateSetting, globalUsers, fetchState, isModuleUnlocked, isFeatureUnlocked } = useAppStore();
+
+  const [orgName, setOrgName] = useState('');
+  const [subdomain, setSubdomain] = useState('');
+  const [welcomeTitle, setWelcomeTitle] = useState('');
+  const [welcomeText, setWelcomeText] = useState('');
+  const [companyLogo, setCompanyLogo] = useState('');
+
+  // Sync state with store/database once loaded
+  useEffect(() => {
+    const currentCompany = systemSettings?.company_name || currentUser?.tenant?.name || 'Mi Empresa';
+    const currentSubdomain = systemSettings?.subdomain || currentUser?.tenant?.subdomain || 'miempresa';
+    
+    setOrgName(currentCompany);
+    setSubdomain(currentSubdomain);
+    setWelcomeTitle(systemSettings?.welcome_title || `¡Bienvenido a ${currentCompany}!`);
+    setWelcomeText(systemSettings?.welcome_text || 'Nos emociona tenerte en el equipo. Por favor, instala esta App para tu control de asistencia.');
+    setCompanyLogo(systemSettings?.company_logo || '');
+  }, [systemSettings, currentUser]);
+
+  // PWA Invite States
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | ''>('');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [invitePin, setInvitePin] = useState('');
+  const [isGeneratingPin, setIsGeneratingPin] = useState(false);
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [inviteFeedback, setInviteFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  const employees = globalUsers.filter(u => u.system_role === 'empleado' || u.role === 'empleado' || u.system_role === 'colaborador');
+
+  const handleSelectEmployee = (empId: number) => {
+    setSelectedEmployeeId(empId);
+    const emp = globalUsers.find(u => u.id === empId);
+    if (emp) {
+      let phone = emp.phone || '';
+      if (phone.startsWith('52')) phone = phone.slice(2);
+      setInvitePhone(phone);
+      setInvitePin(emp.pin_code || '');
+    } else {
+      setInvitePhone('');
+      setInvitePin('');
+    }
+    setInviteFeedback(null);
+  };
+
+  const handleGeneratePin = async () => {
+    if (!selectedEmployeeId) return;
+    setIsGeneratingPin(true);
+    setInviteFeedback(null);
+    try {
+      const res = await axiosInstance.post(`/admin/employees/${selectedEmployeeId}/generate-pin`);
+      if (res.data && res.data.pin) {
+        setInvitePin(res.data.pin);
+        await fetchState();
+        setInviteFeedback({ type: 'success', message: 'PIN temporal generado con éxito.' });
+      }
+    } catch (e: any) {
+      console.error(e);
+      setInviteFeedback({ type: 'error', message: 'Error al generar el PIN.' });
+    } finally {
+      setIsGeneratingPin(false);
+    }
+  };
+
+  const handleSendAutomaticInvite = async () => {
+    if (!selectedEmployeeId || !invitePin || !invitePhone) return;
+    setIsSendingInvite(true);
+    setInviteFeedback(null);
+    try {
+      const emp = globalUsers.find(u => u.id === selectedEmployeeId);
+      const cleanPhone = invitePhone.replace(/\D/g, '');
+      const cleanDbPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+      
+      if (emp && emp.phone !== cleanDbPhone) {
+        await axiosInstance.put(`/employees/${selectedEmployeeId}`, { phone: cleanDbPhone });
+      }
+
+      const inviteUrl = `${window.location.origin}/invite?pin=${invitePin}`;
+      const employeeMessage = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${emp?.name || 'Colaborador'}*, te damos la más cordial bienvenida a *${orgName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${invitePin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
+
+      await axiosInstance.post('/admin/onboarding/send-whatsapp', {
+        employee_phone: cleanDbPhone,
+        employee_message: employeeMessage
+      });
+
+      await fetchState();
+      setInviteFeedback({ type: 'success', message: 'Invitación PWA enviada vía WhatsApp API.' });
+    } catch (e: any) {
+      console.error(e);
+      setInviteFeedback({ type: 'error', message: e.response?.data?.message || 'Error al enviar invitación.' });
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
+
+  const handleSendManualInvite = async () => {
+    if (!selectedEmployeeId || !invitePin || !invitePhone) return;
+    const emp = globalUsers.find(u => u.id === selectedEmployeeId);
+    const cleanPhone = invitePhone.replace(/\D/g, '');
+    const cleanDbPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+    
+    if (emp && emp.phone !== cleanDbPhone) {
+      try {
+        await axiosInstance.put(`/employees/${selectedEmployeeId}`, { phone: cleanDbPhone });
+        await fetchState();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const inviteUrl = `${window.location.origin}/invite?pin=${invitePin}`;
+    const message = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${emp?.name || 'Colaborador'}*, te damos la más cordial bienvenida a *${orgName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${invitePin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
+
+    const waUrl = `https://wa.me/${cleanDbPhone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await Promise.all([
+        updateSetting('company_name', orgName),
+        updateSetting('subdomain', subdomain),
+        updateSetting('welcome_title', welcomeTitle),
+        updateSetting('welcome_text', welcomeText),
+        updateSetting('company_logo', companyLogo)
+      ]);
+      alert("Configuración guardada exitosamente.");
+    } catch (e) {
+      console.error(e);
+      alert("Error al guardar la configuración.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBuyPlan = async (plan: string) => {
+    try {
+      const response = await axiosInstance.post('/subscriptions/create-preference', {
+        plan: plan
+      });
+      if (response.data.init_point) {
+        window.location.href = response.data.init_point;
+      } else {
+        alert('Error al generar la preferencia de pago.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al conectar con la pasarela de pagos.');
+    }
+  };
+
+  const planDetails = {
+    freemium: { name: 'Freemium', maxUsers: 10, price: 0, color: 'text-slate-600', bg: 'bg-slate-100' },
+    pro: { name: 'PRO', maxUsers: 'Ilimitados', price: 5, color: 'text-blue-600', bg: 'bg-blue-100' },
+    enterprise: { name: 'Enterprise', maxUsers: 'Ilimitados', price: 12, color: 'text-purple-600', bg: 'bg-purple-100' },
+  };
+
+  const tierInfo = planDetails[currentTier as keyof typeof planDetails] || planDetails.freemium;
+
+  // Empleados ficticios activos para dar realismo a la barra de progreso
+  const activeEmployeesCount = 8; 
+
+  // Check if trial is active
+  const tenant = currentUser?.tenant;
+  let trialActive = false;
+  let daysRemaining = 0;
+  if (tenant) {
+    if (tenant.subscription_status === 'trial' || !tenant.subscription_status) {
+      if (tenant.trial_ends_at) {
+        const endsAt = new Date(tenant.trial_ends_at);
+        const diff = endsAt.getTime() - Date.now();
+        if (diff > 0) {
+          trialActive = true;
+          daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+        }
+      }
+    }
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
+      
+      {/* Header */}
+      <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50 pointer-events-none"></div>
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-bold text-blue-700 mb-4">
+            <ShieldCheck size={14} /> Espacio de Trabajo Seguro
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Configuración de la Cuenta</h1>
+          <p className="text-slate-500 mt-2 font-medium max-w-xl">
+            Gestiona los detalles de tu empresa, tu suscripción a Talent 360 y los módulos habilitados para tu equipo.
+          </p>
+        </div>
+        <div className="relative z-10 flex gap-3">
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-70"
+          >
+            {isSaving ? <span className="animate-pulse">Guardando...</span> : <><Save size={18}/> Guardar Cambios</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Navegación por Tabs */}
+      <div className="flex gap-2 p-1.5 bg-slate-200/50 rounded-2xl w-fit">
+        <button 
+          onClick={() => setActiveTab('profile')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'profile' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          <Building2 size={16} /> Perfil de Empresa
+        </button>
+        <button 
+          onClick={() => setActiveTab('billing')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'billing' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          <CreditCard size={16} /> Facturación y Plan
+        </button>
+        <button 
+          onClick={() => setActiveTab('modules')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'modules' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          <LayoutGrid size={16} /> Módulos del Sistema
+        </button>
+        <button 
+          onClick={() => setActiveTab('backups')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'backups' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          <Database size={16} /> Respaldos
+        </button>
+      </div>
+
+      {/* Contenido de los Tabs */}
+      <div className="mt-6">
+        
+        {/* TAB: PERFIL DE EMPRESA */}
+        {activeTab === 'profile' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4">
+            
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+                <h2 className="text-xl font-black text-slate-800 mb-6">Datos Generales</h2>
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la Organización</label>
+                    <input type="text" value={orgName} onChange={e => setOrgName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Subdominio PWA</label>
+                    <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                      <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-r border-slate-200 flex items-center gap-2"><Globe size={16}/> https://</div>
+                      <input type="text" value={subdomain} onChange={e => setSubdomain(e.target.value)} className="w-full bg-slate-50 px-4 py-3 font-medium outline-none text-blue-600" />
+                      <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-l border-slate-200">.talent360.com</div>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">Esta es la URL que tus empleados usarán para entrar al sistema.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-800">Mensaje de Onboarding</h2>
+                    <p className="text-sm text-slate-500">Lo que ven tus empleados al instalar la PWA.</p>
+                  </div>
+                  <Smartphone className="text-slate-300" size={32} />
+                </div>
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Título de Bienvenida</label>
+                    <input type="text" value={welcomeTitle} onChange={e => setWelcomeTitle(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Texto Introductorio</label>
+                    <textarea rows={3} value={welcomeText} onChange={e => setWelcomeText(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium resize-none" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col items-center text-center">
+                <h2 className="text-sm font-bold text-slate-700 mb-4 w-full text-left">Logotipo Corporativo</h2>
+                <div 
+                  onClick={() => {
+                    if (!isFeatureUnlocked('custom_logo')) {
+                      alert("La personalización de logotipo está disponible únicamente en el Plan PRO/Enterprise o si fue activada para tu plan. Por favor, actualiza tu plan en Facturación.");
+                      return;
+                    }
+                    document.getElementById('logo-upload-input')?.click();
+                  }}
+                  className="w-32 h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400 mb-4 hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer group relative overflow-hidden"
+                >
+                  {companyLogo ? (
+                    <img src={companyLogo} alt="Logo preview" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <>
+                      <Upload size={24} className="mb-2 group-hover:text-blue-500 group-hover:-translate-y-1 transition-all" />
+                      <span className="text-xs font-bold">Subir Imagen</span>
+                    </>
+                  )}
+                </div>
+                <input 
+                  id="logo-upload-input" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setCompanyLogo(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                {companyLogo && (
+                  <button 
+                    onClick={() => setCompanyLogo('')} 
+                    className="text-xs text-rose-500 font-bold hover:text-rose-700 transition-colors mb-2"
+                  >
+                    Eliminar Logotipo
+                  </button>
+                )}
+                <p className="text-xs text-slate-400">Recomendado: 512x512px, formato PNG transparente.</p>
+              </div>
+
+              {/* ACTION: Enviar Invitaciones PWA */}
+              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-20"><Smartphone size={64}/></div>
+                <h3 className="font-black text-xl mb-2 relative z-10">Invitaciones PWA</h3>
+                <p className="text-emerald-100 text-sm mb-6 relative z-10">Invita a tu personal operativo a descargar el Reloj Checador móvil vía WhatsApp o SMS.</p>
+                <button 
+                  onClick={() => setShowInviteModal(true)}
+                  className="w-full bg-white text-emerald-700 font-black py-3 rounded-xl shadow-md hover:bg-emerald-50 transition-colors relative z-10"
+                >
+                  Enviar Enlaces
+                </button>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB: FACTURACIÓN Y PLAN */}
+        {activeTab === 'billing' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4">
+            
+            {/* Tarjeta del Plan Actual */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className={`bg-white rounded-3xl p-8 border-2 ${currentTier === 'enterprise' ? 'border-purple-200' : currentTier === 'pro' ? 'border-blue-200' : 'border-slate-200'} shadow-sm relative overflow-hidden`}>
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest ${tierInfo.bg} ${tierInfo.color}`}>
+                    Plan Actual
+                  </div>
+                </div>
+                
+                <h3 className="text-4xl font-black text-slate-900 mb-2">{tierInfo.name}</h3>
+                
+                {currentTier !== 'freemium' && (
+                  <div className="mb-6">
+                    <span className="text-3xl font-black text-slate-900">${tierInfo.price * activeEmployeesCount}</span>
+                    <span className="text-slate-500 font-bold"> /mes</span>
+                    <p className="text-xs text-slate-400 mt-1">Estimado en base a {activeEmployeesCount} empleados</p>
+                  </div>
+                )}
+
+                <div className="space-y-4 mb-8">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="font-bold text-slate-700">Licencias Utilizadas</span>
+                      <span className="font-black text-slate-900">{activeEmployeesCount} / {tierInfo.maxUsers}</span>
+                    </div>
+                    {currentTier === 'freemium' && (
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div className="bg-slate-800 h-full rounded-full" style={{ width: `${(activeEmployeesCount/10)*100}%` }}></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {currentTier !== 'enterprise' && (
+                  <button 
+                    onClick={() => setShowCheckout(true)}
+                    className="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Mejorar Plan <ChevronRight size={18}/>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Historial de Facturación y Método de Pago */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-12 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200">
+                    <span className="font-black text-blue-900 italic tracking-tighter text-xl">VISA</span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800">Termina en •••• 4242</h4>
+                    <p className="text-sm text-slate-500">Expira en 12/2028</p>
+                  </div>
+                </div>
+                <button className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-4 py-2 rounded-lg">
+                  Actualizar Tarjeta
+                </button>
+              </div>
+
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+                <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+                  <Receipt className="text-slate-400"/> Historial de Facturación
+                </h3>
+                
+                <div className="space-y-4">
+                  {[
+                    { date: '19 de Junio, 2026', amount: tierInfo.price * activeEmployeesCount, status: 'Pagado', invoice: 'INV-2026-06' },
+                    { date: '19 de Mayo, 2026', amount: tierInfo.price * 6, status: 'Pagado', invoice: 'INV-2026-05' },
+                    { date: '19 de Abril, 2026', amount: tierInfo.price * 5, status: 'Pagado', invoice: 'INV-2026-04' },
+                  ].map((inv, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors">
+                      <div>
+                        <p className="font-bold text-slate-800">{inv.date}</p>
+                        <p className="text-xs text-slate-500 font-medium">Factura {inv.invoice}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-slate-900">${inv.amount}.00</p>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full mt-1">
+                          <CheckCircle2 size={10}/> {inv.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB: MÓDULOS DEL SISTEMA */}
+        {activeTab === 'modules' && (
+          <div className="animate-in slide-in-from-bottom-4">
+            
+            {/* Banner de Tiempo de Prueba */}
+            {trialActive && (
+              <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-300 rounded-3xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-amber-500/20 text-amber-700 rounded-2xl flex items-center justify-center font-black text-xl shrink-0">
+                    ⏳
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800 text-base">Modo de Prueba Activo (Módulos PRO y Enterprise)</h3>
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                      Tienes acceso a todas las herramientas. Quedan <span className="text-amber-600 font-extrabold">{daysRemaining} días</span> de prueba completa antes del bloqueo de los módulos premium.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0 flex-wrap">
+                  <button 
+                    onClick={() => setTutorialStep(0)}
+                    className="bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
+                  >
+                    📖 Ver Tutorial
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('billing')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all shrink-0"
+                  >
+                    Adquirir Plan PRO
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 pb-6">
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 mb-1">Ecosistema Talent 360</h2>
+                  <p className="text-sm text-slate-500">Administra qué herramientas tienen activas tus equipos. El acceso depende de tu plan de suscripción actual.</p>
+                </div>
+                <button 
+                  onClick={() => setTutorialStep(0)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1.5"
+                >
+                  📖 Ver Tutorial de Módulos
+                </button>
+              </div>
+
+              {(() => {
+                const modulesWithDetails = [
+                  { 
+                    name: 'Directorio HR', 
+                    desc: 'Control de expedientes y RBAC', 
+                    tier: 'freemium', 
+                    active: isModuleUnlocked('rrhh'), 
+                    version: 'v3.0',
+                    icon: <Users size={20} />,
+                    iconColor: 'bg-blue-50 text-blue-600',
+                    features: [
+                      'Expedientes digitales completos de colaboradores.',
+                      'Control de roles y permisos (RBAC) personalizados.',
+                      'Historial de contratos y carga de documentos de identidad.',
+                      'Directorio interno con búsqueda rápida y filtros por sucursal.'
+                    ]
+                  },
+                  { 
+                    name: 'Reloj Checador (PWA)', 
+                    desc: 'Asistencia con geolocalización', 
+                    tier: 'freemium', 
+                    active: isModuleUnlocked('reloj'), 
+                    version: 'v4.2',
+                    icon: <Clock size={20} />,
+                    iconColor: 'bg-teal-50 text-teal-600',
+                    features: [
+                      'Registro de asistencia en tiempo real mediante PWA móvil.',
+                      'Validación de geolocalización GPS para evitar fraudes.',
+                      'Reconocimiento facial (selfie de entrada/salida).',
+                      'Modo sin conexión con sincronización automática al recuperar red.'
+                    ]
+                  },
+                  { 
+                    name: 'Checador de Comida', 
+                    desc: 'Control y reserva de comedor', 
+                    tier: 'freemium', 
+                    active: isModuleUnlocked('reloj'), 
+                    version: 'v2.1',
+                    icon: <Coffee size={20} />,
+                    iconColor: 'bg-amber-50 text-amber-600',
+                    features: [
+                      'Registro básico de comidas y descansos largos.',
+                      'Límite de sillas y prevención de solapes (Plan PRO).',
+                      'Configuración de horarios de comedor autorizados.',
+                      'Integración directa con el historial del Reloj Checador.'
+                    ]
+                  },
+                  { 
+                    name: 'Rutinas y Tareas', 
+                    desc: 'Asignación de checklists operativos', 
+                    tier: 'freemium', 
+                    active: isModuleUnlocked('operativo'), 
+                    version: 'v1.5',
+                    icon: <CheckSquare size={20} />,
+                    iconColor: 'bg-green-50 text-green-600',
+                    features: [
+                      'Creación de listas de tareas diarias para personal de piso.',
+                      'Evidencias fotográficas y firmas digitales de finalización.',
+                      'Bolsa de Trabajo para asignación manual de tareas y roles.',
+                      'Rutinas recurrentes y Asistente de Voz AI (disponible en Plan PRO).'
+                    ]
+                  },
+                  { 
+                    name: 'Reclutamiento ATS', 
+                    desc: 'Bolsa de trabajo interna', 
+                    tier: 'pro', 
+                    active: isModuleUnlocked('ats'), 
+                    version: 'v1.1 (Beta)',
+                    icon: <Briefcase size={20} />,
+                    iconColor: 'bg-purple-50 text-purple-600',
+                    features: [
+                      'Publicación automática de vacantes en portal de empleo.',
+                      'Embudo de reclutamiento (pipeline) con etapas personalizadas.',
+                      'Gestión y filtrado inteligente de currículums (CVs) de candidatos.',
+                      'Historial de comentarios y evaluación de psicometría básica.'
+                    ]
+                  },
+                  { 
+                    name: 'Reportes y Analítica', 
+                    desc: 'Nómina e incidencias', 
+                    tier: 'pro', 
+                    active: isModuleUnlocked('reportes'), 
+                    version: 'v2.0',
+                    icon: <FileText size={20} />,
+                    iconColor: 'bg-emerald-50 text-emerald-600',
+                    features: [
+                      'Reportes de asistencia consolidados (horas trabajadas, retardos).',
+                      'Cálculo automático de incidencias listas para prenómina.',
+                      'Gráficas de puntualidad, ausentismo y rotación de personal.',
+                      'Exportación de datos en formato Excel (XLSX) y PDF.'
+                    ]
+                  },
+                  { 
+                    name: 'Portal Web (Vacantes)', 
+                    desc: 'Sitio público para la empresa', 
+                    tier: 'enterprise', 
+                    active: isModuleUnlocked('portal'), 
+                    version: 'v1.0',
+                    icon: <Globe size={20} />,
+                    iconColor: 'bg-sky-50 text-sky-600',
+                    features: [
+                      'Sitio web corporativo de vacantes personalizado con tu dominio.',
+                      'Formulario de aplicación amigable para postulantes móviles.',
+                      'Sincronización instantánea con el ATS de reclutamiento.',
+                      'Enlaces directos para compartir en redes sociales.'
+                    ]
+                  },
+                  { 
+                    name: 'Academia LMS', 
+                    desc: 'Cursos de inducción', 
+                    tier: 'enterprise', 
+                    active: isModuleUnlocked('academia'), 
+                    version: 'v2.8',
+                    icon: <GraduationCap size={20} />,
+                    iconColor: 'bg-indigo-50 text-indigo-600',
+                    features: [
+                      'Plataforma de capacitación interna (LMS) para onboarding.',
+                      'Creación de cursos interactivos con videos y cuestionarios.',
+                      'Gamificación: tabla de líderes, medallas y recompensas.',
+                      'Certificaciones automatizadas descargables para los colaboradores.'
+                    ]
+                  },
+                  { 
+                    name: 'Gestor Documental', 
+                    desc: 'Expedientes y manuales', 
+                    tier: 'enterprise', 
+                    active: isModuleUnlocked('documentos'), 
+                    version: 'v1.0',
+                    icon: <FileText size={20} />,
+                    iconColor: 'bg-yellow-50 text-yellow-600',
+                    features: [
+                      'Expedientes digitales ordenados por colaborador.',
+                      'Subida de documentos oficiales (INE, RFC, Acta de Nacimiento).',
+                      'Gestión de manuales de operación y protocolos de seguridad.',
+                      'Vinculación directa de manuales a cursos de Academia 360.'
+                    ]
+                  }
+                ];
+
+                return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {modulesWithDetails.map((mod, idx) => (
+                        <div key={idx} className={`p-6 rounded-2xl border-2 transition-all flex flex-col justify-between relative overflow-hidden ${
+                          mod.active ? 'border-blue-100 bg-blue-50/10' : 'border-slate-100 bg-slate-50 opacity-80 grayscale-[20%]'
+                        }`}>
+                          <div>
+                            {/* Top Row: Icon & Plan Badge */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${mod.iconColor} shadow-inner`}>
+                                {mod.icon}
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                {mod.active && (
+                                  <span className="bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-emerald-200/50 flex items-center gap-1">
+                                    <CheckCircle2 size={10} /> Activo
+                                  </span>
+                                )}
+                                <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                                  mod.tier === 'freemium' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                                  mod.tier === 'pro' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                  'bg-purple-100 text-purple-700 border-purple-200'
+                                }`}>
+                                  {mod.tier === 'freemium' ? 'Incluido' : `Requiere ${mod.tier}`}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Middle Row: Name, Version & Trial */}
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <h4 className={`font-black text-lg ${mod.active ? 'text-blue-900' : 'text-slate-700'}`}>{mod.name}</h4>
+                              {mod.version && (
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${mod.active ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-500'}`}>
+                                  {mod.version}
+                                </span>
+                              )}
+                              {trialActive && mod.tier !== 'freemium' && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-white uppercase tracking-wider">
+                                  Prueba
+                                </span>
+                              )}
+                            </div>
+
+                            <p className={`text-sm mb-6 ${mod.active ? 'text-slate-600' : 'text-slate-400'}`}>{mod.desc}</p>
+                          </div>
+
+                          {/* Bottom Row: Status & Action Button */}
+                          <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <button 
+                              onClick={() => setSelectedModuleForDetail(mod)}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors flex items-center gap-1"
+                            >
+                              Ver más...
+                            </button>
+
+                            {currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin' ? (
+                              mod.active ? (
+                                <button 
+                                  onClick={() => setConfiguringModule(mod)}
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg hover:rotate-90 transition-all duration-300"
+                                  title={`Configurar ${mod.name}`}
+                                >
+                                  <Settings size={16} />
+                                </button>
+                              ) : (
+                                <button 
+                                  disabled
+                                  className="p-1.5 text-slate-300 cursor-not-allowed"
+                                  title="Requiere plan superior para configurar"
+                                >
+                                  <Lock size={16} className="opacity-50" />
+                                </button>
+                              )
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Modal de Detalle de Módulo */}
+                    {selectedModuleForDetail && (
+                      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-3xl p-8 max-w-lg w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200">
+                          <button 
+                            onClick={() => setSelectedModuleForDetail(null)}
+                            className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            <X size={20} />
+                          </button>
+
+                          <div className="flex items-center gap-3.5 mb-6">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${selectedModuleForDetail.iconColor} shadow-inner shrink-0`}>
+                              {selectedModuleForDetail.icon}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-2xl font-black text-slate-900">{selectedModuleForDetail.name}</h3>
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                  {selectedModuleForDetail.version}
+                                </span>
+                              </div>
+                              <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border mt-1.5 ${
+                                selectedModuleForDetail.tier === 'freemium' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+                                selectedModuleForDetail.tier === 'pro' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                'bg-purple-100 text-purple-700 border-purple-200'
+                              }`}>
+                                Plan {selectedModuleForDetail.tier.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-slate-600 mb-6 font-medium leading-relaxed">
+                            {selectedModuleForDetail.desc}. A continuación te desglosamos las funcionalidades y beneficios incluidos:
+                          </p>
+
+                          {/* Degradación Elegante / Upsell Contextual (Módulo Comedor) */}
+                          {selectedModuleForDetail.name.includes('Comedor') && (
+                            <div className="mb-6 p-4 rounded-2xl border border-amber-100 bg-amber-50/50 text-left">
+                              <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                                ⚖️ Estado del Servicio (Degradación Activa)
+                              </h5>
+                              <div className="space-y-2 text-xs">
+                                <div className="flex justify-between items-center font-bold text-slate-700">
+                                  <span>Registros Básicos de Comida:</span>
+                                  <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/50 font-black text-[9px] uppercase">Activo (Gratis)</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-450 font-semibold">Límite de Sillas en Tiempo Real:</span>
+                                  <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 font-bold text-[9px] uppercase">
+                                    <Lock size={10} /> Bloqueado (PRO)
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-450 font-semibold">Prevención de Solape de Roles:</span>
+                                  <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1 font-bold text-[9px] uppercase">
+                                    <Lock size={10} /> Bloqueado (PRO)
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-6">
+                            <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider mb-3">Funcionalidades Clave</h4>
+                            <ul className="space-y-2.5">
+                              {selectedModuleForDetail.features.map((feature: string, fIdx: number) => (
+                                <li key={fIdx} className="flex gap-2 text-xs font-semibold text-slate-700 leading-relaxed">
+                                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="flex gap-3">
+                            <button 
+                              onClick={() => setSelectedModuleForDetail(null)}
+                              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl transition-all"
+                            >
+                              Cerrar
+                            </button>
+                            {!selectedModuleForDetail.active ? (
+                              <button 
+                                onClick={() => {
+                                  handleBuyPlan(selectedModuleForDetail.tier);
+                                  setSelectedModuleForDetail(null);
+                                }}
+                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <Zap size={14} className="fill-current" /> Adquirir {selectedModuleForDetail.tier.toUpperCase()}
+                              </button>
+                            ) : (
+                              <div className="flex-1 flex items-center justify-center gap-1.5 py-3 border border-emerald-200 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-xs uppercase tracking-widest select-none">
+                                <CheckCircle2 size={14} /> Módulo Activo
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Modal Flotante de Configuración del Módulo */}
+                    {configuringModule && (() => {
+                      const mapModuleToTab = (moduleName: string) => {
+                        switch (moduleName) {
+                          case 'Directorio HR': return 'onboarding';
+                          case 'Reloj Checador (PWA)': return 'reloj';
+                          case 'Checador de Comida': return 'comidas';
+                          case 'Rutinas y Tareas': return 'tareas';
+                          case 'Reclutamiento ATS': return 'ats';
+                          case 'Reportes y Analítica': return 'reportes';
+                          case 'Portal Web (Vacantes)': return 'ats';
+                          case 'Academia LMS': return 'academia';
+                          case 'Gestor Documental': return 'documentos';
+                          default: return 'general';
+                        }
+                      };
+
+                      return (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                          <div className="bg-slate-50 rounded-3xl max-w-4xl w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
+                            {/* Cabecera del Modal */}
+                            <div className="bg-white px-8 py-5 border-b border-slate-200 flex items-center justify-between shrink-0">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                                  <Settings size={20} className="animate-spin-slow" />
+                                </div>
+                                <div>
+                                  <h3 className="text-xl font-black text-slate-800">Ajustes: {configuringModule.name}</h3>
+                                  <p className="text-xs text-slate-500 font-semibold mt-0.5">Establece los parámetros operativos específicos del módulo</p>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => setConfiguringModule(null)}
+                                className="w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-full transition-all border-none cursor-pointer"
+                              >
+                                <X size={18} />
+                              </button>
+                            </div>
+
+                            {/* Cuerpo del Modal (Scrollable) */}
+                            <div className="flex-1 overflow-y-auto p-6 bg-slate-50 custom-scrollbar">
+                              <CompanySettingsPanel initialTab={mapModuleToTab(configuringModule.name)} hideSidebar={true} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Modal de Tutorial Interactivo */}
+                    {tutorialStep !== null && (
+                      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-3xl p-8 max-w-xl w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col justify-between min-h-[460px]">
+                          <div>
+                            {/* Header del Tutorial */}
+                            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl">📖</span>
+                                <h3 className="text-lg font-black text-slate-800">Recorrido de Módulos</h3>
+                              </div>
+                              <span className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                Módulo {tutorialStep + 1} de {modulesWithDetails.length}
+                              </span>
+                            </div>
+
+                            {/* Contenido del Paso del Tutorial */}
+                            {(() => {
+                              const mod = modulesWithDetails[tutorialStep];
+                              if (!mod) return null;
+                              return (
+                                <div className="space-y-6">
+                                  <div className="flex items-center gap-4">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${mod.iconColor} shadow-inner shrink-0 text-2xl`}>
+                                      {mod.icon}
+                                    </div>
+                                    <div>
+                                      <h4 className="text-2xl font-black text-slate-900 leading-tight">{mod.name}</h4>
+                                      <p className="text-xs text-slate-400 font-bold uppercase mt-1">Requisito: Plan {mod.tier.toUpperCase()}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <p className="text-sm text-slate-700 font-bold italic">¿Para qué sirve?</p>
+                                    <p className="text-sm text-slate-600 font-medium leading-relaxed">{mod.desc}</p>
+                                  </div>
+
+                                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+                                    <p className="text-xs font-black uppercase text-slate-500 tracking-wider mb-2.5">Funciones destacadas:</p>
+                                    <ul className="space-y-2">
+                                      {mod.features.map((feature, fIdx) => (
+                                        <li key={fIdx} className="flex gap-2 text-xs font-semibold text-slate-700">
+                                          <span className="text-blue-500 shrink-0">•</span>
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          {/* Botones de Navegación del Tutorial */}
+                          <div className="pt-6 border-t border-slate-100 flex items-center justify-between gap-4 mt-6">
+                            <button 
+                              onClick={() => setTutorialStep(tutorialStep > 0 ? tutorialStep - 1 : null)}
+                              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5"
+                            >
+                              <ArrowLeft size={14} /> {tutorialStep === 0 ? 'Salir' : 'Anterior'}
+                            </button>
+
+                            {/* Progress Dots */}
+                            <div className="flex gap-1.5">
+                              {modulesWithDetails.map((_, dotIdx) => (
+                                <div 
+                                  key={dotIdx}
+                                  className={`w-2 h-2 rounded-full transition-all ${dotIdx === tutorialStep ? 'bg-blue-600 w-4' : 'bg-slate-200'}`}
+                                />
+                              ))}
+                            </div>
+
+                            <button 
+                              onClick={() => {
+                                if (tutorialStep < modulesWithDetails.length - 1) {
+                                  setTutorialStep(tutorialStep + 1);
+                                } else {
+                                  setTutorialStep(null);
+                                }
+                              }}
+                              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center gap-1.5"
+                            >
+                              {tutorialStep === modulesWithDetails.length - 1 ? 'Finalizar' : 'Siguiente'} <ArrowRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+            </div>
+          </div>
+        )}
+        {activeTab === 'backups' && (
+          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-in slide-in-from-bottom-4">
+            <BackupPanel />
+          </div>
+        )}
+      </div>
+      {/* Modal de Invitaciones PWA */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 border border-slate-100 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => {
+                setShowInviteModal(false);
+                setSelectedEmployeeId('');
+                setInvitePhone('');
+                setInvitePin('');
+                setInviteFeedback(null);
+              }}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <h3 className="text-xl font-black text-slate-900 mb-2">Enviar Invitación PWA</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Selecciona un colaborador para enviarle sus datos de acceso temporal y el link de instalación de la PWA.
+            </p>
+
+            <div className="space-y-4">
+              {/* Selector de Colaborador */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Colaborador</label>
+                <select 
+                  value={selectedEmployeeId}
+                  onChange={(e) => handleSelectEmployee(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                >
+                  <option value="">-- Selecciona un colaborador --</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.email})</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedEmployeeId !== '' && (
+                <>
+                  {/* Teléfono */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Número de WhatsApp (10 dígitos)</label>
+                    <input 
+                      type="text" 
+                      value={invitePhone} 
+                      onChange={e => setInvitePhone(e.target.value)} 
+                      placeholder="Ej. 4622071234"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                    />
+                  </div>
+
+                  {/* PIN */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">PIN Temporal</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={invitePin} 
+                        readOnly 
+                        placeholder="Sin PIN asignado"
+                        className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-700 font-bold focus:outline-none"
+                      />
+                      <button 
+                        onClick={handleGeneratePin}
+                        disabled={isGeneratingPin}
+                        className="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 px-4 rounded-xl font-bold text-sm transition-colors whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
+                      >
+                        {isGeneratingPin ? <Loader2 className="animate-spin" size={16} /> : 'Generar'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Feedback */}
+                  {inviteFeedback && (
+                    <div className={`p-4 rounded-xl border text-sm font-medium ${inviteFeedback.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                      {inviteFeedback.message}
+                    </div>
+                  )}
+
+                  {/* Botones de acción */}
+                  <div className="pt-4 flex flex-col gap-2">
+                    <button 
+                      onClick={handleSendAutomaticInvite}
+                      disabled={isSendingInvite || !invitePin || invitePhone.length < 10}
+                      className="w-full bg-slate-900 text-white font-black py-3 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+                    >
+                      {isSendingInvite ? (
+                        <>
+                          <Loader2 className="animate-spin animate-duration-1000" size={18} />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={18} />
+                          Enviar Automático (API)
+                        </>
+                      )}
+                    </button>
+
+                    <button 
+                      onClick={handleSendManualInvite}
+                      disabled={!invitePin || invitePhone.length < 10}
+                      className="w-full bg-emerald-600 text-white font-black py-3 rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+                    >
+                      <MessageSquare size={18} />
+                      Enviar por WhatsApp Web
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};

@@ -1,0 +1,21 @@
+# Laravel & Node dependencies
+/Backend/vendor/
+/Frontend/node_modules/
+/Frontend/dist/
+
+# Environment files
+/Backend/.env
+/Frontend/.env
+
+# Databases & Cache
+/Backend/database/*.sqlite
+/Backend/.phpunit.result.cache
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Agent files & Backups (Antigravity memory, AI local backups)
+/.agents/
+/brain/
+/Respaldo_IA/

@@ -1,0 +1,328 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Helpers\SecurityLogger;
+
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->where('email', strtolower(trim($request->email)))
+            ->with('tenant')
+            ->first();
+
+        \Illuminate\Support\Facades\Log::info("Login attempt details", [
+            'input_email' => $request->email,
+            'input_password_len' => strlen($request->password),
+            'user_found' => $user ? true : false,
+            'user_id' => $user ? $user->id : null,
+            'user_email' => $user ? $user->email : null,
+            'password_match' => $user ? Hash::check($request->password, $user->password) : false,
+        ]);
+
+        $isPlatformUser = false;
+        if (!$user) {
+            $user = \App\Models\PlatformUser::where('email', strtolower(trim($request->email)))->first();
+            if ($user) {
+                $isPlatformUser = true;
+            }
+        }
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            SecurityLogger::log('auth_failure', "Intento de inicio de sesión fallido para el correo: {$request->email}");
+            return response()->json(['error' => 'Credenciales incorrectas'], 401);
+        }
+
+        if (!$user->is_active) {
+            SecurityLogger::log('auth_blocked', "Intento de acceso de usuario inactivo: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
+            return response()->json(['error' => 'Usuario inactivo / archivado'], 403);
+        }
+
+        // Check if tenant is active
+        if (!$isPlatformUser && $user->role !== \App\Enums\UserRole::PLATFORM_ADMIN->value) {
+            $tenant = $user->tenant;
+            if ($tenant && !$tenant->is_active) {
+                SecurityLogger::log('auth_suspended', "Intento de acceso a empresa suspendida: {$tenant->name} por el usuario: {$user->email}", $tenant->id, $user->id);
+                return response()->json([
+                    'error' => 'Empresa suspendida',
+                    'message' => 'El acceso a esta empresa ha sido suspendido temporalmente por el administrador de la plataforma.'
+                ], 403);
+            }
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+        $requires2fa = !$isPlatformUser && $user->two_factor_enabled;
+
+        SecurityLogger::log('auth_success', "Inicio de sesión exitoso de: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
+
+        return response()->json([
+            'message' => 'Login exitoso',
+            'user' => $user,
+            'tenant' => $isPlatformUser ? null : $user->tenant,
+            'token' => $token,
+            'requires_2fa' => $requires2fa
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+        if ($user) {
+            $isPlatformUser = $user instanceof \App\Models\PlatformUser;
+            SecurityLogger::log('auth_logout', "Sesión cerrada por: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
+        }
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Sesión cerrada exitosamente']);
+    }
+
+    public function me(Request $request)
+    {
+        $user = $request->user();
+        if ($user instanceof \App\Models\User) {
+            $user->load('tenant');
+        }
+        return response()->json([
+            'user' => $user,
+            'tenant' => $user instanceof \App\Models\User ? $user->tenant : null
+        ]);
+    }
+
+    public function updateFcmToken(Request $request)
+    {
+        $request->validate([
+            'fcm_token' => 'required|string'
+        ]);
+
+        $user = $request->user();
+        $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
+        \Illuminate\Support\Facades\DB::table($table)
+            ->where('id', $user->id)
+            ->update([
+                'fcm_token' => $request->fcm_token,
+                'updated_at' => now()
+            ]);
+
+        return response()->json(['message' => 'FCM token actualizado exitosamente.']);
+    }
+
+    public function loginSocial(Request $request)
+    {
+        $request->validate([
+            'provider' => 'required|string|in:google,apple,samsung',
+            'provider_id' => 'required|string',
+            'email' => 'nullable|email'
+        ]);
+
+        $provider = $request->provider;
+        $providerId = $request->provider_id;
+        $email = $request->email;
+
+        // Determine column name
+        $column = $provider . '_id';
+
+        // 1. Try to find user by the social ID
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->where($column, $providerId)
+            ->with('tenant')
+            ->first();
+
+        // 2. If not found by social ID, try to find by email and automatically link
+        if (!$user && $email) {
+            $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->where('email', $email)
+                ->with('tenant')
+                ->first();
+
+            if ($user) {
+                // Link the social ID
+                $user->update([$column => $providerId]);
+            }
+        }
+
+        // 3. If still not found, check platform users
+        $isPlatformUser = false;
+        if (!$user) {
+            if ($email) {
+                $user = \App\Models\PlatformUser::where('email', $email)->first();
+                if ($user) {
+                    $isPlatformUser = true;
+                }
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['error' => 'No se encontró ninguna cuenta vinculada con estas credenciales.'], 404);
+        }
+
+        if (!$user->is_active) {
+            return response()->json(['error' => 'Usuario inactivo / archivado'], 403);
+        }
+
+        // Check if tenant is active
+        if (!$isPlatformUser && $user->role !== \App\Enums\UserRole::PLATFORM_ADMIN->value) {
+            $tenant = $user->tenant;
+            if ($tenant && !$tenant->is_active) {
+                return response()->json([
+                    'error' => 'Empresa suspendida',
+                    'message' => 'El acceso a esta empresa ha sido suspendido temporalmente por el administrador de la plataforma.'
+                ], 403);
+            }
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login exitoso',
+            'user' => $user,
+            'tenant' => $isPlatformUser ? null : $user->tenant,
+            'token' => $token
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'avatar' => 'nullable|string',
+            'phone' => 'nullable|string|max:30'
+        ]);
+
+        $updates = [
+            'name' => $request->name,
+            'avatar' => $request->avatar,
+            'updated_at' => now()
+        ];
+
+        if ($request->has('phone')) {
+            $updates['phone'] = $request->phone;
+        }
+
+        $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
+        \Illuminate\Support\Facades\DB::table($table)
+            ->where('id', $user->id)
+            ->update($updates);
+
+        if ($user instanceof \App\Models\PlatformUser) {
+            $updatedUser = \App\Models\PlatformUser::find($user->id);
+        } else {
+            $updatedUser = \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)->with('tenant')->find($user->id);
+        }
+
+        return response()->json([
+            'message' => 'Perfil actualizado exitosamente',
+            'user' => $updatedUser
+        ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed'
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'error' => 'La contraseña actual es incorrecta.'
+            ], 422);
+        }
+
+        $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
+        \Illuminate\Support\Facades\DB::table($table)
+            ->where('id', $user->id)
+            ->update([
+                'password' => Hash::make($request->new_password),
+                'updated_at' => now()
+            ]);
+
+        return response()->json([
+            'message' => 'Contraseña actualizada exitosamente'
+        ]);
+    }
+
+    public function requestRestDay(Request $request)
+    {
+        $user = $request->user();
+        $request->validate([
+            'requested_day' => 'required|string|in:Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
+            'justification' => 'required|string|max:1000'
+        ]);
+
+        $contingencyId = \Illuminate\Support\Facades\DB::table('contingencies')->insertGetId([
+            'user_id' => $user->id,
+            'type' => 'rest_day_change',
+            'status' => 'pending',
+            'justification_text' => "Cambio de día de descanso a: {$request->requested_day}. Razón: {$request->justification}",
+            'tenant_id' => $user->tenant_id,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        $contingency = \Illuminate\Support\Facades\DB::table('contingencies')->find($contingencyId);
+
+        return response()->json([
+            'message' => 'Solicitud de día de descanso registrada exitosamente',
+            'request' => $contingency
+        ]);
+    }
+
+    public function getRestDayRequests(Request $request)
+    {
+        $user = $request->user();
+        $requests = \Illuminate\Support\Facades\DB::table('contingencies')
+            ->where('user_id', $user->id)
+            ->where('type', 'rest_day_change')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'requests' => $requests
+        ]);
+    }
+
+    public function updateSecurity(Request $request)
+    {
+        $user = $request->user();
+        $request->validate([
+            'two_factor_enabled' => 'nullable|boolean',
+            'biometric_key' => 'nullable|string'
+        ]);
+
+        $updates = [];
+        if ($request->has('two_factor_enabled')) {
+            $updates['two_factor_enabled'] = $request->two_factor_enabled;
+            if ($request->two_factor_enabled && !$user->two_factor_secret) {
+                // Generate a mock secret
+                $updates['two_factor_secret'] = 'secret_' . bin2hex(random_bytes(10));
+            }
+        }
+        if ($request->has('biometric_key')) {
+            $updates['biometric_key'] = $request->biometric_key;
+        }
+
+        $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
+        \Illuminate\Support\Facades\DB::table($table)
+            ->where('id', $user->id)
+            ->update($updates);
+
+        $updatedUser = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find($user->id);
+
+        return response()->json([
+            'message' => 'Seguridad actualizada exitosamente',
+            'user' => $updatedUser
+        ]);
+    }
+}

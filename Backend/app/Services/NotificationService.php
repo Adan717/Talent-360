@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Services;
+
+use Kreait\Firebase\Contract\Messaging;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
+class NotificationService
+{
+    protected ?Messaging $messaging = null;
+
+    public function __construct()
+    {
+        try {
+            if (class_exists(\Kreait\Firebase\Contract\Messaging::class) && app()->bound(Messaging::class)) {
+                $this->messaging = app(Messaging::class);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Firebase messaging not initialized: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send notification to a specific user by ID.
+     */
+    public function sendToUser(int $userId, string $title, string $body, array $data = []): bool
+    {
+        $user = DB::table('users')->where('id', $userId)->first();
+        if (!$user) {
+            Log::warning("Cannot send notification. User ID {$userId} not found.");
+            return false;
+        }
+
+        if (!$user->fcm_token) {
+            Log::info("User ID {$userId} does not have an FCM token. Logged notification: [{$title}] {$body}");
+            return true; // Return true as it was handled without crash
+        }
+
+        return $this->sendRawNotification($user->fcm_token, $title, $body, $data);
+    }
+
+    /**
+     * Send notification to all users with a specific role.
+     */
+    public function sendToRole(string $role, string $title, string $body, array $data = []): bool
+    {
+        $tokens = DB::table('users')
+            ->where('role', $role)
+            ->whereNotNull('fcm_token')
+            ->pluck('fcm_token')
+            ->toArray();
+
+        if (empty($tokens)) {
+            Log::info("No users with role {$role} found with FCM tokens. Logged notification: [{$title}] {$body}");
+            return true;
+        }
+
+        $success = true;
+        foreach ($tokens as $token) {
+            if (!$this->sendRawNotification($token, $title, $body, $data)) {
+                $success = false;
+            }
+        }
+
+        return $success;
+    }
+
+    /**
+     * Broadcast notification to all users of a tenant.
+     */
+    public function sendBroadcast(int $tenantId, string $title, string $body, array $data = []): bool
+    {
+        $tokens = DB::table('users')
+            ->where('tenant_id', $tenantId)
+            ->whereNotNull('fcm_token')
+            ->pluck('fcm_token')
+            ->toArray();
+
+        if (empty($tokens)) {
+            Log::info("No users in tenant {$tenantId} found with FCM tokens. Logged notification: [{$title}] {$body}");
+            return true;
+        }
+
+        $success = true;
+        foreach ($tokens as $token) {
+            if (!$this->sendRawNotification($token, $title, $body, $data)) {
+                $success = false;
+            }
+        }
+
+        return $success;
+    }
+
+    /**
+     * Send raw notification via FCM.
+     */
+    protected function sendRawNotification(string $token, string $title, string $body, array $data = []): bool
+    {
+        Log::info("Sending FCM Notification to token [{$token}]: [{$title}] {$body}", $data);
+
+        if (!$this->messaging) {
+            Log::info("Firebase Messaging client not configured. Notification was simulated successfully.");
+            return true;
+        }
+
+        try {
+            $message = CloudMessage::withTarget('token', $token)
+                ->withNotification(Notification::create($title, $body))
+                ->withData($data);
+
+            $this->messaging->send($message);
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Failed to send Firebase Notification: " . $e->getMessage());
+            return false;
+        }
+    }
+}

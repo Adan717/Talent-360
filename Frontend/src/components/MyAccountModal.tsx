@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, User, Lock, Clock, Check, AlertTriangle, 
-  Camera, Sparkles, Key, Calendar, Send
+  Upload, Sparkles, Key, Calendar, Send
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
@@ -272,7 +272,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                     ref={fileInputRef} 
                     onChange={handleFileChange} 
                     className="hidden" 
-                    accept="image/*" 
+                    accept="image/png, image/jpeg" 
                   />
                   <img 
                     src={avatar || 'https://i.pravatar.cc/150?img=11'} 
@@ -283,7 +283,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
                     {isUploading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <Camera size={18} className="text-white" />
+                      <Upload size={18} className="text-white" />
                     )}
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';
@@ -118,6 +118,299 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     }
 
     return null;
+  };
+
+
+  const renderDialMecanismo = (isMobile: boolean) => {
+    const size = isMobile ? 76 : 88;
+    return (
+      <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-1 min-h-[200px] mt-[-5px] mb-3' : ''}`}>
+        {isOpeningPremium && storeStatus === 'closed' && (
+          <div className={`px-5 py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-inner border mb-5 select-none shrink-0 text-center animate-fade-in ${
+            Number(currentUser.id) === Number(openingStatus ? openingStatus.current_responsible_employee_id : 1) && !isWithinPerimeter
+              ? 'bg-violet-50 dark:bg-violet-955/20 border-violet-300 dark:border-violet-800/50 text-violet-750 dark:text-violet-300 font-black animate-pulse'
+              : 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50'
+          }`}>
+            <span className="animate-pulse text-sm">⏳</span>
+            <span className={isMobile ? "text-[10px] font-extrabold uppercase tracking-wide" : "text-[11px] font-extrabold uppercase tracking-wide"}>
+              {(() => {
+                const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
+                if (Number(currentUser.id) === Number(responsibleId)) {
+                  return isWithinPerimeter 
+                    ? 'Tienes el control de la apertura de hoy'
+                    : '🗝️ Responsable de apertura. Dirígete a la sucursal para abrir.';
+                } else {
+                  const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
+                  return `Esperando apertura por: ${responsibleUser.name}`;
+                }
+              })()}
+            </span>
+          </div>
+        )}
+
+        {renderGPSView(size, isMobile) || (
+          <div className="relative flex-shrink-0">
+            {/* Concentric Flashing Gradient Glow Halo */}
+            {getDialGlowClasses() ? (
+              <div className={`absolute inset-[-8px] rounded-full border-[8px] blur-[4px] animate-shimmer-glow pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
+            ) : null}
+
+            <button 
+              onClick={handleAction} 
+              disabled={btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed')} 
+              className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-4 bg-white ${getDialColorClasses()} ${
+                isMobile ? 'w-52 h-52' : 'w-56 h-56'
+              } ${
+                btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed') 
+                  ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
+                  : ''
+              }`}
+            >
+              <div className="flex flex-col items-center justify-center h-full w-full py-2 select-none">
+                {/* ZONA SUPERIOR/CENTRO: Icono Prominente y Grande */}
+                <div className="flex-grow flex items-center justify-center mt-3 text-slate-800">
+                  {getDialIcon(size)}
+                </div>
+
+                {/* ZONA CENTRAL: Hora digital */}
+                <div className={`flex items-baseline font-mono font-black text-slate-800 tracking-tight mt-1 mb-2 ${isMobile ? 'text-3xl' : 'text-4xl md:text-5xl leading-none'}`}>
+                  <span>{formattedTime.split(' ')[0]}</span>
+                  <span className={`uppercase font-bold text-slate-500 ${isMobile ? 'text-xs ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
+                </div>
+
+                {/* ZONA INFERIOR: Texto Instructivo Directo */}
+                <div className={`px-2 text-center w-full min-h-[36px] flex items-center justify-center mb-2 text-slate-700 ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
+                  <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[10px] md:text-[10.5px]' : 'text-[11px] md:text-[12px]'}`}>
+                    {getDialBottomLabel()}
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderBarraCronologica = (isMobile: boolean) => {
+    return (
+      <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-2 w-full text-left py-2 select-none"}>
+        {/* Status title on the right, no horario label */}
+        <div className={`flex justify-end items-center font-bold uppercase tracking-wider ${isMobile ? 'text-xs mb-4' : 'text-xs tracking-widest'}`}>
+          {hasCheckedOut ? (
+            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1">
+              <span>Turno Finalizado ✓</span>
+            </span>
+          ) : hasCheckedIn ? (
+            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1 animate-pulse">
+              <span>Turno Activo ✓</span>
+            </span>
+          ) : (
+            <span className="text-slate-400 dark:text-slate-500 font-extrabold">Turno No Iniciado</span>
+          )}
+        </div>
+        
+        <div className={`flex justify-between items-center w-full z-10 relative ${isMobile ? 'px-2 mb-0' : 'px-4 mb-0 mt-2'}`}>
+          {/* Entrada Node */}
+          {(() => {
+            const isLate = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
+            return (
+              <div 
+                onClick={() => hasCheckedIn && setShowEntryDetailsModal(true)}
+                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                  hasCheckedIn ? 'cursor-pointer' : 'cursor-default'
+                }`}
+              >
+                <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
+                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                } ${
+                  hasCheckedIn 
+                    ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105 shadow-indigo-500/20' 
+                    : 'border-slate-200 bg-white text-slate-400 shadow-sm'
+                }`}>
+                  <LogIn size={isMobile ? 18 : 20} className={!hasCheckedIn ? "animate-pulse" : ""} />
+                  {hasCheckedIn && (
+                    <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
+                  )}
+                </div>
+                {hasCheckedIn ? (
+                  (() => {
+                    const info = getEntryInfo();
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Entrada</span>;
+                    return (
+                      <span className={`text-[10px] font-mono font-bold mt-2 flex flex-col items-center leading-none ${isLate ? 'text-rose-500' : 'text-indigo-550'}`}>
+                        <span>{info.time}</span>
+                        {isLate && <span className="text-[8px] font-black text-rose-505 uppercase tracking-wider mt-0.5">Retardo</span>}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Entrada</span>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Descanso Node */}
+          {(() => {
+            const isDone = (breaksTaken[currentUser.id] || 0) > 0 || breakEndTimes[currentUser.id] !== undefined;
+            const isActive = clockState === 'short_break';
+            const isAccessible = isBreakDone || isActive;
+            return (
+              <div 
+                onClick={() => isAccessible && setShowBreakDetailsModal(true)}
+                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                  isAccessible ? 'cursor-pointer' : 'cursor-default'
+                }`}
+              >
+                <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
+                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                } ${
+                  isAccessible
+                    ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
+                    : 'border-slate-200 bg-white text-slate-400 shadow-sm'
+                }`}>
+                  <Coffee size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
+                  {isDone && (
+                    <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
+                  )}
+                </div>
+                {isAccessible ? (
+                  (() => {
+                    const info = getBreakInfo();
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Descanso</span>;
+                    if (info.isReserved) {
+                      return (
+                        <span className="text-[10px] font-mono text-amber-500 font-bold mt-2 flex flex-col items-center leading-none">
+                          <span>{info.time}</span>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider mt-0.5 text-amber-600">Sugerido</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] font-mono text-purple-655 font-bold mt-2 flex flex-col items-center leading-none">
+                        <span>{info.time}</span>
+                        {info.isAwaitingEnd && <span className="text-[8px] font-black text-purple-505 uppercase tracking-wider mt-0.5 animate-pulse">Activo</span>}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Descanso</span>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Comida Node */}
+          {(() => {
+            const isDone = hasReservedMeal[currentUser.id] || mealEndTimes[currentUser.id] !== undefined;
+            const isActive = clockState === 'meal';
+            const isAccessible = isMealDone || isActive;
+            return (
+              <div 
+                onClick={() => isAccessible && setShowMealDetailsModal(true)}
+                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                  isAccessible ? 'cursor-pointer' : 'cursor-default'
+                }`}
+              >
+                <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
+                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                } ${
+                  isAccessible
+                    ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105 shadow-amber-500/20' 
+                    : 'border-slate-200 bg-white text-slate-400 shadow-sm'
+                }`}>
+                  <Utensils size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
+                  {isDone && (
+                    <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
+                  )}
+                </div>
+                {isAccessible ? (
+                  (() => {
+                    const info = getMealInfo();
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Comida</span>;
+                    if (info.isReserved) {
+                      return (
+                        <span className="text-[10px] font-mono text-amber-500 font-bold mt-2 flex flex-col items-center leading-none">
+                          <span>{info.time}</span>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider mt-0.5 text-amber-600">Sugerido</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] font-mono text-amber-655 font-bold mt-2 flex flex-col items-center leading-none">
+                        <span>{info.time}</span>
+                        {info.isAwaitingEnd && <span className="text-[8px] font-black text-amber-505 uppercase tracking-wider mt-0.5 animate-pulse">Activo</span>}
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">-</span>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Salida Node */}
+          {(() => {
+            const isDone = hasCheckedOut;
+            const isAccessible = hasCheckedOut;
+            return (
+              <div 
+                onClick={() => isAccessible && setShowExitDetailsModal(true)}
+                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                  isAccessible ? 'cursor-pointer' : 'cursor-default'
+                }`}
+              >
+                <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
+                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                } ${
+                  isAccessible
+                    ? 'border-emerald-500 bg-emerald-500 text-white font-extrabold scale-105 shadow-emerald-500/20' 
+                    : 'border-slate-200 bg-white text-slate-400 shadow-sm'
+                }`}>
+                  <LogOut size={isMobile ? 18 : 20} />
+                  {isDone && (
+                    <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
+                  )}
+                </div>
+                {isAccessible ? (
+                  (() => {
+                    const info = getExitInfo();
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Salida</span>;
+                    return (
+                      <span className="text-[10px] font-mono text-emerald-600 font-bold mt-2 flex flex-col items-center leading-none">
+                        <span>{info.time}</span>
+                      </span>
+                    );
+                  })()
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Salida</span>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Timeline Bar - Thicker and closer to icons (Identical to landing simulation) */}
+        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-14px]' : 'px-4 mb-2 mt-[-16px]'}`}>
+          <div className="w-full h-3.5 bg-slate-100 rounded-full border border-slate-200/40"></div>
+          <div 
+            className={`absolute top-0 h-3.5 rounded-full transition-all duration-500 ${
+              isMobile ? 'left-2' : 'left-4'
+            } ${
+              !hasCheckedIn || hasCheckedOut ? 'bg-slate-200' :
+              clockState === 'short_break' ? 'bg-purple-400' :
+              clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
+            }`}
+            style={{ 
+              width: progressPercent === 0 ? '0%' : 
+              isMobile ? `calc(${progressPercent}% - 16px)` : `calc(${progressPercent}% - 32px)` 
+            }}
+          ></div>
+        </div>
+      </div>
+    );
   };
 
   const getDialIcon = (size = 76) => {
@@ -1603,251 +1896,12 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               </div>
             )}
             
-            {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
-            <div className="py-2 px-1 text-left w-full select-none shrink-0">
-              {/* Status title on the right, no horario label */}
-              <div className="flex justify-end items-center text-xs font-bold uppercase tracking-wider mb-4">
-                {hasCheckedOut ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1">
-                    <span>Turno Finalizado ✓</span>
-                  </span>
-                ) : hasCheckedIn ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1 animate-pulse">
-                    <span>Turno Activo ✓</span>
-                  </span>
-                ) : (
-                  <span className="text-slate-400 dark:text-slate-500 font-extrabold">Turno No Iniciado</span>
-                )}
-              </div>
-              
-              <div className="flex justify-between items-center w-full px-2 mb-0 z-10 relative">
-                {/* Entrada Node */}
-                {(() => {
-                  const isLate = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
-                  return (
-                    <div 
-                      onClick={() => hasCheckedIn && setShowEntryDetailsModal(true)}
-                      className={`flex flex-col items-center relative transition-all duration-300 transform ${
-                        hasCheckedIn ? 'cursor-pointer' : 'cursor-default'
-                      }`}
-                    >
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
-                        hasCheckedIn 
-                          ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105 shadow-indigo-500/20' 
-                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
-                      }`}>
-                        <LogIn size={18} className={!hasCheckedIn ? "animate-pulse" : ""} />
-                        {hasCheckedIn && (
-                          <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
-                        )}
-                      </div>
-                      {hasCheckedIn ? (
-                        <span className={`text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all ${
-                          isLate 
-                            ? 'text-rose-700 bg-rose-50 border-rose-100 dark:text-rose-300 dark:bg-rose-950/30 dark:border-rose-900/40 animate-pulse' 
-                            : 'text-indigo-700 bg-indigo-50 border-indigo-100 dark:text-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-900/40'
-                        }`}>
-                          {formatMinsToTimeClean(checkInTimes[currentUser.id])} {isLate && "(Retardo)"}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
-                          {formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Descanso Node */}
-                {(() => {
-                  const isDone = (breaksTaken[currentUser.id] || 0) > 0 || breakEndTimes[currentUser.id] !== undefined;
-                  const isActive = clockState === 'short_break';
-                  const isAccessible = isBreakDone || isActive;
-                  return (
-                    <div 
-                      onClick={() => isAccessible && setShowBreakDetailsModal(true)}
-                      className={`flex flex-col items-center relative transition-all duration-300 transform ${
-                        isAccessible ? 'cursor-pointer' : 'cursor-default'
-                      }`}
-                    >
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
-                        isAccessible
-                          ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
-                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
-                      }`}>
-                        <Coffee size={18} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
-                        {isDone && (
-                          <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
-                        )}
-                      </div>
-                      {isAccessible ? (
-                        (() => {
-                          const info = getBreakInfo();
-                          return (
-                            <span className="text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all text-purple-700 bg-purple-50 border-purple-100 dark:text-purple-300 dark:bg-purple-955/30 dark:border-purple-900/40">
-                              {info ? formatMinsToTimeClean(info.start) : 'Descanso'}
-                            </span>
-                          );
-                        })()
-                      ) : (
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">-</span>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Comida Node */}
-                {(() => {
-                  const isDone = hasReservedMeal[currentUser.id] || mealEndTimes[currentUser.id] !== undefined;
-                  const isActive = clockState === 'meal';
-                  const isAccessible = isMealDone || isActive;
-                  return (
-                    <div 
-                      onClick={() => isAccessible && setShowMealDetailsModal(true)}
-                      className={`flex flex-col items-center relative transition-all duration-300 transform ${
-                        isAccessible ? 'cursor-pointer' : 'cursor-default'
-                      }`}
-                    >
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
-                        isAccessible
-                          ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105 shadow-amber-500/20' 
-                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
-                      }`}>
-                        <Utensils size={18} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
-                        {isDone && (
-                          <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
-                        )}
-                      </div>
-                      {isAccessible ? (
-                        (() => {
-                          const info = getMealInfo();
-                          return (
-                            <span className="text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all text-amber-700 bg-amber-50 border-amber-100 dark:text-amber-300 dark:bg-amber-955/30 dark:border-amber-900/40">
-                              {info && !info.isReserved ? formatMinsToTimeClean(info.start) : 'Comida'}
-                            </span>
-                          );
-                        })()
-                      ) : (
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">-</span>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Salida Node */}
-                {(() => {
-                  return (
-                    <div 
-                      onClick={() => hasCheckedOut && setShowExitDetailsModal(true)}
-                      className={`flex flex-col items-center relative transition-all duration-300 transform ${
-                        hasCheckedOut ? 'cursor-pointer' : 'cursor-default'
-                      }`}
-                    >
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
-                        hasCheckedOut
-                          ? 'border-teal-500 bg-teal-500 text-white font-extrabold scale-105 shadow-teal-500/20' 
-                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
-                      }`}>
-                        <LogOut size={18} className={hasCheckedIn && !hasCheckedOut ? "animate-pulse" : ""} />
-                        {hasCheckedOut && (
-                          <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-550 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
-                        )}
-                      </div>
-                      {hasCheckedOut ? (
-                        <span className="text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all text-teal-700 bg-teal-50 border-teal-100 dark:text-teal-300 dark:bg-teal-955/30 dark:border-teal-900/40">
-                          {checkOutTimes[currentUser.id] ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : 'Fichado'}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
-                          {formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Timeline Bar - Thicker and closer to icons (Identical to landing simulation) */}
-              <div className="relative w-full px-2 mt-[-20px] z-0">
-                <div className="w-full h-3.5 bg-slate-100 rounded-full border border-slate-200/40"></div>
-                <div 
-                  className={`absolute left-2 top-0 h-3.5 rounded-full transition-all duration-500 ${
-                    !hasCheckedIn || hasCheckedOut ? 'bg-slate-200' :
-                    clockState === 'short_break' ? 'bg-purple-400' :
-                    clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
-                  }`}
-                  style={{ width: progressPercent === 0 ? '0%' : `calc(${progressPercent}% - 16px)` }}
-                ></div>
-              </div>
-
-            {/* Fading Divider below timeline section */}
-            <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-5"></div>
             {/* Central Clock Circle Action Button (Middle) */}
-            <div className="flex-1 flex flex-col items-center justify-center min-h-[200px] relative mt-[-5px] mb-3">
-              {isOpeningPremium && storeStatus === 'closed' && (
-                <div className={`px-4.5 py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-inner border mb-5 select-none shrink-0 text-center animate-fade-in ${
-                  Number(currentUser.id) === Number(openingStatus ? openingStatus.current_responsible_employee_id : 1) && !isWithinPerimeter
-                    ? 'bg-violet-50 dark:bg-violet-955/20 border-violet-300 dark:border-violet-800/50 text-violet-750 dark:text-violet-300 font-black animate-pulse'
-                    : 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50'
-                }`}>
-                  <span className="animate-pulse text-sm">⏳</span>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide">
-                    {(() => {
-                      const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
-                      if (Number(currentUser.id) === Number(responsibleId)) {
-                        return isWithinPerimeter 
-                          ? 'Tienes el control de la apertura de hoy'
-                          : '🗝️ Responsable de apertura. Dirígete a la sucursal para abrir.';
-                      } else {
-                        const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
-                        return `Esperando apertura por: ${responsibleUser.name}`;
-                      }
-                    })()}
-                  </span>
-                </div>
-              )}
+            {renderDialMecanismo(true)}
 
-              {renderGPSView(76, true) || (
-                <div className="relative flex-shrink-0">
-                  {/* Concentric Flashing Gradient Glow Halo */}
-                  {getDialGlowClasses() ? (
-                    <div className={`absolute inset-[-8px] rounded-full border-[8px] blur-[4px] animate-shimmer-glow pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
-                  ) : null}
-
-                  <button 
-                    onClick={handleAction} 
-                    disabled={btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed')} 
-                    className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none w-52 h-52 md:w-56 md:h-56 aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-4 bg-white ${getDialColorClasses()} ${
-                      btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed') 
-                        ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
-                        : ''
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center h-full w-full py-2 select-none">
-                      {/* ZONA SUPERIOR/CENTRO: Icono Prominente y Grande */}
-                      <div className="flex-grow flex items-center justify-center mt-3 text-slate-800">
-                        {getDialIcon(76)}
-                      </div>
-
-                      {/* ZONA CENTRAL: Hora digital */}
-                      <div className="flex items-baseline font-mono text-3xl font-black text-slate-800 tracking-tight mt-1 mb-2">
-                        <span>{formattedTime.split(' ')[0]}</span>
-                        <span className="text-xs uppercase font-bold text-slate-500 ml-0.5">{formattedTime.split(' ')[1].toLowerCase()}</span>
-                      </div>
-
-                      {/* ZONA INFERIOR: Texto Instructivo Directo */}
-                      <div className="px-2 text-center w-full max-w-[170px] min-h-[36px] flex items-center justify-center mb-2 text-slate-700">
-                        <span className="text-[10px] md:text-[10.5px] font-black uppercase tracking-wider leading-tight block">
-                          {getDialBottomLabel()}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-            </div>
-
+            {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
+            {renderBarraCronologica(true)}
+            
             {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
             <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">
               {/* Alerta de Tareas */}
@@ -3641,7 +3695,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         ref={avatarFileInputRef} 
                         onChange={handleAvatarFileChange} 
                         className="hidden" 
-                        accept="image/*" 
+                        accept="image/png, image/jpeg" 
                       />
                       <img 
                         src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
@@ -3652,7 +3706,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         {isUploadingAvatar ? (
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         ) : (
-                          <Camera size={14} className="text-white" />
+                          <Upload size={14} className="text-white" />
                         )}
                       </div>
                     </div>

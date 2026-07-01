@@ -25,7 +25,11 @@ chmod -R 777 Backend/storage Backend/bootstrap/cache
 echo "Ejecutando migraciones de base de datos..."
 docker exec talent360-backend php artisan migrate --force
 
-# 7. Limpiar caché de Laravel
+# 7. Ejecutar seeder de DecorArte
+echo "Sembrando estructura de DecorArte..."
+docker exec talent360-backend php scripts_utilidad/seed_decorarte_final.php
+
+# 8. Limpiar caché de Laravel
 echo "Limpiando cachés de Laravel..."
 docker exec talent360-backend php artisan config:clear
 docker exec talent360-backend php artisan cache:clear

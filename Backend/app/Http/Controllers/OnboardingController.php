@@ -134,7 +134,8 @@ class OnboardingController extends Controller
 
         $employee->update([
             'name' => $request->name,
-            'pin_code' => null // Consumir el PIN
+            'pin_code' => null, // Consumir el PIN
+            'avatar' => $request->avatar ?? $employee->avatar
         ]);
 
         if ($employee->user) {

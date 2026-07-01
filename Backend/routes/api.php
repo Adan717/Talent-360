@@ -111,6 +111,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::put('/employees/{id}', [EmployeeController::class, 'update']);
         Route::get('/employees', [EmployeeController::class, 'index']);
         Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+        Route::delete('/employees/{id}/force', [EmployeeController::class, 'forceDestroy']);
 
         // Módulo Puestos (Job Roles)
         Route::get('/job-roles', [JobRoleController::class, 'index']);

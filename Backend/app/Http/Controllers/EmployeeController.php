@@ -102,6 +102,7 @@ class EmployeeController extends Controller
                 'mealMinutes' => 'nullable|integer',
                 'restDay' => 'nullable|string',
                 'base_salary' => 'nullable|numeric',
+                'avatar' => 'sometimes|nullable|string',
             ]);
 
             // Actualizar cuenta de usuario vinculada
@@ -112,6 +113,7 @@ class EmployeeController extends Controller
                         'name' => $data['name'],
                         'email' => $data['email'],
                         'role' => $data['role'],
+                        'avatar' => $data['avatar'] ?? $user->avatar,
                     ]);
                     if ($request->filled('password')) {
                         $user->update(['password' => Hash::make($request->password)]);
@@ -155,6 +157,7 @@ class EmployeeController extends Controller
             'mealMinutes' => 'nullable|integer',
             'restDay' => 'nullable|string',
             'base_salary' => 'nullable|numeric',
+            'avatar' => 'sometimes|nullable|string',
         ]);
 
         try {
@@ -168,7 +171,8 @@ class EmployeeController extends Controller
                 'role' => $data['role'],
                 'job_role_id' => $data['job_role_id'] ?? null,
                 'tenant_id' => $tenantId,
-                'is_active' => $request->input('is_active', true)
+                'is_active' => $request->input('is_active', true),
+                'avatar' => $data['avatar'] ?? null,
             ]);
 
             // Crear el registro del colaborador en la tabla employees
@@ -240,6 +244,7 @@ class EmployeeController extends Controller
             'mealMinutes' => 'sometimes|nullable|integer',
             'restDay' => 'sometimes|nullable|string',
             'base_salary' => 'sometimes|nullable|numeric',
+            'avatar' => 'sometimes|nullable|string',
         ]);
 
         try {
@@ -260,6 +265,7 @@ class EmployeeController extends Controller
                     if ($request->has('google_id')) $userUpdates['google_id'] = $request->google_id;
                     if ($request->has('apple_id')) $userUpdates['apple_id'] = $request->apple_id;
                     if ($request->has('samsung_id')) $userUpdates['samsung_id'] = $request->samsung_id;
+                    if ($request->has('avatar')) $userUpdates['avatar'] = $request->avatar;
 
                     if ($request->filled('password')) {
                         $userUpdates['password'] = Hash::make($request->password);
@@ -278,7 +284,8 @@ class EmployeeController extends Controller
                         'role' => $request->role,
                         'job_role_id' => $request->input('job_role_id', $employee->job_role_id),
                         'tenant_id' => $employee->tenant_id ?? $tenantId,
-                        'is_active' => $request->input('is_active', true)
+                        'is_active' => $request->input('is_active', true),
+                        'avatar' => $request->input('avatar', $employee->avatar)
                     ]);
                     $employee->user_id = $user->id;
                     $employee->save();
@@ -316,6 +323,50 @@ class EmployeeController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'Error al desactivar colaborador: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function forceDestroy($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $currentUser = auth()->user() ?? auth('sanctum')->user();
+
+        // Evitar que el administrador principal se borre a sí mismo
+        if ($employee->user_id && $employee->user_id === $currentUser->id) {
+            return response()->json(['error' => 'No puedes eliminar tu propia cuenta de administrador.'], 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $userId = $employee->user_id;
+
+            // Eliminar físicamente al empleado
+            $employee->delete();
+
+            // Si tiene usuario enlazado, eliminarlo físicamente también (excepto si es el tenant owner / admin principal)
+            if ($userId) {
+                $user = User::withoutGlobalScopes()->find($userId);
+                if ($user) {
+                    // Si el usuario es el creador original o tiene rol admin, comprobar que no estemos eliminando al único admin
+                    if ($user->role === 'admin') {
+                        $adminCount = User::where('tenant_id', $user->tenant_id)
+                            ->where('role', 'admin')
+                            ->count();
+                        if ($adminCount <= 1) {
+                            DB::rollBack();
+                            return response()->json(['error' => 'No se puede eliminar al último administrador del sistema.'], 403);
+                        }
+                    }
+                    $user->delete();
+                }
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Employee and user permanently deleted']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Error al eliminar definitivamente al colaborador: ' . $e->getMessage()], 500);
         }
     }
 }

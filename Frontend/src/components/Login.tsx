@@ -35,11 +35,36 @@ export const Login = () => {
   }, [emailParam]);
 
   useEffect(() => {
+    const tokenParam = searchParams.get('token');
+    if (tokenParam) {
+      localStorage.setItem('talent_auth_token', tokenParam);
+      setIsLoading(true);
+      setError('');
+      axiosInstance.get('/me', {
+        headers: { Authorization: `Bearer ${tokenParam}` }
+      })
+      .then(res => {
+        const { user, tenant } = res.data;
+        setCurrentUser({ ...user, system_role: user.role });
+        setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+        navigate('/app');
+      })
+      .catch(err => {
+        console.error('Error in autologin:', err);
+        setError('Error al iniciar sesión automáticamente tras el pago.');
+        localStorage.removeItem('talent_auth_token');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+      return;
+    }
+
     const hasToken = !!localStorage.getItem('talent_auth_token');
     if (hasToken && paymentParam !== 'success') {
       navigate('/app');
     }
-  }, [navigate, paymentParam]);
+  }, [navigate, paymentParam, searchParams, setCurrentUser, setCurrentTier]);
 
   const handleGoogleCredentialResponse = async (response: any) => {
     setIsLoading(true);

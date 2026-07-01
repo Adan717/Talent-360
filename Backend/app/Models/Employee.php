@@ -34,7 +34,8 @@ class Employee extends Model
         'restDay',
         'pin_code',
         'invite_token',
-        'portadorLlaves'
+        'portadorLlaves',
+        'avatar'
     ];
 
     protected $appends = ['role'];

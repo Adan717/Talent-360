@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
@@ -189,6 +189,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [importingTemplate, setImportingTemplate] = useState(false);
 
   const [orgViewMode, setOrgViewMode] = useState<'tree' | 'levels'>('tree');
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredRoleId, setHoveredRoleId] = useState<number | null>(null);
   const [draggedOverRoleId, setDraggedOverRoleId] = useState<number | null>(null);
 
@@ -827,7 +828,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   };
 
   const handleDeleteUser = async (id: number) => {
-    if(!window.confirm('¿Seguro que deseas archivar a este colaborador? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
+    if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
     try {
       const appState = useAppStore.getState();
       if (appState.isSandboxMode) {
@@ -841,7 +842,26 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch(e) {
       console.error(e);
-      alert("Error al eliminar la ficha.");
+      alert("Error al desactivar la ficha.");
+    }
+  };
+
+  const handleForceDeleteUser = async (id: number) => {
+    if(!window.confirm('¿Seguro que deseas eliminar definitivamente a este colaborador? Esta acción no se puede deshacer y borrará permanentemente sus registros de la base de datos.')) return;
+    try {
+      const appState = useAppStore.getState();
+      if (appState.isSandboxMode) {
+          setUsers(users.filter(u => u.id !== id));
+          appState.setGlobalUsers(appState.globalUsers.filter(u => u.id !== id));
+          return;
+      }
+      const res = await axiosInstance.delete(`/employees/${id}/force`);
+      if (res.status !== 200) throw new Error("Failed to force delete user");
+      await fetchData();
+      window.dispatchEvent(new Event('db_sync_updated'));
+    } catch(e: any) {
+      console.error(e);
+      alert(e.response?.data?.error || "Error al eliminar definitivamente la ficha.");
     }
   };
 
@@ -1306,21 +1326,24 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                        return (
                          <div key={u.id} className={`bg-white border rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow relative ${directorioSubTab === 'inactivos' ? 'border-slate-200 opacity-85 bg-slate-50/50 shadow-none' : 'border-slate-200'}`}>
                            {directorioSubTab === 'activos' ? (
-                             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
-                               <button onClick={() => setEditingUser(u)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Editar"><Pencil size={14}/></button>
-                               <button onClick={() => handleDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors font-bold" title="Archivar Colaborador">
-                                 <X size={14}/>
-                               </button>
-                             </div>
-                           ) : (
-                             <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
-                               <button onClick={() => handleRestoreUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Re-activar Colaborador">
-                                 <RotateCcw size={14}/>
-                               </button>
-                             </div>
-                           )}
+                              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
+                                <button onClick={() => setEditingUser(u)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Editar"><Pencil size={14}/></button>
+                                <button onClick={() => handleDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors font-bold" title="Enviar a inactivo">
+                                  <UserMinus size={14}/>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
+                                <button onClick={() => handleRestoreUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Re-activar Colaborador">
+                                  <RotateCcw size={14}/>
+                                </button>
+                                <button onClick={() => handleForceDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Eliminar Definitivamente">
+                                  <Trash2 size={14}/>
+                                </button>
+                              </div>
+                            )}
                            <div className="flex items-center gap-3 sm:gap-4 mb-4">
-                             <img src={u.avatar} alt={u.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-slate-100" />
+                             <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} alt={u.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-slate-100" />
                              <div className="pr-16 sm:pr-20">
                                <h4 className="font-bold text-slate-800 text-base sm:text-lg leading-tight">{formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.user_id ? Number(u.user_id) : Number(u.id))}</h4>
                                <div className="flex gap-1.5 items-center mt-1 flex-wrap">
@@ -2083,8 +2106,45 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 </div>
 
                 {/* Tree Container with horizontal scroll */}
-                <div className="w-full overflow-x-auto bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-8 shadow-inner min-h-[500px]">
-                  <div className="org-tree inline-block min-w-full">
+                <div className="w-full overflow-auto bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-8 shadow-inner min-h-[500px] relative">
+                  {/* Floating Zoom Controls */}
+                  <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200/80 rounded-2xl p-1.5 shadow-lg flex gap-1 z-20">
+                    <button 
+                      type="button" 
+                      onClick={() => setZoomLevel(z => Math.max(z - 0.15, 0.4))} 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-all text-sm font-bold border border-transparent active:scale-95 cursor-pointer" 
+                      title="Alejar Zoom (-)"
+                    >
+                      <ZoomOut size={16} />
+                    </button>
+                    <span className="px-2 flex items-center justify-center text-[10px] font-black text-slate-500 min-w-[45px] select-none border-x border-slate-100 uppercase tracking-wider">
+                      {Math.round(zoomLevel * 100)}%
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => setZoomLevel(z => Math.min(z + 0.15, 2.0))} 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-all text-sm font-bold border border-transparent active:scale-95 cursor-pointer" 
+                      title="Acercar Zoom (+)"
+                    >
+                      <ZoomIn size={16} />
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setZoomLevel(1.0)} 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-slate-100 transition-all text-xs font-bold border border-transparent active:scale-95 cursor-pointer" 
+                      title="Restablecer (100%)"
+                    >
+                      <RotateCcw size={14} />
+                    </button>
+                  </div>
+
+                  <div 
+                    className="org-tree inline-block min-w-full origin-top"
+                    style={{
+                      transform: `scale(${zoomLevel})`,
+                      transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
                     <ul className="flex justify-center relative">
                       {buildOrgTree(jobRoles, users).map((rootNode, idx) => renderTreeNode(rootNode, `root-${idx}-${rootNode.role.id}`))}
                     </ul>
@@ -2218,7 +2278,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                         }}
                                         className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100 cursor-grab active:cursor-grabbing hover:bg-indigo-50/50 transition-all duration-200"
                                       >
-                                        <img src={c.avatar} className="w-5 h-5 rounded-full border border-white" alt={c.name} />
+                                        <img src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`} className="w-5 h-5 rounded-full border border-white" alt={c.name} />
                                         <span className="text-[10px] font-bold text-slate-700 truncate">{c.name} {getUserKeysIcon(c.user_id ? Number(c.user_id) : Number(c.id))}</span>
                                       </div>
                                     ))

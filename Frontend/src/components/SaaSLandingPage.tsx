@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -21,6 +21,7 @@ export const SaaSLandingPage = () => {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [isEmailDuplicated, setIsEmailDuplicated] = useState(false);
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -206,6 +207,7 @@ export const SaaSLandingPage = () => {
 
     setIsProcessing(true);
     setError('');
+    setIsEmailDuplicated(false);
     try {
       const response = await axiosInstance.post('/register', {
         name: googleName,
@@ -225,7 +227,20 @@ export const SaaSLandingPage = () => {
       setRegistrationStep(2);
       setShowGoogleForm(false);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Error al crear la cuenta. El correo podría estar ya registrado.');
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || '';
+      const isDup = errorMsg.toLowerCase().includes('registrado') || 
+                    errorMsg.toLowerCase().includes('already') || 
+                    errorMsg.toLowerCase().includes('taken') || 
+                    errorMsg.toLowerCase().includes('duplicate') ||
+                    err.response?.status === 422 ||
+                    err.response?.status === 409;
+      
+      if (isDup) {
+        setIsEmailDuplicated(true);
+        setError('El correo electrónico ya está registrado en la plataforma.');
+      } else {
+        setError(errorMsg || 'Error al crear la cuenta. Inténtalo de nuevo.');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -1477,6 +1492,25 @@ export const SaaSLandingPage = () => {
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
                           />
                         </div>
+                        
+                        {isEmailDuplicated && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-2 mt-2">
+                            <p className="font-bold flex items-center gap-1">
+                              <AlertCircle size={14} className="text-amber-600 shrink-0" />
+                              Esta cuenta ya existe
+                            </p>
+                            <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                              La dirección de correo electrónico ya está registrada. Puedes iniciar sesión directamente.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/login?email=${encodeURIComponent(googleEmail)}`)}
+                              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-2 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1 shadow-sm"
+                            >
+                              <LogIn size={11} /> Iniciar Sesión Ahora
+                            </button>
+                          </div>
+                        )}
 
                         <button
                           type="submit"
@@ -1575,9 +1609,15 @@ export const SaaSLandingPage = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-black text-blue-600">
-                        ${selectedPlan === 'PRO' ? monthlyProPrice.toLocaleString() : selectedPlan === 'Enterprise' ? fixedEnterprisePrice.toLocaleString() : '0'}
+                        ${selectedPlan === 'PRO' 
+                          ? (billingCycle === 'yearly' ? yearlyProPrice.toLocaleString() : monthlyProPrice.toLocaleString()) 
+                          : selectedPlan === 'Enterprise' 
+                            ? (billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 12 * 0.8).toLocaleString() : fixedEnterprisePrice.toLocaleString()) 
+                            : '0'}
                       </span>
-                      <span className="block text-[9px] text-blue-500 font-bold uppercase">MXN / mes</span>
+                      <span className="block text-[9px] text-blue-500 font-bold uppercase">
+                        {billingCycle === 'yearly' ? 'MXN / año (Pago Anual)' : 'MXN / mes'}
+                      </span>
                     </div>
                   </div>
 

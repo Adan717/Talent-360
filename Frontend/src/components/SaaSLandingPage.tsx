@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2 } from 'lucide-react';
 import { CompanyOnboardingSettings } from './CompanyOnboardingSettings';
 import { useAppStore } from '../store/useAppStore';
@@ -7,6 +7,7 @@ import axiosInstance from '../lib/axios';
 
 export const SaaSLandingPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [employeesCount, setEmployeesCount] = useState<number>(30); // Enterprise default
@@ -24,6 +25,22 @@ export const SaaSLandingPage = () => {
   });
 
   const { setCurrentUser, setCurrentTier } = useAppStore();
+
+  useEffect(() => {
+    if (location.state && location.state.resumeRegistration) {
+      const { user } = location.state;
+      setGoogleUser({
+        name: user.name,
+        email: user.email,
+        google_id: user.google_id || user.email
+      });
+      setSelectedPlan('Freemium');
+      setRegistrationStep(2);
+      setShowCheckout(true);
+      // Clean history state
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   const handleBuy = (plan: string) => {
     setSelectedPlan(plan);

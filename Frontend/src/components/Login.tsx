@@ -484,6 +484,12 @@ export const Login = () => {
                     });
                     const { user, tenant, token } = response.data;
                     localStorage.setItem('talent_auth_token', token);
+                    
+                    if (user.tenant_id === null) {
+                      navigate('/', { state: { resumeRegistration: true, user, token } });
+                      return;
+                    }
+                    
                     setCurrentUser({ ...user, system_role: user.role });
                     setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
                     

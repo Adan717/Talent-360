@@ -10,7 +10,7 @@ export const SaaSLandingPage = () => {
   const location = useLocation();
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const [employeesCount, setEmployeesCount] = useState<number>(30); // Enterprise default
+  const [proEmployeesCount, setProEmployeesCount] = useState<number>(20); // Professional default
   const [isProcessing, setIsProcessing] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState('');
@@ -100,8 +100,7 @@ export const SaaSLandingPage = () => {
         company_name: formData.company_name,
         subdomain: formData.subdomain,
         plan: selectedPlan.toLowerCase(),
-        // dynamic calculation for enterprise
-        employees: selectedPlan.toLowerCase() === 'enterprise' ? employeesCount : null
+        employees: selectedPlan.toLowerCase() === 'pro' ? proEmployeesCount : null
       });
 
       if (response.data.provisioned) {
@@ -144,10 +143,11 @@ export const SaaSLandingPage = () => {
     );
   }
 
-  // Enterprise pricing calculations
+  // Professional pricing calculations
   const pricePerUser = 12; // $12 MXN per user
-  const monthlyEnterprisePrice = employeesCount * pricePerUser;
-  const yearlyEnterprisePrice = Math.round((employeesCount * pricePerUser * 12) * 0.8); // 20% discount
+  const monthlyProPrice = proEmployeesCount * pricePerUser;
+  const yearlyProPrice = Math.round((proEmployeesCount * pricePerUser * 12) * 0.8); // 20% discount
+  const fixedEnterprisePrice = 499;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
@@ -284,7 +284,7 @@ export const SaaSLandingPage = () => {
             <p className="text-slate-500 font-medium">Comienza gratis o escala tu plan según el volumen de colaboradores.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
             
             {/* FREE PLAN CARD */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
@@ -303,32 +303,32 @@ export const SaaSLandingPage = () => {
               </ul>
               <button 
                 onClick={() => handleBuy('Freemium')} 
-                className="w-full font-bold py-3.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
+                className="w-full font-bold py-3.5 bg-slate-950 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
                 Comenzar Gratis
               </button>
             </div>
 
-            {/* ENTERPRISE PLAN CARD WITH SLIDER */}
-            <div className="bg-white border-2 border-blue-600 rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(37,99,235,0.08)] text-left">
+            {/* PROFESSIONAL PLAN CARD WITH SLIDER */}
+            <div className="bg-white border-2 border-blue-600 rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(37,99,235,0.08)] text-left transform md:-translate-y-4">
               <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
                 <Sparkles size={12} /> Plan Recomendado
               </div>
-              <h4 className="text-2xl font-black text-slate-900 mb-1">Plan Enterprise</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Todo el poder operativo de la plataforma en base de datos dedicada y aislada.</p>
+              <h4 className="text-2xl font-black text-slate-900 mb-1">Plan Profesional</h4>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Escala a medida que tu equipo crece en base de datos optimizada.</p>
               
               {/* Dynamic Price Display */}
               <div className="mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50">
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Costo Mensual</span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-blue-600">${monthlyEnterprisePrice.toLocaleString()}</span>
+                    <span className="text-4xl font-black text-blue-600">${monthlyProPrice.toLocaleString()}</span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline text-xs">
                   <span className="text-emerald-600 font-bold">Pago Anual (Ahorra 20%):</span>
-                  <span className="text-slate-700 font-bold">${yearlyEnterprisePrice.toLocaleString()} MXN / año</span>
+                  <span className="text-slate-700 font-bold">${yearlyProPrice.toLocaleString()} MXN / año</span>
                 </div>
               </div>
 
@@ -336,34 +336,57 @@ export const SaaSLandingPage = () => {
               <div className="mb-8">
                 <div className="flex justify-between text-xs font-bold text-slate-600 mb-2">
                   <span>Colaboradores:</span>
-                  <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{employeesCount} activos</span>
+                  <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{proEmployeesCount} activos</span>
                 </div>
                 <input 
                   type="range" 
-                  min="10" 
-                  max="300" 
-                  step="5"
-                  value={employeesCount} 
-                  onChange={e => setEmployeesCount(parseInt(e.target.value))}
+                  min="6" 
+                  max="50" 
+                  step="1"
+                  value={proEmployeesCount} 
+                  onChange={e => setProEmployeesCount(parseInt(e.target.value))}
                   className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
                 />
                 <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-1">
-                  <span>10 colab.</span>
-                  <span>150 colab.</span>
-                  <span>300+ colab.</span>
+                  <span>6 colab.</span>
+                  <span>25 colab.</span>
+                  <span>50 colab.</span>
                 </div>
               </div>
 
               <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Base de datos Aislada por Seguridad</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Módulos Completos: ATS, LMS, Reloj Pro, Nómina</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Soporte Técnico Prioritario</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Colaboradores Escalables (6 a 50)</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Módulos Incluidos (ATS, LMS, Reportes)</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Reloj Checador Pro</li>
+              </ul>
+              <button 
+                onClick={() => handleBuy('PRO')} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
+              >
+                Suscribirse Profesional
+              </button>
+            </div>
+
+            {/* ENTERPRISE PLAN CARD */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
+              <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Enterprise</h4>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Infraestructura dedicada y aislada para corporativos con volumen.</p>
+              <div className="mb-8 flex items-baseline gap-1">
+                <span className="text-5xl font-black text-slate-900">${fixedEnterprisePrice}</span>
+                <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
+                <span className="text-slate-400 font-bold">/mes</span>
+              </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Colaboradores Ilimitados</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Base de datos Dedicada y Aislada</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Subdominio Corporativo Propio</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Soporte Técnico 24/7 Dedicado</li>
               </ul>
               <button 
                 onClick={() => handleBuy('Enterprise')} 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
+                className="w-full font-bold py-3.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
-                Suscribirse Enterprise
+                Aprovisionar Enterprise
               </button>
             </div>
             
@@ -537,12 +560,12 @@ export const SaaSLandingPage = () => {
                     <div>
                       <p className="text-xs text-blue-800 font-extrabold uppercase">Plan Seleccionado</p>
                       <h5 className="text-sm font-black text-slate-900 mt-0.5">
-                        {selectedPlan === 'Enterprise' ? `Enterprise (${employeesCount} colab.)` : 'Plan Gratuito'}
+                        {selectedPlan === 'PRO' ? `Profesional (${proEmployeesCount} colab.)` : selectedPlan === 'Enterprise' ? 'Enterprise (Ilimitado)' : 'Plan Gratuito'}
                       </h5>
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-black text-blue-600">
-                        ${selectedPlan === 'Enterprise' ? monthlyEnterprisePrice.toLocaleString() : '0'}
+                        ${selectedPlan === 'PRO' ? monthlyProPrice.toLocaleString() : selectedPlan === 'Enterprise' ? fixedEnterprisePrice.toLocaleString() : '0'}
                       </span>
                       <span className="block text-[9px] text-blue-500 font-bold uppercase">MXN / mes</span>
                     </div>

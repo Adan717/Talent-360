@@ -89,10 +89,16 @@ class SubscriptionController extends Controller
             'payload' => json_encode($payload)
         ]);
 
-        $price = $payload['plan'] === 'pro' ? 199 : ($payload['plan'] === 'enterprise' ? 499 : 0);
+        $price = 0;
+        if (strtolower($payload['plan']) === 'pro') {
+            $employees = isset($payload['employees']) ? intval($payload['employees']) : 10;
+            $price = $employees * 12;
+        } elseif (strtolower($payload['plan']) === 'enterprise') {
+            $price = 499;
+        }
 
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
-        if (!$isUpgrade && ($payload['plan'] === 'freemium' || $price <= 0)) {
+        if (!$isUpgrade && (strtolower($payload['plan']) === 'freemium' || $price <= 0)) {
             $tenant = $this->provisionTenant($payload);
             $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
             return response()->json([
@@ -159,7 +165,13 @@ class SubscriptionController extends Controller
         $reg = PendingRegistration::findOrFail($prefId);
         $payload = json_decode($reg->payload, true);
         $plan = $payload['plan'] ?? 'pro';
-        $price = $plan === 'pro' ? 199 : 499;
+        $price = 0;
+        if ($plan === 'pro') {
+            $employees = isset($payload['employees']) ? intval($payload['employees']) : 10;
+            $price = $employees * 12;
+        } elseif ($plan === 'enterprise') {
+            $price = 499;
+        }
 
         $confirmUrl = url('/api/subscriptions/simulated-confirm?pref_id=' . $prefId);
 
@@ -275,7 +287,7 @@ class SubscriptionController extends Controller
                 $tenant = Tenant::findOrFail($payload['tenant_id']);
                 $tenant->update([
                     'plan' => strtolower($payload['plan']),
-                    'max_users' => strtolower($payload['plan']) === 'pro' ? 50 : 9999,
+                    'max_users' => strtolower($payload['plan']) === 'pro' ? (isset($payload['employees']) ? intval($payload['employees']) : 50) : 9999,
                     'mp_subscription_id' => $prefId,
                     'subscription_status' => 'active',
                     'current_period_end' => now()->addMonth(),
@@ -297,7 +309,7 @@ class SubscriptionController extends Controller
                 'name' => $payload['company_name'],
                 'subdomain' => $payload['subdomain'],
                 'plan' => strtolower($payload['plan']),
-                'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (strtolower($payload['plan']) === 'pro' ? 50 : 9999),
+                'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (strtolower($payload['plan']) === 'pro' ? (isset($payload['employees']) ? intval($payload['employees']) : 50) : 9999),
                 'public_slug' => Str::slug($payload['subdomain']),
                 'mp_subscription_id' => $prefId,
                 'subscription_status' => 'active',

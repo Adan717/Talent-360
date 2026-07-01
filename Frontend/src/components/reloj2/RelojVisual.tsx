@@ -1736,25 +1736,17 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 })()}
               </div>
 
-              {/* Thicker horizontal progress bar touching the circles (extremely light gray background, green pulsing fill, centered worked hours overlay) */}
-              <div className="relative w-full px-2 mt-[-22px] z-0">
-                <div className="w-full h-5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800 shadow-inner"></div>
+              {/* Timeline Bar - Thicker and closer to icons (Identical to landing simulation) */}
+              <div className="relative w-full px-2 mt-[-20px] z-0">
+                <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800"></div>
                 <div 
-                  className={`absolute left-2 top-0 h-5 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(16,185,129,0.25)] ${
+                  className={`absolute left-2 top-0 h-3.5 rounded-full transition-all duration-500 ${
+                    !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-700' :
                     clockState === 'short_break' ? 'bg-purple-400' :
                     clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
                   }`}
                   style={{ width: `calc(${progressPercent}% - 16px)` }}
                 ></div>
-                
-                {/* Centered worked time overlay inside the bar */}
-                {hasCheckedIn && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <span className="text-[9px] font-black text-slate-850 dark:text-white font-mono uppercase tracking-wider">
-                      {workedHours} Trabajadas
-                    </span>
-                  </div>
-                )}
               </div>
 
             {/* Fading Divider below timeline section */}
@@ -2136,36 +2128,17 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     })()}
                   </div>
 
-                  {/* Thicker horizontal progress bar touching the circles (extremely light gray background, green pulsing fill, centered overlay) */}
-                  <div className="relative w-full px-4 mb-2 mt-[-18px] z-0">
-                    <div className="w-full h-5 bg-slate-50/10 dark:bg-slate-900/5 rounded-full border border-slate-100/15 dark:border-slate-855/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"></div>
+                  {/* Timeline Bar - Thicker and closer to icons (Identical to landing simulation) */}
+                  <div className="relative w-full px-4 mb-2 mt-[-16px] z-0">
+                    <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800"></div>
                     <div 
-                      className="absolute left-4 top-0 h-5 rounded-full transition-all duration-500 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.35)] animate-pulse"
+                      className={`absolute left-4 top-0 h-3.5 rounded-full transition-all duration-500 ${
+                        !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-700' :
+                        clockState === 'short_break' ? 'bg-purple-400' :
+                        clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
+                      }`}
                       style={{ width: `calc(${progressPercent}% - 32px)` }}
                     ></div>
-                    
-                    {/* Entrance time (left) inside the bar */}
-                    <div className="absolute left-6 top-0 h-5 flex items-center pointer-events-none z-10">
-                      <span className="text-[9px] font-black font-mono text-slate-500 dark:text-slate-400">
-                        {hasCheckedIn ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
-                      </span>
-                    </div>
-
-                    {/* Centered worked time overlay inside the bar */}
-                    {hasCheckedIn && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <span className="text-[10px] font-black text-slate-800 dark:text-white drop-shadow-sm font-mono">
-                          {workedHours}h
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Exit time (right) inside the bar */}
-                    <div className="absolute right-6 top-0 h-5 flex items-center pointer-events-none z-10">
-                      <span className="text-[9px] font-black font-mono text-slate-500 dark:text-slate-400">
-                        {hasCheckedOut ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
-                      </span>
-                    </div>
                   </div>
                 </div>
 

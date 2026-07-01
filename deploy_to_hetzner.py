@@ -1,0 +1,94 @@
+import paramiko
+import os
+import sys
+import io
+import subprocess
+
+def run_local_cmd(cmd):
+    print(f"\n[Local] Running: {cmd}")
+    result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    if result.returncode != 0:
+        print(f"[Local] Error executing command: {cmd}")
+        print(f"Stdout:\n{result.stdout}")
+        print(f"Stderr:\n{result.stderr}")
+        return False
+    print("[Local] Success.")
+    return True
+
+def run_remote_cmd(ssh, cmd):
+    print(f"\n[Remote] Running: {cmd}")
+    stdin, stdout, stderr = ssh.exec_command(cmd)
+    exit_status = stdout.channel.recv_exit_status()
+    print(f"[Remote] Exit Status: {exit_status}")
+    out = stdout.read().decode('utf-8', errors='replace').strip()
+    err = stderr.read().decode('utf-8', errors='replace').strip()
+    if out:
+        print(f"Stdout:\n{out}")
+    if err:
+        print(f"Stderr:\n{err}")
+    return exit_status == 0
+
+def main():
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    
+    commit_msg = input("Enter commit message (default: 'Auto-deploy updates'): ").strip()
+    if not commit_msg:
+        commit_msg = "Auto-deploy updates"
+        
+    print("\n--- STEP 1: Pushing changes to GitHub ---")
+    if not run_local_cmd("git add ."):
+        return
+    # We allow git commit to fail if there are no changes to commit
+    subprocess.run(f'git commit -m "{commit_msg}"', shell=True)
+    if not run_local_cmd("git push origin main"):
+        print("Failed to push changes to GitHub. Aborting deployment.")
+        return
+        
+    print("\n--- STEP 2: Connecting to Hetzner Server via SSH ---")
+    ip = "46.225.153.115"
+    username = "root"
+    key_path = os.path.expanduser("~/.ssh/id_rsa_py")
+    
+    try:
+        private_key = paramiko.RSAKey.from_private_key_file(key_path)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(
+            ip, 
+            username=username, 
+            pkey=private_key, 
+            timeout=15, 
+            look_for_keys=False, 
+            allow_agent=False
+        )
+        print("Connected successfully.")
+        
+        print("\n--- STEP 3: Updating repository on server ---")
+        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git pull"):
+            print("Failed to pull latest changes on remote server.")
+            return
+            
+        print("\n--- STEP 4: Running migrations and clearing cache (non-destructive) ---")
+        # Run migrations safely
+        run_remote_cmd(ssh, "docker exec talent360-backend php artisan migrate --force")
+        # Clear config and cache
+        run_remote_cmd(ssh, "docker exec talent360-backend php artisan config:clear")
+        run_remote_cmd(ssh, "docker exec talent360-backend php artisan cache:clear")
+        
+        print("\n--- STEP 5: Rebuilding Frontend container ---")
+        # Rebuild frontend container so changes take effect immediately
+        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose up -d --build frontend")
+        
+        print("\nDeployment completed successfully!")
+        
+    except Exception as e:
+        print(f"An error occurred during remote execution: {str(e)}")
+    finally:
+        try:
+            ssh.close()
+        except:
+            pass
+
+if __name__ == "__main__":
+    main()

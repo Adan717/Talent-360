@@ -1888,7 +1888,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     Reloj Checador
                   </h3>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20">
-                    v2.2.0
+                    v4.2.0
                   </span>
                 </div>
                 <p className="text-[11px] text-[#525f7f] font-bold mt-1.5 leading-none truncate">

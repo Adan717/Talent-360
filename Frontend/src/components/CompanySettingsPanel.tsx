@@ -260,7 +260,8 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           arrivalWindowMins: 30,
           storeClosedReportDelayMins: 0,
           requireExitEvaluation: true,
-          allowManualCheckIn: false
+          allowManualCheckIn: false,
+          gpsValidationEnabled: true
         }
       });
     }
@@ -1440,6 +1441,22 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       className="sr-only peer" 
                       checked={formData.clockOpConfig?.requireExitEvaluation ?? true} 
                       onChange={(e) => handleNestedChange('clockOpConfig', 'requireExitEvaluation', e.target.checked)} 
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-bold text-slate-800">Validación de GPS Obligatoria</h4>
+                    <p className="text-xs text-slate-500 mt-1">Requerir que los colaboradores estén dentro del perímetro de la sucursal para poder registrar su asistencia.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={formData.clockOpConfig?.gpsValidationEnabled ?? true} 
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'gpsValidationEnabled', e.target.checked)} 
                     />
                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>

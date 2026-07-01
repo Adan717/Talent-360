@@ -566,7 +566,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
  
   const renderGPSView = (dialSize = 76, isMobile = true) => {
     const clockOpConfig = systemSettings?.clockOpConfig || {};
-    if (!!clockOpConfig.allowManualCheckIn) {
+    const isGpsBypassed = clockOpConfig.gpsValidationEnabled === false || !!clockOpConfig.allowManualCheckIn;
+    if (isGpsBypassed) {
       return null;
     }
 

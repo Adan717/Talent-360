@@ -586,7 +586,7 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const clockOpConfig = systemSettings.clockOpConfig || {};
-  const isGpsValidationBypassed = !!clockOpConfig.allowManualCheckIn;
+  const isGpsValidationBypassed = clockOpConfig.gpsValidationEnabled === false || !!clockOpConfig.allowManualCheckIn;
   const gpsDistance = getDistanceInMeters(gpsCoordinates.latitude, gpsCoordinates.longitude, STORE_LAT, STORE_LNG);
   const isWithinPerimeter = isGpsValidationBypassed ? true : (gpsDistance <= ALLOWED_RADIUS_METERS && gpsStatus === 'success');
 

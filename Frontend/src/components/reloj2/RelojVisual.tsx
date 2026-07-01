@@ -1812,32 +1812,31 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
-          {/* MOBILE MODULE HEADER */}
-          <div className={`flex items-center justify-between px-4 py-2.5 border-b shrink-0 ${isDark ? 'border-slate-900 bg-slate-900/60' : 'border-slate-100 bg-slate-50'} text-left`}>
+          {/* UNIFIED MOBILE HEADER */}
+          <div className="flex items-center justify-between px-4 py-3 border-b shrink-0 bg-white dark:bg-slate-905 text-left">
+            {/* Left: Module Info */}
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="shrink-0 flex items-center justify-center">
-                <Clock className="w-7 h-7 text-emerald-500" />
+                <Clock className="w-8 h-8 text-emerald-500" />
               </div>
               <div className="flex flex-col min-w-0 justify-center text-left">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-[12.5px] font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
+                  <h3 className="text-[14.5px] font-black text-slate-950 dark:text-white tracking-tight leading-tight">
                     Reloj Checador
                   </h3>
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-wider uppercase bg-emerald-500/10 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20">
                     v2.2.0
                   </span>
                 </div>
-                <p className="text-[9px] text-slate-450 font-bold mt-0.5 leading-none truncate">
-                  Control de Asistencia, Tareas y Academia
+                <p className="text-[9.5px] text-slate-500 font-bold mt-0.5 leading-none truncate">
+                  Control de Asistencia y Tareas
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* A1. MOBILE HEADER (Identical to landing simulation) */}
-          <div className={`flex items-center justify-between px-4 py-3 border-b shrink-0 ${isDark ? 'border-slate-900 bg-slate-900/40' : 'border-slate-100 bg-white'} backdrop-blur-md`}>
+            {/* Right: User Profile (Click opens settings) */}
             <div 
-              className="flex items-center gap-2 text-left cursor-pointer"
+              className="flex items-center gap-2.5 text-right cursor-pointer"
               onClick={() => {
                 setEditUsername(currentUser?.name || 'Francisco');
                 setEditPassword(currentUser?.pin_code || '1234');
@@ -1845,35 +1844,34 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 setShowSettingsModal(true);
               }}
             >
+              <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
+                <span className="text-[10.5px] font-black text-slate-900 dark:text-slate-100 truncate">
+                  {currentUser?.name || 'Colaborador'}
+                </span>
+                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wide truncate mt-0.5">
+                  {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                </span>
+                <span className="text-[7.5px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider truncate mt-0.5">
+                  {currentUser?.tenant?.name || 'Decorarte'}
+                </span>
+              </div>
+              
               <div className="relative shrink-0">
                 <img 
                   src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                   alt="Avatar" 
-                  className="w-8.5 h-8.5 rounded-full object-cover border border-slate-200/80 shadow-sm hover:scale-105 transition-transform" 
+                  className="w-9 h-9 rounded-full object-cover border border-slate-200/80 shadow-sm hover:scale-105 transition-transform" 
                 />
                 <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${isDark ? 'border-slate-950' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
               </div>
-              <div className="leading-none text-left">
-                <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-100">{currentUser?.name || 'Colaborador'}</h4>
-                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wide">
-                  {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
-                </span>
-              </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              {/* Manual Pass List Trigger */}
-              {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
-                <button 
-                  onClick={() => initPaseLista(false)}
-                  className="bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-[8.5px] uppercase px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none outline-none select-none cursor-pointer active:scale-95 transition-all"
-                >
-                  <span>📋</span>
-                  <span>Lista</span>
-                </button>
-              )}
-
-              <span className={`text-[7.5px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${
+          {/* COMPACT ATTENDANCE STATUS & ACTIONS SUBBAR */}
+          <div className="flex items-center justify-between px-4 py-1.5 border-b shrink-0 bg-slate-50 dark:bg-slate-900 text-left">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8.5px] font-bold text-slate-400 uppercase">Turno:</span>
+              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${
                 hasCheckedOut ? 'bg-teal-50 border-teal-100 text-teal-650 dark:bg-emerald-955/20 dark:border-emerald-800 dark:text-emerald-450' :
                 clockState === 'short_break' ? 'bg-purple-50 border-purple-100 text-purple-650 dark:bg-purple-955/20 dark:border-purple-800 dark:text-purple-400' :
                 clockState === 'meal' ? 'bg-amber-50 border-amber-100 text-amber-650 dark:bg-amber-955/20 dark:border-amber-800 dark:text-amber-450' :
@@ -1886,6 +1884,16 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                  hasCheckedIn ? 'Turno Activo' : 'Inactivo'}
               </span>
             </div>
+
+            {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
+              <button 
+                onClick={() => initPaseLista(false)}
+                className="bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-[8.5px] uppercase px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all"
+              >
+                <span>📋</span>
+                <span>Lista</span>
+              </button>
+            )}
           </div>
           
           {/* A2. MOBILE SCROLLABLE CONTENT OR REST DAY LOCK SCREEN */}

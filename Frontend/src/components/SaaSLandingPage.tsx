@@ -16,7 +16,9 @@ export const SaaSLandingPage = () => {
   const [error, setError] = useState('');
   const [registrationStep, setRegistrationStep] = useState<1 | 2>(1);
   const [googleUser, setGoogleUser] = useState<{name: string, email: string, google_id: string} | null>(null);
-  const [showGoogleMockModal, setShowGoogleMockModal] = useState(false);
+  const [showGoogleForm, setShowGoogleForm] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleName, setGoogleName] = useState('');
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -46,6 +48,7 @@ export const SaaSLandingPage = () => {
     setSelectedPlan(plan);
     setRegistrationStep(1);
     setGoogleUser(null);
+    setShowGoogleForm(false);
     setError('');
     setShowCheckout(true);
   };
@@ -78,7 +81,7 @@ export const SaaSLandingPage = () => {
           google_id: mockEmail
         });
         setRegistrationStep(2);
-        setShowGoogleMockModal(false);
+        setShowGoogleForm(false);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al autenticar con Google');
@@ -419,34 +422,95 @@ export const SaaSLandingPage = () => {
 
               {/* STEP 1: GOOGLE OAUTH FORCED */}
               {registrationStep === 1 && (
-                <div className="text-center py-4 space-y-6">
+                <div className="text-center py-4 space-y-6 animate-in fade-in duration-200">
                   <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
                     <Lock size={28} />
                   </div>
-                  <div className="space-y-1">
-                    <h4 className="font-extrabold text-slate-800 text-lg">Para empezar, valida tu cuenta</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-                      Para garantizar la seguridad de tu base de datos dedicada, debes iniciar sesión con una cuenta de Google.
-                    </p>
-                  </div>
+                  
+                  {!showGoogleForm ? (
+                    <>
+                      <div className="space-y-1">
+                        <h4 className="font-extrabold text-slate-800 text-lg">Para empezar, valida tu cuenta</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                          Para garantizar la seguridad de tu base de datos dedicada, debes iniciar sesión con una cuenta de Google.
+                        </p>
+                      </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowGoogleMockModal(true)}
-                    className="w-full py-4 px-6 border-2 border-slate-200 hover:border-blue-300 hover:bg-slate-50 rounded-2xl font-black text-sm text-slate-700 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-98"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
-                      <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
-                      <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
-                      <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
-                    </svg>
-                    Continuar con Google
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGoogleEmail('');
+                          setGoogleName('');
+                          setShowGoogleForm(true);
+                        }}
+                        className="w-full py-4 px-6 border-2 border-slate-200 hover:border-blue-300 hover:bg-slate-50 rounded-2xl font-black text-sm text-slate-700 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-98"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                          <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
+                          <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
+                          <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
+                          <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
+                        </svg>
+                        Continuar con Google
+                      </button>
+                    </>
+                  ) : (
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (googleEmail && googleName) {
+                          handleGoogleMockLogin(googleEmail, googleName);
+                        }
+                      }}
+                      className="space-y-4 text-left"
+                    >
+                      <div className="text-center mb-2">
+                        <h4 className="font-extrabold text-slate-805 text-base">Inicia sesión con Google</h4>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Ingresa los datos de tu cuenta de Google</p>
+                      </div>
 
-                  <p className="text-[10px] text-slate-400 font-semibold">
-                    ¿No tienes una cuenta de Google? El sistema te permitirá crearla o simularla en este paso.
-                  </p>
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={googleName}
+                          onChange={e => setGoogleName(e.target.value)}
+                          placeholder="Ej. Francisco Vega" 
+                          className="w-full bg-white px-4 py-2.5 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-800" 
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Correo de Google</label>
+                        <input 
+                          type="email" 
+                          required 
+                          value={googleEmail}
+                          onChange={e => setGoogleEmail(e.target.value.toLowerCase().trim())}
+                          placeholder="usuario@gmail.com" 
+                          className="w-full bg-white px-4 py-2.5 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-800" 
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowGoogleForm(false)}
+                          className="w-1/3 py-2.5 border border-slate-200 text-slate-500 font-bold rounded-xl text-xs hover:bg-slate-50 active:scale-98 transition-all text-center"
+                        >
+                          Volver
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isProcessing}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs shadow-md active:scale-98 transition-all flex justify-center items-center gap-1.5"
+                        >
+                          {isProcessing ? 'Verificando...' : 'Verificar y Continuar'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               )}
 
@@ -526,92 +590,7 @@ export const SaaSLandingPage = () => {
                     )}
                   </button>
                 </form>
-              )}
-
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* GOOGLE OAUTH SIMULATED MODAL */}
-      {showGoogleMockModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center relative animate-in zoom-in-95 duration-200">
-            <button
-              type="button"
-              onClick={() => setShowGoogleMockModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-655 font-bold bg-slate-100 p-2 rounded-full w-7 h-7 flex items-center justify-center"
-            >
-              ✕
-            </button>
-
-            <div className="flex items-center gap-3 mb-6 text-left">
-              <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
-                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-black text-slate-800 text-base">Iniciar sesión con Google</h3>
-                <p className="text-[10px] text-slate-400">Portal Seguro de Identidad</p>
-              </div>
-            </div>
-
-            <p className="text-slate-500 text-xs mb-4 text-left leading-relaxed">
-              Selecciona o introduce una cuenta de Google para simular el inicio de sesión OAuth:
-            </p>
-
-            <div className="space-y-2 mb-5">
-              {[
-                { name: 'Francisco Vega', email: 'pcmasterirapuato@gmail.com' },
-                { name: 'Ignacio Ortiz', email: 'nacho.ortiz@gmail.com' }
-              ].map((acc) => (
-                <button
-                  type="button"
-                  key={acc.email}
-                  onClick={() => handleGoogleMockLogin(acc.email, acc.name)}
-                  className="w-full text-left px-3.5 py-3 rounded-2xl text-xs font-bold border border-slate-200 bg-slate-50 hover:bg-blue-50/50 hover:border-blue-200 transition-all flex justify-between items-center text-slate-700"
-                >
-                  <span>{acc.name}</span>
-                  <span className="text-[10px] text-slate-400 font-medium">{acc.email}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="border-t border-slate-100 pt-4 text-left space-y-3">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1">O ingresa otra cuenta de Google:</label>
-                <input
-                  type="email"
-                  id="customGoogleEmail"
-                  placeholder="usuario@gmail.com"
-                  className="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const emailVal = (e.target as HTMLInputElement).value;
-                      if (emailVal) {
-                        const nameVal = emailVal.split('@')[0];
-                        handleGoogleMockLogin(emailVal, nameVal);
-                      }
-                    }
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('customGoogleEmail') as HTMLInputElement;
-                  if (el && el.value) {
-                    handleGoogleMockLogin(el.value, el.value.split('@')[0]);
-                  }
-                }}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-xs shadow-md transition-all"
-              >
-                Autorizar y Acceder
-              </button>
-            </div>
-
           </div>
         </div>
       )}

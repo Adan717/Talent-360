@@ -358,11 +358,7 @@ export const Login = () => {
           <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-xs font-medium text-slate-400">
             <ShieldCheck size={14} className="text-emerald-500" />
             Conexión Segura SSL
-          </div>
-        </div>
-      </div>
-
-      {/* Simulated OAuth Modal */}
+            {/* Social Provider Auth Modal */}
       {showSocialModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-slide-up relative">
@@ -371,8 +367,9 @@ export const Login = () => {
               onClick={() => {
                 setShowSocialModal(false);
                 setSocialProvider(null);
+                setSocialEmail('');
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 font-bold bg-slate-50 p-2 rounded-full"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 font-bold bg-slate-100 p-2 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
             >
               ✕
             </button>
@@ -402,119 +399,90 @@ export const Login = () => {
                 </div>
               )}
               <div>
-                <h3 className="font-extrabold text-slate-800 capitalize text-lg">Sign-in: {socialProvider}</h3>
+                <h3 className="font-extrabold text-slate-800 capitalize text-lg">Validar con {socialProvider}</h3>
                 <p className="text-xs text-slate-400">Portal de Identidad Federada</p>
               </div>
             </div>
 
-            <p className="text-slate-500 text-xs mb-4">
-              Selecciona uno de los colaboradores registrados en DecorArte 360 para simular la autenticación OAuth:
+            <p className="text-slate-500 text-xs mb-5 text-left leading-relaxed">
+              Introduce la dirección de correo electrónico vinculada a tu cuenta de {socialProvider} para verificar tu identidad y acceder a tu empresa.
             </p>
 
-            {/* List of active collaborator accounts */}
-            <div className="space-y-2 max-h-48 overflow-y-auto mb-4 custom-scrollbar bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
-              {[
-                { name: 'Cristhel (Apoyo Eventual)', email: 'cristhel@decorarte360.com' },
-                { name: 'Francisco (Administrador)', email: 'francisco@decorarte360.com' },
-                { name: 'Hiraym (Supervisor de Producción)', email: 'hiraym@decorarte360.com' },
-                { name: 'Joseline (Supervisor de Compras)', email: 'joseline@decorarte360.com' },
-                { name: 'Agnela (Supervisor de Ventas)', email: 'agnela@decorarte360.com' },
-                { name: 'Manuel (Ayudante Integral)', email: 'manuel@decorarte360.com' },
-                { name: 'Cristian (Ayudante Integral)', email: 'cristina@decorarte360.com' },
-                { name: 'Liz (Agente de Ventas)', email: 'liz@decorarte360.com' },
-                { name: 'Adriana (Agente de Ventas)', email: 'adriana@decorarte360.com' }
-              ].map((acc) => (
-                <button
-                  type="button"
-                  key={acc.email}
-                  onClick={() => setSocialEmail(acc.email)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold border transition-all flex justify-between items-center ${
-                    socialEmail === acc.email
-                      ? 'bg-blue-50 border-blue-300 text-blue-700'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>{acc.name}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">{acc.email}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-3">
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!socialEmail || isLoading) return;
+              setIsLoading(true);
+              setError('');
+              setShowSocialModal(false);
+              try {
+                const appState = useAppStore.getState();
+                if (appState.isSandboxMode) {
+                  const mockUser = {
+                    id: 999,
+                    name: socialEmail.split('@')[0],
+                    email: socialEmail,
+                    role: 'Administrador',
+                    system_role: 'Administrador',
+                    tenant_id: 1
+                  };
+                  setCurrentUser(mockUser as any);
+                  setCurrentTier('enterprise');
+                  navigate('/app');
+                  return;
+                }
+                const response = await axiosInstance.post('/login/social', {
+                  provider: socialProvider,
+                  provider_id: socialEmail,
+                  email: socialEmail
+                });
+                const { user, tenant, token } = response.data;
+                localStorage.setItem('talent_auth_token', token);
+                
+                if (user.tenant_id === null) {
+                  navigate('/', { state: { resumeRegistration: true, user, token } });
+                  return;
+                }
+                
+                setCurrentUser({ ...user, system_role: user.role });
+                setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+                
+                if (user.role === 'platform_admin') {
+                  navigate('/superadmin');
+                } else if (user.role === 'empleado') {
+                  navigate('/empleado');
+                } else {
+                  navigate('/app');
+                }
+              } catch (err: any) {
+                setError(err.response?.data?.error || 'No se pudo iniciar sesión con esta cuenta social.');
+              } finally {
+                setIsLoading(false);
+              }
+            }} className="space-y-4 text-left">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-1">O escribe otro correo electrónico:</label>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Correo Electrónico</label>
                 <input
                   type="email"
+                  required
                   value={socialEmail}
-                  onChange={(e) => setSocialEmail(e.target.value)}
-                  placeholder="usuario@dominio.com"
-                  className="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  onChange={(e) => setSocialEmail(e.target.value.toLowerCase().trim())}
+                  placeholder="usuario@gmail.com"
+                  className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50 font-medium"
                 />
               </div>
 
               <button
-                type="button"
+                type="submit"
                 disabled={!socialEmail || isLoading}
-                onClick={async () => {
-                  if (!socialEmail) return;
-                  setIsLoading(true);
-                  setError('');
-                  setShowSocialModal(false);
-                  try {
-                    const appState = useAppStore.getState();
-                    if (appState.isSandboxMode) {
-                      // Sandbox mode simulation
-                      const mockUser = {
-                        id: 999,
-                        name: socialEmail.split('@')[0],
-                        email: socialEmail,
-                        role: 'Administrador',
-                        system_role: 'Administrador',
-                        tenant_id: 1
-                      };
-                      setCurrentUser(mockUser as any);
-                      setCurrentTier('enterprise');
-                      navigate('/app');
-                      return;
-                    }
-                    const response = await axiosInstance.post('/login/social', {
-                      provider: socialProvider,
-                      provider_id: socialEmail,
-                      email: socialEmail
-                    });
-                    const { user, tenant, token } = response.data;
-                    localStorage.setItem('talent_auth_token', token);
-                    
-                    if (user.tenant_id === null) {
-                      navigate('/', { state: { resumeRegistration: true, user, token } });
-                      return;
-                    }
-                    
-                    setCurrentUser({ ...user, system_role: user.role });
-                    setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
-                    
-                    if (user.role === 'platform_admin') {
-                      navigate('/superadmin');
-                    } else if (user.role === 'empleado') {
-                      navigate('/empleado');
-                    } else {
-                      navigate('/app');
-                    }
-                  } catch (err: any) {
-                    setError(err.response?.data?.error || 'No se pudo iniciar sesión con esta cuenta social.');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className={`w-full py-3 rounded-xl font-bold text-sm text-white transition-all ${
+                className={`w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-1.5 ${
                   !socialEmail || isLoading
                     ? 'bg-slate-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 shadow-md'
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-md active:scale-98'
                 }`}
               >
-                Simular Autorización y Acceso
+                {isLoading ? 'Verificando...' : 'Verificar y Acceder'}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

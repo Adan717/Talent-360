@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -33,6 +33,7 @@ export const SaaSLandingPage = () => {
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
   const [simulatedClockState, setSimulatedClockState] = useState<string>('inactive');
   const [phoneActiveTab, setPhoneActiveTab] = useState<'reloj' | 'tareas' | 'academia' | 'herramientas'>('reloj');
+  const [simulatedTier, setSimulatedTier] = useState<'free' | 'pro'>('pro');
   const [simulatedTask1Done, setSimulatedTask1Done] = useState(true);
   const [simulatedTask2Done, setSimulatedTask2Done] = useState(false);
   const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
@@ -447,387 +448,471 @@ export const SaaSLandingPage = () => {
             </div>
 
             {/* Columna Derecha: Showcase Interactivo de Producto (Orden 2 en móvil) */}
-            <div className="col-span-1 lg:col-span-7 relative flex justify-center items-center order-2 lg:order-2">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75"></div>
+            <div className="col-span-1 lg:col-span-7 relative flex flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 order-2 lg:order-2 w-full">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
               
+              {activeTab === 'checador' && (
+                <div className="flex flex-col gap-3 w-full max-w-[190px] shrink-0 text-left order-3 md:order-1 my-4 md:my-0">
+                  <h5 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Selecciona Plan</h5>
+                  
+                  {/* Free Plan Switch Button */}
+                  <button 
+                    onClick={() => setSimulatedTier('free')}
+                    className={`p-3.5 rounded-2xl border text-left transition-all active:scale-95 flex flex-col gap-1 w-full select-none cursor-pointer border-none outline-none ${
+                      simulatedTier === 'free' 
+                        ? 'bg-white border-blue-500 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/20' 
+                        : 'bg-slate-50/50 border-slate-150 text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">🔓</span>
+                      <span className={`text-[11.5px] font-black ${simulatedTier === 'free' ? 'text-blue-600' : 'text-slate-700'}`}>Versión Básica</span>
+                      <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 leading-none">Gratis</span>
+                    </div>
+                    <p className="text-[9.5px] text-slate-450 font-medium leading-tight">
+                      Registro básico de asistencia sin geocercas, pases de lista ni barra cronológica interactiva.
+                    </p>
+                  </button>
+                </div>
+              )}
+
               {activeTab === 'checador' ? (
-                /* SIMULACIÓN MÓVIL (SMARTPHONE FRAME) PARA EL RELOJ CHECADOR */
-                <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] animate-in fade-in duration-300">
-                  {/* Speaker & Sensor Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
-                    <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
+                <div className="flex flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 w-full animate-in fade-in duration-300">
+                  {/* Left Side: Free/Basic Option Panel */}
+                  <div className="flex flex-col gap-3 w-full max-w-[210px] shrink-0 text-left order-3 md:order-1 my-4 md:my-0">
+                    <h5 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Selecciona Plan</h5>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setSimulatedTier('free')}
+                      className={`p-3.5 rounded-2xl border text-left transition-all active:scale-95 flex flex-col gap-1 w-full select-none cursor-pointer border-none outline-none ${
+                        simulatedTier === 'free' 
+                          ? 'bg-white border-blue-500 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/20' 
+                          : 'bg-slate-50/50 border-slate-150 text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">🔓</span>
+                        <span className={`text-[11.5px] font-black ${simulatedTier === 'free' ? 'text-blue-600' : 'text-slate-700'}`}>Versión Básica</span>
+                        <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 leading-none">Gratis</span>
+                      </div>
+                      <p className="text-[9.5px] text-slate-450 font-medium leading-tight">
+                        Registro básico de asistencia sin geocercas, pases de lista ni barra cronológica interactiva.
+                      </p>
+                    </button>
                   </div>
 
-                  {/* Smartphone Viewport */}
-                  <div className="flex-1 bg-white p-3 pt-7 pb-2 flex flex-col justify-between overflow-hidden select-none">
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
-                      <div className="flex items-center gap-1.5 text-left">
-                        <div className="relative">
-                          <img 
-                            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces" 
-                            alt="Francisco" 
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200" 
-                          />
-                          <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${simulatedClockState !== 'inactive' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                  {/* SMARTPHONE FRAME */}
+                  <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2">
+                    {/* Speaker & Sensor Notch */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
+                      <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
+                    </div>
+
+                    {/* Smartphone Viewport */}
+                    <div className="flex-1 bg-white p-3 pt-7 pb-2 flex flex-col justify-between overflow-hidden select-none">
+                      {/* Header (Mockup-aligned solid white styling) */}
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0 text-left bg-white">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="shrink-0 flex items-center justify-center">
+                            <Clock className="w-6.5 h-6.5 text-[#2dce89]" />
+                          </div>
+                          <div className="flex flex-col min-w-0 justify-center text-left">
+                            <div className="flex items-center gap-1 leading-none">
+                              <h4 className="text-[9px] font-black text-slate-900 truncate">Reloj</h4>
+                              <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-[6px] font-black tracking-wider leading-none ${
+                                simulatedTier === 'pro' ? 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20' : 'bg-slate-100 text-slate-500 border border-slate-200'
+                              }`}>
+                                {simulatedTier === 'pro' ? 'v4.2-pro' : 'v4.2-free'}
+                              </span>
+                            </div>
+                            <p className="text-[7px] text-[#525f7f] font-bold mt-0.5 leading-none truncate">
+                              Asistencia
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-left leading-none">
-                          <h4 className="text-[9.5px] font-black text-slate-800">Francisco Vega</h4>
-                          <span className="text-[7.5px] font-bold text-slate-400">Sucursal Centro</span>
+
+                        <div className="flex items-center gap-1 text-right">
+                          <div className="flex flex-col min-w-0 text-right leading-none justify-center">
+                            <span className="text-[8px] font-black text-slate-900 truncate">Francisco Vega</span>
+                            <span className="text-[6px] font-extrabold text-slate-400 uppercase tracking-widest mt-0.5">Ayudante General</span>
+                            <span className="text-[6.5px] font-black text-[#8a2be2] uppercase tracking-wider mt-0.5">Decorarte 365</span>
+                          </div>
+                          <div className="relative shrink-0">
+                            <img 
+                              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces" 
+                              alt="Francisco" 
+                              className="w-7 h-7 rounded-full object-cover border border-slate-200" 
+                            />
+                            <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${simulatedClockState !== 'inactive' ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
+                          </div>
                         </div>
                       </div>
-                      <span className={`text-[7.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        simulatedClockState === 'inactive' ? 'bg-slate-50 text-slate-400 border border-slate-150' :
-                        simulatedClockState === 'finished' ? 'bg-teal-50 text-teal-600 border border-teal-100' :
-                        'bg-emerald-50 text-emerald-600 border border-emerald-100 animate-pulse'
-                      }`}>
-                        {simulatedClockState === 'inactive' ? 'Inactivo' :
-                         simulatedClockState === 'break_active' ? 'Descanso' :
-                         simulatedClockState === 'lunch_active' ? 'Almuerzo' :
-                         simulatedClockState === 'finished' ? 'Finalizado' : 'Turno Activo'}
-                      </span>
-                    </div>
 
-                    {/* VISTA SEGÚN PESTAÑA DEL TELÉFONO */}
-                    <div className="flex-1 flex flex-col justify-between my-2 overflow-y-auto overflow-x-hidden">
-                      {phoneActiveTab === 'reloj' && (
-                        <>
-                                  {/* Timeline de Turno (Línea de Progreso Real) */}
-                          <div className="py-1 text-left w-full shrink-0">
-                            <div className="flex justify-between items-center w-full px-1.5 mb-1.5 z-10 relative">
-                              {/* Entrada */}
-                              <div className="flex flex-col items-center">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState !== 'inactive' ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
-                                  <LogIn size={12} />
+                      {/* VISTA SEGÚN PESTAÑA DEL TELÉFONO */}
+                      <div className="flex-1 flex flex-col justify-between my-2 overflow-y-auto overflow-x-hidden">
+                        {phoneActiveTab === 'reloj' && (
+                          <>
+                            {/* Timeline de Turno (Línea de Progreso Proporcional Clonada) */}
+                            <div className="py-1 text-left w-full shrink-0 relative">
+                              {simulatedTier === 'free' && (
+                                <div className="absolute inset-0 bg-white/75 backdrop-blur-[0.5px] z-20 flex flex-col items-center justify-center select-none rounded-xl text-center px-2">
+                                  <span className="text-sm">🔒</span>
+                                  <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Exclusivo Versión Pro</span>
                                 </div>
-                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
-                                  simulatedClockState !== 'inactive' 
-                                    ? 'text-indigo-600 bg-indigo-50 border-indigo-100/50' 
-                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
-                                }`}>
-                                  {simulatedClockState !== 'inactive' ? '08:45 am' : '-'}
-                                </span>
+                              )}
+                              <div className="flex justify-between items-center w-full px-1.5 mb-0.5 z-10 relative">
+                                {/* Entrada */}
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[6px] font-black uppercase mb-0.5 text-indigo-600">Entrada</span>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState !== 'inactive' ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
+                                    <LogIn size={11} />
+                                  </div>
+                                </div>
+                                {/* Descanso */}
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[6px] font-black uppercase mb-0.5 text-purple-600">Descanso</span>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${
+                                    ['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 bg-white text-slate-400'
+                                  } ${simulatedClockState === 'break_active' ? 'animate-pulse' : ''}`}>
+                                    <Armchair size={11} />
+                                  </div>
+                                </div>
+                                {/* Comida */}
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[6px] font-black uppercase mb-0.5 text-amber-600">Comida</span>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${
+                                    ['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-200 bg-white text-slate-400'
+                                  } ${simulatedClockState === 'lunch_active' ? 'animate-pulse' : ''}`}>
+                                    <Utensils size={11} />
+                                  </div>
+                                </div>
+                                {/* Salida */}
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[6px] font-black uppercase mb-0.5 text-emerald-600">Salida</span>
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState === 'finished' ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
+                                    <LogOut size={11} />
+                                  </div>
+                                </div>
                               </div>
-                              {/* Descanso */}
-                              <div className="flex flex-col items-center">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${
-                                  ['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 bg-white text-slate-400'
-                                } ${simulatedClockState === 'break_active' ? 'animate-pulse' : ''}`}>
-                                  <Coffee size={12} />
+
+                              {/* Timeline Bar - Thicker and closer to icons (Slim h-5) */}
+                              <div className="relative w-full px-2 mt-1.5 z-0">
+                                <div className="relative w-full h-5 bg-slate-50/20 rounded-2xl border border-slate-200/20 shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
+                                  {/* Elapsed Proportional Segment (Pro version) */}
+                                  {simulatedTier === 'pro' && simulatedClockState !== 'inactive' && (
+                                    <div 
+                                      className="absolute top-0 left-0 h-full rounded-2xl overflow-hidden flex transition-all duration-700 ease-out"
+                                      style={{ width: 
+                                        simulatedClockState === 'active' ? '25%' : 
+                                        ['break_active', 'break_done'].includes(simulatedClockState) ? '50%' : 
+                                        ['lunch_active', 'lunch_done'].includes(simulatedClockState) ? '75%' : '100%' 
+                                      }}
+                                    >
+                                      {/* Proportional colors segment mock */}
+                                      <div className="h-full bg-emerald-500" style={{ width: '35%' }}></div>
+                                      {['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) && (
+                                        <div className="h-full bg-purple-400" style={{ width: '15%' }}></div>
+                                      )}
+                                      {['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) && (
+                                        <div className="h-full bg-amber-400" style={{ width: '25%' }}></div>
+                                      )}
+                                      {simulatedClockState === 'finished' && (
+                                        <div className="h-full bg-emerald-500" style={{ width: '25%' }}></div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Extremes Timestamps inside */}
+                                  <div className="absolute inset-0 flex justify-between items-center px-2.5 pointer-events-none z-10 text-[8px] font-mono font-bold text-slate-500">
+                                    <span>{simulatedClockState !== 'inactive' ? '08:45 am' : '09:00 am'}</span>
+                                    <span>06:00 pm</span>
+                                  </div>
                                 </div>
-                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
-                                  ['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState)
-                                    ? 'text-purple-650 bg-purple-50 border-purple-100/50' 
-                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
-                                }`}>
-                                  {['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '11:15 am' : '-'}
-                                </span>
-                              </div>
-                              {/* Comida */}
-                              <div className="flex flex-col items-center">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${
-                                  ['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-200 bg-white text-slate-400'
-                                } ${simulatedClockState === 'lunch_active' ? 'animate-pulse' : ''}`}>
-                                  <Utensils size={12} />
-                                </div>
-                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
-                                  ['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState)
-                                    ? 'text-amber-650 bg-amber-50 border-amber-100/50' 
-                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
-                                }`}>
-                                  {['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '02:00 pm' : '-'}
-                                </span>
-                              </div>
-                              {/* Salida */}
-                              <div className="flex flex-col items-center">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState === 'finished' ? 'border-teal-500 bg-teal-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
-                                  <LogOut size={12} />
-                                </div>
-                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
-                                  simulatedClockState === 'finished'
-                                    ? 'text-teal-600 bg-teal-50 border-teal-100/50' 
-                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
-                                }`}>
-                                  {simulatedClockState === 'finished' ? '06:00 pm' : '-'}
-                                </span>
                               </div>
                             </div>
 
-                            {/* Timeline Bar - Thicker and closer to icons */}
-                            <div className="relative w-full px-2 mt-[-20px] z-0">
-                              <div className="w-full h-3.5 bg-slate-100 rounded-full border border-slate-200/40"></div>
-                              <div 
-                                className={`absolute left-2 top-0 h-3.5 rounded-full transition-all duration-500 ${
-                                  simulatedClockState === 'inactive' ? 'bg-slate-200' :
-                                  simulatedClockState === 'break_active' ? 'bg-purple-400' :
-                                  simulatedClockState === 'lunch_active' ? 'bg-amber-400' : 'bg-emerald-500'
+                            {/* Dial Central */}
+                            <div className="flex-1 flex flex-col items-center justify-center my-2 relative">
+                              {/* Glow Ring (Only in Pro version) */}
+                              {simulatedTier === 'pro' && (
+                                <div className={`absolute w-32 h-32 rounded-full blur-[8px] animate-shimmer-glow opacity-30 ${
+                                  simulatedClockState === 'inactive' ? 'bg-blue-400' :
+                                  simulatedClockState === 'break_active' ? 'bg-purple-400' : 
+                                  simulatedClockState === 'lunch_active' ? 'bg-amber-400' : 'bg-emerald-400'
+                                }`}></div>
+                              )}
+                              
+                              <button 
+                                type="button" 
+                                onClick={handleDialClick}
+                                className={`group relative z-10 w-32 h-32 rounded-full shadow-lg flex flex-col items-center justify-center p-2.5 transition-all transform active:scale-95 ${
+                                  simulatedTier === 'pro'
+                                    ? `bg-white border-4 border-double ${
+                                        simulatedClockState === 'inactive' ? 'border-blue-500 text-blue-600 shadow-blue-500/10' :
+                                        simulatedClockState === 'break_active' ? 'border-purple-500 text-purple-600 shadow-purple-550/10 animate-pulse' :
+                                        simulatedClockState === 'lunch_active' ? 'border-amber-500 text-amber-600 shadow-amber-550/10 animate-pulse' :
+                                        simulatedClockState === 'finished' ? 'border-teal-500 text-teal-600 shadow-teal-500/10' :
+                                        'border-emerald-500 text-emerald-600 shadow-emerald-500/10'
+                                      }`
+                                    : 'bg-slate-50 border border-slate-250 text-slate-500 shadow-none'
                                 }`}
-                                style={{ width: 
-                                  simulatedClockState === 'inactive' ? '0%' : 
-                                  simulatedClockState === 'active' ? '25%' : 
-                                  ['break_active', 'break_done'].includes(simulatedClockState) ? '50%' : 
-                                  ['lunch_active', 'lunch_done'].includes(simulatedClockState) ? '75%' : '100%' 
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-
-                          {/* Dial Central */}
-                          <div className="flex-1 flex flex-col items-center justify-center my-2 relative">
-                            {/* Glow Ring */}
-                            <div className={`absolute w-32 h-32 rounded-full blur-[8px] animate-shimmer-glow opacity-30 ${
-                              simulatedClockState === 'inactive' ? 'bg-blue-400' :
-                              simulatedClockState === 'break_active' ? 'bg-purple-400' : 
-                              simulatedClockState === 'lunch_active' ? 'bg-amber-400' : 'bg-emerald-400'
-                            }`}></div>
-                            
-                            <button 
-                              type="button" 
-                              onClick={handleDialClick}
-                              className={`group relative z-10 w-32 h-32 rounded-full border-4 border-double shadow-lg flex flex-col items-center justify-center p-2.5 transition-all transform active:scale-95 bg-white ${
-                                simulatedClockState === 'inactive' ? 'border-blue-500 text-blue-600 shadow-blue-500/10' :
-                                simulatedClockState === 'break_active' ? 'border-purple-500 text-purple-600 shadow-purple-550/10 animate-pulse' :
-                                simulatedClockState === 'lunch_active' ? 'border-amber-500 text-amber-600 shadow-amber-550/10 animate-pulse' :
-                                simulatedClockState === 'finished' ? 'border-teal-500 text-teal-600 shadow-teal-500/10' :
-                                'border-emerald-500 text-emerald-600 shadow-emerald-500/10'
-                              }`}
-                            >
-                              {simulatedClockState === 'break_active' ? <Coffee size={24} className="mb-0.5" /> :
-                               simulatedClockState === 'lunch_active' ? <Utensils size={24} className="mb-0.5" /> :
-                               simulatedClockState === 'finished' ? <CheckCircle2 size={24} className="mb-0.5" /> :
-                               <Fingerprint size={24} className="mb-0.5" />}
-                              <span className="font-mono text-lg font-black text-slate-800 tracking-tight leading-none mb-0.5">{liveTime.split(' ')[0]}</span>
-                              <span className="text-[7px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight max-w-[85px]">
-                                {simulatedClockState === 'inactive' ? 'Marcar Entrada' :
-                                 simulatedClockState === 'active' ? 'Marcar Descanso' :
-                                 simulatedClockState === 'break_active' ? 'Terminar Descanso' :
-                                 simulatedClockState === 'break_done' ? 'Marcar Comida' :
-                                 simulatedClockState === 'lunch_active' ? 'Terminar Comida' :
-                                 simulatedClockState === 'lunch_done' ? 'Marcar Salida' : 'Reiniciar Turno'}
-                              </span>
-                            </button>
-                          </div>
-
-                          {/* Alertas Sencillas Abajo del Dial */}
-                          <div className="space-y-1.5 shrink-0 px-0.5 mt-1">
-                            {/* Alerta de Tareas */}
-                            <button
-                              type="button"
-                              onClick={() => setPhoneActiveTab('tareas')}
-                              className="w-full p-2 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-xl flex items-center gap-1.5 text-left transition-colors active:scale-[0.99]"
-                            >
-                              <span className="text-xs">⚠️</span>
-                              <div className="leading-tight overflow-hidden flex-1">
-                                <p className="text-[7.5px] font-black text-rose-800 uppercase tracking-wide">Alerta de Tareas</p>
-                                <p className="text-[8px] font-bold text-rose-650 truncate">
-                                  {(!simulatedTask1Done || !simulatedTask2Done) 
-                                    ? `Pendiente: ${!simulatedTask1Done && !simulatedTask2Done ? '2 tareas pendientes' : '1 tarea pendiente'}`
-                                    : '¡Todas tus tareas están al día ✓'}
-                                </p>
-                              </div>
-                            </button>
-
-                            {/* Alerta de Hora de Comida / Turno */}
-                            <div className="w-full p-2 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-1.5 text-left select-none">
-                              <span className="text-xs">📅</span>
-                              <div className="leading-tight overflow-hidden flex-1">
-                                <p className="text-[7.5px] font-black text-blue-800 uppercase tracking-wide">Jornada / Horario</p>
-                                <p className="text-[8px] font-bold text-blue-650 truncate">
-                                  {simulatedClockState === 'inactive' ? 'Inicio programado: 09:00 am' :
-                                   simulatedClockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
-                                   simulatedClockState === 'break_active' ? 'Descanso activo: Regresa 11:30 am' :
-                                   simulatedClockState === 'break_done' ? 'Almuerzo sugerido: 02:00 pm (30m)' :
-                                   simulatedClockState === 'lunch_active' ? 'Comida activa: Regresa 02:30 pm' :
-                                   simulatedClockState === 'lunch_done' ? 'Salida oficial programada a las 06:00 pm' :
-                                   'Jornada del día completada 🎉'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {phoneActiveTab === 'tareas' && (
-                        <div className="p-1 text-left animate-in fade-in duration-200 flex-1 flex flex-col justify-between">
-                          <div>
-                            <div className="flex justify-between items-center mb-3">
-                              <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Tareas del Colaborador</h5>
-                              <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
-                                {((simulatedTask1Done ? 1 : 0) + (simulatedTask2Done ? 1 : 0))} / 2
-                              </span>
-                            </div>
-
-                            <div className="space-y-2">
-                              {/* Tarea 1 */}
-                              <button
-                                type="button"
-                                onClick={() => setSimulatedTask1Done(!simulatedTask1Done)}
-                                className="w-full p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between text-left transition-all active:scale-[0.99]"
                               >
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                                    simulatedTask1Done ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'
-                                  }`}>
-                                    {simulatedTask1Done && <Check size={8} />}
-                                  </div>
-                                  <span className={`text-[8.5px] font-bold text-slate-700 ${simulatedTask1Done ? 'line-through text-slate-400' : ''}`}>
-                                    Apertura de sucursal
-                                  </span>
-                                </div>
-                                <span className="text-[7.5px] font-black text-slate-400 uppercase">Obligatorio</span>
-                              </button>
-
-                              {/* Tarea 2 */}
-                              <button
-                                type="button"
-                                onClick={() => setSimulatedTask2Done(!simulatedTask2Done)}
-                                className="w-full p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between text-left transition-all active:scale-[0.99]"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
-                                    simulatedTask2Done ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'
-                                  }`}>
-                                    {simulatedTask2Done && <Check size={8} />}
-                                  </div>
-                                  <span className={`text-[8.5px] font-bold text-slate-700 ${simulatedTask2Done ? 'line-through text-slate-400' : ''}`}>
-                                    Inventario de vitrinas
-                                  </span>
-                                </div>
-                                <span className="text-[7.5px] font-black text-slate-400 uppercase">Apertura</span>
+                                {simulatedClockState === 'break_active' ? <Armchair size={24} className="mb-0.5 text-purple-500 animate-pulse" /> :
+                                 simulatedClockState === 'lunch_active' ? <Utensils size={24} className="mb-0.5 text-amber-500 animate-pulse" /> :
+                                 simulatedClockState === 'finished' ? <CheckCircle2 size={24} className="mb-0.5 text-teal-500" /> :
+                                 <Fingerprint size={24} className={`mb-0.5 ${simulatedTier === 'pro' ? (simulatedClockState === 'inactive' ? 'text-blue-500' : 'text-emerald-500') : 'text-slate-400'}`} />}
+                                <span className="font-mono text-lg font-black text-slate-800 tracking-tight leading-none mb-0.5">{liveTime.split(' ')[0]}</span>
+                                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight max-w-[85px]">
+                                  {simulatedClockState === 'inactive' ? 'Marcar Entrada' :
+                                   simulatedClockState === 'active' ? 'Marcar Descanso' :
+                                   simulatedClockState === 'break_active' ? 'Terminar Descanso' :
+                                   simulatedClockState === 'break_done' ? 'Marcar Comida' :
+                                   simulatedClockState === 'lunch_active' ? 'Terminar Comida' :
+                                   simulatedClockState === 'lunch_done' ? 'Marcar Salida' : 'Reiniciar Turno'}
+                                </span>
                               </button>
                             </div>
-                          </div>
 
-                          <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-[7.5px] text-blue-800 font-medium leading-normal mt-3">
-                            💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
-                          </div>
-                        </div>
-                      )}
+                            {/* Alertas Sencillas Abajo del Dial */}
+                            <div className="space-y-1.5 shrink-0 px-0.5 mt-1">
+                              {/* Alerta de Tareas */}
+                              <button
+                                type="button"
+                                onClick={() => setPhoneActiveTab('tareas')}
+                                className="w-full p-2 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-xl flex items-center gap-1.5 text-left transition-colors active:scale-[0.99]"
+                              >
+                                <span className="text-xs">⚠️</span>
+                                <div className="leading-tight overflow-hidden flex-1">
+                                  <p className="text-[7.5px] font-black text-rose-800 uppercase tracking-wide">Alerta de Tareas</p>
+                                  <p className="text-[8px] font-bold text-rose-650 truncate">
+                                    {(!simulatedTask1Done || !simulatedTask2Done) 
+                                      ? `Pendiente: ${!simulatedTask1Done && !simulatedTask2Done ? '2 tareas pendientes' : '1 tarea pendiente'}`
+                                      : '¡Todas tus tareas están al día ✓'}
+                                  </p>
+                                </div>
+                              </button>
 
-                      {phoneActiveTab === 'academia' && (
-                        <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
-                          <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Cursos de Inducción</h5>
-                          
-                          {/* Curso 1 */}
-                          <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
-                              <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                              {/* Alerta de Hora de Comida / Turno */}
+                              <div className="w-full p-2 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-1.5 text-left select-none">
+                                <span className="text-xs">📅</span>
+                                <div className="leading-tight overflow-hidden flex-1">
+                                  <p className="text-[7.5px] font-black text-blue-800 uppercase tracking-wide">Jornada / Horario</p>
+                                  <p className="text-[8px] font-bold text-blue-650 truncate">
+                                    {simulatedClockState === 'inactive' ? 'Inicio programado: 09:00 am' :
+                                     simulatedClockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
+                                     simulatedClockState === 'break_active' ? 'Descanso activo: Regresa 11:30 am' :
+                                     simulatedClockState === 'break_done' ? 'Almuerzo sugerido: 02:00 pm (30m)' :
+                                     simulatedClockState === 'lunch_active' ? 'Comida activa: Regresa 02:30 pm' :
+                                     simulatedClockState === 'lunch_done' ? 'Salida oficial programada a las 06:00 pm' :
+                                     'Jornada del día completada 🎉'}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
-                            </div>
-                          </div>
-
-                          {/* Curso 2 */}
-                          <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
-                              <span className="text-[8px] font-bold text-blue-600">10%</span>
-                            </div>
-                            <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
-                            </div>
-                          </div>
-
-                          {/* Curso 3 */}
-                          <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5 opacity-55">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Prevención y Seguridad</span>
-                              <span className="text-[8px] font-bold text-slate-400">Pendiente</span>
-                            </div>
-                            <div className="w-full h-1 bg-slate-200 rounded-full"></div>
-                          </div>
-                        </div>
-                      )}
-
-                      {phoneActiveTab === 'herramientas' && (
-                        <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
-                          <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Herramientas</h5>
-                          
-                          <div className="grid grid-cols-2 gap-2">
-                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                              <span className="text-sm">🏖️</span>
-                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Solicitar Vacaciones</span>
-                            </button>
-
-                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                              <span className="text-sm">📄</span>
-                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Recibos Nómina</span>
-                            </button>
-
-                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                              <span className="text-sm">🤕</span>
-                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Nueva Incidencia</span>
-                            </button>
-
-                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                              <span className="text-sm">🔑</span>
-                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Cambiar PIN</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* MENU INFERIOR DEL CELULARCITO (FOOTER NAVIGATION BAR) */}
-                    <div className="border-t border-slate-100 bg-white pt-2 flex items-center justify-between shrink-0 px-2 mt-auto">
-                      {/* Reloj */}
-                      <button
-                        type="button"
-                        onClick={() => setPhoneActiveTab('reloj')}
-                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                          phoneActiveTab === 'reloj' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
-                        }`}
-                      >
-                        <Clock size={14} className={phoneActiveTab === 'reloj' ? 'scale-110' : ''} />
-                        <span className="text-[7.5px] font-black uppercase tracking-wider">Reloj</span>
-                      </button>
-
-                      {/* Tareas */}
-                      <button
-                        type="button"
-                        onClick={() => setPhoneActiveTab('tareas')}
-                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer relative ${
-                          phoneActiveTab === 'tareas' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
-                        }`}
-                      >
-                        <CheckCircle2 size={14} className={phoneActiveTab === 'tareas' ? 'scale-110' : ''} />
-                        <span className="text-[7.5px] font-black uppercase tracking-wider">Tareas</span>
-                        {(!simulatedTask1Done || !simulatedTask2Done) && (
-                          <span className="absolute -top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                          </>
                         )}
-                      </button>
 
-                      {/* Academia */}
-                      <button
-                        type="button"
-                        onClick={() => setPhoneActiveTab('academia')}
-                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                          phoneActiveTab === 'academia' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
-                        }`}
-                      >
-                        <GraduationCap size={14} className={phoneActiveTab === 'academia' ? 'scale-110' : ''} />
-                        <span className="text-[7.5px] font-black uppercase tracking-wider">Academia</span>
-                      </button>
+                        {phoneActiveTab === 'tareas' && (
+                          <div className="p-1 text-left animate-in fade-in duration-200 flex-1 flex flex-col justify-between">
+                            <div>
+                              <div className="flex justify-between items-center mb-3">
+                                <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Tareas del Colaborador</h5>
+                                <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
+                                  {((simulatedTask1Done ? 1 : 0) + (simulatedTask2Done ? 1 : 0))} / 2
+                                </span>
+                              </div>
 
-                      {/* Herramientas */}
-                      <button
-                        type="button"
-                        onClick={() => setPhoneActiveTab('herramientas')}
-                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
-                          phoneActiveTab === 'herramientas' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
-                        }`}
-                      >
-                        <Lock size={14} className={phoneActiveTab === 'herramientas' ? 'scale-110' : ''} />
-                        <span className="text-[7.5px] font-black uppercase tracking-wider">Herramientas</span>
-                      </button>
+                              <div className="space-y-2">
+                                {/* Tarea 1 */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                                  simulatedTask1Done ? 'bg-slate-50/50 border-slate-150 text-slate-400' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                                }`}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={simulatedTask1Done}
+                                    onChange={() => setSimulatedTask1Done(!simulatedTask1Done)}
+                                    className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                  />
+                                  <div className="leading-tight text-left">
+                                    <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
+                                    <p className="text-[7.5px] text-slate-450">Sanitizar mostradores y barrer entrada</p>
+                                  </div>
+                                </label>
+
+                                {/* Tarea 2 */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                                  simulatedTask2Done ? 'bg-slate-50/50 border-slate-150 text-slate-400' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                                }`}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={simulatedTask2Done}
+                                    onChange={() => setSimulatedTask2Done(!simulatedTask2Done)}
+                                    className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                  />
+                                  <div className="leading-tight text-left">
+                                    <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
+                                    <p className="text-[7.5px] text-slate-450">Conciliar ventas del día en terminal</p>
+                                  </div>
+                                </label>
+                              </div>
+                            </div>
+
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-[7.5px] text-blue-800 font-medium leading-normal mt-3">
+                              💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
+                            </div>
+                          </div>
+                        )}
+
+                        {phoneActiveTab === 'academia' && (
+                          <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
+                            <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Cursos de Inducción</h5>
+                            
+                            {/* Curso 1 */}
+                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
+                                <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                              </div>
+                              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                              </div>
+                            </div>
+
+                            {/* Curso 2 */}
+                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
+                                <span className="text-[8px] font-bold text-blue-600">10%</span>
+                              </div>
+                              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                              </div>
+                            </div>
+
+                            {/* Curso 3 */}
+                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5 opacity-55">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Prevención y Seguridad</span>
+                                <span className="text-[8px] font-bold text-slate-400">Pendiente</span>
+                              </div>
+                              <div className="w-full h-1 bg-slate-200 rounded-full"></div>
+                            </div>
+                          </div>
+                        )}
+
+                        {phoneActiveTab === 'herramientas' && (
+                          <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
+                            <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Herramientas</h5>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                <span className="text-sm">🏖️</span>
+                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Solicitar Vacaciones</span>
+                              </button>
+
+                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                <span className="text-sm">📄</span>
+                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Recibos Nómina</span>
+                              </button>
+
+                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                <span className="text-sm">🤕</span>
+                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Nueva Incidencia</span>
+                              </button>
+
+                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                <span className="text-sm">🔑</span>
+                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Cambiar PIN</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* MENU INFERIOR DEL CELULARCITO (FOOTER NAVIGATION BAR) */}
+                      <div className="border-t border-slate-100 bg-white pt-2 flex items-center justify-between shrink-0 px-2 mt-auto">
+                        {/* Reloj */}
+                        <button
+                          type="button"
+                          onClick={() => setPhoneActiveTab('reloj')}
+                          className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                            phoneActiveTab === 'reloj' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          <Clock size={14} className={phoneActiveTab === 'reloj' ? 'scale-110' : ''} />
+                          <span className="text-[7.5px] font-black uppercase tracking-wider">Reloj</span>
+                        </button>
+
+                        {/* Tareas */}
+                        <button
+                          type="button"
+                          onClick={() => setPhoneActiveTab('tareas')}
+                          className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer relative ${
+                            phoneActiveTab === 'tareas' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          <CheckCircle2 size={14} className={phoneActiveTab === 'tareas' ? 'scale-110' : ''} />
+                          <span className="text-[7.5px] font-black uppercase tracking-wider">Tareas</span>
+                          {(!simulatedTask1Done || !simulatedTask2Done) && (
+                            <span className="absolute -top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                          )}
+                        </button>
+
+                        {/* Academia */}
+                        <button
+                          type="button"
+                          onClick={() => setPhoneActiveTab('academia')}
+                          className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                            phoneActiveTab === 'academia' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          <GraduationCap size={14} className={phoneActiveTab === 'academia' ? 'scale-110' : ''} />
+                          <span className="text-[7.5px] font-black uppercase tracking-wider">Academia</span>
+                        </button>
+
+                        {/* Herramientas */}
+                        <button
+                          type="button"
+                          onClick={() => setPhoneActiveTab('herramientas')}
+                          className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                            phoneActiveTab === 'herramientas' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          <Lock size={14} className={phoneActiveTab === 'herramientas' ? 'scale-110' : ''} />
+                          <span className="text-[7.5px] font-black uppercase tracking-wider">Herramientas</span>
+                        </button>
+                      </div>
                     </div>
+
+                    {/* iOS Home Indicator Bar */}
+                    <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
                   </div>
 
-                  {/* iOS Home Indicator Bar */}
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
+                  {/* Right Side: Pro Option Panel */}
+                  <div className="flex flex-col gap-3 w-full max-w-[210px] shrink-0 text-left order-4">
+                    <h5 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Funciones Premium</h5>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setSimulatedTier('pro')}
+                      className={`p-3.5 rounded-2xl border text-left transition-all active:scale-95 flex flex-col gap-1 w-full select-none cursor-pointer border-none outline-none ${
+                        simulatedTier === 'pro' 
+                          ? 'bg-white border-violet-500 shadow-md shadow-violet-500/5 ring-1 ring-violet-500/20' 
+                          : 'bg-slate-50/50 border-slate-150 text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">👑</span>
+                        <span className={`text-[11.5px] font-black ${simulatedTier === 'pro' ? 'text-violet-600' : 'text-slate-700'}`}>Versión Pro</span>
+                        <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 border border-violet-100 leading-none">Premium</span>
+                      </div>
+                      <p className="text-[9.5px] text-slate-450 font-medium leading-tight">
+                        Barra cronológica proporcional, geocercas, pases de lista automáticos y asistencia consolidada.
+                      </p>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 /* SIMULACIÓN ESCRITORIO (BROWSER FRAME) PARA ATS Y ORGANIGRAMA */

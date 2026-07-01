@@ -214,6 +214,37 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
   const [editRestDay, setEditRestDay] = useState('');
   const [isSessionLocked, setIsSessionLocked] = useState(false);
   const [unlockPin, setUnlockPin] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await axiosInstance.post('/me/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (res.data && res.data.avatar_url) {
+        const avatarUrl = res.data.avatar_url;
+        const updatedUser = { ...currentUser, avatar: avatarUrl };
+        setCurrentUser(updatedUser);
+        setGlobalUsers(globalUsers.map(u => u.id === currentUser.id ? updatedUser : u));
+        showCustomAlert("📸 Foto de perfil subida exitosamente.");
+      }
+    } catch (err: any) {
+      console.error("Error al subir avatar:", err);
+      showCustomAlert(err.response?.data?.error || "Error al subir la imagen. Intenta con un archivo más ligero (máx 5MB).");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   // Estados interactivos para el Perfil de Usuario y PWA
   const [showQrModal, setShowQrModal] = useState(false);
@@ -3590,6 +3621,40 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 </div>
                 
                 <div className="space-y-4">
+                  {/* Photo / Avatar Selector */}
+                  <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 mb-2">
+                    <div 
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-700 shadow-sm overflow-hidden relative group shrink-0 cursor-pointer"
+                      title="Haz clic para cambiar tu foto"
+                    >
+                      <input 
+                        type="file" 
+                        ref={avatarFileInputRef} 
+                        onChange={handleAvatarFileChange} 
+                        className="hidden" 
+                        accept="image/*" 
+                      />
+                      <img 
+                        src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                        alt="Current Avatar" 
+                        className="w-full h-full object-cover" 
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {isUploadingAvatar ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <Camera size={14} className="text-white" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="leading-tight text-left">
+                      <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200">{currentUser?.name}</h4>
+                      <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mt-1">
+                        {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                      </p>
+                    </div>
+                  </div>
                   {/* Username / Name */}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre de Usuario</label>
@@ -3656,16 +3721,29 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
                 <div className="mt-6 flex flex-col gap-2">
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       if (!editUsername.trim() || !editPassword.trim()) {
                         showCustomAlert('Por favor, completa el usuario y la contraseña.');
                         return;
                       }
+                      
                       const updatedUser = {
                         ...currentUser,
                         name: editUsername,
                         pin_code: editPassword
                       };
+
+                      if (!isSandboxMode) {
+                        try {
+                          await axiosInstance.post('/me/update-profile', {
+                            name: editUsername,
+                            avatar: currentUser.avatar
+                          });
+                        } catch (err: any) {
+                          console.error("Error al persistir cambios de perfil:", err);
+                        }
+                      }
+
                       setCurrentUser(updatedUser);
                       setGlobalUsers(globalUsers.map(u => u.id === currentUser.id ? updatedUser : u));
                       setShiftConfigs({

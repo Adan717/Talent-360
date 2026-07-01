@@ -40,6 +40,41 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
   const [avatar, setAvatar] = useState(currentUser?.avatar || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await axiosInstance.post('/me/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      if (res.data && res.data.avatar_url) {
+        setAvatar(res.data.avatar_url);
+        const appState = useAppStore.getState();
+        if (appState.currentUser) {
+          const updatedUser = { ...appState.currentUser, avatar: res.data.avatar_url };
+          appState.setCurrentUser(updatedUser);
+          appState.setGlobalUsers(appState.globalUsers.map(u => u.id === appState.currentUser?.id ? updatedUser : u));
+        }
+        setToastMessage("📸 Foto de perfil actualizada con éxito.");
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    } catch (err: any) {
+      console.error("Error al subir avatar:", err);
+      alert(err.response?.data?.error || "Error al subir la imagen. Intenta con un archivo más ligero (máx 5MB).");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Security State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -226,16 +261,30 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
           {activeTab === 'profile' && (
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               
-              {/* Profile Card Summary */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden relative group shrink-0">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-16 h-16 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden relative group shrink-0 cursor-pointer"
+                  title="Haz clic para cambiar tu foto"
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                    accept="image/*" 
+                  />
                   <img 
                     src={avatar || 'https://i.pravatar.cc/150?img=11'} 
                     alt="Current Avatar" 
                     className="w-full h-full object-cover" 
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera size={18} className="text-white" />
+                    {isUploading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Camera size={18} className="text-white" />
+                    )}
                   </div>
                 </div>
                 <div>

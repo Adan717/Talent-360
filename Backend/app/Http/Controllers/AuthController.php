@@ -296,6 +296,54 @@ class AuthController extends Controller
         ]);
     }
 
+    public function uploadAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        $user = $request->user();
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            
+            $destinationPath = public_path('uploads/avatars');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+
+            $file->move($destinationPath, $filename);
+            
+            $avatarUrl = '/uploads/avatars/' . $filename;
+
+            $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
+            \Illuminate\Support\Facades\DB::table($table)
+                ->where('id', $user->id)
+                ->update([
+                    'avatar' => $avatarUrl,
+                    'updated_at' => now()
+                ]);
+
+            if (!($user instanceof \App\Models\PlatformUser)) {
+                \Illuminate\Support\Facades\DB::table('employees')
+                    ->where('user_id', $user->id)
+                    ->update([
+                        'avatar' => $avatarUrl,
+                        'updated_at' => now()
+                    ]);
+            }
+
+            return response()->json([
+                'message' => 'Avatar subido exitosamente',
+                'avatar_url' => $avatarUrl
+            ]);
+        }
+
+        return response()->json(['error' => 'No se cargó ningún archivo.'], 400);
+    }
+
+
     public function changePassword(Request $request)
     {
         $user = $request->user();

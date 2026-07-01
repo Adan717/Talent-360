@@ -198,6 +198,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/update-profile', [AuthController::class, 'updateProfile']);
+        Route::post('/me/upload-avatar', [AuthController::class, 'uploadAvatar']);
         Route::post('/me/change-password', [AuthController::class, 'changePassword']);
         Route::post('/me/request-rest-day', [AuthController::class, 'requestRestDay']);
         Route::get('/me/rest-day-requests', [AuthController::class, 'getRestDayRequests']);

@@ -71,12 +71,12 @@ export default function DialPrincipal({
   const isGpsSeeking = gpsStatus === 'seeking';
 
   // Effectively disable the button visually and behaviorally (without block events)
-  const isEffectivelyDisabled = isGpsError || btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed');
+  const isEffectivelyDisabled = !isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'));
 
   const getDialColorClasses = () => {
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300';
-    if (isGpsError) return 'bg-white border-rose-300 text-rose-450 dark:border-rose-900/50 shadow-none';
+    if (isGpsError) return 'bg-rose-500 border-rose-650 text-white shadow-rose-500/30 animate-pulse hover:bg-rose-600';
     if (btnProps.isIncidenceReport) return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
 
     const text = btnProps.text || '';
@@ -96,7 +96,8 @@ export default function DialPrincipal({
 
   const getDialGlowClasses = () => {
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
-    if (isRestDay || isGpsError) return null;
+    if (isRestDay) return null;
+    if (isGpsError) return 'bg-rose-500';
     if (btnProps.isIncidenceReport) return 'bg-amber-400';
 
     const text = btnProps.text || '';
@@ -114,7 +115,7 @@ export default function DialPrincipal({
   };
 
   const getDialIcon = (sizeValue: number) => {
-    if (isGpsError) return <MapPin size={sizeValue} className="text-rose-450 shrink-0 animate-pulse" />;
+    if (isGpsError) return <MapPin size={sizeValue} className="text-white shrink-0 animate-bounce" />;
     if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return <Sun size={sizeValue} className="text-slate-400 shrink-0" />;
@@ -188,27 +189,10 @@ export default function DialPrincipal({
           <div className={`absolute w-44 h-44 rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
         ) : null}
 
-        {/* Pulsing GPS Warning Button on the Left */}
-        {isGpsError && (
-          <div className={`absolute z-20 ${isMobile ? '-left-12' : '-left-16'} top-1/2 -translate-y-1/2`}>
-            <button
-              type="button"
-              onClick={() => setShowGpsModal(true)}
-              className="relative w-11 h-11 xs:w-12 xs:h-12 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 border border-rose-400/20 active:scale-95 transition-all focus:outline-none cursor-pointer"
-            >
-              {/* Pulse waves */}
-              <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-75"></span>
-              <span className="absolute inset-0 rounded-full bg-rose-400/30 animate-pulse"></span>
-              
-              <MapPin size={20} className="relative z-10 animate-bounce" />
-            </button>
-          </div>
-        )}
-
         <button 
           onClick={handleDialClick} 
           disabled={!isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'))} 
-          className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-4 bg-white ${getDialColorClasses()} ${
+          className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-4 ${getDialColorClasses()} ${
             isMobile ? 'w-52 h-52' : 'w-56 h-56'
           } ${
             isEffectivelyDisabled
@@ -218,23 +202,23 @@ export default function DialPrincipal({
         >
           <div className="flex flex-col items-center justify-center h-full w-full py-2 select-none">
             {/* UPPER ZONE: Prominent Icon */}
-            <div className="flex-grow flex items-center justify-center mt-3 text-slate-800">
+            <div className={`flex-grow flex items-center justify-center mt-3 ${isGpsError ? 'text-white' : 'text-slate-800'}`}>
               {getDialIcon(size)}
             </div>
 
             {/* CENTRAL ZONE: Digital Time */}
-            <div className={`flex items-baseline font-mono font-black text-slate-800 tracking-tight mt-1 mb-2 ${isMobile ? 'text-3xl' : 'text-4xl md:text-5xl leading-none'}`}>
+            <div className={`flex items-baseline font-mono font-black tracking-tight mt-1 mb-2 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-3xl' : 'text-4xl md:text-5xl leading-none'}`}>
               <span>{formattedTime.split(' ')[0]}</span>
-              <span className={`uppercase font-bold text-slate-500 ${isMobile ? 'text-xs ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
+              <span className={`uppercase font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-xs ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
             </div>
 
             {/* LOWER ZONE: Bottom Label */}
-            <div className={`px-2 text-center w-full min-h-[36px] flex flex-col items-center justify-center mb-2 text-slate-700 ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
-              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[10px] md:text-[10.5px]' : 'text-[11px] md:text-[12px]'} ${isGpsError ? 'text-rose-600 dark:text-rose-400 font-extrabold' : ''}`}>
+            <div className={`px-2 text-center w-full min-h-[36px] flex flex-col items-center justify-center mb-2 ${isGpsError ? 'text-white' : 'text-slate-700'} ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
+              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[10px] md:text-[10.5px]' : 'text-[11px] md:text-[12px]'} ${isGpsError ? 'text-white font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
               {btnProps.subtext && (
-                <span className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 mt-0.5 leading-none block select-none uppercase truncate max-w-full">
+                <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-rose-105' : 'text-slate-500 dark:text-slate-400'}`}>
                   {btnProps.subtext}
                 </span>
               )}
@@ -246,49 +230,49 @@ export default function DialPrincipal({
       {/* Premium Centered GPS Instruction Modal */}
       {showGpsModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left">
+          <div className="bg-white border border-slate-200 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left">
             
             {/* Close Button */}
             <button 
               onClick={() => setShowGpsModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 transition-all border-none cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-655 p-1.5 rounded-full hover:bg-slate-100 transition-all border-none cursor-pointer"
             >
               <X size={18} />
             </button>
 
             {/* Modal Icon Header */}
-            <div className="w-14 h-14 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
+            <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
               <AlertTriangle size={26} className="animate-bounce" />
             </div>
 
             {/* Modal Title */}
-            <h3 className="text-base font-black text-slate-900 dark:text-white text-center tracking-tight mb-2">
+            <h3 className="text-base font-black text-slate-900 text-center tracking-tight mb-2">
               Permiso de GPS Requerido
             </h3>
             
             {/* Message */}
-            <p className="text-[11.5px] text-slate-505 dark:text-slate-400 text-center leading-relaxed mb-6 px-1 font-medium">
+            <p className="text-[11.5px] text-slate-505 text-center leading-relaxed mb-6 px-1 font-medium">
               Para cumplir con las normas del SAT 2027 y validar tu perímetro de trabajo en DecorArte, es obligatorio activar la ubicación.
             </p>
             
             {/* Steps Container */}
-            <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850 rounded-2xl p-4 text-[11px] space-y-3 mb-6">
-              <p className="font-extrabold text-slate-850 dark:text-slate-200 font-sans">
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-[11px] space-y-3 mb-6">
+              <p className="font-extrabold text-slate-850 font-sans">
                 ¿Cómo dar permiso de ubicación?
               </p>
               
-              <div className="flex gap-2.5 text-slate-600 dark:text-slate-400 font-medium font-sans items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center font-black text-[10px]">1</span>
+              <div className="flex gap-2.5 text-slate-600 font-medium font-sans items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-650 flex items-center justify-center font-black text-[10px]">1</span>
                 <span className="mt-0.5 leading-snug">Haz clic en el candado 🔒 (junto a la URL del navegador).</span>
               </div>
               
-              <div className="flex gap-2.5 text-slate-600 dark:text-slate-400 font-medium font-sans items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center font-black text-[10px]">2</span>
+              <div className="flex gap-2.5 text-slate-600 font-medium font-sans items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-650 flex items-center justify-center font-black text-[10px]">2</span>
                 <span className="mt-0.5 leading-snug">Cambia el permiso de <strong>Ubicación</strong> a <strong>Permitir</strong>.</span>
               </div>
               
-              <div className="flex gap-2.5 text-slate-600 dark:text-slate-400 font-medium font-sans items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center font-black text-[10px]">3</span>
+              <div className="flex gap-2.5 text-slate-600 font-medium font-sans items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-650 flex items-center justify-center font-black text-[10px]">3</span>
                 <span className="mt-0.5 leading-snug">Presiona el botón de abajo para reintentar.</span>
               </div>
             </div>

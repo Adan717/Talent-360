@@ -972,6 +972,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
   const isMobileScreen = windowWidth < 768;
   const isScrollableMobile = isMobileScreen || isMobileFrame;
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -1737,16 +1738,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         ...prev,
         {
           sender: 'bot',
-          text: '⚠️ Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
-          timestamp: new Date()
-        }
-      ]);
-    } finally {
-      setCopilotLoading(false);
-    }
-  };
-
-  const renderUnifiedMobileHeader = () => {
+          text: '⚠️ Ocurrió un error al conect  const renderUnifiedMobileHeader = () => {
     let title = '';
     let desc = '';
     let icon = null;
@@ -1757,56 +1749,56 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       case 'checador':
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
-        icon = <Clock className="w-9 h-9 text-[#2dce89]" />;
+        icon = <Clock className="text-[#2dce89]" />;
         badgeText = 'v4.2-pro';
         badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
         break;
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión y seguimiento operativo';
-        icon = <CheckSquare className="w-9 h-9 text-indigo-500" />;
+        icon = <CheckSquare className="text-indigo-500" />;
         badgeText = 'Tareas';
-        badgeColorClass = 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30';
+        badgeColorClass = 'bg-indigo-50 dark:bg-indigo-955/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Capacitación y desarrollo';
-        icon = <GraduationCap className="w-9 h-9 text-violet-500 animate-bounce" />;
+        icon = <GraduationCap className="text-violet-500 animate-bounce" />;
         badgeText = 'Cursos';
         badgeColorClass = 'bg-violet-50 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
         break;
       case 'herramientas':
         title = 'Herramientas';
         desc = 'Simulador y bitácoras';
-        icon = <Settings className="w-9 h-9 text-slate-500 animate-spin" style={{ animationDuration: '6s' }} />;
+        icon = <Settings className="text-slate-500 animate-spin" style={{ animationDuration: '6s' }} />;
         badgeText = 'Utilidades';
         badgeColorClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
         break;
       case 'evaluacion360':
         title = 'Evaluación 360';
         desc = 'Evaluación de compañeros';
-        icon = <Star className="w-9 h-9 text-amber-500" />;
+        icon = <Star className="text-amber-500" />;
         badgeText = 'Feedback';
         badgeColorClass = 'bg-amber-50 dark:bg-amber-955/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30';
         break;
       case 'organigrama':
         title = 'Organigrama';
         desc = 'Estructura de la empresa';
-        icon = <Network className="w-9 h-9 text-emerald-500" />;
+        icon = <Network className="text-emerald-500" />;
         badgeText = 'Puestos';
         badgeColorClass = 'bg-emerald-50 dark:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30';
         break;
       case 'perfil':
         title = 'Mi Perfil';
         desc = 'Credencial y ajustes';
-        icon = <ClipboardList className="w-9 h-9 text-blue-500" />;
+        icon = <ClipboardList className="text-blue-500" />;
         badgeText = 'Usuario';
         badgeColorClass = 'bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
         break;
       default:
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
-        icon = <Clock className="w-9 h-9 text-[#2dce89]" />;
+        icon = <Clock className="text-[#2dce89]" />;
         badgeText = 'v4.2-pro';
         badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
     }
@@ -1820,7 +1812,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         {/* Columna Izquierda: Info de Módulo */}
         <div className="flex items-center gap-2.5 xs:gap-3.5 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
-            {icon && React.cloneElement(icon, { className: 'w-8 h-8 xs:w-10 xs:h-10' })}
+            {icon && React.cloneElement(icon, { className: `w-8 h-8 xs:w-10 xs:h-10 ${icon.props.className || ''}` })}
           </div>
           <div className="flex flex-col min-w-0 justify-center text-left">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1862,7 +1854,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               setEditUsername(currentUser?.name || 'Francisco');
               setEditPassword(currentUser?.pin_code || '1234');
               setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
-              setShowSettingsModal(true);
+              setShowProfileMenu(true);
             }}
           >
             <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
@@ -4661,7 +4653,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
           {/* Modal Report */}
           {showReportModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col justify-end text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">📢</span>
@@ -4719,9 +4711,113 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             </div>
           )}
 
+          {/* Menú de Perfil Flotante (Popover Contextual debajo del Header) */}
+          {showProfileMenu && (
+            <div 
+              className="fixed inset-0 z-[85] bg-black/10 dark:bg-black/30 backdrop-blur-xs"
+              onClick={() => setShowProfileMenu(false)}
+            >
+              <div 
+                className={`fixed top-[76px] right-3.5 w-60 z-[90] rounded-2xl border p-4 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-left ${
+                  isDark 
+                    ? 'bg-slate-900 border-slate-850 text-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.5)]' 
+                    : 'bg-white border-slate-150 text-slate-800 shadow-[0_8px_32px_rgba(124,58,237,0.08)]'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header del menú */}
+                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+                  <img 
+                    src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                    alt="Avatar" 
+                    className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" 
+                  />
+                  <div className="leading-tight min-w-0">
+                    <p className="font-black text-xs truncate">{currentUser?.name || 'Colaborador'}</p>
+                    <p className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wide truncate mt-0.5">{userPositionName}</p>
+                  </div>
+                </div>
+
+                {/* Lista de opciones */}
+                <div className="space-y-1">
+                  <button 
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowSettingsModal(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2.5 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
+                  >
+                    <span>👤</span> Ver Perfil / Ajustes
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      showCustomAlert('🕒 Historial de Asistencia y Actividad (Próximamente)');
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-955 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span>🕒</span> Ver Histórico
+                    </div>
+                    <span className="text-[7px] font-black uppercase bg-violet-100 dark:bg-violet-950 text-violet-755 dark:text-violet-300 px-1.5 py-0.5 rounded">Próx</span>
+                  </button>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
+                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1.5">Entorno</span>
+                    
+                    {/* Dark/Light mode toggle */}
+                    <button 
+                      onClick={() => setIsDark(!isDark)}
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-955 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span>🌓</span> Tema del Dispositivo
+                      </div>
+                      <span className="text-[9px] font-extrabold text-slate-500 capitalize">{isDark ? 'Oscuro' : 'Claro'}</span>
+                    </button>
+
+                    {/* Sandbox toggle for admin/supervisor */}
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+                      <button 
+                        onClick={() => {
+                          useAppStore.getState().setIsSandboxMode(!isSandboxMode);
+                          showCustomAlert(`🛠️ Modo Sandbox ${!isSandboxMode ? 'activado' : 'desactivado'}.`);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-955 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span>🛠️</span> Modo Simulador
+                        </div>
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${isSandboxMode ? 'bg-emerald-50 border-emerald-250 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                          {isSandboxMode ? 'ON' : 'OFF'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Cerrar Sesión */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-2 mt-2">
+                    <button 
+                      onClick={() => {
+                        localStorage.removeItem('talent_auth_token');
+                        useAppStore.getState().setCurrentUser(null as any);
+                        setShowProfileMenu(false);
+                        window.location.href = '/login';
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-black transition-colors flex items-center gap-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border-none cursor-pointer"
+                    >
+                      <span>🚪</span> Cerrar Sesión
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* settings Modal (User Profile & App Settings) */}
           {showSettingsModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
               <div className={`rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border text-left ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-black text-lg flex items-center gap-2">

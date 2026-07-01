@@ -112,6 +112,28 @@ return new class extends Migration
 
         // SEED INITIAL PREMIUM FEATURE AND TENANT 1 CONFIG
         try {
+            // Asegurar que exista el Tenant 1 y Company 1 para no violar restricciones de llave foránea en DBs limpias
+            DB::table('tenants')->insertOrIgnore([
+                'id' => 1,
+                'name' => 'DecorArte 360',
+                'subdomain' => 'default',
+                'public_slug' => 'default',
+                'plan' => 'pro',
+                'max_users' => 100,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::table('companies')->insertOrIgnore([
+                'id' => 1,
+                'name' => 'DecorArte 360',
+                'is_active' => true,
+                'tenant_id' => 1,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
             DB::table('platform_features')->insert([
                 'feature_key' => 'store_opening',
                 'feature_name' => 'Apertura de tienda',

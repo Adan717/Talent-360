@@ -219,13 +219,13 @@ class TaskValidationRuleTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $admin->id)->update(['tenant_id' => 1]);
 
         $employee = User::factory()->create([
             'role' => 'empleado',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $employee->id)->update(['tenant_id' => 1]);
 
         $task = Task::create([
             'title' => 'Test Task',

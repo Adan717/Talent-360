@@ -100,13 +100,15 @@ function MainLayout() {
     window.location.href = '/login';
   };
 
-  const { currentTier, currentUser, systemSettings, updateSetting } = useAppStore();
+  const { currentTier, currentUser, systemSettings, updateSetting, simulatedTierOverride } = useAppStore();
+
+  const activeTier = simulatedTierOverride || currentTier;
 
   // Check if trial is active
   const tenant = currentUser?.tenant;
   let trialActive = false;
   let daysRemaining = 0;
-  if (tenant) {
+  if (tenant && !simulatedTierOverride) {
     if (tenant.subscription_status === 'trial' || !tenant.subscription_status) {
       if (tenant.trial_ends_at) {
         const endsAt = new Date(tenant.trial_ends_at);
@@ -142,7 +144,7 @@ function MainLayout() {
     if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') {
       return true;
     }
-    if (currentTier === 'enterprise') {
+    if (activeTier === 'enterprise') {
       return true;
     }
     if (trialActive) {
@@ -150,13 +152,13 @@ function MainLayout() {
     }
     
     // Non-trial checks
-    if (currentTier === 'freemium') {
+    if (activeTier === 'freemium') {
       const freeAllowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo'];
       return freeAllowed.includes(targetModuleId);
     }
     
-    if (currentTier === 'pro') {
-      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia'];
+    if (activeTier === 'pro') {
+      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'];
       return activeMods.includes(targetModuleId);
     }
     
@@ -563,11 +565,11 @@ function MainLayout() {
                     </div>
                     {/* License Tier Badge */}
                     <span className={`text-[7px] sm:text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full leading-none mt-1 border select-none ${
-                      currentTier === 'enterprise' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                      currentTier === 'pro' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                      activeTier === 'enterprise' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                      activeTier === 'pro' ? 'bg-amber-100 text-amber-700 border-amber-200' :
                       'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
-                      {currentTier === 'enterprise' ? 'Enterprise' : currentTier === 'pro' ? 'Premium' : 'Freemium'}
+                      {activeTier === 'enterprise' ? 'Enterprise' : activeTier === 'pro' ? 'Premium' : 'Freemium'}
                     </span>
                   </div>
                 </button>

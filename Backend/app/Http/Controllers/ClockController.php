@@ -225,6 +225,7 @@ class ClockController extends Controller
 
         $users = $request->input('users');
         $configs = $request->input('configs');
+        $tenantId = auth()->user()->tenant_id ?? 1;
 
         if (DB::getDriverName() === 'sqlite') {
             DB::statement('PRAGMA foreign_keys=OFF;');

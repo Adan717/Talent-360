@@ -216,7 +216,10 @@ export default function PanelSimulador() {
     setHasAlertedStoreDelay,
     globalClockStates,
     globalSimDay,
-    setGlobalSimDay
+    setGlobalSimDay,
+    currentTier,
+    simulatedTierOverride,
+    setSimulatedTierOverride
   } = useAppStore();
 
   // Estados del Simulador QA Matrix
@@ -367,6 +370,76 @@ export default function PanelSimulador() {
               <button onClick={toggleStore} className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors ${storeStatus === 'open' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 hover:bg-rose-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/40'}`}>
                 {storeStatus === 'open' ? '🔒 Cerrar Tienda (Global)' : '🔓 Abrir Tienda (Global)'}
               </button>
+            </div>
+          </div>
+
+          {/* Plan Selector & Active Modules Visualizer */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-slate-900/60 border border-slate-700/80 rounded-2xl p-4 gap-4">
+            <div className="flex flex-col gap-1.5 shrink-0">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Licencia SaaS Activa (QA Override)</span>
+              <div className="flex items-center bg-slate-800 rounded-xl p-1 border border-slate-700 gap-1">
+                <button
+                  onClick={() => setSimulatedTierOverride('freemium')}
+                  className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
+                    currentTier === 'freemium' 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md shadow-emerald-500/5' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>🆓</span> Freemium (Gratuito)
+                </button>
+                <button
+                  onClick={() => setSimulatedTierOverride('pro')}
+                  className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
+                    currentTier === 'pro' 
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-md shadow-amber-500/5' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>⚡</span> Pro (Premium)
+                </button>
+                {simulatedTierOverride && (
+                  <button
+                    onClick={() => setSimulatedTierOverride(null)}
+                    className="px-2.5 py-1.5 rounded-lg font-bold text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors border border-transparent cursor-pointer"
+                    title="Restablecer al plan real de la base de datos"
+                  >
+                    Restablecer
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5 w-full lg:w-auto">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Módulos Habilitados en este Plan</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'reloj', name: 'Reloj Checador', tier: 'freemium' },
+                  { id: 'rrhh', name: 'Recursos Humanos', tier: 'freemium' },
+                  { id: 'operativo', name: 'Tareas / Rutinas', tier: 'freemium' },
+                  { id: 'reportes', name: 'Reportes y Nómina', tier: 'pro' },
+                  { id: 'ats', name: 'Bolsa de Trabajo ATS', tier: 'pro' },
+                  { id: 'academia', name: 'Academia LMS', tier: 'pro' },
+                  { id: 'documentos', name: 'Gestor Documental', tier: 'pro' }
+                ].map(mod => {
+                  const isUnlocked = currentTier === 'enterprise' || 
+                                     mod.tier === 'freemium' || 
+                                     (currentTier === 'pro' && mod.tier === 'pro');
+                  return (
+                    <span 
+                      key={mod.id} 
+                      className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border flex items-center gap-1 select-none transition-all ${
+                        isUnlocked 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                          : 'bg-slate-800/40 text-slate-500 border-slate-700/60 line-through opacity-60'
+                      }`}
+                    >
+                      <span>{isUnlocked ? '🟢' : '🔴'}</span>
+                      {mod.name}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

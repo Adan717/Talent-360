@@ -33,15 +33,15 @@ class DashboardVoiceTaskTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'admin',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
 
         // Create target employee Francisco
         $employee = User::factory()->create([
             'name' => 'Francisco Javier',
             'role' => 'empleado',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $employee->id)->update(['tenant_id' => 1]);
         DB::table('employees')->insert([
             'tenant_id' => 1,
             'user_id' => $employee->id,
@@ -78,8 +78,8 @@ class DashboardVoiceTaskTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'admin',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
 
         // Create job role
         $jobRole = JobRole::create([
@@ -114,15 +114,15 @@ class DashboardVoiceTaskTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'admin',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
 
         // Target employee
         $employee = User::factory()->create([
             'name' => 'Francisco Javier',
             'role' => 'empleado',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $employee->id)->update(['tenant_id' => 1]);
         DB::table('employees')->insert([
             'tenant_id' => 1,
             'user_id' => $employee->id,
@@ -167,8 +167,8 @@ class DashboardVoiceTaskTest extends TestCase
     {
         $user = User::factory()->create([
             'role' => 'admin',
+            'tenant_id' => 1,
         ]);
-        DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
 
         $response = $this->actingAs($user)->postJson('/api/v1/admin/dashboard/parse-voice-task', [
             'text' => 'Crear tarea Limpiar la mesa de comida con asistente de foto pidiendo tomar foto de la mesa limpia'

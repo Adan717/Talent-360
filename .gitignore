@@ -19,3 +19,8 @@ Thumbs.db
 /.agents/
 /brain/
 /Respaldo_IA/
+
+# Temporary scratch files, videos and logs
+/scratch/
+/scripts/campana_sat_2027.mp4
+*.log

@@ -43,12 +43,14 @@ interface AppState {
   dbRolePermissions: any[];
   allowedModules: string[];
   allowedFeatures: string[];
+  simulatedTierOverride: 'freemium' | 'pro' | null;
   
   // Setters
   setIsLoadingDB: (loading: boolean) => void;
   setGlobalUsers: (users: User[]) => void;
   setCurrentUser: (user: User | null) => void;
   setCurrentTier: (tier: 'freemium' | 'pro' | 'enterprise') => void;
+  setSimulatedTierOverride: (tier: 'freemium' | 'pro' | null) => void;
   setSystemSettings: (settings: any) => void;
   setStoreStatus: (status: 'open' | 'closed') => void;
   setGlobalClockState: (userId: number, state: string) => void;
@@ -110,6 +112,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   hasReservedMeal: {},
   allowedModules: ['reloj', 'rrhh', 'operativo'],
   allowedFeatures: [],
+  simulatedTierOverride: null,
   
   // Initial SaaS State
   saasTenants: [],
@@ -155,6 +158,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   setGlobalUsers: (users) => set({ globalUsers: users }),
   setCurrentUser: (user) => set({ currentUser: user }),
   setCurrentTier: (tier) => set({ currentTier: tier }),
+  setSimulatedTierOverride: (tier) => {
+    set({ simulatedTierOverride: tier });
+    if (tier) {
+      set({ currentTier: tier });
+      if (tier === 'freemium') {
+        set({ allowedModules: ['reloj', 'rrhh', 'operativo'], allowedFeatures: [] });
+      } else if (tier === 'pro') {
+        set({ 
+          allowedModules: ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'], 
+          allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands'] 
+        });
+      }
+    } else {
+      get().fetchState();
+    }
+  },
   setSystemSettings: (settings) => set({ systemSettings: settings }),
   setStoreStatus: (status) => set({ storeStatus: status }),
   setGlobalClockState: (userId, state) => set((s) => ({ globalClockStates: { ...s.globalClockStates, [userId]: state } })),
@@ -307,7 +326,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             const meUser = meRes.data.user;
             set({ currentUser: { ...meUser, system_role: meUser.role } });
             const tenant = meUser.tenant || meRes.data.tenant;
-            if (tenant?.plan) {
+            if (!get().simulatedTierOverride && tenant?.plan) {
               set({ currentTier: tenant.plan.toLowerCase() as any });
             }
             if (meUser.role === 'platform_admin') {
@@ -430,14 +449,27 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
 
         if (!state.isSandboxMode) {
-          if (data.tenant_plan) {
-            set({ currentTier: data.tenant_plan.toLowerCase() as any });
-          }
-          if (data.tenant_allowed_modules) {
-            set({ allowedModules: data.tenant_allowed_modules });
-          }
-          if (data.tenant_allowed_features) {
-            set({ allowedFeatures: data.tenant_allowed_features });
+          const tierOverride = get().simulatedTierOverride;
+          if (tierOverride) {
+            set({ currentTier: tierOverride });
+            if (tierOverride === 'freemium') {
+              set({ allowedModules: ['reloj', 'rrhh', 'operativo'], allowedFeatures: [] });
+            } else if (tierOverride === 'pro') {
+              set({ 
+                allowedModules: ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'], 
+                allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands'] 
+              });
+            }
+          } else {
+            if (data.tenant_plan) {
+              set({ currentTier: data.tenant_plan.toLowerCase() as any });
+            }
+            if (data.tenant_allowed_modules) {
+              set({ allowedModules: data.tenant_allowed_modules });
+            }
+            if (data.tenant_allowed_features) {
+              set({ allowedFeatures: data.tenant_allowed_features });
+            }
           }
 
           if (data.time_entries) {
@@ -627,7 +659,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     
     if (currentTier === 'pro') {
-      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia'];
+      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'];
       return activeMods.includes(moduleId);
     }
     

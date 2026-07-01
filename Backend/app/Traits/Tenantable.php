@@ -14,9 +14,11 @@ trait Tenantable
         static::addGlobalScope(new TenantScope);
 
         static::creating(function ($model) {
-            if ($model instanceof \App\Models\User && $model->role === 'platform_admin') {
-                $model->tenant_id = null;
-                return;
+            if ($model instanceof \App\Models\User && ($model->role === 'platform_admin' || $model->role === 'admin')) {
+                if (!session('tenant_id') && !request()->header('X-Tenant-ID')) {
+                    $model->tenant_id = null;
+                    return;
+                }
             }
             if (!$model->tenant_id) {
                 $user = auth()->user() ?? auth('sanctum')->user();

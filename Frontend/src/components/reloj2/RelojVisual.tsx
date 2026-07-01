@@ -1731,28 +1731,31 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     }
 
     return (
-      <div className={`flex items-center justify-between px-4 py-4 shrink-0 text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b transition-colors duration-200 ${
-        isDark ? 'bg-slate-900 border-slate-800/80 shadow-[0_4px_20px_0_rgba(0,0,0,0.2)]' : 'bg-white border-slate-100/80'
+      <div className={`flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3 shrink-0 text-left -mx-4 -mt-4 mb-4 rounded-b-[1.75rem] shadow-[0_4px_16px_rgba(0,0,0,0.03)] border-b transition-colors duration-200 select-none ${
+        isDark ? 'bg-slate-900 border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.15)]' : 'bg-white border-slate-100/80'
       }`}>
         {/* Left: Module Info */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-1.5 xs:gap-2.5 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
-            {icon}
+            {icon && React.cloneElement(icon, { className: 'w-7 h-7 xs:w-8.5 xs:h-8.5' })}
           </div>
           <div className="flex flex-col min-w-0 justify-center text-left">
-            <div className="flex items-center gap-2">
-              <h3 className={`text-[16px] font-black tracking-tight leading-tight transition-colors ${
+            <div className="flex items-center gap-1 flex-wrap">
+              <h3 className={`text-[12.5px] xs:text-[14.5px] font-black tracking-tight leading-tight transition-colors truncate max-w-[90px] xxs:max-w-[120px] xs:max-w-[150px] ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
                 {title}
               </h3>
-              {badgeText && (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase bg-[#e8eaf6] dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/20">
+                v4.3.0
+              </span>
+              {badgeText && badgeText !== 'v4.2.0' && badgeText !== 'Tareas' && badgeText !== 'Cursos' && (
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
                   {badgeText}
                 </span>
               )}
             </div>
-            <p className={`text-[11px] font-bold mt-1.5 leading-none truncate transition-colors ${
+            <p className={`text-[8.5px] xs:text-[9.5px] font-bold mt-0.5 leading-none truncate transition-colors max-w-[110px] xs:max-w-[160px] ${
               isDark ? 'text-slate-400' : 'text-[#525f7f]'
             }`}>
               {desc}
@@ -1761,20 +1764,20 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         </div>
 
         {/* Right: Actions & User Profile */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 xs:gap-3 shrink-0 min-w-0">
           {/* Manual Pass List Trigger inside the header for Supervisors */}
           {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
             <button 
               onClick={() => initPaseLista(false)}
-              className="bg-violet-600 hover:bg-violet-755 text-white font-extrabold text-[9px] uppercase px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
+              className="bg-violet-600 hover:bg-violet-755 text-white font-extrabold text-[8px] xs:text-[9px] uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
             >
               <span>📋</span>
-              <span>Lista</span>
+              <span className="hidden xxs:inline">Lista</span>
             </button>
           )}
 
           <div 
-            className="flex items-center gap-2.5 text-right cursor-pointer"
+            className="flex items-center gap-1.5 xs:gap-2.5 text-right cursor-pointer min-w-0"
             onClick={() => {
               setEditUsername(currentUser?.name || 'Francisco');
               setEditPassword(currentUser?.pin_code || '1234');
@@ -1783,15 +1786,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             }}
           >
             <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-              <span className={`text-[13px] font-black truncate transition-colors ${
+              <span className={`text-[10.5px] xs:text-[12.5px] font-black truncate transition-colors max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px] ${
                 isDark ? 'text-slate-100' : 'text-slate-900'
               }`}>
                 {currentUser?.name || 'Colaborador'}
               </span>
-              <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
+              <span className="text-[7.5px] xs:text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5 max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px]">
                 {userPositionName}
               </span>
-              <span className={`text-[9px] font-black uppercase tracking-wider truncate mt-0.5 transition-colors ${
+              <span className={`text-[7.5px] xs:text-[8.5px] font-black uppercase tracking-wider truncate mt-0.5 transition-colors max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px] ${
                 isDark ? 'text-violet-400' : 'text-[#8a2be2]'
               }`}>
                 {currentUser?.tenant?.name || 'Decorarte 360'}
@@ -1802,11 +1805,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               <img 
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                 alt="Avatar" 
-                className={`w-12 h-12 rounded-full object-cover border shadow-md hover:scale-105 transition-transform ${
-                  isDark ? 'border-slate-700' : 'border-slate-200/80'
+                className={`w-9 h-9 xs:w-11 xs:h-11 rounded-full object-cover border shadow-sm hover:scale-105 transition-transform ${
+                  isDark ? 'border-slate-700' : 'border-slate-202'
                 }`} 
               />
-              <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
+              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 xs:w-3.5 xs:h-3.5 rounded-full border ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
             </div>
           </div>
         </div>

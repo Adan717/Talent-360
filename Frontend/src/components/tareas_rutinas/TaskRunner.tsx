@@ -125,31 +125,47 @@ export function FichaTarea({
                     {task.title}
                 </h4>
 
-                {/* Fila 3: Barra de progreso con tiempo interno */}
-                {!['completed', 'omitted'].includes(assignment.status) && (
-                    <div className="w-full bg-slate-100 h-4.5 rounded-lg overflow-hidden mt-2.5 relative border border-slate-200/50 flex items-center justify-center">
-                        <div 
-                            className={`h-full absolute left-0 top-0 transition-all duration-300 ${
-                                isOvertime ? 'bg-rose-500/80' : assignment.status === 'in_progress' ? 'bg-emerald-500/80' : 'bg-indigo-55/60'
-                            }`}
-                            style={{ width: `${percent}%` }}
-                        ></div>
-                        <span className="relative z-10 text-[9px] font-black text-slate-700">
-                            {timeDisplay}
-                        </span>
-                    </div>
-                )}
-
-                {/* Fila 4: Metadata compacta (Colaborador + Acciones rápidas) */}
-                <div className="flex items-center justify-between mt-3 text-[10px] text-slate-500 font-bold">
-                    <div className="flex items-center gap-1 min-w-0">
-                        <User size={12} className="text-slate-400 shrink-0" />
+                {/* Fila 3: Colaborador, Barra de Progreso y Tiempo en la misma línea */}
+                <div className="flex items-center justify-between gap-3 mt-3 text-[10px] text-slate-500 font-bold">
+                    {/* Colaborador */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <User size={12} className="text-slate-450 shrink-0" />
                         <span className="truncate text-slate-700 font-black">
                             {collaboratorName}
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Lado derecho: Progreso, Tiempo y Controles */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Progreso y Tiempo (si no está completada/omitida) */}
+                        {!['completed', 'omitted'].includes(assignment.status) && (
+                            <div className="flex items-center gap-1.5">
+                                {/* Barra de progreso slim */}
+                                <div className="w-16 bg-slate-100 h-2.5 rounded-lg overflow-hidden relative border border-slate-200/50">
+                                    <div 
+                                        className={`h-full absolute left-0 top-0 transition-all duration-300 ${
+                                            isOvertime ? 'bg-rose-500/85' : assignment.status === 'in_progress' ? 'bg-emerald-500/80' : 'bg-[#8a2be2]/40'
+                                        }`}
+                                        style={{ width: `${percent}%` }}
+                                    ></div>
+                                </div>
+                                {/* Tiempo */}
+                                <span className="text-[9px] font-black text-slate-700 shrink-0">
+                                    {timeDisplay}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Estado finalizado/omitido */}
+                        {['completed', 'omitted'].includes(assignment.status) && (
+                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-150">
+                                <Clock size={10} className="text-slate-400" />
+                                <span className="text-slate-655 font-extrabold text-[9px]">
+                                    {assignment.status === 'completed' ? 'Finalizada' : 'Omitida'}
+                                </span>
+                            </div>
+                        )}
+
                         {/* Botón rápido Play / Pausa */}
                         {showPlayPause && (
                             <button
@@ -167,16 +183,6 @@ export function FichaTarea({
                                     <Play size={10} className="fill-white text-white translate-x-0.5" />
                                 )}
                             </button>
-                        )}
-                        
-                        {/* Si no muestra Play/Pause y no tiene barra de progreso, mostrar etiqueta de tiempo simple */}
-                        {['completed', 'omitted'].includes(assignment.status) && (
-                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
-                                <Clock size={11} className="text-slate-400" />
-                                <span className="text-slate-655 font-extrabold">
-                                    {assignment.status === 'completed' ? 'Finalizada' : 'Omitida'}
-                                </span>
-                            </div>
                         )}
                     </div>
                 </div>
@@ -460,64 +466,15 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-y-auto">
-            {/* Cabecera Unificada con el Estilo del Reloj Checador */}
-            <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-white text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b border-slate-100/80">
-                {/* Left: Module Info */}
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="shrink-0 flex items-center justify-center">
-                        <ClipboardList className="w-9 h-9 text-[#8a2be2]" />
-                    </div>
-                    <div className="flex flex-col min-w-0 justify-center text-left">
-                        <div className="flex items-center gap-2">
-                            <h3 className="text-[16px] font-black text-slate-900 tracking-tight leading-tight">
-                                Tablero de Tareas
-                            </h3>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider bg-violet-50 text-[#8a2be2] border border-violet-100">
-                                v4.2.0
-                            </span>
-                        </div>
-                        <p className="text-[11px] text-[#525f7f] font-bold mt-1.5 leading-none truncate">
-                            Rutina, Bolsa e Inmediatas
-                        </p>
-                    </div>
-                </div>
-
-                {/* Right: Actions & User Profile */}
-                <div className="flex items-center gap-3 shrink-0">
-                    <button 
-                        onClick={onBack}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-[9px] uppercase px-3 py-2 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
-                    >
-                        <span>← Volver</span>
-                    </button>
-
-                    <div className="flex items-center gap-2.5 text-right">
-                        <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-                            <span className="text-[13px] font-black text-slate-900 truncate">
-                                {currentUser?.name || 'Colaborador'}
-                            </span>
-                            <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
-                                {userPositionName}
-                            </span>
-                            <span className="text-[9px] font-black text-[#8a2be2] uppercase tracking-wider truncate mt-0.5">
-                                {currentUser?.tenant?.name || 'Decorarte 360'}
-                            </span>
-                        </div>
-                        
-                        <div className="relative shrink-0">
-                            <img 
-                                src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-                                alt="Avatar" 
-                                className="w-12 h-12 rounded-full object-cover border border-slate-200/80 shadow-md" 
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Buscador de tareas */}
-            <div className="mb-4 shrink-0">
-                <div className="relative">
+            {/* Buscador de tareas y Volver */}
+            <div className="mb-4 shrink-0 flex gap-2.5 items-center">
+                <button 
+                    onClick={onBack}
+                    className="bg-white hover:bg-slate-50 text-slate-655 font-extrabold text-[10px] uppercase px-3 py-2.5 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer active:scale-95 transition-all select-none shrink-0"
+                >
+                    <span>← Volver</span>
+                </button>
+                <div className="relative flex-1">
                     <input 
                         type="text" 
                         placeholder="Buscar tareas por título..."

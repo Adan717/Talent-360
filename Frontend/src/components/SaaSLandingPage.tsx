@@ -414,8 +414,9 @@ export const SaaSLandingPage = () => {
 
         <div className="max-w-7xl mx-auto relative z-10 animate-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Columna Izquierda: Mensaje y Controles */}
-            <div className="lg:col-span-5 text-left space-y-6">
+            
+            {/* Bloque 1: Propuesta de Valor */}
+            <div className="col-span-1 lg:col-span-5 text-left space-y-6 order-1">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-bold text-blue-600 shadow-sm">
                 <Sparkles size={12} className="text-blue-500" /> Registro rápido con tu cuenta de Google
               </div>
@@ -428,67 +429,10 @@ export const SaaSLandingPage = () => {
               <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed max-w-lg">
                 Optimiza la asistencia con control biométrico y GPS, gestiona expedientes, organigramas y capacitación interna. Todo desde un único panel inteligente.
               </p>
+            </div>
 
-              <div className="flex flex-wrap gap-4">
-                <button 
-                  onClick={() => {
-                    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-                  }} 
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs shadow-lg shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
-                >
-                  Ver Planes y Precios <ChevronRight size={14} />
-                </button>
-              </div>
-
-              {/* Selector de Pestañas Interactivas */}
-              <div className="space-y-2.5 border-t border-slate-100 pt-6">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
-                <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory scroll-smooth">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('checador')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'checador' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-650 hover:bg-slate-50'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'checador' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
-                      <Clock size={15} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black">Reloj Checador Premium V2</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('rrhh')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'rrhh' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'rrhh' ? 'bg-indigo-50 text-indigo-650' : 'bg-slate-100 text-slate-500'}`}>
-                      <Users size={15} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black">Organigrama & Recursos Humanos</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">Visualización de personal y jerarquías relacionales</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('reclutamiento')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'reclutamiento' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'reclutamiento' ? 'bg-violet-50 text-violet-650' : 'bg-slate-100 text-slate-500'}`}>
-                      <UserPlus size={15} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black">Reclutamiento ATS</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-                 {/* Columna Derecha: Showcase Interactivo de Producto */}
-            <div className="lg:col-span-7 relative flex justify-center items-center">
+            {/* Columna Derecha: Showcase Interactivo de Producto (Orden 2 en móvil) */}
+            <div className="col-span-1 lg:col-span-7 relative flex justify-center items-center order-2 lg:order-2">
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75"></div>
               
               {activeTab === 'checador' ? (
@@ -1066,6 +1010,67 @@ export const SaaSLandingPage = () => {
                 </div>
               )}
             </div>
+
+            {/* Bloque 3: Controles y Selector de Pestañas (Abajo en Móvil, Izquierda en Desktop) */}
+            <div className="col-span-1 lg:col-span-5 text-left space-y-6 order-3 lg:order-2">
+              <div className="flex flex-wrap gap-4">
+                <button 
+                  onClick={() => {
+                    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+                  }} 
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs shadow-lg shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+                >
+                  Ver Planes y Precios <ChevronRight size={14} />
+                </button>
+              </div>
+
+              {/* Selector de Pestañas Interactivas */}
+              <div className="space-y-2.5 border-t border-slate-100 pt-6">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
+                <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory scroll-smooth">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('checador')}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'checador' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-650 hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'checador' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                      <Clock size={15} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black">Reloj Checador Premium V2</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('rrhh')}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'rrhh' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'rrhh' ? 'bg-indigo-50 text-indigo-650' : 'bg-slate-100 text-slate-500'}`}>
+                      <Users size={15} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black">Organigrama & Recursos Humanos</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">Visualización de personal y jerarquías relacionales</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('reclutamiento')}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'reclutamiento' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'reclutamiento' ? 'bg-violet-50 text-violet-650' : 'bg-slate-100 text-slate-500'}`}>
+                      <UserPlus size={15} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black">Reclutamiento ATS</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

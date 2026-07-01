@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';
@@ -8,11 +8,359 @@ import Academia from './Academia';
 import Evaluacion360 from './Evaluacion360';
 import axiosInstance from '../../lib/axios';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
+import { MobileBottomNav } from './MobileBottomNav';
 import RecursosHumanos from '../RecursosHumanos';
 import DialPrincipal from './DialPrincipal';
 
 export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?: boolean }) {
   const { currentTier, isFeatureUnlocked, isSandboxMode } = useAppStore();
+
+  // Estados locales para nuevas herramientas operativas
+  const [chatMessageText, setChatMessageText] = useState('');
+  const [selectedAccusedId, setSelectedAccusedId] = useState('');
+  const [soplonReportType, setSoplonReportType] = useState('');
+  const [soplonReportDetails, setSoplonReportDetails] = useState('');
+  const [buzonFeedbackType, setBuzonFeedbackType] = useState('');
+  const [buzonFeedbackContent, setBuzonFeedbackContent] = useState('');
+  const [transferNotes, setTransferNotes] = useState('');
+  const [selectedTransferReceiverId, setSelectedTransferReceiverId] = useState('');
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll para el chat de equipo
+  useEffect(() => {
+    if (innerTool === 'chat' && chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, innerTool]);
+
+  // --- RENDERS AUXILIARES DE NUEVAS PANTALLAS DE HERRAMIENTAS ---
+
+  const renderToolChat = () => {
+    return (
+      <div className={`flex flex-col h-[400px] rounded-2xl border p-3 ${isDark ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-white'} shadow-inner`}>
+        <div className="flex justify-between items-center border-b pb-2 mb-2 dark:border-slate-800">
+          <h5 className="font-black text-sm text-indigo-500 flex items-center gap-1.5">
+            <span className="animate-pulse">🟢</span> Chat Grupal de Sucursal
+          </h5>
+          <span className="text-[9px] text-slate-400 italic">Mensajes expiran en 7 días</span>
+        </div>
+        
+        {/* Historial de mensajes */}
+        <div className="flex-grow overflow-y-auto space-y-3 pr-1 scrollbar-thin flex flex-col">
+          {chatLoading && chatMessages.length === 0 ? (
+            <div className="text-center py-8 text-xs text-slate-400 my-auto">Cargando historial...</div>
+          ) : chatMessages.length === 0 ? (
+            <div className="text-center py-8 text-xs text-slate-400 italic my-auto">No hay mensajes recientes. ¡Sé el primero en escribir!</div>
+          ) : (
+            <div className="space-y-3 flex-grow overflow-y-auto pr-1">
+              {chatMessages.map((msg) => {
+                const isMe = msg.user_id === currentUser.id;
+                return (
+                  <div key={msg.id} className={`flex gap-2 max-w-[85%] ${isMe ? 'ml-auto flex-row-reverse text-right' : 'mr-auto text-left'}`}>
+                    {!isMe && (
+                      <img 
+                        src={msg.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80'} 
+                        alt="Avatar" 
+                        className="w-7 h-7 rounded-full border border-slate-200 shrink-0" 
+                      />
+                    )}
+                    <div>
+                      {!isMe && (
+                        <span className="text-[9px] font-bold text-slate-400 block mb-0.5">
+                          {msg.user?.name} <span className="font-medium text-indigo-400">({msg.user?.role})</span>
+                        </span>
+                      )}
+                      <div className={`p-2.5 rounded-2xl text-xs font-medium leading-relaxed ${
+                        isMe 
+                          ? 'bg-indigo-600 text-white rounded-tr-none' 
+                          : (isDark ? 'bg-slate-800 text-slate-100' : 'bg-slate-100 text-slate-800') + ' rounded-tl-none'
+                      }`}>
+                        {msg.message}
+                      </div>
+                      <span className="text-[8px] text-slate-400 block mt-1">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div ref={chatBottomRef} />
+        </div>
+
+        {/* Input de envío */}
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!chatMessageText.trim()) return;
+            sendChatMessage(chatMessageText);
+            setChatMessageText('');
+          }} 
+          className="mt-3 flex gap-2 pt-2 border-t dark:border-slate-800"
+        >
+          <input 
+            type="text" 
+            placeholder="Escribe un mensaje seguro..." 
+            className={`flex-grow p-2.5 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500 ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+            } border`}
+            value={chatMessageText}
+            onChange={(e) => setChatMessageText(e.target.value)}
+          />
+          <button 
+            type="submit" 
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 rounded-xl text-xs shadow-md transition-colors"
+          >
+            Enviar
+          </button>
+        </form>
+      </div>
+    );
+  };
+
+  const renderToolSoplon = () => {
+    const activePeers = (globalUsers || []).filter(u => u.id !== currentUser.id);
+    return (
+      <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white'} shadow-sm`}>
+        <div className="border-b pb-2 mb-2 dark:border-slate-800">
+          <h5 className="font-black text-sm text-rose-500 flex items-center gap-1.5">
+            📢 Reportar Falta (El Soplón)
+          </h5>
+          <p className="text-[10px] text-slate-500">Notifica de forma confidencial ausencias o mala conducta en el turno.</p>
+        </div>
+
+        <div className="space-y-3.5">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Compañero involucrado</label>
+            <select 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              value={selectedAccusedId}
+              onChange={e => setSelectedAccusedId(e.target.value)}
+            >
+              <option value="">Selecciona un colaborador...</option>
+              {activePeers.map(u => (
+                <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo de Falta</label>
+            <select 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              value={soplonReportType}
+              onChange={e => setSoplonReportType(e.target.value)}
+            >
+              <option value="">Selecciona una opción...</option>
+              <option value="abandono">Abandono de puesto de trabajo</option>
+              <option value="retardo">Retardo / Impuntualidad constante</option>
+              <option value="conducta">Conducta inapropiada en sucursal</option>
+              <option value="dano">Daño a equipo o instalaciones</option>
+              <option value="otro">Otro motivo (describir abajo)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Detalles e Incidencias</label>
+            <textarea 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              rows={3}
+              placeholder="Describe lo ocurrido detalladamente..."
+              value={soplonReportDetails}
+              onChange={e => setSoplonReportDetails(e.target.value)}
+            />
+          </div>
+
+          <button 
+            onClick={async () => {
+              if (!selectedAccusedId || !soplonReportType || !soplonReportDetails.trim()) {
+                showCustomAlert("Por favor completa todos los campos del reporte.");
+                return;
+              }
+              const ok = await sendEmployeeReport(parseInt(selectedAccusedId), soplonReportType, soplonReportDetails);
+              if (ok) {
+                setSelectedAccusedId('');
+                setSoplonReportType('');
+                setSoplonReportDetails('');
+                setInnerTool(null);
+              }
+            }} 
+            className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-colors"
+          >
+            Enviar Reporte de Falta
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderToolBuzon = () => {
+    return (
+      <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white'} shadow-sm`}>
+        <div className="border-b pb-2 mb-2 dark:border-slate-800">
+          <h5 className="font-black text-sm text-sky-500 flex items-center gap-1.5">
+            🕵️ Buzón Anónimo de RRHH
+          </h5>
+          <p className="text-[10px] text-slate-500">Envía tus quejas o sugerencias. Tu identidad no será grabada en el servidor.</p>
+        </div>
+
+        <div className="space-y-3.5">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Categoría de Feedback</label>
+            <select 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-sky-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              value={buzonFeedbackType}
+              onChange={e => setBuzonFeedbackType(e.target.value)}
+            >
+              <option value="">Selecciona una categoría...</option>
+              <option value="sugerencia">Propuesta de mejora o sugerencia</option>
+              <option value="ambiente">Ambiente de trabajo o clima laboral</option>
+              <option value="acoso">Reporte de acoso o discriminación</option>
+              <option value="seguridad">Seguridad e higiene</option>
+              <option value="otro">Otro tema confidencial</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contenido de tu Mensaje</label>
+            <textarea 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-sky-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              rows={4}
+              placeholder="Escribe tu mensaje confidencial para el equipo de Recursos Humanos aquí..."
+              value={buzonFeedbackContent}
+              onChange={e => setBuzonFeedbackContent(e.target.value)}
+            />
+          </div>
+
+          <button 
+            onClick={async () => {
+              if (!buzonFeedbackType || !buzonFeedbackContent.trim()) {
+                showCustomAlert("Por favor completa los campos del feedback.");
+                return;
+              }
+              const ok = await sendAnonymousFeedback(buzonFeedbackType, buzonFeedbackContent);
+              if (ok) {
+                setBuzonFeedbackType('');
+                setBuzonFeedbackContent('');
+                setInnerTool(null);
+              }
+            }} 
+            className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-colors"
+          >
+            Enviar Comentarios de Forma Segura
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderToolTransfer = () => {
+    const activePeers = (globalUsers || []).filter(u => u.id !== currentUser.id);
+    return (
+      <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white'} shadow-sm`}>
+        <div className="border-b pb-2 mb-2 dark:border-slate-800">
+          <h5 className="font-black text-sm text-indigo-500 flex items-center gap-1.5">
+            🔑 Transferir Cierre (Custodia de Llaves)
+          </h5>
+          <p className="text-[10px] text-slate-500">Delega la responsabilidad del cierre a un compañero. El sistema requiere su aceptación.</p>
+        </div>
+
+        <div className="space-y-3.5">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Compañero receptor</label>
+            <select 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              value={selectedTransferReceiverId}
+              onChange={e => setSelectedTransferReceiverId(e.target.value)}
+            >
+              <option value="">Selecciona un compañero...</option>
+              {activePeers.map(u => (
+                <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas de Entrega</label>
+            <textarea 
+              className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+              rows={2}
+              placeholder="Instrucciones adicionales para el cierre..."
+              value={transferNotes}
+              onChange={e => setTransferNotes(e.target.value)}
+            />
+          </div>
+
+          <button 
+            onClick={async () => {
+              if (!selectedTransferReceiverId) {
+                showCustomAlert("Por favor selecciona al compañero que recibirá el cierre.");
+                return;
+              }
+              const ok = await initiateKeyTransfer(parseInt(selectedTransferReceiverId), transferNotes);
+              if (ok) {
+                setSelectedTransferReceiverId('');
+                setTransferNotes('');
+                setInnerTool(null);
+              }
+            }} 
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-colors"
+          >
+            Enviar Solicitud de Traspaso
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderToolHuida = () => {
+    return (
+      <div className={`rounded-2xl border p-6 text-center space-y-4 ${isDark ? 'border-slate-800 bg-slate-900/40 text-white' : 'border-slate-200 bg-white text-slate-800'} shadow-sm`}>
+        <div className="text-4xl">🏃⚠️</div>
+        <h5 className="font-black text-base text-rose-600">Simulación de Abandono (Pérdida de Wi-Fi)</h5>
+        <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+          Al activar esta simulación, registrarás que te retiraste de la sucursal de manera imprevista sin traspasar formalmente las llaves de cierre a tu respaldo.
+        </p>
+        <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded-xl p-3.5 text-rose-700 dark:text-rose-400 text-[10px] leading-normal text-left">
+          <strong>⚠️ Alerta de Seguridad:</strong> Esta acción registrará una incidencia crítica en la bitácora de auditoría del servidor (`audit_logs`) con una penalización simulada.
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={async () => {
+              await reportAbandonment();
+              setInnerTool(null);
+            }} 
+            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-xs shadow-md transition-colors"
+          >
+            Simular Huida / Desconexión
+          </button>
+          <button 
+            onClick={() => setInnerTool(null)} 
+            className={`flex-1 font-bold py-3 rounded-xl text-xs border ${
+              isDark ? 'border-slate-800 text-slate-350 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  };
     const renderStatusText = (text: string) => {
     if (!text) return null;
     if (text.toLowerCase().includes('disponible a las')) {
@@ -766,9 +1114,19 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     handleReportAbsencePremium,
     handleReportLatePremium,
     handleReportStoreStillClosedPremium,
-    isOpeningPremium,
     mealSettings,
-    leySillaConfig
+    leySillaConfig,
+    chatMessages,
+    chatLoading,
+    pendingKeyTransfers,
+    fetchChatMessages,
+    sendChatMessage,
+    sendEmployeeReport,
+    sendAnonymousFeedback,
+    initiateKeyTransfer,
+    checkPendingKeyTransfers,
+    respondToKeyTransfer,
+    reportAbandonment
   } = useClockContext2();
 
   // Resolve user official job title from globalRoles based on job_role_id
@@ -1248,55 +1606,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     );
   };
 
-  const renderMobileBottomNav = () => {
-    return (
-      <nav className={`mt-auto flex items-center justify-around py-3.5 px-2 border-t z-30 backdrop-blur-md rounded-2xl shrink-0 ${
-        isDark 
-          ? 'bg-slate-900/80 border-slate-805 text-slate-400' 
-          : 'bg-white/80 border-slate-200 shadow-lg text-slate-500'
-      }`}>
-        <button 
-          onClick={() => { setInnerTool(null); setPhoneTab('checador'); }}
-          className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 ${
-            phoneTab === 'checador' ? 'text-violet-500 font-extrabold scale-105' : 'hover:text-slate-800 dark:hover:text-slate-250'
-          }`}
-        >
-          <Clock size={22} className={phoneTab === 'checador' ? 'animate-pulse' : ''} />
-          <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Reloj</span>
-        </button>
-        
-        <button 
-          onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-          className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 ${
-            phoneTab === 'tareas' ? 'text-violet-500 font-extrabold scale-105' : 'hover:text-slate-800 dark:hover:text-slate-250'
-          }`}
-        >
-          <CheckSquare size={22} />
-          <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Tareas</span>
-        </button>
-        
-        <button 
-          onClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
-          className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 ${
-            phoneTab === 'academia' ? 'text-violet-500 font-extrabold scale-105' : 'hover:text-slate-800 dark:hover:text-slate-250'
-          }`}
-        >
-          <GraduationCap size={22} />
-          <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Academia</span>
-        </button>
-        
-        <button 
-          onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }}
-          className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 ${
-            ['herramientas', 'evaluacion360'].includes(phoneTab) ? 'text-violet-500 font-extrabold scale-105' : 'hover:text-slate-800 dark:hover:text-slate-250'
-          }`}
-        >
-          <Settings size={22} />
-          <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Herramientas</span>
-        </button>
-      </nav>
-    );
-  };
+
 
   // Render specific mobile subviews
   if (isScrollableMobile && phoneTab !== 'checador') {
@@ -1333,66 +1643,120 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           {phoneTab === 'perfil' && renderProfilePanel(true)}
           {phoneTab === 'herramientas' && (
             <div className="space-y-4">
-              <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-widest">Caja de Herramientas</h4>
-              <div className="grid grid-cols-1 gap-3">
-                <button 
-                  onClick={() => setPhoneTab('evaluacion360')} 
-                  className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-905 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center">
-                    <Star size={18} />
+              {innerTool === null ? (
+                <>
+                  <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-widest">Caja de Herramientas</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    <button 
+                      onClick={() => { setInnerTool('chat'); fetchChatMessages(); }} 
+                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-violet-400 flex items-center justify-center shrink-0">
+                        <MessageSquare size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Chat de Equipo 💬</p>
+                        <p className="text-[10px] text-slate-500">Mensajes temporales entre colaboradores (Se borran cada semana)</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setInnerTool('soplon')} 
+                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-rose-400 flex items-center justify-center shrink-0">
+                        <AlertOctagon size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">El Soplón 📢</p>
+                        <p className="text-[10px] text-slate-500">Reportar ausencias o faltas de compañeros de forma directa</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setInnerTool('buzon')} 
+                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-sky-400 flex items-center justify-center shrink-0">
+                        <Fingerprint size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Buzón Anónimo RRHH 🕵️</p>
+                        <p className="text-[10px] text-slate-500">Enviar sugerencias o reportes generales 100% privados</p>
+                      </div>
+                    </button>
+
+                    {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
+                      <button 
+                        onClick={() => setInnerTool('transfer')} 
+                        className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-slate-900 text-indigo-400 flex items-center justify-center shrink-0">
+                          <Key size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Transferir Cierre 🔑</p>
+                          <p className="text-[10px] text-slate-500">Ceder llaves de la sucursal a un compañero</p>
+                        </div>
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => setInnerTool('huida')} 
+                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-amber-500 flex items-center justify-center shrink-0">
+                        <WifiOff size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Simular Desconexión (Huida) 🏃</p>
+                        <p className="text-[10px] text-slate-500">Detección de desconexión sin entregar el turno</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setPhoneTab('evaluacion360')} 
+                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center shrink-0">
+                        <Star size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Evaluación de Compañeros ⭐</p>
+                        <p className="text-[10px] text-slate-500">Evaluar desempeño y puntualidad en el turno</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setPhoneTab('organigrama')} 
+                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-202 bg-white'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-900 text-emerald-450 flex items-center justify-center shrink-0">
+                        <Network size={18} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Organigrama de la Empresa 🕸️</p>
+                        <p className="text-[10px] text-slate-500">Consulta los puestos y responsabilidades</p>
+                      </div>
+                    </button>
                   </div>
-                  <div>
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Evaluación 360°</p>
-                    <p className="text-[10px] text-slate-500">Evaluar desempeño de compañeros</p>
-                  </div>
-                </button>
-                
-                {currentUser.id === designatedCloserId && (
-                  <button 
-                    onClick={() => { setInnerTool('transfer'); setShowKeyDelegationModal(true); }} 
-                    className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-905 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-slate-900 text-indigo-400 flex items-center justify-center">
-                      <Key size={18} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Transferir Cierre</p>
-                      <p className="text-[10px] text-slate-500">Delegar llaves de sucursal</p>
-                    </div>
+                </>
+              ) : (
+                <div className="flex flex-col h-full bg-transparent">
+                  <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-500 mb-4 flex items-center gap-1">
+                    ← Volver a Herramientas
                   </button>
-                )}
-                
-                <button 
-                  onClick={() => setShowReportModal(true)} 
-                  className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-905 bg-slate-900/30' : 'border-slate-202 bg-white'}`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-sky-400 flex items-center justify-center">
-                    <UserX size={18} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Canal Seguro RRHH</p>
-                    <p className="text-[10px] text-slate-500">Reportes e incidencias anónimos</p>
-                  </div>
-                </button>
-                
-                <button 
-                  onClick={() => setPhoneTab('organigrama')} 
-                  className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-905 bg-slate-900/30' : 'border-slate-202 bg-white'}`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-emerald-450 flex items-center justify-center">
-                    <Network size={18} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Organigrama de la Empresa</p>
-                    <p className="text-[10px] text-slate-500">Consulta los puestos y responsabilidades</p>
-                  </div>
-                </button>
-              </div>
+                  {innerTool === 'chat' && renderToolChat()}
+                  {innerTool === 'soplon' && renderToolSoplon()}
+                  {innerTool === 'buzon' && renderToolBuzon()}
+                  {innerTool === 'transfer' && renderToolTransfer()}
+                  {innerTool === 'huida' && renderToolHuida()}
+                </div>
+              )}
             </div>
           )}
         </div>
-        {renderMobileBottomNav()}
+        <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} />
       </div>
     );
   }
@@ -1817,6 +2181,40 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           ) : (
             <div className="flex-1 overflow-hidden px-4 py-3 flex flex-col justify-between gap-2 scrollbar-none">
             
+            {/* Banner de transferencia de llaves pendiente */}
+            {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
+              <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl mt-0.5 shrink-0">🔑</span>
+                  <div>
+                    <p className="font-black text-xs">Propuesta de Transferencia de Cierre</p>
+                    <p className="text-[10px] text-amber-50/90 leading-normal mt-0.5">
+                      {pendingKeyTransfers[0].sender?.name} te ha propuesto cederte la custodia de llaves de la sucursal.
+                    </p>
+                    {pendingKeyTransfers[0].notes && (
+                      <p className="text-[9px] bg-black/10 rounded px-1.5 py-1 mt-1.5 italic">
+                        Nota: "{pendingKeyTransfers[0].notes}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end shrink-0">
+                  <button 
+                    onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
+                    className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
+                  >
+                    Aceptar Llaves
+                  </button>
+                  <button 
+                    onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'rejected')}
+                    className="bg-transparent hover:bg-black/10 text-white border border-white/50 font-bold text-[9.5px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Rechazar
+                  </button>
+                </div>
+              </div>
+            )}
+            
             {/* Reminders of Premium opening - Mobile */}
             {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
               <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
@@ -1926,7 +2324,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}
-          {renderMobileBottomNav()}
+          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} />
         </div>
       )}
 
@@ -1954,6 +2352,40 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               <div className={`col-span-7 flex flex-col gap-6 p-6 rounded-3xl border transition-colors ${
                 isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
               }`}>
+              
+              {/* Banner de transferencia de llaves pendiente - Desktop */}
+              {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-5 shadow-lg mb-2 flex flex-col sm:flex-row items-center justify-between gap-4 text-left border border-amber-400/20">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl mt-0.5 shrink-0">🔑</span>
+                    <div>
+                      <p className="font-black text-sm">Propuesta de Transferencia de Cierre</p>
+                      <p className="text-xs text-amber-50/90 leading-normal mt-1">
+                        {pendingKeyTransfers[0].sender?.name} te ha propuesto cederte la custodia de llaves de la sucursal.
+                      </p>
+                      {pendingKeyTransfers[0].notes && (
+                        <p className="text-xs bg-black/10 rounded px-2 py-1.5 mt-2 italic">
+                          Nota: "{pendingKeyTransfers[0].notes}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2.5 w-full sm:w-auto justify-end shrink-0">
+                    <button 
+                      onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
+                      className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition-colors border-none cursor-pointer"
+                    >
+                      Aceptar Llaves
+                    </button>
+                    <button 
+                      onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'rejected')}
+                      className="bg-transparent hover:bg-black/10 text-white border border-white/50 font-bold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                </div>
+              )}
 
             {/* Reminders of Premium opening - Desktop */}
             {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
@@ -2246,73 +2678,133 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           {/* Desktop Herramientas list */}
           {phoneTab === 'herramientas' && (
             <div className={`w-full mx-auto border flex flex-col gap-4 animate-fade-in text-left p-6 md:p-8 rounded-3xl max-w-3xl transition-colors ${
-              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-250 shadow-sm'
+              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-255 shadow-sm'
             }`}>
-               <h4 className="font-extrabold text-xl text-slate-805 dark:text-slate-100 mb-4">Caja de Herramientas</h4>
-               
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <button 
-                   onClick={() => setPhoneTab('evaluacion360')} 
-                   className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                     isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
-                   }`}
-                 >
-                    <div className="w-12 h-12 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center shrink-0">
-                       <Star size={20} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Evaluación 360°</p>
-                      <p className="text-xs text-slate-500 mt-0.5">Evaluar compañeros de turno</p>
-                    </div>
-                 </button>
-                 
-                 {currentUser.id === designatedCloserId && (
-                   <button 
-                     onClick={() => { setInnerTool('transfer'); setShowKeyDelegationModal(true); }} 
-                     className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                       isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
-                     }`}
-                   >
-                      <div className="w-12 h-12 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center shrink-0">
-                         <Key size={20} />
+              {innerTool === null ? (
+                <>
+                  <h4 className="font-extrabold text-xl text-slate-805 dark:text-slate-100 mb-4">Caja de Herramientas</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => { setInnerTool('chat'); fetchChatMessages(); }} 
+                      className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-slate-800 text-violet-400 flex items-center justify-center shrink-0">
+                        <MessageSquare size={20} />
                       </div>
                       <div>
-                         <h5 className="font-bold text-sm text-slate-850 dark:text-slate-100">Transferir Cierre</h5>
-                         <p className="text-xs text-slate-500 mt-0.5">Delegar llaves de sucursal</p>
+                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Chat de Equipo 💬</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Mensajes temporales entre colaboradores (Se borran cada semana)</p>
                       </div>
-                   </button>
-                 )}
-                 
-                 <button
-                    onClick={() => setShowReportModal(true)} 
-                   className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                     isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
-                   }`}
-                 >
-                    <div className="w-12 h-12 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center shrink-0">
-                       <UserX size={20} />
-                    </div>
-                    <div>
-                       <p className="font-bold text-sm text-slate-855 dark:text-slate-100">Canal Seguro RRHH</p>
-                       <p className="text-xs text-slate-500 mt-0.5">Reportar incidencias anónimamente</p>
-                    </div>
-                 </button>
+                    </button>
 
-                 <button
-                    onClick={() => setShowDesktopOrgModal(true)} 
-                    className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                      isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                     <div className="w-12 h-12 rounded-full bg-slate-800 text-emerald-400 flex items-center justify-center shrink-0">
+                    <button 
+                      onClick={() => setInnerTool('soplon')} 
+                      className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-slate-800 text-rose-400 flex items-center justify-center shrink-0">
+                        <AlertOctagon size={20} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">El Soplón 📢</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Reportar ausencias o faltas de compañeros de forma directa</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setInnerTool('buzon')} 
+                      className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center shrink-0">
+                        <Fingerprint size={20} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Buzón Anónimo RRHH 🕵️</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Enviar sugerencias o reportes generales 100% privados</p>
+                      </div>
+                    </button>
+
+                    {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
+                      <button 
+                        onClick={() => setInnerTool('transfer')} 
+                        className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                          isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center shrink-0">
+                          <Key size={20} />
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-sm text-slate-850 dark:text-slate-100">Transferir Cierre 🔑</h5>
+                          <p className="text-xs text-slate-500 mt-0.5">Ceder llaves de la sucursal a un compañero</p>
+                        </div>
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => setInnerTool('huida')} 
+                      className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-slate-800 text-amber-500 flex items-center justify-center shrink-0">
+                        <WifiOff size={20} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Simular Desconexión (Huida) 🏃</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Detección de desconexión sin entregar el turno</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setPhoneTab('evaluacion360')} 
+                      className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center shrink-0">
+                        <Star size={20} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Evaluación de Compañeros ⭐</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Evaluar desempeño y puntualidad en el turno</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => setShowDesktopOrgModal(true)} 
+                      className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-slate-800 text-emerald-400 flex items-center justify-center shrink-0">
                         <Network size={20} />
-                     </div>
-                     <div>
-                        <p className="font-bold text-sm text-slate-855 dark:text-slate-100">Organigrama de la Empresa</p>
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-855 dark:text-slate-100">Organigrama de la Empresa 🕸️</p>
                         <p className="text-xs text-slate-500 mt-0.5">Consulta los puestos y responsabilidades</p>
-                     </div>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col h-full bg-transparent">
+                  <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-500 mb-4 flex items-center gap-1">
+                    ← Volver a Herramientas
                   </button>
-               </div>
+                  {innerTool === 'chat' && renderToolChat()}
+                  {innerTool === 'soplon' && renderToolSoplon()}
+                  {innerTool === 'buzon' && renderToolBuzon()}
+                  {innerTool === 'transfer' && renderToolTransfer()}
+                  {innerTool === 'huida' && renderToolHuida()}
+                </div>
+              )}
             </div>
           )}
 

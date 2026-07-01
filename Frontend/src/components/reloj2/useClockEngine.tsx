@@ -2279,6 +2279,174 @@ export function useClockEngine(overrideUser?: any) {
     fetchRealAssignments();
   }, [isSandboxMode]);
 
+  // --- NUEVAS HERRAMIENTAS INTEGRADAS CON EL SERVIDOR ---
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [pendingKeyTransfers, setPendingKeyTransfers] = useState<any[]>([]);
+
+  // 1. Chat de equipo
+  const fetchChatMessages = async () => {
+    if (isSandboxMode) return;
+    setChatLoading(true);
+    try {
+      const res = await axiosInstance.get('/chat/messages');
+      if (res.data) {
+        setChatMessages(res.data);
+      }
+    } catch (e) {
+      console.error("Error al cargar mensajes del chat:", e);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const sendChatMessage = async (msg: string) => {
+    if (isSandboxMode) {
+      const mockMsg = {
+        id: Date.now(),
+        user_id: currentUser.id,
+        message: msg,
+        created_at: new Date().toISOString(),
+        user: {
+          id: currentUser.id,
+          name: currentUser.name,
+          role: currentUser.role,
+          avatar: currentUser.avatar
+        }
+      };
+      setChatMessages(prev => [...prev, mockMsg]);
+      return;
+    }
+    try {
+      const res = await axiosInstance.post('/chat/messages', { message: msg });
+      if (res.data) {
+        setChatMessages(prev => [...prev, res.data]);
+      }
+    } catch (e) {
+      console.error("Error al enviar mensaje:", e);
+      showCustomAlert("Error al enviar mensaje.");
+    }
+  };
+
+  // 2. El Soplón (Reporte de Compañero)
+  const sendEmployeeReport = async (accusedId: number, type: string, details: string) => {
+    if (isSandboxMode) {
+      showCustomAlert("✅ Reporte registrado con éxito (Modo Sandbox).");
+      return true;
+    }
+    try {
+      await axiosInstance.post('/reports/employee', {
+        accused_id: accusedId,
+        type: type,
+        details: details
+      });
+      showCustomAlert("✅ Tu reporte confidencial ha sido enviado.");
+      return true;
+    } catch (e) {
+      console.error("Error al enviar reporte de conducta:", e);
+      showCustomAlert("Error al procesar el reporte.");
+      return false;
+    }
+  };
+
+  // 3. Buzón Anónimo de RRHH
+  const sendAnonymousFeedback = async (type: string, content: string) => {
+    if (isSandboxMode) {
+      showCustomAlert("✅ Feedback anónimo enviado (Modo Sandbox).");
+      return true;
+    }
+    try {
+      await axiosInstance.post('/anonymous-feedback', {
+        type: type,
+        content: content
+      });
+      showCustomAlert("✅ Tu feedback anónimo ha sido enviado de forma segura.");
+      return true;
+    } catch (e) {
+      console.error("Error al enviar feedback anónimo:", e);
+      showCustomAlert("Error al enviar el feedback.");
+      return false;
+    }
+  };
+
+  // 4. Transferencia de Llaves / Cierre
+  const initiateKeyTransfer = async (receiverId: number, notes: string) => {
+    if (isSandboxMode) {
+      setDesignatedCloserId(receiverId);
+      showCustomAlert("✅ Cierre transferido con éxito (Modo Sandbox).");
+      return true;
+    }
+    try {
+      await axiosInstance.post('/key-transfers', {
+        receiver_id: receiverId,
+        notes: notes
+      });
+      showCustomAlert("✅ Solicitud de transferencia enviada. Tu compañero debe aceptarla.");
+      return true;
+    } catch (e) {
+      console.error("Error al transferir cierre:", e);
+      showCustomAlert(e.response?.data?.error || "Error al procesar la transferencia.");
+      return false;
+    }
+  };
+
+  const checkPendingKeyTransfers = async () => {
+    if (isSandboxMode) return;
+    try {
+      const res = await axiosInstance.get('/key-transfers/pending');
+      if (res.data) {
+        setPendingKeyTransfers(res.data);
+      }
+    } catch (e) {
+      console.error("Error al cargar transferencias pendientes:", e);
+    }
+  };
+
+  const respondToKeyTransfer = async (transferId: number, status: 'accepted' | 'rejected') => {
+    if (isSandboxMode) return;
+    try {
+      const res = await axiosInstance.post(`/key-transfers/${transferId}/respond`, { status });
+      if (res.data) {
+        showCustomAlert(res.data.message || "Respuesta procesada.");
+        fetchState();
+        checkPendingKeyTransfers();
+      }
+    } catch (e) {
+      console.error("Error al responder transferencia:", e);
+      showCustomAlert("Error al responder.");
+    }
+  };
+
+  // 5. Alerta de Abandono (Huida de tienda)
+  const reportAbandonment = async () => {
+    if (isSandboxMode) {
+      showCustomAlert("⚠️ Alerta Crítica (Sandbox): Abandonaste la tienda sin transferir. Se notificó a Gerencia.");
+      return;
+    }
+    try {
+      await axiosInstance.post('/security/abandonment');
+      showCustomAlert("⚠️ Alerta de abandono enviada a Gerencia y RRHH por pérdida de red.");
+    } catch (e) {
+      console.error("Error al reportar abandono:", e);
+    }
+  };
+
+  // Polling para Chat y Llaves
+  useEffect(() => {
+    if (isSandboxMode) return;
+    
+    checkPendingKeyTransfers();
+
+    const interval = setInterval(() => {
+      checkPendingKeyTransfers();
+      if (phoneTab === 'herramientas' && innerTool === 'chat') {
+        fetchChatMessages();
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [isSandboxMode, phoneTab, innerTool]);
+
   const btnProps = getButtonProps();
 
 
@@ -2539,6 +2707,17 @@ export function useClockEngine(overrideUser?: any) {
     checkOutTimes,
     cancelMealReservation,
     swapMealSlots,
-    requestGPS
+    requestGPS,
+    chatMessages,
+    chatLoading,
+    pendingKeyTransfers,
+    fetchChatMessages,
+    sendChatMessage,
+    sendEmployeeReport,
+    sendAnonymousFeedback,
+    initiateKeyTransfer,
+    checkPendingKeyTransfers,
+    respondToKeyTransfer,
+    reportAbandonment
   };
 }

@@ -28,6 +28,9 @@ use App\Http\Controllers\TaskValidationController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\StoreOpeningController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\TeamChatController;
+use App\Http\Controllers\IncidentReportController;
+use App\Http\Controllers\KeyTransferController;
 
 
 Route::prefix('v1')->middleware('device.security')->group(function () {
@@ -248,6 +251,26 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Evaluación 360°
         Route::get('/clock/peers', [Evaluation360Controller::class, 'getPeers']);
         Route::post('/clock/evaluations', [Evaluation360Controller::class, 'store']);
+
+        // Chat Interno de Equipo (Mensajes temporales de 7 días)
+        Route::get('/chat/messages', [TeamChatController::class, 'index']);
+        Route::post('/chat/messages', [TeamChatController::class, 'store']);
+
+        // El Soplón (Denuncias de compañeros)
+        Route::post('/reports/employee', [IncidentReportController::class, 'storeIncident']);
+        Route::get('/reports/employee', [IncidentReportController::class, 'indexIncidents']);
+
+        // Buzón Anónimo de RRHH (Feedback)
+        Route::post('/anonymous-feedback', [IncidentReportController::class, 'storeFeedback']);
+        Route::get('/anonymous-feedback', [IncidentReportController::class, 'indexFeedback']);
+
+        // Alerta de Abandono (Simular Desconexión)
+        Route::post('/security/abandonment', [IncidentReportController::class, 'reportAbandonment']);
+
+        // Transferencia de Cierre / Custodia de Llaves
+        Route::post('/key-transfers', [KeyTransferController::class, 'store']);
+        Route::get('/key-transfers/pending', [KeyTransferController::class, 'pending']);
+        Route::post('/key-transfers/{id}/respond', [KeyTransferController::class, 'respond']);
     });
 });
 

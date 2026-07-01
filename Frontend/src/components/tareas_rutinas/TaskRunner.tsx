@@ -796,7 +796,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
             </div>
 
             {/* Listado principal */}
-            <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar pr-1 -mr-1">
+            <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar pr-1 -mr-1">
                 {activeTab === 'hoy' && (
                     <>
                         <div className="flex justify-between items-center mb-3">
@@ -1026,14 +1026,14 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
             {/* Alerta flotante Toast */}
             {toast && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white px-4.5 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 border border-slate-800/20 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white px-4.5 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 border border-slate-800/20 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <span className="text-xs font-black">{toast.message}</span>
                 </div>
             )}
 
             {/* MENÚ FLOTANTE (FAB) en la parte inferior derecha para el supervisor */}
             {isSupervisor && (
-                <div className="fixed bottom-6 right-6 z-40" ref={fabMenuRef}>
+                <div className="fixed bottom-24 right-6 z-40" ref={fabMenuRef}>
                     {/* Panel del Menú Desplegado (aparece arriba del FAB) */}
                     {showFabMenu && (
                         <div className="absolute bottom-16 right-0 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 flex flex-col gap-1 min-w-[200px] animate-in fade-in slide-in-from-bottom-3 duration-200">

@@ -447,10 +447,24 @@ export const SaaSLandingPage = () => {
               <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed max-w-lg">
                 Optimiza la asistencia con control biométrico y GPS, gestiona expedientes, organigramas y capacitación interna. Todo desde un único panel inteligente.
               </p>
+
+              {/* Botón para ver simulador en móviles */}
+              <div className="block lg:hidden pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById('seccion-simulador')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
+                >
+                  <Play size={14} fill="currentColor" />
+                  <span>Ver simulador</span>
+                </button>
+              </div>
             </div>
 
-            {/* Columna Derecha: Showcase Interactivo de Producto (Orden 2 en móvil) */}
-            <div className="col-span-1 lg:col-span-7 relative flex flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 order-2 lg:order-2 w-full">
+            {/* Columna Derecha: Showcase Interactivo de Producto (Oculto en móvil) */}
+            <div className="hidden lg:flex col-span-1 lg:col-span-7 relative flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 order-2 lg:order-2 w-full">
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
               
               {activeTab === 'checador' && (
@@ -798,8 +812,8 @@ export const SaaSLandingPage = () => {
               )}
             </div>
 
-            {/* Bloque 3: Controles y Selector de Pestañas (Abajo en Móvil, Izquierda en Desktop) */}
-            <div className="col-span-1 lg:col-span-5 text-left space-y-6 order-3 lg:order-2">
+            {/* Bloque 3: Controles y Selector de Pestañas (Oculto en móvil) */}
+            <div className="hidden lg:block col-span-1 lg:col-span-5 text-left space-y-6 order-3 lg:order-2">
               <div className="flex flex-wrap gap-4">
                 <button 
                   onClick={() => {
@@ -859,6 +873,85 @@ export const SaaSLandingPage = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECCIÓN DEL SIMULADOR EXCLUSIVA PARA MÓVILES */}
+      <section 
+        id="seccion-simulador" 
+        className="block lg:hidden bg-slate-50 dark:bg-slate-950 py-16 px-4 border-b border-slate-150 dark:border-slate-800"
+      >
+        <div className="max-w-md mx-auto flex flex-col items-center text-center space-y-6">
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-indigo-650 bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/30 dark:text-indigo-400">
+              <Sparkles size={10} /> Demo Interactiva
+            </span>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+              Prueba el Reloj Checador
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold px-4 max-w-sm">
+              Experimenta el registro de asistencia en tiempo real. Cambia de versión para ver las diferencias.
+            </p>
+          </div>
+
+          {/* Selector de versión + Botón de reinicio para móviles */}
+          <div className="flex items-center gap-2 w-full max-w-[290px] justify-center">
+            <div className="flex p-1 bg-slate-200/50 dark:bg-slate-900/90 rounded-2xl border border-slate-300/30 dark:border-slate-800 flex-1">
+              <button 
+                type="button" 
+                onClick={() => setSimulatedTier('free')}
+                className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                  simulatedTier === 'free' 
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-650'
+                }`}
+              >
+                <span>🔓</span> Básica
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setSimulatedTier('pro')}
+                className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                  simulatedTier === 'pro' 
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-655'
+                }`}
+              >
+                <span>👑</span> Pro
+              </button>
+            </div>
+            
+            {/* Botón de Reinicio Rápido */}
+            <button
+              type="button"
+              title="Reiniciar Simulación"
+              onClick={() => setSimKey(prev => prev + 1)}
+              className="p-2.5 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-805 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
+            >
+              <RotateCcw size={14} />
+            </button>
+          </div>
+
+          {/* SMARTPHONE FRAME (Perfectamente centrado en celulares) */}
+          <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0">
+            {/* Speaker & Notch */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
+              <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
+            </div>
+
+            <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
+              <RelojSimuladoLanding 
+                key={simKey}
+                tier={simulatedTier}
+                setTier={setSimulatedTier}
+                onActionClick={() => handleBuy('Professional')}
+              />
+            </div>
+
+            {/* iOS Home Indicator Bar */}
+            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
           </div>
         </div>
       </section>

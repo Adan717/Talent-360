@@ -161,8 +161,20 @@ class AuthController extends Controller
             }
         }
 
+        // 4. If still not found, register new global user (pre-registration state)
         if (!$user) {
-            return response()->json(['error' => 'No se encontró ninguna cuenta vinculada con estas credenciales.'], 404);
+            if ($email) {
+                $user = User::create([
+                    'name' => $request->input('name') ?? explode('@', $email)[0],
+                    'email' => $email,
+                    'role' => 'admin', // Will become admin once company is created
+                    $column => $providerId,
+                    'password' => Hash::make(bin2hex(random_bytes(16))),
+                    'tenant_id' => null
+                ]);
+            } else {
+                return response()->json(['error' => 'No se encontró ninguna cuenta vinculada con estas credenciales.'], 404);
+            }
         }
 
         if (!$user->is_active) {

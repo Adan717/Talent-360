@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2 } from 'lucide-react';
 import { CompanyOnboardingSettings } from './CompanyOnboardingSettings';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
@@ -9,25 +9,65 @@ export const SaaSLandingPage = () => {
   const navigate = useNavigate();
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
-  const [employeesCount, setEmployeesCount] = useState<number>(20);
+  const [employeesCount, setEmployeesCount] = useState<number>(30); // Enterprise default
   const [isProcessing, setIsProcessing] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [error, setError] = useState('');
+  const [registrationStep, setRegistrationStep] = useState<1 | 2>(1);
+  const [googleUser, setGoogleUser] = useState<{name: string, email: string, google_id: string} | null>(null);
+  const [showGoogleMockModal, setShowGoogleMockModal] = useState(false);
 
   // Form Data
   const [formData, setFormData] = useState({
     company_name: '',
-    subdomain: '',
-    admin_name: '',
-    admin_email: '',
-    admin_password: ''
+    subdomain: ''
   });
 
   const { setCurrentUser, setCurrentTier } = useAppStore();
 
   const handleBuy = (plan: string) => {
     setSelectedPlan(plan);
+    setRegistrationStep(1);
+    setGoogleUser(null);
+    setError('');
     setShowCheckout(true);
+  };
+
+  const handleGoogleMockLogin = async (mockEmail: string, mockName: string) => {
+    setIsProcessing(true);
+    setError('');
+    try {
+      const response = await axiosInstance.post('/login/social', {
+        provider: 'google',
+        provider_id: mockEmail,
+        email: mockEmail,
+        name: mockName
+      });
+
+      const { user, token, tenant } = response.data;
+      
+      localStorage.setItem('talent_auth_token', token);
+      
+      if (user.tenant_id) {
+        // Already owns a company - direct login
+        setCurrentUser(user);
+        setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+        navigate('/app');
+      } else {
+        // Pre-registered state - proceed to step 2 (Company Details)
+        setGoogleUser({
+          name: user.name,
+          email: user.email,
+          google_id: mockEmail
+        });
+        setRegistrationStep(2);
+        setShowGoogleMockModal(false);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al autenticar con Google');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const processPayment = async (e: React.FormEvent) => {
@@ -39,13 +79,9 @@ export const SaaSLandingPage = () => {
       const response = await axiosInstance.post('/subscriptions/create-preference', {
         company_name: formData.company_name,
         subdomain: formData.subdomain,
-        admin_name: formData.admin_name,
-        admin_email: formData.admin_email,
-        admin_password: formData.admin_password,
         plan: selectedPlan.toLowerCase(),
-        success_url: window.location.origin + '/login?payment=success',
-        failure_url: window.location.origin + '/register?payment=failed',
-        pending_url: window.location.origin + '/register?payment=pending'
+        // dynamic calculation for enterprise
+        employees: selectedPlan.toLowerCase() === 'enterprise' ? employeesCount : null
       });
 
       if (response.data.provisioned) {
@@ -59,7 +95,7 @@ export const SaaSLandingPage = () => {
         setShowCheckout(false);
         setShowOnboarding(true);
       } else if (response.data.init_point) {
-        // Paid: Redirect to payment gateway
+        // Paid: Redirect to payment gateway/simulator
         window.location.href = response.data.init_point;
       } else {
         throw new Error('Respuesta inválida del servidor');
@@ -78,8 +114,8 @@ export const SaaSLandingPage = () => {
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={32} />
           </div>
-          <h1 className="text-3xl font-black text-slate-900">¡Pago Exitoso!</h1>
-          <p className="text-slate-500 mt-2">Tu instancia de Talent 360 ha sido aprovisionada y configurada con datos Demo para que puedas explorar.</p>
+          <h1 className="text-3xl font-black text-slate-900">¡Estructura Creada!</h1>
+          <p className="text-slate-500 mt-2">Tu instancia de Talent 360 ha sido configurada. Comienza a registrar tu sucursal y tus puestos reales.</p>
         </div>
         <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
           <CompanyOnboardingSettings onComplete={() => navigate('/app')} />
@@ -88,304 +124,477 @@ export const SaaSLandingPage = () => {
     );
   }
 
-  const proPricePerUser = 5;
-  const entPricePerUser = 12;
+  // Enterprise pricing calculations
+  const pricePerUser = 12; // $12 MXN per user
+  const monthlyEnterprisePrice = employeesCount * pricePerUser;
+  const yearlyEnterprisePrice = Math.round((employeesCount * pricePerUser * 12) * 0.8); // 20% discount
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-50 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
       
-      <header className="fixed top-0 left-0 right-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
+      {/* NAVBAR */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
               <span className="text-white font-black text-xl">T</span>
             </div>
-            <h1 className="text-xl font-black tracking-tight text-white">
-              Talent <span className="text-blue-500">360</span>
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
+              Talent <span className="text-blue-600">360</span>
             </h1>
           </div>
-          <div className="hidden md:flex gap-8 text-sm font-bold text-slate-400">
-            <a href="#features" className="hover:text-white transition-colors">Plataforma</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Precios por Usuario</a>
-            <a href="#" className="hover:text-white transition-colors">Empresas</a>
+          <div className="hidden md:flex gap-8 text-sm font-bold text-slate-500">
+            <a href="#features" className="hover:text-slate-900 transition-colors">Plataforma</a>
+            <a href="#pricing" className="hover:text-slate-900 transition-colors">Precios</a>
+            <a href="#demo" className="hover:text-slate-900 transition-colors">Demostraciones</a>
           </div>
           <div className="flex gap-4">
-            <button onClick={() => navigate('/login')} className="text-sm font-bold text-slate-300 hover:text-white transition-colors hidden md:block">Login (Subdominio)</button>
-            <button onClick={() => handleBuy('Freemium')} className="bg-white text-slate-950 px-5 py-2.5 rounded-xl text-sm font-black hover:bg-slate-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-              Empezar Gratis
+            <button onClick={() => navigate('/login')} className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
+              Iniciar Sesión
+            </button>
+            <button onClick={() => handleBuy('Freemium')} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-black hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-98">
+              Crear Cuenta Gratis
             </button>
           </div>
         </div>
       </header>
 
-      <section className="relative pt-40 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px] opacity-50 pointer-events-none"></div>
-        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
+      {/* HERO SECTION */}
+      <section className="relative pt-44 pb-24 px-6 overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-r from-blue-200/30 to-purple-200/30 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
 
-        <div className="max-w-5xl mx-auto text-center relative z-10 animate-in slide-in-from-bottom-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-blue-400 mb-8 shadow-inner">
-            <Zap size={14} className="text-blue-500" /> Nuevo: Arquitectura SaaS Aislada
+        <div className="max-w-5xl mx-auto text-center relative z-10 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-bold text-blue-600 mb-8 shadow-sm">
+            <Sparkles size={14} className="text-blue-500" /> Nuevo: Registro rápido con Google Account
           </div>
-          <h2 className="text-5xl md:text-7xl font-black tracking-tight mb-8 leading-tight">
+          <h2 className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 mb-8 leading-tight">
             El sistema operativo para <br className="hidden md:block"/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">tu Capital Humano</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">tu Capital Humano</span>
           </h2>
-          <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 font-medium leading-relaxed">
-            Desde la atracción de talento hasta la nómina. Talent 360 escala con tu empresa pagando un modelo flexible y transparente "por empleado activo".
+          <p className="text-lg md:text-xl text-slate-500 max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
+            Optimiza la atracción de talento, reloj checador con control biométrico, academia y nóminas. Talent 360 se adapta al tamaño de tu empresa con un modelo transparente.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button onClick={() => {
               document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-            }} className="w-full sm:w-auto bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-blue-700 transition-all shadow-[0_0_30px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2">
-              Ver Planes de Precios <ChevronRight size={20} />
+            }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-lg shadow-lg shadow-blue-500/25 active:scale-98 transition-all flex items-center justify-center gap-2">
+              Ver Planes y Precios <ChevronRight size={20} />
             </button>
           </div>
         </div>
       </section>
 
-      {/* SECCIÓN DE VIDEOS DEMOSTRATIVOS */}
-      <section className="py-20 px-6 relative z-10 bg-slate-900/30 border-t border-slate-900">
+      {/* DEMO SECTION */}
+      <section id="demo" className="py-24 px-6 bg-white border-y border-slate-100">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h3 className="text-3xl md:text-5xl font-black mb-4">Explora la Plataforma en Acción</h3>
-            <p className="text-slate-400 font-medium max-w-2xl mx-auto">Mira demostraciones interactivas de nuestros módulos clave diseñadas para asombrar a tus colaboradores.</p>
+          <div className="text-center mb-20">
+            <h3 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Módulos en Acción</h3>
+            <p className="text-slate-500 font-medium max-w-2xl mx-auto">Explora el ecosistema operativo diseñado para dar la mejor experiencia a tus equipos.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Card 1 */}
-            <div className="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-blue-500/50 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)] transition-all duration-300">
-              <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                {/* Simulated Thumbnail */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent z-10 opacity-60"></div>
-                <div className="absolute inset-0 bg-blue-600/10 mix-blend-overlay group-hover:bg-blue-600/20 transition-colors"></div>
-                
-                {/* Play Button Icon */}
-                <div className="w-14 h-14 bg-blue-600 border border-blue-500 rounded-full flex items-center justify-center text-white relative z-20 group-hover:scale-110 shadow-lg transition-transform duration-300">
+            <div className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+              <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 bg-blue-600/5 mix-blend-overlay group-hover:bg-blue-600/10 transition-colors"></div>
+                <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
-                
-                {/* Visual Placeholder */}
-                <div className="absolute inset-0 flex items-center justify-center text-slate-800 font-black text-6xl select-none tracking-widest opacity-25">
+                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
                   WIZARD
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Tutorial Configuración</span>
-                <h4 className="font-bold text-white text-base mt-1 mb-2">Onboarding y Flujo Inicial</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  Mira cómo el asistente interactivo (Wizard) guía a los administradores desde la sucursal hasta la primera asistencia.
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Configuración Rápida</span>
+                <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Onboarding y Cuentas</h4>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Configura tu sucursal, áreas de trabajo y puestos en pocos pasos a través de nuestro asistente inteligente.
                 </p>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] transition-all duration-300">
-              <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent z-10 opacity-60"></div>
-                <div className="absolute inset-0 bg-amber-600/10 mix-blend-overlay group-hover:bg-amber-600/20 transition-colors"></div>
-                
-                <div className="w-14 h-14 bg-amber-500 border border-amber-400 rounded-full flex items-center justify-center text-white relative z-20 group-hover:scale-110 shadow-lg transition-transform duration-300">
+            <div className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+              <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 bg-blue-600/5 mix-blend-overlay group-hover:bg-blue-600/10 transition-colors"></div>
+                <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
-                
-                <div className="absolute inset-0 flex items-center justify-center text-slate-800 font-black text-6xl select-none tracking-widest opacity-25">
+                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
                   CLOCK
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Funciones Pro</span>
-                <h4 className="font-bold text-white text-base mt-1 mb-2">Reloj Checador y Aforos Pro</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  Descubre la experiencia Pro de asistencia, comedor con aforo en tiempo real y asignación de encargados de llaves.
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Asistencia</span>
+                <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Reloj Checador Biométrico</h4>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Control de horarios mediante huella digital y biometría, prevención de fraude y registro en tiempo real.
                 </p>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] transition-all duration-300">
-              <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent z-10 opacity-60"></div>
-                <div className="absolute inset-0 bg-purple-600/10 mix-blend-overlay group-hover:bg-purple-600/20 transition-colors"></div>
-                
-                <div className="w-14 h-14 bg-purple-600 border border-purple-500 rounded-full flex items-center justify-center text-white relative z-20 group-hover:scale-110 shadow-lg transition-transform duration-300">
+            <div className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+              <div className="aspect-video bg-slate-200 relative overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 bg-blue-600/5 mix-blend-overlay group-hover:bg-blue-600/10 transition-colors"></div>
+                <div className="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center text-blue-600 relative z-20 group-hover:scale-110 shadow-md transition-transform duration-300">
                   <span className="text-xl ml-1">▶</span>
                 </div>
-                
-                <div className="absolute inset-0 flex items-center justify-center text-slate-800 font-black text-6xl select-none tracking-widest opacity-25">
+                <div className="absolute inset-0 flex items-center justify-center text-slate-300 font-black text-6xl select-none tracking-widest opacity-35">
                   ATS
                 </div>
               </div>
               <div className="p-6 text-left">
-                <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Módulo Reclutamiento</span>
-                <h4 className="font-bold text-white text-base mt-1 mb-2">Portal de Empleos y ATS</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  Conoce cómo publicar vacantes de forma pública y calificar automáticamente a los candidatos usando IA.
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Reclutamiento</span>
+                <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Portal de Empleos Integrado</h4>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Publica vacantes de forma pública, gestiona candidatos y califica postulantes de forma inteligente.
                 </p>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="py-24 px-6 relative z-10 bg-slate-950">
+      {/* PRICING SECTION WITH SLIDER */}
+      <section id="pricing" className="py-24 px-6 bg-slate-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h3 className="text-3xl md:text-5xl font-black mb-4">Planes Sencillos y Transparentes</h3>
-            <p className="text-slate-400 font-medium">Elige el plan ideal para tu organización. Ajusta o cambia tu plan en cualquier momento.</p>
+            <h3 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Planes Transparentes y Flexibles</h3>
+            <p className="text-slate-500 font-medium">Comienza gratis o escala tu plan según el volumen de colaboradores.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 flex flex-col hover:border-slate-700 transition-colors text-left">
-              <h4 className="text-2xl font-black text-white mb-2">Gratuito</h4>
-              <p className="text-slate-400 text-sm mb-6 min-h-[40px]">Para pequeños negocios que comienzan su digitalización.</p>
+            {/* FREE PLAN CARD */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
+              <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Gratuito</h4>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Para pequeños negocios que inician la digitalización de su checador.</p>
               <div className="mb-8 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-white">$0</span>
-                <span className="text-slate-500 font-bold text-xs uppercase">MXN</span>
-                <span className="text-slate-500 font-bold">/mes</span>
+                <span className="text-5xl font-black text-slate-900">$0</span>
+                <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
+                <span className="text-slate-400 font-bold">/mes</span>
               </div>
               <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Hasta 10 Colaboradores Activos</li>
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Reloj Checador Básico (Sin comedor Pro)</li>
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Directorio de Colaboradores y Puestos</li>
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> 30 Días de Prueba de Módulos Pro</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Hasta 5 Colaboradores Activos</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Reloj Checador Básico</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Directorio de Puestos y Estructura</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Onboarding Inicial Limpio</li>
               </ul>
               <button 
                 onClick={() => handleBuy('Freemium')} 
-                className="w-full font-bold py-3 bg-slate-800 text-white hover:bg-slate-700 rounded-xl transition-colors"
+                className="w-full font-bold py-3.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-98 text-center"
               >
                 Comenzar Gratis
               </button>
             </div>
 
-            <div className="bg-gradient-to-b from-blue-900/40 to-slate-900/80 border border-blue-500/50 rounded-3xl p-8 flex flex-col relative transform md:-translate-y-4 shadow-[0_0_50px_rgba(37,99,235,0.15)] text-left">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow-md">
-                Más Popular
+            {/* ENTERPRISE PLAN CARD WITH SLIDER */}
+            <div className="bg-white border-2 border-blue-600 rounded-3xl p-8 flex flex-col relative shadow-[0_10px_35px_rgba(37,99,235,0.08)] text-left">
+              <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md flex items-center gap-1">
+                <Sparkles size={12} /> Plan Recomendado
               </div>
-              <h4 className="text-2xl font-black text-white mb-2">Profesional</h4>
-              <p className="text-blue-200/70 text-sm mb-6 min-h-[40px]">Todo el poder de la plataforma en base de datos compartida optimizada.</p>
-              <div className="mb-8 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-white">$99</span>
-                <span className="text-blue-300/50 font-bold text-xs uppercase">MXN</span>
-                <span className="text-blue-300/50 font-bold">/mes</span>
+              <h4 className="text-2xl font-black text-slate-900 mb-1">Plan Enterprise</h4>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Todo el poder operativo de la plataforma en base de datos dedicada y aislada.</p>
+              
+              {/* Dynamic Price Display */}
+              <div className="mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Costo Mensual</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-black text-blue-600">${monthlyEnterprisePrice.toLocaleString()}</span>
+                    <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-baseline text-xs">
+                  <span className="text-emerald-600 font-bold">Pago Anual (Ahorra 20%):</span>
+                  <span className="text-slate-700 font-bold">${yearlyEnterprisePrice.toLocaleString()} MXN / año</span>
+                </div>
               </div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-100 text-sm font-medium"><CheckCircle2 className="text-blue-400 shrink-0" size={20}/> Colaboradores Ilimitados (Hasta 50)</li>
-                <li className="flex items-start gap-3 text-slate-100 text-sm font-medium"><CheckCircle2 className="text-blue-400 shrink-0" size={20}/> Todos los Módulos Incluidos (ATS, LMS, Reportes)</li>
-                <li className="flex items-start gap-3 text-slate-100 text-sm font-medium"><CheckCircle2 className="text-blue-400 shrink-0" size={20}/> Reloj Checador Pro (Comedor e Integración)</li>
-                <li className="flex items-start gap-3 text-slate-100 text-sm font-medium"><CheckCircle2 className="text-blue-400 shrink-0" size={20}/> Respaldos y Sincronización Google Drive</li>
-              </ul>
-              <button onClick={() => handleBuy('PRO')} className="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg">Suscribirse Profesional</button>
-            </div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 flex flex-col hover:border-slate-700 transition-colors text-left">
-              <h4 className="text-2xl font-black text-white mb-2">Empresas</h4>
-              <p className="text-slate-400 text-sm mb-6 min-h-[40px]">Base de datos totalmente dedicada y aislada para corporativos.</p>
-              <div className="mb-8 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-white">$499</span>
-                <span className="text-slate-500 font-bold text-xs uppercase">MXN</span>
-                <span className="text-slate-500 font-bold">/mes</span>
+              {/* Slider Controller */}
+              <div className="mb-8">
+                <div className="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                  <span>Colaboradores:</span>
+                  <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{employeesCount} activos</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="10" 
+                  max="300" 
+                  step="5"
+                  value={employeesCount} 
+                  onChange={e => setEmployeesCount(parseInt(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-1">
+                  <span>10 colab.</span>
+                  <span>150 colab.</span>
+                  <span>300+ colab.</span>
+                </div>
               </div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Colaboradores Ilimitados sin restricciones</li>
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Infraestructura de BD Dedicada y Aislada</li>
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Subdominio Corporativo Propio</li>
-                <li className="flex items-start gap-3 text-slate-300 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Soporte Técnico 24/7 Dedicado</li>
-              </ul>
-              <button onClick={() => handleBuy('Enterprise')} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-700 transition-colors">Aprovisionar Empresas</button>
-            </div>
 
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Base de datos Aislada por Seguridad</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Módulos Completos: ATS, LMS, Reloj Pro, Nómina</li>
+                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Soporte Técnico Prioritario</li>
+              </ul>
+              <button 
+                onClick={() => handleBuy('Enterprise')} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-98 text-center"
+              >
+                Suscribirse Enterprise
+              </button>
+            </div>
+            
           </div>
         </div>
       </section>
 
+      {/* FOOTER */}
+      <footer className="bg-white border-t border-slate-100 py-12 px-6 text-center text-sm text-slate-400 font-bold">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">T</div>
+            <span className="text-slate-800 font-black">Talent 360</span>
+          </div>
+          <p>© 2026 Talent 360. Todos los derechos reservados. Infraestructura SaaS Dedicada.</p>
+        </div>
+      </footer>
+
+      {/* REGISTRATION STEP WIZARD MODAL */}
       {showCheckout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in overflow-y-auto pt-10">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-900 my-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-900 my-auto border border-slate-100 animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
             <div className="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="text-emerald-600" size={24} />
-                <span className="font-bold text-slate-700">Registro de Cuenta Segura</span>
+                <Building2 className="text-blue-600" size={22} />
+                <span className="font-extrabold text-slate-800 text-base">Crear Cuenta Talent 360</span>
               </div>
-              <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+              <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1 bg-slate-200/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors">&times;</button>
             </div>
             
-            <form onSubmit={processPayment} className="p-6">
-              
+            <div className="p-6">
               {error && (
-                <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-600 text-sm font-bold p-3 rounded-xl">
-                  {error}
+                <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
+                  <span>⚠️</span> <span>{error}</span>
                 </div>
               )}
 
-              <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded-xl flex justify-between items-center text-left">
-                <div>
-                  <p className="text-sm text-blue-800 font-bold">Plan <span className="uppercase">{selectedPlan === 'PRO' ? 'Profesional' : selectedPlan === 'Enterprise' ? 'Empresas' : 'Gratuito'}</span></p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    {selectedPlan === 'Freemium' ? 'Hasta 10 colaboradores' : selectedPlan === 'PRO' ? 'Colaboradores ilimitados (Max 50)' : 'Colaboradores ilimitados (BD Aislada)'}
+              {/* Progress Steps Indicator */}
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 1 ? 'bg-blue-600 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
+                    {registrationStep === 1 ? '1' : '✓'}
+                  </div>
+                  <span className={`text-xs font-bold ${registrationStep === 1 ? 'text-blue-600' : 'text-slate-500'}`}>Identidad</span>
+                </div>
+                <div className="w-10 h-0.5 bg-slate-200"></div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${registrationStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    2
+                  </div>
+                  <span className={`text-xs font-bold ${registrationStep === 2 ? 'text-blue-600' : 'text-slate-400'}`}>Empresa</span>
+                </div>
+              </div>
+
+              {/* STEP 1: GOOGLE OAUTH FORCED */}
+              {registrationStep === 1 && (
+                <div className="text-center py-4 space-y-6">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                    <Lock size={28} />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-extrabold text-slate-800 text-lg">Para empezar, valida tu cuenta</h4>
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                      Para garantizar la seguridad de tu base de datos dedicada, debes iniciar sesión con una cuenta de Google.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleMockModal(true)}
+                    className="w-full py-4 px-6 border-2 border-slate-200 hover:border-blue-300 hover:bg-slate-50 rounded-2xl font-black text-sm text-slate-700 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-98"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
+                      <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
+                      <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
+                      <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
+                    </svg>
+                    Continuar con Google
+                  </button>
+
+                  <p className="text-[10px] text-slate-400 font-semibold">
+                    ¿No tienes una cuenta de Google? El sistema te permitirá crearla o simularla en este paso.
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-blue-700">
-                    ${selectedPlan === 'Freemium' ? '0' : selectedPlan === 'PRO' ? '99' : '499'}
-                  </span>
-                  <span className="block text-[10px] text-blue-600 font-bold uppercase">MXN / mes</span>
-                </div>
-              </div>
+              )}
 
-              <div className="space-y-4 mb-8">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
-                  <input type="text" value={formData.company_name} onChange={e => setFormData({...formData, company_name: e.target.value})} required placeholder="Talent360 SA de CV" className="w-full bg-white px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Subdominio Deseado</label>
-                  <div className="flex border border-slate-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                    <input type="text" value={formData.subdomain} onChange={e => setFormData({...formData, subdomain: e.target.value})} required placeholder="talent360" className="w-full bg-white px-4 py-3 font-medium outline-none" />
-                    <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-l border-slate-300">.talent360.com</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tu Nombre</label>
-                    <input type="text" value={formData.admin_name} onChange={e => setFormData({...formData, admin_name: e.target.value})} required placeholder="Juan Pérez" className="w-full bg-white px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Contraseña</label>
-                    <input type="password" value={formData.admin_password} onChange={e => setFormData({...formData, admin_password: e.target.value})} required placeholder="••••••" minLength={6} className="w-full bg-white px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Correo de Administrador</label>
-                  <input type="email" value={formData.admin_email} onChange={e => setFormData({...formData, admin_email: e.target.value})} required placeholder="admin@talent360.com" className="w-full bg-white px-4 py-3 border border-slate-300 rounded-lg font-medium outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                
-                {selectedPlan !== 'Freemium' && (
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tarjeta de Crédito</label>
-                    <div className="relative">
-                      <input type="text" required placeholder="4242 4242 4242 4242" className="w-full bg-white border border-slate-300 rounded-lg pl-10 pr-4 py-3 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                      <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
+              {/* STEP 2: COMPANY DETAILS & SIMULATED CHECKOUT */}
+              {registrationStep === 2 && googleUser && (
+                <form onSubmit={processPayment} className="space-y-5">
+                  
+                  {/* Google Authenticated profile badge */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-base shadow-sm">
+                      {googleUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-black text-slate-800">{googleUser.name}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">{googleUser.email}</p>
+                    </div>
+                    <div className="ml-auto bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-100">
+                      Google OK
                     </div>
                   </div>
-                )}
-              </div>
 
-              <button 
-                type="submit" 
-                disabled={isProcessing}
-                className={`w-full text-white font-black py-4 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 ${isProcessing ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                  {/* Summary of the selected plan */}
+                  <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl text-left flex justify-between items-center">
+                    <div>
+                      <p className="text-xs text-blue-800 font-extrabold uppercase">Plan Seleccionado</p>
+                      <h5 className="text-sm font-black text-slate-900 mt-0.5">
+                        {selectedPlan === 'Enterprise' ? `Enterprise (${employeesCount} colab.)` : 'Plan Gratuito'}
+                      </h5>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-black text-blue-600">
+                        ${selectedPlan === 'Enterprise' ? monthlyEnterprisePrice.toLocaleString() : '0'}
+                      </span>
+                      <span className="block text-[9px] text-blue-500 font-bold uppercase">MXN / mes</span>
+                    </div>
+                  </div>
+
+                  {/* Fields */}
+                  <div className="space-y-4 text-left">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Nombre de la Empresa</label>
+                      <input 
+                        type="text" 
+                        value={formData.company_name} 
+                        onChange={e => setFormData({...formData, company_name: e.target.value})} 
+                        required 
+                        placeholder="Ej. DashComputer" 
+                        className="w-full bg-white px-4 py-3 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Subdominio para tus empleados</label>
+                      <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+                        <input 
+                          type="text" 
+                          value={formData.subdomain} 
+                          onChange={e => setFormData({...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})} 
+                          required 
+                          placeholder="dashcomputer" 
+                          className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-slate-800" 
+                        />
+                        <div className="bg-slate-50 px-4 py-3 text-xs text-slate-500 font-bold border-l border-slate-200 flex items-center">.talent360.com</div>
+                      </div>
+                      <p className="text-[9px] text-slate-400 mt-1 font-semibold">Tus empleados ingresarán desde: {formData.subdomain || 'subdominio'}.talent360.com</p>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={isProcessing}
+                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  >
+                    {isProcessing ? (
+                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Creando Instancia...</>
+                    ) : (
+                      <>{selectedPlan === 'Enterprise' ? 'Proceder al Pago' : 'Crear mi Empresa'}</>
+                    )}
+                  </button>
+                </form>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GOOGLE OAUTH SIMULATED MODAL */}
+      {showGoogleMockModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center relative animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setShowGoogleMockModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-655 font-bold bg-slate-100 p-2 rounded-full w-7 h-7 flex items-center justify-center"
+            >
+              ✕
+            </button>
+
+            <div className="flex items-center gap-3 mb-6 text-left">
+              <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
+                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800 text-base">Iniciar sesión con Google</h3>
+                <p className="text-[10px] text-slate-400">Portal Seguro de Identidad</p>
+              </div>
+            </div>
+
+            <p className="text-slate-500 text-xs mb-4 text-left leading-relaxed">
+              Selecciona o introduce una cuenta de Google para simular el inicio de sesión OAuth:
+            </p>
+
+            <div className="space-y-2 mb-5">
+              {[
+                { name: 'Francisco Vega', email: 'pcmasterirapuato@gmail.com' },
+                { name: 'Ignacio Ortiz', email: 'nacho.ortiz@gmail.com' }
+              ].map((acc) => (
+                <button
+                  type="button"
+                  key={acc.email}
+                  onClick={() => handleGoogleMockLogin(acc.email, acc.name)}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl text-xs font-bold border border-slate-200 bg-slate-50 hover:bg-blue-50/50 hover:border-blue-200 transition-all flex justify-between items-center text-slate-700"
+                >
+                  <span>{acc.name}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">{acc.email}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="border-t border-slate-100 pt-4 text-left space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1">O ingresa otra cuenta de Google:</label>
+                <input
+                  type="email"
+                  id="customGoogleEmail"
+                  placeholder="usuario@gmail.com"
+                  className="w-full px-4 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const emailVal = (e.target as HTMLInputElement).value;
+                      if (emailVal) {
+                        const nameVal = emailVal.split('@')[0];
+                        handleGoogleMockLogin(emailVal, nameVal);
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('customGoogleEmail') as HTMLInputElement;
+                  if (el && el.value) {
+                    handleGoogleMockLogin(el.value, el.value.split('@')[0]);
+                  }
+                }}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-xs shadow-md transition-all"
               >
-                {isProcessing ? (
-                  <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Creando Base de Datos...</>
-                ) : (
-                  <>Crear Cuenta {selectedPlan !== 'Freemium' && 'y Pagar'}</>
-                )}
+                Autorizar y Acceder
               </button>
-            </form>
+            </div>
+
           </div>
         </div>
       )}

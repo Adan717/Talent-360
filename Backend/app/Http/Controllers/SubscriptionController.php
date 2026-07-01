@@ -20,13 +20,14 @@ class SubscriptionController extends Controller
      */
     public function createPreference(Request $request)
     {
-        $isUpgrade = auth('sanctum')->check();
+        $user = auth('sanctum')->user();
+        $isInitialRegistration = ($user && $user->tenant_id === null);
+        $isUpgrade = ($user && $user->tenant_id !== null);
 
         if ($isUpgrade) {
             $request->validate([
                 'plan' => 'required|string',
             ]);
-            $user = auth('sanctum')->user();
             $tenant = Tenant::findOrFail($user->tenant_id);
 
             $payload = [
@@ -38,8 +39,24 @@ class SubscriptionController extends Controller
                 'admin_name' => $user->name,
                 'subdomain' => $tenant->subdomain,
             ];
+        } elseif ($isInitialRegistration) {
+            // Google authenticated registration flow: only company data is required
+            $request->validate([
+                'subdomain' => 'required|string',
+                'plan' => 'required|string',
+                'company_name' => 'required|string',
+            ]);
+            $payload = [
+                'action' => 'register_initial',
+                'subdomain' => $request->subdomain,
+                'plan' => $request->plan,
+                'company_name' => $request->company_name,
+                'admin_name' => $user->name,
+                'admin_email' => $user->email,
+            ];
         } else {
-            if ($request->has('subdomain')) {
+            // Fallback for standard registration
+            if ($request->has('subdomain') && !$request->has('admin_email')) {
                 $request->merge([
                     'admin_email' => 'admin@' . $request->subdomain . '.com'
                 ]);
@@ -271,7 +288,7 @@ class SubscriptionController extends Controller
                 'name' => $payload['company_name'],
                 'subdomain' => $payload['subdomain'],
                 'plan' => strtolower($payload['plan']),
-                'max_users' => strtolower($payload['plan']) === 'freemium' ? 10 : (strtolower($payload['plan']) === 'pro' ? 50 : 9999),
+                'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (strtolower($payload['plan']) === 'pro' ? 50 : 9999),
                 'public_slug' => Str::slug($payload['subdomain']),
                 'mp_subscription_id' => $prefId,
                 'subscription_status' => 'active',
@@ -282,14 +299,35 @@ class SubscriptionController extends Controller
             // Set context for traits
             session(['tenant_id' => $tenant->id]);
 
-            // 2. Create Admin User
-            $admin = User::create([
-                'name' => $payload['admin_name'],
-                'email' => 'admin@' . $tenant->subdomain . '.com',
-                'password' => Hash::make($payload['admin_password']),
-                'role' => UserRole::ADMIN->value,
-                'tenant_id' => $tenant->id,
-            ]);
+            // 2. Associate or Create Admin User
+            $currentUser = auth('sanctum')->user();
+            if ($currentUser && $currentUser->tenant_id === null) {
+                // Link the active Google authenticated user
+                $currentUser->update([
+                    'tenant_id' => $tenant->id,
+                    'role' => UserRole::ADMIN->value,
+                ]);
+                $admin = $currentUser;
+            } else {
+                // Fallback: check if user already exists globally
+                $admin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                    ->where('email', $payload['admin_email'])
+                    ->first();
+                if ($admin) {
+                    $admin->update([
+                        'tenant_id' => $tenant->id,
+                        'role' => UserRole::ADMIN->value,
+                    ]);
+                } else {
+                    $admin = User::create([
+                        'name' => $payload['admin_name'],
+                        'email' => $payload['admin_email'],
+                        'password' => Hash::make(bin2hex(random_bytes(16))),
+                        'role' => UserRole::ADMIN->value,
+                        'tenant_id' => $tenant->id,
+                    ]);
+                }
+            }
 
             Auth::login($admin);
 

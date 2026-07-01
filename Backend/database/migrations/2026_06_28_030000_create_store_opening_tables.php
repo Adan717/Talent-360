@@ -204,7 +204,7 @@ return new class extends Migration
                 }
             }
         } catch (\Exception $e) {
-            // Silently skip if database state is altered during test setups
+            throw $e;
         }
     }
 

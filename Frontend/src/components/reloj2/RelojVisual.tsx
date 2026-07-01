@@ -44,154 +44,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     );
   };
 
-  const getDialColorClasses = () => {
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
-    if (isRestDay) {
-      return 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300';
-    }
-
-    if (btnProps.isIncidenceReport) {
-      return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
-    }
-
-    const shiftStartMins = parseTimeToMins(shiftConfigs[currentUser?.id]?.start || '09:00');
-    const isLate = lateUsers[currentUser?.id] || (clockState === 'inactive' && currentSimTime > shiftStartMins + 10);
-
-    if (isLate) {
-      return 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 animate-pulse hover:border-rose-600';
-    }
-
-    if (clockState === 'active') {
-      return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
-    }
-
-    if (clockState === 'short_break') {
-      return 'bg-white border-purple-500 text-purple-600 shadow-purple-500/10 animate-pulse hover:border-purple-600';
-    }
-
-    if (clockState === 'meal') {
-      return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
-    }
-
-    if (clockState === 'finished') {
-      return 'bg-white border-teal-500 text-teal-600 shadow-teal-500/10 hover:border-teal-600';
-    }
-
-    if (clockState === 'inactive') {
-      return 'bg-white border-blue-500 text-blue-600 shadow-blue-500/10 hover:border-blue-600';
-    }
-
-    return 'bg-white border-violet-400 text-violet-655 shadow-violet-500/10 hover:border-violet-500';
-  };
-
-  const getDialGlowClasses = () => {
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
-    if (isRestDay) return null;
-
-    if (btnProps.isIncidenceReport) {
-      return 'bg-amber-400';
-    }
-
-    if (clockState === 'active') {
-      return 'bg-emerald-400';
-    }
-    if (clockState === 'short_break') {
-      return 'bg-purple-400';
-    }
-    if (clockState === 'meal') {
-      return 'bg-amber-400';
-    }
-    if (clockState === 'finished') {
-      return 'bg-teal-400';
-    }
-
-    const shiftStartMins = parseTimeToMins(shiftConfigs[currentUser?.id]?.start || '09:00');
-    const isLate = lateUsers[currentUser?.id] || (clockState === 'inactive' && currentSimTime > shiftStartMins + 10);
-
-    if (isLate) {
-      return 'bg-rose-400';
-    }
-
-    if (clockState === 'inactive') {
-      return 'bg-blue-400';
-    }
-
-    return 'bg-violet-400';
-  };
-
-
-  const renderDialMecanismo = (isMobile: boolean) => {
-    const size = isMobile ? 76 : 88;
-    return (
-      <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-1 min-h-[200px] mt-[-5px] mb-3' : ''}`}>
-        {isOpeningPremium && storeStatus === 'closed' && (
-          <div className={`px-5 py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-inner border mb-5 select-none shrink-0 text-center animate-fade-in ${
-            Number(currentUser.id) === Number(openingStatus ? openingStatus.current_responsible_employee_id : 1) && !isWithinPerimeter
-              ? 'bg-violet-50 dark:bg-violet-955/20 border-violet-300 dark:border-violet-800/50 text-violet-750 dark:text-violet-300 font-black animate-pulse'
-              : 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50'
-          }`}>
-            <span className="animate-pulse text-sm">⏳</span>
-            <span className={isMobile ? "text-[10px] font-extrabold uppercase tracking-wide" : "text-[11px] font-extrabold uppercase tracking-wide"}>
-              {(() => {
-                const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
-                if (Number(currentUser.id) === Number(responsibleId)) {
-                  return isWithinPerimeter 
-                    ? 'Tienes el control de la apertura de hoy'
-                    : '🗝️ Responsable de apertura. Dirígete a la sucursal para abrir.';
-                } else {
-                  const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
-                  return `Esperando apertura por: ${responsibleUser.name}`;
-                }
-              })()}
-            </span>
-          </div>
-        )}
-
-        {renderGPSView(size, isMobile) || (
-          <div className="relative flex-shrink-0 flex items-center justify-center">
-            {/* Landing-Page-aligned Shimmer Glow Ring */}
-            {getDialGlowClasses() ? (
-              <div className={`absolute w-44 h-44 rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
-            ) : null}
-
-            <button 
-              onClick={handleAction} 
-              disabled={btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed')} 
-              className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-4 bg-white ${getDialColorClasses()} ${
-                isMobile ? 'w-52 h-52' : 'w-56 h-56'
-              } ${
-                btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed') 
-                  ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
-                  : ''
-              }`}
-            >
-              <div className="flex flex-col items-center justify-center h-full w-full py-2 select-none">
-                {/* ZONA SUPERIOR/CENTRO: Icono Prominente y Grande */}
-                <div className="flex-grow flex items-center justify-center mt-3 text-slate-800">
-                  {getDialIcon(size)}
-                </div>
-
-                {/* ZONA CENTRAL: Hora digital */}
-                <div className={`flex items-baseline font-mono font-black text-slate-800 tracking-tight mt-1 mb-2 ${isMobile ? 'text-3xl' : 'text-4xl md:text-5xl leading-none'}`}>
-                  <span>{formattedTime.split(' ')[0]}</span>
-                  <span className={`uppercase font-bold text-slate-500 ${isMobile ? 'text-xs ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
-                </div>
-
-                {/* ZONA INFERIOR: Texto Instructivo Directo */}
-                <div className={`px-2 text-center w-full min-h-[36px] flex items-center justify-center mb-2 text-slate-700 ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
-                  <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[10px] md:text-[10.5px]' : 'text-[11px] md:text-[12px]'}`}>
-                    {getDialBottomLabel()}
-                  </span>
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderBarraCronologica = (isMobile: boolean) => {
+    const renderBarraCronologica = (isMobile: boolean) => {
     // Check for any deviations in the current turn
     const isLateIn = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
     const breakInfoObj = getBreakInfo();
@@ -1998,7 +1851,25 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             {renderBarraCronologica(true)}
 
             {/* Central Clock Circle Action Button (Middle) */}
-            {renderDialMecanismo(true)}
+            <DialPrincipal
+              isMobile={true}
+              isOpeningPremium={isOpeningPremium}
+              storeStatus={storeStatus}
+              openingStatus={openingStatus}
+              currentUser={currentUser}
+              isWithinPerimeter={isWithinPerimeter}
+              globalUsers={globalUsers}
+              clockState={clockState}
+              formattedTime={formattedTime}
+              btnProps={btnProps}
+              lateUsers={lateUsers}
+              currentDay={currentDay}
+              currentSimTime={currentSimTime}
+              shiftConfigs={shiftConfigs}
+              parseTimeToMins={parseTimeToMins}
+              handleAction={handleAction}
+              renderGPSView={renderGPSView}
+            />
             
             {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
             <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">
@@ -2147,42 +2018,25 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   )}
 
                   {renderGPSView(88, false) || (
-                    <div className="relative flex-shrink-0">
-                      {/* Concentric Flashing Gradient Glow Halo */}
-                      {(clockState === 'active' || (clockState === 'inactive' && currentSimTime <= parseTimeToMins(shiftConfigs[currentUser?.id]?.start || '09:00') + 10)) ? (
-                        <div className="absolute inset-[-8px] rounded-full border-[8px] border-emerald-400 opacity-45 blur-[4px] animate-shimmer-glow pointer-events-none z-0"></div>
-                      ) : null}
-
-                      <button 
-                        onClick={handleAction} 
-                        disabled={btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed')} 
-                        className={`group relative flex flex-col items-center justify-between rounded-full z-10 transition-all transform hover:scale-[1.03] active:scale-95 select-none w-64 h-64 aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-6 bg-white ${getDialColorClasses()} ${
-                          btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed') 
-                            ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
-                            : ''
-                        }`}
-                      >
-                        <div className="flex flex-col items-center justify-center h-full w-full py-3 select-none">
-                          {/* ZONA SUPERIOR/CENTRO: Icono Prominente y Grande */}
-                          <div className="flex-grow flex items-center justify-center mt-4 text-slate-800">
-                            {getDialIcon(88)}
-                          </div>
-
-                          {/* ZONA CENTRAL: Hora digital */}
-                          <div className="flex items-baseline font-mono text-4xl md:text-5xl font-black text-slate-800 tracking-tight leading-none my-2">
-                            <span>{formattedTime.split(' ')[0]}</span>
-                            <span className="text-xs md:text-sm uppercase font-bold text-slate-500 ml-1.5">{formattedTime.split(' ')[1].toLowerCase()}</span>
-                          </div>
-
-                          {/* ZONA INFERIOR: Texto Instructivo Directo */}
-                          <div className="px-3 text-center w-full max-w-[190px] min-h-[40px] flex items-center justify-center mb-2 text-slate-700">
-                            <span className="text-[11px] md:text-[12px] font-black uppercase tracking-wider leading-tight block">
-                              {getDialBottomLabel()}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
+                    <DialPrincipal
+                      isMobile={false}
+                      isOpeningPremium={isOpeningPremium}
+                      storeStatus={storeStatus}
+                      openingStatus={openingStatus}
+                      currentUser={currentUser}
+                      isWithinPerimeter={isWithinPerimeter}
+                      globalUsers={globalUsers}
+                      clockState={clockState}
+                      formattedTime={formattedTime}
+                      btnProps={btnProps}
+                      lateUsers={lateUsers}
+                      currentDay={currentDay}
+                      currentSimTime={currentSimTime}
+                      shiftConfigs={shiftConfigs}
+                      parseTimeToMins={parseTimeToMins}
+                      handleAction={handleAction}
+                      renderGPSView={renderGPSView}
+                    />
                   )}
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}

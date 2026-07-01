@@ -68,6 +68,18 @@ try {
     // Delete from users table to completely isolate
     User::where('email', 'master@talent360.com')->delete();
 
+    // 2b. Francisco Vega (Google Admin)
+    \App\Models\PlatformUser::updateOrCreate(
+        ['email' => 'pcmasterirapuato@gmail.com'],
+        [
+            'name' => 'Francisco Vega',
+            'password' => Hash::make('Master'),
+            'role' => 'platform_admin',
+            'is_active' => true,
+        ]
+    );
+    User::where('email', 'pcmasterirapuato@gmail.com')->delete();
+
     // 3. Employee Admin/Gerente (francisco@talent360.com)
     User::updateOrCreate(
         ['email' => 'francisco@talent360.com'],

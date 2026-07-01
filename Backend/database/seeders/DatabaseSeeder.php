@@ -26,6 +26,18 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
 
+            if (!DB::table('platform_users')->where('email', 'pcmasterirapuato@gmail.com')->exists()) {
+                DB::table('platform_users')->insert([
+                    'name' => 'Francisco Vega',
+                    'email' => 'pcmasterirapuato@gmail.com',
+                    'password' => \Illuminate\Support\Facades\Hash::make('Master'),
+                    'role' => 'platform_admin',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
             if (!DB::table('platform_users')->where('email', 'support@talent360.com')->exists()) {
                 DB::table('platform_users')->insert([
                     'name' => 'Agente Soporte',
@@ -37,6 +49,11 @@ class DatabaseSeeder extends Seeder
                     'updated_at' => now()
                 ]);
             }
+        }
+
+        // Eliminar pcmasterirapuato@gmail.com de la tabla users para que no colisione con platform_users al iniciar sesión con Google
+        if (DB::getSchemaBuilder()->hasTable('users')) {
+            DB::table('users')->where('email', 'pcmasterirapuato@gmail.com')->delete();
         }
 
         // Sincronizar secuencias de PostgreSQL para evitar colisiones de llaves primarias autoincrementales

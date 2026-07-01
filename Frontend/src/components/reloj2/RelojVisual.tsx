@@ -265,7 +265,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     return (
       <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-2 w-full text-left py-2 select-none"}>
         {/* Two-Column Status Bar: Store Status (Left) & Employee Shift Status (Right) */}
-        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-4' : 'text-[11px] mb-1 tracking-wider'}`}>
+        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-4 px-1' : 'text-[11px] mb-1 tracking-wider'}`}>
           {/* Left: Store status */}
           <div className="flex items-center select-none">
             {storeStatus === 'open' ? (
@@ -274,7 +274,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 <span>🏪 Sucursal Abierta</span>
               </span>
             ) : (
-              <span className="text-rose-600 dark:text-rose-450 font-black flex items-center gap-1.5">
+              <span className="text-rose-600 dark:text-rose-455 font-black flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                 <span>🔒 Sucursal Cerrada</span>
               </span>
@@ -301,13 +301,14 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           </div>
         </div>
         
-        <div className="flex justify-between items-start w-full z-10 relative px-2 mb-0 mt-1">
+        {/* responsively spaced icons (divided in four equal spaces) */}
+        <div className="flex w-full z-10 relative px-0 mb-0 mt-1">
           {/* Entrada Node */}
           {(() => {
             return (
               <div 
                 onClick={() => hasCheckedIn && setShowEntryDetailsModal(true)}
-                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
                   hasCheckedIn ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
@@ -330,19 +331,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     )
                   )}
                 </div>
-                {hasCheckedIn ? (
-                  <span className={`text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all ${
-                    isLateIn 
-                      ? 'text-rose-750 bg-rose-50 border-rose-100 dark:text-rose-300 dark:bg-rose-955/30' 
-                      : 'text-indigo-700 bg-indigo-50 border-indigo-100 dark:text-indigo-300 dark:bg-indigo-955/30'
-                  }`}>
-                    {formatMinsToTimeClean(checkInTimes[currentUser.id])} {isLateIn && "(Retardo)"}
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-455 font-bold mt-2">
-                    {formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
-                  </span>
-                )}
               </div>
             );
           })()}
@@ -355,7 +343,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             return (
               <div 
                 onClick={() => isAccessible && setShowBreakDetailsModal(true)}
-                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
@@ -378,33 +366,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     )
                   )}
                 </div>
-                {isAccessible ? (
-                  (() => {
-                    const info = getBreakInfo();
-                    return (
-                      <div className="flex flex-col items-center mt-1.5 leading-tight">
-                        <span className={`text-[10px] font-mono font-bold ${isMobile ? 'mt-0.5 text-purple-650' : 'text-purple-750 dark:text-purple-305'}`}>
-                          {info ? formatMinsToTimeClean(info.start) : 'Descanso'}
-                        </span>
-                        {info && (
-                          info.isActive ? (
-                            <span className="text-[9.5px] font-mono text-purple-500 font-bold mt-0.5">
-                              Activo ({info.duration}m)
-                              {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
-                            </span>
-                          ) : (
-                            <span className="text-[9.5px] font-mono text-purple-650 dark:text-purple-405 font-medium mt-0.5">
-                              {info.duration} min
-                              {info.extra > 0 && <span className="text-rose-550 font-black ml-0.5">+{info.extra}m</span>}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Descanso</span>
-                )}
               </div>
             );
           })()}
@@ -417,7 +378,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             return (
               <div 
                 onClick={() => isAccessible && setShowMealDetailsModal(true)}
-                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
@@ -440,44 +401,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     )
                   )}
                 </div>
-                {isAccessible ? (
-                  (() => {
-                    const info = getMealInfo();
-                    if (!info) return <span className="text-[10px] font-mono text-slate-505 dark:text-slate-450 font-bold mt-2">Comida</span>;
-                    if (info.isReserved) {
-                      return (
-                        <div className="flex flex-col items-center mt-1.5 leading-tight">
-                          <span className="text-[10px] font-bold text-amber-600 font-mono">
-                            Reservado
-                          </span>
-                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">
-                            {info.reservedText}
-                          </span>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="flex flex-col items-center mt-1.5 leading-tight">
-                        <span className="text-[10px] font-bold text-amber-705 dark:text-amber-305 font-mono">
-                          {formatMinsToTimeClean(info.start)}
-                        </span>
-                        {info.isActive ? (
-                          <span className="text-[9.5px] font-mono text-amber-500 font-bold mt-0.5">
-                            Activo ({info.duration}m)
-                            {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
-                          </span>
-                        ) : (
-                          <span className="text-[9.5px] font-mono text-emerald-655 dark:text-emerald-450 font-medium mt-0.5">
-                            {info.duration} min
-                            {info.extra > 0 && <span className="text-rose-505 font-black ml-0.5">+{info.extra}m</span>}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Comida</span>
-                )}
               </div>
             );
           })()}
@@ -489,7 +412,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             return (
               <div 
                 onClick={() => isAccessible && setShowExitDetailsModal(true)}
-                className={`flex flex-col items-center relative transition-all duration-300 transform ${
+                className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
@@ -512,23 +435,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     )
                   )}
                 </div>
-                {isAccessible ? (
-                  <span className="text-[10px] font-mono text-emerald-600 font-bold mt-2 flex flex-col items-center leading-none">
-                    <span>{checkOutTimes[currentUser.id] ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : 'Fichado'}</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-455 font-bold mt-2">
-                    {formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
-                  </span>
-                )}
               </div>
             );
           })()}
         </div>
 
-        {/* Timeline Bar - Thicker and closer to icons (Dynamic Color Gradients & Smooth Transition) */}
-        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-10px]' : 'px-4 mb-2 mt-[-10px]'}`}>
-          <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200/40 shadow-inner"></div>
+        {/* Timeline Bar - Thicker and closer to icons (Dynamic Color Gradients & Soft Track Fills) */}
+        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-6px]' : 'px-4 mb-2 mt-[-6px]'}`}>
+          {/* Soft Track fill: no dark/black colors */}
+          <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-700/60 rounded-full border border-slate-200/40 shadow-inner"></div>
           
           {/* Elapsed Proportional Progress Segment Container */}
           {hasCheckedIn && elapsedTotal > 0 && (
@@ -555,6 +470,24 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               })}
             </div>
           )}
+
+          {/* Extremes timestamps placed just below the progress track */}
+          <div className="flex justify-between items-center mt-1.5 px-0.5 text-[9.5px] font-mono font-black text-slate-500 dark:text-slate-400">
+            {/* Left extreme: Check-In time */}
+            <span>
+              {hasCheckedIn 
+                ? `Entrada: ${formatMinsToTimeClean(checkInTimes[currentUser.id])}` 
+                : `Entrada: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}`
+              }
+            </span>
+            {/* Right extreme: Check-Out time */}
+            <span>
+              {hasCheckedOut 
+                ? `Salida: ${formatMinsToTimeClean(checkOutTimes[currentUser.id])}` 
+                : `Salida: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}`
+              }
+            </span>
+          </div>
         </div>
       </div>
     );

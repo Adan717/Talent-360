@@ -21,6 +21,13 @@ class SubscriptionController extends Controller
     public function createPreference(Request $request)
     {
         $user = auth('sanctum')->user();
+        if (!$user && $request->bearerToken()) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($request->bearerToken());
+            if ($tokenModel) {
+                $user = $tokenModel->tokenable;
+                auth('sanctum')->setUser($user);
+            }
+        }
         $isInitialRegistration = ($user && $user->tenant_id === null);
         $isUpgrade = ($user && $user->tenant_id !== null);
 

@@ -313,7 +313,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Entrada</span>
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-indigo-600 dark:text-indigo-400">Entrada</span>
                 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-11 h-11' : 'w-12 h-12'
@@ -348,7 +348,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Descanso</span>
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-purple-600 dark:text-purple-400">Descanso</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-11 h-11' : 'w-12 h-12'
@@ -383,7 +383,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Comida</span>
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-amber-600 dark:text-amber-400">Comida</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
                   isMobile ? 'w-11 h-11' : 'w-12 h-12'
@@ -417,7 +417,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Salida</span>
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-emerald-600 dark:text-emerald-400">Salida</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-11 h-11' : 'w-12 h-12'
@@ -441,7 +441,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         </div>
 
         {/* Timeline Bar - Thicker, Larger, and Innovatively Styled (Glassmorphism & Contrast Text) */}
-        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-3.5' : 'px-4 mb-2 mt-3.5'}`}>
+        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-1.5' : 'px-4 mb-2 mt-1.5'}`}>
           {/* Progress Container (Slimmer size h-5 - Softest styled gray track with bevel shadow) */}
           <div className="relative w-full h-5 bg-slate-50/20 dark:bg-slate-800/10 rounded-2xl border border-slate-200/20 dark:border-slate-700/15 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.03),_0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
             
@@ -469,16 +469,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             )}
 
             {/* Absolute Overlay for Extremes Timestamps inside the bar */}
-            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[10.5px] font-mono font-black">
-              {/* Left extreme: Check-In time (inside) */}
-              <span className={hasCheckedIn ? "text-indigo-900 dark:text-white" : "text-indigo-400/80 dark:text-slate-500"}>
+            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[10.5px] font-mono font-bold text-slate-500 dark:text-slate-400">
+              {/* Left & Right extremes using uniform slate-500 gray text */}
+              <span>
                 {hasCheckedIn 
                   ? formatMinsToTimeClean(checkInTimes[currentUser.id]) 
                   : formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')
                 }
               </span>
-              {/* Right extreme: Check-Out time (inside) */}
-              <span className={hasCheckedOut ? "text-indigo-900 dark:text-white" : "text-indigo-400/80 dark:text-slate-500"}>
+              <span>
                 {hasCheckedOut 
                   ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) 
                   : formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')

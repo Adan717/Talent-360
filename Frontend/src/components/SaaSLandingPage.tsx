@@ -475,10 +475,10 @@ export const SaaSLandingPage = () => {
                     </div>
 
                     {/* VISTA SEGÚN PESTAÑA DEL TELÉFONO */}
-                    <div className="flex-1 flex flex-col justify-between my-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div className="flex-1 flex flex-col justify-between my-2 overflow-y-auto overflow-x-hidden">
                       {phoneActiveTab === 'reloj' && (
                         <>
-                          {/* Timeline de Turno (Línea de Progreso Real) */}
+                                  {/* Timeline de Turno (Línea de Progreso Real) */}
                           <div className="py-1 text-left w-full shrink-0">
                             <div className="flex justify-between items-center w-full px-1.5 mb-1.5 z-10 relative">
                               {/* Entrada */}
@@ -486,7 +486,13 @@ export const SaaSLandingPage = () => {
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState !== 'inactive' ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
                                   <LogIn size={12} />
                                 </div>
-                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState !== 'inactive' ? '08:45 am' : '-'}</span>
+                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
+                                  simulatedClockState !== 'inactive' 
+                                    ? 'text-indigo-600 bg-indigo-50 border-indigo-100/50' 
+                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
+                                }`}>
+                                  {simulatedClockState !== 'inactive' ? '08:45 am' : '-'}
+                                </span>
                               </div>
                               {/* Descanso */}
                               <div className="flex flex-col items-center">
@@ -495,7 +501,13 @@ export const SaaSLandingPage = () => {
                                 } ${simulatedClockState === 'break_active' ? 'animate-pulse' : ''}`}>
                                   <Coffee size={12} />
                                 </div>
-                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '11:15 am' : '-'}</span>
+                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
+                                  ['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState)
+                                    ? 'text-purple-650 bg-purple-50 border-purple-100/50' 
+                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
+                                }`}>
+                                  {['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '11:15 am' : '-'}
+                                </span>
                               </div>
                               {/* Comida */}
                               <div className="flex flex-col items-center">
@@ -504,25 +516,37 @@ export const SaaSLandingPage = () => {
                                 } ${simulatedClockState === 'lunch_active' ? 'animate-pulse' : ''}`}>
                                   <Utensils size={12} />
                                 </div>
-                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '02:00 pm' : '-'}</span>
+                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
+                                  ['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState)
+                                    ? 'text-amber-650 bg-amber-50 border-amber-100/50' 
+                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
+                                }`}>
+                                  {['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '02:00 pm' : '-'}
+                                </span>
                               </div>
                               {/* Salida */}
                               <div className="flex flex-col items-center">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState === 'finished' ? 'border-teal-500 bg-teal-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
                                   <LogOut size={12} />
                                 </div>
-                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState === 'finished' ? '06:00 pm' : '-'}</span>
+                                <span className={`text-[7px] font-mono font-black mt-1 px-1.5 py-0.5 rounded-full border transition-all ${
+                                  simulatedClockState === 'finished'
+                                    ? 'text-teal-600 bg-teal-50 border-teal-100/50' 
+                                    : 'text-slate-400 bg-slate-50 border-slate-200/40'
+                                }`}>
+                                  {simulatedClockState === 'finished' ? '06:00 pm' : '-'}
+                                </span>
                               </div>
                             </div>
 
-                            {/* Timeline Bar */}
-                            <div className="relative w-full px-2 mt-[-13px] z-0">
-                              <div className="w-full h-1 bg-slate-100 rounded-full"></div>
+                            {/* Timeline Bar - Thicker and closer to icons */}
+                            <div className="relative w-full px-2 mt-[-20px] z-0">
+                              <div className="w-full h-3.5 bg-slate-100 rounded-full border border-slate-200/40"></div>
                               <div 
-                                className={`absolute left-2 top-0 h-1 rounded-full transition-all duration-300 ${
+                                className={`absolute left-2 top-0 h-3.5 rounded-full transition-all duration-500 ${
                                   simulatedClockState === 'inactive' ? 'bg-slate-200' :
-                                  simulatedClockState === 'break_active' ? 'bg-purple-500' :
-                                  simulatedClockState === 'lunch_active' ? 'bg-amber-500' : 'bg-emerald-500'
+                                  simulatedClockState === 'break_active' ? 'bg-purple-400' :
+                                  simulatedClockState === 'lunch_active' ? 'bg-amber-400' : 'bg-emerald-500'
                                 }`}
                                 style={{ width: 
                                   simulatedClockState === 'inactive' ? '0%' : 

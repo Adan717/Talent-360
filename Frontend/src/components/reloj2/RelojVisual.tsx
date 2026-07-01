@@ -1452,62 +1452,60 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   >
                     🪪 Perfil & Ajustes
                   </button>
-                </nav>
-              </div>
-            </header>
-          )}
-        </>
-      )}
-
-      {/* --- CONTENT LAYOUTS --- */}
-      
-      {/* A. MOBILE VIEW LAYOUT (phoneTab === 'checador') */}
+           {/* A. MOBILE VIEW LAYOUT (phoneTab === 'checador') */}
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
-          {/* A1. MOBILE HEADER */}
-          <div className={`flex items-center justify-between px-4 py-3 border-b shrink-0 ${isDark ? 'border-slate-900 bg-slate-900/40' : 'border-slate-202 bg-white/80'} backdrop-blur-md`}>
-            <div className="flex items-center gap-3 text-left">
-              {/* Module Icon */}
-              <div className="w-10 h-10 rounded-2xl bg-violet-500/10 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0">
-                <Clock size={22} className="animate-pulse" />
+          {/* A1. MOBILE HEADER (Identical to landing simulation) */}
+          <div className={`flex items-center justify-between px-4 py-3 border-b shrink-0 ${isDark ? 'border-slate-900 bg-slate-900/40' : 'border-slate-100 bg-white'} backdrop-blur-md`}>
+            <div 
+              className="flex items-center gap-2 text-left cursor-pointer"
+              onClick={() => {
+                setEditUsername(currentUser?.name || 'Francisco');
+                setEditPassword(currentUser?.pin_code || '1234');
+                setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
+                setShowSettingsModal(true);
+              }}
+            >
+              <div className="relative shrink-0">
+                <img 
+                  src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                  alt="Avatar" 
+                  className="w-8.5 h-8.5 rounded-full object-cover border border-slate-200/80 shadow-sm hover:scale-105 transition-transform" 
+                />
+                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${isDark ? 'border-slate-950' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h2 className="text-sm font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider leading-none">Reloj Checador</h2>
-                  <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[7.5px] font-black uppercase tracking-wider border ${
-                    storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                  }`}>
-                    {storeStatus === 'open' ? 'Abierto' : 'Tienda Cerrada'}
-                  </span>
-                </div>
-                <p className="text-[9.5px] text-slate-500 dark:text-slate-400 mt-1 leading-none">Control de Asistencia y Turnos</p>
+              <div className="leading-none text-left">
+                <h4 className="text-[10px] font-black text-slate-800 dark:text-slate-100">{currentUser?.name || 'Colaborador'}</h4>
+                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wide">
+                  {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                </span>
               </div>
             </div>
-            
-            {/* Manual Pass List Trigger */}
-            {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
-              <button 
-                onClick={() => initPaseLista(false)}
-                className="bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-full flex items-center gap-1 shadow-md border-none outline-none select-none cursor-pointer active:scale-95 transition-all ml-auto mr-3 shrink-0"
-              >
-                <span>📋</span>
-                <span>Pase Lista</span>
-              </button>
-            )}
-            
-            {/* User Profile Avatar aligned to the right (larger size) */}
-            <div className="relative cursor-pointer shrink-0" onClick={() => {
-              setEditUsername(currentUser?.name || 'Francisco');
-              setEditPassword(currentUser?.pin_code || '1234');
-              setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
-              setShowSettingsModal(true);
-            }}>
-              <img 
-                src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-                alt="Avatar" 
-                className="w-11 h-11 rounded-full border-2 border-violet-500/60 object-cover shadow-sm hover:scale-105 transition-transform duration-250"
-              />
-              <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 ${isDark ? 'border-slate-950' : 'border-white'} ${clockState === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+
+            <div className="flex items-center gap-2">
+              {/* Manual Pass List Trigger */}
+              {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
+                <button 
+                  onClick={() => initPaseLista(false)}
+                  className="bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-[8.5px] uppercase px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none outline-none select-none cursor-pointer active:scale-95 transition-all"
+                >
+                  <span>📋</span>
+                  <span>Lista</span>
+                </button>
+              )}
+
+              <span className={`text-[7.5px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${
+                hasCheckedOut ? 'bg-teal-50 border-teal-100 text-teal-650 dark:bg-emerald-955/20 dark:border-emerald-800 dark:text-emerald-450' :
+                clockState === 'short_break' ? 'bg-purple-50 border-purple-100 text-purple-650 dark:bg-purple-955/20 dark:border-purple-800 dark:text-purple-400' :
+                clockState === 'meal' ? 'bg-amber-50 border-amber-100 text-amber-650 dark:bg-amber-955/20 dark:border-amber-800 dark:text-amber-450' :
+                hasCheckedIn ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-800 dark:text-emerald-400' : 
+                'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800'
+              }`}>
+                {hasCheckedOut ? 'Finalizado' :
+                 clockState === 'short_break' ? 'Descanso' :
+                 clockState === 'meal' ? 'Almuerzo' :
+                 hasCheckedIn ? 'Turno Activo' : 'Inactivo'}
+              </span>
             </div>
           </div>
           
@@ -1598,11 +1596,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         )}
                       </div>
                       {hasCheckedIn ? (
-                        <span className={`text-[9px] font-mono mt-2 font-bold ${isLate ? 'text-rose-500' : 'text-indigo-650 dark:text-indigo-400'}`}>
+                        <span className={`text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all ${
+                          isLate 
+                            ? 'text-rose-605 bg-rose-50 border-rose-100/50 dark:text-rose-400 dark:bg-rose-955/20 dark:border-rose-900/50 animate-pulse' 
+                            : 'text-indigo-650 bg-indigo-50 border-indigo-100/50 dark:text-indigo-400 dark:bg-indigo-950/20 dark:border-indigo-900/50'
+                        }`}>
                           {formatMinsToTimeClean(checkInTimes[currentUser.id])} {isLate && "(Retardo)"}
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono text-transparent mt-2 pointer-events-none">-</span>
+                        <span className="text-[7px] font-mono text-slate-400 bg-slate-50 border border-slate-200/40 mt-2 px-1.5 py-0.5 rounded-full dark:bg-slate-900/20 dark:border-slate-800/40">-</span>
                       )}
                     </div>
                   );
@@ -1633,24 +1635,14 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       </div>
                       {(() => {
                         const info = getBreakInfo();
-                        if (!info) return <span className="text-[9px] font-mono text-transparent mt-2 pointer-events-none">-</span>;
                         return (
-                          <div className="flex flex-col items-center mt-1.5 leading-tight">
-                            <span className="text-[9px] font-bold text-slate-500 font-mono">
-                              {formatMinsToTimeClean(info.start)}
-                            </span>
-                            {info.isActive ? (
-                              <span className="text-[8.5px] font-mono text-violet-500 font-bold mt-0.5">
-                                Activo ({info.duration}m)
-                                {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
-                              </span>
-                            ) : (
-                              <span className="text-[8.5px] font-mono text-purple-650 dark:text-purple-400 font-medium mt-0.5">
-                                {info.duration} min
-                                {info.extra > 0 && <span className="text-rose-500 font-black ml-0.5">+{info.extra}m</span>}
-                              </span>
-                            )}
-                          </div>
+                          <span className={`text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all ${
+                            isDone || isActive
+                              ? 'text-purple-650 bg-purple-50 border-purple-100/50 dark:text-purple-400 dark:bg-purple-955/20 dark:border-purple-900/50' 
+                              : 'text-slate-400 bg-slate-50 border border-slate-200/40 dark:text-slate-500 dark:bg-slate-900/20 dark:border-slate-800/40'
+                          }`}>
+                            {info ? formatMinsToTimeClean(info.start) : '-'}
+                          </span>
                         );
                       })()}
                     </div>
@@ -1682,36 +1674,14 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       </div>
                       {(() => {
                         const info = getMealInfo();
-                        if (!info) return <span className="text-[9px] font-mono text-transparent mt-2 pointer-events-none">-</span>;
-                        if (info.isReserved) {
-                          return (
-                            <div className="flex flex-col items-center mt-1.5 leading-tight">
-                              <span className="text-[9px] font-bold text-amber-600 font-mono">
-                                Reservado
-                              </span>
-                              <span className="text-[8px] text-slate-400 font-mono mt-0.5">
-                                {info.reservedText}
-                              </span>
-                            </div>
-                          );
-                        }
                         return (
-                          <div className="flex flex-col items-center mt-1.5 leading-tight">
-                            <span className="text-[9px] font-bold text-slate-500 font-mono">
-                              {formatMinsToTimeClean(info.start)}
-                            </span>
-                            {info.isActive ? (
-                              <span className="text-[8.5px] font-mono text-amber-500 font-bold mt-0.5">
-                                Activo ({info.duration}m)
-                                {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
-                              </span>
-                            ) : (
-                              <span className="text-[8.5px] font-mono text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                                {info.duration} min
-                                {info.extra > 0 && <span className="text-rose-500 font-black ml-0.5">+{info.extra}m</span>}
-                              </span>
-                            )}
-                          </div>
+                          <span className={`text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all ${
+                            isDone || isActive
+                              ? 'text-amber-650 bg-amber-50 border-amber-100/50 dark:text-amber-450 dark:bg-amber-955/20 dark:border-amber-900/40' 
+                              : 'text-slate-400 bg-slate-50 border border-slate-200/40 dark:text-slate-500 dark:bg-slate-900/20 dark:border-slate-800/40'
+                          }`}>
+                            {info && !info.isReserved ? formatMinsToTimeClean(info.start) : '-'}
+                          </span>
                         );
                       })()}
                     </div>
@@ -1740,49 +1710,37 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         )}
                       </div>
                       {hasCheckedOut ? (
-                        <span className="text-[9px] font-mono text-teal-655 dark:text-teal-400 font-bold mt-2">
+                        <span className="text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all text-teal-600 bg-teal-50 border-teal-100/50 dark:text-teal-450 dark:bg-teal-950/20 dark:border-teal-900/40">
                           {checkOutTimes[currentUser.id] ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : 'Fichado'}
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono text-transparent mt-2 pointer-events-none">-</span>
+                        <span className="text-[7px] font-mono text-slate-400 bg-slate-50 border border-slate-200/40 mt-2 px-1.5 py-0.5 rounded-full dark:bg-slate-900/20 dark:border-slate-800/40">-</span>
                       )}
                     </div>
                   );
                 })()}
               </div>
 
-              {/* Thicker horizontal progress bar touching the circles (extremely light gray background, green pulsing fill, centered overlay) */}
-              <div className="relative w-full px-2 mt-[-16px] z-0">
-                <div className="w-full h-4.5 bg-slate-50/10 dark:bg-slate-900/5 rounded-full border border-slate-100/15 dark:border-slate-850/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.01)]"></div>
+              {/* Thicker horizontal progress bar touching the circles (extremely light gray background, green pulsing fill, centered worked hours overlay) */}
+              <div className="relative w-full px-2 mt-[-22px] z-0">
+                <div className="w-full h-5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800 shadow-inner"></div>
                 <div 
-                  className="absolute left-2 top-0 h-4.5 rounded-full transition-all duration-500 bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
+                  className={`absolute left-2 top-0 h-5 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(16,185,129,0.25)] ${
+                    clockState === 'short_break' ? 'bg-purple-400' :
+                    clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
+                  }`}
                   style={{ width: `calc(${progressPercent}% - 16px)` }}
                 ></div>
                 
-                {/* Entrance time (left) inside the bar */}
-                <div className="absolute left-4 top-0 h-4.5 flex items-center pointer-events-none z-10">
-                  <span className="text-[8.5px] font-black font-mono text-slate-500 dark:text-slate-400">
-                    {hasCheckedIn ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
-                  </span>
-                </div>
-
                 {/* Centered worked time overlay inside the bar */}
                 {hasCheckedIn && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <span className="text-[9.5px] font-black text-slate-800 dark:text-white drop-shadow-sm font-mono">
-                      {workedHours}h
+                    <span className="text-[9px] font-black text-slate-850 dark:text-white font-mono uppercase tracking-wider">
+                      {workedHours} Trabajadas
                     </span>
                   </div>
                 )}
-
-                {/* Exit time (right) inside the bar */}
-                <div className="absolute right-4 top-0 h-4.5 flex items-center pointer-events-none z-10">
-                  <span className="text-[8.5px] font-black font-mono text-slate-500 dark:text-slate-400">
-                    {hasCheckedOut ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
-                  </span>
-                </div>
               </div>
-            </div>
 
             {/* Fading Divider below timeline section */}
             <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800/60 to-transparent my-5"></div>
@@ -1849,156 +1807,52 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   </button>
                 </div>
               )}
-            {/* Wait Queue & Absence Helpers - Side by Side */}
-            <div className="flex items-center justify-center gap-3 mt-5.5 w-full max-w-[340px] mx-auto px-1 shrink-0">
-
-            </div>
-            </div>
-
-            {/* Bottom Tasks Hub (Bottom) - VISUALLY DISTINCT CARD SECTION */}
-            <div className={`border rounded-3xl p-4 flex flex-col gap-2.5 h-[180px] shrink-0 mt-3 relative transition-colors ${
-              isDark ? 'bg-[#0e1726]/60 border-slate-855' : 'bg-slate-50 border-slate-200/80 shadow-md'
-            }`}>
+            {/* Alertas Sencillas Abajo del Dial (Identical to landing simulation) */}
+            <div className="space-y-1.5 shrink-0 px-0.5 mt-2 w-full max-w-[340px] mx-auto">
+              {/* Alerta de Tareas */}
               {(() => {
-                if (clockState === 'inactive' || clockState === 'waiting_room') {
-                  return null;
-                }
-                const alertMsg = buddyAlerts[currentUser.id] || globalBroadcastMessage;
-                const alertBg = isDark ? 'bg-violet-955/20 border-violet-900/60 text-violet-300' : 'bg-violet-50 border-violet-200 text-violet-700';
-                
-                return alertMsg ? (
-                  <div className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-bold text-left truncate flex items-center gap-1.5 shrink-0 ${alertBg}`}>
-                    <span>📢</span>
-                    <span className="truncate flex-1">{alertMsg}</span>
-                  </div>
-                ) : null;
+                const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
+                    className={`w-full p-2 border rounded-xl flex items-center gap-1.5 text-left transition-all active:scale-[0.99] focus:outline-none ${
+                      pendingCount > 0
+                        ? (isDark ? 'bg-rose-955/20 border-rose-900/60 text-rose-300' : 'bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-800')
+                        : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-100 text-emerald-800')
+                    }`}
+                  >
+                    <span className="text-xs">⚠️</span>
+                    <div className="leading-tight overflow-hidden flex-1">
+                      <p className="text-[7.5px] font-black uppercase tracking-wide">Alerta de Tareas</p>
+                      <p className="text-[8px] font-bold truncate">
+                        {pendingCount > 0 
+                          ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
+                          : '¡Todas tus tareas están al día ✓'}
+                      </p>
+                    </div>
+                  </button>
+                );
               })()}
 
-              {/* Hub Columns */}
-              <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-800/10 dark:border-slate-800/60 pb-1.5 shrink-0">
-                <span className="flex items-center gap-1">📋 Tareas del Día</span>
-                <span>Bolsa de Trabajo</span>
-              </div>
-
-              {/* The division line inside column A and B is thicker gray */}
-              <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-                
-                {/* Column A: Tareas del Día */}
-                <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-none text-left">
-                  {(() => {
-                    const myAssignments = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress', 'paused', 'completed', 'awaiting_validation'].includes(a.status));
-                    if (myAssignments.length === 0) {
-                      return (
-                        <div className="flex items-center justify-center h-full text-[10px] text-slate-400 italic text-center leading-tight font-medium">
-                          Sin tareas asignadas
-                        </div>
-                      );
-                    }
-                    return myAssignments.map(assignment => {
-                      const task = tasks.find(t => t.id === assignment.taskId);
-                      if (!task) return null;
-                      
-                      return (
-                        <div key={assignment.id} className={`flex items-center justify-between p-2 rounded-xl text-left gap-1.5 border ${
-                          isDark ? 'bg-slate-950/20 border-slate-900/60' : 'bg-white border-slate-200'
-                        }`}>
-                          <div className="min-w-0 flex-1 text-left">
-                            <p className="text-[10px] font-extrabold text-slate-808 dark:text-slate-202 truncate leading-tight">{task.title}</p>
-                            <p className="text-[8px] text-slate-450 uppercase font-black tracking-wider mt-0.5">{task.priority === 'bloqueante' ? '🚨 Urgente' : 'Rutina'}</p>
-                          </div>
-                          
-                          <div className="flex-shrink-0">
-                            {assignment.status === 'pending' && (
-                              <button 
-                                onClick={() => startTask(assignment.id, currentSimTime)}
-                                className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-505 flex items-center justify-center hover:bg-emerald-500/20 active:scale-90 transition-all focus:outline-none"
-                              >
-                                <Play size={9} fill="currentColor" className="ml-0.5" />
-                              </button>
-                            )}
-                            {assignment.status === 'in_progress' && (
-                              <button 
-                                onClick={() => completeTask(assignment.id, currentSimTime, 'Completado')}
-                                className="w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-605 dark:text-amber-400 flex items-center justify-center hover:bg-amber-500/20 active:scale-90 transition-all focus:outline-none"
-                              >
-                                <Check size={9} strokeWidth={3} />
-                              </button>
-                            )}
-                            {(assignment.status === 'completed' || assignment.status === 'awaiting_validation') && (
-                              <span className="w-5.5 h-5.5 rounded-full bg-emerald-500/15 border border-emerald-505/20 text-emerald-505 flex items-center justify-center text-[9px] font-black font-sans">
-                                ✓
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-
-                {/* Column B: Bolsa de Trabajo - Thick Gray Divider border-l-2 */}
-                <div className="relative flex flex-col min-h-0 border-l-2 border-slate-250 dark:border-slate-800/80 pl-2.5">
-                  {(() => {
-                    const isFreemium = currentTier === 'freemium';
-                    if (isFreemium) {
-                      return (
-                        <div className={`absolute inset-0 backdrop-blur-xs flex flex-col items-center justify-center text-center p-1.5 rounded-xl z-20 border ${
-                          isDark ? 'bg-slate-955/85 border-slate-900' : 'bg-slate-50/90 border-slate-202'
-                        }`}>
-                          <Lock size={14} className="text-violet-500 mb-0.5 animate-pulse" />
-                          <p className="text-[8px] font-black text-violet-500 uppercase tracking-widest leading-none">Bolsa Pro</p>
-                          <p className="text-[8px] text-slate-505 dark:text-slate-400 leading-tight mt-0.5 max-w-[110px]">
-                            Mejora tu plan para tomar tareas
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    const poolAssignments = assignments.filter(a => {
-                      if (a.userId !== null || a.status !== 'pending') return false;
-                      const t = tasks.find(tsk => tsk.id === a.taskId);
-                      if (!t) return false;
-                      return t.targetId === null || t.targetId === undefined || Number(t.targetId) === Number(currentUser.job_role_id);
-                    });
-
-                    if (poolAssignments.length === 0) {
-                      return (
-                        <div className="flex items-center justify-center h-full text-[10px] text-slate-400 italic text-center leading-tight">
-                          No hay ofertas en bolsa
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-none flex-1">
-                        {poolAssignments.map(assignment => {
-                          const task = tasks.find(t => t.id === assignment.taskId);
-                          if (!task) return null;
-                          
-                          return (
-                            <div key={assignment.id} className={`flex items-center justify-between p-2 rounded-xl text-left gap-1.5 border ${
-                              isDark ? 'bg-slate-950/20 border-slate-900/60' : 'bg-white border-slate-202'
-                            }`}>
-                              <div className="min-w-0 flex-1 text-left">
-                                <p className="text-[10px] font-bold text-slate-805 dark:text-slate-202 truncate leading-tight">{task.title}</p>
-                                <p className="text-[7.5px] text-emerald-500 dark:text-emerald-450 font-extrabold mt-0.5">+{task.points || 15} pts</p>
-                              </div>
-                              <button 
-                                onClick={() => grabTaskFromPool(assignment.id, currentUser.id, currentSimTime)}
-                                className="flex-shrink-0 bg-violet-650 hover:bg-violet-700 text-white font-extrabold text-[8px] px-2 py-0.5 rounded-md active:scale-90 transition-all focus:outline-none"
-                              >
-                                Tomar
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+              {/* Alerta de Hora de Comida / Turno */}
+              <div className={`w-full p-2 border rounded-xl flex items-center gap-1.5 text-left select-none ${
+                isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50 border-blue-105 text-blue-800'
+              }`}>
+                <span className="text-xs">📅</span>
+                <div className="leading-tight overflow-hidden flex-1">
+                  <p className="text-[7.5px] font-black uppercase tracking-wide">Jornada / Horario</p>
+                  <p className="text-[8px] font-bold truncate">
+                    {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
+                     clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
+                     clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
+                     clockState === 'meal' ? 'Comida activa: Regresa en 30 minutos' :
+                     hasCheckedOut ? 'Jornada del día completada 🎉' :
+                     'Turno programado en progreso'}
+                  </p>
                 </div>
               </div>
             </div>
-
             </div>
           )}
 

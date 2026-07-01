@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';
@@ -1452,7 +1452,16 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   >
                     🪪 Perfil & Ajustes
                   </button>
-           {/* A. MOBILE VIEW LAYOUT (phoneTab === 'checador') */}
+                </nav>
+              </div>
+            </header>
+          )}
+        </>
+      )}
+
+      {/* --- CONTENT LAYOUTS --- */}
+      
+      {/* A. MOBILE VIEW LAYOUT (phoneTab === 'checador') */}
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
           {/* A1. MOBILE HEADER (Identical to landing simulation) */}
@@ -1807,6 +1816,9 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   </button>
                 </div>
               )}
+            </div>
+            </div>
+
             {/* Alertas Sencillas Abajo del Dial (Identical to landing simulation) */}
             <div className="space-y-1.5 shrink-0 px-0.5 mt-2 w-full max-w-[340px] mx-auto">
               {/* Alerta de Tareas */}
@@ -1853,7 +1865,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 </div>
               </div>
             </div>
-            </div>
+          </div>
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}

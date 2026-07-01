@@ -541,22 +541,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {renderUnifiedMobileHeader()}
 
       {/* ZONA DE CONTENIDO MÓVIL (Con padding para evitar colisionar con Header y Footer) */}
-      <div className="flex-1 overflow-y-auto px-4 pt-[74px] pb-[72px] flex flex-col justify-between gap-2 scrollbar-none relative z-10">
+      <div className="flex-1 overflow-y-auto px-4 pt-[74px] pb-[92px] flex flex-col justify-between gap-2 scrollbar-none relative z-10">
         
         {phoneTab === 'checador' && (
           <div className="flex-grow flex flex-col justify-between gap-2 py-2">
             
-            {/* Cronómetro/Hora Digital (Único reloj del panel) */}
-            <div className="text-center py-2 shrink-0">
-              <div className="text-2xl font-black font-mono tracking-tight">{formattedTime}</div>
-              <p className="text-[8.5px] font-black uppercase text-slate-400 tracking-widest mt-1">
-                {clockState === 'inactive' && 'Jornada Sin Iniciar'}
-                {clockState === 'active' && '⏱️ Registrando Jornada'}
-                {clockState === 'short_break' && '💤 En Descanso Corto'}
-                {clockState === 'meal' && '🍲 Horario de Comida'}
-                {clockState === 'finished' && '🏁 Jornada Finalizada'}
-              </p>
-            </div>
+
 
             {/* Barra Cronológica Proporcional Real */}
             {renderBarraCronologica()}

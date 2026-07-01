@@ -10,7 +10,7 @@ export interface MobileBottomNavProps {
 
 export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark }: MobileBottomNavProps) {
   return (
-    <nav className={`fixed bottom-4 left-4 right-4 z-[75] flex items-center justify-around py-3 px-2 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200 ${
+    <nav className={`absolute bottom-4 left-4 right-4 z-[75] flex items-center justify-around py-3 px-2 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200 ${
       isDark 
         ? 'bg-slate-955/80 border-violet-900/40 shadow-[0_-8px_32px_rgba(124,58,237,0.12),0_8px_32px_rgba(124,58,237,0.1)] text-slate-400' 
         : 'bg-white/80 border-violet-100/50 shadow-[0_-8px_32px_rgba(124,58,237,0.06),0_8px_32px_rgba(124,58,237,0.04)] text-slate-500'

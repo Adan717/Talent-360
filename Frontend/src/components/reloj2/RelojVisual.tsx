@@ -204,19 +204,41 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
     return (
       <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-2 w-full text-left py-2 select-none"}>
-        {/* Status title on the right, no horario label */}
-        <div className={`flex justify-end items-center font-bold uppercase tracking-wider ${isMobile ? 'text-[10px] mb-4.5' : 'text-xs tracking-widest'}`}>
-          {hasCheckedOut ? (
-            <span className="text-emerald-600 dark:text-emerald-450 font-extrabold flex items-center gap-1">
-              <span>Turno Finalizado ✓</span>
-            </span>
-          ) : hasCheckedIn ? (
-            <span className="text-emerald-600 dark:text-emerald-455 font-extrabold flex items-center gap-1 animate-pulse">
-              <span>Turno Activo ✓</span>
-            </span>
-          ) : (
-            <span className="text-slate-400 dark:text-slate-500 font-extrabold">Turno No Iniciado</span>
-          )}
+        {/* Two-Column Status Bar: Store Status (Left) & Employee Shift Status (Right) */}
+        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-4.5' : 'text-[11px] mb-1 tracking-wider'}`}>
+          {/* Left: Store status */}
+          <div className="flex items-center select-none">
+            {storeStatus === 'open' ? (
+              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>🏪 Sucursal Abierta</span>
+              </span>
+            ) : (
+              <span className="text-rose-600 dark:text-rose-450 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                <span>🔒 Sucursal Cerrada</span>
+              </span>
+            )}
+          </div>
+
+          {/* Right: Employee Shift status */}
+          <div className="flex items-center select-none">
+            {hasCheckedOut ? (
+              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+                <span>Turno Finalizado ✓</span>
+              </span>
+            ) : hasCheckedIn ? (
+              <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Turno Activo ✓</span>
+              </span>
+            ) : (
+              <span className="text-slate-400 dark:text-slate-550 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-600"></span>
+                <span>Turno Inactivo</span>
+              </span>
+            )}
+          </div>
         </div>
         
         <div className={`flex justify-between items-center w-full z-10 relative ${isMobile ? 'px-2 mb-0' : 'px-4 mb-0 mt-2'}`}>
@@ -1843,7 +1865,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               </div>
               <div className="flex flex-col min-w-0 justify-center text-left">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-[14.5px] font-black text-slate-950 dark:text-white tracking-tight leading-tight">
+                  <h3 className="text-[14.5px] font-black text-slate-955 dark:text-white tracking-tight leading-tight">
                     Reloj Checador
                   </h3>
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-wider uppercase bg-emerald-500/10 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20">
@@ -1856,68 +1878,51 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               </div>
             </div>
 
-            {/* Right: User Profile (Click opens settings) */}
-            <div 
-              className="flex items-center gap-2.5 text-right cursor-pointer"
-              onClick={() => {
-                setEditUsername(currentUser?.name || 'Francisco');
-                setEditPassword(currentUser?.pin_code || '1234');
-                setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
-                setShowSettingsModal(true);
-              }}
-            >
-              <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-                <span className="text-[10.5px] font-black text-slate-900 dark:text-slate-100 truncate">
-                  {currentUser?.name || 'Colaborador'}
-                </span>
-                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wide truncate mt-0.5">
-                  {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
-                </span>
-                <span className="text-[7.5px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider truncate mt-0.5">
-                  {currentUser?.tenant?.name || 'Decorarte'}
-                </span>
-              </div>
-              
-              <div className="relative shrink-0">
-                <img 
-                  src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-                  alt="Avatar" 
-                  className="w-9 h-9 rounded-full object-cover border border-slate-200/80 shadow-sm hover:scale-105 transition-transform" 
-                />
-                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${isDark ? 'border-slate-950' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-              </div>
-            </div>
-          </div>
+            {/* Right: Actions & User Profile */}
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Manual Pass List Trigger inside the header for Supervisors */}
+              {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
+                <button 
+                  onClick={() => initPaseLista(false)}
+                  className="bg-violet-605 hover:bg-violet-700 text-white font-extrabold text-[8.5px] uppercase px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
+                >
+                  <span>📋</span>
+                  <span>Lista</span>
+                </button>
+              )}
 
-          {/* COMPACT ATTENDANCE STATUS & ACTIONS SUBBAR */}
-          <div className="flex items-center justify-between px-4 py-1.5 border-b shrink-0 bg-slate-50 dark:bg-slate-900 text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[8.5px] font-bold text-slate-400 uppercase">Turno:</span>
-              <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${
-                hasCheckedOut ? 'bg-teal-50 border-teal-100 text-teal-650 dark:bg-emerald-955/20 dark:border-emerald-800 dark:text-emerald-450' :
-                clockState === 'short_break' ? 'bg-purple-50 border-purple-100 text-purple-650 dark:bg-purple-955/20 dark:border-purple-800 dark:text-purple-400' :
-                clockState === 'meal' ? 'bg-amber-50 border-amber-100 text-amber-650 dark:bg-amber-955/20 dark:border-amber-800 dark:text-amber-450' :
-                hasCheckedIn ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-800 dark:text-emerald-400' : 
-                'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-900 dark:border-slate-800'
-              }`}>
-                {hasCheckedOut ? 'Finalizado' :
-                 clockState === 'short_break' ? 'Descanso' :
-                 clockState === 'meal' ? 'Almuerzo' :
-                 hasCheckedIn ? 'Turno Activo' : 'Inactivo'}
-              </span>
-            </div>
-
-            {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
-              <button 
-                onClick={() => initPaseLista(false)}
-                className="bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-[8.5px] uppercase px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all"
+              <div 
+                className="flex items-center gap-2.5 text-right cursor-pointer"
+                onClick={() => {
+                  setEditUsername(currentUser?.name || 'Francisco');
+                  setEditPassword(currentUser?.pin_code || '1234');
+                  setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
+                  setShowSettingsModal(true);
+                }}
               >
-                <span>📋</span>
-                <span>Lista</span>
-              </button>
-            )}
+                <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
+                  <span className="text-[10.5px] font-black text-slate-900 dark:text-slate-100 truncate">
+                    {currentUser?.name || 'Colaborador'}
+                  </span>
+                  <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wide truncate mt-0.5">
+                    {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                  </span>
+                  <span className="text-[7.5px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider truncate mt-0.5">
+                    {currentUser?.tenant?.name || 'Decorarte'}
+                  </span>
+                </div>
+                
+                <div className="relative shrink-0">
+                  <img 
+                    src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                    alt="Avatar" 
+                    className="w-9 h-9 rounded-full object-cover border border-slate-200/80 shadow-sm hover:scale-105 transition-transform" 
+                  />
+                  <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${isDark ? 'border-slate-955' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                </div>
+              </div>
+            </div>
           </div>
-          
           {/* A2. MOBILE SCROLLABLE CONTENT OR REST DAY LOCK SCREEN */}
           {shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
             <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up">

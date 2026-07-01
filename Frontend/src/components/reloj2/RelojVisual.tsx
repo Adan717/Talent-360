@@ -1621,7 +1621,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             ← Reloj
           </button>
           <span className="mx-auto text-xs font-black uppercase tracking-widest text-slate-400">
-            {phoneTab === 'academia' ? 'Academia' : phoneTab === 'herramientas' ? 'Herramientas' : phoneTab === 'evaluacion360' ? 'Fin de Turno' : phoneTab === 'organigrama' ? 'Organigrama' : 'Perfil y Ajustes'}
+            {phoneTab === 'academia' ? 'Academia' : phoneTab === 'tareas' ? 'Tablero de Tareas' : phoneTab === 'herramientas' ? 'Herramientas' : phoneTab === 'evaluacion360' ? 'Fin de Turno' : phoneTab === 'organigrama' ? 'Organigrama' : 'Perfil y Ajustes'}
           </span>
           <div className="w-12"></div>
         </div>

@@ -187,7 +187,27 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     pendingBreakRequests,
     requestBreak,
     approveBreakRequest,
-    rejectBreakRequest
+    rejectBreakRequest,
+    showBreakSeatModal,
+    setShowBreakSeatModal,
+    showTempExitModal,
+    setShowTempExitModal,
+    showPanicModal,
+    setShowPanicModal,
+    isPanicActive,
+    setIsPanicActive,
+    showMealSwapModal,
+    setShowMealSwapModal,
+    isHandoverCompleted,
+    setIsHandoverCompleted,
+    startBreakWithSittingTask,
+    startTempExit,
+    endTempExit,
+    triggerPanic,
+    resolvePanic,
+    completeHandover,
+    cashCount,
+    setCashCount
   } = useClockContext2();
 
   // Estados locales para nuevas herramientas operativas

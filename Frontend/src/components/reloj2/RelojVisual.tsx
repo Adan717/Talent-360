@@ -1443,9 +1443,9 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           <button 
                             onClick={() => {
                               localStorage.removeItem('talent_auth_token');
-                              setIsSessionLocked(true);
+                              useAppStore.getState().setCurrentUser(null as any);
                               setIsProfileMenuOpen(false);
-                              showCustomAlert('🚪 Sesión Cerrada. Pantalla Bloqueada.');
+                              window.location.href = '/login';
                             }}
                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center gap-2 focus:outline-none"
                           >
@@ -3764,9 +3764,9 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   <button 
                     onClick={() => {
                       localStorage.removeItem('talent_auth_token');
-                      setIsSessionLocked(true);
+                      useAppStore.getState().setCurrentUser(null as any);
                       setShowSettingsModal(false);
-                      showCustomAlert('🚪 Sesión Cerrada. Pantalla Bloqueada.');
+                      window.location.href = '/login';
                     }}
                     className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 border-none outline-none mt-1 cursor-pointer"
                   >

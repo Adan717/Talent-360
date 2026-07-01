@@ -129,7 +129,6 @@ return new class extends Migration
                 'id' => 1,
                 'name' => 'DecorArte 360',
                 'is_active' => true,
-                'tenant_id' => 1,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);

@@ -37,8 +37,8 @@ def main():
     )
     
     try:
-        run_cmd(ssh, "ls -la /var/www/talent360/Backend/storage/logs")
-        run_cmd(ssh, "tail -n 50 /var/www/talent360/Backend/storage/logs/laravel.log")
+        run_cmd(ssh, "cd /var/www/talent360 && git pull")
+        run_cmd(ssh, "docker exec talent360-backend php scripts_utilidad/test_login.php")
     finally:
         ssh.close()
 

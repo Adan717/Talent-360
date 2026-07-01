@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2 } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -25,6 +25,16 @@ export const SaaSLandingPage = () => {
     company_name: '',
     subdomain: ''
   });
+
+  const [activeTab, setActiveTab] = useState<'checador' | 'rrhh' | 'reclutamiento'>('checador');
+  const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTime(new Date().toLocaleTimeString());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const { setCurrentUser, setCurrentTier } = useAppStore();
 
@@ -280,26 +290,222 @@ export const SaaSLandingPage = () => {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative pt-44 pb-24 px-6 overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-r from-blue-200/30 to-purple-200/30 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
+      <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-r from-blue-200/20 to-purple-200/20 rounded-full blur-[120px] opacity-60 pointer-events-none"></div>
 
-        <div className="max-w-5xl mx-auto text-center relative z-10 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs font-bold text-blue-600 mb-8 shadow-sm">
-            <Sparkles size={14} className="text-blue-500" /> Nuevo: Registro rápido con Google Account
-          </div>
-          <h2 className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 mb-8 leading-tight">
-            El sistema operativo para <br className="hidden md:block"/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">tu Capital Humano</span>
-          </h2>
-          <p className="text-lg md:text-xl text-slate-500 max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
-            Optimiza la atracción de talento, reloj checador con control biométrico, academia y nóminas. Talent 360 se adapta al tamaño de tu empresa con un modelo transparente.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button onClick={() => {
-              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-            }} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-lg shadow-lg shadow-blue-500/25 active:scale-98 transition-all flex items-center justify-center gap-2">
-              Ver Planes y Precios <ChevronRight size={20} />
-            </button>
+        <div className="max-w-7xl mx-auto relative z-10 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Columna Izquierda: Mensaje y Controles */}
+            <div className="lg:col-span-5 text-left space-y-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-bold text-blue-600 shadow-sm">
+                <Sparkles size={12} className="text-blue-500" /> Registro rápido con tu cuenta de Google
+              </div>
+              
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+                El sistema operativo para <br className="hidden sm:block"/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">tu Capital Humano</span>
+              </h2>
+              
+              <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed max-w-lg">
+                Optimiza la asistencia con control biométrico y GPS, gestiona expedientes, organigramas y capacitación interna. Todo desde un único panel inteligente.
+              </p>
+
+              <div className="flex flex-wrap gap-4">
+                <button 
+                  onClick={() => {
+                    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+                  }} 
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs shadow-lg shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+                >
+                  Ver Planes y Precios <ChevronRight size={14} />
+                </button>
+              </div>
+
+              {/* Selector de Pestañas Interactivas */}
+              <div className="space-y-2.5 border-t border-slate-100 pt-6">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Explora las interfaces clave</p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('checador')}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border ${activeTab === 'checador' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-650 hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'checador' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                      <Clock size={15} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black">Reloj Checador Premium V2</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">Asistencia con geocerca, biométricos y firma digital</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('rrhh')}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border ${activeTab === 'rrhh' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'rrhh' ? 'bg-indigo-50 text-indigo-650' : 'bg-slate-100 text-slate-500'}`}>
+                      <Users size={15} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black">Organigrama & Recursos Humanos</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">Visualización de personal y jerarquías relacionales</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('reclutamiento')}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border ${activeTab === 'reclutamiento' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'reclutamiento' ? 'bg-violet-50 text-violet-650' : 'bg-slate-100 text-slate-500'}`}>
+                      <UserPlus size={15} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black">Reclutamiento ATS</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">Tablero Kanban para el seguimiento de candidatos</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Columna Derecha: Showcase Interactivo de Producto */}
+            <div className="lg:col-span-7 relative">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75"></div>
+              
+              <div className="relative bg-white rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col min-h-[380px] transition-all">
+                {/* Top Browser Bar */}
+                <div className="bg-slate-50/80 border-b border-slate-200/60 px-4 py-3 flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                  </div>
+                  <div className="flex-1 max-w-sm mx-auto bg-slate-100 rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
+                    <Lock size={10} className="text-slate-400" />
+                    <span>https://app.talent360.com/{activeTab === 'checador' ? 'reloj' : activeTab === 'rrhh' ? 'organigrama' : 'reclutamiento'}</span>
+                  </div>
+                </div>
+
+                {/* Main Viewport Content */}
+                <div className="p-6 flex-1 bg-slate-50/50 flex flex-col justify-center">
+                  {activeTab === 'checador' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <div className="max-w-xs mx-auto bg-white border border-slate-200/60 rounded-3xl p-5 shadow-lg shadow-slate-100/30 flex flex-col items-center text-center">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 mb-1">RELOJ CHECADOR</span>
+                        <span className="text-3xl font-black text-slate-800 tracking-tight mb-0.5">{liveTime}</span>
+                        <span className="text-[9px] font-bold text-slate-450 mb-4">Martes, 30 de Junio, 2026</span>
+
+                        <div className="w-full aspect-video bg-slate-100 rounded-2xl mb-4 border border-slate-250/20 relative overflow-hidden flex items-center justify-center">
+                          {/* Simulated Geofence Map */}
+                          <div className="absolute inset-0 bg-blue-50/25 flex flex-col items-center justify-center text-center p-4">
+                            <MapPin size={22} className="text-blue-600 mb-1 animate-bounce" />
+                            <span className="text-[10px] font-black text-slate-700">Sucursal Centro</span>
+                            <span className="text-[8px] font-bold text-emerald-600 flex items-center gap-0.5 mt-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                              Dentro de Geocerca (12m)
+                            </span>
+                          </div>
+                        </div>
+
+                        <button type="button" className="w-full py-3 bg-blue-600 text-white rounded-xl font-black text-xs hover:bg-blue-700 shadow-md shadow-blue-500/10 active:scale-98 transition-all flex items-center justify-center gap-1.5">
+                          <Clock size={14} /> Registrar Asistencia
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'rrhh' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-lg shadow-slate-100/30">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-indigo-650">COLABORADORES</span>
+                          <span className="text-[9px] font-bold text-slate-400">Total: 8 Activos</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-black text-xs flex items-center justify-center">
+                                FV
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-slate-800">Francisco Vega</p>
+                                <p className="text-[9px] text-slate-400 font-bold">Administrador General</p>
+                              </div>
+                            </div>
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[8px] font-black">Activo</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-650 font-black text-xs flex items-center justify-center">
+                                LC
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-slate-800">Liz Camacho</p>
+                                <p className="text-[9px] text-slate-400 font-bold">Supervisor de Sucursal</p>
+                              </div>
+                            </div>
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[8px] font-black">Activo</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-650 font-black text-xs flex items-center justify-center">
+                                HC
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-slate-800">Hiraym Castillo</p>
+                                <p className="text-[9px] text-slate-400 font-bold">Ayudante General</p>
+                              </div>
+                            </div>
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[8px] font-black">Activo</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'reclutamiento' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-lg shadow-slate-100/30">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-violet-650">TABLERO ATS</span>
+                          <span className="text-[9px] font-bold text-slate-400">Puesto: Agente de Ventas</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          {/* Col 1 */}
+                          <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-100/50">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide">Postulados</p>
+                            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200/40">
+                              <p className="text-[10px] font-black text-slate-700">Valeria Díaz</p>
+                              <p className="text-[8px] text-slate-400 font-medium mt-0.5">Hace 2 horas</p>
+                            </div>
+                          </div>
+                          {/* Col 2 */}
+                          <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-100/50">
+                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-wide">Entrevista</p>
+                            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200/40">
+                              <p className="text-[10px] font-black text-slate-700">Adriana López</p>
+                              <p className="text-[8px] text-indigo-650 font-bold mt-0.5">Hoy 15:00</p>
+                            </div>
+                          </div>
+                          {/* Col 3 */}
+                          <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-100/50">
+                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-wide">Contratados</p>
+                            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-250/20 border-l-2 border-l-emerald-500">
+                              <p className="text-[10px] font-black text-slate-700">Cristian Gómez</p>
+                              <p className="text-[8px] text-emerald-600 font-bold mt-0.5">Pendiente</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

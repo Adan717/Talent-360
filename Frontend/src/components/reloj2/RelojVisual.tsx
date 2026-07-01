@@ -768,9 +768,9 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     switch (phoneTab) {
       case 'checador':
         return {
-          title: 'Checador Inteligente',
-          desc: 'Registro de entradas, salidas, descansos y alimentación',
-          icon: <Clock className="w-8 h-8 text-violet-500 animate-pulse" />,
+          title: 'Reloj Checador 2',
+          desc: 'Control de Asistencia (V2)',
+          icon: <Clock className="w-8 h-8 text-emerald-500" />,
           badge: storeStatus === 'open' ? 'SUCURSAL ACTIVA' : 'SUCURSAL INACTIVA'
         };
       case 'tareas':
@@ -803,9 +803,9 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         };
       default:
         return {
-          title: 'Reloj Checador 360',
-          desc: 'Control de asistencia en tiempo real',
-          icon: <Clock className="w-8 h-8 text-violet-500" />,
+          title: 'Reloj Checador 2',
+          desc: 'Control de Asistencia (V2)',
+          icon: <Clock className="w-8 h-8 text-emerald-500" />,
           badge: null
         };
     }

@@ -386,7 +386,6 @@ export const useAppStore = create<AppState>((set, get) => ({
                 esAperturador,
                 jerarquiaLlaves,
                 is_active_employee: true,
-                employee_id: u.employee_id,
                 has_completed_induction: u.has_completed_induction ? true : false,
                 phone: u.phone || '',
                 pin_code: u.pin_code || ''

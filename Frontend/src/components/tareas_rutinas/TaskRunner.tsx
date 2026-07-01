@@ -8,83 +8,107 @@ import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
 
-// Componente para tarjeta de tarea compacta y limpia
-interface CompactTaskCardProps {
+// Componente para tarjeta de tarea unificada (Ficha de Tarea)
+export interface FichaTareaProps {
     assignment: TaskAssignment;
     task: Task;
     currentUser: any;
     globalSimTime: number;
     onSelect: () => void;
+    onPlayPause: (e: React.MouseEvent) => void;
     getRoleName: (id?: number) => string;
 }
 
-function CompactTaskCard({
+export function FichaTarea({
     assignment,
     task,
     currentUser,
     globalSimTime,
     onSelect,
+    onPlayPause,
     getRoleName
-}: CompactTaskCardProps) {
+}: FichaTareaProps) {
     const { globalUsers } = useAppStore();
-    const worker = globalUsers?.find(u => u.id === assignment.userId);
-
-    // Determinar etiqueta y color de estado
-    let badgeText = '';
-    let badgeClass = '';
-
-    if (assignment.status === 'awaiting_validation') {
-        badgeText = 'Firma Pendiente';
-        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200/50';
-    } else if (assignment.userId === null) {
-        badgeText = 'Bolsa de Trabajo';
-        badgeClass = 'bg-sky-50 text-sky-700 border-sky-200/50';
-    } else if (assignment.status === 'in_progress') {
-        badgeText = 'En Curso';
-        badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200/50';
-    } else if (assignment.status === 'paused') {
-        badgeText = 'Pausada';
-        badgeClass = 'bg-slate-100 text-slate-600 border-slate-200/50';
-    } else if (assignment.status === 'pending') {
-        badgeText = 'Pendiente';
-        badgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200/50';
-    } else if (assignment.status === 'completed') {
-        badgeText = 'Completada';
-        badgeClass = 'bg-teal-50 text-teal-700 border-teal-200/50';
-    } else if (assignment.status === 'omitted') {
-        badgeText = 'Omitida';
-        badgeClass = 'bg-rose-50 text-rose-600 border-rose-100/50';
-    }
+    const worker = globalUsers?.find((u: any) => u.id === assignment.userId);
 
     // Calcular el tiempo transcurrido o estimado
     const elapsed = assignment.status === 'pending' ? 0 : 
         ((assignment.accumulatedMins || 0) + 
         (assignment.status === 'in_progress' && assignment.startedAtMins ? (globalSimTime - assignment.startedAtMins) : 0));
-    
+
+    const isOvertime = assignment.status !== 'pending' && elapsed > task.estimatedMins;
+    const isFromPool = assignment.userId === null;
+
+    // Determinar etiqueta, color de estado y fondo de tarjeta
+    let badgeText = '';
+    let badgeClass = '';
+    let cardClass = 'bg-white border-slate-250/70 hover:translate-x-0.5';
+
+    if (isOvertime && assignment.status !== 'completed' && assignment.status !== 'omitted') {
+        badgeText = 'Tiempo Excedido';
+        badgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
+        cardClass = 'bg-rose-50/50 border-rose-300 hover:-translate-y-0.5 shadow-rose-100/50';
+    } else if (assignment.status === 'awaiting_validation') {
+        badgeText = 'Firma Pendiente';
+        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200/50';
+        cardClass = 'bg-amber-50/10 border-amber-200 hover:-translate-y-0.5 shadow-amber-50/50';
+    } else if (isFromPool) {
+        badgeText = 'Bolsa de Trabajo';
+        badgeClass = 'bg-sky-50 text-sky-700 border-sky-200/50';
+        cardClass = 'bg-sky-50/10 border-sky-250/70 hover:-translate-y-0.5';
+    } else if (assignment.status === 'in_progress') {
+        badgeText = 'En Curso';
+        badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200/55';
+        cardClass = 'bg-emerald-50/10 border-emerald-250/80 hover:-translate-y-0.5';
+    } else if (assignment.status === 'paused') {
+        badgeText = 'Pausada';
+        badgeClass = 'bg-slate-105 text-slate-650 border-slate-200';
+        cardClass = 'bg-slate-50/40 border-slate-200 hover:-translate-y-0.5';
+    } else if (assignment.status === 'pending') {
+        badgeText = 'Pendiente';
+        badgeClass = 'bg-indigo-50 text-indigo-705 border-indigo-200/50';
+        cardClass = 'bg-white border-slate-250/70 hover:-translate-y-0.5';
+    } else if (assignment.status === 'completed') {
+        badgeText = 'Completada';
+        badgeClass = 'bg-teal-50 text-teal-805 border-teal-200';
+        cardClass = 'bg-teal-55/5 border-slate-200 opacity-80';
+    } else if (assignment.status === 'omitted') {
+        badgeText = 'Omitida';
+        badgeClass = 'bg-rose-50 text-rose-600 border-rose-100/50';
+        cardClass = 'bg-rose-55/5 border-slate-200 opacity-60';
+    }
+
     const timeDisplay = assignment.status === 'pending' 
         ? `${task.estimatedMins} min est.`
-        : `${elapsed} min real`;
+        : `${elapsed} / ${task.estimatedMins} min`;
 
     // Nombre del colaborador a mostrar
-    const collaboratorName = assignment.userId === null 
+    const collaboratorName = isFromPool 
         ? 'Bolsa Libre'
         : (worker?.name || `Colaborador #${assignment.userId}`);
+
+    // Calcular porcentaje de progreso
+    const percent = assignment.status === 'pending' ? 0 : Math.min(100, Math.max(0, (elapsed / task.estimatedMins) * 100));
+
+    // Determinar si corresponde mostrar control directo Play/Pausa
+    const showPlayPause = !isFromPool && assignment.userId === currentUser.id && !['completed', 'omitted', 'awaiting_validation'].includes(assignment.status);
 
     return (
         <div 
             onClick={onSelect}
-            className="bg-white border border-slate-250/70 rounded-2xl p-3.5 shadow-xs hover:shadow-md hover:translate-x-0.5 transition-all duration-200 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden"
+            className={`border rounded-2xl p-3.5 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden ${cardClass}`}
         >
             {/* Indicador lateral de estado */}
             <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                isOvertime && assignment.status !== 'completed' && assignment.status !== 'omitted' ? 'bg-rose-500' :
                 assignment.status === 'awaiting_validation' ? 'bg-amber-400' :
-                assignment.userId === null ? 'bg-sky-400' :
+                isFromPool ? 'bg-sky-400' :
                 assignment.status === 'in_progress' ? 'bg-emerald-500' :
                 assignment.status === 'paused' ? 'bg-slate-400' : 'bg-indigo-500'
             }`}></div>
 
-            <div className="pl-1">
-                {/* Fila 1: Badge de Estado */}
+            <div className="pl-1.5">
+                {/* Fila 1: Badge de Estado y Prioridad */}
                 <div className="flex justify-between items-center">
                     <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border ${badgeClass}`}>
                         {badgeText}
@@ -101,7 +125,22 @@ function CompactTaskCard({
                     {task.title}
                 </h4>
 
-                {/* Fila 3: Metadata compacta (Colaborador + Tiempo) */}
+                {/* Fila 3: Barra de progreso con tiempo interno */}
+                {!['completed', 'omitted'].includes(assignment.status) && (
+                    <div className="w-full bg-slate-100 h-4.5 rounded-lg overflow-hidden mt-2.5 relative border border-slate-200/50 flex items-center justify-center">
+                        <div 
+                            className={`h-full absolute left-0 top-0 transition-all duration-300 ${
+                                isOvertime ? 'bg-rose-500/80' : assignment.status === 'in_progress' ? 'bg-emerald-500/80' : 'bg-indigo-55/60'
+                            }`}
+                            style={{ width: `${percent}%` }}
+                        ></div>
+                        <span className="relative z-10 text-[9px] font-black text-slate-700">
+                            {timeDisplay}
+                        </span>
+                    </div>
+                )}
+
+                {/* Fila 4: Metadata compacta (Colaborador + Acciones rápidas) */}
                 <div className="flex items-center justify-between mt-3 text-[10px] text-slate-500 font-bold">
                     <div className="flex items-center gap-1 min-w-0">
                         <User size={12} className="text-slate-400 shrink-0" />
@@ -110,11 +149,35 @@ function CompactTaskCard({
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0 bg-slate-55 px-2 py-0.5 rounded-lg border border-slate-100">
-                        <Clock size={11} className="text-slate-400" />
-                        <span className="text-slate-655 font-extrabold">
-                            {timeDisplay}
-                        </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Botón rápido Play / Pausa */}
+                        {showPlayPause && (
+                            <button
+                                onClick={onPlayPause}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-sm text-white ${
+                                    assignment.status === 'in_progress'
+                                        ? 'bg-amber-500 hover:bg-amber-600'
+                                        : 'bg-[#8a2be2] hover:bg-[#7b1fa2]'
+                                }`}
+                                title={assignment.status === 'in_progress' ? 'Pausar Tarea' : 'Iniciar Tarea'}
+                            >
+                                {assignment.status === 'in_progress' ? (
+                                    <Pause size={10} className="fill-white text-white" />
+                                ) : (
+                                    <Play size={10} className="fill-white text-white translate-x-0.5" />
+                                )}
+                            </button>
+                        )}
+                        
+                        {/* Si no muestra Play/Pause y no tiene barra de progreso, mostrar etiqueta de tiempo simple */}
+                        {['completed', 'omitted'].includes(assignment.status) && (
+                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                                <Clock size={11} className="text-slate-400" />
+                                <span className="text-slate-655 font-extrabold">
+                                    {assignment.status === 'completed' ? 'Finalizada' : 'Omitida'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -567,19 +630,28 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                         {displayedAssignments.map(a => {
                             const t = tasks.find(tsk => tsk.id === a.taskId);
                             if (!t) return null;
 
                             return (
-                                <CompactTaskCard 
+                                <FichaTarea 
                                     key={a.id}
                                     assignment={a}
                                     task={t}
                                     currentUser={currentUser}
                                     globalSimTime={globalSimTime}
                                     onSelect={() => handleSelectAssignment(a.id)}
+                                    onPlayPause={(e) => {
+                                        e.stopPropagation();
+                                        if (a.status === 'in_progress') {
+                                            pauseTask(a.id);
+                                            showToast(`Pausada la tarea: ${t.title}`, 'info');
+                                        } else {
+                                            handleStartTaskCooperative(a.id, a.userId === null);
+                                        }
+                                    }}
                                     getRoleName={getRoleName}
                                 />
                             );

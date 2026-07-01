@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';

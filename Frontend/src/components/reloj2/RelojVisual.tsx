@@ -1772,11 +1772,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800"></div>
                 <div 
                   className={`absolute left-2 top-0 h-3.5 rounded-full transition-all duration-500 ${
-                    !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-700' :
+                    !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-300' :
                     clockState === 'short_break' ? 'bg-purple-400' :
                     clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
                   }`}
-                  style={{ width: `calc(${progressPercent}% - 16px)` }}
+                  style={{ width: progressPercent === 0 ? '0%' : `calc(${progressPercent}% - 16px)` }}
                 ></div>
               </div>
 
@@ -1848,8 +1848,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             </div>
             </div>
 
-            {/* Alertas Sencillas Abajo del Dial (Identical to landing simulation) */}
-            <div className="space-y-1.5 shrink-0 px-0.5 mt-2 w-full max-w-[340px] mx-auto">
+            {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
+            <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">
               {/* Alerta de Tareas */}
               {(() => {
                 const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
@@ -1857,16 +1857,18 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   <button
                     type="button"
                     onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-                    className={`w-full p-2 border rounded-xl flex items-center gap-1.5 text-left transition-all active:scale-[0.99] focus:outline-none ${
+                    className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] focus:outline-none ${
                       pendingCount > 0
-                        ? (isDark ? 'bg-rose-955/20 border-rose-900/60 text-rose-300' : 'bg-rose-50 hover:bg-rose-100 border-rose-100 text-rose-800')
-                        : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-100 text-emerald-800')
+                        ? (isDark ? 'bg-rose-950/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800')
+                        : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/70 border-emerald-100/60 text-emerald-800')
                     }`}
                   >
-                    <span className="text-xs">⚠️</span>
+                    <span className="text-lg shrink-0">⚠️</span>
                     <div className="leading-tight overflow-hidden flex-1">
-                      <p className="text-[7.5px] font-black uppercase tracking-wide">Alerta de Tareas</p>
-                      <p className="text-[8px] font-bold truncate">
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${pendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                        Alerta de Tareas
+                      </p>
+                      <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                         {pendingCount > 0 
                           ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
                           : '¡Todas tus tareas están al día ✓'}
@@ -1877,13 +1879,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               })()}
 
               {/* Alerta de Hora de Comida / Turno */}
-              <div className={`w-full p-2 border rounded-xl flex items-center gap-1.5 text-left select-none ${
-                isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50 border-blue-105 text-blue-800'
+              <div className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left select-none ${
+                isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
               }`}>
-                <span className="text-xs">📅</span>
+                <span className="text-lg shrink-0">📅</span>
                 <div className="leading-tight overflow-hidden flex-1">
-                  <p className="text-[7.5px] font-black uppercase tracking-wide">Jornada / Horario</p>
-                  <p className="text-[8px] font-bold truncate">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-400">
+                    Jornada / Horario
+                  </p>
+                  <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
                     {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
                      clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
                      clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
@@ -2164,11 +2168,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800"></div>
                     <div 
                       className={`absolute left-4 top-0 h-3.5 rounded-full transition-all duration-500 ${
-                        !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-700' :
+                        !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-300' :
                         clockState === 'short_break' ? 'bg-purple-400' :
                         clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
                       }`}
-                      style={{ width: `calc(${progressPercent}% - 32px)` }}
+                      style={{ width: progressPercent === 0 ? '0%' : `calc(${progressPercent}% - 32px)` }}
                     ></div>
                   </div>
                 </div>

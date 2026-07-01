@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';
@@ -303,7 +303,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <Coffee size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
+                  <Armchair size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isBreakExceeded ? (
                       <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Límite excedido">⚠️</div>
@@ -454,20 +454,99 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           })()}
         </div>
 
-        {/* Timeline Bar - Thicker and closer to icons (Dynamic Color Gradients & Smooth Transition) */}
-        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-14px]' : 'px-4 mb-2 mt-[-16px]'}`}>
-          <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200/40 shadow-inner"></div>
-          <div 
-            className={`absolute top-0 h-3.5 rounded-full transition-all duration-700 ease-out shadow-sm ${
-              !hasCheckedIn ? 'bg-slate-200 dark:bg-slate-700' :
-              hasAnyDeviation ? 'bg-gradient-to-r from-amber-450 to-rose-500' : 'bg-gradient-to-r from-emerald-450 to-teal-500'
-            }`}
-            style={{ 
-              width: progressPercent === 0 ? '0%' : 
-              isMobile ? `calc(${progressPercent}% - 16px)` : `calc(${progressPercent}% - 32px)` 
-            }}
-          ></div>
-        </div>
+        {/* Proportional Segmented Timeline Bar (Work/Break/Meal proportional layout) */}
+        {(() => {
+          const tStart = Math.min(
+            parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00'),
+            checkInTimes[currentUser.id] !== undefined ? checkInTimes[currentUser.id] : 99999
+          );
+          const tEnd = Math.max(
+            parseTimeToMins(shiftConfigs[currentUser.id]?.end || '18:00'),
+            checkOutTimes[currentUser.id] !== undefined ? checkOutTimes[currentUser.id] : 0,
+            currentSimTime
+          );
+
+          const tDuration = tEnd - tStart;
+          const limitPos = checkOutTimes[currentUser.id] !== undefined ? checkOutTimes[currentUser.id] : currentSimTime;
+          const elapsedTotal = limitPos - tStart;
+
+          const eventsList: { start: number; end: number; type: 'break' | 'meal' }[] = [];
+          
+          // Break time
+          const bStart = breakStartTimes[currentUser.id];
+          if (bStart !== undefined) {
+            const bEnd = breakEndTimes[currentUser.id] !== undefined 
+              ? breakEndTimes[currentUser.id] 
+              : (clockState === 'short_break' ? currentSimTime : bStart + (leySillaConfig?.breakMinutes || 15));
+            eventsList.push({ start: bStart, end: bEnd, type: 'break' });
+          }
+
+          // Meal time
+          const mStart = mealStartTimes[currentUser.id];
+          if (mStart !== undefined) {
+            const mEnd = mealEndTimes[currentUser.id] !== undefined 
+              ? mealEndTimes[currentUser.id] 
+              : (clockState === 'meal' ? currentSimTime : mStart + (shiftConfigs[currentUser.id]?.mealMinutes || 45));
+            eventsList.push({ start: mStart, end: mEnd, type: 'meal' });
+          }
+
+          // Sort by start minutes
+          eventsList.sort((a, b) => a.start - b.start);
+
+          // Build chronological segments
+          const segmentsList: { mins: number; type: 'work' | 'break' | 'meal' }[] = [];
+          let currentPos = tStart;
+
+          eventsList.forEach(ev => {
+            const evStart = Math.max(currentPos, Math.min(ev.start, limitPos));
+            const evEnd = Math.max(evStart, Math.min(ev.end, limitPos));
+
+            if (evStart > currentPos) {
+              segmentsList.push({ mins: evStart - currentPos, type: 'work' });
+            }
+            if (evEnd > evStart) {
+              segmentsList.push({ mins: evEnd - evStart, type: ev.type });
+            }
+            currentPos = evEnd;
+          });
+
+          if (limitPos > currentPos) {
+            segmentsList.push({ mins: limitPos - currentPos, type: 'work' });
+          }
+
+          return (
+            <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-14px]' : 'px-4 mb-2 mt-[-16px]'}`}>
+              {/* Timeline Track Background */}
+              <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200/40 shadow-inner"></div>
+              
+              {/* Elapsed Proportional Progress Segment Container */}
+              {hasCheckedIn && elapsedTotal > 0 && (
+                <div 
+                  className="absolute top-0 h-3.5 rounded-full shadow-sm overflow-hidden flex transition-all duration-700 ease-out"
+                  style={{ 
+                    width: progressPercent === 0 ? '0%' : 
+                    isMobile ? `calc(${progressPercent}% - 16px)` : `calc(${progressPercent}% - 32px)` 
+                  }}
+                >
+                  {segmentsList.map((seg, sIdx) => {
+                    const segWidth = (seg.mins / elapsedTotal) * 100;
+                    let segColor = 'bg-emerald-500'; // Active Work
+                    if (seg.type === 'break') segColor = 'bg-purple-400'; // Rest Day/Seat Break
+                    if (seg.type === 'meal') segColor = 'bg-amber-400'; // Meal break (yellow)
+                    
+                    return (
+                      <div 
+                        key={sIdx}
+                        className={`h-full ${segColor} transition-all duration-300`}
+                        style={{ width: `${segWidth}%` }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -485,7 +564,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       return <Settings size={size} className="text-blue-500 shrink-0" />;
     }
     if (clockState === 'meal' || clockState === 'short_break') {
-      return <Coffee size={size} className="text-amber-500 animate-pulse shrink-0" />;
+      return <Armchair size={size} className="text-amber-500 animate-pulse shrink-0" />;
     }
     if (clockState === 'finished') {
       return <CheckCircle size={size} className="text-slate-400 shrink-0" />;
@@ -1857,7 +1936,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
           {/* UNIFIED MOBILE HEADER */}
-          <div className="flex items-center justify-between px-4 py-3 border-b shrink-0 bg-white dark:bg-slate-905 text-left">
+          <div className="flex items-center justify-between px-4 py-3 border-b shrink-0 bg-white dark:bg-slate-800 text-left">
             {/* Left: Module Info */}
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="shrink-0 flex items-center justify-center">
@@ -2160,7 +2239,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
                               : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                           }`}>
-                            <Coffee size={20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
+                            <Armchair size={20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                             {isDone && (
                               <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>
                             )}
@@ -3266,7 +3345,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   <div className="space-y-4">
                     <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
                       <div className="flex items-center gap-2 text-left">
-                        <Coffee className="w-5 h-5 text-purple-600 shrink-0" />
+                        <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
                         <h3 className="font-black text-slate-800 text-sm">
                           Registro de Descanso
                         </h3>
@@ -3287,7 +3366,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   {/* Minimal Header */}
                   <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-left">
-                      <Coffee className="w-5 h-5 text-purple-600 shrink-0" />
+                      <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
                       <h3 className="font-black text-slate-800 text-sm">
                         Registro de Descanso
                       </h3>

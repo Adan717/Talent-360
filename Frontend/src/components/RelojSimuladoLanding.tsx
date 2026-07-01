@@ -22,6 +22,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const [phoneTab, setPhoneTab] = useState<string>('checador');
   const [innerTool, setInnerTool] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [simTask1Done, setSimTask1Done] = useState(false);
+  const [simTask2Done, setSimTask2Done] = useState(false);
 
   // Estados de validación PRO temporales
   const [isVerifying, setIsVerifying] = useState(false);
@@ -554,7 +556,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             {/* Dial Central Principal (Importado de producción) */}
             <div className="flex flex-col items-center justify-center shrink-0 my-auto">
               <DialPrincipal
-                isMobile={true}
+                isMobile={false}
                 isOpeningPremium={true}
                 storeStatus="open"
                 openingStatus={null}
@@ -631,59 +633,131 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         )}
 
         {phoneTab === 'tareas' && (
-          <div className="flex-grow text-left py-2">
-            <div className="space-y-2">
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-              }`}>
-                <div>
-                  <h5 className="text-[10px] font-bold">Limpieza y sanitización de barra</h5>
-                  <p className="text-[8px] text-slate-400 mt-0.5">Prioridad Alta • 10 pts</p>
+          <div className="flex-1 flex flex-col justify-between py-2 text-left">
+            {tier === 'free' ? (
+              <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                  <Lock size={22} className="text-rose-500" />
                 </div>
-                <div className="w-5 h-5 rounded border-2 border-emerald-500 bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">✓</div>
-              </div>
-
-              <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-              }`}>
-                <div>
-                  <h5 className="text-[10px] font-bold">Arqueo de caja y terminales</h5>
-                  <p className="text-[8px] text-slate-400 mt-0.5">Pendiente de firma de supervisor</p>
+                <div className="space-y-1">
+                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                  <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                    La gestión de Tareas requiere la Versión Pro del Reloj Checador.
+                  </p>
                 </div>
-                <div className="w-5 h-5 rounded border border-slate-300"></div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setTier) setTier('pro');
+                  }}
+                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                >
+                  Probar Versión Pro
+                </button>
               </div>
-            </div>
+            ) : (
+              <div className="p-1 text-left animate-in fade-in duration-200 flex-grow flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Tareas del Colaborador</h5>
+                    <span className="text-[8px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
+                      {((simTask1Done ? 1 : 0) + (simTask2Done ? 1 : 0))} / 2
+                    </span>
+                  </div>
 
-            {tier !== 'pro' && (
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl mt-4 flex items-start gap-2">
-                <Lock className="text-amber-500 shrink-0 mt-0.5" size={14} />
-                <p className="text-[9px] text-amber-500 leading-normal font-medium">
-                  <strong>Las Rutinas y Checklists Obligatorios</strong> se bloquean en la versión gratuita. Contrata el Plan PRO para forzar a tus empleados a completar sus tareas diarias.
-                </p>
+                  <div className="space-y-2">
+                    {/* Tarea 1 */}
+                    <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                      simTask1Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
+                    }`}>
+                      <input 
+                        type="checkbox" 
+                        checked={simTask1Done}
+                        onChange={() => setSimTask1Done(!simTask1Done)}
+                        className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <div className="leading-tight text-left">
+                        <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
+                        <p className="text-[7.5px] text-slate-455">Sanitizar mostradores y barrer entrada</p>
+                      </div>
+                    </label>
+
+                    {/* Tarea 2 */}
+                    <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                      simTask2Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
+                    }`}>
+                      <input 
+                        type="checkbox" 
+                        checked={simTask2Done}
+                        onChange={() => setSimTask2Done(!simTask2Done)}
+                        className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <div className="leading-tight text-left">
+                        <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
+                        <p className="text-[7.5px] text-slate-455">Conciliar ventas del día en terminal</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/30 rounded-xl p-2 text-[7.5px] text-blue-800 dark:text-blue-300 font-medium leading-normal mt-3">
+                  💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
+                </div>
               </div>
             )}
           </div>
         )}
 
         {phoneTab === 'academia' && (
-          <div className="flex-grow text-left py-2">
-            <div className={`p-3 rounded-xl border ${
-              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-            }`}>
-              <span className="text-[8px] font-black uppercase tracking-wider text-amber-500">Módulo 1</span>
-              <h5 className="text-[10px] font-bold mt-0.5">Inducción y Atención al Cliente Premium</h5>
-              <div className="w-full bg-slate-250 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div className="bg-indigo-500 h-full w-[45%]"></div>
+          <div className="flex-1 flex flex-col justify-between py-2 text-left">
+            {tier === 'free' ? (
+              <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                  <Lock size={22} className="text-rose-500" />
+                </div>
+                <div className="space-y-1">
+                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                  <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                    La gestión de Academia requiere la Versión Pro del Reloj Checador.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setTier) setTier('pro');
+                  }}
+                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                >
+                  Probar Versión Pro
+                </button>
               </div>
-              <span className="text-[7px] text-slate-400 block mt-1 font-bold">Avance: 45% (2 / 5 lecciones)</span>
-            </div>
+            ) : (
+              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow">
+                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Cursos de Inducción</h5>
+                
+                {/* Curso 1 */}
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
+                    <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                  </div>
+                  <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
 
-            {tier !== 'pro' && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl mt-4 flex items-start gap-2">
-                <Lock className="text-rose-500 shrink-0 mt-0.5" size={14} />
-                <p className="text-[9px] text-rose-500 leading-normal font-medium">
-                  <strong>La Academia Integrada de Aprendizaje</strong> con certificados automáticos y caminos de carrera al estilo Duolingo requiere una suscripción PRO activa.
-                </p>
+                {/* Curso 2 */}
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
+                    <span className="text-[8px] font-bold text-blue-600">10%</span>
+                  </div>
+                  <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -691,33 +765,57 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
         {phoneTab === 'herramientas' && (
           <div className="flex-grow text-left py-2">
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: 'Chat de Sucursal', icon: Send, pro: true },
-                { label: 'Ley Silla', icon: Star, pro: false },
-                { label: 'Incidencias', icon: AlertTriangle, pro: false },
-                { label: 'Control de Llaves', icon: ShieldCheck, pro: true }
-              ].map((tool, idx) => {
-                const ToolIcon = tool.icon;
-                const isLocked = tool.pro && tier !== 'pro';
-                return (
-                  <div 
-                    key={idx} 
-                    className={`p-3 rounded-xl border flex flex-col justify-between aspect-square transition-all ${
-                      isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-                    } ${isLocked ? 'opacity-65' : 'hover:scale-[1.02] cursor-pointer'}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-850' : 'bg-slate-100'} text-indigo-500`}>
-                        <ToolIcon size={14} />
+            {tier === 'free' ? (
+              <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                  <Lock size={22} className="text-rose-500" />
+                </div>
+                <div className="space-y-1">
+                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                  <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                    La gestión de Herramientas requiere la Versión Pro del Reloj Checador.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setTier) setTier('pro');
+                  }}
+                  className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                >
+                  Probar Versión Pro
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200">
+                {[
+                  { label: 'Chat de Sucursal', icon: Send, pro: true },
+                  { label: 'Ley Silla', icon: Star, pro: false },
+                  { label: 'Incidencias', icon: AlertTriangle, pro: false },
+                  { label: 'Control de Llaves', icon: ShieldCheck, pro: true }
+                ].map((tool, idx) => {
+                  const ToolIcon = tool.icon;
+                  const isLocked = tool.pro && tier !== 'pro';
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`p-3 rounded-xl border flex flex-col justify-between aspect-square transition-all ${
+                        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                      } ${isLocked ? 'opacity-65' : 'hover:scale-[1.02] cursor-pointer'}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-850' : 'bg-slate-100'} text-indigo-500`}>
+                          <ToolIcon size={14} />
+                        </div>
+                        {isLocked && <Lock size={12} className="text-slate-400" />}
                       </div>
-                      {isLocked && <Lock size={12} className="text-slate-400" />}
+                      <span className="text-[9px] font-black leading-tight uppercase mt-2">{tool.label}</span>
                     </div>
-                    <span className="text-[9px] font-black leading-tight uppercase mt-2">{tool.label}</span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

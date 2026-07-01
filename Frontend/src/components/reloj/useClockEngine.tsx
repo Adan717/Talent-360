@@ -549,7 +549,7 @@ export function useClockEngine(overrideUser?: any) {
     setPlayedAlarms({ ya_llegue: false, tienda_cerrada: false });
   }, [currentUser.id, currentDay]);
 
-  const playAlarm = (type: 'ya_llegue' | 'tienda_cerrada') => {
+  const playAlarm = (type: 'ya_llegue' | 'tienda_cerrada' | 'alerta_tiempo') => {
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -576,6 +576,14 @@ export function useClockEngine(overrideUser?: any) {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
         osc.start();
         osc.stop(ctx.currentTime + 0.9);
+      } else if (type === 'alerta_tiempo') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // Re5
+        osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); // La5
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
       }
     } catch (e) {
       console.log("Audio no soportado");
@@ -607,26 +615,62 @@ export function useClockEngine(overrideUser?: any) {
 
 
 
-  // Push Notification: Tareas Retrasadas
+  // Push Notification: Tareas Retrasadas / Advertencia 80% de tiempo
   useEffect(() => {
     if (storeStatus !== 'open') return;
     const storeState = useTaskStore.getState();
     const myAssignment = storeState.assignments.find(a => a.userId === currentUser.id && a.status === 'in_progress');
     
-    if (myAssignment && myAssignment.expectedEndTimeMins && currentSimTime >= myAssignment.expectedEndTimeMins) {
-      if (activePushNotification?.type !== 'tarea_retrasada') {
-        const myTask = storeState.tasks.find(t => t.id === myAssignment.taskId);
-        setActivePushNotification({
-          type: 'tarea_retrasada',
-          text: `🚨 Estás retrasado en tu tarea: ${myTask?.title || 'Tarea Actual'}. ¡Apresúrate!`,
-          action: () => {
-            setActivePushNotification(null);
-            setPhoneTab('tareas');
+    if (myAssignment) {
+      const myTask = storeState.tasks.find(t => t.id === myAssignment.taskId);
+      if (myTask) {
+        const isDelayed = myAssignment.expectedEndTimeMins && currentSimTime >= myAssignment.expectedEndTimeMins;
+        
+        if (isDelayed) {
+          if (activePushNotification?.type !== 'tarea_retrasada') {
+            setActivePushNotification({
+              type: 'tarea_retrasada',
+              text: `🚨 Estás retrasado en tu tarea: ${myTask.title}. ¡Apresúrate!`,
+              action: () => {
+                setActivePushNotification(null);
+                setPhoneTab('tareas');
+              }
+            });
           }
-        });
+        } else {
+          // Evaluar si falta 20% o menos para terminar
+          const elapsed = currentSimTime - myAssignment.startedAtMins + (myAssignment.accumulatedMins || 0);
+          const remaining = myTask.estimatedMins - elapsed;
+          const threshold = Math.ceil(myTask.estimatedMins * 0.20);
+          
+          if (remaining <= threshold && remaining > 0 && !myAssignment.warned80Percent) {
+            // Marcar como advertido localmente en store
+            const updated = storeState.assignments.map(asg => 
+              asg.id === myAssignment.id ? { ...asg, warned80Percent: true } : asg
+            );
+            useTaskStore.setState({ assignments: updated });
+            
+            // Alarmas
+            playAlarm('alerta_tiempo');
+            if (navigator.vibrate) {
+              navigator.vibrate([100, 50, 100]);
+            }
+            
+            setActivePushNotification({
+              type: 'advertencia_tiempo',
+              text: `⚠️ ¡Tiempo límite cerca! Tarea "${myTask.title}" al 80% de avance. Quedan ${remaining} min.`,
+              action: () => {
+                setActivePushNotification(null);
+                setPhoneTab('tareas');
+              }
+            });
+          }
+        }
       }
-    } else if (activePushNotification?.type === 'tarea_retrasada' && (!myAssignment || currentSimTime < (myAssignment.expectedEndTimeMins || 99999))) {
+    } else {
+      if (activePushNotification?.type === 'tarea_retrasada' || activePushNotification?.type === 'advertencia_tiempo') {
         setActivePushNotification(null);
+      }
     }
   }, [currentSimTime, storeStatus, currentUser.id, activePushNotification]);
 

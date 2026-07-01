@@ -79,17 +79,42 @@ export function FichaTarea({
         cardClass = 'bg-rose-55/5 border-slate-200 opacity-60';
     }
 
-    const timeDisplay = assignment.status === 'pending' 
-        ? `${task.estimatedMins} min est.`
-        : `${elapsed} / ${task.estimatedMins} min`;
+    // Calcular porcentaje de progreso
+    let percent = 0;
+    if (assignment.status === 'completed') {
+        percent = 100;
+    } else if (assignment.status === 'pending') {
+        percent = 0;
+    } else {
+        percent = Math.min(100, Math.max(0, (elapsed / task.estimatedMins) * 100));
+    }
+
+    // Cuenta atrás del tiempo asignado
+    let timeDisplay = '';
+    if (assignment.status === 'pending') {
+        timeDisplay = `⏱️ ${task.estimatedMins} min est.`;
+    } else if (assignment.status === 'completed') {
+        timeDisplay = `✅ Listo en ${elapsed} min`;
+    } else if (assignment.status === 'omitted') {
+        timeDisplay = `🚫 Omitida`;
+    } else if (assignment.status === 'paused') {
+        const remaining = Math.max(0, task.estimatedMins - (assignment.accumulatedMins || 0));
+        timeDisplay = `⏳ ${remaining} min rest.`;
+    } else {
+        // in_progress u otros estados activos
+        if (isOvertime) {
+            timeDisplay = `🚨 Excedido +${elapsed - task.estimatedMins} min`;
+        } else {
+            const remaining = Math.max(0, task.estimatedMins - elapsed);
+            timeDisplay = `⏳ Quedan ${remaining} min`;
+        }
+    }
 
     // Nombre del colaborador a mostrar
+    const roleName = getRoleName(Number(task.targetId));
     const collaboratorName = isFromPool 
-        ? (task.targetId && Number(task.targetId) !== 0 ? `Bolsa: ${getRoleName(Number(task.targetId))}` : 'Bolsa Libre')
+        ? (roleName ? `Bolsa: ${roleName}` : 'Bolsa Libre')
         : (worker?.name || `Colaborador #${assignment.userId}`);
-
-    // Calcular porcentaje de progreso
-    const percent = assignment.status === 'pending' ? 0 : Math.min(100, Math.max(0, (elapsed / task.estimatedMins) * 100));
 
     // Determinar si corresponde mostrar control directo Play/Pausa
     const showPlayPause = !isFromPool && assignment.userId === currentUser.id && !['completed', 'omitted', 'awaiting_validation'].includes(assignment.status);
@@ -164,34 +189,25 @@ export function FichaTarea({
 
                     {/* Lado derecho: Progreso, Tiempo y Controles */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* Progreso y Tiempo (si no está completada/omitida) */}
-                        {!['completed', 'omitted'].includes(assignment.status) && (
-                            <div className="flex items-center gap-1.5">
-                                {/* Barra de progreso slim */}
-                                <div className="w-16 bg-slate-100 h-2.5 rounded-lg overflow-hidden relative border border-slate-200/50">
-                                    <div 
-                                        className={`h-full absolute left-0 top-0 transition-all duration-300 ${
-                                            isOvertime ? 'bg-rose-500/85' : assignment.status === 'in_progress' ? 'bg-emerald-500/80' : 'bg-[#8a2be2]/40'
-                                        }`}
-                                        style={{ width: `${percent}%` }}
-                                    ></div>
-                                </div>
-                                {/* Tiempo */}
-                                <span className="text-[9px] font-black text-slate-700 shrink-0">
-                                    {timeDisplay}
-                                </span>
+                        {/* Progreso y Tiempo (siempre visible) */}
+                        <div className="flex items-center gap-1.5">
+                            {/* Barra de progreso slim */}
+                            <div className="w-20 bg-slate-100 h-2.5 rounded-lg overflow-hidden relative border border-slate-200/50">
+                                <div 
+                                    className={`h-full absolute left-0 top-0 transition-all duration-300 ${
+                                        assignment.status === 'completed' ? 'bg-teal-500' :
+                                        assignment.status === 'omitted' ? 'bg-slate-350' :
+                                        isOvertime ? 'bg-rose-500/85' : 
+                                        assignment.status === 'in_progress' ? 'bg-emerald-500/80' : 'bg-[#8a2be2]/40'
+                                    }`}
+                                    style={{ width: `${percent}%` }}
+                                ></div>
                             </div>
-                        )}
-
-                        {/* Estado finalizado/omitido */}
-                        {['completed', 'omitted'].includes(assignment.status) && (
-                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-150">
-                                <Clock size={10} className="text-slate-400" />
-                                <span className="text-slate-655 font-extrabold text-[9px]">
-                                    {assignment.status === 'completed' ? 'Finalizada' : 'Omitida'}
-                                </span>
-                            </div>
-                        )}
+                            {/* Tiempo */}
+                            <span className="text-[9px] font-black text-slate-700 shrink-0">
+                                {timeDisplay}
+                            </span>
+                        </div>
 
                         {/* Botón rápido Play / Pausa */}
                         {showPlayPause && (
@@ -316,8 +332,8 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     };
 
     const getRoleName = (id?: number) => {
-        if (id === 0 || !id) return 'Bolsa de Trabajo';
-        return globalRoles?.find((r: any) => r.id === id)?.name || `Puesto #${id}`;
+        if (id === 0 || !id) return '';
+        return globalRoles?.find((r: any) => r.id === id)?.name || '';
     };
 
     const myRole = globalRoles?.find((r: any) => r.id === currentUser.job_role_id);

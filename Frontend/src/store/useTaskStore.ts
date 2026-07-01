@@ -57,6 +57,7 @@ export interface TaskAssignment {
     validationFeedback?: string | null;
     accumulatedMins?: number;
     reservedAtMins?: number | null;
+    warned80Percent?: boolean;
 }
 
 interface TaskStoreState {

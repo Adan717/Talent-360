@@ -1900,12 +1900,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         </div>
       </div>
     );
-  };der ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const renderFloatingActionButton = () => {

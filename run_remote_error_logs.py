@@ -38,7 +38,6 @@ def main():
     
     try:
         run_cmd(ssh, "cd /var/www/talent360 && git pull")
-        run_cmd(ssh, "docker exec talent360-backend php scripts_utilidad/test_request_login.php")
     finally:
         ssh.close()
 

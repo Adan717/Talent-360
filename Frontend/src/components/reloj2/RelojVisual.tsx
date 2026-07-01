@@ -1755,10 +1755,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
     switch (phoneTab) {
       case 'checador':
-        title = 'Reloj Checador';
-        desc = 'Control de Asistencia y Tareas';
+        title = 'Reloj';
+        desc = 'Asistencia';
         icon = <Clock className="w-9 h-9 text-[#2dce89]" />;
-        badgeText = 'v4.2.0';
+        badgeText = 'v4.2-pro';
+        badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
         break;
       case 'tareas':
         title = 'Tareas y Rutinas';
@@ -1803,94 +1804,103 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         badgeColorClass = 'bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
         break;
       default:
-        title = 'Reloj Checador';
-        desc = 'Control de Asistencia';
+        title = 'Reloj';
+        desc = 'Asistencia';
         icon = <Clock className="w-9 h-9 text-[#2dce89]" />;
-        badgeText = 'v4.2.0';
+        badgeText = 'v4.2-pro';
+        badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
     }
 
     return (
-      <div className={`fixed top-3 left-3 right-3 z-[75] flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3 text-left rounded-[1.25rem] xs:rounded-2xl border transition-all duration-200 select-none ${
+      <div className={`fixed top-3 left-3 right-3 z-[75] flex flex-col px-3 xs:px-4 py-2 xs:py-2.5 text-left rounded-[1.25rem] xs:rounded-2xl border transition-all duration-200 select-none gap-1.5 ${
         isDark 
           ? 'bg-slate-955/80 backdrop-blur-md border-violet-900/40 shadow-[0_8px_32px_rgba(124,58,237,0.15)] text-slate-100' 
           : 'bg-white/80 backdrop-blur-md border-violet-100/50 shadow-[0_8px_32px_rgba(124,58,237,0.06)] text-slate-900'
       }`}>
-        {/* Left: Module Info */}
-        <div className="flex items-center gap-1.5 xs:gap-2.5 min-w-0">
-          <div className="shrink-0 flex items-center justify-center">
-            {icon && React.cloneElement(icon, { className: 'w-7 h-7 xs:w-8.5 xs:h-8.5' })}
-          </div>
-          <div className="flex flex-col min-w-0 justify-center text-left">
-            <div className="flex items-center gap-1 flex-wrap">
-              <h3 className={`text-[12.5px] xs:text-[14.5px] font-black tracking-tight leading-tight transition-colors truncate max-w-[90px] xxs:max-w-[120px] xs:max-w-[150px] ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}>
-                {title}
-              </h3>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase bg-[#e8eaf6] dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-200/20">
-                v4.3.0
-              </span>
-              {badgeText && badgeText !== 'v4.2.0' && badgeText !== 'Tareas' && badgeText !== 'Cursos' && (
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
-                  {badgeText}
-                </span>
-              )}
-            </div>
-            <p className={`text-[8.5px] xs:text-[9.5px] font-bold mt-0.5 leading-none truncate transition-colors max-w-[110px] xs:max-w-[160px] ${
-              isDark ? 'text-slate-400' : 'text-[#525f7f]'
-            }`}>
-              {desc}
-            </p>
-          </div>
+        {/* Fila Superior: Nombre de la Empresa (DECORARTE 365) */}
+        <div className="w-full flex justify-end items-center border-b border-slate-100/40 dark:border-slate-800/40 pb-1 shrink-0">
+          <span className="text-[9px] xs:text-[10px] font-black uppercase tracking-wider text-[#8a2be2] dark:text-violet-400">
+            {currentUser?.tenant?.name || 'Decorarte 365'}
+          </span>
         </div>
 
-        {/* Right: Actions & User Profile */}
-        <div className="flex items-center gap-2 xs:gap-3 shrink-0 min-w-0">
-          {/* Manual Pass List Trigger inside the header for Supervisors */}
-          {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
-            <button 
-              onClick={() => initPaseLista(false)}
-              className="bg-violet-600 hover:bg-violet-755 text-white font-extrabold text-[8px] xs:text-[9px] uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
-            >
-              <span>📋</span>
-              <span className="hidden xxs:inline">Lista</span>
-            </button>
-          )}
-
-          <div 
-            className="flex items-center gap-1.5 xs:gap-2.5 text-right cursor-pointer min-w-0"
-            onClick={() => {
-              setEditUsername(currentUser?.name || 'Francisco');
-              setEditPassword(currentUser?.pin_code || '1234');
-              setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
-              setShowSettingsModal(true);
-            }}
-          >
-            <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-              <span className={`text-[10.5px] xs:text-[12.5px] font-black truncate transition-colors max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px] ${
-                isDark ? 'text-slate-100' : 'text-slate-900'
-              }`}>
-                {currentUser?.name || 'Colaborador'}
-              </span>
-              <span className="text-[7.5px] xs:text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5 max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px]">
-                {userPositionName}
-              </span>
-              <span className={`text-[7.5px] xs:text-[8.5px] font-black uppercase tracking-wider truncate mt-0.5 transition-colors max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px] ${
-                isDark ? 'text-violet-400' : 'text-[#8a2be2]'
-              }`}>
-                {currentUser?.tenant?.name || 'Decorarte 360'}
-              </span>
+        {/* Fila Inferior: Info del módulo (Izquierda) y Perfil del usuario (Derecha) */}
+        <div className="w-full flex items-center justify-between gap-2.5 min-w-0">
+          {/* Columna Izquierda: Info de Módulo */}
+          <div className="flex items-center gap-1.5 xs:gap-2.5 min-w-0">
+            <div className="shrink-0 flex items-center justify-center">
+              {icon && React.cloneElement(icon, { className: 'w-7.5 h-7.5 xs:w-9 xs:h-9' })}
             </div>
-            
-            <div className="relative shrink-0">
-              <img 
-                src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-                alt="Avatar" 
-                className={`w-9 h-9 xs:w-11 xs:h-11 rounded-full object-cover border shadow-sm hover:scale-105 transition-transform ${
-                  isDark ? 'border-slate-700' : 'border-slate-202'
-                }`} 
-              />
-              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 xs:w-3.5 xs:h-3.5 rounded-full border ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
+            <div className="flex flex-col min-w-0 justify-center text-left">
+              <div className="flex items-center gap-1 flex-wrap">
+                <h3 className={`text-[13.5px] xs:text-[15px] font-black tracking-tight leading-tight transition-colors truncate max-w-[90px] xxs:max-w-[120px] xs:max-w-[150px] ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
+                  {title}
+                </h3>
+                {badgeText && (
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
+                    {badgeText}
+                  </span>
+                )}
+              </div>
+              <p className={`text-[8.5px] xs:text-[9.5px] font-bold mt-0.5 leading-none truncate transition-colors max-w-[110px] xs:max-w-[160px] ${
+                isDark ? 'text-slate-400' : 'text-[#525f7f]'
+              }`}>
+                {desc}
+              </p>
+            </div>
+          </div>
+
+          {/* Columna Derecha: Perfil de Usuario */}
+          <div className="flex items-center gap-2 xs:gap-3 shrink-0 min-w-0">
+            {/* Manual Pass List Trigger inside the header for Supervisors */}
+            {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
+              <button 
+                onClick={() => initPaseLista(false)}
+                className="bg-violet-600 hover:bg-violet-755 text-white font-extrabold text-[8px] xs:text-[9px] uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
+              >
+                <span>📋</span>
+                <span className="hidden xxs:inline">Lista</span>
+              </button>
+            )}
+
+            <div 
+              className="flex items-center gap-1.5 xs:gap-2.5 text-right cursor-pointer min-w-0"
+              onClick={() => {
+                setEditUsername(currentUser?.name || 'Francisco');
+                setEditPassword(currentUser?.pin_code || '1234');
+                setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
+                setShowSettingsModal(true);
+              }}
+            >
+              <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
+                <span className={`text-[10.5px] xs:text-[12.5px] font-black truncate transition-colors max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px] ${
+                  isDark ? 'text-slate-100' : 'text-slate-900'
+                }`}>
+                  {currentUser?.name || 'Colaborador'}
+                </span>
+                <span className="text-[7.5px] xs:text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5 max-w-[70px] xxs:max-w-[95px] xs:max-w-[120px]">
+                  {userPositionName}
+                </span>
+              </div>
+              
+              <div className="relative shrink-0">
+                <img 
+                  src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                  alt="Avatar" 
+                  className={`w-9 h-9 xs:w-11 xs:h-11 rounded-full object-cover border shadow-sm hover:scale-105 transition-transform ${
+                    isDark ? 'border-slate-700' : 'border-slate-202'
+                  }`} 
+                />
+                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 xs:w-3.5 xs:h-3.5 rounded-full border ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };der ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
             </div>
           </div>
         </div>
@@ -2726,7 +2736,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           {/* MOBILE CONTENT AREA (Scrollable/Overflow depending on module) */}
           {phoneTab === 'checador' && (
             shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[78px] pb-[88px]">
+              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[96px] pb-[88px]">
                 <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
                   🌴
                 </div>
@@ -2736,7 +2746,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 </p>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-4 pt-[78px] pb-[88px] flex flex-col justify-between gap-2 scrollbar-none">
+              <div className="flex-1 overflow-y-auto px-4 pt-[96px] pb-[88px] flex flex-col justify-between gap-2 scrollbar-none">
                 {/* Banner de transferencia de llaves pendiente */}
                 {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
                   <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
@@ -2884,7 +2894,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           )}
 
           {phoneTab !== 'checador' && (
-            <div className="flex-1 overflow-y-auto p-4 pt-[78px] pb-[88px] scrollbar-none">
+            <div className="flex-1 overflow-y-auto p-4 pt-[96px] pb-[88px] scrollbar-none">
               {phoneTab === 'tareas' && (
                 <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
               )}

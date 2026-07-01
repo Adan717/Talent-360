@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -19,6 +19,8 @@ export const SaaSLandingPage = () => {
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -28,7 +30,10 @@ export const SaaSLandingPage = () => {
 
   const [activeTab, setActiveTab] = useState<'checador' | 'rrhh' | 'reclutamiento'>('checador');
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
-  const [simulatedClockState, setSimulatedClockState] = useState<'inactive' | 'active' | 'break'>('inactive');
+  const [simulatedClockState, setSimulatedClockState] = useState<string>('inactive');
+  const [phoneActiveTab, setPhoneActiveTab] = useState<'reloj' | 'tareas' | 'academia' | 'herramientas'>('reloj');
+  const [simulatedTask1Done, setSimulatedTask1Done] = useState(true);
+  const [simulatedTask2Done, setSimulatedTask2Done] = useState(false);
   const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
   const [atsCandidates, setAtsCandidates] = useState([
     { id: 1, name: 'Valeria Díaz', vacancy: 'Agente de Ventas', status: 'prospect', time: 'Hace 2 horas' },
@@ -153,7 +158,15 @@ export const SaaSLandingPage = () => {
     if (simulatedClockState === 'inactive') {
       setSimulatedClockState('active');
     } else if (simulatedClockState === 'active') {
-      setSimulatedClockState('break');
+      setSimulatedClockState('break_active');
+    } else if (simulatedClockState === 'break_active') {
+      setSimulatedClockState('break_done');
+    } else if (simulatedClockState === 'break_done') {
+      setSimulatedClockState('lunch_active');
+    } else if (simulatedClockState === 'lunch_active') {
+      setSimulatedClockState('lunch_done');
+    } else if (simulatedClockState === 'lunch_done') {
+      setSimulatedClockState('finished');
     } else {
       setSimulatedClockState('inactive');
     }
@@ -265,7 +278,8 @@ export const SaaSLandingPage = () => {
         company_name: formData.company_name,
         subdomain: formData.subdomain,
         plan: selectedPlan.toLowerCase(),
-        employees: selectedPlan.toLowerCase() === 'pro' ? proEmployeesCount : null
+        employees: selectedPlan.toLowerCase() === 'pro' ? proEmployeesCount : null,
+        billing_cycle: billingCycle
       });
 
       if (response.data.provisioned) {
@@ -311,12 +325,16 @@ export const SaaSLandingPage = () => {
               Talent <span className="text-blue-600">360</span>
             </h1>
           </div>
+          
+          {/* Desktop Navigation Links */}
           <div className="hidden md:flex gap-8 text-sm font-bold text-slate-500">
             <a href="#features" className="hover:text-slate-900 transition-colors">Plataforma</a>
             <a href="#pricing" className="hover:text-slate-900 transition-colors">Precios</a>
             <a href="#demo" className="hover:text-slate-900 transition-colors">Demostraciones</a>
           </div>
-          <div className="flex gap-4">
+          
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:flex items-center gap-4">
             <button onClick={() => navigate('/login')} className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
               Iniciar Sesión
             </button>
@@ -324,7 +342,70 @@ export const SaaSLandingPage = () => {
               Crear Cuenta Gratis
             </button>
           </div>
+
+          {/* Mobile Right Controls */}
+          <div className="flex md:hidden items-center gap-3">
+            <button 
+              onClick={() => navigate('/login')} 
+              className="text-xs font-black text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl hover:bg-blue-100 transition-all"
+            >
+              Entrar
+            </button>
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+              aria-label="Abrir menú"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed top-20 left-0 right-0 bottom-0 bg-white/95 backdrop-blur-lg z-30 flex flex-col p-6 animate-in slide-in-from-top-5 duration-200 border-t border-slate-100">
+            <nav className="flex flex-col gap-6 text-base font-extrabold text-slate-700 mb-8">
+              <a 
+                href="#features" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
+              >
+                <span>Plataforma</span>
+                <ChevronRight size={16} className="text-slate-400" />
+              </a>
+              <a 
+                href="#pricing" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
+              >
+                <span>Precios y Planes</span>
+                <ChevronRight size={16} className="text-slate-400" />
+              </a>
+              <a 
+                href="#demo" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
+              >
+                <span>Demostraciones</span>
+                <ChevronRight size={16} className="text-slate-400" />
+              </a>
+            </nav>
+            <div className="mt-auto flex flex-col gap-3.5">
+              <button 
+                onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
+                className="w-full py-4 rounded-2xl font-black text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors text-center text-sm"
+              >
+                Iniciar Sesión
+              </button>
+              <button 
+                onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
+                className="w-full py-4 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-98 transition-all text-center text-sm"
+              >
+                Crear Cuenta Gratis
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* HERO SECTION */}
@@ -420,111 +501,345 @@ export const SaaSLandingPage = () => {
                   </div>
 
                   {/* Smartphone Viewport */}
-                  <div className="flex-1 bg-white p-4 pt-8 pb-6 flex flex-col justify-between overflow-hidden select-none">
+                  <div className="flex-1 bg-white p-3 pt-7 pb-2 flex flex-col justify-between overflow-hidden select-none">
                     {/* Header */}
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
+                      <div className="flex items-center gap-1.5 text-left">
                         <div className="relative">
                           <img 
                             src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces" 
                             alt="Francisco" 
-                            className="w-9 h-9 rounded-full object-cover border border-slate-200" 
+                            className="w-8 h-8 rounded-full object-cover border border-slate-200" 
                           />
-                          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white ${simulatedClockState === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                          <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${simulatedClockState !== 'inactive' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
                         </div>
                         <div className="text-left leading-none">
-                          <h4 className="text-[10px] font-black text-slate-800">Francisco Vega</h4>
-                          <span className="text-[8px] font-bold text-slate-400">Sucursal Centro</span>
+                          <h4 className="text-[9.5px] font-black text-slate-800">Francisco Vega</h4>
+                          <span className="text-[7.5px] font-bold text-slate-400">Sucursal Centro</span>
                         </div>
                       </div>
-                      <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${simulatedClockState === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-150'}`}>
-                        {simulatedClockState === 'active' ? 'Turno Activo ✓' : simulatedClockState === 'break' ? 'Descanso ✓' : 'Inactivo'}
+                      <span className={`text-[7.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        simulatedClockState === 'inactive' ? 'bg-slate-50 text-slate-400 border border-slate-150' :
+                        simulatedClockState === 'finished' ? 'bg-teal-50 text-teal-600 border border-teal-100' :
+                        'bg-emerald-50 text-emerald-600 border border-emerald-100 animate-pulse'
+                      }`}>
+                        {simulatedClockState === 'inactive' ? 'Inactivo' :
+                         simulatedClockState === 'break_active' ? 'Descanso' :
+                         simulatedClockState === 'lunch_active' ? 'Almuerzo' :
+                         simulatedClockState === 'finished' ? 'Finalizado' : 'Turno Activo'}
                       </span>
                     </div>
 
-                    {/* Timeline de Turno (Línea de Progreso Real) */}
-                    <div className="py-2 text-left w-full shrink-0">
-                      <div className="flex justify-between items-center w-full px-2 mb-1 z-10 relative">
-                        {/* Entrada */}
-                        <div className="flex flex-col items-center">
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState !== 'inactive' ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
-                            <LogIn size={14} />
-                          </div>
-                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState !== 'inactive' ? '08:45 am' : '-'}</span>
-                        </div>
-                        {/* Descanso */}
-                        <div className="flex flex-col items-center">
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState === 'break' ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
-                            <Coffee size={14} />
-                          </div>
-                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState === 'break' ? '15 min' : '-'}</span>
-                        </div>
-                        {/* Comida */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-sm">
-                            <Utensils size={14} />
-                          </div>
-                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-400">-</span>
-                        </div>
-                        {/* Salida */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-sm">
-                            <LogOut size={14} />
-                          </div>
-                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-400">-</span>
-                        </div>
-                      </div>
+                    {/* VISTA SEGÚN PESTAÑA DEL TELÉFONO */}
+                    <div className="flex-1 flex flex-col justify-between my-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                      {phoneActiveTab === 'reloj' && (
+                        <>
+                          {/* Timeline de Turno (Línea de Progreso Real) */}
+                          <div className="py-1 text-left w-full shrink-0">
+                            <div className="flex justify-between items-center w-full px-1.5 mb-1.5 z-10 relative">
+                              {/* Entrada */}
+                              <div className="flex flex-col items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState !== 'inactive' ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
+                                  <LogIn size={12} />
+                                </div>
+                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState !== 'inactive' ? '08:45 am' : '-'}</span>
+                              </div>
+                              {/* Descanso */}
+                              <div className="flex flex-col items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${
+                                  ['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 bg-white text-slate-400'
+                                } ${simulatedClockState === 'break_active' ? 'animate-pulse' : ''}`}>
+                                  <Coffee size={12} />
+                                </div>
+                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{['break_active', 'break_done', 'lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '11:15 am' : '-'}</span>
+                              </div>
+                              {/* Comida */}
+                              <div className="flex flex-col items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${
+                                  ['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-200 bg-white text-slate-400'
+                                } ${simulatedClockState === 'lunch_active' ? 'animate-pulse' : ''}`}>
+                                  <Utensils size={12} />
+                                </div>
+                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{['lunch_active', 'lunch_done', 'finished'].includes(simulatedClockState) ? '02:00 pm' : '-'}</span>
+                              </div>
+                              {/* Salida */}
+                              <div className="flex flex-col items-center">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState === 'finished' ? 'border-teal-500 bg-teal-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
+                                  <LogOut size={12} />
+                                </div>
+                                <span className="text-[7.5px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState === 'finished' ? '06:00 pm' : '-'}</span>
+                              </div>
+                            </div>
 
-                      {/* Timeline Bar */}
-                      <div className="relative w-full px-2 mt-[-14px] z-0">
-                        <div className="w-full h-1 bg-slate-100 rounded-full"></div>
-                        <div 
-                          className="absolute left-2 top-0 h-1 bg-indigo-500 rounded-full transition-all duration-300"
-                          style={{ width: simulatedClockState === 'inactive' ? '0%' : simulatedClockState === 'active' ? '33%' : '66%' }}
-                        ></div>
-                      </div>
+                            {/* Timeline Bar */}
+                            <div className="relative w-full px-2 mt-[-13px] z-0">
+                              <div className="w-full h-1 bg-slate-100 rounded-full"></div>
+                              <div 
+                                className={`absolute left-2 top-0 h-1 rounded-full transition-all duration-300 ${
+                                  simulatedClockState === 'inactive' ? 'bg-slate-200' :
+                                  simulatedClockState === 'break_active' ? 'bg-purple-500' :
+                                  simulatedClockState === 'lunch_active' ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`}
+                                style={{ width: 
+                                  simulatedClockState === 'inactive' ? '0%' : 
+                                  simulatedClockState === 'active' ? '25%' : 
+                                  ['break_active', 'break_done'].includes(simulatedClockState) ? '50%' : 
+                                  ['lunch_active', 'lunch_done'].includes(simulatedClockState) ? '75%' : '100%' 
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          {/* Dial Central */}
+                          <div className="flex-1 flex flex-col items-center justify-center my-2 relative">
+                            {/* Glow Ring */}
+                            <div className={`absolute w-32 h-32 rounded-full blur-[8px] animate-shimmer-glow opacity-30 ${
+                              simulatedClockState === 'inactive' ? 'bg-blue-400' :
+                              simulatedClockState === 'break_active' ? 'bg-purple-400' : 
+                              simulatedClockState === 'lunch_active' ? 'bg-amber-400' : 'bg-emerald-400'
+                            }`}></div>
+                            
+                            <button 
+                              type="button" 
+                              onClick={handleDialClick}
+                              className={`group relative z-10 w-32 h-32 rounded-full border-4 border-double shadow-lg flex flex-col items-center justify-center p-2.5 transition-all transform active:scale-95 bg-white ${
+                                simulatedClockState === 'inactive' ? 'border-blue-500 text-blue-600 shadow-blue-500/10' :
+                                simulatedClockState === 'break_active' ? 'border-purple-500 text-purple-600 shadow-purple-550/10 animate-pulse' :
+                                simulatedClockState === 'lunch_active' ? 'border-amber-500 text-amber-600 shadow-amber-550/10 animate-pulse' :
+                                simulatedClockState === 'finished' ? 'border-teal-500 text-teal-600 shadow-teal-500/10' :
+                                'border-emerald-500 text-emerald-600 shadow-emerald-500/10'
+                              }`}
+                            >
+                              {simulatedClockState === 'break_active' ? <Coffee size={24} className="mb-0.5" /> :
+                               simulatedClockState === 'lunch_active' ? <Utensils size={24} className="mb-0.5" /> :
+                               simulatedClockState === 'finished' ? <CheckCircle2 size={24} className="mb-0.5" /> :
+                               <Fingerprint size={24} className="mb-0.5" />}
+                              <span className="font-mono text-lg font-black text-slate-800 tracking-tight leading-none mb-0.5">{liveTime.split(' ')[0]}</span>
+                              <span className="text-[7px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight max-w-[85px]">
+                                {simulatedClockState === 'inactive' ? 'Marcar Entrada' :
+                                 simulatedClockState === 'active' ? 'Marcar Descanso' :
+                                 simulatedClockState === 'break_active' ? 'Terminar Descanso' :
+                                 simulatedClockState === 'break_done' ? 'Marcar Comida' :
+                                 simulatedClockState === 'lunch_active' ? 'Terminar Comida' :
+                                 simulatedClockState === 'lunch_done' ? 'Marcar Salida' : 'Reiniciar Turno'}
+                              </span>
+                            </button>
+                          </div>
+
+                          {/* Alertas Sencillas Abajo del Dial */}
+                          <div className="space-y-1.5 shrink-0 px-0.5 mt-1">
+                            {/* Alerta de Tareas */}
+                            <button
+                              type="button"
+                              onClick={() => setPhoneActiveTab('tareas')}
+                              className="w-full p-2 bg-rose-50 hover:bg-rose-100 border border-rose-100 rounded-xl flex items-center gap-1.5 text-left transition-colors active:scale-[0.99]"
+                            >
+                              <span className="text-xs">⚠️</span>
+                              <div className="leading-tight overflow-hidden flex-1">
+                                <p className="text-[7.5px] font-black text-rose-800 uppercase tracking-wide">Alerta de Tareas</p>
+                                <p className="text-[8px] font-bold text-rose-650 truncate">
+                                  {(!simulatedTask1Done || !simulatedTask2Done) 
+                                    ? `Pendiente: ${!simulatedTask1Done && !simulatedTask2Done ? '2 tareas pendientes' : '1 tarea pendiente'}`
+                                    : '¡Todas tus tareas están al día ✓'}
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* Alerta de Hora de Comida / Turno */}
+                            <div className="w-full p-2 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-1.5 text-left select-none">
+                              <span className="text-xs">📅</span>
+                              <div className="leading-tight overflow-hidden flex-1">
+                                <p className="text-[7.5px] font-black text-blue-800 uppercase tracking-wide">Jornada / Horario</p>
+                                <p className="text-[8px] font-bold text-blue-650 truncate">
+                                  {simulatedClockState === 'inactive' ? 'Inicio programado: 09:00 am' :
+                                   simulatedClockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
+                                   simulatedClockState === 'break_active' ? 'Descanso activo: Regresa 11:30 am' :
+                                   simulatedClockState === 'break_done' ? 'Almuerzo sugerido: 02:00 pm (30m)' :
+                                   simulatedClockState === 'lunch_active' ? 'Comida activa: Regresa 02:30 pm' :
+                                   simulatedClockState === 'lunch_done' ? 'Salida oficial programada a las 06:00 pm' :
+                                   'Jornada del día completada 🎉'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {phoneActiveTab === 'tareas' && (
+                        <div className="p-1 text-left animate-in fade-in duration-200 flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex justify-between items-center mb-3">
+                              <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Tareas del Colaborador</h5>
+                              <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
+                                {((simulatedTask1Done ? 1 : 0) + (simulatedTask2Done ? 1 : 0))} / 2
+                              </span>
+                            </div>
+
+                            <div className="space-y-2">
+                              {/* Tarea 1 */}
+                              <button
+                                type="button"
+                                onClick={() => setSimulatedTask1Done(!simulatedTask1Done)}
+                                className="w-full p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between text-left transition-all active:scale-[0.99]"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                    simulatedTask1Done ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'
+                                  }`}>
+                                    {simulatedTask1Done && <Check size={8} />}
+                                  </div>
+                                  <span className={`text-[8.5px] font-bold text-slate-700 ${simulatedTask1Done ? 'line-through text-slate-400' : ''}`}>
+                                    Apertura de sucursal
+                                  </span>
+                                </div>
+                                <span className="text-[7.5px] font-black text-slate-400 uppercase">Obligatorio</span>
+                              </button>
+
+                              {/* Tarea 2 */}
+                              <button
+                                type="button"
+                                onClick={() => setSimulatedTask2Done(!simulatedTask2Done)}
+                                className="w-full p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between text-left transition-all active:scale-[0.99]"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                    simulatedTask2Done ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 bg-white'
+                                  }`}>
+                                    {simulatedTask2Done && <Check size={8} />}
+                                  </div>
+                                  <span className={`text-[8.5px] font-bold text-slate-700 ${simulatedTask2Done ? 'line-through text-slate-400' : ''}`}>
+                                    Inventario de vitrinas
+                                  </span>
+                                </div>
+                                <span className="text-[7.5px] font-black text-slate-400 uppercase">Apertura</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-[7.5px] text-blue-800 font-medium leading-normal mt-3">
+                            💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
+                          </div>
+                        </div>
+                      )}
+
+                      {phoneActiveTab === 'academia' && (
+                        <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
+                          <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Cursos de Inducción</h5>
+                          
+                          {/* Curso 1 */}
+                          <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
+                              <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                            </div>
+                          </div>
+
+                          {/* Curso 2 */}
+                          <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
+                              <span className="text-[8px] font-bold text-blue-600">10%</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                            </div>
+                          </div>
+
+                          {/* Curso 3 */}
+                          <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5 opacity-55">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Prevención y Seguridad</span>
+                              <span className="text-[8px] font-bold text-slate-400">Pendiente</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-200 rounded-full"></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {phoneActiveTab === 'herramientas' && (
+                        <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
+                          <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Herramientas</h5>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                              <span className="text-sm">🏖️</span>
+                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Solicitar Vacaciones</span>
+                            </button>
+
+                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                              <span className="text-sm">📄</span>
+                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Recibos Nómina</span>
+                            </button>
+
+                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                              <span className="text-sm">🤕</span>
+                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Nueva Incidencia</span>
+                            </button>
+
+                            <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                              <span className="text-sm">🔑</span>
+                              <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Cambiar PIN</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Dial Central */}
-                    <div className="flex-1 flex flex-col items-center justify-center my-3 relative">
-                      {/* Glow Ring */}
-                      <div className={`absolute w-36 h-36 rounded-full blur-[8px] animate-shimmer-glow opacity-30 ${simulatedClockState === 'active' ? 'bg-emerald-400' : simulatedClockState === 'break' ? 'bg-purple-400' : 'bg-blue-400'}`}></div>
-                      
-                      <button 
-                        type="button" 
-                        onClick={handleDialClick}
-                        className={`group relative z-10 w-36 h-36 rounded-full border-4 border-double shadow-xl flex flex-col items-center justify-center p-3 transition-all transform active:scale-95 bg-white ${
-                          simulatedClockState === 'active' 
-                            ? 'border-emerald-500 text-emerald-600 shadow-emerald-500/10' 
-                            : simulatedClockState === 'break' 
-                              ? 'border-purple-500 text-purple-600 shadow-purple-500/10' 
-                              : 'border-blue-500 text-blue-600 shadow-blue-500/10'
+                    {/* MENU INFERIOR DEL CELULARCITO (FOOTER NAVIGATION BAR) */}
+                    <div className="border-t border-slate-100 bg-white pt-2 flex items-center justify-between shrink-0 px-2 mt-auto">
+                      {/* Reloj */}
+                      <button
+                        type="button"
+                        onClick={() => setPhoneActiveTab('reloj')}
+                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                          phoneActiveTab === 'reloj' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
                         }`}
                       >
-                        <Fingerprint size={32} className="mb-1" />
-                        <span className="font-mono text-xl font-black text-slate-800 tracking-tight leading-none mb-1">{liveTime.split(' ')[0]}</span>
-                        <span className="text-[7.5px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight max-w-[90px]">
-                          {simulatedClockState === 'active' ? 'Marcar Salida' : simulatedClockState === 'break' ? 'Terminar Descanso' : 'Marcar Entrada'}
-                        </span>
+                        <Clock size={14} className={phoneActiveTab === 'reloj' ? 'scale-110' : ''} />
+                        <span className="text-[7.5px] font-black uppercase tracking-wider">Reloj</span>
                       </button>
-                    </div>
 
-                    {/* Hub de Tareas */}
-                    <div className="bg-slate-50 border border-slate-150 rounded-2xl p-2.5 text-left shrink-0">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between items-center">
-                        <span>Tareas del Día</span>
-                        <span className="text-[7.5px] font-bold text-slate-400 bg-slate-200/55 px-1.5 py-0.5 rounded-full">1/2</span>
-                      </p>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <CheckCircle2 size={11} className="text-emerald-500 flex-shrink-0" />
-                          <span className="text-[8.5px] font-bold text-slate-650 line-through">Apertura de sucursal</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full border border-slate-300 flex-shrink-0"></div>
-                          <span className="text-[8.5px] font-bold text-slate-650">Inventario de vitrinas</span>
-                        </div>
-                      </div>
+                      {/* Tareas */}
+                      <button
+                        type="button"
+                        onClick={() => setPhoneActiveTab('tareas')}
+                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer relative ${
+                          phoneActiveTab === 'tareas' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
+                        }`}
+                      >
+                        <CheckCircle2 size={14} className={phoneActiveTab === 'tareas' ? 'scale-110' : ''} />
+                        <span className="text-[7.5px] font-black uppercase tracking-wider">Tareas</span>
+                        {(!simulatedTask1Done || !simulatedTask2Done) && (
+                          <span className="absolute -top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                        )}
+                      </button>
+
+                      {/* Academia */}
+                      <button
+                        type="button"
+                        onClick={() => setPhoneActiveTab('academia')}
+                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                          phoneActiveTab === 'academia' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
+                        }`}
+                      >
+                        <GraduationCap size={14} className={phoneActiveTab === 'academia' ? 'scale-110' : ''} />
+                        <span className="text-[7.5px] font-black uppercase tracking-wider">Academia</span>
+                      </button>
+
+                      {/* Herramientas */}
+                      <button
+                        type="button"
+                        onClick={() => setPhoneActiveTab('herramientas')}
+                        className={`flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                          phoneActiveTab === 'herramientas' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-655'
+                        }`}
+                      >
+                        <Lock size={14} className={phoneActiveTab === 'herramientas' ? 'scale-110' : ''} />
+                        <span className="text-[7.5px] font-black uppercase tracking-wider">Herramientas</span>
+                      </button>
                     </div>
                   </div>
 
@@ -831,9 +1146,28 @@ export const SaaSLandingPage = () => {
       {/* PRICING SECTION WITH SLIDER */}
       <section id="pricing" className="py-24 px-6 bg-slate-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8">
             <h3 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Planes Transparentes y Flexibles</h3>
             <p className="text-slate-500 font-medium">Comienza gratis o escala tu plan según el volumen de colaboradores.</p>
+          </div>
+
+          {/* Billing Cycle Switch/Toggle */}
+          <div className="flex justify-center items-center gap-3 mb-16 select-none">
+            <span className={`text-sm font-extrabold transition-colors duration-200 ${billingCycle === 'monthly' ? 'text-blue-600' : 'text-slate-500'}`}>Facturación Mensual</span>
+            <button 
+              type="button"
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+              className="w-14 h-8 bg-slate-200 hover:bg-slate-300 rounded-full p-1 transition-all duration-300 relative focus:outline-none"
+              aria-label="Alternar ciclo de facturación"
+            >
+              <div 
+                className={`w-6 h-6 bg-blue-600 rounded-full transition-all duration-300 transform shadow-md ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-0'}`}
+              />
+            </button>
+            <span className={`text-sm font-extrabold flex items-center gap-1.5 transition-colors duration-200 ${billingCycle === 'yearly' ? 'text-blue-600' : 'text-slate-500'}`}>
+              Facturación Anual
+              <span className="text-[9px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">Ahorra 20%</span>
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
@@ -842,10 +1176,13 @@ export const SaaSLandingPage = () => {
             <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
               <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Gratuito</h4>
               <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Para pequeños negocios que inician la digitalización de su checador.</p>
-              <div className="mb-8 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-slate-900">$0</span>
-                <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
-                <span className="text-slate-400 font-bold">/mes</span>
+              <div className="mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 flex flex-col justify-center min-h-[106px]">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-black text-slate-900">$0</span>
+                  <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
+                  <span className="text-slate-400 font-bold">/mes</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
               </div>
               <ul className="space-y-4 mb-8 flex-1">
                 <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Hasta 5 Colaboradores Activos</li>
@@ -870,25 +1207,34 @@ export const SaaSLandingPage = () => {
               <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Escala a medida que tu equipo crece en base de datos optimizada.</p>
               
               {/* Dynamic Price Display */}
-              <div className="mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50">
+              <div className="mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 transition-all duration-300">
                 <div className="flex justify-between items-baseline mb-2">
-                  <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Costo Mensual</span>
+                  <span className="text-slate-505 text-xs font-bold uppercase tracking-wider">
+                    {billingCycle === 'yearly' ? 'Costo Equivalente' : 'Costo Mensual'}
+                  </span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-blue-600">${monthlyProPrice.toLocaleString()}</span>
+                    <span className="text-4xl font-black text-blue-600 transition-all">
+                      ${(billingCycle === 'yearly' ? Math.round(monthlyProPrice * 0.8) : monthlyProPrice).toLocaleString()}
+                    </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
+                    <span className="text-slate-400 text-xs font-bold">/mes</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-baseline text-xs">
-                  <span className="text-emerald-600 font-bold">Pago Anual (Ahorra 20%):</span>
-                  <span className="text-slate-700 font-bold">${yearlyProPrice.toLocaleString()} MXN / año</span>
+                <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
+                  <span className="text-emerald-600 font-bold">
+                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : 'Ahorra 20% en Plan Anual:'}
+                  </span>
+                  <span className="text-slate-700 font-bold whitespace-nowrap">
+                    ${(billingCycle === 'yearly' ? yearlyProPrice : Math.round(monthlyProPrice * 12 * 0.8)).toLocaleString()} MXN/año
+                  </span>
                 </div>
               </div>
 
               {/* Slider Controller */}
               <div className="mb-8">
-                <div className="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                <div className="flex justify-between text-xs font-bold text-slate-650 mb-2">
                   <span>Colaboradores:</span>
-                  <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{proEmployeesCount} activos</span>
+                  <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-black">{proEmployeesCount} activos</span>
                 </div>
                 <input 
                   type="range" 
@@ -923,11 +1269,31 @@ export const SaaSLandingPage = () => {
             <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
               <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Enterprise</h4>
               <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Infraestructura dedicada y aislada para corporativos con volumen.</p>
-              <div className="mb-8 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-slate-900">${fixedEnterprisePrice}</span>
-                <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
-                <span className="text-slate-400 font-bold">/mes</span>
+              
+              {/* Dynamic Price Display */}
+              <div className="mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 transition-all duration-300">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    {billingCycle === 'yearly' ? 'Costo Equivalente' : 'Costo Mensual'}
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-black text-slate-900 transition-all">
+                      ${(billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 0.8) : fixedEnterprisePrice).toLocaleString()}
+                    </span>
+                    <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
+                    <span className="text-slate-400 text-xs font-bold">/mes</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
+                  <span className="text-emerald-600 font-bold">
+                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : 'Ahorra 20% en Plan Anual:'}
+                  </span>
+                  <span className="text-slate-700 font-bold whitespace-nowrap">
+                    ${(billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 12 * 0.8) : Math.round(fixedEnterprisePrice * 12 * 0.8)).toLocaleString()} MXN/año
+                  </span>
+                </div>
               </div>
+
               <ul className="space-y-4 mb-8 flex-1">
                 <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Colaboradores Ilimitados</li>
                 <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Base de datos Dedicada y Aislada</li>
@@ -960,10 +1326,10 @@ export const SaaSLandingPage = () => {
       {/* REGISTRATION STEP WIZARD MODAL */}
       {showCheckout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-900 my-auto border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative text-slate-900 my-auto border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
             
             {/* Header */}
-            <div className="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-center">
+            <div className="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
                 <Building2 className="text-blue-600" size={22} />
                 <span className="font-extrabold text-slate-800 text-base">Crear Cuenta Talent 360</span>
@@ -971,7 +1337,7 @@ export const SaaSLandingPage = () => {
               <button onClick={() => setShowCheckout(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1 bg-slate-200/50 rounded-full w-7 h-7 flex items-center justify-center transition-colors">&times;</button>
             </div>
             
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
               {error && (
                 <div className="mb-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold p-3 rounded-xl flex gap-1.5 items-start">
                   <span>⚠️</span> <span>{error}</span>
@@ -1210,7 +1576,7 @@ export const SaaSLandingPage = () => {
                           placeholder="dashcomputer" 
                           className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-slate-800" 
                         />
-                        <div className="bg-slate-50 px-4 py-3 text-xs text-slate-500 font-bold border-l border-slate-200 flex items-center">.talent360.com</div>
+                        <div className="bg-slate-50 px-2.5 sm:px-4 py-3 text-[10px] sm:text-xs text-slate-500 font-black border-l border-slate-200 flex items-center shrink-0">.talent360.com</div>
                       </div>
                       <p className="text-[9px] text-slate-400 mt-1 font-semibold">Tus empleados ingresarán desde: {formData.subdomain || 'subdominio'}.talent360.com</p>
                     </div>

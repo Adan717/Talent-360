@@ -59,6 +59,10 @@ export default function RelojVisual({
       role: 'empleado',
       pin_code: '1234'
     },
+    currentSimTime: 540,
+    formattedTime: '09:00:00',
+    ampm: 'AM',
+    btnProps: { isIncidenceReport: false },
     systemSettings: {
       clockOpConfig: {
         allowManualCheckIn: true,
@@ -114,7 +118,7 @@ export default function RelojVisual({
           if (propStr.includes('Show') || propStr.includes('show')) {
             return false;
           }
-          if (['timeBankConfigs', 'leySillaConfig', 'mealSettings', 'buddyAlerts', 'reservedMeals', 'userReservedMealSlots', 'activeTimers', 'arrivalTimes', 'checkInTimes', 'checkOutTimes', 'breaksTaken', 'breakStartTimes', 'breakEndTimes', 'mealStartTimes', 'mealEndTimes', 'hasReservedMeal', 'shiftConfigs'].includes(propStr)) {
+          if (['timeBankConfigs', 'leySillaConfig', 'mealSettings', 'buddyAlerts', 'reservedMeals', 'userReservedMealSlots', 'activeTimers', 'arrivalTimes', 'checkInTimes', 'checkOutTimes', 'breaksTaken', 'breakStartTimes', 'breakEndTimes', 'mealStartTimes', 'mealEndTimes', 'hasReservedMeal', 'shiftConfigs', 'userSettings', 'adminConfigs', 'openingSettings', 'btnProps', 'reportForm'].includes(propStr)) {
             return {};
           }
           return undefined;

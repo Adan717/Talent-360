@@ -8,449 +8,114 @@ import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
 
-// Componente para tarjeta deslizable en modo claro y suave
-interface SwipeableTaskCardProps {
+// Componente para tarjeta de tarea compacta y limpia
+interface CompactTaskCardProps {
     assignment: TaskAssignment;
     task: Task;
     currentUser: any;
     globalSimTime: number;
-    restriction: any;
-    isCurrentlyLocked: boolean;
-    onStart: () => void;
-    onPause: () => void;
-    onComplete: () => void;
-    onOmit: () => void;
-    onShowToast: (msg: string, type: 'info' | 'success' | 'warning') => void;
     onSelect: () => void;
-    isSelected: boolean;
-    getRoutineName: (id?: number) => string;
     getRoleName: (id?: number) => string;
 }
 
-function SwipeableTaskCard({
+function CompactTaskCard({
     assignment,
     task,
     currentUser,
     globalSimTime,
-    restriction,
-    isCurrentlyLocked,
-    onStart,
-    onPause,
-    onComplete,
-    onOmit,
-    onShowToast,
     onSelect,
-    isSelected,
-    getRoutineName,
     getRoleName
-}: SwipeableTaskCardProps) {
-    const [startX, setStartX] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragOffset, setDragOffset] = useState(0);
-    const [showInstructions, setShowInstructions] = useState(false);
-    const [localInput, setLocalInput] = useState('');
-    const [photoDone, setPhotoDone] = useState(false);
+}: CompactTaskCardProps) {
+    const { globalUsers } = useAppStore();
+    const worker = globalUsers?.find(u => u.id === assignment.userId);
 
-    const isCompleted = assignment.status === 'completed' || assignment.status === 'awaiting_validation';
-    const isOmitted = assignment.status === 'omitted';
-    const isActive = assignment.status === 'in_progress';
-    const isPaused = assignment.status === 'paused';
+    // Determinar etiqueta y color de estado
+    let badgeText = '';
+    let badgeClass = '';
 
+    if (assignment.status === 'awaiting_validation') {
+        badgeText = 'Firma Pendiente';
+        badgeClass = 'bg-amber-50 text-amber-700 border-amber-200/50';
+    } else if (assignment.userId === null) {
+        badgeText = 'Bolsa de Trabajo';
+        badgeClass = 'bg-sky-50 text-sky-700 border-sky-200/50';
+    } else if (assignment.status === 'in_progress') {
+        badgeText = 'En Curso';
+        badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200/50';
+    } else if (assignment.status === 'paused') {
+        badgeText = 'Pausada';
+        badgeClass = 'bg-slate-100 text-slate-600 border-slate-200/50';
+    } else if (assignment.status === 'pending') {
+        badgeText = 'Pendiente';
+        badgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200/50';
+    } else if (assignment.status === 'completed') {
+        badgeText = 'Completada';
+        badgeClass = 'bg-teal-50 text-teal-700 border-teal-200/50';
+    } else if (assignment.status === 'omitted') {
+        badgeText = 'Omitida';
+        badgeClass = 'bg-rose-50 text-rose-600 border-rose-100/50';
+    }
+
+    // Calcular el tiempo transcurrido o estimado
     const elapsed = assignment.status === 'pending' ? 0 : 
         ((assignment.accumulatedMins || 0) + 
         (assignment.status === 'in_progress' && assignment.startedAtMins ? (globalSimTime - assignment.startedAtMins) : 0));
-    const percent = Math.min(100, Math.max(0, (elapsed / task.estimatedMins) * 100));
-    const isOvertime = assignment.status !== 'pending' && elapsed > task.estimatedMins;
+    
+    const timeDisplay = assignment.status === 'pending' 
+        ? `${task.estimatedMins} min est.`
+        : `${elapsed} min real`;
 
-    // Gestores de arrastre
-    const handleStart = (clientX: number) => {
-        if (isCompleted || isOmitted || isCurrentlyLocked) return;
-        setStartX(clientX);
-        setIsDragging(true);
-    };
-
-    const handleMove = (clientX: number) => {
-        if (!isDragging) return;
-        const offset = clientX - startX;
-        
-        // Si es bloqueante/obligatoria, no permitir deslizar a la izquierda (omitir)
-        if (task.priority === 'bloqueante' && offset < 0) {
-            setDragOffset(Math.max(-25, offset * 0.15));
-        } else {
-            // amortiguación
-            if (offset > 150) {
-                setDragOffset(150 + (offset - 150) * 0.2);
-            } else if (offset < -150) {
-                setDragOffset(-150 + (offset + 150) * 0.2);
-            } else {
-                setDragOffset(offset);
-            }
-        }
-    };
-
-    const handleEnd = () => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        const threshold = 80;
-
-        if (dragOffset > threshold) {
-            // Deslizar a la derecha -> Play / Continuar / Completar
-            if (assignment.userId !== currentUser.id && assignment.userId !== null) {
-                onStart();
-                onShowToast(`Retomando la tarea colaborativa de ${getRoleName(task.targetId as any)}`, 'info');
-            } else if (assignment.status === 'pending' || isPaused) {
-                onStart();
-                onShowToast(`Tarea "${task.title}" iniciada`, 'success');
-            } else if (isActive) {
-                if (task.assistantType !== 'ninguno') {
-                    onSelect();
-                    setShowInstructions(true);
-                    onShowToast("Completa el asistente requerido", 'info');
-                } else {
-                    onComplete();
-                    onShowToast("¡Tarea completada!", 'success');
-                }
-            }
-        } else if (dragOffset < -threshold) {
-            // Deslizar a la izquierda -> Omitir
-            if (task.priority === 'bloqueante') {
-                onShowToast("Las tareas bloqueantes son obligatorias y no se pueden omitir", 'warning');
-            } else {
-                onOmit();
-                onShowToast("Tarea omitida", 'info');
-            }
-        }
-        setDragOffset(0);
-    };
-
-    // Soporte táctil
-    const onTouchStart = (e: React.TouchEvent) => handleStart(e.touches[0].clientX);
-    const onTouchMove = (e: React.TouchEvent) => handleMove(e.touches[0].clientX);
-    const onTouchEnd = () => handleEnd();
-
-    // Soporte de ratón
-    const onMouseDown = (e: React.MouseEvent) => handleStart(e.clientX);
-    const onMouseMove = (e: React.MouseEvent) => handleMove(e.clientX);
-    const onMouseUp = () => handleEnd();
-    const onMouseLeave = () => { if (isDragging) handleEnd(); };
-
-    // Envío del asistente
-    const submitAssistant = () => {
-        if (!localInput.trim()) return;
-        const { completeTask } = useTaskStore.getState();
-        const { addMatrixEvent } = useAppStore.getState();
-        
-        completeTask(assignment.id, globalSimTime, localInput);
-        setLocalInput('');
-        setPhotoDone(false);
-        onShowToast("Evidencia guardada y tarea completada", 'success');
-        addMatrixEvent('✅ Asistente completado', `Tarea "${task.title}" con reporte: ${localInput}`, 'success', currentUser.id);
-    };
-
-    const isAssignedToOther = assignment.userId !== null && assignment.userId !== currentUser.id;
-
-    // Badges en colores suaves y pasteles
-    const getBadgeStyle = () => {
-        // Si es urgente/inmediata (no es de rutina y tiene prioridad o asignada)
-        const isUrgent = (task.priority === 'bloqueante') || (!assignment.assignedFromRoutineId && assignment.userId === currentUser.id);
-        
-        if (isUrgent && !isCompleted && !isOmitted) {
-            return 'bg-rose-50 text-rose-600 border border-rose-100';
-        }
-        if (assignment.userId === null) {
-            return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-        }
-        return 'bg-blue-50 text-blue-600 border border-blue-100';
-    };
-
-    const getBadgeLabel = () => {
-        const isUrgent = (task.priority === 'bloqueante') || (!assignment.assignedFromRoutineId && assignment.userId === currentUser.id);
-        if (isUrgent && !isCompleted && !isOmitted) return 'Inmediata / Urgente';
-        if (assignment.userId === null) return 'Bolsa de Trabajo';
-        return 'Rutina Laboral';
-    };
-
-    // Fondo dinámico de progreso para la tarjeta
-    const cardBgStyle = isActive && !isOvertime
-        ? {
-            background: `linear-gradient(to right, #f0f4ff ${percent}%, #ffffff ${percent}%)`
-          }
-        : isOvertime
-        ? {
-            background: `linear-gradient(to right, #ffebee ${percent}%, #ffffff ${percent}%)`
-          }
-        : undefined;
+    // Nombre del colaborador a mostrar
+    const collaboratorName = assignment.userId === null 
+        ? 'Bolsa Libre'
+        : (worker?.name || `Colaborador #${assignment.userId}`);
 
     return (
         <div 
-            className={`relative rounded-2xl overflow-hidden mb-3 border select-none transition-all ${
-                isSelected 
-                    ? 'border-indigo-400 ring-2 ring-indigo-50/50' 
-                    : 'border-slate-200/60 shadow-[0_4px_12px_0_rgba(0,0,0,0.02)]'
-            }`}
+            onClick={onSelect}
+            className="bg-white border border-slate-250/70 rounded-2xl p-3.5 shadow-xs hover:shadow-md hover:translate-x-0.5 transition-all duration-200 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden"
         >
-            {/* Fondo revelado al deslizar */}
-            <div className="absolute inset-0 flex justify-between items-center px-6 z-0">
-                <div 
-                    className="absolute inset-y-0 left-0 bg-emerald-500/80 flex items-center pl-6 text-white transition-opacity"
-                    style={{ opacity: dragOffset > 10 ? 1 : 0, width: '100%' }}
-                >
-                    <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
-                        {isActive ? <Check size={16} /> : <Play size={16} />}
-                        <span>{isActive ? 'Completar' : 'Iniciar'}</span>
-                    </div>
+            {/* Indicador lateral de estado */}
+            <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                assignment.status === 'awaiting_validation' ? 'bg-amber-400' :
+                assignment.userId === null ? 'bg-sky-400' :
+                assignment.status === 'in_progress' ? 'bg-emerald-500' :
+                assignment.status === 'paused' ? 'bg-slate-400' : 'bg-indigo-500'
+            }`}></div>
+
+            <div className="pl-1">
+                {/* Fila 1: Badge de Estado */}
+                <div className="flex justify-between items-center">
+                    <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border ${badgeClass}`}>
+                        {badgeText}
+                    </span>
+                    {task.priority === 'bloqueante' && (
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100/60">
+                            ⚠️ Obligatoria
+                        </span>
+                    )}
                 </div>
 
-                <div 
-                    className="absolute inset-y-0 right-0 bg-rose-500/80 flex items-center justify-end pr-6 text-white transition-opacity"
-                    style={{ opacity: dragOffset < -10 ? 1 : 0, width: '100%' }}
-                >
-                    <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
-                        <span>{task.priority === 'bloqueante' ? 'Obligatoria' : 'Omitir'}</span>
-                        <Trash2 size={16} />
-                    </div>
-                </div>
-            </div>
+                {/* Fila 2: Título de la tarea */}
+                <h4 className="font-extrabold text-xs text-slate-800 mt-2 line-clamp-2 leading-tight">
+                    {task.title}
+                </h4>
 
-            {/* Tarjeta principal */}
-            <div
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-                onMouseDown={onMouseDown}
-                onMouseMove={onMouseMove}
-                onMouseUp={onMouseUp}
-                onMouseLeave={onMouseLeave}
-                className="relative z-10 p-4 bg-white text-slate-800 transition-transform cursor-grab active:cursor-grabbing border-none text-left"
-                style={{ 
-                    transform: `translateX(${dragOffset}px)`,
-                    transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                    ...cardBgStyle
-                }}
-            >
-                <div className="flex flex-col">
-                    {/* Fila superior: Badges */}
-                    <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${getBadgeStyle()}`}>
-                                {getBadgeLabel()}
-                            </span>
-
-                            {isActive && (
-                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 animate-pulse">
-                                    En Proceso
-                                </span>
-                            )}
-
-                            {isPaused && (
-                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                                    Pausada
-                                </span>
-                            )}
-
-                            {isAssignedToOther && (
-                                <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                                    ⏸️ Pausada por puesto
-                                </span>
-                            )}
-                        </div>
-
-                        <div>
-                            {isCompleted ? (
-                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-lg">
-                                    ✓ Resuelta
-                                </span>
-                            ) : isOmitted ? (
-                                <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2.5 py-0.5 rounded-lg">
-                                    Omitida
-                                </span>
-                            ) : isCurrentlyLocked ? (
-                                <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-lg">
-                                    🔒 Horario restringido
-                                </span>
-                            ) : null}
-                        </div>
+                {/* Fila 3: Metadata compacta (Colaborador + Tiempo) */}
+                <div className="flex items-center justify-between mt-3 text-[10px] text-slate-500 font-bold">
+                    <div className="flex items-center gap-1 min-w-0">
+                        <User size={12} className="text-slate-400 shrink-0" />
+                        <span className="truncate text-slate-700 font-black">
+                            {collaboratorName}
+                        </span>
                     </div>
 
-                    {/* Título de tarea y estimación */}
-                    <div className="flex justify-between items-start gap-4 mb-2">
-                        <div className="flex-1 min-w-0">
-                            <h4 className={`font-black text-sm text-slate-800 leading-snug ${isCompleted ? 'text-slate-400 line-through' : ''}`}>
-                                {task.title}
-                            </h4>
-                            {task.description && (
-                                <p className="text-xs text-slate-500 mt-1 font-medium leading-normal">
-                                    {task.description}
-                                </p>
-                            )}
-                        </div>
-                        <div className="text-right shrink-0">
-                            <span className="text-xs font-bold text-slate-550 flex items-center gap-1 justify-end">
-                                <Clock size={11} className="text-slate-400" /> {task.estimatedMins} min
-                            </span>
-                            {isActive && (
-                                <span className={`text-[10px] font-black block mt-1 ${isOvertime ? 'text-rose-600 animate-pulse' : 'text-indigo-600'}`}>
-                                    {isOvertime ? `Excedido: ${elapsed - task.estimatedMins} min` : `Restan: ${task.estimatedMins - elapsed} min`}
-                                </span>
-                            )}
-                        </div>
+                    <div className="flex items-center gap-1 shrink-0 bg-slate-55 px-2 py-0.5 rounded-lg border border-slate-100">
+                        <Clock size={11} className="text-slate-400" />
+                        <span className="text-slate-655 font-extrabold">
+                            {timeDisplay}
+                        </span>
                     </div>
-
-                    {/* Fila de progreso visual e indicadores */}
-                    {isActive && (
-                        <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden mb-2 mt-1">
-                            <div 
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                    isOvertime ? 'bg-rose-500 animate-pulse' : 'bg-indigo-500'
-                                }`} 
-                                style={{ width: `${percent}%` }}
-                            />
-                        </div>
-                    )}
-
-                    {/* Fila de acciones y checklist */}
-                    <div className="flex flex-wrap items-center justify-between mt-2 pt-2 border-t border-slate-100 gap-2">
-                        <div className="flex gap-2">
-                            {(task.description || (task.subTasks && task.subTasks.length > 0)) && (
-                                <button 
-                                    onClick={() => setShowInstructions(!showInstructions)}
-                                    className="text-[10px] font-black px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200/50 cursor-pointer"
-                                >
-                                    {showInstructions ? 'Ocultar pasos ▴' : 'Ver pasos ▾'}
-                                </button>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                            {!isCompleted && !isOmitted && !isCurrentlyLocked && (
-                                <>
-                                    {isActive ? (
-                                        <>
-                                            <button 
-                                                onClick={onPause} 
-                                                className="p-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all hover:scale-105 cursor-pointer border-none"
-                                                title="Pausar Tarea"
-                                            >
-                                                <Pause size={12} />
-                                            </button>
-                                            <button 
-                                                onClick={() => {
-                                                    if (task.assistantType !== 'ninguno') {
-                                                        onSelect();
-                                                        setShowInstructions(true);
-                                                    } else {
-                                                        onComplete();
-                                                    }
-                                                }} 
-                                                className="flex items-center gap-1 px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] rounded-lg transition-all hover:scale-105 cursor-pointer border-none shadow-sm"
-                                            >
-                                                <Check size={12} /> Completar
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {task.priority !== 'bloqueante' && (
-                                                <button 
-                                                    onClick={onOmit}
-                                                    className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors cursor-pointer border-none"
-                                                    title="Omitir Tarea"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            )}
-                                            <button 
-                                                onClick={onStart} 
-                                                className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] rounded-lg transition-all hover:scale-105 shadow-md border-none cursor-pointer"
-                                            >
-                                                <Play size={10} className="fill-white" /> {isPaused ? 'Reanudar' : isAssignedToOther ? 'Continuar' : 'Iniciar'}
-                                            </button>
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Desplegable de Instrucciones y Asistente */}
-                    {showInstructions && (
-                        <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-3 text-xs leading-normal">
-                            {task.description && (
-                                <div>
-                                    <p className="font-extrabold text-slate-800">Detalles de ejecución:</p>
-                                    <p className="text-slate-600 mt-0.5 leading-relaxed font-medium">{task.description}</p>
-                                </div>
-                            )}
-
-                            {task.subTasks && task.subTasks.length > 0 && (
-                                <div className="space-y-1">
-                                    <p className="font-extrabold text-slate-800 mb-1">Checklist de Pasos Obligatorios:</p>
-                                    {task.subTasks.map(sub => (
-                                        <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-150/60 hover:bg-indigo-50 cursor-pointer transition-colors shadow-sm">
-                                            <input type="checkbox" className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-350" />
-                                            <span className="text-slate-700 font-semibold">{sub.text}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Mini Asistente en Enfoque */}
-                            {task.assistantType !== 'ninguno' && !isCompleted && !isOmitted && (
-                                <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl space-y-2 text-left">
-                                    <p className="font-black text-indigo-900 flex items-center gap-1">
-                                        <Bot size={13} className="text-indigo-600" /> Asistente de Verificación
-                                    </p>
-                                    <p className="text-slate-650 font-bold text-[11px]">{task.assistantPrompt}</p>
-                                    
-                                    {task.assistantType === 'evidencia_foto' && (
-                                        <div className="space-y-2">
-                                            {!photoDone ? (
-                                                <button 
-                                                    onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }}
-                                                    className="w-full py-2.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg border border-indigo-300 text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                >
-                                                    <Camera size={13} /> Capturar Foto de Evidencia
-                                                </button>
-                                            ) : (
-                                                <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800">
-                                                    <Check size={14} className="text-emerald-600 font-black" />
-                                                    <span className="font-extrabold truncate">evidencia_checador_foto.jpg</span>
-                                                    <button onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[10px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {task.assistantType === 'captura_numero' && (
-                                        <input 
-                                            type="number"
-                                            value={localInput}
-                                            onChange={e => setLocalInput(e.target.value)}
-                                            placeholder="Ingresa la cantidad..."
-                                            className="w-full p-2.5 border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
-                                        />
-                                    )}
-
-                                    {task.assistantType === 'texto' && (
-                                        <input 
-                                            type="text"
-                                            value={localInput}
-                                            onChange={e => setLocalInput(e.target.value)}
-                                            placeholder="Escribe reporte de fin de tarea..."
-                                            className="w-full p-2.5 border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
-                                        />
-                                    )}
-
-                                    <button 
-                                        onClick={submitAssistant}
-                                        disabled={!localInput}
-                                        className="w-full py-2 bg-indigo-650 disabled:bg-slate-100 disabled:text-slate-400 hover:bg-indigo-750 text-white rounded-lg text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
-                                    >
-                                        Enviar Reporte y Completar
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
@@ -464,12 +129,13 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         pauseTask, completeTask, omitAssignment, createDynamicTask,
         validateTaskAssignment
     } = useTaskStore();
-    const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore();
-
-    // Filtros y pestañas locales
-    const [activeTab, setActiveTab] = useState<'hoy' | 'supervisar' | 'historial'>('hoy');
+    const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore    // Filtros y pestañas locales
+    const [filterTab, setFilterTab] = useState<'todos' | 'firma_pendiente' | 'mis_tareas' | 'bolsa'>('todos');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [localInput, setLocalInput] = useState('');
+    const [photoDone, setPhotoDone] = useState(false);
     
     // Modal de creación de tareas
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -495,6 +161,14 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     const showToast = (message: string, type: 'info' | 'success' | 'warning') => {
         setToast({ message, type });
+    };
+
+    const handleSelectAssignment = (id: string | null) => {
+        setSelectedAssignmentId(id);
+        setLocalInput('');
+        setPhotoDone(false);
+        setRejectingAssignmentId(null);
+        setRejectFeedback('');
     };
 
     // Cerrar menú flotante si hacen clic fuera
@@ -557,11 +231,19 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                          currentUser?.role?.toLowerCase().includes('geren') || 
                          currentUser?.role?.toLowerCase().includes('admin');
 
-    // 1. Tareas asignadas directamente al colaborador (rutina + inmediatas personales)
-    const myAssignments = assignments.filter(a => 
-        a.userId === currentUser.id && 
-        ['pending', 'in_progress', 'paused', 'completed', 'awaiting_validation'].includes(a.status)
-    );
+    // Filtrados según búsqueda
+    const filterBySearch = (list: TaskAssignment[]) => {
+        return list.filter(a => {
+            const t = tasks.find(tsk => tsk.id === a.taskId);
+            if (!t) return false;
+            return t.title.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+    };
+
+    // 1. Tareas de firma pendiente (para validar):
+    const awaitingValidationFiltered = filterBySearch(assignments.filter(a => 
+        a.status === 'awaiting_validation' && (isSupervisor ? true : a.userId === currentUser.id)
+    ));
 
     // 2. Bolsa de Trabajo y Puestos
     const puestoBolsaAssignments = assignments.filter(a => {
@@ -578,42 +260,38 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         
         return isFreeInPool || isPausedByPeer;
     });
+    const puestoAssignmentsFiltered = filterBySearch(puestoBolsaAssignments);
 
-    // 3. Tareas esperando validación (para supervisores)
-    const awaitingValidationAssignments = assignments.filter(a => 
-        a.status === 'awaiting_validation'
-    );
+    // 3. Mis Tareas Activas (rutina + urgentes):
+    const activeAssignmentsFiltered = filterBySearch(assignments.filter(a => 
+        a.userId === currentUser.id && 
+        ['pending', 'in_progress', 'paused'].includes(a.status)
+    ));
 
     // 4. Historial (Tareas completadas u omitidas por el colaborador hoy)
-    const historyAssignments = assignments.filter(a => 
+    const historyAssignmentsFiltered = filterBySearch(assignments.filter(a => 
         a.userId === currentUser.id && 
         ['completed', 'awaiting_validation', 'omitted'].includes(a.status)
-    );
+    ));
 
-    // Filtrados según búsqueda
-    const filterBySearch = (list: TaskAssignment[]) => {
-        return list.filter(a => {
-            const t = tasks.find(tsk => tsk.id === a.taskId);
-            if (!t) return false;
-            return t.title.toLowerCase().includes(searchQuery.toLowerCase());
-        });
-    };
-
-    const activeAssignmentsFiltered = filterBySearch(myAssignments.filter(a => a.status !== 'completed' && a.status !== 'awaiting_validation'));
-    const puestoAssignmentsFiltered = filterBySearch(puestoBolsaAssignments);
-    const awaitingValidationFiltered = filterBySearch(awaitingValidationAssignments);
-    const historyAssignmentsFiltered = filterBySearch(historyAssignments);
-
-    // Fusión de tareas en una sola Lista Unificada (hoy)
-    // Tareas inmediatas primero, luego rutinas, luego bolsa de trabajo disponible.
-    const unifiedActiveList = [
-        // 1. Inmediatas / urgentes
-        ...activeAssignmentsFiltered.filter(a => a.assignedFromRoutineId === null || a.assignedFromRoutineId === undefined),
-        // 2. Rutina laboral
-        ...activeAssignmentsFiltered.filter(a => a.assignedFromRoutineId !== null && a.assignedFromRoutineId !== undefined),
-        // 3. Bolsa de trabajo disponible
-        ...filterBySearch(puestoBolsaAssignments)
-    ];
+    // El listado actual a mostrar
+    const displayedAssignments = (() => {
+        switch (filterTab) {
+            case 'firma_pendiente':
+                return awaitingValidationFiltered;
+            case 'mis_tareas':
+                return activeAssignmentsFiltered;
+            case 'bolsa':
+                return puestoAssignmentsFiltered;
+            case 'todos':
+            default:
+                return [
+                    ...awaitingValidationFiltered,
+                    ...activeAssignmentsFiltered,
+                    ...puestoAssignmentsFiltered
+                ];
+        }
+    })();
 
     const handleCreateTaskSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -704,7 +382,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     // Manejar reanudación de una tarea deteniendo la actual si estuviera activa
     const handleStartTaskCooperative = (assignmentId: string, isFromPool: boolean) => {
         // Encontrar si hay alguna tarea en progreso para pausarla primero
-        const currentActive = myAssignments.find(a => a.status === 'in_progress');
+        const currentActive = activeAssignmentsFiltered.find(a => a.status === 'in_progress');
         if (currentActive) {
             pauseTask(currentActive.id);
             showToast(`Pausada la tarea: ${tasks.find(t => t.id === currentActive.taskId)?.title}`, 'info');
@@ -795,232 +473,118 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 </div>
             </div>
 
+            {/* Filtros Rápidos Táctiles */}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1.5 scrollbar-none shrink-0 -mx-1 px-1">
+                <button
+                    onClick={() => setFilterTab('todos')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
+                        filterTab === 'todos'
+                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-sm'
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    🔍 Todas
+                    <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                        filterTab === 'todos' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                        {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                    </span>
+                </button>
+
+                {(isSupervisor || awaitingValidationFiltered.length > 0) && (
+                    <button
+                        onClick={() => setFilterTab('firma_pendiente')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
+                            filterTab === 'firma_pendiente'
+                                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                        ✍️ Firma Pendiente
+                        {awaitingValidationFiltered.length > 0 && (
+                            <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                                filterTab === 'firma_pendiente' ? 'bg-white/20 text-white' : 'bg-rose-105 text-rose-700'
+                            }`}>
+                                {awaitingValidationFiltered.length}
+                            </span>
+                        )}
+                    </button>
+                )}
+
+                <button
+                    onClick={() => setFilterTab('mis_tareas')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
+                        filterTab === 'mis_tareas'
+                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-sm'
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    📋 Mis Tareas
+                    <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                        filterTab === 'mis_tareas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                        {activeAssignmentsFiltered.length}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => setFilterTab('bolsa')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
+                        filterTab === 'bolsa'
+                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-sm'
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    🤝 Bolsa
+                    <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                        filterTab === 'bolsa' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                        {puestoAssignmentsFiltered.length}
+                    </span>
+                </button>
+            </div>
+
             {/* Listado principal */}
             <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar pr-1 -mr-1">
-                {activeTab === 'hoy' && (
-                    <>
-                        <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
-                                Lista Unificada de Tareas Activas
-                            </h3>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                                {unifiedActiveList.length} disponibles
-                            </span>
-                        </div>
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                        {filterTab === 'todos' ? 'Lista Unificada de Tareas' :
+                         filterTab === 'firma_pendiente' ? 'Tareas esperando validación' :
+                         filterTab === 'mis_tareas' ? 'Mis Tareas del Turno' :
+                         'Bolsa de Trabajo'}
+                    </h3>
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {displayedAssignments.length} {displayedAssignments.length === 1 ? 'tarea' : 'tareas'}
+                    </span>
+                </div>
 
-                        {unifiedActiveList.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-                                <Coffee size={36} className="text-indigo-400 mb-2 animate-bounce" />
-                                <p className="text-sm font-black text-slate-700">¡Tablero limpio!</p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    No tienes tareas personales de rutina, urgentes o en bolsa para desarrollar ahora.
-                                </p>
-                            </div>
-                        ) : (
-                            unifiedActiveList.map(a => {
-                                const t = tasks.find(tsk => tsk.id === a.taskId);
-                                if (!t) return null;
+                {displayedAssignments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
+                        <Coffee size={36} className="text-indigo-400 mb-2 animate-bounce" />
+                        <p className="text-sm font-black text-slate-700">¡Tablero limpio!</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                            No se encontraron tareas en esta sección por ahora.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                        {displayedAssignments.map(a => {
+                            const t = tasks.find(tsk => tsk.id === a.taskId);
+                            if (!t) return null;
 
-                                const restriction = getRoutineTimeRestriction(a.assignedFromRoutineId);
-                                const isCurrentlyLocked = restriction 
-                                    ? (globalSimTime < restriction.startMin || globalSimTime > restriction.endMin)
-                                    : false;
-
-                                const isFromPool = a.userId === null;
-
-                                return (
-                                    <SwipeableTaskCard 
-                                        key={a.id}
-                                        assignment={a}
-                                        task={t}
-                                        currentUser={currentUser}
-                                        globalSimTime={globalSimTime}
-                                        restriction={restriction}
-                                        isCurrentlyLocked={isCurrentlyLocked}
-                                        onStart={() => handleStartTaskCooperative(a.id, isFromPool)}
-                                        onPause={() => pauseTask(a.id)}
-                                        onComplete={() => completeTask(a.id, globalSimTime)}
-                                        onOmit={() => omitAssignment(a.id)}
-                                        onShowToast={showToast}
-                                        onSelect={() => setSelectedAssignmentId(a.id)}
-                                        isSelected={selectedAssignmentId === a.id}
-                                        getRoutineName={getRoutineName}
-                                        getRoleName={getRoleName}
-                                    />
-                                );
-                            })
-                        )}
-                    </>
-                )}
-
-                {activeTab === 'supervisar' && isSupervisor && (
-                    <>
-                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">
-                            Tareas esperando validación de firma
-                        </h3>
-
-                        {awaitingValidationFiltered.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-                                <CheckCircle size={36} className="text-emerald-500 mb-2 animate-bounce" />
-                                <p className="text-sm font-black text-slate-755">Todo al corriente</p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    No hay reportes de tareas esperando firma de supervisor.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {awaitingValidationFiltered.map(a => {
-                                    const t = tasks.find(tsk => tsk.id === a.taskId);
-                                    const worker = globalUsers?.find(u => u.id === a.userId);
-                                    if (!t) return null;
-
-                                    const isRejecting = rejectingAssignmentId === a.id;
-
-                                    return (
-                                        <div 
-                                            key={a.id} 
-                                            className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm relative overflow-hidden"
-                                        >
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
-
-                                            <div className="flex justify-between items-start gap-4 mb-2 text-left">
-                                                <div>
-                                                    <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-250/20">
-                                                        Firma Pendiente
-                                                    </span>
-                                                    <h4 className="font-black text-sm text-slate-800 mt-2">
-                                                        {t.title}
-                                                    </h4>
-                                                    <p className="text-xs text-slate-500 font-bold mt-1.5 flex items-center gap-1">
-                                                        <User size={12} className="text-slate-400" />
-                                                        Colaborador: <span className="text-slate-850 font-black">{worker?.name || `Usuario #${a.userId}`}</span> 
-                                                        ({getRoleName(worker?.job_role_id)})
-                                                    </p>
-                                                </div>
-                                                <div className="text-right shrink-0">
-                                                    <span className="text-xs font-bold text-slate-500">
-                                                        ⏱️ {a.accumulatedMins || t.estimatedMins} min real
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Reporte / Evidencia presentada */}
-                                            {a.assistantData && (
-                                                <div className="my-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1 text-left">
-                                                    <p className="font-extrabold text-indigo-750 flex items-center gap-1.5">
-                                                        <Bot size={13} /> Evidencia presentada:
-                                                    </p>
-                                                    <p className="text-slate-700 font-black bg-white p-2.5 rounded-lg border border-slate-150 leading-relaxed">
-                                                        {t.assistantType === 'evidencia_foto' ? (
-                                                            <span className="flex items-center gap-1.5">
-                                                                <Camera size={13} className="text-indigo-500" />
-                                                                {String(a.assistantData)} (Imagen capturada)
-                                                            </span>
-                                                        ) : (
-                                                            String(a.assistantData)
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {/* Formulario de rechazo */}
-                                            {isRejecting ? (
-                                                <div className="mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150 text-left">
-                                                    <p className="text-xs font-black text-rose-800">
-                                                        Razón de devolución / Corrección requerida:
-                                                    </p>
-                                                    <textarea 
-                                                        value={rejectFeedback}
-                                                        onChange={e => setRejectFeedback(e.target.value)}
-                                                        placeholder="Ej: Te faltó limpiar el área trasera, por favor hazlo antes de terminar..."
-                                                        rows={2}
-                                                        className="w-full p-2 border border-slate-200 bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus:ring-rose-500"
-                                                    />
-                                                    <div className="flex gap-2 justify-end">
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => { setRejectingAssignmentId(null); setRejectFeedback(''); }}
-                                                            className="px-3 py-1.5 bg-white text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 cursor-pointer"
-                                                        >
-                                                            Cancelar
-                                                        </button>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => handleReject(a.id, t.title)}
-                                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
-                                                        >
-                                                            Devolver e Iniciar Corrección
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex gap-2 justify-end mt-3 pt-2 border-t border-slate-100">
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => setRejectingAssignmentId(a.id)}
-                                                        className="flex items-center gap-1 px-3 py-1.5 hover:bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black border border-rose-200/50 cursor-pointer bg-transparent"
-                                                    >
-                                                        <XCircle size={13} /> Devolver Tarea
-                                                    </button>
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => handleApprove(a.id, t.title)}
-                                                        className="flex items-center gap-1 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black border-none shadow-sm cursor-pointer transition-all hover:scale-105"
-                                                    >
-                                                        <CheckCircle size={13} /> Validar y Firmar
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {activeTab === 'historial' && (
-                    <>
-                        <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">
-                            Historial de tareas completadas u omitidas
-                        </h3>
-
-                        {historyAssignmentsFiltered.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-                                <AlertCircle size={36} className="text-slate-300 mb-2" />
-                                <p className="text-sm font-black text-slate-700">Historial Vacío</p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    Aún no has completado u omitido tareas en tu turno de hoy.
-                                </p>
-                            </div>
-                        ) : (
-                            historyAssignmentsFiltered.map(a => {
-                                const t = tasks.find(tsk => tsk.id === a.taskId);
-                                if (!t) return null;
-
-                                return (
-                                    <SwipeableTaskCard 
-                                        key={a.id}
-                                        assignment={a}
-                                        task={t}
-                                        currentUser={currentUser}
-                                        globalSimTime={globalSimTime}
-                                        restriction={null}
-                                        isCurrentlyLocked={false}
-                                        onStart={() => {}}
-                                        onPause={() => {}}
-                                        onComplete={() => {}}
-                                        onOmit={() => {}}
-                                        onShowToast={showToast}
-                                        onSelect={() => setSelectedAssignmentId(a.id)}
-                                        isSelected={selectedAssignmentId === a.id}
-                                        getRoutineName={getRoutineName}
-                                        getRoleName={getRoleName}
-                                    />
-                                );
-                            })
-                        )}
-                    </>
+                            return (
+                                <CompactTaskCard 
+                                    key={a.id}
+                                    assignment={a}
+                                    task={t}
+                                    currentUser={currentUser}
+                                    globalSimTime={globalSimTime}
+                                    onSelect={() => handleSelectAssignment(a.id)}
+                                    getRoleName={getRoleName}
+                                />
+                            );
+                        })}
+                    </div>
                 )}
             </div>
 
@@ -1031,65 +595,133 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 </div>
             )}
 
-            {/* MENÚ FLOTANTE (FAB) en la parte inferior derecha para el supervisor */}
-            {isSupervisor && (
-                <div className="fixed bottom-24 right-6 z-40" ref={fabMenuRef}>
-                    {/* Panel del Menú Desplegado (aparece arriba del FAB) */}
-                    {showFabMenu && (
-                        <div className="absolute bottom-16 right-0 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 flex flex-col gap-1 min-w-[200px] animate-in fade-in slide-in-from-bottom-3 duration-200">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 text-left border-b border-slate-50">
-                                Herramientas Supervisor
-                            </p>
-                            
-                            <button
-                                onClick={() => { setActiveTab('hoy'); setShowFabMenu(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 border-none cursor-pointer transition-colors ${
-                                    activeTab === 'hoy' ? 'bg-indigo-50 text-indigo-700' : 'bg-transparent text-slate-650 hover:bg-slate-50'
-                                }`}
-                            >
-                                📋 Ver Mis Tareas
-                            </button>
+            {/* Botón Flotante (FAB) */}
+            <div className="fixed bottom-24 right-6 z-40" ref={fabMenuRef}>
+                {isSupervisor && showFabMenu && (
+                    <div className="absolute bottom-16 right-0 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 flex flex-col gap-1 min-w-[200px] animate-in fade-in slide-in-from-bottom-3 duration-200 text-left">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 text-left border-b border-slate-50">
+                            Menú de Tareas
+                        </p>
+                        
+                        <button
+                            type="button"
+                            onClick={() => { setShowCreateModal(true); setShowFabMenu(false); }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-655 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
+                        >
+                            ➕ Crear Tarea Nueva
+                        </button>
 
-                            <button
-                                onClick={() => { setActiveTab('supervisar'); setShowFabMenu(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 border-none cursor-pointer transition-colors justify-between ${
-                                    activeTab === 'supervisar' ? 'bg-indigo-50 text-indigo-700' : 'bg-transparent text-slate-650 hover:bg-slate-50'
-                                }`}
-                            >
-                                <span className="flex items-center gap-2">🔍 Supervisar Tareas</span>
-                                {awaitingValidationFiltered.length > 0 && (
-                                    <span className="bg-rose-100 text-rose-700 font-extrabold text-[9px] px-1.5 py-0.5 rounded-full shrink-0">
-                                        {awaitingValidationFiltered.length}
-                                    </span>
-                                )}
-                            </button>
+                        <button
+                            type="button"
+                            onClick={() => { 
+                                setShowCreateModal(true); 
+                                setShowFabMenu(false);
+                                // Auto focus IA assistant
+                                setTimeout(() => {
+                                    const aiInputEl = document.querySelector('input[placeholder*="inventario"]');
+                                    if (aiInputEl) (aiInputEl as HTMLInputElement).focus();
+                                }, 100);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-[#8a2be2] hover:bg-violet-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
+                        >
+                            🤖 Crear con Asistente de IA
+                        </button>
 
-                            <button
-                                onClick={() => { setShowCreateModal(true); setShowFabMenu(false); }}
-                                className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-650 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
-                            >
-                                ➕ Crear Nueva Tarea
-                            </button>
+                        <button
+                            type="button"
+                            onClick={() => { setShowHistoryModal(true); setShowFabMenu(false); }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-655 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
+                        >
+                            📜 Ver Historial de Hoy
+                        </button>
+                    </div>
+                )}
 
-                            <button
-                                onClick={() => { setActiveTab('historial'); setShowFabMenu(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 border-none cursor-pointer transition-colors ${
-                                    activeTab === 'historial' ? 'bg-indigo-50 text-indigo-700' : 'bg-transparent text-slate-655 hover:bg-slate-50'
-                                }`}
+                <button
+                    onClick={() => {
+                        if (isSupervisor) {
+                            setShowFabMenu(!showFabMenu);
+                        } else {
+                            setShowHistoryModal(true);
+                        }
+                    }}
+                    className="w-14 h-14 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer"
+                    title={isSupervisor ? "Menú de Acciones" : "Ver Historial"}
+                >
+                    {isSupervisor && showFabMenu ? (
+                        <X size={22} />
+                    ) : isSupervisor ? (
+                        <Plus size={22} className="text-white" />
+                    ) : (
+                        <ClipboardList size={22} className="text-white" />
+                    )}
+                </button>
+            </div>
+
+            {/* Modal de Historial */}
+            {showHistoryModal && (
+                <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-md max-h-[85vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-2 border-b border-slate-150 z-10 shrink-0">
+                            <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                📜 Historial de Tareas de Hoy
+                            </h3>
+                            <button 
+                                onClick={() => setShowHistoryModal(false)}
+                                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer"
                             >
-                                ✓ Ver Historial Completo
+                                <X size={15} />
                             </button>
                         </div>
-                    )}
+                        
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                            {historyAssignmentsFiltered.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                                    <AlertCircle size={32} className="text-slate-350 mb-2" />
+                                    <p className="text-xs font-black text-slate-700">Sin historial registrado</p>
+                                    <p className="text-[11px] text-slate-400 mt-1">
+                                        No has completado ni omitido tareas durante tu turno actual.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {historyAssignmentsFiltered.map(a => {
+                                        const t = tasks.find(tsk => tsk.id === a.taskId);
+                                        if (!t) return null;
 
-                    {/* Botón FAB circular */}
-                    <button
-                        onClick={() => setShowFabMenu(!showFabMenu)}
-                        className="w-14 h-14 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer"
-                        title="Filtros y Herramientas"
-                    >
-                        {showFabMenu ? <X size={22} /> : <Plus size={22} className="text-white" />}
-                    </button>
+                                        return (
+                                            <div 
+                                                key={a.id}
+                                                onClick={() => {
+                                                    handleSelectAssignment(a.id);
+                                                    setShowHistoryModal(false);
+                                                }}
+                                                className="bg-slate-55/40 border border-slate-200/60 rounded-xl p-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                                            >
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                                        a.status === 'completed' ? 'bg-teal-50 text-teal-700 border-teal-200/50' :
+                                                        a.status === 'awaiting_validation' ? 'bg-amber-50 text-amber-700 border-amber-250/50' :
+                                                        'bg-rose-50 text-rose-700 border-rose-250/50'
+                                                    }`}>
+                                                        {a.status === 'completed' ? 'Completada' :
+                                                         a.status === 'awaiting_validation' ? 'Firma Pendiente' : 'Omitida'}
+                                                    </span>
+                                                    <span className="text-[9px] text-slate-450 font-extrabold flex items-center gap-1">
+                                                        <Clock size={10} />
+                                                        {a.accumulatedMins || t.estimatedMins} min
+                                                    </span>
+                                                </div>
+                                                <h4 className="font-extrabold text-xs text-slate-750 mt-1.5 line-clamp-1">
+                                                    {t.title}
+                                                </h4>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -1146,7 +778,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     onChange={e => setNewTitle(e.target.value)}
                                     placeholder="Ej: Limpieza de cafetera industrial..."
                                     required
-                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                    className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
                                 />
                             </div>
 
@@ -1157,7 +789,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                 <select 
                                     value={newTargetRole}
                                     onChange={e => setNewTargetRole(Number(e.target.value))}
-                                    className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                    className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
                                 >
                                     <option value={0}>Cualquiera (Bolsa de Trabajo General)</option>
                                     {globalRoles?.map(role => (
@@ -1178,7 +810,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                         value={newMins}
                                         onChange={e => setNewMins(Number(e.target.value))}
                                         required
-                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                        className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
                                     />
                                 </div>
 
@@ -1189,7 +821,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     <select 
                                         value={newPriority}
                                         onChange={e => setNewPriority(e.target.value as any)}
-                                        className="w-full p-2.5 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                        className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
                                     >
                                         <option value="normal">Normal</option>
                                         <option value="bloqueante">Bloqueante (Obligatoria)</option>
@@ -1199,7 +831,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
                             <button 
                                 type="submit" 
-                                className="w-full py-3 bg-indigo-650 hover:bg-indigo-750 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer mt-2"
+                                className="w-full py-3 bg-indigo-650 hover:bg-indigo-755 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer mt-2"
                             >
                                 Lanzar Tarea a Bolsa
                             </button>
@@ -1207,6 +839,341 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     </div>
                 </div>
             )}
+
+            {/* Modal de Detalles de Tarea */}
+            {selectedAssignmentId && (() => {
+                const a = assignments.find(asg => asg.id === selectedAssignmentId);
+                if (!a) return null;
+                const t = tasks.find(tsk => tsk.id === a.taskId);
+                if (!t) return null;
+
+                const worker = globalUsers?.find(u => u.id === a.userId);
+                const isFromPool = a.userId === null;
+                const restriction = getRoutineTimeRestriction(a.assignedFromRoutineId);
+
+                const isCompleted = a.status === 'completed' || a.status === 'awaiting_validation';
+                const isOmitted = a.status === 'omitted';
+                const isActive = a.status === 'in_progress';
+                const isPaused = a.status === 'paused';
+
+                const elapsed = a.status === 'pending' ? 0 : 
+                    ((a.accumulatedMins || 0) + 
+                    (a.status === 'in_progress' && a.startedAtMins ? (globalSimTime - a.startedAtMins) : 0));
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/35 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
+                        <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded border ${
+                                            a.status === 'awaiting_validation' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                            a.userId === null ? 'bg-sky-50 text-sky-700 border-sky-200' :
+                                            a.status === 'in_progress' ? 'bg-emerald-50 text-emerald-700 border-emerald-250' :
+                                            a.status === 'paused' ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                                            'bg-indigo-50 text-indigo-755 border-indigo-200'
+                                        }`}>
+                                            {a.status === 'awaiting_validation' ? 'Firma Pendiente' :
+                                             a.userId === null ? 'Bolsa de Trabajo' :
+                                             a.status === 'in_progress' ? 'En Curso' :
+                                             a.status === 'paused' ? 'Pausada' : 'Pendiente'}
+                                        </span>
+                                        {t.priority === 'bloqueante' && (
+                                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100">
+                                                ⚠️ Obligatoria
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="text-base font-black text-slate-800 mt-2 leading-snug">
+                                        {t.title}
+                                    </h3>
+                                </div>
+                                <button 
+                                    onClick={() => handleSelectAssignment(null)}
+                                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer shrink-0"
+                                >
+                                    <X size={15} />
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="space-y-4 flex-1">
+                                {/* Metadata Row */}
+                                <div className="grid grid-cols-2 gap-3 bg-slate-55 p-3 rounded-2xl border border-slate-100/50 text-xs text-slate-605 font-bold">
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] uppercase tracking-wider text-slate-400">Responsable</p>
+                                        <p className="text-slate-800 font-black flex items-center gap-1">
+                                            <User size={13} className="text-slate-400" />
+                                            {isFromPool ? 'Bolsa de Trabajo' : (worker?.name || `Usuario #${a.userId}`)}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] uppercase tracking-wider text-slate-400">Tiempo</p>
+                                        <p className="text-slate-800 font-black flex items-center gap-1">
+                                            <Clock size={13} className="text-slate-400" />
+                                            {a.status === 'pending' ? `${t.estimatedMins} min est.` : `${elapsed} min real`}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {t.description && (
+                                    <div className="space-y-1">
+                                        <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Descripción</h5>
+                                        <p className="text-xs text-slate-600 font-semibold leading-relaxed bg-slate-50/40 p-2.5 rounded-xl border border-slate-100">
+                                            {t.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Checklist de subtareas */}
+                                {t.subTasks && t.subTasks.length > 0 && (
+                                    <div className="space-y-1.5">
+                                        <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subtareas obligatorias</h5>
+                                        <div className="space-y-1">
+                                            {t.subTasks.map(sub => (
+                                                <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-150/60 hover:bg-indigo-50/20 cursor-pointer transition-colors shadow-xs">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        defaultChecked={sub.completed}
+                                                        className="w-3.5 h-3.5 text-indigo-650 rounded border-slate-350 focus:ring-indigo-500" 
+                                                    />
+                                                    <span className="text-xs text-slate-700 font-semibold">{sub.text}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Caso: Tarea esperando validación (Solo para Supervisor) */}
+                                {a.status === 'awaiting_validation' && (
+                                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                                        {a.assistantData && (
+                                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                                                <p className="font-extrabold text-violet-750 flex items-center gap-1.5 mb-1.5">
+                                                    📸 Evidencia presentada:
+                                                </p>
+                                                <p className="text-slate-800 font-black bg-white p-2.5 rounded-lg border border-slate-150">
+                                                    {t.assistantType === 'evidencia_foto' ? (
+                                                        <span className="flex items-center gap-1.5 text-slate-755">
+                                                            <Camera size={13} className="text-indigo-500" />
+                                                            {String(a.assistantData)} (Evidencia Fotográfica)
+                                                        </span>
+                                                    ) : (
+                                                        String(a.assistantData)
+                                                    )}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {rejectingAssignmentId === a.id ? (
+                                            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+                                                <p className="text-xs font-black text-rose-800">
+                                                    Razón de devolución / Corrección requerida:
+                                                </p>
+                                                <textarea 
+                                                    value={rejectFeedback}
+                                                    onChange={e => setRejectFeedback(e.target.value)}
+                                                    placeholder="Ej: Te faltó limpiar el área trasera, por favor hazlo antes de terminar..."
+                                                    rows={2.5}
+                                                    className="w-full p-2.5 border border-slate-200 bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus:ring-rose-500"
+                                                />
+                                                <div className="flex gap-2 justify-end">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => { setRejectingAssignmentId(null); setRejectFeedback(''); }}
+                                                        className="px-3 py-1.5 bg-white text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 cursor-pointer"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            handleReject(a.id, t.title);
+                                                            handleSelectAssignment(null);
+                                                        }}
+                                                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
+                                                    >
+                                                        Devolver Tarea
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2 justify-end mt-2 pt-2">
+                                                {isSupervisor ? (
+                                                    <>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setRejectingAssignmentId(a.id)}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-rose-50 text-rose-650 rounded-xl text-xs font-black border border-rose-200 cursor-pointer bg-transparent"
+                                                        >
+                                                            <XCircle size={14} /> Devolver Tarea
+                                                        </button>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleApprove(a.id, t.title);
+                                                                handleSelectAssignment(null);
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black border-none shadow-sm cursor-pointer transition-all hover:scale-105"
+                                                        >
+                                                            <CheckCircle size={14} /> Validar y Firmar
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-[10px] text-center w-full text-slate-400 font-extrabold uppercase">
+                                                        Esperando firma de supervisor
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Caso: Tarea de la Bolsa de Trabajo */}
+                                {isFromPool && (
+                                    <div className="pt-3 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                handleStartTaskCooperative(a.id, true);
+                                                handleSelectAssignment(null);
+                                            }}
+                                            className="w-full py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                                        >
+                                            <Play size={13} className="fill-white" /> Tomar Tarea de Bolsa
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Caso: Tarea propia activa / en progreso / pausada */}
+                                {!isFromPool && a.userId === currentUser.id && a.status !== 'awaiting_validation' && (
+                                    <div className="space-y-3 pt-3 border-t border-slate-100">
+                                        {/* Acciones de ejecución */}
+                                        {a.status === 'pending' || a.status === 'paused' ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    handleStartTaskCooperative(a.id, false);
+                                                }}
+                                                className="w-full py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                                            >
+                                                <Play size={13} className="fill-white" /> Iniciar Tarea
+                                            </button>
+                                        ) : isActive ? (
+                                            <div className="space-y-3">
+                                                {/* Controles de pausar y completar */}
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => pauseTask(a.id)}
+                                                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl border border-slate-200 cursor-pointer flex items-center justify-center gap-2"
+                                                    >
+                                                        <Pause size={13} /> Pausar Tarea
+                                                    </button>
+                                                    {t.assistantType === 'ninguno' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                completeTask(a.id, globalSimTime);
+                                                                showToast("¡Tarea completada!", 'success');
+                                                                handleSelectAssignment(null);
+                                                            }}
+                                                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
+                                                        >
+                                                            <Check size={13} /> Completar
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Mini Asistente de evidencias */}
+                                                {t.assistantType !== 'ninguno' && (
+                                                    <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2.5 text-left">
+                                                        <p className="font-black text-indigo-900 flex items-center gap-1 text-[11px]">
+                                                            <Bot size={13} className="text-[#8a2be2]" /> Asistente de Evidencias
+                                                        </p>
+                                                        <p className="text-slate-655 font-bold text-[10.5px] leading-relaxed">{t.assistantPrompt}</p>
+                                                        
+                                                        {t.assistantType === 'evidencia_foto' && (
+                                                            <div className="space-y-2">
+                                                                {!photoDone ? (
+                                                                    <button 
+                                                                        type="button"
+                                                                        onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }}
+                                                                        className="w-full py-2.5 bg-white hover:bg-slate-50 text-indigo-805 rounded-xl border border-indigo-200 text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                                                    >
+                                                                        <Camera size={13} /> Capturar Foto de Evidencia
+                                                                    </button>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-[11px]">
+                                                                        <Check size={13} className="text-emerald-600 font-black" />
+                                                                        <span className="font-bold truncate">evidencia_checador_foto.jpg</span>
+                                                                        <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {t.assistantType === 'captura_numero' && (
+                                                            <input 
+                                                                type="number"
+                                                                value={localInput}
+                                                                onChange={e => setLocalInput(e.target.value)}
+                                                                placeholder="Ingresa la cantidad..."
+                                                                className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
+                                                            />
+                                                        )}
+
+                                                        {t.assistantType === 'texto' && (
+                                                            <input 
+                                                                type="text"
+                                                                value={localInput}
+                                                                onChange={e => setLocalInput(e.target.value)}
+                                                                placeholder="Escribe reporte de fin de tarea..."
+                                                                className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
+                                                            />
+                                                        )}
+
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!localInput.trim()) return;
+                                                                completeTask(a.id, globalSimTime, localInput);
+                                                                showToast("Evidencia guardada y completada", 'success');
+                                                                addMatrixEvent('✅ Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
+                                                                handleSelectAssignment(null);
+                                                            }}
+                                                            disabled={!localInput}
+                                                            className="w-full py-2 bg-indigo-650 disabled:bg-slate-100 disabled:text-slate-400 hover:bg-indigo-755 text-white rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
+                                                        >
+                                                            Enviar Evidencia y Completar
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : null}
+
+                                        {/* Botón de Omitir (si es normal y no bloqueante) */}
+                                        {t.priority !== 'bloqueante' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    omitAssignment(a.id);
+                                                    showToast("Tarea omitida", 'info');
+                                                    handleSelectAssignment(null);
+                                                }}
+                                                className="w-full py-2.5 bg-transparent hover:bg-rose-50 text-rose-600 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-rose-200/40 cursor-pointer flex items-center justify-center gap-1 transition-all"
+                                            >
+                                                <Trash2 size={12} /> Omitir esta Tarea
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

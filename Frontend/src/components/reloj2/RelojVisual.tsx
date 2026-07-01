@@ -1592,7 +1592,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               </div>
             </div>
 
-            <button
+          <button
               onClick={() => {
                 localStorage.removeItem('talent_auth_token');
                 window.location.href = '/login';
@@ -1607,160 +1607,643 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     );
   };
 
+  // Estados para el botón flotante, la ventana emergente de operaciones, copiloto y creador de tareas
+  const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
+  const [isTaskCreatorOpen, setIsTaskCreatorOpen] = useState(false);
+  const [isCopilotChatOpen, setIsCopilotChatOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskMins, setNewTaskMins] = useState(15);
+  const [newTaskPriority, setNewTaskPriority] = useState<'normal' | 'bloqueante'>('normal');
+  const [newTaskRoleTarget, setNewTaskRoleTarget] = useState(currentUser?.role_id || 6);
 
+  // Estado del chat local del Copiloto AI
+  const [copilotMessages, setCopilotMessages] = useState([
+    {
+      sender: 'bot',
+      text: '¡Hola! Soy tu Copiloto de Soporte de Talent 360. 🤖 ¿En qué puedo ayudarte hoy? Puedo resolver dudas sobre el Reloj Checador V2, geolocalización, sincronización offline, planes de suscripción o la facturación CFDI 4.0.',
+      timestamp: new Date()
+    }
+  ]);
+  const [copilotInput, setCopilotInput] = useState('');
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const copilotEndRef = useRef<HTMLDivElement>(null);
 
-  // Render specific mobile subviews
-  if (isScrollableMobile && phoneTab !== 'checador') {
+  // Auto-scroll del chat del copiloto
+  useEffect(() => {
+    if (isCopilotChatOpen && copilotEndRef.current) {
+      copilotEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [copilotMessages, isCopilotChatOpen]);
+
+  const handleSendCopilot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!copilotInput.trim() || copilotLoading) return;
+
+    const userMsg = copilotInput.trim();
+    setCopilotInput('');
+    setCopilotMessages(prev => [...prev, { sender: 'user', text: userMsg, timestamp: new Date() }]);
+    setCopilotLoading(true);
+
+    try {
+      const response = await axiosInstance.post('/support/copilot', {
+        question: userMsg,
+        context: `Usuario actual: ${currentUser?.name || 'Desconocido'}, Email: ${currentUser?.email || 'N/A'}, Rol: ${currentUser?.role || 'N/A'}`
+      });
+
+      const botAnswer = response.data.answer || 'Lo siento, no he podido procesar tu solicitud.';
+      setCopilotMessages(prev => [...prev, { sender: 'bot', text: botAnswer, timestamp: new Date() }]);
+    } catch (error) {
+      console.error('Error in Copilot support chat:', error);
+      setCopilotMessages(prev => [
+        ...prev,
+        {
+          sender: 'bot',
+          text: '⚠️ Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
+          timestamp: new Date()
+        }
+      ]);
+    } finally {
+      setCopilotLoading(false);
+    }
+  };
+
+  const renderUnifiedMobileHeader = () => {
+    let title = '';
+    let desc = '';
+    let icon = null;
+    let badgeText = '';
+    let badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
+
+    switch (phoneTab) {
+      case 'checador':
+        title = 'Reloj Checador';
+        desc = 'Control de Asistencia y Tareas';
+        icon = <Clock className="w-9 h-9 text-[#2dce89]" />;
+        badgeText = 'v4.2.0';
+        break;
+      case 'tareas':
+        title = 'Tareas y Rutinas';
+        desc = 'Gestión y seguimiento operativo';
+        icon = <CheckSquare className="w-9 h-9 text-indigo-500" />;
+        badgeText = 'Tareas';
+        badgeColorClass = 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30';
+        break;
+      case 'academia':
+        title = 'Academia';
+        desc = 'Capacitación y desarrollo';
+        icon = <GraduationCap className="w-9 h-9 text-violet-500 animate-bounce" />;
+        badgeText = 'Cursos';
+        badgeColorClass = 'bg-violet-50 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
+        break;
+      case 'herramientas':
+        title = 'Herramientas';
+        desc = 'Simulador y bitácoras';
+        icon = <Settings className="w-9 h-9 text-slate-500 animate-spin" style={{ animationDuration: '6s' }} />;
+        badgeText = 'Utilidades';
+        badgeColorClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
+        break;
+      case 'evaluacion360':
+        title = 'Evaluación 360';
+        desc = 'Evaluación de compañeros';
+        icon = <Star className="w-9 h-9 text-amber-500" />;
+        badgeText = 'Feedback';
+        badgeColorClass = 'bg-amber-50 dark:bg-amber-955/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30';
+        break;
+      case 'organigrama':
+        title = 'Organigrama';
+        desc = 'Estructura de la empresa';
+        icon = <Network className="w-9 h-9 text-emerald-500" />;
+        badgeText = 'Puestos';
+        badgeColorClass = 'bg-emerald-50 dark:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30';
+        break;
+      case 'perfil':
+        title = 'Mi Perfil';
+        desc = 'Credencial y ajustes';
+        icon = <ClipboardList className="w-9 h-9 text-blue-500" />;
+        badgeText = 'Usuario';
+        badgeColorClass = 'bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
+        break;
+      default:
+        title = 'Reloj Checador';
+        desc = 'Control de Asistencia';
+        icon = <Clock className="w-9 h-9 text-[#2dce89]" />;
+        badgeText = 'v4.2.0';
+    }
+
     return (
-      <div className={`h-full w-full flex flex-col overflow-hidden font-sans ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-        <div className={`flex items-center px-4 py-3 border-b shrink-0 ${isDark ? 'border-slate-900 bg-slate-900/40' : 'border-slate-202 bg-white/80'} backdrop-blur-md`}>
-          <button 
-            onClick={() => { setInnerTool(null); setPhoneTab('checador'); }}
-            className="text-xs font-bold text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 focus:outline-none"
-          >
-            ← Reloj
-          </button>
-          <span className="mx-auto text-xs font-black uppercase tracking-widest text-slate-400">
-            {phoneTab === 'academia' ? 'Academia' : phoneTab === 'tareas' ? 'Tablero de Tareas' : phoneTab === 'herramientas' ? 'Herramientas' : phoneTab === 'evaluacion360' ? 'Fin de Turno' : phoneTab === 'organigrama' ? 'Organigrama' : 'Perfil y Ajustes'}
-          </span>
-          <div className="w-12"></div>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-4 scrollbar-none">
-          {phoneTab === 'tareas' && (
-            <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
-          )}
-          {phoneTab === 'academia' && (
-            <Academia onBack={() => setPhoneTab('checador')} />
-          )}
-          {phoneTab === 'evaluacion360' && (
-            <Evaluacion360 onBack={() => setPhoneTab('herramientas')} />
-          )}
-          {phoneTab === 'organigrama' && (
-            <div className="h-full w-full bg-white dark:bg-slate-950 rounded-3xl p-4 overflow-y-auto shadow-inner">
-              <RecursosHumanos readOnly={true} initialTab="organigrama" />
-            </div>
-          )}
-          {phoneTab === 'perfil' && renderProfilePanel(true)}
-          {phoneTab === 'herramientas' && (
-            <div className="space-y-4">
-              {innerTool === null ? (
-                <>
-                  <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-widest">Caja de Herramientas</h4>
-                  <div className="grid grid-cols-1 gap-3">
-                    <button 
-                      onClick={() => { setInnerTool('chat'); fetchChatMessages(); }} 
-                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-violet-400 flex items-center justify-center shrink-0">
-                        <MessageSquare size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Chat de Equipo 💬</p>
-                        <p className="text-[10px] text-slate-500">Mensajes temporales entre colaboradores (Se borran cada semana)</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => setInnerTool('soplon')} 
-                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-rose-400 flex items-center justify-center shrink-0">
-                        <AlertOctagon size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">El Soplón 📢</p>
-                        <p className="text-[10px] text-slate-500">Reportar ausencias o faltas de compañeros de forma directa</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => setInnerTool('buzon')} 
-                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-sky-400 flex items-center justify-center shrink-0">
-                        <Fingerprint size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Buzón Anónimo RRHH 🕵️</p>
-                        <p className="text-[10px] text-slate-500">Enviar sugerencias o reportes generales 100% privados</p>
-                      </div>
-                    </button>
-
-                    {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
-                      <button 
-                        onClick={() => setInnerTool('transfer')} 
-                        className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                      >
-                        <div className="w-10 h-10 rounded-full bg-slate-900 text-indigo-400 flex items-center justify-center shrink-0">
-                          <Key size={18} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Transferir Cierre 🔑</p>
-                          <p className="text-[10px] text-slate-500">Ceder llaves de la sucursal a un compañero</p>
-                        </div>
-                      </button>
-                    )}
-
-                    <button 
-                      onClick={() => setInnerTool('huida')} 
-                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-amber-500 flex items-center justify-center shrink-0">
-                        <WifiOff size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Simular Desconexión (Huida) 🏃</p>
-                        <p className="text-[10px] text-slate-500">Detección de desconexión sin entregar el turno</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => setPhoneTab('evaluacion360')} 
-                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-200 bg-white'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center shrink-0">
-                        <Star size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Evaluación de Compañeros ⭐</p>
-                        <p className="text-[10px] text-slate-500">Evaluar desempeño y puntualidad en el turno</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => setPhoneTab('organigrama')} 
-                      className={`p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${isDark ? 'border-slate-800 bg-slate-900/30' : 'border-slate-202 bg-white'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-emerald-450 flex items-center justify-center shrink-0">
-                        <Network size={18} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-100">Organigrama de la Empresa 🕸️</p>
-                        <p className="text-[10px] text-slate-500">Consulta los puestos y responsabilidades</p>
-                      </div>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col h-full bg-transparent">
-                  <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-500 mb-4 flex items-center gap-1">
-                    ← Volver a Herramientas
-                  </button>
-                  {innerTool === 'chat' && renderToolChat()}
-                  {innerTool === 'soplon' && renderToolSoplon()}
-                  {innerTool === 'buzon' && renderToolBuzon()}
-                  {innerTool === 'transfer' && renderToolTransfer()}
-                  {innerTool === 'huida' && renderToolHuida()}
-                </div>
+      <div className={`flex items-center justify-between px-4 py-4 shrink-0 text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b transition-colors duration-200 ${
+        isDark ? 'bg-slate-900 border-slate-800/80 shadow-[0_4px_20px_0_rgba(0,0,0,0.2)]' : 'bg-white border-slate-100/80'
+      }`}>
+        {/* Left: Module Info */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="shrink-0 flex items-center justify-center">
+            {icon}
+          </div>
+          <div className="flex flex-col min-w-0 justify-center text-left">
+            <div className="flex items-center gap-2">
+              <h3 className={`text-[16px] font-black tracking-tight leading-tight transition-colors ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
+                {title}
+              </h3>
+              {badgeText && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
+                  {badgeText}
+                </span>
               )}
             </div>
-          )}
+            <p className={`text-[11px] font-bold mt-1.5 leading-none truncate transition-colors ${
+              isDark ? 'text-slate-400' : 'text-[#525f7f]'
+            }`}>
+              {desc}
+            </p>
+          </div>
         </div>
-        <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} />
+
+        {/* Right: Actions & User Profile */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Manual Pass List Trigger inside the header for Supervisors */}
+          {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
+            <button 
+              onClick={() => initPaseLista(false)}
+              className="bg-violet-600 hover:bg-violet-755 text-white font-extrabold text-[9px] uppercase px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
+            >
+              <span>📋</span>
+              <span>Lista</span>
+            </button>
+          )}
+
+          <div 
+            className="flex items-center gap-2.5 text-right cursor-pointer"
+            onClick={() => {
+              setEditUsername(currentUser?.name || 'Francisco');
+              setEditPassword(currentUser?.pin_code || '1234');
+              setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
+              setShowSettingsModal(true);
+            }}
+          >
+            <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
+              <span className={`text-[13px] font-black truncate transition-colors ${
+                isDark ? 'text-slate-100' : 'text-slate-900'
+              }`}>
+                {currentUser?.name || 'Colaborador'}
+              </span>
+              <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
+                {userPositionName}
+              </span>
+              <span className={`text-[9px] font-black uppercase tracking-wider truncate mt-0.5 transition-colors ${
+                isDark ? 'text-violet-400' : 'text-[#8a2be2]'
+              }`}>
+                {currentUser?.tenant?.name || 'Decorarte 360'}
+              </span>
+            </div>
+            
+            <div className="relative shrink-0">
+              <img 
+                src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                alt="Avatar" 
+                className={`w-12 h-12 rounded-full object-cover border shadow-md hover:scale-105 transition-transform ${
+                  isDark ? 'border-slate-700' : 'border-slate-200/80'
+                }`} 
+              />
+              <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
+            </div>
+          </div>
+        </div>
       </div>
     );
-  }
+  };
+
+  const renderFloatingActionButton = () => {
+    return (
+      <div className="fixed bottom-24 right-6 z-[80] font-sans">
+        <button
+          type="button"
+          onClick={() => setIsFabSheetOpen(true)}
+          className="w-14 h-14 bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-600 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-all active:scale-95 duration-300 relative group cursor-pointer border-none outline-none animate-pulse-radial"
+          title="Menú de Operaciones y Soporte AI"
+        >
+          <div className="absolute inset-0 bg-violet-400 rounded-full blur-[8px] opacity-40 group-hover:opacity-75 transition-opacity pointer-events-none"></div>
+          <Sparkles size={24} className="relative z-10 text-white" />
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-ping"></span>
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+        </button>
+      </div>
+    );
+  };
+
+  const renderFabOperationsSheet = () => {
+    if (!isFabSheetOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[90] flex items-end justify-center">
+        {/* Backdrop overlay */}
+        <div 
+          onClick={() => setIsFabSheetOpen(false)}
+          className="absolute inset-0 bg-slate-955/40 backdrop-blur-sm transition-opacity"
+        ></div>
+
+        {/* Sheet Content */}
+        <div className={`relative w-full max-h-[85vh] rounded-t-[2rem] border-t shadow-2xl z-10 flex flex-col transition-transform duration-300 animate-slide-up pb-8 ${
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-202 text-slate-850'
+        }`}>
+          {/* Drag Handle */}
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-3 shrink-0"></div>
+
+          <div className="px-5 pb-2 border-b dark:border-slate-800 text-left shrink-0 flex justify-between items-center">
+            <div>
+              <h3 className="text-base font-black tracking-tight">Operaciones & Soporte AI</h3>
+              <p className="text-[11px] text-slate-400 font-medium">Accesos rápidos y caja de herramientas operativas</p>
+            </div>
+            <button 
+              onClick={() => setIsFabSheetOpen(false)}
+              className="w-8 h-8 rounded-full bg-slate-105 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-none cursor-pointer font-bold"
+            >
+              &times;
+            </button>
+          </div>
+
+          <div className="flex-grow overflow-y-auto p-5 space-y-6 scrollbar-none text-left">
+            {/* Section 1: AI Assistant & Actions */}
+            <div className="space-y-3">
+              <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Asistencia & Creación</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setIsCopilotChatOpen(true);
+                  }}
+                  className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 text-center transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
+                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-202 bg-slate-50 hover:bg-slate-105 text-slate-850'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                    <Bot size={20} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Copiloto AI</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5">Soporte Técnico</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setIsTaskCreatorOpen(true);
+                  }}
+                  className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 text-center transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
+                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-202 bg-slate-50 hover:bg-slate-105 text-slate-850'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md">
+                    <Play size={20} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Crear Tarea</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5">Lanzar on-the-fly</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Caja de Herramientas Operativa */}
+            <div className="space-y-3">
+              <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Caja de Herramientas</h4>
+              <div className="grid grid-cols-1 gap-2.5">
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('herramientas');
+                    setInnerTool('chat');
+                    fetchChatMessages();
+                  }} 
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-indigo-400 flex items-center justify-center shrink-0">
+                    <MessageSquare size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Chat de Equipo 💬</p>
+                    <p className="text-[9.5px] text-slate-505">Mensajes temporales entre colaboradores de la sucursal</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('herramientas');
+                    setInnerTool('soplon');
+                  }} 
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-rose-400 flex items-center justify-center shrink-0">
+                    <AlertOctagon size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">El Soplón 📢</p>
+                    <p className="text-[9.5px] text-slate-505">Reportar ausencias o faltas de compañeros de forma directa</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('herramientas');
+                    setInnerTool('buzon');
+                  }} 
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-sky-400 flex items-center justify-center shrink-0">
+                    <Fingerprint size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Buzón Anónimo RRHH 🕵️</p>
+                    <p className="text-[9.5px] text-slate-505">Enviar sugerencias o reportes generales 100% privados</p>
+                  </div>
+                </button>
+
+                {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
+                  <button 
+                    onClick={() => {
+                      setIsFabSheetOpen(false);
+                      setPhoneTab('herramientas');
+                      setInnerTool('transfer');
+                    }} 
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-indigo-400 flex items-center justify-center shrink-0">
+                      <Key size={16} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs">Transferir Cierre 🔑</p>
+                      <p className="text-[9.5px] text-slate-550">Ceder llaves de la sucursal a un compañero</p>
+                    </div>
+                  </button>
+                )}
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('herramientas');
+                    setInnerTool('huida');
+                  }} 
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-amber-500 flex items-center justify-center shrink-0">
+                    <WifiOff size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Simular Desconexión (Huida) 🏃</p>
+                    <p className="text-[9.5px] text-slate-550">Detección de desconexión sin entregar el turno</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('evaluacion360');
+                  }} 
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-202 bg-white hover:bg-slate-50 text-slate-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-amber-450 flex items-center justify-center shrink-0">
+                    <Star size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Evaluación de Compañeros ⭐</p>
+                    <p className="text-[9.5px] text-slate-550">Evaluar desempeño y puntualidad en el turno</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('organigrama');
+                  }} 
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-202 bg-white hover:bg-slate-50 text-slate-800'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-emerald-450 flex items-center justify-center shrink-0">
+                    <Network size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs">Organigrama de la Empresa 🕸️</p>
+                    <p className="text-[9.5px] text-slate-550">Consulta los puestos y responsabilidades</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTaskCreatorModal = () => {
+    if (!isTaskCreatorOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        {/* Backdrop overlay */}
+        <div 
+          onClick={() => setIsTaskCreatorOpen(false)}
+          className="absolute inset-0 bg-slate-955/65 backdrop-blur-sm transition-opacity"
+        ></div>
+
+        {/* Modal Content */}
+        <div className={`relative w-full max-w-md rounded-3xl p-6 shadow-2xl border text-left animate-in zoom-in-95 duration-200 ${
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-202 text-slate-850'
+        }`}>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base font-black flex items-center gap-1.5 text-indigo-500">
+              ⚡ Crear Tarea Rápida
+            </h3>
+            <button 
+              onClick={() => setIsTaskCreatorOpen(false)}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold bg-transparent border-none cursor-pointer text-lg leading-none"
+            >
+              &times;
+            </button>
+          </div>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (!newTaskTitle.trim()) return;
+            const { createDynamicTask } = useTaskStore.getState();
+            createDynamicTask(
+              newTaskTitle.trim(),
+              newTaskRoleTarget,
+              Number(newTaskMins),
+              newTaskPriority
+            );
+            setNewTaskTitle('');
+            setIsTaskCreatorOpen(false);
+            setGlobalToast('¡Tarea rápida creada con éxito y enviada a la Bolsa de Trabajo! ⚡');
+            setTimeout(() => setGlobalToast(null), 4000);
+          }} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Título de la Tarea</label>
+              <input 
+                type="text" 
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Ej. Limpiar mesa de corte o Contar stock"
+                required
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
+                  isDark ? 'bg-slate-950 border-slate-800 text-white focus:border-indigo-500' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-indigo-400'
+                }`}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Tiempo Estimado</label>
+                <select 
+                  value={newTaskMins}
+                  onChange={(e) => setNewTaskMins(Number(e.target.value))}
+                  className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
+                    isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <option value={15}>15 Minutos</option>
+                  <option value={30}>30 Minutos</option>
+                  <option value={45}>45 Minutos</option>
+                  <option value={60}>1 Hora</option>
+                  <option value={120}>2 Horas</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-405 tracking-wider mb-1">Prioridad</label>
+                <select 
+                  value={newTaskPriority}
+                  onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                  className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
+                    isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <option value="normal">Normal</option>
+                  <option value="bloqueante">Crítica (Bloqueante)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-slate-405 tracking-wider mb-1">Puesto Dirigido (Rol)</label>
+              <select 
+                value={newTaskRoleTarget}
+                onChange={(e) => setNewTaskRoleTarget(Number(e.target.value))}
+                className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
+                  isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value={6}>Ayudante Integral (General)</option>
+                <option value={5}>Supervisor de Sucursal</option>
+                <option value={4}>Cajero / Cobros</option>
+                <option value={3}>Asesor de Ventas</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-indigo-600/20 active:scale-95 transition-all cursor-pointer border-none"
+            >
+              Lanzar a la Bolsa de Trabajo
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCopilotChatDrawer = () => {
+    if (!isCopilotChatOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+        {/* Backdrop overlay */}
+        <div 
+          onClick={() => setIsCopilotChatOpen(false)}
+          className="absolute inset-0 bg-slate-955/65 backdrop-blur-sm transition-opacity"
+        ></div>
+
+        {/* Chat Drawer Content */}
+        <div className={`relative w-full max-w-md h-[80vh] sm:h-[600px] rounded-t-[2rem] sm:rounded-3xl shadow-2xl border flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300 ${
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-202 text-slate-850'
+        }`}>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 px-5 py-4 flex items-center justify-between text-white shrink-0 shadow-md">
+            <div className="flex items-center gap-3 text-left">
+              <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
+                <Bot size={22} className="animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black tracking-wide uppercase leading-none">Copiloto AI</h3>
+                <p className="text-[10px] text-violet-200 mt-1 flex items-center gap-1">
+                  <Sparkles size={10} className="animate-bounce" />
+                  Soporte Técnico Activo
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsCopilotChatOpen(false)}
+              className="bg-white/10 hover:bg-white/20 text-white/90 p-1.5 rounded-full transition-colors border-none cursor-pointer outline-none"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Messages area */}
+          <div className="flex-grow p-4 overflow-y-auto space-y-3.5 bg-slate-50/50 dark:bg-slate-950/20 scrollbar-none">
+            {copilotMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in-50 duration-200`}
+              >
+                <div
+                  className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs leading-relaxed text-left ${
+                    msg.sender === 'user'
+                      ? 'bg-violet-600 text-white rounded-br-none shadow-md shadow-violet-600/10'
+                      : 'bg-white dark:bg-slate-800 text-slate-850 dark:text-slate-200 border rounded-bl-none shadow-sm border-slate-100 dark:border-slate-700/80'
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {copilotLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700/80 px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+              </div>
+            )}
+            <div ref={copilotEndRef} />
+          </div>
+
+          {/* Input Form */}
+          <form onSubmit={handleSendCopilot} className="p-3.5 border-t dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900 flex gap-2">
+            <input
+              type="text"
+              value={copilotInput}
+              onChange={(e) => setCopilotInput(e.target.value)}
+              placeholder="Escribe tu duda de soporte aquí..."
+              className={`flex-grow px-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none ${
+                isDark ? 'bg-slate-955 border-slate-800 text-white focus:border-violet-500' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-violet-400'
+              }`}
+            />
+            <button
+              type="submit"
+              disabled={copilotLoading}
+              className="bg-violet-600 hover:bg-violet-750 text-white p-2.5 rounded-xl flex items-center justify-center transition-colors shadow-md border-none cursor-pointer"
+            >
+              <Send size={16} />
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   // --- HTML MAIN VIEW RENDERING ---
   return (
@@ -2086,248 +2569,219 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   </button>
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
-                  >
-                    🪪 Perfil & Ajustes
-                  </button>
-                </nav>
-              </div>
-            </header>
-          )}
-        </>
-      )}
-
-      {/* --- CONTENT LAYOUTS --- */}
-      
-      {isScrollableMobile && phoneTab === 'checador' && (
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-95      {isScrollableMobile && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
-          {/* UNIFIED MOBILE HEADER (Mockup-aligned solid white styling) */}
-          <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-white text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b border-slate-100/80">
-            {/* Left: Module Info */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="shrink-0 flex items-center justify-center">
-                <Clock className="w-9 h-9 text-[#2dce89]" />
-              </div>
-              <div className="flex flex-col min-w-0 justify-center text-left">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[16px] font-black text-slate-900 tracking-tight leading-tight">
-                    Reloj Checador
-                  </h3>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20">
-                    v4.2.0
-                  </span>
+          {/* UNIFIED MOBILE HEADER (Anchor at the top, consistent styling) */}
+          {renderUnifiedMobileHeader()}
+
+          {/* MOBILE CONTENT AREA (Scrollable/Overflow depending on module) */}
+          {phoneTab === 'checador' && (
+            shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
+              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up">
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
+                  🌴
                 </div>
-                <p className="text-[11px] text-[#525f7f] font-bold mt-1.5 leading-none truncate">
-                  Control de Asistencia y Tareas
+                <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-200 mb-1.5">Día de Descanso</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mb-6 leading-relaxed">
+                  ¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día. Tu equipo te cubre hoy. 🌟
                 </p>
               </div>
-            </div>
-
-            {/* Right: Actions & User Profile */}
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Manual Pass List Trigger inside the header for Supervisors */}
-              {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
-                <button 
-                  onClick={() => initPaseLista(false)}
-                  className="bg-violet-605 hover:bg-violet-700 text-white font-extrabold text-[9px] uppercase px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
-                >
-                  <span>📋</span>
-                  <span>Lista</span>
-                </button>
-              )}
-
-              <div 
-                className="flex items-center gap-2.5 text-right cursor-pointer"
-                onClick={() => {
-                  setEditUsername(currentUser?.name || 'Francisco');
-                  setEditPassword(currentUser?.pin_code || '1234');
-                  setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
-                  setShowSettingsModal(true);
-                }}
-              >
-                <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-                  <span className="text-[13px] font-black text-slate-900 truncate">
-                    {currentUser?.name || 'Colaborador'}
-                  </span>
-                  <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
-                    {userPositionName}
-                  </span>
-                  <span className="text-[9px] font-black text-[#8a2be2] uppercase tracking-wider truncate mt-0.5">
-                    {currentUser?.tenant?.name || 'Decorarte 360'}
-                  </span>
-                </div>
-                
-                <div className="relative shrink-0">
-                  <img 
-                    src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-                    alt="Avatar" 
-                    className="w-12 h-12 rounded-full object-cover border border-slate-200/80 shadow-md hover:scale-105 transition-transform" 
-                  />
-                  <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${isDark ? 'border-slate-955' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* A2. MOBILE SCROLLABLE CONTENT OR REST DAY LOCK SCREEN */}
-          {shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up">
-              <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
-                🌴
-              </div>
-              <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-200 mb-1.5">Día de Descanso</h2>
-              <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mb-6 leading-relaxed">
-                ¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día. Tu equipo te cubre hoy. 🌟
-              </p>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-hidden px-4 py-3 flex flex-col justify-between gap-2 scrollbar-none">
-            
-            {/* Banner de transferencia de llaves pendiente */}
-            {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
-              <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
-                <div className="flex items-start gap-2.5">
-                  <span className="text-xl mt-0.5 shrink-0">🔑</span>
-                  <div>
-                    <p className="font-black text-xs">Propuesta de Transferencia de Cierre</p>
-                    <p className="text-[10px] text-amber-50/90 leading-normal mt-0.5">
-                      {pendingKeyTransfers[0].sender?.name} te ha propuesto cederte la custodia de llaves de la sucursal.
-                    </p>
-                    {pendingKeyTransfers[0].notes && (
-                      <p className="text-[9px] bg-black/10 rounded px-1.5 py-1 mt-1.5 italic">
-                        Nota: "{pendingKeyTransfers[0].notes}"
-                      </p>
-                    )}
+            ) : (
+              <div className="flex-1 overflow-hidden px-4 py-3 flex flex-col justify-between gap-2 scrollbar-none">
+                {/* Banner de transferencia de llaves pendiente */}
+                {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-xl mt-0.5 shrink-0">🔑</span>
+                      <div>
+                        <p className="font-black text-xs">Propuesta de Transferencia de Cierre</p>
+                        <p className="text-[10px] text-amber-50/90 leading-normal mt-0.5">
+                          {pendingKeyTransfers[0].sender?.name} te ha propuesto cederte la custodia de llaves de la sucursal.
+                        </p>
+                        {pendingKeyTransfers[0].notes && (
+                          <p className="text-[9px] bg-black/10 rounded px-1.5 py-1 mt-1.5 italic">
+                            Nota: "{pendingKeyTransfers[0].notes}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end shrink-0">
+                      <button 
+                        onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
+                        className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
+                      >
+                        Aceptar Llaves
+                      </button>
+                      <button 
+                        onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'rejected')}
+                        className="bg-transparent hover:bg-black/10 text-white border border-white/50 font-bold text-[9.5px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 justify-end shrink-0">
-                  <button 
-                    onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
-                    className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
-                  >
-                    Aceptar Llaves
-                  </button>
-                  <button 
-                    onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'rejected')}
-                    className="bg-transparent hover:bg-black/10 text-white border border-white/50 font-bold text-[9.5px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Rechazar
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Reminders of Premium opening - Mobile */}
-            {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
-              <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">📋</span>
-                  <span className="text-xs font-bold">Checklist de apertura pendiente.</span>
-                </div>
-                <button 
-                  onClick={() => setShowOpeningChecklistModal(true)} 
-                  className="bg-white text-emerald-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer"
-                >
-                  Completar
-                </button>
-              </div>
-            )}
+                )}
+                
+                {/* Reminders of Premium opening - Mobile */}
+                {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
+                  <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">📋</span>
+                      <span className="text-xs font-bold">Checklist de apertura pendiente.</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowOpeningChecklistModal(true)} 
+                      className="bg-white text-emerald-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer"
+                    >
+                      Completar
+                    </button>
+                  </div>
+                )}
 
-            {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
-              <div className="bg-violet-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">📋</span>
-                  <span className="text-xs font-bold">Pase de lista de apertura pendiente.</span>
-                </div>
-                <button 
-                  onClick={() => initPaseLista(false)} 
-                  className="bg-white text-violet-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer"
-                >
-                  Iniciar
-                </button>
-              </div>
-            )}
-            
-            {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
-            {renderBarraCronologica(true)}
+                {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
+                  <div className="bg-violet-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">📋</span>
+                      <span className="text-xs font-bold">Pase de lista de apertura pendiente.</span>
+                    </div>
+                    <button 
+                      onClick={() => initPaseLista(false)} 
+                      className="bg-white text-violet-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer"
+                    >
+                      Iniciar
+                    </button>
+                  </div>
+                )}
+                
+                {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
+                {renderBarraCronologica(true)}
 
-            {/* Central Clock Circle Action Button (Middle) */}
-            <DialPrincipal
-              isMobile={true}
-              isOpeningPremium={isOpeningPremium}
-              storeStatus={storeStatus}
-              openingStatus={openingStatus}
-              currentUser={currentUser}
-              isWithinPerimeter={isWithinPerimeter}
-              globalUsers={globalUsers}
-              clockState={clockState}
-              formattedTime={formattedTime}
-              btnProps={btnProps}
-              lateUsers={lateUsers}
-              currentDay={currentDay}
-              currentSimTime={currentSimTime}
-              shiftConfigs={shiftConfigs}
-              parseTimeToMins={parseTimeToMins}
-              handleAction={handleAction}
-              renderGPSView={renderGPSView}
-            />
-            
-            {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
-            <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">
-              {/* Alerta de Tareas */}
-              {(() => {
-                const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
-                return (
-                  <button
-                    type="button"
-                    onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-                    className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] focus:outline-none ${
-                      pendingCount > 0
-                        ? (isDark ? 'bg-rose-950/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800')
-                        : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/70 border-emerald-100/60 text-emerald-800')
-                    }`}
-                  >
-                    <span className="text-lg shrink-0">⚠️</span>
+                {/* Central Clock Circle Action Button (Middle) */}
+                <DialPrincipal
+                  isMobile={true}
+                  isOpeningPremium={isOpeningPremium}
+                  storeStatus={storeStatus}
+                  openingStatus={openingStatus}
+                  currentUser={currentUser}
+                  isWithinPerimeter={isWithinPerimeter}
+                  globalUsers={globalUsers}
+                  clockState={clockState}
+                  formattedTime={formattedTime}
+                  btnProps={btnProps}
+                  lateUsers={lateUsers}
+                  currentDay={currentDay}
+                  currentSimTime={currentSimTime}
+                  shiftConfigs={shiftConfigs}
+                  parseTimeToMins={parseTimeToMins}
+                  handleAction={handleAction}
+                  renderGPSView={renderGPSView}
+                />
+                
+                {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
+                <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">
+                  {/* Alerta de Tareas */}
+                  {(() => {
+                    const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
+                        className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] focus:outline-none ${
+                          pendingCount > 0
+                            ? (isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800')
+                            : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/70 border-emerald-100/60 text-emerald-800')
+                        }`}
+                      >
+                        <span className="text-lg shrink-0">⚠️</span>
+                        <div className="leading-tight overflow-hidden flex-1">
+                          <p className={`text-[10px] font-black uppercase tracking-widest ${pendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                            Alerta de Tareas
+                          </p>
+                          <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
+                            {pendingCount > 0 
+                              ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
+                              : '¡Todas tus tareas están al día ✓'}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Alerta de Hora de Comida / Turno */}
+                  <div className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left select-none ${
+                    isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
+                  }`}>
+                    <span className="text-lg shrink-0">📅</span>
                     <div className="leading-tight overflow-hidden flex-1">
-                      <p className={`text-[10px] font-black uppercase tracking-widest ${pendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                        Alerta de Tareas
+                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-400">
+                        Jornada / Horario
                       </p>
-                      <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                        {pendingCount > 0 
-                          ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
-                          : '¡Todas tus tareas están al día ✓'}
+                      <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
+                        {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
+                         clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
+                         clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
+                         clockState === 'meal' ? 'Comida activa: Regresa en 30 minutos' :
+                         hasCheckedOut ? 'Jornada del día completada 🎉' :
+                         'Turno programado en progreso'}
                       </p>
                     </div>
-                  </button>
-                );
-              })()}
-
-              {/* Alerta de Hora de Comida / Turno */}
-              <div className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left select-none ${
-                isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
-              }`}>
-                <span className="text-lg shrink-0">📅</span>
-                <div className="leading-tight overflow-hidden flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-400">
-                    Jornada / Horario
-                  </p>
-                  <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
-                    {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
-                     clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
-                     clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
-                     clockState === 'meal' ? 'Comida activa: Regresa en 30 minutos' :
-                     hasCheckedOut ? 'Jornada del día completada 🎉' :
-                     'Turno programado en progreso'}
-                  </p>
+                  </div>
                 </div>
               </div>
+            )
+          )}
+
+          {phoneTab !== 'checador' && (
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-none">
+              {phoneTab === 'tareas' && (
+                <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
+              )}
+              {phoneTab === 'academia' && (
+                <Academia onBack={() => setPhoneTab('checador')} />
+              )}
+              {phoneTab === 'evaluacion360' && (
+                <Evaluacion360 onBack={() => setPhoneTab('herramientas')} />
+              )}
+              {phoneTab === 'organigrama' && (
+                <div className="h-full w-full bg-white dark:bg-slate-955 rounded-3xl p-4 overflow-y-auto shadow-inner">
+                  <RecursosHumanos readOnly={true} initialTab="organigrama" />
+                </div>
+              )}
+              {phoneTab === 'perfil' && renderProfilePanel(true)}
+              {phoneTab === 'herramientas' && (
+                <div className="space-y-4">
+                  {innerTool === null ? (
+                    <div className="text-center py-12">
+                      <p className="text-slate-400 font-bold text-sm">Cargando Caja de Herramientas...</p>
+                      <p className="text-xs text-slate-500 mt-2">Usa el botón flotante 🛠️ para ver las herramientas rápidas.</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col h-full bg-transparent">
+                      <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-505 mb-4 flex items-center gap-1">
+                        ← Volver a Herramientas
+                      </button>
+                      {innerTool === 'chat' && renderToolChat()}
+                      {innerTool === 'soplon' && renderToolSoplon()}
+                      {innerTool === 'buzon' && renderToolBuzon()}
+                      {innerTool === 'transfer' && renderToolTransfer()}
+                      {innerTool === 'huida' && renderToolHuida()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}
           <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} />
         </div>
       )}
+
+      {/* RENDER OPERATIONAL MODALS FOR MOBILE */}
+      {isScrollableMobile && renderFloatingActionButton()}
+      {isScrollableMobile && renderFabOperationsSheet()}
+      {isScrollableMobile && renderTaskCreatorModal()}
+      {isScrollableMobile && renderCopilotChatDrawer()}
 
       {/* B. DESKTOP VIEW LAYOUT (isScrollableMobile is false) */}
       {!isScrollableMobile && (

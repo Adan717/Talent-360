@@ -44,16 +44,6 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark }:
         <GraduationCap size={22} className={phoneTab === 'academia' ? 'text-[#8a2be2]' : ''} />
         <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Academia</span>
       </button>
-      
-      <button 
-        onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }}
-        className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-          ['herramientas', 'evaluacion360'].includes(phoneTab) ? 'text-[#8a2be2] font-extrabold scale-105' : 'hover:text-slate-855 dark:hover:text-slate-200'
-        }`}
-      >
-        <Settings size={22} className={['herramientas', 'evaluacion360'].includes(phoneTab) ? 'text-[#8a2be2]' : ''} />
-        <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Herramientas</span>
-      </button>
     </nav>
   );
 }

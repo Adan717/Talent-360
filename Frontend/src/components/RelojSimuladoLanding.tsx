@@ -111,27 +111,47 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   // Transiciones de estado del dial
   const handleAction = () => {
-    if (clockState === 'inactive') {
+    const stateStr = clockState as string;
+    if (stateStr === 'inactive') {
       runProVerification(() => {
         setClockState('active');
         setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
         setCurrentSimTime(545);
         setFormattedTime('09:05:00 AM');
       });
-    } else if (clockState === 'active') {
-      // Simular descanso
-      setClockState('short_break');
-      setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
-      setCurrentSimTime(720);
-      setFormattedTime('12:00:00 PM');
-    } else if (clockState === 'short_break') {
+    } else if (stateStr === 'active') {
+      const hasTakenBreak = breaksTaken[99] !== undefined;
+      const hasTakenMeal = mealEndTimes[99] !== undefined;
+
+      if (!hasTakenBreak) {
+        // Simular descanso
+        setClockState('short_break');
+        setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
+        setCurrentSimTime(720);
+        setFormattedTime('12:00:00 PM');
+      } else if (!hasTakenMeal) {
+        // Simular comida
+        setClockState('meal');
+        setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
+        setCurrentSimTime(840);
+        setFormattedTime('02:00:00 PM');
+      } else {
+        // Simular salida
+        runProVerification(() => {
+          setClockState('finished');
+          setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
+          setCurrentSimTime(1080);
+          setFormattedTime('06:00:00 PM');
+        });
+      }
+    } else if (stateStr === 'short_break') {
       // Regresar descanso
       setClockState('active');
       setBreakEndTimes({ 99: 735 }); // Regreso 12:15 PM
       setBreaksTaken({ 99: 1 });
       setCurrentSimTime(735);
       setFormattedTime('12:15:00 PM');
-    } else if (clockState === 'meal') {
+    } else if (stateStr === 'meal') {
       // Regresar comida
       setClockState('active');
       setMealEndTimes({ 99: 885 }); // Regreso 02:45 PM
@@ -139,22 +159,6 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       setCurrentSimTime(885);
       setFormattedTime('02:45:00 PM');
     }
-  };
-
-  const handleStartMealSim = () => {
-    setClockState('meal');
-    setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
-    setCurrentSimTime(840);
-    setFormattedTime('02:00:00 PM');
-  };
-
-  const handleClockOutSim = () => {
-    runProVerification(() => {
-      setClockState('finished');
-      setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
-      setCurrentSimTime(1080);
-      setFormattedTime('06:00:00 PM');
-    });
   };
 
   const handleResetSim = () => {
@@ -578,32 +582,6 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 handleAction={handleAction}
               />
 
-              {/* Botones de flujo complementario */}
-              {clockState === 'active' && (
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={handleStartMealSim}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/10 cursor-pointer"
-                  >
-                    Ir a Comida
-                  </button>
-                  <button
-                    onClick={handleClockOutSim}
-                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-rose-600/10 cursor-pointer"
-                  >
-                    Fichar Salida
-                  </button>
-                </div>
-              )}
-
-              {clockState === 'finished' && (
-                <button
-                  onClick={handleResetSim}
-                  className="mt-4 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
-                >
-                  Reiniciar Simulación
-                </button>
-              )}
             </div>
 
             {/* Alertas dinámicas bajo el dial */}

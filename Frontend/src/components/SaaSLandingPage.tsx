@@ -35,6 +35,7 @@ export const SaaSLandingPage = () => {
   const [simulatedClockState, setSimulatedClockState] = useState<string>('inactive');
   const [phoneActiveTab, setPhoneActiveTab] = useState<'reloj' | 'tareas' | 'academia' | 'herramientas'>('reloj');
   const [simulatedTier, setSimulatedTier] = useState<'free' | 'pro'>('pro');
+  const [simKey, setSimKey] = useState<number>(0);
   const [simulatedTask1Done, setSimulatedTask1Done] = useState(true);
   const [simulatedTask2Done, setSimulatedTask2Done] = useState(false);
   const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
@@ -492,6 +493,7 @@ export const SaaSLandingPage = () => {
 
                     <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
                       <RelojSimuladoLanding 
+                        key={simKey}
                         tier={simulatedTier}
                         setTier={setSimulatedTier}
                       />
@@ -558,6 +560,15 @@ export const SaaSLandingPage = () => {
                           </>
                         )}
                       </ul>
+                      <div className="border-t border-slate-100 pt-4 mt-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSimKey(prev => prev + 1)}
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 px-4 rounded-2xl text-[9px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          🔄 Reiniciar Simulación del Checador
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

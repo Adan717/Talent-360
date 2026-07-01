@@ -2569,7 +2569,20 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   </button>
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-95      {isScrollableMobile && (
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                  >
+                    🪪 Perfil & Ajustes
+                  </button>
+                </nav>
+              </div>
+            </header>
+          )}
+        </>
+      )}
+
+      {/* --- CONTENT LAYOUTS --- */}
+      
+      {isScrollableMobile && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
           {/* UNIFIED MOBILE HEADER (Anchor at the top, consistent styling) */}
           {renderUnifiedMobileHeader()}

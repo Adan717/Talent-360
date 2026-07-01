@@ -1876,7 +1876,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
           {/* UNIFIED MOBILE HEADER (Mockup-aligned solid white styling) */}
-          <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-white dark:bg-slate-800 text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b border-slate-100/80 dark:border-slate-800/40">
+          <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-white text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b border-slate-100/80">
             {/* Left: Module Info */}
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="shrink-0 flex items-center justify-center">
@@ -1884,14 +1884,14 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               </div>
               <div className="flex flex-col min-w-0 justify-center text-left">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                  <h3 className="text-[16px] font-black text-slate-900 tracking-tight leading-tight">
                     Reloj Checador
                   </h3>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider bg-[#e6f4ea] text-[#137333] dark:bg-[#137333]/20 dark:text-[#ceead6] border border-[#ceead6]/20">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20">
                     v2.2.0
                   </span>
                 </div>
-                <p className="text-[11px] text-[#525f7f] dark:text-slate-400 font-bold mt-1.5 leading-none truncate">
+                <p className="text-[11px] text-[#525f7f] font-bold mt-1.5 leading-none truncate">
                   Control de Asistencia y Tareas
                 </p>
               </div>
@@ -1920,13 +1920,13 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 }}
               >
                 <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-                  <span className="text-[13px] font-black text-slate-900 dark:text-slate-100 truncate">
+                  <span className="text-[13px] font-black text-slate-900 truncate">
                     {currentUser?.name || 'Colaborador'}
                   </span>
                   <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
                     {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
                   </span>
-                  <span className="text-[9px] font-black text-[#8a2be2] dark:text-violet-400 uppercase tracking-wider truncate mt-0.5">
+                  <span className="text-[9px] font-black text-[#8a2be2] uppercase tracking-wider truncate mt-0.5">
                     {currentUser?.tenant?.name || 'Decorarte 360'}
                   </span>
                 </div>

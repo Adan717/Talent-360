@@ -1634,7 +1634,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                         hasCheckedIn 
                           ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105 shadow-indigo-500/20' 
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                       }`}>
                         <LogIn size={18} className={!hasCheckedIn ? "animate-pulse" : ""} />
                         {hasCheckedIn && (
@@ -1642,15 +1642,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         )}
                       </div>
                       {hasCheckedIn ? (
-                        <span className={`text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all ${
+                        <span className={`text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all ${
                           isLate 
-                            ? 'text-rose-605 bg-rose-50 border-rose-100/50 dark:text-rose-400 dark:bg-rose-955/20 dark:border-rose-900/50 animate-pulse' 
-                            : 'text-indigo-650 bg-indigo-50 border-indigo-100/50 dark:text-indigo-400 dark:bg-indigo-950/20 dark:border-indigo-900/50'
+                            ? 'text-rose-700 bg-rose-50 border-rose-100 dark:text-rose-300 dark:bg-rose-950/30 dark:border-rose-900/40 animate-pulse' 
+                            : 'text-indigo-700 bg-indigo-50 border-indigo-100 dark:text-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-900/40'
                         }`}>
                           {formatMinsToTimeClean(checkInTimes[currentUser.id])} {isLate && "(Retardo)"}
                         </span>
                       ) : (
-                        <span className="text-[7px] font-mono text-slate-400 bg-slate-50 border border-slate-200/40 mt-2 px-1.5 py-0.5 rounded-full dark:bg-slate-900/20 dark:border-slate-800/40">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
                           {formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
                         </span>
                       )}
@@ -1673,7 +1673,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                         isAccessible
                           ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                       }`}>
                         <Coffee size={18} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                         {isDone && (
@@ -1684,13 +1684,13 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         (() => {
                           const info = getBreakInfo();
                           return (
-                            <span className="text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all text-purple-650 bg-purple-50 border-purple-100/50 dark:text-purple-400 dark:bg-purple-955/20 dark:border-purple-900/50">
+                            <span className="text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all text-purple-700 bg-purple-50 border-purple-100 dark:text-purple-300 dark:bg-purple-955/30 dark:border-purple-900/40">
                               {info ? formatMinsToTimeClean(info.start) : 'Descanso'}
                             </span>
                           );
                         })()
                       ) : (
-                        <span className="text-[7px] font-mono text-slate-400 bg-slate-50 border border-slate-200/40 mt-2 px-1.5 py-0.5 rounded-full dark:bg-slate-900/20 dark:border-slate-800/40">-</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">-</span>
                       )}
                     </div>
                   );
@@ -1711,7 +1711,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
                         isAccessible
                           ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105 shadow-amber-500/20' 
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                       }`}>
                         <Utensils size={18} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
                         {isDone && (
@@ -1722,13 +1722,13 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         (() => {
                           const info = getMealInfo();
                           return (
-                            <span className="text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all text-amber-650 bg-amber-50 border-amber-100/50 dark:text-amber-450 dark:bg-amber-955/20 dark:border-amber-900/40">
+                            <span className="text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all text-amber-700 bg-amber-50 border-amber-100 dark:text-amber-300 dark:bg-amber-955/30 dark:border-amber-900/40">
                               {info && !info.isReserved ? formatMinsToTimeClean(info.start) : 'Comida'}
                             </span>
                           );
                         })()
                       ) : (
-                        <span className="text-[7px] font-mono text-slate-400 bg-slate-50 border border-slate-200/40 mt-2 px-1.5 py-0.5 rounded-full dark:bg-slate-900/20 dark:border-slate-800/40">-</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">-</span>
                       )}
                     </div>
                   );
@@ -1746,7 +1746,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                         hasCheckedOut
                           ? 'border-teal-500 bg-teal-500 text-white font-extrabold scale-105 shadow-teal-500/20' 
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                       }`}>
                         <LogOut size={18} className={hasCheckedIn && !hasCheckedOut ? "animate-pulse" : ""} />
                         {hasCheckedOut && (
@@ -1754,11 +1754,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         )}
                       </div>
                       {hasCheckedOut ? (
-                        <span className="text-[7px] font-mono mt-2 font-black px-1.5 py-0.5 rounded-full border transition-all text-teal-600 bg-teal-50 border-teal-100/50 dark:text-teal-450 dark:bg-teal-955/20 dark:border-teal-900/40">
+                        <span className="text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all text-teal-700 bg-teal-50 border-teal-100 dark:text-teal-300 dark:bg-teal-955/30 dark:border-teal-900/40">
                           {checkOutTimes[currentUser.id] ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : 'Fichado'}
                         </span>
                       ) : (
-                        <span className="text-[7px] font-mono text-slate-400 bg-slate-50 border border-slate-200/40 mt-2 px-1.5 py-0.5 rounded-full dark:bg-slate-900/20 dark:border-slate-800/40">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
                           {formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
                         </span>
                       )}
@@ -1993,7 +1993,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                             hasCheckedIn 
                               ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105 shadow-indigo-500/20' 
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                           }`}>
                             <LogIn size={20} className={!hasCheckedIn ? "animate-pulse" : ""} />
                             {hasCheckedIn && (
@@ -2001,11 +2001,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                             )}
                           </div>
                           {hasCheckedIn ? (
-                            <span className={`text-[9.5px] font-mono mt-2 font-bold ${isLate ? 'text-rose-500' : 'text-indigo-650 dark:text-indigo-400'}`}>
+                            <span className={`text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all ${
+                              isLate 
+                                ? 'text-rose-700 bg-rose-50 border-rose-100 dark:text-rose-300 dark:bg-rose-950/30 dark:border-rose-900/40 animate-pulse' 
+                                : 'text-indigo-700 bg-indigo-50 border-indigo-100 dark:text-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-900/40'
+                            }`}>
                               {formatMinsToTimeClean(checkInTimes[currentUser.id])} {isLate && "(Retardo)"}
                             </span>
                           ) : (
-                            <span className="text-[9.5px] font-mono text-slate-400 dark:text-slate-500 mt-2">
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
                               {formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
                             </span>
                           )}
@@ -2028,7 +2032,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                             isAccessible
                               ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                           }`}>
                             <Coffee size={20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                             {isDone && (
@@ -2040,17 +2044,17 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               const info = getBreakInfo();
                               return (
                                 <div className="flex flex-col items-center mt-1.5 leading-tight">
-                                  <span className="text-[9.5px] font-bold text-purple-650 dark:text-purple-400 font-mono">
+                                  <span className="text-[10px] font-bold text-purple-750 dark:text-purple-305 font-mono">
                                     {info ? formatMinsToTimeClean(info.start) : 'Descanso'}
                                   </span>
                                   {info && (
                                     info.isActive ? (
-                                      <span className="text-[9px] font-mono text-violet-500 font-bold mt-0.5">
+                                      <span className="text-[9.5px] font-mono text-violet-500 font-bold mt-0.5">
                                         Activo ({info.duration}m)
                                         {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
                                       </span>
                                     ) : (
-                                      <span className="text-[9px] font-mono text-purple-655 dark:text-purple-400 font-medium mt-0.5">
+                                      <span className="text-[9.5px] font-mono text-purple-650 dark:text-purple-400 font-medium mt-0.5">
                                         {info.duration} min
                                         {info.extra > 0 && <span className="text-rose-500 font-black ml-0.5">+{info.extra}m</span>}
                                       </span>
@@ -2060,7 +2064,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               );
                             })()
                           ) : (
-                            <span className="text-[9.5px] font-mono text-slate-400 dark:text-slate-500 mt-2">-</span>
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">-</span>
                           )}
                         </div>
                       );
@@ -2081,7 +2085,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
                             isAccessible
                               ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105 shadow-amber-500/20' 
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                           }`}>
                             <Utensils size={20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
                             {isDone && (
@@ -2091,31 +2095,31 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           {isAccessible ? (
                             (() => {
                               const info = getMealInfo();
-                              if (!info) return <span className="text-[9.5px] font-mono text-slate-400 dark:text-slate-500 mt-2">Comida</span>;
+                              if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Comida</span>;
                               if (info.isReserved) {
-                                return (
-                                  <div className="flex flex-col items-center mt-1.5 leading-tight">
-                                    <span className="text-[9.5px] font-bold text-amber-600 font-mono">
-                                      Reservado
-                                    </span>
-                                    <span className="text-[8.5px] text-slate-400 font-mono mt-0.5">
-                                      {info.reservedText}
-                                    </span>
-                                  </div>
-                                );
+                                  return (
+                                    <div className="flex flex-col items-center mt-1.5 leading-tight">
+                                      <span className="text-[10px] font-bold text-amber-600 font-mono">
+                                        Reservado
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                        {info.reservedText}
+                                      </span>
+                                    </div>
+                                  );
                               }
                               return (
                                 <div className="flex flex-col items-center mt-1.5 leading-tight">
-                                  <span className="text-[9.5px] font-bold text-amber-650 dark:text-amber-450 font-mono">
+                                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-305 font-mono">
                                     {formatMinsToTimeClean(info.start)}
                                   </span>
                                   {info.isActive ? (
-                                    <span className="text-[9px] font-mono text-amber-500 font-bold mt-0.5">
+                                    <span className="text-[9.5px] font-mono text-amber-500 font-bold mt-0.5">
                                       Activo ({info.duration}m)
                                       {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                                    <span className="text-[9.5px] font-mono text-emerald-600 dark:text-emerald-450 font-medium mt-0.5">
                                       {info.duration} min
                                       {info.extra > 0 && <span className="text-rose-500 font-black ml-0.5">+{info.extra}m</span>}
                                     </span>
@@ -2124,7 +2128,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               );
                             })()
                           ) : (
-                            <span className="text-[9.5px] font-mono text-slate-400 dark:text-slate-500 mt-2">-</span>
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">-</span>
                           )}
                         </div>
                       );
@@ -2142,7 +2146,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                             hasCheckedOut
                               ? 'border-teal-500 bg-teal-500 text-white font-extrabold scale-105 shadow-teal-500/20' 
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                           }`}>
                             <LogOut size={20} className={hasCheckedIn && !hasCheckedOut ? "animate-pulse" : ""} />
                             {hasCheckedOut && (
@@ -2150,11 +2154,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                             )}
                           </div>
                           {hasCheckedOut ? (
-                            <span className="text-[9.5px] font-mono text-teal-655 dark:text-teal-400 font-bold mt-2">
+                            <span className="text-[10px] font-mono text-teal-700 dark:text-teal-305 font-bold mt-2">
                               {checkOutTimes[currentUser.id] ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : 'Fichado'}
                             </span>
                           ) : (
-                            <span className="text-[9.5px] font-mono text-slate-400 dark:text-slate-500 mt-2">
+                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
                               {formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
                             </span>
                           )}

@@ -2471,6 +2471,23 @@ export function useClockEngine(overrideUser?: any) {
     const isPro = currentTier === 'pro' || currentTier === 'enterprise';
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
 
+    let responsibleId = 1;
+    if (openingStatus) {
+      responsibleId = openingStatus.current_responsible_employee_id;
+    } else {
+      try {
+        const savedAss = localStorage.getItem('store_opening_assignments');
+        const ass = savedAss ? JSON.parse(savedAss) : [];
+        const firstActive = ass
+          .filter((a: any) => a.is_active)
+          .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
+        if (firstActive) {
+          responsibleId = firstActive.employee_id;
+        }
+      } catch {}
+    }
+    const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
+
     const shiftStartStr = shiftConfigs[currentUser?.id]?.start || '09:00';
     const shiftStartMins = parseTimeToMins(shiftStartStr);
 
@@ -2488,22 +2505,6 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
-      let responsibleId = 1;
-      if (openingStatus) {
-        responsibleId = openingStatus.current_responsible_employee_id;
-      } else {
-        try {
-          const savedAss = localStorage.getItem('store_opening_assignments');
-          const ass = savedAss ? JSON.parse(savedAss) : [];
-          const firstActive = ass
-            .filter((a: any) => a.is_active)
-            .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-          if (firstActive) {
-            responsibleId = firstActive.employee_id;
-          }
-        } catch {}
-      }
-
       const isResponsibleForOpening = isOpeningPremium && storeStatus === 'closed' && Number(currentUser?.id) === Number(responsibleId);
 
       if (isResponsibleForOpening) {
@@ -2542,22 +2543,6 @@ export function useClockEngine(overrideUser?: any) {
         return { text: `🔒 Disponible a las ${formatLimit()}`, bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true, subtext: 'Antes de la ventana de apertura programada' };
       }
 
-      let responsibleId = 11;
-      if (openingStatus) {
-        responsibleId = openingStatus.current_responsible_employee_id;
-      } else {
-        try {
-          const savedAss = localStorage.getItem('store_opening_assignments');
-          const ass = savedAss ? JSON.parse(savedAss) : [];
-          const firstActive = ass
-            .filter((a: any) => a.is_active)
-            .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-          if (firstActive) {
-            responsibleId = firstActive.employee_id;
-          }
-        } catch {}
-      }
-
       if (Number(currentUser.id) === Number(responsibleId)) {
         return { 
           text: 'Abrir Tienda', 
@@ -2570,7 +2555,8 @@ export function useClockEngine(overrideUser?: any) {
           text: '⚠️ Reportar Tienda Cerrada', 
           bg: 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold shadow-[0_0_20px_rgba(239,68,68,0.2)]', 
           icon: '🚨', 
-          isReportStoreClosed: true 
+          isReportStoreClosed: true,
+          subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}`
         };
       }
     }
@@ -2590,13 +2576,13 @@ export function useClockEngine(overrideUser?: any) {
           };
           return { text: `🔒 Disponible a las ${formatLimit()}`, bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true, subtext: 'Tienda inactiva antes de turno' };
         }
-        return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢' };
+        return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢', subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}` };
       }
       if (clockState === 'waiting_room') {
         if (currentSimTime >= shiftStartMins) {
-          return { text: '⚠️ Reportar tienda cerrada', bg: 'bg-rose-500 hover:bg-rose-600 text-white', icon: '🚨', isReport: true };
+          return { text: '⚠️ Reportar tienda cerrada', bg: 'bg-rose-500 hover:bg-rose-600 text-white', icon: '🚨', isReport: true, subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}` };
         }
-        return { text: 'En perímetro. Esperando...', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '⏳', disabled: true };
+        return { text: 'En perímetro. Esperando...', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '⏳', disabled: true, subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}` };
       }
     }
     if (clockState === 'inactive' || clockState === 'waiting_room') {

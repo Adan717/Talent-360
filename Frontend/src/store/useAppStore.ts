@@ -590,7 +590,9 @@ export const useAppStore = create<AppState>((set, get) => ({
                expectedEndTimeMins: a.expected_end_time_mins,
                completedAtMins: a.completed_at_mins,
                assignedFromRoutineId: a.assigned_from_routine_id,
-               assistantData: a.assistant_data ? (typeof a.assistant_data === 'string' ? JSON.parse(a.assistant_data) : a.assistant_data) : null
+               assistantData: a.assistant_data ? (typeof a.assistant_data === 'string' ? JSON.parse(a.assistant_data) : a.assistant_data) : null,
+               accumulatedMins: a.accumulated_mins || 0,
+               reservedAtMins: a.reserved_at_mins
            }));
            useTaskStore.getState().setAssignments(camelCaseAssignments);
         }

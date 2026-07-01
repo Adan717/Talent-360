@@ -138,6 +138,7 @@ class TaskSyncController extends Controller
                         'assistant_data' => $assistantData,
                         'tenant_id' => $tenantId,
                         'accumulated_mins' => $assignment['accumulatedMins'] ?? $assignment['accumulated_mins'] ?? 0,
+                        'reserved_at_mins' => $assignment['reservedAtMins'] ?? $assignment['reserved_at_mins'] ?? null,
                     ];
 
                     // Check if supervisor validation is required

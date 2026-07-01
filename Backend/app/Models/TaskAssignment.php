@@ -15,7 +15,7 @@ class TaskAssignment extends Model
     protected $fillable = [
         'id', 'task_id', 'user_id', 'status', 'started_at_mins', 'expected_end_time_mins',
         'completed_at_mins', 'assigned_from_routine_id', 'assistant_data', 'accumulated_mins',
-        'validated_by', 'validation_feedback', 'date', 'points_awarded'
+        'validated_by', 'validation_feedback', 'date', 'points_awarded', 'reserved_at_mins'
     ];
 
     protected $keyType = 'string';

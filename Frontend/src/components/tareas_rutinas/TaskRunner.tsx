@@ -85,7 +85,7 @@ export function FichaTarea({
 
     // Nombre del colaborador a mostrar
     const collaboratorName = isFromPool 
-        ? 'Bolsa Libre'
+        ? (task.targetId && Number(task.targetId) !== 0 ? `Bolsa: ${getRoleName(Number(task.targetId))}` : 'Bolsa Libre')
         : (worker?.name || `Colaborador #${assignment.userId}`);
 
     // Calcular porcentaje de progreso
@@ -240,7 +240,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const [newDesc, setNewDesc] = useState('');
     const [newMins, setNewMins] = useState(15);
     const [newPriority, setNewPriority] = useState<'normal' | 'bloqueante'>('normal');
-    const [newTargetRole, setNewTargetRole] = useState<number>(currentUser.job_role_id || 6);
+    const [newTargetRole, setNewTargetRole] = useState<number>(0);
 
     // AI Assistant state
     const [aiInput, setAiInput] = useState('');
@@ -347,7 +347,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         const t = tasks.find(tsk => tsk.id === a.taskId);
         if (!t) return false;
         
-        const isTargetedToMyRole = t.targetId === null || t.targetId === undefined || Number(t.targetId) === 0 || Number(t.targetId) === Number(currentUser.job_role_id);
+        const isTargetedToMyRole = isSupervisor || t.targetId === null || t.targetId === undefined || Number(t.targetId) === 0 || Number(t.targetId) === Number(currentUser.job_role_id);
         
         // Pendiente en la bolsa (nadie la tiene asignada)
         const isFreeInPool = a.userId === null && a.status === 'pending' && isTargetedToMyRole;

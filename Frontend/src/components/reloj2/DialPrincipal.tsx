@@ -31,6 +31,7 @@ interface DialPrincipalProps {
     disabled: boolean;
     isIncidenceReport?: boolean;
     text?: string;
+    subtext?: string;
   };
   lateUsers: Record<number, boolean>;
   currentDay: string;
@@ -179,28 +180,7 @@ export default function DialPrincipal({
 
   return (
     <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-shrink-0 w-full my-3' : ''}`}>
-      {isOpeningPremium && storeStatus === 'closed' && (
-        <div className={`px-5 py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-inner border mb-5 select-none shrink-0 text-center animate-fade-in ${
-          Number(currentUser?.id) === Number(openingStatus ? openingStatus.current_responsible_employee_id : 1) && !isWithinPerimeter
-            ? 'bg-violet-50 dark:bg-violet-955/20 border-violet-300 dark:border-violet-800/50 text-violet-750 dark:text-violet-300 font-black animate-pulse'
-            : 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50'
-        }`}>
-          <span className="animate-pulse text-sm">⏳</span>
-          <span className={isMobile ? "text-[10px] font-extrabold uppercase tracking-wide" : "text-[11px] font-extrabold uppercase tracking-wide"}>
-            {(() => {
-              const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
-              if (Number(currentUser?.id) === Number(responsibleId)) {
-                return isWithinPerimeter 
-                  ? 'Tienes el control de la apertura de hoy'
-                  : '🗝️ Responsable de apertura. Dirígete a la sucursal para abrir.';
-              } else {
-                const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
-                return `Esperando apertura por: ${responsibleUser.name}`;
-              }
-            })()}
-          </span>
-        </div>
-      )}
+
 
       <div className="relative flex-shrink-0 flex items-center justify-center">
         {/* Landing-Page-aligned Shimmer Glow Ring */}
@@ -249,10 +229,15 @@ export default function DialPrincipal({
             </div>
 
             {/* LOWER ZONE: Bottom Label */}
-            <div className={`px-2 text-center w-full min-h-[36px] flex items-center justify-center mb-2 text-slate-700 ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
+            <div className={`px-2 text-center w-full min-h-[36px] flex flex-col items-center justify-center mb-2 text-slate-700 ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
               <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[10px] md:text-[10.5px]' : 'text-[11px] md:text-[12px]'} ${isGpsError ? 'text-rose-600 dark:text-rose-400 font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
+              {btnProps.subtext && (
+                <span className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 mt-0.5 leading-none block select-none uppercase truncate max-w-full">
+                  {btnProps.subtext}
+                </span>
+              )}
             </div>
           </div>
         </button>

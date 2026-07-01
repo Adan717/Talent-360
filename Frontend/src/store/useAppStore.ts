@@ -372,6 +372,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
               return {
                 id: u.id,
+                employee_id: u.employee_id,
                 name: u.name,
                 role: roleName,
                 system_role: u.role,

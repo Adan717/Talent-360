@@ -77,6 +77,7 @@ class ClockController extends Controller
         $users = $employees->map(function ($e) {
             // Reloj Checador local client expects the primary ID of the employee
             // to match user_id so time entry tracking maps back to users.id
+            $e->employee_id = $e->id;
             $e->id = $e->user_id ?? $e->id;
             return $e;
         });

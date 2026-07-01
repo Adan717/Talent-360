@@ -274,7 +274,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         return;
       }
 
-      const res = await axiosInstance.put(`/employees/${employeeId}`, {
+      const res = await axiosInstance.put(`/employees/${employee.employee_id || employeeId}`, {
         job_role_id: targetRoleId
       });
 
@@ -799,7 +799,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           setEditingUser(null);
           return;
       }
-      const res = await axiosInstance.put('/employees/' + editingUser.id, payload);
+      const res = await axiosInstance.put('/employees/' + (editingUser.employee_id || editingUser.id), payload);
       
       if (res.status !== 200) {
           throw new Error("Failed to save user");
@@ -836,7 +836,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           appState.setGlobalUsers(appState.globalUsers.map(u => u.id === id ? { ...u, is_active_employee: false } : u));
           return;
       }
-      const res = await axiosInstance.delete(`/employees/${id}`);
+      const emp = users.find((u: any) => u.id === id);
+      const targetId = emp?.employee_id || id;
+      const res = await axiosInstance.delete(`/employees/${targetId}`);
       if (res.status !== 200) throw new Error("Failed to delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -855,7 +857,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           appState.setGlobalUsers(appState.globalUsers.filter(u => u.id !== id));
           return;
       }
-      const res = await axiosInstance.delete(`/employees/${id}/force`);
+      const emp = users.find((u: any) => u.id === id);
+      const targetId = emp?.employee_id || id;
+      const res = await axiosInstance.delete(`/employees/${targetId}/force`);
       if (res.status !== 200) throw new Error("Failed to force delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -874,7 +878,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           appState.setGlobalUsers(appState.globalUsers.map(u => u.id === id ? { ...u, is_active_employee: true } : u));
           return;
       }
-      const res = await axiosInstance.put(`/employees/${id}`, { is_active_employee: true });
+      const emp = users.find((u: any) => u.id === id);
+      const targetId = emp?.employee_id || id;
+      const res = await axiosInstance.put(`/employees/${targetId}`, { is_active_employee: true });
       if (res.status !== 200) throw new Error("Failed to restore user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -1693,7 +1699,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                                   
                                                   // Guardar el teléfono en el colaborador en base de datos de fondo
                                                   try {
-                                                     await axiosInstance.put(`/employees/${editingUser.id}`, {
+                                                     await axiosInstance.put(`/employees/${editingUser.employee_id || editingUser.id}`, {
                                                         phone: editingUser.phone
                                                      });
                                                   } catch (e) {
@@ -1742,7 +1748,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                          type="button"
                                          onClick={async () => {
                                             try {
-                                               const res = await axiosInstance.post(`/admin/employees/${editingUser.id}/generate-pin`);
+                                               const res = await axiosInstance.post(`/admin/employees/${editingUser.employee_id || editingUser.id}/generate-pin`);
                                                setEditingUser({ ...editingUser, pin_code: res.data.pin });
                                                alert("PIN generado exitosamente.");
                                             } catch (err) {

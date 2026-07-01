@@ -76,7 +76,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     setIsGeneratingPin(true);
     setInviteFeedback(null);
     try {
-      const res = await axiosInstance.post(`/admin/employees/${selectedEmployeeId}/generate-pin`);
+      const emp = globalUsers.find(u => u.id === selectedEmployeeId);
+      const employeeIdToUse = emp?.employee_id || selectedEmployeeId;
+      const res = await axiosInstance.post(`/admin/employees/${employeeIdToUse}/generate-pin`);
       if (res.data && res.data.pin) {
         setInvitePin(res.data.pin);
         await fetchState();
@@ -96,11 +98,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     setInviteFeedback(null);
     try {
       const emp = globalUsers.find(u => u.id === selectedEmployeeId);
+      const employeeIdToUse = emp?.employee_id || selectedEmployeeId;
       const cleanPhone = invitePhone.replace(/\D/g, '');
       const cleanDbPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
       
       if (emp && emp.phone !== cleanDbPhone) {
-        await axiosInstance.put(`/employees/${selectedEmployeeId}`, { phone: cleanDbPhone });
+        await axiosInstance.put(`/employees/${employeeIdToUse}`, { phone: cleanDbPhone });
       }
 
       const inviteUrl = `${window.location.origin}/invite?pin=${invitePin}`;
@@ -124,12 +127,13 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
   const handleSendManualInvite = async () => {
     if (!selectedEmployeeId || !invitePin || !invitePhone) return;
     const emp = globalUsers.find(u => u.id === selectedEmployeeId);
+    const employeeIdToUse = emp?.employee_id || selectedEmployeeId;
     const cleanPhone = invitePhone.replace(/\D/g, '');
     const cleanDbPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
     
     if (emp && emp.phone !== cleanDbPhone) {
       try {
-        await axiosInstance.put(`/employees/${selectedEmployeeId}`, { phone: cleanDbPhone });
+        await axiosInstance.put(`/employees/${employeeIdToUse}`, { phone: cleanDbPhone });
         await fetchState();
       } catch (err) {
         console.error(err);

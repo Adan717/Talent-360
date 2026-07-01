@@ -170,7 +170,8 @@ class AuthController extends Controller
                     'role' => 'admin', // Will become admin once company is created
                     $column => $providerId,
                     'password' => Hash::make(bin2hex(random_bytes(16))),
-                    'tenant_id' => null
+                    'tenant_id' => null,
+                    'is_active' => true
                 ]);
             } else {
                 return response()->json(['error' => 'No se encontró ninguna cuenta vinculada con estas credenciales.'], 404);

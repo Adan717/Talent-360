@@ -793,6 +793,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     getButtonProps,
     globalClockStates,
     globalPermissions,
+    globalRoles,
     globalUsers,
     setGlobalUsers,
     systemSettings,
@@ -913,6 +914,10 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     mealSettings,
     leySillaConfig
   } = useClockContext2();
+
+  // Resolve user official job title from globalRoles based on job_role_id
+  const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+  const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
 
   useEffect(() => {
     if (currentUser) {
@@ -1251,7 +1256,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             <div>
               <h4 className="font-black text-sm leading-tight text-slate-900 dark:text-slate-100">{currentUser?.name}{getUserKeysIcon(currentUser?.id)}</h4>
               <span className="bg-violet-500/10 text-violet-500 text-[10px] font-black px-2.5 py-0.5 rounded-full capitalize border border-violet-500/20 mt-1.5 inline-block">
-                {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                {userPositionName}
               </span>
               <p className="text-[10px] text-slate-500 mt-1 font-mono">
                 ID: {currentUser?.employee_id || `EMP-${currentUser?.id.toString().padStart(4, '0')}`}
@@ -1780,7 +1785,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       <div className="hidden lg:flex flex-col items-end mr-1 text-right leading-tight">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-250">{currentUser?.name || 'Colaborador'}{getUserKeysIcon(currentUser?.id)}</span>
                         <span className="text-[9px] text-violet-500 font-extrabold bg-violet-500/10 px-2 py-0.5 rounded-md mt-1 capitalize border border-violet-500/10">
-                          {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                          {userPositionName}
                         </span>
                       </div>
                       
@@ -1924,7 +1929,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     {currentUser?.name || 'Colaborador'}
                   </span>
                   <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
-                    {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                    {userPositionName}
                   </span>
                   <span className="text-[9px] font-black text-[#8a2be2] uppercase tracking-wider truncate mt-0.5">
                     {currentUser?.tenant?.name || 'Decorarte 360'}
@@ -3414,7 +3419,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     <div className="leading-tight text-left">
                       <h4 className="font-bold text-xs text-slate-800 dark:text-slate-200">{currentUser?.name}</h4>
                       <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mt-1">
-                        {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
+                        {userPositionName}
                       </p>
                     </div>
                   </div>

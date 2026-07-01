@@ -129,7 +129,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         pauseTask, completeTask, omitAssignment, createDynamicTask,
         validateTaskAssignment
     } = useTaskStore();
-    const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore    // Filtros y pestañas locales
+    const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore(); // Filtros y pestañas locales
     const [filterTab, setFilterTab] = useState<'todos' | 'firma_pendiente' | 'mis_tareas' | 'bolsa'>('todos');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
@@ -220,10 +220,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     const getRoleName = (id?: number) => {
         if (id === 0 || !id) return 'Bolsa de Trabajo';
-        return globalRoles?.find(r => r.id === id)?.name || `Puesto #${id}`;
+        return globalRoles?.find((r: any) => r.id === id)?.name || `Puesto #${id}`;
     };
 
-    const myRole = globalRoles?.find(r => r.id === currentUser.job_role_id);
+    const myRole = globalRoles?.find((r: any) => r.id === currentUser.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
 
     // Determinar si tiene rol de supervisor
@@ -333,16 +333,16 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
         // Detectar roles
         if (/cajero|cajera/i.test(aiInput)) {
-            const found = globalRoles?.find(r => r.name.toLowerCase().includes('caje'));
+            const found = globalRoles?.find((r: any) => r.name.toLowerCase().includes('caje'));
             if (found) parsedRoleId = found.id;
         } else if (/ayudante/i.test(aiInput)) {
-            const found = globalRoles?.find(r => r.name.toLowerCase().includes('ayud'));
+            const found = globalRoles?.find((r: any) => r.name.toLowerCase().includes('ayud'));
             if (found) parsedRoleId = found.id;
         } else if (/gerente|encargado/i.test(aiInput)) {
-            const found = globalRoles?.find(r => r.name.toLowerCase().includes('geren') || r.name.toLowerCase().includes('encar'));
+            const found = globalRoles?.find((r: any) => r.name.toLowerCase().includes('geren') || r.name.toLowerCase().includes('encar'));
             if (found) parsedRoleId = found.id;
         } else if (/supervisor/i.test(aiInput)) {
-            const found = globalRoles?.find(r => r.name.toLowerCase().includes('superv'));
+            const found = globalRoles?.find((r: any) => r.name.toLowerCase().includes('superv'));
             if (found) parsedRoleId = found.id;
         }
 
@@ -792,7 +792,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
                                 >
                                     <option value={0}>Cualquiera (Bolsa de Trabajo General)</option>
-                                    {globalRoles?.map(role => (
+                                    {globalRoles?.map((role: any) => (
                                         <option key={role.id} value={role.id}>{role.name}</option>
                                     ))}
                                 </select>
@@ -847,7 +847,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 const t = tasks.find(tsk => tsk.id === a.taskId);
                 if (!t) return null;
 
-                const worker = globalUsers?.find(u => u.id === a.userId);
+                const worker = globalUsers?.find((u: any) => u.id === a.userId);
                 const isFromPool = a.userId === null;
                 const restriction = getRoutineTimeRestriction(a.assignedFromRoutineId);
 

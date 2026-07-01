@@ -317,9 +317,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchState: async () => {
     try {
-      // Fetch authenticated user first if token is present
       const hasToken = !!localStorage.getItem('talent_auth_token');
-      if (hasToken) {
+      const isUserLoaded = get().currentUser && get().currentUser?.role !== 'Loading';
+      if (hasToken && !isUserLoaded) {
         try {
           const meRes = await axiosInstance.get('/me');
           if (meRes.status === 200 && meRes.data.user) {

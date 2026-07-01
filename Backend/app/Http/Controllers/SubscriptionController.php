@@ -36,6 +36,8 @@ class SubscriptionController extends Controller
         if ($isUpgrade) {
             $request->validate([
                 'plan' => 'required|string',
+                'employees' => 'nullable|integer',
+                'billing_cycle' => 'nullable|string',
             ]);
             $tenant = Tenant::findOrFail($user->tenant_id);
 
@@ -47,6 +49,8 @@ class SubscriptionController extends Controller
                 'admin_email' => $user->email,
                 'admin_name' => $user->name,
                 'subdomain' => $tenant->subdomain,
+                'employees' => $request->input('employees'),
+                'billing_cycle' => $request->input('billing_cycle', 'monthly'),
             ];
         } elseif ($isInitialRegistration) {
             // Google authenticated registration flow: only company data is required
@@ -54,6 +58,8 @@ class SubscriptionController extends Controller
                 'subdomain' => 'required|string',
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
+                'employees' => 'nullable|integer',
+                'billing_cycle' => 'nullable|string',
             ]);
             $payload = [
                 'action' => 'register_initial',
@@ -62,6 +68,8 @@ class SubscriptionController extends Controller
                 'company_name' => $request->company_name,
                 'admin_name' => $user->name,
                 'admin_email' => $user->email,
+                'employees' => $request->input('employees'),
+                'billing_cycle' => $request->input('billing_cycle', 'monthly'),
             ];
         } else {
             // Fallback for standard registration
@@ -76,9 +84,13 @@ class SubscriptionController extends Controller
                 'company_name' => 'required|string',
                 'admin_name' => 'required|string',
                 'admin_email' => 'required|email',
-                'admin_password' => 'required|min:6'
+                'admin_password' => 'required|min:6',
+                'employees' => 'nullable|integer',
+                'billing_cycle' => 'nullable|string',
             ]);
             $payload = $request->all();
+            $payload['employees'] = $request->input('employees');
+            $payload['billing_cycle'] = $request->input('billing_cycle', 'monthly');
         }
 
         $regId = (string) Str::uuid();
@@ -90,11 +102,21 @@ class SubscriptionController extends Controller
         ]);
 
         $price = 0;
+        $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         if (strtolower($payload['plan']) === 'pro') {
             $employees = isset($payload['employees']) ? intval($payload['employees']) : 10;
-            $price = $employees * 12;
+            $basePrice = $employees * 12;
+            if ($billingCycle === 'yearly') {
+                $price = (float) round($basePrice * 12 * 0.8); // 20% discount billed annually
+            } else {
+                $price = (float) $basePrice;
+            }
         } elseif (strtolower($payload['plan']) === 'enterprise') {
-            $price = 499;
+            if ($billingCycle === 'yearly') {
+                $price = (float) round(499 * 12 * 0.8); // 20% discount billed annually
+            } else {
+                $price = (float) 499;
+            }
         }
 
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
@@ -165,13 +187,24 @@ class SubscriptionController extends Controller
         $reg = PendingRegistration::findOrFail($prefId);
         $payload = json_decode($reg->payload, true);
         $plan = $payload['plan'] ?? 'pro';
+        $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         $price = 0;
         if ($plan === 'pro') {
             $employees = isset($payload['employees']) ? intval($payload['employees']) : 10;
-            $price = $employees * 12;
+            $basePrice = $employees * 12;
+            if ($billingCycle === 'yearly') {
+                $price = (float) round($basePrice * 12 * 0.8);
+            } else {
+                $price = (float) $basePrice;
+            }
         } elseif ($plan === 'enterprise') {
-            $price = 499;
+            if ($billingCycle === 'yearly') {
+                $price = (float) round(499 * 12 * 0.8);
+            } else {
+                $price = (float) 499;
+            }
         }
+        $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
         $confirmUrl = url('/api/subscriptions/simulated-confirm?pref_id=' . $prefId);
 
@@ -183,7 +216,7 @@ class SubscriptionController extends Controller
         $bank = $bankConfigRow ? json_decode($bankConfigRow->value, true) : null;
         $bankActive = $bank && ($bank['is_active'] ?? false);
 
-        return response()->stream(function() use ($payload, $plan, $price, $confirmUrl, $bank, $bankActive) {
+        return response()->stream(function() use ($payload, $plan, $price, $priceUnit, $confirmUrl, $bank, $bankActive) {
             $bankJson = json_encode($bank);
             $hasBankStr = $bankActive ? 'true' : 'false';
             echo "
@@ -218,7 +251,7 @@ class SubscriptionController extends Controller
 
                     <div class='bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 text-left space-y-3 text-sm'>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Concepto:</span><span>Plan " . ucfirst($plan) . "</span></div>
-                        <div class='flex justify-between'><span class='text-slate-400 font-bold'>Importe:</span><span class='text-emerald-400 font-black'>$" . $price . " MXN/mes</span></div>
+                        <div class='flex justify-between'><span class='text-slate-400 font-bold'>Importe:</span><span class='text-emerald-400 font-black'>$" . $price . " " . $priceUnit . "</span></div>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Empresa:</span><span>" . htmlspecialchars($payload['company_name']) . "</span></div>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Admin Email:</span><span>" . htmlspecialchars($payload['admin_email']) . "</span></div>
                     </div>

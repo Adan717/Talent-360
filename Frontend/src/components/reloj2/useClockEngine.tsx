@@ -1931,13 +1931,15 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     // GPS Geofencing Check
-    if (gpsStatus === 'error') {
-      showCustomAlert("⚠️ Error de GPS: No se pudo determinar tu ubicación actual.");
-      return;
-    }
-    if (!isWithinPerimeter) {
-      showCustomAlert(`⚠️ Fichaje Denegado: Estás fuera del perímetro permitido (Distancia: ${Math.round(gpsDistance)}m).`);
-      return;
+    if (!isGpsValidationBypassed) {
+      if (gpsStatus === 'error') {
+        showCustomAlert("⚠️ Error de GPS: No se pudo determinar tu ubicación actual.");
+        return;
+      }
+      if (!isWithinPerimeter) {
+        showCustomAlert(`⚠️ Fichaje Denegado: Estás fuera del perímetro permitido (Distancia: ${Math.round(gpsDistance)}m).`);
+        return;
+      }
     }
 
     const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));

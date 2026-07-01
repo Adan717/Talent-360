@@ -208,8 +208,25 @@ export default function DialPrincipal({
 
             {/* CENTRAL ZONE: Digital Time */}
             <div className={`flex items-baseline font-mono font-black tracking-tight mt-1 mb-2 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-[22px]' : 'text-4xl md:text-5xl leading-none'}`}>
-              <span>{formattedTime.split(' ')[0]}</span>
-              <span className={`uppercase font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-[10px] ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
+              <span>
+                {(() => {
+                  const timePart = formattedTime.split(' ')[0];
+                  if (timePart.includes(':')) {
+                    const [h, m] = timePart.split(':');
+                    return (
+                      <>
+                        {h}
+                        <span className="animate-[pulse_1s_infinite] select-none mx-0.5 text-indigo-500 font-bold">:</span>
+                        {m}
+                      </>
+                    );
+                  }
+                  return timePart;
+                })()}
+              </span>
+              <span className={`font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-[10px] ml-1' : 'text-xs md:text-sm ml-2'}`}>
+                {formattedTime.split(' ')[1] ? formattedTime.split(' ')[1].toLowerCase() : ''}
+              </span>
             </div>
 
             {/* LOWER ZONE: Bottom Label */}

@@ -36,24 +36,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   // Datos simulados de tiempo
   const [currentSimTime, setCurrentSimTime] = useState(540); // 09:00 AM
-  const [blink, setBlink] = useState(true);
-
-  // Intervalo de parpadeo de los dos puntos del segundero
-  useEffect(() => {
-    const blinkInterval = setInterval(() => {
-      setBlink(prev => !prev);
-    }, 1000);
-    return () => clearInterval(blinkInterval);
-  }, []);
-
-  // Formateador de tiempo interactivo de alta fidelidad sin ceros a la izquierda y con parpadeo
-  const getFormattedTimeText = (minsVal: number, blinkVal: boolean) => {
+  // Formateador de tiempo interactivo de alta fidelidad sin ceros a la izquierda
+  const getFormattedTimeText = (minsVal: number) => {
     const hrs = Math.floor(minsVal / 60);
     const mins = minsVal % 60;
     const displayHrs = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs; // Sin padStart en horas
-    const ampm = hrs >= 12 ? 'PM' : 'AM';
-    const separator = blinkVal ? ':' : ' ';
-    return `${displayHrs}${separator}${mins.toString().padStart(2, '0')} ${ampm}`;
+    const ampm = hrs >= 12 ? 'pm' : 'am';
+    return `${displayHrs}:${mins.toString().padStart(2, '0')} ${ampm}`;
   };
 
   // Copiloto AI chat simulado
@@ -571,7 +560,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 isWithinPerimeter={true}
                 globalUsers={[]}
                 clockState={clockState}
-                formattedTime={getFormattedTimeText(currentSimTime, blink)}
+                formattedTime={getFormattedTimeText(currentSimTime)}
                 btnProps={{
                   disabled: clockState === 'finished',
                   text: btnProps.text,

@@ -13,6 +13,23 @@
     <meta property="og:image" content="/logo_preview.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
+    <script>
+      // Clear legacy service worker registrations and caches to prevent stuck crash screens
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) {
+            caches.delete(name);
+          }
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

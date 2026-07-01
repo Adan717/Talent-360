@@ -9,6 +9,7 @@ import Evaluacion360 from './Evaluacion360';
 import axiosInstance from '../../lib/axios';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import RecursosHumanos from '../RecursosHumanos';
+import DialPrincipal from './DialPrincipal';
 
 export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?: boolean }) {
   const { currentTier, isFeatureUnlocked, isSandboxMode } = useAppStore();
@@ -810,7 +811,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         .then(res => {
           const assignmentsData = res.data || [];
           if (assignmentsData.length > 0) {
-            const allDone = assignmentsData.every((a: any) => a.status === 'completed' || a.status === 'awaiting_validation');
+            const allDone = assignmentsData.every((a: any) => a.status === 'completed' || a.status === 'awaiting_validation' || a.status === 'omitted');
             if (allDone) {
               setOpeningChecklistCompleted(true);
               localStorage.setItem('opening_checklist_completed', 'true');
@@ -2610,7 +2611,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
                     <button 
                       id="btn-finish-checklist"
-                      disabled={!openingAssignments.every(a => a.status === 'completed' || a.status === 'awaiting_validation')}
+                      disabled={!openingAssignments.every(a => a.status === 'completed' || a.status === 'awaiting_validation' || a.status === 'omitted')}
                       onClick={() => {
                         setOpeningChecklistCompleted(true);
                         localStorage.setItem('opening_checklist_completed', 'true');
@@ -2618,7 +2619,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         showCustomAlert("✅ Checklist de apertura completado y registrado con éxito.");
                       }}
                       className={`w-full font-black py-4 rounded-2xl transition-all shadow-md cursor-pointer border-none ${
-                        openingAssignments.every(a => a.status === 'completed' || a.status === 'awaiting_validation')
+                        openingAssignments.every(a => a.status === 'completed' || a.status === 'awaiting_validation' || a.status === 'omitted')
                           ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                       }`}

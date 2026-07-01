@@ -45,7 +45,7 @@ class TaskAssignmentController extends Controller
             ->findOrFail($id);
 
         $validated = $request->validate([
-            'status' => 'required|string|in:pending,in_progress,paused,completed,awaiting_validation',
+            'status' => 'required|string|in:pending,in_progress,paused,completed,awaiting_validation,omitted,spilled',
             'assistant_data' => 'nullable',
             'accumulated_mins' => 'nullable|integer',
             'started_at_mins' => 'nullable|integer',

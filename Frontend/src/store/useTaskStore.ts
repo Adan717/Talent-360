@@ -47,7 +47,7 @@ export interface TaskAssignment {
     id: string; // Unique assignment ID
     taskId: number;
     userId: number | null; // Null significa que está en la Bolsa de Trabajo
-    status: 'pending' | 'in_progress' | 'paused' | 'completed' | 'spilled' | 'awaiting_validation';
+    status: 'pending' | 'in_progress' | 'paused' | 'completed' | 'spilled' | 'awaiting_validation' | 'omitted';
     startedAtMins: number | null;
     expectedEndTimeMins?: number | null;
     completedAtMins: number | null;
@@ -82,7 +82,8 @@ interface TaskStoreState {
     completeTask: (assignmentId: string, currentSimTime: number, assistantData?: any) => void;
     validateTaskAssignment: (assignmentId: string, status: 'completed' | 'in_progress', feedback?: string) => Promise<void>;
     handleSpillOver: (userId: number, roleId: number) => void;
-    createDynamicTask: (title: string, roleTarget: string) => void; // On-the-fly
+    createDynamicTask: (title: string, roleTarget: any, estimatedMins?: number, priority?: TaskPriority) => void; // On-the-fly
+    omitAssignment: (assignmentId: string) => void;
 }
 
 export const useTaskStore = create<TaskStoreState>((set, get) => ({
@@ -170,7 +171,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             
             return {
                 assignments: state.assignments.map(a => 
-                    a.id === assignmentId ? { ...a, userId, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, accumulatedMins: 0 } : a
+                    a.id === assignmentId ? { ...a, userId, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, accumulatedMins: a.accumulatedMins || 0 } : a
                 )
             };
         });
@@ -356,12 +357,12 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
         }
     },
 
-    createDynamicTask: (title, roleTarget) => {
+    createDynamicTask: (title, roleTarget, estimatedMins = 15, priority = 'normal') => {
         const newTask: Task = {
             id: Date.now(),
             title,
-            estimatedMins: 15,
-            priority: 'normal',
+            estimatedMins,
+            priority,
             category: 'operativo',
             targetType: 'role',
             targetId: roleTarget,
@@ -388,6 +389,21 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             '⚡ Tarea On-the-fly',
             `Un supervisor ha lanzado la tarea "${title}" a la Bolsa de Trabajo.`,
             'info'
+        );
+    },
+
+    omitAssignment: (assignmentId) => {
+        set(state => ({
+            assignments: state.assignments.map(a => 
+                a.id === assignmentId ? { ...a, status: 'omitted' } : a
+            )
+        }));
+        get().syncToBackend();
+        
+        useAppStore.getState().addMatrixEvent(
+            '❌ Tarea Omitida',
+            `Se omitió la tarea asignada.`,
+            'warning'
         );
     }
 }));

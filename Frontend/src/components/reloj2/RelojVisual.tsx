@@ -1738,7 +1738,16 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         ...prev,
         {
           sender: 'bot',
-          text: '⚠️ Ocurrió un error al conect  const renderUnifiedMobileHeader = () => {
+          text: '⚠️ Ocurrió un error al conectar con el servidor de inteligencia artificial. Por favor, inténtalo de nuevo.',
+          timestamp: new Date()
+        }
+      ]);
+    } finally {
+      setCopilotLoading(false);
+    }
+  };
+
+  const renderUnifiedMobileHeader = () => {
     let title = '';
     let desc = '';
     let icon = null;

@@ -47,77 +47,76 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
   const getDialColorClasses = () => {
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) {
-      return 'bg-slate-100 border-slate-300 text-slate-400 shadow-none hover:border-slate-350';
+      return 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300';
     }
 
     if (btnProps.isIncidenceReport) {
-      return 'bg-white border-amber-600 text-amber-600 shadow-[0_0_40px_rgba(217,119,6,0.3)] animate-pulse hover:border-amber-700';
+      return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
     }
 
     const shiftStartMins = parseTimeToMins(shiftConfigs[currentUser?.id]?.start || '09:00');
     const isLate = lateUsers[currentUser?.id] || (clockState === 'inactive' && currentSimTime > shiftStartMins + 10);
 
     if (isLate) {
-      return 'bg-white border-rose-500 text-rose-600 shadow-[0_0_30px_rgba(244,63,94,0.3)] animate-pulse hover:border-rose-600';
+      return 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 animate-pulse hover:border-rose-600';
     }
 
     if (clockState === 'active') {
-      return 'bg-white border-emerald-500 text-emerald-600 shadow-[0_0_40px_rgba(16,185,129,0.35)] hover:border-emerald-600';
+      return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
     }
 
-    if (clockState === 'meal' || clockState === 'short_break') {
-      return 'bg-white border-amber-500 text-amber-600 shadow-[0_0_40px_rgba(245,158,11,0.25)] animate-pulse hover:border-amber-600';
+    if (clockState === 'short_break') {
+      return 'bg-white border-purple-500 text-purple-600 shadow-purple-500/10 animate-pulse hover:border-purple-600';
+    }
+
+    if (clockState === 'meal') {
+      return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
+    }
+
+    if (clockState === 'finished') {
+      return 'bg-white border-teal-500 text-teal-600 shadow-teal-500/10 hover:border-teal-600';
     }
 
     if (clockState === 'inactive') {
-      if (currentSimTime < shiftStartMins - 10) {
-        return 'bg-white border-slate-300 text-slate-400 shadow-none hover:border-slate-350';
-      }
-      if (currentSimTime >= shiftStartMins - 10 && currentSimTime < shiftStartMins) {
-        return 'bg-white border-emerald-400 text-emerald-600 shadow-[0_0_35px_rgba(16,185,129,0.25)] animate-pulse hover:border-emerald-505';
-      }
-      if (currentSimTime >= shiftStartMins && currentSimTime <= shiftStartMins + 10) {
-        return 'bg-white border-amber-400 text-amber-600 shadow-[0_0_35px_rgba(245,158,11,0.25)] animate-pulse hover:border-amber-500';
-      }
+      return 'bg-white border-blue-500 text-blue-600 shadow-blue-500/10 hover:border-blue-600';
     }
 
-    return 'bg-white border-violet-400 text-violet-655 shadow-[0_0_30px_rgba(139,92,246,0.2)] hover:border-violet-500';
+    return 'bg-white border-violet-400 text-violet-655 shadow-violet-500/10 hover:border-violet-500';
   };
 
   const getDialGlowClasses = () => {
+    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
+    if (isRestDay) return null;
+
     if (btnProps.isIncidenceReport) {
-      return 'border-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.25)] opacity-45';
+      return 'bg-amber-400';
     }
 
     if (clockState === 'active') {
-      return 'border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] opacity-40';
+      return 'bg-emerald-400';
     }
-    if (clockState === 'meal' || clockState === 'short_break') {
-      return 'border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] opacity-40';
+    if (clockState === 'short_break') {
+      return 'bg-purple-400';
     }
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
-    if (isRestDay) return null;
+    if (clockState === 'meal') {
+      return 'bg-amber-400';
+    }
+    if (clockState === 'finished') {
+      return 'bg-teal-400';
+    }
 
     const shiftStartMins = parseTimeToMins(shiftConfigs[currentUser?.id]?.start || '09:00');
     const isLate = lateUsers[currentUser?.id] || (clockState === 'inactive' && currentSimTime > shiftStartMins + 10);
 
     if (isLate) {
-      return 'border-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.3)] opacity-45';
+      return 'bg-rose-400';
     }
 
     if (clockState === 'inactive') {
-      if (currentSimTime < shiftStartMins - 10) {
-        return null;
-      }
-      if (currentSimTime >= shiftStartMins - 10 && currentSimTime < shiftStartMins) {
-        return 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] opacity-45';
-      }
-      if (currentSimTime >= shiftStartMins && currentSimTime <= shiftStartMins + 10) {
-        return 'border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.25)] opacity-45';
-      }
+      return 'bg-blue-400';
     }
 
-    return null;
+    return 'bg-violet-400';
   };
 
 
@@ -149,10 +148,10 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         )}
 
         {renderGPSView(size, isMobile) || (
-          <div className="relative flex-shrink-0">
-            {/* Concentric Flashing Gradient Glow Halo */}
+          <div className="relative flex-shrink-0 flex items-center justify-center">
+            {/* Landing-Page-aligned Shimmer Glow Ring */}
             {getDialGlowClasses() ? (
-              <div className={`absolute inset-[-8px] rounded-full border-[8px] blur-[4px] animate-shimmer-glow pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
+              <div className={`absolute w-44 h-44 rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
             ) : null}
 
             <button 
@@ -500,13 +499,16 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       return <Sun size={size} className="text-slate-400 shrink-0" />;
     }
     if (clockState === 'active') {
-      return <Settings size={size} className="text-blue-500 shrink-0" />;
+      return <Fingerprint size={size} className="text-emerald-500 shrink-0" />;
     }
-    if (clockState === 'meal' || clockState === 'short_break') {
-      return <Armchair size={size} className="text-amber-500 animate-pulse shrink-0" />;
+    if (clockState === 'short_break') {
+      return <Armchair size={size} className="text-purple-500 animate-pulse shrink-0" />;
+    }
+    if (clockState === 'meal') {
+      return <Utensils size={size} className="text-amber-500 animate-pulse shrink-0" />;
     }
     if (clockState === 'finished') {
-      return <CheckCircle size={size} className="text-slate-400 shrink-0" />;
+      return <CheckCircle size={size} className="text-teal-500 shrink-0" />;
     }
     if (clockState === 'absent') {
       return <AlertCircle size={size} className="text-rose-500 shrink-0" />;
@@ -521,7 +523,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     }
 
     if (clockState === 'inactive' && storeStatus === 'open') {
-      return <Fingerprint size={size} className="text-emerald-500 animate-pulse shrink-0" />;
+      return <Fingerprint size={size} className="text-blue-500 animate-pulse shrink-0" />;
     }
 
     return <Fingerprint size={size} className="text-slate-300 shrink-0" />;

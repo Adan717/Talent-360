@@ -1769,10 +1769,10 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
               {/* Timeline Bar - Thicker and closer to icons (Identical to landing simulation) */}
               <div className="relative w-full px-2 mt-[-20px] z-0">
-                <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800"></div>
+                <div className="w-full h-3.5 bg-slate-100 rounded-full border border-slate-200/40"></div>
                 <div 
                   className={`absolute left-2 top-0 h-3.5 rounded-full transition-all duration-500 ${
-                    !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-300' :
+                    !hasCheckedIn || hasCheckedOut ? 'bg-slate-200' :
                     clockState === 'short_break' ? 'bg-purple-400' :
                     clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
                   }`}
@@ -1781,7 +1781,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               </div>
 
             {/* Fading Divider below timeline section */}
-            <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800/60 to-transparent my-5"></div>
+            <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-5"></div>
             {/* Central Clock Circle Action Button (Middle) */}
             <div className="flex-1 flex flex-col items-center justify-center min-h-[200px] relative mt-[-5px] mb-3">
               {isOpeningPremium && storeStatus === 'closed' && (
@@ -2169,10 +2169,10 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
                   {/* Timeline Bar - Thicker and closer to icons (Identical to landing simulation) */}
                   <div className="relative w-full px-4 mb-2 mt-[-16px] z-0">
-                    <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/40 dark:border-slate-800"></div>
+                    <div className="w-full h-3.5 bg-slate-100 rounded-full border border-slate-200/40"></div>
                     <div 
                       className={`absolute left-4 top-0 h-3.5 rounded-full transition-all duration-500 ${
-                        !hasCheckedIn || hasCheckedOut ? 'bg-slate-200 dark:bg-slate-300' :
+                        !hasCheckedIn || hasCheckedOut ? 'bg-slate-200' :
                         clockState === 'short_break' ? 'bg-purple-400' :
                         clockState === 'meal' ? 'bg-amber-400' : 'bg-emerald-500'
                       }`}
@@ -2182,7 +2182,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 </div>
 
                 {/* Fading Divider below timeline section */}
-                <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800/60 to-transparent my-5"></div>
+                <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-5"></div>
 
                 {/* Clock Dial Area */}
                 <div className="flex flex-col items-center justify-center py-2 mt-0 relative">

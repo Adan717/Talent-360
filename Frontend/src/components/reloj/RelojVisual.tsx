@@ -1194,11 +1194,11 @@ export default function RelojVisual() {
                         </div>
 
                         {/* Listado Deslizable de Intercambio Filtrado */}
-                        {swapCandidates.length > 0 && (
-                          <div className="border-t border-slate-100 pt-3.5 mb-4">
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                              <span>🔄</span> ¿Intercambiar horario con un compañero?
-                            </h4>
+                        <div className="border-t border-slate-100 pt-3.5 mb-4">
+                          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                            <span>🔄</span> ¿Intercambiar horario con un compañero?
+                          </h4>
+                          {swapCandidates.length > 0 ? (
                             <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar">
                               {swapCandidates.map(u => {
                                 const pSlots = userReservedMealSlots[u.id] || [];
@@ -1233,8 +1233,12 @@ export default function RelojVisual() {
                                 );
                               })}
                             </div>
-                          </div>
-                        )}
+                          ) : (
+                            <p className="text-slate-400 text-[10.5px] font-semibold text-center py-4 bg-slate-50 border border-slate-100 rounded-2xl leading-relaxed select-none">
+                              No hay compañeros compatibles con reservas hoy para realizar intercambio.
+                            </p>
+                          )}
+                        </div>
                         
                         <button 
                           onClick={() => setShowMealReservationModal(false)} 

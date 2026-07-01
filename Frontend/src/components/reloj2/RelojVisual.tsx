@@ -23,7 +23,17 @@ export default function RelojVisual({
   simulatedTier?: 'free' | 'pro';
   setSimulatedTier?: (tier: 'free' | 'pro') => void;
 }) {
-  const { currentTier, isFeatureUnlocked, isSandboxMode } = useAppStore();
+  const { currentTier, isFeatureUnlocked: isFeatureUnlockedReal, isSandboxMode } = useAppStore();
+  const isFeatureUnlocked = (featureId: string) => {
+    if (isSimulated) {
+      if (simulatedTier === 'pro') return true;
+      if (['gps_validation', 'face_validation', 'meal_reservation', 'roll_call', 'store_opening'].includes(featureId)) {
+        return false;
+      }
+      return true;
+    }
+    return isFeatureUnlockedReal(featureId);
+  };
   const isPro = isSimulated ? (simulatedTier === 'pro') : (currentTier === 'pro' || currentTier === 'enterprise');
 
   const clockContextReal = useClockContext2();
@@ -98,11 +108,14 @@ export default function RelojVisual({
           if (propStr.startsWith('set') || propStr.startsWith('handle') || propStr.startsWith('submit') || propStr.startsWith('request') || propStr.startsWith('approve') || propStr.startsWith('reject')) {
             return () => {};
           }
-          if (propStr.includes('List') || propStr.includes('Messages') || propStr.includes('Alarms')) {
+          if (propStr.includes('List') || propStr.includes('Messages') || propStr.includes('Alarms') || ['chatMessages', 'pendingKeyTransfers', 'lateUsers', 'absentUsers', 'contingencyLogs', 'pendingBreakRequests', 'syncQueue', 'dailyHistory'].includes(propStr)) {
             return [];
           }
           if (propStr.includes('Show') || propStr.includes('show')) {
             return false;
+          }
+          if (['timeBankConfigs', 'leySillaConfig', 'mealSettings', 'buddyAlerts', 'reservedMeals', 'userReservedMealSlots', 'activeTimers', 'arrivalTimes', 'checkInTimes', 'checkOutTimes', 'breaksTaken', 'breakStartTimes', 'breakEndTimes', 'mealStartTimes', 'mealEndTimes', 'hasReservedMeal', 'shiftConfigs'].includes(propStr)) {
+            return {};
           }
           return undefined;
         }

@@ -1668,6 +1668,41 @@ export function useClockEngine(overrideUser?: any) {
     }
   }, [currentSimTime, storeStatus, currentUser.id, activePushNotification, assignments]);
 
+  // Auto-liberar tareas de la bolsa que expiraron su tiempo de reserva
+  useEffect(() => {
+    if (storeStatus !== 'open') return;
+    const storeState = useTaskStore.getState();
+    const reservedAssignments = storeState.assignments.filter(
+      a => a.userId !== null && a.status === 'pending' && a.reservedAtMins !== undefined && a.reservedAtMins !== null
+    );
+
+    if (reservedAssignments.length === 0) return;
+
+    let hasChanges = false;
+    const updatedAssignments = storeState.assignments.map(a => {
+      if (a.userId !== null && a.status === 'pending' && a.reservedAtMins !== undefined && a.reservedAtMins !== null) {
+        const task = storeState.tasks.find(t => t.id === a.taskId);
+        if (!task) return a;
+        const limit = task.priority === 'bloqueante' ? 5 : 15;
+        if (currentSimTime >= a.reservedAtMins + limit) {
+          hasChanges = true;
+          useAppStore.getState().addMatrixEvent(
+            '⏳ Reserva Expirada',
+            `La tarea de la Bolsa "${task.title}" superó el tiempo límite de inicio y se liberó automáticamente.`,
+            'warning'
+          );
+          return { ...a, userId: null, reservedAtMins: null };
+        }
+      }
+      return a;
+    });
+
+    if (hasChanges) {
+      useTaskStore.setState({ assignments: updatedAssignments });
+      useTaskStore.getState().syncToBackend();
+    }
+  }, [currentSimTime, storeStatus]);
+
   useEffect(() => {
     if (storeStatus !== 'closed') return;
     const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));

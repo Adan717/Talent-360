@@ -109,16 +109,42 @@ export function FichaTarea({
             }`}></div>
 
             <div className="pl-1.5">
-                {/* Fila 1: Badge de Estado y Prioridad */}
-                <div className="flex justify-between items-center">
+                {/* Fila 1: Badge de Estado y Prioridad / Origen */}
+                <div className="flex justify-between items-center gap-2">
                     <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border ${badgeClass}`}>
                         {badgeText}
                     </span>
-                    {task.priority === 'bloqueante' && (
-                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100/60">
-                            ⚠️ Obligatoria
-                        </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {task.priority === 'bloqueante' && (
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100/60">
+                                ⚠️ Obligatoria
+                            </span>
+                        )}
+                        {/* Badge de Origen de la Tarea */}
+                        {isFromPool ? (
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-violet-50 text-violet-700 border-violet-200/60 shadow-xs animate-pulse">
+                                ✨ Bolsa (+Bono)
+                            </span>
+                        ) : assignment.reservedAtMins !== null && assignment.reservedAtMins !== undefined && assignment.status === 'pending' ? (
+                            (() => {
+                                const limit = task.priority === 'bloqueante' ? 5 : 15;
+                                const remaining = Math.max(0, (assignment.reservedAtMins + limit) - globalSimTime);
+                                return (
+                                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-300 shadow-xs animate-pulse">
+                                        ⏳ Libera en {remaining} min
+                                    </span>
+                                );
+                            })()
+                        ) : assignment.assignedFromRoutineId ? (
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-slate-50 text-slate-650 border-slate-200">
+                                📅 Rutina
+                            </span>
+                        ) : (
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-indigo-50/50 text-indigo-755 border-indigo-200/50">
+                                📌 Directa
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Fila 2: Título de la tarea */}
@@ -197,7 +223,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const { 
         tasks, routines, assignments, grabTaskFromPool, startTask, 
         pauseTask, completeTask, omitAssignment, createDynamicTask,
-        validateTaskAssignment
+        validateTaskAssignment, reserveTaskFromPool, releaseTask
     } = useTaskStore();
     const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore(); // Filtros y pestañas locales
     const [filterTab, setFilterTab] = useState<'todos' | 'firma_pendiente' | 'mis_tareas' | 'bolsa'>('todos');
@@ -350,17 +376,44 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         switch (filterTab) {
             case 'firma_pendiente':
                 return awaitingValidationFiltered;
-            case 'mis_tareas':
-                return activeAssignmentsFiltered;
+            case 'mis_tareas': {
+                const combined = [
+                    ...activeAssignmentsFiltered,
+                    ...puestoAssignmentsFiltered
+                ];
+                // Quitar duplicados por ID
+                const uniqueCombined = combined.filter((val, index, self) =>
+                    self.findIndex(a => a.id === val.id) === index
+                );
+                // Ordenar: En curso, Pausadas, Pendientes propias, Bolsa libre
+                return uniqueCombined.sort((a, b) => {
+                    if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+                    if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
+
+                    if (a.status === 'paused' && b.status !== 'paused') return -1;
+                    if (b.status === 'paused' && a.status !== 'paused') return 1;
+
+                    const aIsFree = a.userId === null;
+                    const bIsFree = b.userId === null;
+                    if (!aIsFree && bIsFree) return -1;
+                    if (aIsFree && !bIsFree) return 1;
+
+                    return 0;
+                });
+            }
             case 'bolsa':
                 return puestoAssignmentsFiltered;
             case 'todos':
-            default:
-                return [
+            default: {
+                const combined = [
                     ...awaitingValidationFiltered,
                     ...activeAssignmentsFiltered,
                     ...puestoAssignmentsFiltered
                 ];
+                return combined.filter((val, index, self) =>
+                    self.findIndex(a => a.id === val.id) === index
+                );
+            }
         }
     })();
 
@@ -504,7 +557,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 </div>
             ) : (
                 /* Fila fija de botones (Grid responsivo a ancho completo) */
-                <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-5' : 'grid-cols-4'} gap-1.5 mb-4 shrink-0 select-none`}>
+                <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-4 shrink-0 select-none`}>
                     {/* Botón 1: Todas */}
                     <button
                         type="button"
@@ -551,7 +604,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         </button>
                     )}
 
-                    {/* Botón 3: Mis Tareas */}
+                    {/* Botón 3: Mis Tareas (Unificado con Bolsa) */}
                     <button
                         type="button"
                         onClick={() => setFilterTab('mis_tareas')}
@@ -563,41 +616,18 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     >
                         <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
                         <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
-                        {activeAssignmentsFiltered.length > 0 && (
+                        {(activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length) > 0 && (
                             <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                                 filterTab === 'mis_tareas'
                                     ? 'bg-white text-[#8a2be2] border-white'
                                     : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}>
-                                {activeAssignmentsFiltered.length}
+                                {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
                             </span>
                         )}
                     </button>
 
-                    {/* Botón 4: Bolsa */}
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('bolsa')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
-                            filterTab === 'bolsa'
-                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                        }`}
-                    >
-                        <Briefcase size={18} className={filterTab === 'bolsa' ? 'text-white' : 'text-slate-400'} />
-                        <span className="text-[9px] font-black uppercase mt-1">Bolsa</span>
-                        {puestoAssignmentsFiltered.length > 0 && (
-                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                                filterTab === 'bolsa'
-                                    ? 'bg-white text-[#8a2be2] border-white'
-                                    : 'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}>
-                                {puestoAssignmentsFiltered.length}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* Botón 5: Buscar (Lupa) */}
+                    {/* Botón 4: Buscar (Lupa) */}
                     <button
                         type="button"
                         onClick={() => setIsSearchOpen(true)}
@@ -615,7 +645,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
                         {filterTab === 'todos' ? 'Lista Unificada de Tareas' :
                          filterTab === 'firma_pendiente' ? 'Tareas esperando validación' :
-                         filterTab === 'mis_tareas' ? 'Mis Tareas del Turno' :
+                         filterTab === 'mis_tareas' ? 'Mis Tareas y Bolsa' :
                          'Bolsa de Trabajo'}
                     </h3>
                     <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -1108,16 +1138,26 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
                                 {/* Caso: Tarea de la Bolsa de Trabajo */}
                                 {isFromPool && (
-                                    <div className="pt-3 border-t border-slate-100">
+                                    <div className="pt-3 border-t border-slate-100 flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                reserveTaskFromPool(a.id, currentUser.id, globalSimTime);
+                                                handleSelectAssignment(null);
+                                            }}
+                                            className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-xs rounded-xl border border-indigo-200 cursor-pointer flex items-center justify-center gap-1.5"
+                                        >
+                                            <Clock size={13} /> Reservar
+                                        </button>
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 handleStartTaskCooperative(a.id, true);
                                                 handleSelectAssignment(null);
                                             }}
-                                            className="w-full py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                                            className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
                                         >
-                                            <Play size={13} className="fill-white" /> Tomar Tarea de Bolsa
+                                            <Play size={13} className="fill-white" /> Iniciar Ya
                                         </button>
                                     </div>
                                 )}
@@ -1127,15 +1167,29 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     <div className="space-y-3 pt-3 border-t border-slate-100">
                                         {/* Acciones de ejecución */}
                                         {a.status === 'pending' || a.status === 'paused' ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    handleStartTaskCooperative(a.id, false);
-                                                }}
-                                                className="w-full py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
-                                            >
-                                                <Play size={13} className="fill-white" /> Iniciar Tarea
-                                            </button>
+                                            <div className="flex gap-2 w-full">
+                                                {a.reservedAtMins !== null && a.reservedAtMins !== undefined && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            releaseTask(a.id);
+                                                            handleSelectAssignment(null);
+                                                        }}
+                                                        className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-250/50 font-black text-xs rounded-xl cursor-pointer flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <XCircle size={13} /> Liberar Bolsa
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        handleStartTaskCooperative(a.id, false);
+                                                    }}
+                                                    className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                                                >
+                                                    <Play size={13} className="fill-white" /> Iniciar Tarea
+                                                </button>
+                                            </div>
                                         ) : isActive ? (
                                             <div className="space-y-3">
                                                 {/* Controles de pausar y completar */}

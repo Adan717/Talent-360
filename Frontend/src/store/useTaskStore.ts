@@ -56,6 +56,7 @@ export interface TaskAssignment {
     assistantData?: any; // La foto o el número capturado
     validationFeedback?: string | null;
     accumulatedMins?: number;
+    reservedAtMins?: number | null;
 }
 
 interface TaskStoreState {
@@ -78,6 +79,8 @@ interface TaskStoreState {
     // Acciones Operativas
     triggerCheckInRoutines: (userId: number, roleId: number, currentSimTime: number) => void;
     grabTaskFromPool: (assignmentId: string, userId: number, currentSimTime: number) => void;
+    reserveTaskFromPool: (assignmentId: string, userId: number, currentSimTime: number) => void;
+    releaseTask: (assignmentId: string) => void;
     startTask: (assignmentId: string, currentSimTime: number) => void;
     pauseTask: (assignmentId: string) => void;
     completeTask: (assignmentId: string, currentSimTime: number, assistantData?: any) => void;
@@ -172,11 +175,45 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             
             return {
                 assignments: state.assignments.map(a => 
-                    a.id === assignmentId ? { ...a, userId, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, accumulatedMins: a.accumulatedMins || 0 } : a
+                    a.id === assignmentId ? { ...a, userId, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, accumulatedMins: a.accumulatedMins || 0, reservedAtMins: null } : a
                 )
             };
         });
         get().syncToBackend();
+    },
+
+    reserveTaskFromPool: (assignmentId, userId, currentSimTime) => {
+        set(state => ({
+            assignments: state.assignments.map(a => 
+                a.id === assignmentId ? { ...a, userId, status: 'pending', reservedAtMins: currentSimTime } : a
+            )
+        }));
+        get().syncToBackend();
+        
+        const assignment = get().assignments.find(a => a.id === assignmentId);
+        const task = assignment ? get().tasks.find(t => t.id === assignment.taskId) : null;
+        useAppStore.getState().addMatrixEvent(
+            '⏳ Tarea Reservada',
+            `Se reservó la tarea "${task?.title || 'de la Bolsa'}" para comenzar pronto.`,
+            'info'
+        );
+    },
+
+    releaseTask: (assignmentId) => {
+        set(state => ({
+            assignments: state.assignments.map(a => 
+                a.id === assignmentId ? { ...a, userId: null, status: 'pending', reservedAtMins: null } : a
+            )
+        }));
+        get().syncToBackend();
+
+        const assignment = get().assignments.find(a => a.id === assignmentId);
+        const task = assignment ? get().tasks.find(t => t.id === assignment.taskId) : null;
+        useAppStore.getState().addMatrixEvent(
+            '🤝 Tarea Liberada',
+            `La tarea "${task?.title || 'de la Bolsa'}" volvió a la Bolsa de Trabajo.`,
+            'info'
+        );
     },
 
     startTask: (assignmentId, currentSimTime) => {
@@ -188,7 +225,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             
             return {
                 assignments: state.assignments.map(a => 
-                    a.id === assignmentId ? { ...a, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins } : a
+                    a.id === assignmentId ? { ...a, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, reservedAtMins: null } : a
                 )
             };
         });

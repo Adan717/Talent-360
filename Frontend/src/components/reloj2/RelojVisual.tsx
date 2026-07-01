@@ -2998,20 +2998,23 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
           {/* Modal MealDetailsModal */}
       {showMealDetailsModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2">
-              <span>🍔</span> Detalle de Horario de Comida
-            </h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 text-slate-800">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <h3 className="font-black text-lg text-slate-800 flex items-center gap-2">
+                <span>🍔</span> Detalle de Comida
+              </h3>
+              <button onClick={() => setShowMealDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+            </div>
             
-            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mb-5">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-5">
               <img 
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                 alt="Avatar" 
-                className="w-10 h-10 rounded-full object-cover border-2 border-amber-500/20" 
+                className="w-10 h-10 rounded-full object-cover border border-slate-200/60" 
               />
               <div className="text-left leading-tight">
-                <p className="text-xs font-black text-slate-800 dark:text-slate-200">
+                <p className="text-xs font-black text-slate-800">
                   {currentUser?.name}
                 </p>
                 <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mt-0.5">
@@ -3036,26 +3039,26 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 <div className="space-y-5">
                   {(isDone || isActive) ? (
                     <div className="space-y-5">
-                      <div className="p-4 rounded-2xl border-2 border-amber-200 dark:border-amber-900 bg-amber-50/20 dark:bg-amber-950/10 text-center">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 block mb-1">
+                      <div className="p-4 rounded-2xl border border-amber-100 bg-amber-50/50 text-center">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700 block mb-1">
                           Tu Horario Reservado
                         </span>
                         <span className="text-xl font-black text-amber-600 block">
                           {mySlots.length > 0 ? mySlots.join(' - ') : 'Horario Reservado'}
                         </span>
                         {isActive && (
-                          <span className="text-[10px] bg-amber-500 text-white font-extrabold px-2 py-0.5 rounded-full inline-block mt-2 animate-pulse">
+                          <span className="text-[10px] bg-amber-500 text-white font-extrabold px-2.5 py-0.5 rounded-full inline-block mt-2 animate-pulse">
                             Actualmente Almorzando
                           </span>
                         )}
                       </div>
 
                       {candidateColleagues.length > 0 ? (
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/20 border border-slate-200/50 dark:border-slate-800 rounded-2xl text-left">
-                          <h4 className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left">
+                          <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <span>🔄</span> Intercambiar con un compañero
                           </h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+                          <p className="text-[10px] text-slate-505 mb-3 leading-relaxed">
                             Solo puedes intercambiar con compañeros de tu mismo puesto:
                           </p>
                           
@@ -3073,7 +3076,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                                 }
                               }
                             }}
-                            className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none select-none text-slate-800 dark:text-slate-200"
+                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none select-none text-slate-800"
                           >
                             <option value="" disabled>Selecciona un compañero...</option>
                             {candidateColleagues.map((partner: any) => {
@@ -3088,7 +3091,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           </select>
                         </div>
                       ) : (
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/10 border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl text-center text-xs text-slate-400 italic">
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 italic">
                           No hay compañeros del mismo puesto disponibles para intercambio.
                         </div>
                       )}
@@ -3101,7 +3104,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               setShowMealDetailsModal(false);
                             }
                           }}
-                          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3.5 rounded-2xl text-xs shadow-md shadow-rose-500/10 transition-colors uppercase tracking-wider"
+                          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none mt-2 cursor-pointer shadow-sm animate-pulse"
                         >
                           Liberar y Cancelar Horario
                         </button>
@@ -3109,8 +3112,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="p-4 bg-amber-50/20 dark:bg-amber-950/5 border border-amber-100 dark:border-amber-900 rounded-2xl text-center">
-                        <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                      <div className="p-4 bg-amber-50/50 border border-amber-100 rounded-2xl text-center">
+                        <p className="text-xs text-slate-550 leading-relaxed font-semibold">
                           Aún no has reservado tu horario de comida para el turno de hoy.
                         </p>
                       </div>
@@ -3121,7 +3124,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                             setShowMealDetailsModal(false);
                             setShowMealReservationModal(true);
                           }}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-2xl text-xs shadow-md shadow-amber-500/10 transition-colors uppercase tracking-wider"
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
                         >
                           Reservar Horario Ahora
                         </button>
@@ -3132,15 +3135,15 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               confirmMealReservation(0);
                               setShowMealDetailsModal(false);
                             }}
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-2xl text-xs shadow-md shadow-amber-500/10 transition-colors uppercase tracking-wider"
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
                           >
                             Registrar Salida a Comer
                           </button>
-                          <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-150 dark:border-blue-900 rounded-xl flex items-start gap-2.5">
+                          <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-150 rounded-xl flex items-start gap-2.5 text-left">
                             <span className="text-sm">⭐</span>
                             <div className="text-left">
-                              <h4 className="font-black text-blue-900 dark:text-blue-300 text-[10px] uppercase tracking-wider">Plan Pro Requerido</h4>
-                              <p className="text-blue-700 dark:text-blue-405 text-[9px] leading-normal mt-0.5">
+                              <h4 className="font-black text-blue-900 text-[10px] uppercase tracking-wider">Plan Pro Requerido</h4>
+                              <p className="text-blue-700 text-[9px] leading-normal mt-0.5">
                                 Para elegir bloques de aforo y realizar intercambios jerárquicos necesitas activar el plan Pro de Talent360.
                               </p>
                             </div>
@@ -3152,7 +3155,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
                   <button 
                     onClick={() => setShowMealDetailsModal(false)} 
-                    className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-350 font-bold py-3.5 rounded-2xl text-xs transition-colors"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
                   >
                     Cerrar Ventana
                   </button>
@@ -3162,23 +3165,25 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           </div>
         </div>
       )}
-
       {/* Modal EntryDetailsModal */}
       {showEntryDetailsModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-indigo-600 dark:text-indigo-400 mb-2 text-xl flex items-center gap-2">
-              <span>🚪</span> Detalle de Entrada
-            </h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 text-slate-800">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <h3 className="font-black text-lg text-slate-800 flex items-center gap-2">
+                <span>🚪</span> Detalle de Entrada
+              </h3>
+              <button onClick={() => setShowEntryDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+            </div>
             
-            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mb-5">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-5">
               <img 
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                 alt="Avatar" 
-                className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500/20" 
+                className="w-10 h-10 rounded-full object-cover border border-slate-200/60" 
               />
               <div className="text-left leading-tight">
-                <p className="text-xs font-black text-slate-800 dark:text-slate-200">
+                <p className="text-xs font-black text-slate-800">
                   {currentUser?.name}
                 </p>
                 <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mt-0.5">
@@ -3196,40 +3201,32 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 return (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-800/60 text-center">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                         <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-450 block mb-1">Entrada Asignada</span>
-                        <span className="text-base font-extrabold text-slate-700 dark:text-slate-300">
+                        <span className="text-base font-extrabold text-slate-700">
                           {formatStringToTimeClean(expectedInStr)}
                         </span>
                       </div>
-                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-800/60 text-center">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                         <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-455 block mb-1">Entrada Real</span>
-                        <span className="text-base font-extrabold text-slate-750 dark:text-slate-250">
+                        <span className="text-base font-extrabold text-slate-750">
                           {actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}
                         </span>
                       </div>
                     </div>
 
-                    <div className={`p-4.5 rounded-2xl border-2 text-center ${
+                    <div className={`p-4.5 rounded-2xl border text-center ${
                       isLate 
-                        ? 'border-rose-200 dark:border-rose-900/60 bg-rose-50/10 dark:bg-rose-955/10 text-rose-600 dark:text-rose-450' 
-                        : 'border-emerald-250 dark:border-emerald-900/50 bg-emerald-50/10 dark:bg-emerald-955/10 text-emerald-600 dark:text-emerald-450'
+                        ? 'border-rose-100 bg-rose-50/50 text-rose-700' 
+                        : 'border-emerald-100 bg-emerald-50/50 text-emerald-700'
                     }`}>
                       <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 block mb-1">
                         Estatus de Asistencia
                       </span>
-                      <span className="text-xl font-black flex items-center justify-center gap-1.5">
-                        {isLate ? (
-                          <>
-                            <span>⚠️</span> Retardo
-                          </>
-                        ) : (
-                          <>
-                            <span>✓</span> Puntual
-                          </>
-                        )}
+                      <span className="text-lg font-black flex items-center justify-center gap-1.5">
+                        {isLate ? <span>⚠️ Retardo</span> : <span>✓ Puntual</span>}
                       </span>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                      <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
                         {isLate 
                           ? 'Registraste un ingreso posterior al horario límite (tolerancia de 10 minutos).'
                           : '¡Felicidades! Has mantenido tu récord de puntualidad hoy.'}
@@ -3241,7 +3238,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
               <button 
                 onClick={() => setShowEntryDetailsModal(false)} 
-                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-355 font-bold py-3.5 rounded-2xl text-xs transition-colors"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
               >
                 Cerrar Ventana
               </button>
@@ -3249,23 +3246,25 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           </div>
         </div>
       )}
-
       {/* Modal BreakDetailsModal */}
       {showBreakDetailsModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-purple-600 dark:text-purple-400 mb-2 text-xl flex items-center gap-2">
-              <span>☕</span> Detalle de Descanso
-            </h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 text-slate-800">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <h3 className="font-black text-lg text-slate-800 flex items-center gap-2">
+                <span>☕</span> Detalle de Descanso
+              </h3>
+              <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+            </div>
             
-            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mb-5">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-5">
               <img 
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                 alt="Avatar" 
-                className="w-10 h-10 rounded-full object-cover border-2 border-purple-500/20" 
+                className="w-10 h-10 rounded-full object-cover border border-slate-200/60" 
               />
               <div className="text-left leading-tight">
-                <p className="text-xs font-black text-slate-800 dark:text-slate-200">
+                <p className="text-xs font-black text-slate-800">
                   {currentUser?.name}
                 </p>
                 <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mt-0.5">
@@ -3280,7 +3279,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 const limit = leySillaConfig?.breakMinutes || 15;
                 if (!info) {
                   return (
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/10 border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl text-center text-xs text-slate-400 italic">
+                    <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 italic">
                       Aún no has tomado ningún descanso durante el turno de hoy.
                     </div>
                   );
@@ -3289,52 +3288,52 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 return (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-800/60 text-center">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                         <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-450 block mb-1">Inicio de Descanso</span>
-                        <span className="text-base font-extrabold text-slate-700 dark:text-slate-300">
+                        <span className="text-base font-extrabold text-slate-700">
                           {formatMinsToTimeClean(info.start)}
                         </span>
                       </div>
-                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-800/60 text-center">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                         <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-455 block mb-1">Fin de Descanso</span>
-                        <span className="text-base font-extrabold text-slate-750 dark:text-slate-250">
+                        <span className="text-base font-extrabold text-slate-750">
                           {info.isActive ? 'En Curso ⏳' : info.end !== undefined ? formatMinsToTimeClean(info.end) : '--:--'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-800/60 rounded-2xl">
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                       <div className="flex justify-between items-center text-xs font-bold mb-2">
-                        <span className="text-slate-500 dark:text-slate-400">Límite Asignado:</span>
-                        <span className="text-slate-800 dark:text-white font-black">{limit} minutos</span>
+                        <span className="text-slate-500">Límite Asignado:</span>
+                        <span className="text-slate-800 font-black">{limit} minutos</span>
                       </div>
                       <div className="flex justify-between items-center text-xs font-bold">
-                        <span className="text-slate-500 dark:text-slate-400">Duración Real:</span>
-                        <span className="text-slate-800 dark:text-white font-black">{info.duration} minutos</span>
+                        <span className="text-slate-500">Duración Real:</span>
+                        <span className="text-slate-800 font-black">{info.duration} minutos</span>
                       </div>
                     </div>
 
                     {info.extra > 0 ? (
-                      <div className="p-4.5 rounded-2xl border-2 border-rose-200 dark:border-rose-900/60 bg-rose-50/10 dark:bg-rose-955/10 text-rose-600 dark:text-rose-450 text-center">
+                      <div className="p-4.5 rounded-2xl border border-rose-100 bg-rose-50/55 text-rose-700 text-center">
                         <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 block mb-1">
                           Límite Superado
                         </span>
                         <span className="text-xl font-black block">
                           +{info.extra} minutos
                         </span>
-                        <p className="text-[10px] text-rose-500 dark:text-rose-405 mt-2 leading-relaxed">
+                        <p className="text-[10px] text-rose-600 mt-2 leading-relaxed">
                           Has superado el tiempo de descanso permitido por {info.extra} minutos. El tiempo excedido se resalta en rojo.
                         </p>
                       </div>
                     ) : (
-                      <div className="p-4.5 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-emerald-50/10 dark:bg-emerald-955/10 text-emerald-600 dark:text-emerald-450 text-center">
+                      <div className="p-4.5 rounded-2xl border border-emerald-100 bg-emerald-50/55 text-emerald-700 text-center">
                         <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 block mb-1">
                           Estado de Cumplimiento
                         </span>
                         <span className="text-base font-black flex items-center justify-center gap-1.5">
                           <span>✓</span> Dentro del Límite
                         </span>
-                        <p className="text-[10px] text-emerald-600/80 dark:text-emerald-450 mt-1 leading-relaxed">
+                        <p className="text-[10px] text-emerald-600/80 mt-1 leading-relaxed">
                           ¡Excelente! Has respetado el límite asignado para tu descanso.
                         </p>
                       </div>
@@ -3345,7 +3344,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
               <button 
                 onClick={() => setShowBreakDetailsModal(false)} 
-                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-355 font-bold py-3.5 rounded-2xl text-xs transition-colors"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
               >
                 Cerrar Ventana
               </button>
@@ -3353,23 +3352,25 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           </div>
         </div>
       )}
-
       {/* Modal ExitDetailsModal */}
       {showExitDetailsModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-            <h3 className="font-bold text-teal-600 dark:text-teal-400 mb-2 text-xl flex items-center gap-2">
-              <span>📋</span> Resumen de Turno Finalizado
-            </h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 text-slate-800">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <h3 className="font-black text-lg text-slate-800 flex items-center gap-2">
+                <span>📋</span> Resumen de Turno
+              </h3>
+              <button onClick={() => setShowExitDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+            </div>
             
-            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mb-5">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-5">
               <img 
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                 alt="Avatar" 
-                className="w-10 h-10 rounded-full object-cover border-2 border-teal-500/20" 
+                className="w-10 h-10 rounded-full object-cover border border-slate-200/60" 
               />
               <div className="text-left leading-tight">
-                <p className="text-xs font-black text-slate-800 dark:text-slate-200">
+                <p className="text-xs font-black text-slate-800">
                   {currentUser?.name}
                 </p>
                 <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide mt-0.5">
@@ -3387,23 +3388,23 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 return (
                   <div className="space-y-4 text-left">
                     {/* Time metrics */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-200/40 dark:border-slate-800/60 rounded-2xl text-center">
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center">
                       <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 block mb-1">
                         Jornada Registrada de Hoy
                       </span>
-                      <span className="text-2xl font-black text-teal-600">
+                      <span className="text-2xl font-black text-teal-605">
                         {workedHours} horas
                       </span>
-                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-150">
                         <div>
                           <span className="text-[9px] text-slate-400 block uppercase font-bold">Entrada</span>
-                          <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                          <span className="text-xs font-black text-slate-700">
                             {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'}
                           </span>
                         </div>
                         <div>
                           <span className="text-[9px] text-slate-400 block uppercase font-bold">Salida</span>
-                          <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                          <span className="text-xs font-black text-slate-700">
                             {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}
                           </span>
                         </div>
@@ -3417,29 +3418,29 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       </h4>
 
                       {/* Puntualidad */}
-                      <div className="flex justify-between items-center p-3 rounded-xl border border-slate-100 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-900/10">
+                      <div className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-slate-50/20">
                         <div className="flex items-center gap-2">
                           <span className="text-base">🕒</span>
                           <div className="leading-tight">
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Puntualidad de Entrada</p>
+                            <p className="text-xs font-bold text-slate-700">Puntualidad de Entrada</p>
                             <p className="text-[9px] text-slate-400">Entrada límite tolerada</p>
                           </div>
                         </div>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                           isLate 
-                            ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400' 
-                            : 'bg-emerald-100 dark:bg-emerald-955/30 text-emerald-600 dark:text-emerald-400'
+                            ? 'bg-rose-100 text-rose-600' 
+                            : 'bg-emerald-100 text-emerald-600'
                         }`}>
                           {isLate ? 'Retardo' : 'Puntual'}
                         </span>
                       </div>
 
                       {/* Descansos */}
-                      <div className="flex justify-between items-center p-3 rounded-xl border border-slate-100 dark:border-slate-855 bg-slate-50/20 dark:bg-slate-900/10">
+                      <div className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-slate-50/20">
                         <div className="flex items-center gap-2">
                           <span className="text-base">☕</span>
                           <div className="leading-tight">
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Tiempo de Descanso</p>
+                            <p className="text-xs font-bold text-slate-700">Tiempo de Descanso</p>
                             <p className="text-[9px] text-slate-400">
                               {breakInfo ? `Tomado: ${breakInfo.duration} min (Límite: ${leySillaConfig?.breakMinutes || 15}m)` : 'No Tomado'}
                             </p>
@@ -3448,24 +3449,24 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         {breakInfo ? (
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                             breakInfo.extra > 0 
-                              ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-600 dark:text-rose-450' 
-                              : 'bg-emerald-100 dark:bg-emerald-955/30 text-emerald-600 dark:text-emerald-400'
+                              ? 'bg-rose-100 text-rose-600' 
+                              : 'bg-emerald-100 text-emerald-600'
                           }`}>
                             {breakInfo.extra > 0 ? `+${breakInfo.extra}m Excedido` : 'Cumplido'}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full">
+                          <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-full">
                             N/A
                           </span>
                         )}
                       </div>
 
                       {/* Comida */}
-                      <div className="flex justify-between items-center p-3 rounded-xl border border-slate-100 dark:border-slate-855 bg-slate-50/20 dark:bg-slate-900/10">
+                      <div className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-slate-50/20">
                         <div className="flex items-center gap-2">
                           <span className="text-base">🍔</span>
                           <div className="leading-tight">
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Tiempo de Almuerzo</p>
+                            <p className="text-xs font-bold text-slate-700">Tiempo de Almuerzo</p>
                             <p className="text-[9px] text-slate-400">
                               {mealInfo && !mealInfo.isReserved ? `Tomado: ${mealInfo.duration} min (Límite: ${shiftConfigs[currentUser.id]?.mealMinutes || timeBankConfigs.mealMinutes || 45}m)` : 'No Tomado'}
                             </p>
@@ -3474,13 +3475,13 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         {mealInfo && !mealInfo.isReserved ? (
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                             mealInfo.extra > 0 
-                              ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-600 dark:text-rose-450' 
-                              : 'bg-emerald-100 dark:bg-emerald-955/30 text-emerald-600 dark:text-emerald-400'
+                              ? 'bg-rose-100 text-rose-600' 
+                              : 'bg-emerald-100 text-emerald-600'
                           }`}>
                             {mealInfo.extra > 0 ? `+${mealInfo.extra}m Excedido` : 'Cumplido'}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full">
+                          <span className="text-[10px] text-slate-400 font-bold px-2 py-0.5 bg-slate-100 rounded-full">
                             N/A
                           </span>
                         )}
@@ -3492,7 +3493,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
               <button 
                 onClick={() => setShowExitDetailsModal(false)} 
-                className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-355 font-bold py-3.5 rounded-2xl text-xs transition-colors"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
               >
                 Cerrar Ventana
               </button>
@@ -3500,7 +3501,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           </div>
         </div>
       )}
-
           {/* Modal MealReservation */}
           {showMealReservationModal && (
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">

@@ -834,6 +834,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     buddyAlerts,
     calculateDailyStats,
     checkInTimes,
+    checkOutTimes,
     clockState,
     confirmMealReservation,
     cancelMealReservation,

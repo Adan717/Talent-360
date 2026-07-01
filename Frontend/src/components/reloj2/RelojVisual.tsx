@@ -440,53 +440,51 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           })()}
         </div>
 
-        {/* Timeline Bar - Thicker and closer to icons (Dynamic Color Gradients & Soft Track Fills) */}
+        {/* Timeline Bar - Thicker, Larger, and Innovatively Styled (Glassmorphism & Contrast Text) */}
         <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-6px]' : 'px-4 mb-2 mt-[-6px]'}`}>
-          {/* Soft Track fill: no dark/black colors */}
-          <div className="w-full h-3.5 bg-slate-100 dark:bg-slate-700/60 rounded-full border border-slate-200/40 shadow-inner"></div>
-          
-          {/* Elapsed Proportional Progress Segment Container */}
-          {hasCheckedIn && elapsedTotal > 0 && (
-            <div 
-              className="absolute top-0 h-3.5 rounded-full shadow-sm overflow-hidden flex transition-all duration-700 ease-out"
-              style={{ 
-                width: progressPercent === 0 ? '0%' : 
-                isMobile ? `calc(${progressPercent}% - 16px)` : `calc(${progressPercent}% - 32px)` 
-              }}
-            >
-              {segmentsList.map((seg, sIdx) => {
-                const segWidth = (seg.mins / elapsedTotal) * 100;
-                let segColor = 'bg-emerald-500'; // Active Work
-                if (seg.type === 'break') segColor = 'bg-purple-400'; // Rest Day/Seat Break
-                if (seg.type === 'meal') segColor = 'bg-amber-400'; // Meal break (yellow)
-                
-                return (
-                  <div 
-                    key={sIdx}
-                    className={`h-full ${segColor} transition-all duration-300`}
-                    style={{ width: `${segWidth}%` }}
-                  />
-                );
-              })}
-            </div>
-          )}
+          {/* Progress Container (Larger size h-7) */}
+          <div className="relative w-full h-7 bg-indigo-50/50 dark:bg-slate-800/80 rounded-2xl border border-indigo-100/50 dark:border-slate-700/40 shadow-inner overflow-hidden">
+            
+            {/* Elapsed Proportional Progress Segment Container */}
+            {hasCheckedIn && elapsedTotal > 0 && (
+              <div 
+                className="absolute top-0 left-0 h-full rounded-2xl overflow-hidden flex transition-all duration-700 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              >
+                {segmentsList.map((seg, sIdx) => {
+                  const segWidth = (seg.mins / elapsedTotal) * 100;
+                  let segColor = 'bg-emerald-500'; // Active Work
+                  if (seg.type === 'break') segColor = 'bg-purple-400'; // Rest Day/Seat Break
+                  if (seg.type === 'meal') segColor = 'bg-amber-400'; // Meal break (yellow)
+                  
+                  return (
+                    <div 
+                      key={sIdx}
+                      className={`h-full ${segColor} transition-all duration-300`}
+                      style={{ width: `${segWidth}%` }}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
-          {/* Extremes timestamps placed just below the progress track */}
-          <div className="flex justify-between items-center mt-1.5 px-0.5 text-[9.5px] font-mono font-black text-slate-500 dark:text-slate-400">
-            {/* Left extreme: Check-In time */}
-            <span>
-              {hasCheckedIn 
-                ? `Entrada: ${formatMinsToTimeClean(checkInTimes[currentUser.id])}` 
-                : `Entrada: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}`
-              }
-            </span>
-            {/* Right extreme: Check-Out time */}
-            <span>
-              {hasCheckedOut 
-                ? `Salida: ${formatMinsToTimeClean(checkOutTimes[currentUser.id])}` 
-                : `Salida: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}`
-              }
-            </span>
+            {/* Absolute Overlay for Extremes Timestamps inside the bar */}
+            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[10.5px] font-mono font-black">
+              {/* Left extreme: Check-In time (inside) */}
+              <span className={hasCheckedIn ? "text-indigo-900 dark:text-white" : "text-indigo-400/80 dark:text-slate-500"}>
+                {hasCheckedIn 
+                  ? formatMinsToTimeClean(checkInTimes[currentUser.id]) 
+                  : formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')
+                }
+              </span>
+              {/* Right extreme: Check-Out time (inside) */}
+              <span className={hasCheckedOut ? "text-indigo-900 dark:text-white" : "text-indigo-400/80 dark:text-slate-500"}>
+                {hasCheckedOut 
+                  ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) 
+                  : formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')
+                }
+              </span>
+            </div>
           </div>
         </div>
       </div>

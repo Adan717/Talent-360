@@ -293,9 +293,9 @@ class SubscriptionController extends Controller
 
             Auth::login($admin);
 
-            // 3. Inject Demo Data (Disabled for production clean state)
-            // $seeder = new TenantSeeder();
-            // $seeder->run();
+            // 3. Inject Clean Base Structure (Roles & Policies) for the new Tenant
+            $seeder = new TenantSeeder();
+            $seeder->run();
 
             Auth::logout();
 

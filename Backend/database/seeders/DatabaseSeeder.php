@@ -9,11 +9,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Catálogos Base esenciales para el funcionamiento del sistema
-        $this->call([
-            RoleNormalizationSeeder::class,
-            RoleClockPolicySeeder::class,
-        ]);
+        // 1. Catálogos Base esenciales (Si existieran catalogos 100% globales, se llamarian aqui)
+        // Por ahora, todos los catalogos dependen del Tenant en el modelo SaaS.
 
         // Asegurar que el usuario administrador de la plataforma (Super Admin) exista
         if (DB::getSchemaBuilder()->hasTable('platform_users')) {

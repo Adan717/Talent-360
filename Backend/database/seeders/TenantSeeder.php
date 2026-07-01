@@ -76,145 +76,85 @@ class TenantSeeder extends Seeder
             }
         }
 
+        // 1b. Crear políticas de reloj (RoleClockPolicy) por defecto para cada puesto de trabajo
+        if ($puestoGerente) {
+            \App\Models\RoleClockPolicy::create([
+                'job_role_id' => $puestoGerente->id,
+                'policy_name' => 'Perfil Ejecutivo',
+                'tenant_id' => $tenantId,
+                'config' => [
+                    'tolerancia_retardo_mins' => 15,
+                    'requiere_evaluacion_salida' => false,
+                    'puede_abrir_sucursal' => true,
+                    'tiene_boton_panico' => true,
+                    'puede_usar_kiosko' => true,
+                    'minutos_comida' => 60,
+                    'paseDeLista' => true,
+                ]
+            ]);
+        }
+
+        if ($puestoVentas) {
+            \App\Models\RoleClockPolicy::create([
+                'job_role_id' => $puestoVentas->id,
+                'policy_name' => 'Perfil Operativo Ventas',
+                'tenant_id' => $tenantId,
+                'config' => [
+                    'tolerancia_retardo_mins' => 10,
+                    'requiere_evaluacion_salida' => true,
+                    'puede_abrir_sucursal' => false,
+                    'tiene_boton_panico' => false,
+                    'puede_usar_kiosko' => true,
+                    'minutos_comida' => 45,
+                    'paseDeLista' => true,
+                ]
+            ]);
+        }
+
+        if ($puestoCaja) {
+            \App\Models\RoleClockPolicy::create([
+                'job_role_id' => $puestoCaja->id,
+                'policy_name' => 'Perfil Cajero',
+                'tenant_id' => $tenantId,
+                'config' => [
+                    'tolerancia_retardo_mins' => 10,
+                    'requiere_evaluacion_salida' => true,
+                    'puede_abrir_sucursal' => false,
+                    'tiene_boton_panico' => true,
+                    'puede_usar_kiosko' => true,
+                    'minutos_comida' => 30,
+                    'paseDeLista' => true,
+                ]
+            ]);
+        }
+
+        if ($puestoAlmacen) {
+            \App\Models\RoleClockPolicy::create([
+                'job_role_id' => $puestoAlmacen->id,
+                'policy_name' => 'Perfil Almacén',
+                'tenant_id' => $tenantId,
+                'config' => [
+                    'tolerancia_retardo_mins' => 10,
+                    'requiere_evaluacion_salida' => true,
+                    'puede_abrir_sucursal' => false,
+                    'tiene_boton_panico' => false,
+                    'puede_usar_kiosko' => true,
+                    'minutos_comida' => 45,
+                    'paseDeLista' => true,
+                ]
+            ]);
+        }
+
+        // Las secciones de usuarios y checklists de prueba quedan desactivadas para mantener la base de datos limpia de datos demo.
+        /*
         $tenant = Tenant::find($tenantId);
         $subdomain = $tenant ? $tenant->subdomain : 'demo';
         $domain = $subdomain . '.com';
 
         // 2. Usuarios de Prueba (Colaboradores)
         $users = [
-            [
-                'name' => 'Roberto Sánchez',
-                'email' => 'roberto.sanchez@' . $domain,
-                'password' => Hash::make('password123'),
-                'role' => 'empleado',
-                'job_role_id' => $puestoGerente->id ?? null,
-                'tenant_id' => $tenantId,
-            ],
-            [
-                'name' => 'María García',
-                'email' => 'maria.garcia@' . $domain,
-                'password' => Hash::make('password123'),
-                'role' => 'empleado',
-                'job_role_id' => $puestoVentas->id ?? null,
-                'tenant_id' => $tenantId,
-            ],
-            [
-                'name' => 'Carlos López',
-                'email' => 'carlos.lopez@' . $domain,
-                'password' => Hash::make('password123'),
-                'role' => 'empleado',
-                'job_role_id' => $puestoCaja->id ?? null,
-                'tenant_id' => $tenantId,
-            ],
-            [
-                'name' => 'Ana Martínez',
-                'email' => 'ana.martinez@' . $domain,
-                'password' => Hash::make('password123'),
-                'role' => 'empleado',
-                'job_role_id' => $puestoVentas->id ?? null,
-                'tenant_id' => $tenantId,
-            ],
-            [
-                'name' => 'Luis Fernández',
-                'email' => 'luis.fernandez@' . $domain,
-                'password' => Hash::make('password123'),
-                'role' => 'empleado',
-                'job_role_id' => $puestoAlmacen->id ?? null,
-                'tenant_id' => $tenantId,
-            ]
+            ...
         ];
-
-        foreach ($users as $u) {
-            if (!User::where('email', $u['email'])->exists()) {
-                User::create($u);
-            }
-        }
-
-        // Import necessary models for tasks and routines
-        // 3. Checklist de Apertura
-        $routineApertura = \App\Models\Routine::create([
-            'title' => 'Checklist Diario de Apertura',
-            'target_role_id' => $puestoGerente->id,
-            'trigger' => 'apertura',
-            'assign_mode' => 'fijo',
-            'tenant_id' => $tenantId
-        ]);
-
-        $tasksApertura = [
-            'Desactivar alarma perimetral y encender switch principal',
-            'Verificar funcionamiento de las luces del piso de ventas',
-            'Realizar conteo del fondo de caja',
-            'Encender equipos de refrigeración/clima',
-            'Tomar foto de la fachada frontal limpia y despejada'
-        ];
-
-        foreach ($tasksApertura as $t) {
-            $task = \App\Models\Task::create([
-                'title' => $t,
-                'priority' => 'bloqueante',
-                'target_type' => 'role',
-                'target_id' => $puestoGerente->id,
-                'assistant_type' => str_contains($t, 'foto') ? 'evidencia_foto' : 'ninguno',
-                'tenant_id' => $tenantId
-            ]);
-            $routineApertura->tasks()->attach($task->id);
-        }
-
-        // 4. Checklist de Operación
-        $routineOperacion = \App\Models\Routine::create([
-            'title' => 'Checklist Diario de Operación',
-            'target_role_id' => $puestoGerente->id,
-            'trigger' => 'hora_fija',
-            'assign_mode' => 'fijo',
-            'tenant_id' => $tenantId
-        ]);
-
-        $tasksOperacion = [
-            'Recorrer pasillos asegurando que el piso esté libre de cajas',
-            'Alinear los precios en las etiquetas de los domos principales',
-            'Validar que el personal esté portando el gafete y uniforme limpios',
-            'Revisar stock de bolsas de empaque en las cajas'
-        ];
-
-        foreach ($tasksOperacion as $t) {
-            $task = \App\Models\Task::create([
-                'title' => $t,
-                'priority' => 'normal',
-                'target_type' => 'role',
-                'target_id' => $puestoGerente->id,
-                'assistant_type' => 'ninguno',
-                'tenant_id' => $tenantId
-            ]);
-            $routineOperacion->tasks()->attach($task->id);
-        }
-
-        // 5. Checklist de Cierre
-        $routineCierre = \App\Models\Routine::create([
-            'title' => 'Checklist Diario de Cierre',
-            'target_role_id' => $puestoGerente->id,
-            'trigger' => 'cierre',
-            'assign_mode' => 'fijo',
-            'tenant_id' => $tenantId
-        ]);
-
-        $tasksCierre = [
-            'Ejecutar corte X y validar los retiros parciales (Arqueos)',
-            'Hacer el cierre de terminales bancarias y adjuntar voucher',
-            'Guardar el efectivo en la tómbola',
-            'Apagar aires acondicionados y luces',
-            'Activar alarma perimetral y asegurar puertas'
-        ];
-
-        foreach ($tasksCierre as $t) {
-            $task = \App\Models\Task::create([
-                'title' => $t,
-                'priority' => 'bloqueante',
-                'target_type' => 'role',
-                'target_id' => $puestoGerente->id,
-                'assistant_type' => 'ninguno',
-                'tenant_id' => $tenantId
-            ]);
-            $routineCierre->tasks()->attach($task->id);
-        }
+        */
     }
 }

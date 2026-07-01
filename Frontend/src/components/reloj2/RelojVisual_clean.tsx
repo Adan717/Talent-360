@@ -234,17 +234,18 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   )}
                 </div>
                 {hasCheckedIn ? (
-                  <span className={`text-[10px] font-mono mt-2 font-black px-2 py-0.5 rounded-full border transition-all ${
-                    isLate 
-                      ? 'text-rose-750 bg-rose-50 border-rose-100 dark:text-rose-300 dark:bg-rose-950/30 dark:border-rose-900/40 animate-pulse' 
-                      : 'text-indigo-700 bg-indigo-50 border-indigo-100 dark:text-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-900/40'
-                  }`}>
-                    {formatMinsToTimeClean(checkInTimes[currentUser.id])} {isLate && "(Retardo)"}
-                  </span>
+                  (() => {
+                    const info = getEntryInfo();
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Entrada</span>;
+                    return (
+                      <span className={`text-[10px] font-mono font-bold mt-2 flex flex-col items-center leading-none ${isLate ? 'text-rose-500' : 'text-indigo-550'}`}>
+                        <span>{info.time}</span>
+                        {isLate && <span className="text-[8px] font-black text-rose-505 uppercase tracking-wider mt-0.5">Retardo</span>}
+                      </span>
+                    );
+                  })()
                 ) : (
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">
-                    {formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}
-                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Entrada</span>
                 )}
               </div>
             );
@@ -277,25 +278,20 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 {isAccessible ? (
                   (() => {
                     const info = getBreakInfo();
-                    return (
-                      <div className="flex flex-col items-center mt-1.5 leading-tight">
-                        <span className={`text-[10px] font-mono font-bold ${isMobile ? 'mt-0.5 text-purple-650' : 'text-purple-750 dark:text-purple-305'}`}>
-                          {info ? formatMinsToTimeClean(info.start) : 'Descanso'}
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Descanso</span>;
+                    if (info.isReserved) {
+                      return (
+                        <span className="text-[10px] font-mono text-amber-500 font-bold mt-2 flex flex-col items-center leading-none">
+                          <span>{info.time}</span>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider mt-0.5 text-amber-600">Sugerido</span>
                         </span>
-                        {info && (
-                          info.isActive ? (
-                            <span className="text-[9.5px] font-mono text-violet-500 font-bold mt-0.5">
-                              Activo ({info.duration}m)
-                              {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
-                            </span>
-                          ) : (
-                            <span className="text-[9.5px] font-mono text-purple-650 dark:text-purple-400 font-medium mt-0.5">
-                              {info.duration} min
-                              {info.extra > 0 && <span className="text-rose-500 font-black ml-0.5">+{info.extra}m</span>}
-                            </span>
-                          )
-                        )}
-                      </div>
+                      );
+                    }
+                    return (
+                      <span className="text-[10px] font-mono text-purple-655 font-bold mt-2 flex flex-col items-center leading-none">
+                        <span>{info.time}</span>
+                        {info.isAwaitingEnd && <span className="text-[8px] font-black text-purple-505 uppercase tracking-wider mt-0.5 animate-pulse">Activo</span>}
+                      </span>
                     );
                   })()
                 ) : (
@@ -335,33 +331,17 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Comida</span>;
                     if (info.isReserved) {
                       return (
-                        <div className="flex flex-col items-center mt-1.5 leading-tight">
-                          <span className="text-[10px] font-bold text-amber-600 font-mono">
-                            Reservado
-                          </span>
-                          <span className="text-[9px] text-slate-400 font-mono mt-0.5">
-                            {info.reservedText}
-                          </span>
-                        </div>
+                        <span className="text-[10px] font-mono text-amber-500 font-bold mt-2 flex flex-col items-center leading-none">
+                          <span>{info.time}</span>
+                          <span className="text-[7.5px] font-black uppercase tracking-wider mt-0.5 text-amber-600">Sugerido</span>
+                        </span>
                       );
                     }
                     return (
-                      <div className="flex flex-col items-center mt-1.5 leading-tight">
-                        <span className="text-[10px] font-bold text-amber-705 dark:text-amber-305 font-mono">
-                          {formatMinsToTimeClean(info.start)}
-                        </span>
-                        {info.isActive ? (
-                          <span className="text-[9.5px] font-mono text-amber-500 font-bold mt-0.5">
-                            Activo ({info.duration}m)
-                            {info.extra > 0 && <span className="text-rose-500 font-black ml-1 animate-pulse">+{info.extra}m</span>}
-                          </span>
-                        ) : (
-                          <span className="text-[9.5px] font-mono text-emerald-650 dark:text-emerald-450 font-medium mt-0.5">
-                            {info.duration} min
-                            {info.extra > 0 && <span className="text-rose-500 font-black ml-0.5">+{info.extra}m</span>}
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-[10px] font-mono text-amber-655 font-bold mt-2 flex flex-col items-center leading-none">
+                        <span>{info.time}</span>
+                        {info.isAwaitingEnd && <span className="text-[8px] font-black text-amber-505 uppercase tracking-wider mt-0.5 animate-pulse">Activo</span>}
+                      </span>
                     );
                   })()
                 ) : (
@@ -395,13 +375,17 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   )}
                 </div>
                 {isAccessible ? (
-                  <span className="text-[10px] font-mono text-emerald-600 font-bold mt-2 flex flex-col items-center leading-none">
-                    <span>{checkOutTimes[currentUser.id] ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : 'Fichado'}</span>
-                  </span>
+                  (() => {
+                    const info = getExitInfo();
+                    if (!info) return <span className="text-[10px] font-mono text-slate-500 dark:text-slate-450 font-bold mt-2">Salida</span>;
+                    return (
+                      <span className="text-[10px] font-mono text-emerald-600 font-bold mt-2 flex flex-col items-center leading-none">
+                        <span>{info.time}</span>
+                      </span>
+                    );
+                  })()
                 ) : (
-                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">
-                    {formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')}
-                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 font-bold mt-2">Salida</span>
                 )}
               </div>
             );

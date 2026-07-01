@@ -442,8 +442,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
         {/* Timeline Bar - Thicker, Larger, and Innovatively Styled (Glassmorphism & Contrast Text) */}
         <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-[-6px]' : 'px-4 mb-2 mt-[-6px]'}`}>
-          {/* Progress Container (Larger size h-7 - Softest styled gray track with shadow) */}
-          <div className="relative w-full h-7 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-slate-100/50 dark:border-slate-750/20 shadow-[0_2px_8px_rgba(148,163,184,0.05)] overflow-hidden">
+          {/* Progress Container (Slimmer size h-5 - Softest styled gray track with shadow) */}
+          <div className="relative w-full h-5 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-slate-100/50 dark:border-slate-750/20 shadow-[0_2px_8px_rgba(148,163,184,0.05)] overflow-hidden">
             
             {/* Elapsed Proportional Progress Segment Container */}
             {hasCheckedIn && elapsedTotal > 0 && (

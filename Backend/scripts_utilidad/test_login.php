@@ -57,6 +57,14 @@ try {
     $token = $user->createToken('auth_token')->plainTextToken;
     echo "Token created successfully: $token\n";
 
+    echo "Checking 2FA...\n";
+    $requires2fa = !$isPlatformUser && $user->two_factor_enabled;
+    echo "2FA status check passed: " . ($requires2fa ? 'YES' : 'NO') . "\n";
+
+    echo "Logging success using SecurityLogger...\n";
+    SecurityLogger::log('auth_success', "Inicio de sesión exitoso de: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
+    echo "SecurityLogger log passed.\n";
+
 } catch (\Exception $e) {
     echo "EXCEPTION CAUGHT: " . $e->getMessage() . "\n";
     echo "STACK TRACE:\n" . $e->getTraceAsString() . "\n";

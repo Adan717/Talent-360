@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Star, Briefcase, Crown, Trophy, Map, GraduationCap, ShieldCheck } from 'lucide-react';
+import { 
+  Lock, Star, Briefcase, Crown, Trophy, Map, GraduationCap, ShieldCheck,
+  BookOpen, Wrench, Laptop, ClipboardList, Target, Award, Key, DollarSign, 
+  Store, Coffee, Package, Settings, Truck, HeartHandshake, Check, Sparkles, ChevronRight, X 
+} from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import YouTube from 'react-youtube';
 import { CertificadoImprimible } from './CertificadoImprimible';
@@ -23,6 +27,70 @@ class AcademiaErrorBoundary extends React.Component<{children: React.ReactNode},
   }
 }
 
+const getRoleIcon = (roleName: string) => {
+  const name = roleName.toLowerCase();
+  if (name.includes('gerente') || name.includes('director') || name.includes('administrad')) {
+    return <Crown className="w-6 h-6 text-amber-500" />;
+  }
+  if (name.includes('cajer') || name.includes('caja') || name.includes('cobro')) {
+    return <DollarSign className="w-6 h-6 text-emerald-500" />;
+  }
+  if (name.includes('ventas') || name.includes('asesor') || name.includes('comercial') || name.includes('piso')) {
+    return <Store className="w-6 h-6 text-blue-500" />;
+  }
+  if (name.includes('almacen') || name.includes('bodega') || name.includes('inventario') || name.includes('recibo') || name.includes('logist')) {
+    return <Package className="w-6 h-6 text-indigo-500" />;
+  }
+  if (name.includes('supervisor') || name.includes('sup.') || name.includes('coordinador')) {
+    return <Target className="w-6 h-6 text-rose-500" />;
+  }
+  if (name.includes('ayudante') || name.includes('auxiliar') || name.includes('general') || name.includes('integral')) {
+    return <HeartHandshake className="w-6 h-6 text-teal-500" />;
+  }
+  if (name.includes('mantenimiento') || name.includes('limpieza') || name.includes('aseo')) {
+    return <Sparkles className="w-6 h-6 text-yellow-500" />;
+  }
+  if (name.includes('seguridad') || name.includes('vigilante')) {
+    return <ShieldCheck className="w-6 h-6 text-cyan-500" />;
+  }
+  if (name.includes('repartidor') || name.includes('chofer')) {
+    return <Truck className="w-6 h-6 text-orange-500" />;
+  }
+  return <Briefcase className="w-6 h-6 text-slate-500" />;
+};
+
+function ProgressRing({ percentage, color = '#6366F1', size = 96, strokeWidth = 6 }: { percentage: number; color?: string; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <svg className="absolute inset-0 transform -rotate-90 pointer-events-none" width={size} height={size}>
+      <circle
+        className="text-slate-200/60"
+        strokeWidth={strokeWidth}
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+      />
+      <circle
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        strokeLinecap="round"
+        fill="transparent"
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+        className="transition-all duration-500 ease-out"
+      />
+    </svg>
+  );
+}
+
 function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [courses, setCourses] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
@@ -36,6 +104,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [videoFinished, setVideoFinished] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [selectedPrintTemplate, setSelectedPrintTemplate] = useState<any>(null);
+  const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
 
   const { currentUser: loggedUser, systemSettings, completeInduction } = useAppStore();
 
@@ -160,7 +229,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
     return (
       <div className="bg-white h-full flex items-center justify-center text-slate-800">
         <div className="flex flex-col items-center animate-pulse">
-          <GraduationCap size={48} className="text-slate-300 mb-4" />
+          <GraduationCap size={48} className="text-slate-300 mb-4 animate-bounce" />
           <p className="font-semibold text-slate-500">Cargando Plan de Carrera...</p>
         </div>
       </div>
@@ -183,7 +252,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        <div className="p-4 md:p-6 flex-1 pb-20 max-w-3xl mx-auto w-full">
+        <div className="p-4 md:p-6 flex-1 pb-20 max-w-3xl mx-auto w-full animate-fade-in">
           <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-black mb-6 flex justify-center items-center aspect-video relative">
             {!ytId ? (
               <p className="text-slate-400 text-sm font-medium">Este módulo no tiene video configurado.</p>
@@ -273,11 +342,80 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
 
   const filteredCourses = courses.filter(c => !c.target_job_role_id || c.target_job_role_id === targetRoleId);
 
-  // Línea de tiempo Corporativa (Vertical)
+  // Math config for Duolingo snake line
+  const H = 140; // Vertical gap between nodes
+  let pathD = '';
+  let pathDCompleted = '';
+
+  // Determine indices for completion tracking
+  let lastCompletedIndex = -1;
+  filteredCourses.forEach((course, index) => {
+    const prog = userProgress.find((p: any) => p.course_id === course.id);
+    if (prog?.status === 'completed') {
+      lastCompletedIndex = index;
+    }
+  });
+
+  const activeIndex = lastCompletedIndex + 1;
+
+  filteredCourses.forEach((course, index) => {
+    const cx = 150 + Math.sin(index * 1.25) * 60;
+    const cy = 60 + index * H;
+    if (index === 0) {
+      pathD += `M ${cx} ${cy}`;
+    } else {
+      const prevX = 150 + Math.sin((index - 1) * 1.25) * 60;
+      const prevY = 60 + (index - 1) * H;
+      const cp1x = prevX;
+      const cp1y = prevY + H / 2;
+      const cp2x = cx;
+      const cp2y = cy - H / 2;
+      pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${cx} ${cy}`;
+    }
+  });
+
+  const completedLimit = Math.min(activeIndex, filteredCourses.length - 1);
+  filteredCourses.forEach((course, index) => {
+    if (index > completedLimit) return;
+    const cx = 150 + Math.sin(index * 1.25) * 60;
+    const cy = 60 + index * H;
+    if (index === 0) {
+      pathDCompleted += `M ${cx} ${cy}`;
+    } else {
+      const prevX = 150 + Math.sin((index - 1) * 1.25) * 60;
+      const prevY = 60 + (index - 1) * H;
+      const cp1x = prevX;
+      const cp1y = prevY + H / 2;
+      const cp2x = cx;
+      const cp2y = cy - H / 2;
+      pathDCompleted += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${cx} ${cy}`;
+    }
+  });
+
   return (
-    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden overflow-y-auto custom-scrollbar">
+    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden overflow-y-auto custom-scrollbar select-none">
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+          animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes bounceSlow {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-6px) scale(1.03); }
+        }
+        .animate-bounce-slow {
+          animation: bounceSlow 2.2s ease-in-out infinite;
+        }
+        .custom-shadow-3d {
+          box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.15);
+        }
+      `}</style>
+
       {/* Cabecera con Pestañas */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs">
         <div className="p-6 pb-4">
           <h2 className="text-xl font-black text-slate-900 tracking-tight">Academia 360</h2>
           <p className="text-indigo-600 text-xs mt-0.5 font-bold uppercase tracking-widest">Plan de Desarrollo y Logros</p>
@@ -299,184 +437,453 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="p-6 relative z-10 flex flex-col max-w-md mx-auto w-full pb-32">
+        {/* TAB 1: PLAN (Elección de Puesto) */}
         {activeTab === 'plan' && !targetRoleId && (
           <div className="animate-fade-in-up">
             <div className="text-center mb-8 mt-4">
-              <Crown size={48} className="text-amber-400 mx-auto mb-4" />
-              <h3 className="font-black text-2xl text-slate-800 mb-2">Elige tu Meta Profesional</h3>
-              <p className="text-sm text-slate-500">¿A qué puesto deseas ascender? Selecciona tu objetivo para personalizar tu plan de entrenamiento.</p>
+              <div className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-400/20">
+                <Crown size={32} className="text-amber-950 animate-pulse" />
+              </div>
+              <h3 className="font-black text-2xl text-slate-900 mb-2 tracking-tight">Elige tu Meta Profesional</h3>
+              <p className="text-sm text-slate-500 font-medium">¿A qué puesto deseas ascender? Selecciona tu objetivo para personalizar tu plan de entrenamiento.</p>
             </div>
-            <div className="space-y-4">
-              {roles.filter((role: any) => role.is_active !== false).map(role => (
-                <button 
-                  key={role.id}
-                  onClick={() => setTargetRoleId(role.id)}
-                  className="w-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all text-left flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                      <Briefcase size={24} />
+            
+            <div className="grid grid-cols-1 gap-4">
+              {roles.filter((role: any) => role.is_active !== false).map(role => {
+                const IconComponent = getRoleIcon(role.name);
+                return (
+                  <button 
+                    key={role.id}
+                    onClick={() => setTargetRoleId(role.id)}
+                    className="w-full bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-xs hover:border-indigo-400 hover:shadow-md hover:translate-y-[-2px] transition-all text-left flex items-center gap-4 group animate-fade-in"
+                  >
+                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-indigo-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100">
+                      {IconComponent}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-lg">{role.name}</h4>
-                      <p className="text-xs text-slate-500 mt-1">Ruta de certificación requerida</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-extrabold text-slate-800 text-base truncate group-hover:text-indigo-900 transition-colors">
+                          {role.name}
+                        </h4>
+                        <ChevronRight className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" size={20} />
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium truncate mt-1">
+                        {role.description || "Ruta de certificación requerida"}
+                      </p>
+                      
+                      {(() => {
+                        const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                        const completedRoleCourses = roleCourses.filter(c => {
+                          const p = userProgress.find(up => up.course_id === c.id);
+                          return p?.status === 'completed';
+                        });
+                        if (roleCourses.length > 0) {
+                          return (
+                            <div className="flex items-center gap-2 mt-2">
+                              <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div 
+                                  className="bg-emerald-500 h-full rounded-full transition-all"
+                                  style={{ width: `${(completedRoleCourses.length / roleCourses.length) * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-[10px] font-bold text-slate-400">
+                                {completedRoleCourses.length}/{roleCourses.length} mod.
+                              </span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <span className="text-[10px] font-bold text-slate-400 block mt-2">
+                            Módulos generales únicamente
+                          </span>
+                        );
+                      })()}
                     </div>
-                  </div>
-                  <span className="text-indigo-400 font-bold text-xl group-hover:translate-x-1 transition-transform">→</span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
+        {/* TAB 1: PLAN (Ruta estilo Duolingo) */}
         {activeTab === 'plan' && targetRoleId && (
-          <div className="animate-fade-in">
-            <button 
-              onClick={() => setTargetRoleId(null)}
-              className="mb-6 text-sm font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-2"
-            >
-              ← Cambiar Meta Profesional
-            </button>
+          <div className="relative animate-fade-in flex flex-col items-center">
+            {/* Header info card */}
+            {(() => {
+              const selectedRole = roles.find(r => r.id === targetRoleId);
+              const roleCourses = filteredCourses;
+              const completedRoleCourses = roleCourses.filter(c => {
+                const p = userProgress.find(up => up.course_id === c.id);
+                return p?.status === 'completed';
+              });
+              const totalCoursesCount = roleCourses.length;
+              const completedCoursesCount = completedRoleCourses.length;
+              const overallPercent = totalCoursesCount > 0 ? Math.round((completedCoursesCount / totalCoursesCount) * 100) : 0;
 
-            {/* Línea conectora central (Timeline) */}
-            <div className="absolute top-20 bottom-10 left-10 w-[2px] bg-slate-200 z-0"></div>
-
-            {filteredCourses.map((course, index) => {
-              const prog = userProgress.find((p: any) => p.course_id === course.id);
-              const isCompleted = prog?.status === 'completed';
-
-              let isBlocked = false;
-              if (course.prerequisite_course_id) {
-                const prereqProgress = userProgress.find((p: any) => p.course_id === course.prerequisite_course_id);
-                isBlocked = prereqProgress?.status !== 'completed';
-              } else if (index > 0) {
-                const prevCourse = filteredCourses[index - 1];
-                const prevProgress = userProgress.find((p: any) => p.course_id === prevCourse.id);
-                isBlocked = prevProgress?.status !== 'completed';
-              }
-              
               return (
-                <div key={course.id} className="w-full flex items-start mb-8 relative z-10 group">
+                <div className="w-full bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-5 mb-8 shadow-xl text-white relative overflow-hidden animate-fade-in">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <GraduationCap size={120} />
+                  </div>
                   
-                  {/* Nodo Circular (Indicador) */}
-                  <div className="flex-shrink-0 w-8 h-8 mt-1 rounded-full flex items-center justify-center bg-white border-4 border-slate-50 shadow-sm relative z-10 transition-transform">
-                    {isCompleted ? (
-                       <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-sm"></div>
-                    ) : isBlocked ? (
-                       <div className="w-3 h-3 bg-slate-300 rounded-full"></div>
-                    ) : (
-                       <div className={`w-3 h-3 rounded-full shadow-sm ${course.course_type === 'induction' ? 'bg-indigo-500' : course.course_type === 'training' ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
-                    )}
+                  <button 
+                    onClick={() => {
+                      setTargetRoleId(null);
+                      setSelectedCourseForDrawer(null);
+                    }}
+                    className="mb-4 text-xs font-bold text-indigo-200 hover:text-white flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-all w-fit"
+                  >
+                    ← Cambiar Meta
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shadow-inner">
+                      {selectedRole ? getRoleIcon(selectedRole.name) : <Briefcase className="text-white" />}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-lg leading-tight">{selectedRole?.name || 'Ruta de Carrera'}</h4>
+                      <p className="text-xs text-indigo-200 font-medium">Meta Profesional Seleccionada</p>
+                    </div>
                   </div>
 
-                  {/* Tarjeta del Curso */}
-                  <div 
-                    className={`ml-6 flex-1 bg-white border rounded-2xl p-4 shadow-sm transition-all cursor-pointer 
-                      ${isCompleted ? 'border-emerald-200 bg-emerald-50/20' : isBlocked ? 'border-slate-200 opacity-60' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md'}`}
-                    onClick={() => !isBlocked && handleStartCourse(course)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                        Módulo {index + 1} {isCompleted && '✓ Completado'}
-                      </span>
-                      {isBlocked && <Lock size={12} className="text-slate-400" />}
+                  <div className="mt-5">
+                    <div className="flex justify-between items-center text-xs font-bold text-indigo-200 mb-1.5">
+                      <span>Progreso de Certificación</span>
+                      <span>{overallPercent}% ({completedCoursesCount}/{totalCoursesCount})</span>
                     </div>
-                    
-                    <h3 className={`font-bold text-sm leading-tight mb-1 ${isBlocked ? 'text-slate-500' : 'text-slate-800'}`}>
-                      {course.title}
-                    </h3>
-                    
-                    {isBlocked && (
-                      <span className="inline-block mt-2 text-[9px] text-rose-600 font-bold uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
-                        Completa el módulo anterior
-                      </span>
-                    )}
+                    <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${overallPercent}%` }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
-              )
-            })}
+              );
+            })()}
 
-            {filteredCourses.length === 0 && !loading && (
-              <div className="text-center py-12 bg-white rounded-2xl p-6 border border-slate-200 relative z-10 w-full flex flex-col items-center shadow-sm">
-                <Map size={40} className="text-slate-300 mb-4" />
-                <p className="text-slate-800 font-bold mb-1">Sin módulos aún.</p>
-                <p className="text-slate-500 text-xs font-medium">No hay entrenamientos para esta ruta todavía.</p>
+            {/* Winding Duolingo Path Area */}
+            {filteredCourses.length > 0 ? (
+              <div 
+                className="relative w-[300px] mb-8 select-none"
+                style={{ height: `${(filteredCourses.length - 1) * H + 120}px` }}
+              >
+                {/* SVG connection lines */}
+                <svg 
+                  className="absolute top-0 left-0 w-full pointer-events-none" 
+                  style={{ height: `${(filteredCourses.length - 1) * H + 120}px` }} 
+                  viewBox={`0 0 300 ${(filteredCourses.length - 1) * H + 120}`}
+                >
+                  {/* Underlay / Inactive line */}
+                  <path 
+                    d={pathD} 
+                    fill="none" 
+                    stroke="#E2E8F0" 
+                    strokeWidth="12" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                  />
+                  {/* Progress Line */}
+                  <path 
+                    d={pathDCompleted} 
+                    fill="none" 
+                    stroke="#6366F1" 
+                    strokeWidth="8" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                  />
+                </svg>
+
+                {/* Path Nodes */}
+                {filteredCourses.map((course, index) => {
+                  const prog = userProgress.find((p: any) => p.course_id === course.id);
+                  const isCompleted = prog?.status === 'completed';
+
+                  let isBlocked = false;
+                  if (course.prerequisite_course_id) {
+                    const prereqProgress = userProgress.find((p: any) => p.course_id === course.prerequisite_course_id);
+                    isBlocked = prereqProgress?.status !== 'completed';
+                  } else if (index > 0) {
+                    const prevCourse = filteredCourses[index - 1];
+                    const prevProgress = userProgress.find((p: any) => p.course_id === prevCourse.id);
+                    isBlocked = prevProgress?.status !== 'completed';
+                  }
+
+                  let percentage = 0;
+                  if (isCompleted) percentage = 100;
+                  else if (prog?.status === 'in_progress') percentage = 50;
+                  else if (prog?.status === 'enrolled') percentage = 25;
+
+                  const cx = 150 + Math.sin(index * 1.25) * 60;
+                  const cy = 60 + index * H;
+
+                  const isActive = !isBlocked && !isCompleted;
+
+                  let CourseIcon = BookOpen;
+                  if (course.course_type === 'induction') CourseIcon = GraduationCap;
+                  else if (course.course_type === 'training') CourseIcon = Laptop;
+                  else if (course.course_type === 'promotion') CourseIcon = Trophy;
+
+                  return (
+                    <div 
+                      key={course.id} 
+                      className="absolute"
+                      style={{ left: `${cx - 48}px`, top: `${cy - 48}px`, width: '96px', height: '96px' }}
+                    >
+                      {/* Progress Ring around the node */}
+                      {!isBlocked && (
+                        <ProgressRing 
+                          percentage={percentage} 
+                          color={isCompleted ? '#10B981' : '#6366F1'} 
+                          size={96} 
+                          strokeWidth={6} 
+                        />
+                      )}
+
+                      {/* Main circular button */}
+                      <button
+                        onClick={() => {
+                          if (!isBlocked) {
+                            setSelectedCourseForDrawer(course);
+                          }
+                        }}
+                        disabled={isBlocked}
+                        className={`absolute inset-2 rounded-full flex items-center justify-center transition-all duration-200 select-none
+                          ${isCompleted 
+                            ? 'bg-emerald-500 border-b-[6px] border-emerald-700 hover:brightness-105 active:border-b-0 active:translate-y-[6px] text-white shadow-lg shadow-emerald-500/20' 
+                            : isBlocked 
+                              ? 'bg-slate-200 border-b-[6px] border-slate-400 text-slate-400 cursor-not-allowed shadow-none' 
+                              : 'bg-indigo-600 border-b-[6px] border-indigo-800 hover:brightness-105 active:border-b-0 active:translate-y-[6px] text-white shadow-lg shadow-indigo-600/30'
+                          }
+                          ${isActive ? 'animate-bounce-slow ring-4 ring-indigo-500/30' : ''}
+                        `}
+                      >
+                        {isBlocked ? (
+                          <Lock className="w-6 h-6" />
+                        ) : isCompleted ? (
+                          <Check className="w-8 h-8 stroke-[3]" />
+                        ) : (
+                          <CourseIcon className="w-7 h-7" />
+                        )}
+                      </button>
+
+                      {/* Star floating marker for the active node */}
+                      {isActive && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-950 text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm border border-amber-300 uppercase tracking-wider animate-pulse flex items-center gap-0.5 z-20">
+                          <Star className="w-2.5 h-2.5 fill-amber-950 text-amber-950" />
+                          Siguiente
+                        </div>
+                      )}
+
+                      {/* Small index badge below the node */}
+                      <div className="absolute -bottom-5 left-0 right-0 text-center pointer-events-none">
+                        <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100/90 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-200">
+                          Módulo {index + 1}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            ) : (
+              !loading && (
+                <div className="text-center py-12 bg-white rounded-3xl p-6 border border-slate-200 relative z-10 w-full flex flex-col items-center shadow-xs">
+                  <Map size={40} className="text-slate-300 mb-4 animate-pulse" />
+                  <p className="text-slate-800 font-bold mb-1">Sin módulos aún.</p>
+                  <p className="text-slate-500 text-xs font-medium">No hay entrenamientos para esta ruta todavía.</p>
+                </div>
+              )
             )}
           </div>
         )}
 
+        {/* TAB 2: LOGROS */}
         {activeTab === 'logros' && (
           <div className="animate-fade-in-up">
-            <h3 className="font-black text-2xl text-slate-800 mb-6">Mis Certificados</h3>
+            <h3 className="font-black text-2xl text-slate-900 mb-6 tracking-tight">Mis Certificados</h3>
             <div className="space-y-4">
                {filteredCourses.filter(course => {
-                 const prog = userProgress.find((p: any) => p.course_id === course.id);
-                 return prog?.status === 'completed' && course.certificate_template_id;
-               }).map((course, idx) => {
-                 let template = null;
-                 if (systemSettings?.certificate_templates) {
-                   try {
-                     const parsed = JSON.parse(systemSettings.certificate_templates);
-                     template = parsed.find((t: any) => t.id === course.certificate_template_id);
-                   } catch { }
-                 }
-                 
-                 return (
-                   <div key={idx} className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between">
-                     <div className="absolute top-0 right-0 p-8 opacity-10">
-                       <Trophy size={100} />
-                     </div>
-                     <div className="relative z-10">
-                       <h4 className="text-xl font-black text-white mb-1">{course.title}</h4>
-                       <p className="text-indigo-200 text-sm mb-0">Completado con Excelencia</p>
-                     </div>
-                     <button 
-                       onClick={() => {
-                         setSelectedPrintTemplate({ course, template });
-                         setTimeout(() => {
-                           window.print();
-                         }, 100);
-                       }}
-                       className="relative z-10 bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl backdrop-blur-sm border border-white/20 transition-all shadow-lg flex items-center gap-2 font-bold"
-                     >
-                       <span className="text-xl">🖨️</span> Imprimir
-                     </button>
-                   </div>
-                 );
-               })}
-               
-               {filteredCourses.filter(course => {
-                 const prog = userProgress.find((p: any) => p.course_id === course.id);
-                 return prog?.status === 'completed' && course.certificate_template_id;
-               }).length === 0 ? (
-                 <div className="bg-slate-100 rounded-3xl p-8 text-center border border-slate-200">
-                   <Trophy size={48} className="text-slate-300 mx-auto mb-4" />
-                   <p className="text-slate-500 font-bold">Aún no tienes certificados disponibles.</p>
-                   <p className="text-xs text-slate-400 mt-2">Completa cursos con diplomas para verlos aquí.</p>
-                 </div>
-               ) : null}
+                  const prog = userProgress.find((p: any) => p.course_id === course.id);
+                  return prog?.status === 'completed' && course.certificate_template_id;
+                }).map((course, idx) => {
+                  let template = null;
+                  if (systemSettings?.certificate_templates) {
+                    try {
+                      const parsed = JSON.parse(systemSettings.certificate_templates);
+                      template = parsed.find((t: any) => t.id === course.certificate_template_id);
+                    } catch { }
+                  }
+                  
+                  return (
+                    <div key={idx} className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between animate-fade-in">
+                      <div className="absolute top-0 right-0 p-8 opacity-10 text-white pointer-events-none">
+                        <Trophy size={100} />
+                      </div>
+                      <div className="relative z-10">
+                        <h4 className="text-xl font-black text-white mb-1 leading-tight">{course.title}</h4>
+                        <p className="text-indigo-200 text-sm mb-0">Completado con Excelencia</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setSelectedPrintTemplate({ course, template });
+                          setTimeout(() => {
+                            window.print();
+                          }, 100);
+                        }}
+                        className="relative z-10 bg-white/10 hover:bg-white/20 text-white/90 p-4 rounded-2xl backdrop-blur-sm border border-white/20 transition-all shadow-lg flex items-center gap-2 font-bold hover:scale-105 active:scale-95"
+                      >
+                        <span className="text-xl">🖨️</span> Imprimir
+                      </button>
+                    </div>
+                  );
+                })}
+                
+                {filteredCourses.filter(course => {
+                  const prog = userProgress.find((p: any) => p.course_id === course.id);
+                  return prog?.status === 'completed' && course.certificate_template_id;
+                }).length === 0 ? (
+                  <div className="bg-slate-100 rounded-3xl p-8 text-center border border-slate-200 shadow-inner">
+                    <Trophy size={48} className="text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500 font-bold">Aún no tienes certificados disponibles.</p>
+                    <p className="text-xs text-slate-400 mt-2">Completa cursos con diplomas para verlos aquí.</p>
+                  </div>
+                ) : null}
             </div>
 
-            <h4 className="font-bold text-slate-800 mt-8 mb-4">Insignias Obtenidas</h4>
+            <h4 className="font-black text-slate-800 mt-8 mb-4 tracking-tight">Insignias Obtenidas</h4>
             <div className="grid grid-cols-3 gap-4">
                {/* Insignia Mock */}
-               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2">
+               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 shadow-inner">
                      <Star size={24} />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500">Servicio al Cliente</span>
+                  <span className="text-[10px] font-bold text-slate-500 leading-tight">Servicio al Cliente</span>
                </div>
-               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2">
+               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2 shadow-inner">
                      <ShieldCheck size={24} />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500">Seguridad</span>
+                  <span className="text-[10px] font-bold text-slate-500 leading-tight">Seguridad</span>
                </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Backdrop for Course Details Drawer */}
+      {selectedCourseForDrawer && (
+        <div 
+          className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs z-30 transition-all duration-300 animate-fade-in"
+          onClick={() => setSelectedCourseForDrawer(null)}
+        />
+      )}
+
+      {/* Course Details Bottom Drawer */}
+      {selectedCourseForDrawer && (() => {
+        const course = selectedCourseForDrawer;
+        const prog = userProgress.find((p: any) => p.course_id === course.id);
+        const isCompleted = prog?.status === 'completed';
+        
+        let progressText = 'Pendiente de iniciar';
+        let progressColor = 'text-slate-400';
+        let percentage = 0;
+        if (isCompleted) {
+          progressText = '¡Completado!';
+          progressColor = 'text-emerald-500';
+          percentage = 100;
+        } else if (prog?.status === 'in_progress') {
+          progressText = 'En curso';
+          progressColor = 'text-indigo-500';
+          percentage = 50;
+        } else if (prog?.status === 'enrolled') {
+          progressText = 'Inscrito';
+          progressColor = 'text-blue-500';
+          percentage = 25;
+        }
+
+        let courseTypeLabel = 'Entrenamiento';
+        let courseTypeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+        if (course.course_type === 'induction') {
+          courseTypeLabel = 'Inducción Obligatoria';
+          courseTypeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        } else if (course.course_type === 'promotion') {
+          courseTypeLabel = 'Ascenso a Puesto';
+          courseTypeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+        }
+
+        return (
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] border-t border-slate-200 shadow-2xl p-6 z-40 transition-all duration-300 transform translate-y-0 animate-slide-up select-none">
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 cursor-pointer" onClick={() => setSelectedCourseForDrawer(null)}></div>
+            
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${courseTypeColor} tracking-wider`}>
+                  {courseTypeLabel}
+                </span>
+                <h3 className="text-lg font-black text-slate-800 mt-2 leading-tight">
+                  {course.title}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedCourseForDrawer(null)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Objetivo de este tema</h4>
+                <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                  {course.description || 'Sin descripción disponible para este módulo de entrenamiento.'}
+                </p>
+              </div>
+
+              {course.incentive_bonus_cents > 0 && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 flex items-center gap-3">
+                  <span className="text-2xl">🎁</span>
+                  <div>
+                    <p className="text-xs font-black text-emerald-800 uppercase tracking-wider">¡Premio por Certificación!</p>
+                    <p className="text-sm font-extrabold text-emerald-600">
+                      Bono de incentivo de ${(course.incentive_bonus_cents / 100).toFixed(2)} MXN al completarlo.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                  <span className="text-slate-400 font-bold">Progreso en este módulo</span>
+                  <span className={`${progressColor} font-black uppercase tracking-wider text-[10px]`}>{progressText}</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-emerald-500' : 'bg-indigo-600'}`}
+                    style={{ width: `${percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                handleStartCourse(course);
+                setSelectedCourseForDrawer(null);
+              }}
+              className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all duration-200 active:scale-[0.98] shadow-md
+                ${isCompleted 
+                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20' 
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
+                }
+              `}
+            >
+              {isCompleted ? 'Repasar Módulo' : 'Comenzar a Estudiar'}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Certificado Oculto para Impresión */}
       <div className="fixed inset-0 pointer-events-none opacity-0 print:opacity-100 print:z-[9999] bg-white flex items-center justify-center">
@@ -495,7 +902,6 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
 }
 
 export default function Academia(props: { onBack: () => void }) {
-
   return (
     <AcademiaErrorBoundary>
       <AcademiaContent {...props} />

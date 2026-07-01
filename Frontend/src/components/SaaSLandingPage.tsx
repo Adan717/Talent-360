@@ -452,55 +452,34 @@ export const SaaSLandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
               
               {activeTab === 'checador' && (
-                <div className="flex flex-col gap-3 w-full max-w-[190px] shrink-0 text-left order-3 md:order-1 my-4 md:my-0">
-                  <h5 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Selecciona Plan</h5>
-                  
-                  {/* Free Plan Switch Button */}
+                <div className="flex justify-center p-1.5 bg-slate-100/90 rounded-2xl max-w-sm w-full mx-auto border border-slate-200 shadow-sm shrink-0 mb-4 order-2 md:absolute md:-top-16 md:left-1/2 md:-translate-x-1/2 md:z-20">
                   <button 
+                    type="button" 
                     onClick={() => setSimulatedTier('free')}
-                    className={`p-3.5 rounded-2xl border text-left transition-all active:scale-95 flex flex-col gap-1 w-full select-none cursor-pointer border-none outline-none ${
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer outline-none border-none ${
                       simulatedTier === 'free' 
-                        ? 'bg-white border-blue-500 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/20' 
-                        : 'bg-slate-50/50 border-slate-150 text-slate-500 hover:bg-slate-50'
+                        ? 'bg-white text-slate-800 shadow-md shadow-slate-200/50' 
+                        : 'text-slate-400 hover:text-slate-650 font-bold'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">🔓</span>
-                      <span className={`text-[11.5px] font-black ${simulatedTier === 'free' ? 'text-blue-600' : 'text-slate-700'}`}>Versión Básica</span>
-                      <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 leading-none">Gratis</span>
-                    </div>
-                    <p className="text-[9.5px] text-slate-450 font-medium leading-tight">
-                      Registro básico de asistencia sin geocercas, pases de lista ni barra cronológica interactiva.
-                    </p>
+                    <span>🔓</span> Versión Básica
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setSimulatedTier('pro')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer outline-none border-none ${
+                      simulatedTier === 'pro' 
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/10' 
+                        : 'text-slate-400 hover:text-slate-650 font-bold'
+                    }`}
+                  >
+                    <span>👑</span> Versión Pro
                   </button>
                 </div>
               )}
 
               {activeTab === 'checador' ? (
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6 lg:gap-8 w-full animate-in fade-in duration-300">
-                  {/* Left Side: Free/Basic Option Panel */}
-                  <div className="flex flex-col gap-3 w-full max-w-[210px] shrink-0 text-left order-3 md:order-1 my-4 md:my-0">
-                    <h5 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Selecciona Plan</h5>
-                    
-                    <button 
-                      type="button"
-                      onClick={() => setSimulatedTier('free')}
-                      className={`p-3.5 rounded-2xl border text-left transition-all active:scale-95 flex flex-col gap-1 w-full select-none cursor-pointer border-none outline-none ${
-                        simulatedTier === 'free' 
-                          ? 'bg-white border-blue-500 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/20' 
-                          : 'bg-slate-50/50 border-slate-150 text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm">🔓</span>
-                        <span className={`text-[11.5px] font-black ${simulatedTier === 'free' ? 'text-blue-600' : 'text-slate-700'}`}>Versión Básica</span>
-                        <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 leading-none">Gratis</span>
-                      </div>
-                      <p className="text-[9.5px] text-slate-450 font-medium leading-tight">
-                        Registro básico de asistencia sin geocercas, pases de lista ni barra cronológica interactiva.
-                      </p>
-                    </button>
-                  </div>
+                <div className="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-10 w-full animate-in fade-in duration-300 mt-14 md:mt-8">
 
                   {/* SMARTPHONE FRAME */}
                   <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2">
@@ -714,120 +693,144 @@ export const SaaSLandingPage = () => {
                           </>
                         )}
 
-                        {phoneActiveTab === 'tareas' && (
-                          <div className="p-1 text-left animate-in fade-in duration-200 flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex justify-between items-center mb-3">
-                                <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Tareas del Colaborador</h5>
-                                <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
-                                  {((simulatedTask1Done ? 1 : 0) + (simulatedTask2Done ? 1 : 0))} / 2
-                                </span>
-                              </div>
-
-                              <div className="space-y-2">
-                                {/* Tarea 1 */}
-                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
-                                  simulatedTask1Done ? 'bg-slate-50/50 border-slate-150 text-slate-400' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
-                                }`}>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={simulatedTask1Done}
-                                    onChange={() => setSimulatedTask1Done(!simulatedTask1Done)}
-                                    className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                                  />
-                                  <div className="leading-tight text-left">
-                                    <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
-                                    <p className="text-[7.5px] text-slate-450">Sanitizar mostradores y barrer entrada</p>
+                        {simulatedTier === 'free' && phoneActiveTab !== 'reloj' ? (
+                          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
+                            <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                              <Lock size={22} className="text-rose-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <h5 className="text-[9px] font-black text-rose-800 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                              <h4 className="text-[11px] font-black text-slate-800 leading-tight">Módulo Bloqueado</h4>
+                              <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                                La gestión de {phoneActiveTab === 'tareas' ? 'Tareas' : phoneActiveTab === 'academia' ? 'Academia' : 'Herramientas'} requiere la Versión Pro del Reloj Checador.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSimulatedTier('pro')}
+                              className="bg-slate-900 hover:bg-slate-800 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                            >
+                              Probar Versión Pro
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            {phoneActiveTab === 'tareas' && (
+                              <div className="p-1 text-left animate-in fade-in duration-200 flex-1 flex flex-col justify-between">
+                                <div>
+                                  <div className="flex justify-between items-center mb-3">
+                                    <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Tareas del Colaborador</h5>
+                                    <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
+                                      {((simulatedTask1Done ? 1 : 0) + (simulatedTask2Done ? 1 : 0))} / 2
+                                    </span>
                                   </div>
-                                </label>
 
-                                {/* Tarea 2 */}
-                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
-                                  simulatedTask2Done ? 'bg-slate-50/50 border-slate-150 text-slate-400' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
-                                }`}>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={simulatedTask2Done}
-                                    onChange={() => setSimulatedTask2Done(!simulatedTask2Done)}
-                                    className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                                  />
-                                  <div className="leading-tight text-left">
-                                    <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
-                                    <p className="text-[7.5px] text-slate-450">Conciliar ventas del día en terminal</p>
+                                  <div className="space-y-2">
+                                    {/* Tarea 1 */}
+                                    <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                                      simulatedTask1Done ? 'bg-slate-50/50 border-slate-150 text-slate-400' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                                    }`}>
+                                      <input 
+                                        type="checkbox" 
+                                        checked={simulatedTask1Done}
+                                        onChange={() => setSimulatedTask1Done(!simulatedTask1Done)}
+                                        className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                      />
+                                      <div className="leading-tight text-left">
+                                        <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
+                                        <p className="text-[7.5px] text-slate-450">Sanitizar mostradores y barrer entrada</p>
+                                      </div>
+                                    </label>
+
+                                    {/* Tarea 2 */}
+                                    <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                                      simulatedTask2Done ? 'bg-slate-50/50 border-slate-150 text-slate-400' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                                    }`}>
+                                      <input 
+                                        type="checkbox" 
+                                        checked={simulatedTask2Done}
+                                        onChange={() => setSimulatedTask2Done(!simulatedTask2Done)}
+                                        className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                      />
+                                      <div className="leading-tight text-left">
+                                        <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
+                                        <p className="text-[7.5px] text-slate-450">Conciliar ventas del día en terminal</p>
+                                      </div>
+                                    </label>
                                   </div>
-                                </label>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-[7.5px] text-blue-800 font-medium leading-normal mt-3">
+                                  💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
+                                </div>
                               </div>
-                            </div>
+                            )}
 
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-[7.5px] text-blue-800 font-medium leading-normal mt-3">
-                              💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
-                            </div>
-                          </div>
-                        )}
+                            {phoneActiveTab === 'academia' && (
+                              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
+                                <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Cursos de Inducción</h5>
+                                
+                                {/* Curso 1 */}
+                                <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
+                                    <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                                  </div>
+                                  <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                                  </div>
+                                </div>
 
-                        {phoneActiveTab === 'academia' && (
-                          <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
-                            <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Cursos de Inducción</h5>
-                            
-                            {/* Curso 1 */}
-                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
-                                <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                                {/* Curso 2 */}
+                                <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
+                                    <span className="text-[8px] font-bold text-blue-600">10%</span>
+                                  </div>
+                                  <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                                  </div>
+                                </div>
+
+                                {/* Curso 3 */}
+                                <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5 opacity-55">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Prevención y Seguridad</span>
+                                    <span className="text-[8px] font-bold text-slate-400">Pendiente</span>
+                                  </div>
+                                  <div className="w-full h-1 bg-slate-200 rounded-full"></div>
+                                </div>
                               </div>
-                              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                            )}
+
+                            {phoneActiveTab === 'herramientas' && (
+                              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
+                                <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Herramientas</h5>
+                                
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                    <span className="text-sm">🏖️</span>
+                                    <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Solicitar Vacaciones</span>
+                                  </button>
+
+                                  <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                    <span className="text-sm">📄</span>
+                                    <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Recibos Nómina</span>
+                                  </button>
+
+                                  <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                    <span className="text-sm">🤕</span>
+                                    <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Nueva Incidencia</span>
+                                  </button>
+
+                                  <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
+                                    <span className="text-sm">🔑</span>
+                                    <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Cambiar PIN</span>
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-
-                            {/* Curso 2 */}
-                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
-                                <span className="text-[8px] font-bold text-blue-600">10%</span>
-                              </div>
-                              <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
-                              </div>
-                            </div>
-
-                            {/* Curso 3 */}
-                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl space-y-1.5 opacity-55">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[8.5px] font-black text-slate-800 uppercase tracking-wide truncate max-w-[120px]">Prevención y Seguridad</span>
-                                <span className="text-[8px] font-bold text-slate-400">Pendiente</span>
-                              </div>
-                              <div className="w-full h-1 bg-slate-200 rounded-full"></div>
-                            </div>
-                          </div>
-                        )}
-
-                        {phoneActiveTab === 'herramientas' && (
-                          <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-1">
-                            <h5 className="text-[9.5px] font-black uppercase text-slate-800 tracking-wider">Herramientas</h5>
-                            
-                            <div className="grid grid-cols-2 gap-2">
-                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                                <span className="text-sm">🏖️</span>
-                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Solicitar Vacaciones</span>
-                              </button>
-
-                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                                <span className="text-sm">📄</span>
-                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Recibos Nómina</span>
-                              </button>
-
-                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                                <span className="text-sm">🤕</span>
-                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Nueva Incidencia</span>
-                              </button>
-
-                              <button type="button" className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98]">
-                                <span className="text-sm">🔑</span>
-                                <span className="text-[7.5px] font-black text-slate-750 uppercase leading-none">Cambiar PIN</span>
-                              </button>
-                            </div>
-                          </div>
+                            )}
+                          </>
                         )}
                       </div>
 
@@ -890,28 +893,64 @@ export const SaaSLandingPage = () => {
                     <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
                   </div>
 
-                  {/* Right Side: Pro Option Panel */}
-                  <div className="flex flex-col gap-3 w-full max-w-[210px] shrink-0 text-left order-4">
-                    <h5 className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Funciones Premium</h5>
+                  {/* Right Side: Comparative Detail Card */}
+                  <div className="flex-1 max-w-sm text-left bg-white border border-slate-200/80 p-6 rounded-3xl shadow-xl shadow-slate-100/50 space-y-4 order-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{simulatedTier === 'pro' ? '👑' : '🔓'}</span>
+                      <h4 className="text-sm font-black text-slate-800 tracking-tight uppercase">
+                        {simulatedTier === 'pro' ? 'Reloj Checador Pro' : 'Reloj Checador Básico'}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                      {simulatedTier === 'pro' 
+                        ? 'Ideal para empresas que requieren un control operacional riguroco, pases de lista automáticos y checklists de tareas vinculados al checador.'
+                        : 'Pensado para microempresas que solo necesitan que sus empleados marquen entrada y salida, sin pases de lista ni geolocalización GPS.'}
+                    </p>
                     
-                    <button 
-                      type="button"
-                      onClick={() => setSimulatedTier('pro')}
-                      className={`p-3.5 rounded-2xl border text-left transition-all active:scale-95 flex flex-col gap-1 w-full select-none cursor-pointer border-none outline-none ${
-                        simulatedTier === 'pro' 
-                          ? 'bg-white border-violet-500 shadow-md shadow-violet-500/5 ring-1 ring-violet-500/20' 
-                          : 'bg-slate-50/50 border-slate-150 text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm">👑</span>
-                        <span className={`text-[11.5px] font-black ${simulatedTier === 'pro' ? 'text-violet-600' : 'text-slate-700'}`}>Versión Pro</span>
-                        <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 border border-violet-100 leading-none">Premium</span>
-                      </div>
-                      <p className="text-[9.5px] text-slate-450 font-medium leading-tight">
-                        Barra cronológica proporcional, geocercas, pases de lista automáticos y asistencia consolidada.
-                      </p>
-                    </button>
+                    <div className="border-t border-slate-100 pt-3 space-y-2.5">
+                      <h5 className="text-[9px] font-black uppercase tracking-wider text-slate-400">Características de esta versión</h5>
+                      <ul className="space-y-2">
+                        {simulatedTier === 'pro' ? (
+                          <>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
+                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                              <span><strong>Barra de Progreso y Badges</strong>: Timeline dinámico con colores de entrada, descansos y comidas.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
+                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                              <span><strong>Auditoría de Ubicación GPS</strong>: Valida que el colaborador esté en sucursal al checar.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
+                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                              <span><strong>Checklist de Tareas Integrado</strong>: Lista de pendientes operativas del día directo en la app.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-700">
+                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                              <span><strong>Academia LMS e Incidencias</strong>: Cursos de inducción y solicitud de vacaciones/permisos.</span>
+                            </li>
+                          </>
+                        ) : (
+                          <>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-600">
+                              <span className="text-emerald-500 font-extrabold text-xs">✓</span>
+                              <span><strong>Fichaje Básico de Turnos</strong>: Registro tradicional de entradas y salidas por PIN.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
+                              <span className="text-rose-500 font-extrabold text-xs">✗</span>
+                              <span className="line-through">Sin geolocalización (fichajes fuera de sucursal permitidos).</span>
+                            </li>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
+                              <span className="text-rose-500 font-extrabold text-xs">✗</span>
+                              <span className="line-through">Sin barra cronológica interactiva de colores de estado.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5 text-[11px] font-bold text-slate-400/80">
+                              <span className="text-rose-500 font-extrabold text-xs">✗</span>
+                              <span className="line-through">Pestañas de Tareas, LMS y Herramientas bloqueadas.</span>
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
                   </div>
                 </div>
               ) : (

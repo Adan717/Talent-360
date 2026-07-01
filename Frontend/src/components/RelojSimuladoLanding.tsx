@@ -392,10 +392,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="flex w-full z-10 relative px-0 mb-0 mt-1">
           {/* Entrada Node */}
           <div 
-            onClick={() => hasCheckedIn && setActiveModal('entry')}
-            className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
-              hasCheckedIn ? 'cursor-pointer hover:scale-105 active:scale-95' : 'cursor-default'
-            }`}
+            onClick={() => setActiveModal('entry')}
+            className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
             <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-indigo-650 dark:text-indigo-400">Entrada</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
@@ -414,10 +412,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             const isActive = clockState === 'short_break';
             return (
               <div 
-                onClick={() => (isDone || isActive) && setActiveModal('break')}
-                className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
-                  isDone || isActive ? 'cursor-pointer hover:scale-105 active:scale-95' : 'cursor-default'
-                }`}
+                onClick={() => setActiveModal('break')}
+                className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
                 <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-purple-650 dark:text-purple-400">Descanso</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
@@ -438,10 +434,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             const isActive = clockState === 'meal';
             return (
               <div 
-                onClick={() => (isDone || isActive) && setActiveModal('meal')}
-                className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
-                  isDone || isActive ? 'cursor-pointer hover:scale-105 active:scale-95' : 'cursor-default'
-                }`}
+                onClick={() => setActiveModal('meal')}
+                className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
                 <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-amber-650 dark:text-amber-400">Comida</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
@@ -458,10 +452,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
           {/* Salida Node */}
           <div 
-            onClick={() => hasCheckedOut && setActiveModal('exit')}
-            className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
-              hasCheckedOut ? 'cursor-pointer hover:scale-105 active:scale-95' : 'cursor-default'
-            }`}
+            onClick={() => setActiveModal('exit')}
+            className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
             <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-emerald-650 dark:text-emerald-400">Salida</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
@@ -935,7 +927,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
       {/* PANTALLAS DE VALIDACIÓN PRO SIMULADAS (Selfie + GPS) */}
       {isVerifying && (
-        <div className="absolute inset-0 bg-slate-950/90 z-80 flex flex-col items-center justify-center p-6 text-white text-center font-sans">
+        <div className="absolute inset-0 bg-slate-955/90 z-80 flex flex-col items-center justify-center p-6 text-white text-center font-sans">
           {verifyingStep === 'gps' ? (
             <div className="space-y-4 animate-pulse">
               <div className="w-16 h-16 rounded-full bg-indigo-500/20 border-2 border-indigo-500 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(99,102,241,0.5)]">
@@ -967,7 +959,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           }`}>
             <button 
               onClick={() => setActiveModal(null)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-650 cursor-pointer border-none bg-transparent font-bold text-sm"
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent font-bold text-sm"
             >
               ✕
             </button>
@@ -981,73 +973,125 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                       Registro de Entrada
                     </h3>
                   </div>
-                  <span className="bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 text-rose-650 dark:text-rose-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
-                    ⚠️ Retardo
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                    hasCheckedIn ? 'bg-rose-50 border-rose-100 text-rose-650 dark:bg-rose-955/20 dark:border-rose-900/30 dark:text-rose-450' : 'bg-slate-100 border-slate-200 text-slate-500'
+                  }`}>
+                    {hasCheckedIn ? '⚠️ Retardo' : '📅 Pendiente'}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border bg-rose-50/40 border-rose-100/60 text-rose-900 dark:text-rose-300 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
-                  Hola, <strong className="font-black text-slate-950 dark:text-white">Francisco Vega</strong>. Buen día. Registraste tu entrada hoy a las <strong className="text-rose-600 dark:text-rose-400 font-bold">09:05 AM</strong> (tu entrada regular es a las 09:00 AM), acumulando un retardo de <strong className="text-rose-600 dark:text-rose-400 font-bold">5 minutos</strong>. Recuerda ingresar a tiempo para proteger tu bono de puntualidad mensual. ¡Mucho éxito en el turno de hoy! 💪
+                <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
+                  hasCheckedIn ? 'bg-rose-50/40 border-rose-100/60 text-rose-900 dark:bg-slate-900/40 dark:border-slate-800' : 'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                }`}>
+                  {hasCheckedIn ? (
+                    <>Entrada registrada a las <strong className="text-rose-600 dark:text-rose-455 font-bold">09:05 AM</strong> (Retardo de 5 minutos).</>
+                  ) : (
+                    <>Entrada pendiente de registrar. Tu horario de ingreso es a las <strong className="text-slate-850 dark:text-white font-bold">09:00 AM</strong>.</>
+                  )}
                 </div>
               </div>
             )}
 
-            {activeModal === 'break' && (
-              <div className="space-y-4 text-left">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
-                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
-                      Registro de Descanso
-                    </h3>
+            {activeModal === 'break' && (() => {
+              const isDone = breaksTaken[99] !== undefined;
+              const isActive = clockState === 'short_break';
+              return (
+                <div className="space-y-4 text-left">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
+                      <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                        Registro de Descanso
+                      </h3>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                      isActive ? 'bg-purple-50 border-purple-100 text-purple-650' :
+                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-900/30' :
+                      'bg-slate-100 border-slate-200 text-slate-500'
+                    }`}>
+                      {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
+                    </span>
                   </div>
-                  <span className="bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
-                    ✓ Cumplido
-                  </span>
-                </div>
 
-                <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:text-emerald-350 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
-                  ¡Hola, <strong className="font-black text-slate-955 dark:text-white">Francisco Vega</strong>! Tu descanso (iniciado a las 12:00 PM) duró <strong className="text-emerald-650 dark:text-emerald-400 font-bold">15 minutos</strong> (dentro de tu límite regular de 15 minutos). ¡Excelente coordinación con tus tiempos de descanso! ☕
-                </div>
-              </div>
-            )}
-
-            {activeModal === 'meal' && (
-              <div className="space-y-4 text-left">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Utensils className="w-5 h-5 text-amber-600 shrink-0" />
-                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
-                      Horario de Almuerzo
-                    </h3>
+                  <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
+                    isActive ? 'bg-purple-50/40 border-purple-100/60 text-purple-900 dark:bg-slate-900/40 dark:border-slate-800' :
+                    isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' :
+                    'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                  }`}>
+                    {isActive ? (
+                      <>Descanso iniciado a las <strong className="text-purple-650 font-bold">12:00 PM</strong> (Tolerancia: 15 min).</>
+                    ) : isDone ? (
+                      <>Descanso completado: <strong className="text-emerald-650 dark:text-emerald-455 font-bold">12:00 PM - 12:15 PM</strong> (15 minutos).</>
+                    ) : (
+                      <>Descanso de Ley Silla pendiente (Tolerancia regular: 15 minutos).</>
+                    )}
                   </div>
-                  <span className="bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
-                    ✓ Cumplido
-                  </span>
                 </div>
+              );
+            })()}
 
-                <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:text-emerald-350 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
-                  ¡Hola, <strong className="font-black text-slate-955 dark:text-white">Francisco Vega</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-650 dark:text-emerald-400 font-bold">45 minutos</strong> (dentro del límite regular de 45 minutos). ¡Excelente coordinación! 🌟
+            {activeModal === 'meal' && (() => {
+              const isDone = mealEndTimes[99] !== undefined;
+              const isActive = clockState === 'meal';
+              return (
+                <div className="space-y-4 text-left">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Utensils className="w-5 h-5 text-amber-600 shrink-0" />
+                      <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                        Horario de Almuerzo
+                      </h3>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                      isActive ? 'bg-amber-50 border-amber-100 text-amber-650' :
+                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-900/30' :
+                      'bg-slate-100 border-slate-200 text-slate-500'
+                    }`}>
+                      {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
+                    </span>
+                  </div>
+
+                  <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
+                    isActive ? 'bg-amber-50/40 border-amber-100/60 text-amber-900 dark:bg-slate-900/40' :
+                    isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' :
+                    'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                  }`}>
+                    {isActive ? (
+                      <>Almuerzo iniciado a las <strong className="text-amber-650 font-bold">02:00 PM</strong> (Tolerancia: 45 min).</>
+                    ) : isDone ? (
+                      <>Almuerzo completado: <strong className="text-emerald-650 dark:text-emerald-455 font-bold">02:00 PM - 02:45 PM</strong> (45 minutos).</>
+                    ) : (
+                      <>Almuerzo pendiente de tomar (Tolerancia regular: 45 minutos).</>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {activeModal === 'exit' && (
               <div className="space-y-4 text-left">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <LogOut className="w-5 h-5 text-teal-600 shrink-0" />
+                    <LogOut className="w-5 h-5 text-teal-650 shrink-0" />
                     <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
                       Resumen de Turno
                     </h3>
                   </div>
-                  <span className="bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
-                    ✓ Cumplido
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                    hasCheckedOut ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-900/30' : 'bg-slate-100 border-slate-200 text-slate-500'
+                  }`}>
+                    {hasCheckedOut ? '✓ Cumplido' : '📅 Pendiente'}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:text-emerald-350 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
-                  ¡Hola, <strong className="font-black text-slate-955 dark:text-white">Francisco Vega</strong>! Tu jornada de hoy finalizó con éxito. Completaste <strong className="text-emerald-650 dark:text-emerald-400 font-bold">8 horas 55 minutos</strong> de trabajo sin desvíos registrados. ¡Excelente desempeño hoy! 🎉
+                <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
+                  hasCheckedOut ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' : 'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                }`}>
+                  {hasCheckedOut ? (
+                    <>Jornada finalizada: <strong className="text-emerald-650 dark:text-emerald-455 font-bold">06:00 PM</strong> (8h 55m laborados sin desvíos).</>
+                  ) : (
+                    <>Salida pendiente de registrar. Tu horario regular de salida es a las <strong className="text-slate-850 dark:text-white font-bold">06:00 PM</strong>.</>
+                  )}
                 </div>
               </div>
             )}

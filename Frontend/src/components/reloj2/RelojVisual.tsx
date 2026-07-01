@@ -12,9 +12,102 @@ import { MobileBottomNav } from './MobileBottomNav';
 import RecursosHumanos from '../RecursosHumanos';
 import DialPrincipal from './DialPrincipal';
 
-export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?: boolean }) {
+export default function RelojVisual({ 
+  isMobileFrame = false,
+  isSimulated = false,
+  simulatedTier = 'pro',
+  setSimulatedTier
+}: { 
+  isMobileFrame?: boolean;
+  isSimulated?: boolean;
+  simulatedTier?: 'free' | 'pro';
+  setSimulatedTier?: (tier: 'free' | 'pro') => void;
+}) {
   const { currentTier, isFeatureUnlocked, isSandboxMode } = useAppStore();
-  const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+  const isPro = isSimulated ? (simulatedTier === 'pro') : (currentTier === 'pro' || currentTier === 'enterprise');
+
+  const clockContextReal = useClockContext2();
+
+  // Estados de simulación local en memoria para el modo demostrativo/landing
+  const [simClockState, setSimClockState] = useState('inactive');
+  const [simPhoneTab, setSimPhoneTab] = useState('checador');
+  const [simInnerTool, setSimInnerTool] = useState(null);
+  const [simTask1Done, setSimTask1Done] = useState(true);
+  const [simTask2Done, setSimTask2Done] = useState(false);
+  const [simIsDark, setSimIsDark] = useState(false);
+
+  const mockProps: any = {
+    isSimulated: true,
+    simulatedTier,
+    setSimulatedTier,
+    clockState: simClockState,
+    currentUser: {
+      id: 99,
+      name: 'Francisco Vega',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces',
+      tenant: { name: 'Decorarte 365' },
+      role: 'empleado',
+      pin_code: '1234'
+    },
+    systemSettings: {
+      clockOpConfig: {
+        allowManualCheckIn: true,
+        gpsValidationEnabled: simulatedTier === 'pro' ? true : false
+      }
+    },
+    workedHours: 6.5,
+    progressPercent: simClockState === 'active' ? 25 : ['break_active', 'break_done'].includes(simClockState) ? 50 : ['lunch_active', 'lunch_done'].includes(simClockState) ? 75 : 100,
+    phoneTab: simPhoneTab,
+    setPhoneTab: setSimPhoneTab,
+    innerTool: simInnerTool,
+    setInnerTool: setSimInnerTool,
+    currentDay: 'Lunes',
+    DIAS_SEMANA: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    shiftConfigs: {
+      99: { restDay: 'Domingo', shiftStart: '09:00', shiftEnd: '18:00' }
+    },
+    chatMessages: [],
+    pendingKeyTransfers: [],
+    lateUsers: [],
+    absentUsers: [],
+    contingencyLogs: [],
+    arrivalTimes: {},
+    checkInTimes: {},
+    checkOutTimes: {},
+    breaksTaken: {},
+    showCustomAlert: (msg: string) => console.log('Mock Alert:', msg),
+    updateClockState: (state: string) => setSimClockState(state),
+    handleAction: (action: string) => {
+      // Simular transiciones de estado
+      if (action === 'iniciar_jornada') setSimClockState('active');
+      else if (action === 'iniciar_descanso') setSimClockState('break_active');
+      else if (action === 'terminar_descanso') setSimClockState('break_done');
+      else if (action === 'iniciar_comida') setSimClockState('lunch_active');
+      else if (action === 'terminar_comida') setSimClockState('lunch_done');
+      else if (action === 'terminar_jornada') setSimClockState('finished');
+    }
+  };
+
+  const context = (isSimulated || !clockContextReal) 
+    ? new Proxy(mockProps, {
+        get: (target, prop) => {
+          if (prop in target) {
+            return target[prop];
+          }
+          const propStr = prop.toString();
+          if (propStr.startsWith('set') || propStr.startsWith('handle') || propStr.startsWith('submit') || propStr.startsWith('request') || propStr.startsWith('approve') || propStr.startsWith('reject')) {
+            return () => {};
+          }
+          if (propStr.includes('List') || propStr.includes('Messages') || propStr.includes('Alarms')) {
+            return [];
+          }
+          if (propStr.includes('Show') || propStr.includes('show')) {
+            return false;
+          }
+          return undefined;
+        }
+      })
+    : clockContextReal;
 
   const {
     currentSimTime,
@@ -208,7 +301,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     completeHandover,
     cashCount,
     setCashCount
-  } = useClockContext2();
+  } = context;
 
   // Estados locales para nuevas herramientas operativas
   const [chatMessageText, setChatMessageText] = useState('');
@@ -2884,42 +2977,188 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           )}
 
           {phoneTab !== 'checador' && (
-            <div className="flex-1 overflow-y-auto p-4 pt-[82px] pb-[88px] scrollbar-none">
-              {phoneTab === 'tareas' && (
-                <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
-              )}
-              {phoneTab === 'academia' && (
-                <Academia onBack={() => setPhoneTab('checador')} />
-              )}
-              {phoneTab === 'evaluacion360' && (
-                <Evaluacion360 onBack={() => setPhoneTab('herramientas')} />
-              )}
-              {phoneTab === 'organigrama' && (
-                <div className="h-full w-full bg-white dark:bg-slate-955 rounded-3xl p-4 overflow-y-auto shadow-inner">
-                  <RecursosHumanos readOnly={true} initialTab="organigrama" />
+            <div className="flex-1 overflow-y-auto p-4 pt-[82px] pb-[88px] scrollbar-none flex flex-col">
+              {isSimulated && simulatedTier === 'free' ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
+                  <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                    <Lock size={22} className="text-rose-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <h5 className="text-[9px] font-black text-rose-800 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                    <h4 className="text-[11px] font-black text-slate-805 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                    <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
+                      La gestión de {phoneTab === 'tareas' ? 'Tareas' : phoneTab === 'academia' ? 'Academia' : 'Herramientas'} requiere la Versión Pro del Reloj Checador.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof setSimulatedTier === 'function') {
+                        setSimulatedTier('pro');
+                      }
+                    }}
+                    className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-[8.5px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer mt-1"
+                  >
+                    Probar Versión Pro
+                  </button>
                 </div>
-              )}
-              {phoneTab === 'perfil' && renderProfilePanel(true)}
-              {phoneTab === 'herramientas' && (
-                <div className="space-y-4">
-                  {innerTool === null ? (
-                    <div className="text-center py-12">
-                      <p className="text-slate-400 font-bold text-sm">Cargando Caja de Herramientas...</p>
-                      <p className="text-xs text-slate-500 mt-2">Usa el botón flotante 🛠️ para ver las herramientas rápidas.</p>
+              ) : isSimulated ? (
+                <div className="flex-1 flex flex-col justify-between">
+                  {phoneTab === 'tareas' && (
+                    <div className="p-1 text-left animate-in fade-in duration-200 flex-grow flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Tareas del Colaborador</h5>
+                          <span className="text-[8px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
+                            {((simTask1Done ? 1 : 0) + (simTask2Done ? 1 : 0))} / 2
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {/* Tarea 1 */}
+                          <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                            simTask1Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
+                          }`}>
+                            <input 
+                              type="checkbox" 
+                              checked={simTask1Done}
+                              onChange={() => setSimTask1Done(!simTask1Done)}
+                              className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                            <div className="leading-tight text-left">
+                              <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
+                              <p className="text-[7.5px] text-slate-450">Sanitizar mostradores y barrer entrada</p>
+                            </div>
+                          </label>
+
+                          {/* Tarea 2 */}
+                          <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
+                            simTask2Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
+                          }`}>
+                            <input 
+                              type="checkbox" 
+                              checked={simTask2Done}
+                              onChange={() => setSimTask2Done(!simTask2Done)}
+                              className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                            <div className="leading-tight text-left">
+                              <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
+                              <p className="text-[7.5px] text-slate-450">Conciliar ventas del día en terminal</p>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/30 rounded-xl p-2 text-[7.5px] text-blue-800 dark:text-blue-300 font-medium leading-normal mt-3">
+                        💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-col h-full bg-transparent">
-                      <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-505 mb-4 flex items-center gap-1">
-                        ← Volver a Herramientas
-                      </button>
-                      {innerTool === 'chat' && renderToolChat()}
-                      {innerTool === 'soplon' && renderToolSoplon()}
-                      {innerTool === 'buzon' && renderToolBuzon()}
-                      {innerTool === 'transfer' && renderToolTransfer()}
-                      {innerTool === 'huida' && renderToolHuida()}
+                  )}
+
+                  {phoneTab === 'academia' && (
+                    <div className="p-1 text-left animate-in fade-in duration-200 space-y-3">
+                      <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Cursos de Inducción</h5>
+                      
+                      {/* Curso 1 */}
+                      <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
+                          <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                        </div>
+                      </div>
+
+                      {/* Curso 2 */}
+                      <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
+                          <span className="text-[8px] font-bold text-blue-600">10%</span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                        </div>
+                      </div>
+
+                      {/* Curso 3 */}
+                      <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 opacity-55">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Prevención y Seguridad</span>
+                          <span className="text-[8px] font-bold text-slate-400">Pendiente</span>
+                        </div>
+                        <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {phoneTab === 'herramientas' && (
+                    <div className="p-1 text-left animate-in fade-in duration-200 space-y-3">
+                      <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Herramientas</h5>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
+                          <span className="text-sm">🏖️</span>
+                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Solicitar Vacaciones</span>
+                        </button>
+
+                        <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
+                          <span className="text-sm">📄</span>
+                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Recibos Nómina</span>
+                        </button>
+
+                        <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
+                          <span className="text-sm">🤕</span>
+                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Nueva Incidencia</span>
+                        </button>
+
+                        <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
+                          <span className="text-sm">🔑</span>
+                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Cambiar PIN</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
+              ) : (
+                <>
+                  {phoneTab === 'tareas' && (
+                    <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
+                  )}
+                  {phoneTab === 'academia' && (
+                    <Academia onBack={() => setPhoneTab('checador')} />
+                  )}
+                  {phoneTab === 'evaluacion360' && (
+                    <Evaluacion360 onBack={() => setPhoneTab('herramientas')} />
+                  )}
+                  {phoneTab === 'organigrama' && (
+                    <div className="h-full w-full bg-white dark:bg-slate-955 rounded-3xl p-4 overflow-y-auto shadow-inner">
+                      <RecursosHumanos readOnly={true} initialTab="organigrama" />
+                    </div>
+                  )}
+                  {phoneTab === 'perfil' && renderProfilePanel(true)}
+                  {phoneTab === 'herramientas' && (
+                    <div className="space-y-4">
+                      {innerTool === null ? (
+                        <div className="text-center py-12">
+                          <p className="text-slate-400 font-bold text-sm">Cargando Caja de Herramientas...</p>
+                          <p className="text-xs text-slate-500 mt-2">Usa el botón flotante 🛠️ para ver las herramientas rápidas.</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col h-full bg-transparent">
+                          <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-505 mb-4 flex items-center gap-1">
+                            ← Volver a Herramientas
+                          </button>
+                          {innerTool === 'chat' && renderToolChat()}
+                          {innerTool === 'soplon' && renderToolSoplon()}
+                          {innerTool === 'buzon' && renderToolBuzon()}
+                          {innerTool === 'transfer' && renderToolTransfer()}
+                          {innerTool === 'huida' && renderToolHuida()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

@@ -272,6 +272,13 @@ try {
         ['routine' => 'Rutina de Cierre de Producción', 'task' => 'Limpieza y orden del taller de ensamble']
     ];
  
+    foreach ($routineTasks as $rt) {
+        DB::table('routine_task')->insert([
+            'routine_id' => $insertedRoutines[$rt['routine']],
+            'task_id' => $insertedTasks[$rt['task']],
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
     }
 
     // 7. Crear Vacantes para DecorArte (Tenant 1)

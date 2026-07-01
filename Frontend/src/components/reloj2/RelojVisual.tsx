@@ -1946,7 +1946,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
           {/* UNIFIED MOBILE HEADER */}
-          <div className="flex items-center justify-between px-4 py-3 border-b shrink-0 bg-white dark:bg-slate-800 text-left">
+          <div className="flex items-center justify-between px-4 py-3.5 shrink-0 bg-white dark:bg-slate-800/90 text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-sm border-b border-slate-100 dark:border-slate-850/30 backdrop-blur-sm">
             {/* Left: Module Info */}
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="shrink-0 flex items-center justify-center">

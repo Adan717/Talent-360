@@ -9,7 +9,7 @@ import Evaluacion360 from './Evaluacion360';
 import axiosInstance from '../../lib/axios';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import { MobileBottomNav } from './MobileBottomNav';
-import RecursosHumanos from '../RecursosHumanos';
+const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
 import DialPrincipal from './DialPrincipal';
 
 export default function RelojVisual({ 
@@ -3133,7 +3133,9 @@ export default function RelojVisual({
                   )}
                   {phoneTab === 'organigrama' && (
                     <div className="h-full w-full bg-white dark:bg-slate-955 rounded-3xl p-4 overflow-y-auto shadow-inner">
-                      <RecursosHumanos readOnly={true} initialTab="organigrama" />
+                      <React.Suspense fallback={<div className="p-4 text-center text-xs text-slate-450">Cargando Organigrama...</div>}>
+                        <RecursosHumanos readOnly={true} initialTab="organigrama" />
+                      </React.Suspense>
                     </div>
                   )}
                   {phoneTab === 'perfil' && renderProfilePanel(true)}
@@ -5317,7 +5319,9 @@ export default function RelojVisual({
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6">
-                  <RecursosHumanos readOnly={true} initialTab="organigrama" />
+                  <React.Suspense fallback={<div className="p-4 text-center text-xs text-slate-450">Cargando Organigrama...</div>}>
+                    <RecursosHumanos readOnly={true} initialTab="organigrama" />
+                  </React.Suspense>
                 </div>
               </div>
             </div>

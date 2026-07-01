@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
-import RelojVisual from './reloj2/RelojVisual';
+const RelojVisual = React.lazy(() => import('./reloj2/RelojVisual'));
 
 export const SaaSLandingPage = () => {
   const navigate = useNavigate();
@@ -491,12 +491,19 @@ export const SaaSLandingPage = () => {
                     </div>
 
                     <div className="flex-grow bg-white flex flex-col justify-between overflow-hidden select-none">
-                      <RelojVisual 
-                        isMobileFrame={true} 
-                        isSimulated={true} 
-                        simulatedTier={simulatedTier}
-                        setSimulatedTier={setSimulatedTier}
-                      />
+                      <Suspense fallback={
+                        <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-3 my-auto">
+                          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Cargando Simulador...</p>
+                        </div>
+                      }>
+                        <RelojVisual 
+                          isMobileFrame={true} 
+                          isSimulated={true} 
+                          simulatedTier={simulatedTier}
+                          setSimulatedTier={setSimulatedTier}
+                        />
+                      </Suspense>
                     </div>
 
                     {/* iOS Home Indicator Bar */}

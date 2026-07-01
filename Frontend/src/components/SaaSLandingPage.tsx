@@ -508,6 +508,7 @@ export const SaaSLandingPage = () => {
                         key={simKey}
                         tier={simulatedTier}
                         setTier={setSimulatedTier}
+                        onActionClick={() => handleBuy('Professional')}
                       />
                     </div>
 

@@ -12,11 +12,13 @@ import { MobileBottomNav } from './reloj2/MobileBottomNav';
 interface RelojSimuladoLandingProps {
   tier: 'free' | 'pro';
   setTier?: (tier: 'free' | 'pro') => void;
+  onActionClick?: () => void;
 }
 
 export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   tier,
-  setTier
+  setTier,
+  onActionClick
 }) => {
   const [clockState, setClockState] = useState<'inactive' | 'active' | 'short_break' | 'meal' | 'finished'>('inactive');
   const [phoneTab, setPhoneTab] = useState<string>('checador');
@@ -33,6 +35,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<'entry' | 'break' | 'meal' | 'exit' | null>(null);
+  const [showPromoGancho, setShowPromoGancho] = useState(false);
 
   // Datos simulados de tiempo
   const [currentSimTime, setCurrentSimTime] = useState(540); // 09:00 AM
@@ -137,6 +140,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           setClockState('finished');
           setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
           setCurrentSimTime(1080);
+          setTimeout(() => {
+            setShowPromoGancho(true);
+          }, 800);
         });
       }
     } else if (stateStr === 'short_break') {
@@ -165,6 +171,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     setBreaksTaken({});
     setHasReservedMeal({});
     setCurrentSimTime(540);
+    setShowPromoGancho(false);
   };
 
   // Ayudantes de conversión y formateo
@@ -1102,6 +1109,79 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             >
               Entendido
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* GANCHO COMERCIAL DE MARKETING (PROMO AL FINAL DE LA SIMULACIÓN) */}
+      {showPromoGancho && (
+        <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
+          <div onClick={() => setShowPromoGancho(false)} className="absolute inset-0 bg-slate-955/80 backdrop-blur-xs"></div>
+          
+          <div className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10">
+            <button 
+              onClick={() => setShowPromoGancho(false)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 cursor-pointer border-none bg-transparent font-bold text-sm"
+            >
+              ✕
+            </button>
+
+            <div className="flex flex-col items-center gap-3">
+              {/* Icono de Escudo de Seguridad / Validación */}
+              <div className="w-12 h-12 rounded-full bg-violet-955 border border-violet-850 flex items-center justify-center text-violet-400 relative">
+                <ShieldCheck size={26} className="text-violet-400 animate-[pulse_2s_infinite]" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-violet-300">
+                  ¡Fichaje Seguro Activo!
+                </h3>
+                <p className="text-[9.5px] font-bold text-slate-450 mt-1 leading-normal">
+                  Has probado la validación del Reloj Checador PRO de Talent 360.
+                </p>
+              </div>
+
+              <div className="w-full text-left space-y-2 border-y border-slate-800/80 py-3 my-1">
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] text-emerald-450 shrink-0">✓</span>
+                  <span className="text-[8.5px] font-semibold text-slate-350 leading-normal">
+                    <strong>Reconocimiento Facial (Selfie):</strong> Previene que un compañero cheque por otro.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] text-emerald-450 shrink-0">✓</span>
+                  <span className="text-[8.5px] font-semibold text-slate-350 leading-normal">
+                    <strong>Geolocalización GPS:</strong> Bloquea registros fuera del perímetro permitido.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[10px] text-emerald-450 shrink-0">✓</span>
+                  <span className="text-[8.5px] font-semibold text-slate-350 leading-normal">
+                    <strong>Reportes Automatizados:</strong> Calcula retardos y horas extras al instante.
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-full space-y-2">
+                <button
+                  onClick={() => {
+                    setShowPromoGancho(false);
+                    if (onActionClick) onActionClick();
+                  }}
+                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-650 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-violet-500/10 cursor-pointer border-none"
+                >
+                  Probar 14 días Gratis
+                </button>
+                
+                <button
+                  onClick={handleResetSim}
+                  className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
+                >
+                  Reiniciar Simulación
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

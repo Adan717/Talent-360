@@ -19,7 +19,9 @@ class RecruitmentController extends Controller
             'slug' => 'required|string',
         ]);
 
-        $tenant = Tenant::withoutGlobalScopes()->where('public_slug', $slug)->firstOrFail();
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($slug) {
+            $q->where('public_slug', $slug)->orWhere('subdomain', $slug);
+        })->firstOrFail();
         $tenantId = $tenant->id;
 
         $vacancies = Vacancy::withoutGlobalScopes()
@@ -49,7 +51,9 @@ class RecruitmentController extends Controller
     public function storeVacancyAlert(Request $request)
     {
         if ($request->has('slug') && !$request->has('tenant_id')) {
-            $tenant = Tenant::withoutGlobalScopes()->where('public_slug', $request->slug)->first();
+            $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($request) {
+                $q->where('public_slug', $request->slug)->orWhere('subdomain', $request->slug);
+            })->first();
             if ($tenant) {
                 $request->merge(['tenant_id' => $tenant->id]);
             }

@@ -36,7 +36,25 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   // Datos simulados de tiempo
   const [currentSimTime, setCurrentSimTime] = useState(540); // 09:00 AM
-  const [formattedTime, setFormattedTime] = useState('09:00:00 AM');
+  const [blink, setBlink] = useState(true);
+
+  // Intervalo de parpadeo de los dos puntos del segundero
+  useEffect(() => {
+    const blinkInterval = setInterval(() => {
+      setBlink(prev => !prev);
+    }, 1000);
+    return () => clearInterval(blinkInterval);
+  }, []);
+
+  // Formateador de tiempo interactivo de alta fidelidad sin ceros a la izquierda y con parpadeo
+  const getFormattedTimeText = (minsVal: number, blinkVal: boolean) => {
+    const hrs = Math.floor(minsVal / 60);
+    const mins = minsVal % 60;
+    const displayHrs = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs; // Sin padStart en horas
+    const ampm = hrs >= 12 ? 'PM' : 'AM';
+    const separator = blinkVal ? ':' : ' ';
+    return `${displayHrs}${separator}${mins.toString().padStart(2, '0')} ${ampm}`;
+  };
 
   // Copiloto AI chat simulado
   const [chatMessages, setChatMessages] = useState<{sender: 'user' | 'bot', text: string}[]>([
@@ -74,15 +92,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     let timer: any;
     if (clockState === 'active') {
       timer = setInterval(() => {
-        setCurrentSimTime(prev => {
-          const next = prev + 1;
-          const hrs = Math.floor(next / 60);
-          const mins = next % 60;
-          const displayHrs = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs;
-          const ampm = hrs >= 12 ? 'PM' : 'AM';
-          setFormattedTime(`${displayHrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00 ${ampm}`);
-          return next;
-        });
+        setCurrentSimTime(prev => prev + 1);
       }, 4000);
     }
     return () => clearInterval(timer);
@@ -117,7 +127,6 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         setClockState('active');
         setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
         setCurrentSimTime(545);
-        setFormattedTime('09:05:00 AM');
       });
     } else if (stateStr === 'active') {
       const hasTakenBreak = breaksTaken[99] !== undefined;
@@ -128,20 +137,17 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         setClockState('short_break');
         setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
         setCurrentSimTime(720);
-        setFormattedTime('12:00:00 PM');
       } else if (!hasTakenMeal) {
         // Simular comida
         setClockState('meal');
         setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
         setCurrentSimTime(840);
-        setFormattedTime('02:00:00 PM');
       } else {
         // Simular salida
         runProVerification(() => {
           setClockState('finished');
           setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
           setCurrentSimTime(1080);
-          setFormattedTime('06:00:00 PM');
         });
       }
     } else if (stateStr === 'short_break') {
@@ -150,14 +156,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       setBreakEndTimes({ 99: 735 }); // Regreso 12:15 PM
       setBreaksTaken({ 99: 1 });
       setCurrentSimTime(735);
-      setFormattedTime('12:15:00 PM');
     } else if (stateStr === 'meal') {
       // Regresar comida
       setClockState('active');
       setMealEndTimes({ 99: 885 }); // Regreso 02:45 PM
       setHasReservedMeal({ 99: true });
       setCurrentSimTime(885);
-      setFormattedTime('02:45:00 PM');
     }
   };
 
@@ -172,7 +176,6 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     setBreaksTaken({});
     setHasReservedMeal({});
     setCurrentSimTime(540);
-    setFormattedTime('09:00:00 AM');
   };
 
   // Ayudantes de conversión y formateo
@@ -560,7 +563,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             {/* Dial Central Principal (Importado de producción) */}
             <div className="flex flex-col items-center justify-center shrink-0 my-auto">
               <DialPrincipal
-                isMobile={false}
+                isMobile={true}
                 isOpeningPremium={true}
                 storeStatus="open"
                 openingStatus={null}
@@ -568,7 +571,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 isWithinPerimeter={true}
                 globalUsers={[]}
                 clockState={clockState}
-                formattedTime={formattedTime}
+                formattedTime={getFormattedTimeText(currentSimTime, blink)}
                 btnProps={{
                   disabled: clockState === 'finished',
                   text: btnProps.text,
@@ -981,103 +984,81 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             </button>
 
             {activeModal === 'entry' && (
-              <div className="space-y-3.5 text-left">
-                <div className="flex items-center gap-2">
-                  <LogIn className="text-indigo-500" size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-wider">Detalles de Entrada</h4>
+              <div className="space-y-4 text-left">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-5 h-5 text-indigo-650 shrink-0" />
+                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                      Registro de Entrada
+                    </h3>
+                  </div>
+                  <span className="bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 text-rose-650 dark:text-rose-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                    ⚠️ Retardo
+                  </span>
                 </div>
-                
-                <div className="space-y-2 text-[10px]">
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Hora de Registro</span>
-                    <span className="font-mono font-bold">09:05:12 AM</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Tolerancia</span>
-                    <span className="text-amber-500 font-bold">Retardo (5 min)</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">GPS (Geocerca)</span>
-                    <span className="text-emerald-500 font-bold">Válido (Dentro)</span>
-                  </div>
-                  {tier === 'pro' && (
-                    <div className="flex items-center justify-between border-b pb-1 dark:border-slate-800">
-                      <span className="text-slate-400">Foto Selfie</span>
-                      <img src={currentUser.avatar} alt="Selfie" className="w-5 h-5 rounded object-cover border border-emerald-500" />
-                    </div>
-                  )}
+
+                <div className="p-4 rounded-2xl border bg-rose-50/40 border-rose-100/60 text-rose-900 dark:text-rose-300 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
+                  Hola, <strong className="font-black text-slate-950 dark:text-white">Francisco Vega</strong>. Buen día. Registraste tu entrada hoy a las <strong className="text-rose-600 dark:text-rose-400 font-bold">09:05 AM</strong> (tu entrada regular es a las 09:00 AM), acumulando un retardo de <strong className="text-rose-600 dark:text-rose-400 font-bold">5 minutos</strong>. Recuerda ingresar a tiempo para proteger tu bono de puntualidad mensual. ¡Mucho éxito en el turno de hoy! 💪
                 </div>
               </div>
             )}
 
             {activeModal === 'break' && (
-              <div className="space-y-3.5 text-left">
-                <div className="flex items-center gap-2">
-                  <Armchair className="text-purple-500" size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-wider">Detalles de Descanso</h4>
+              <div className="space-y-4 text-left">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
+                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                      Registro de Descanso
+                    </h3>
+                  </div>
+                  <span className="bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                    ✓ Cumplido
+                  </span>
                 </div>
-                
-                <div className="space-y-2 text-[10px]">
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Inicio de Descanso</span>
-                    <span className="font-mono font-bold">12:00:10 PM</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Fin de Descanso</span>
-                    <span className="font-mono font-bold">12:15:05 PM</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Duración</span>
-                    <span className="text-emerald-500 font-bold">15 min (Dentro del límite)</span>
-                  </div>
+
+                <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:text-emerald-350 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
+                  ¡Hola, <strong className="font-black text-slate-955 dark:text-white">Francisco Vega</strong>! Tu descanso (iniciado a las 12:00 PM) duró <strong className="text-emerald-650 dark:text-emerald-400 font-bold">15 minutos</strong> (dentro de tu límite regular de 15 minutos). ¡Excelente coordinación con tus tiempos de descanso! ☕
                 </div>
               </div>
             )}
 
             {activeModal === 'meal' && (
-              <div className="space-y-3.5 text-left">
-                <div className="flex items-center gap-2">
-                  <Utensils className="text-amber-500" size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-wider">Detalles de Comida</h4>
+              <div className="space-y-4 text-left">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Utensils className="w-5 h-5 text-amber-600 shrink-0" />
+                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                      Horario de Almuerzo
+                    </h3>
+                  </div>
+                  <span className="bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                    ✓ Cumplido
+                  </span>
                 </div>
-                
-                <div className="space-y-2 text-[10px]">
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Inicio de Comida</span>
-                    <span className="font-mono font-bold">02:00:08 PM</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Fin de Comida</span>
-                    <span className="font-mono font-bold">02:45:00 PM</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Duración</span>
-                    <span className="text-emerald-500 font-bold">45 min (Exacto)</span>
-                  </div>
+
+                <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:text-emerald-350 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
+                  ¡Hola, <strong className="font-black text-slate-955 dark:text-white">Francisco Vega</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-650 dark:text-emerald-400 font-bold">45 minutos</strong> (dentro del límite regular de 45 minutos). ¡Excelente coordinación! 🌟
                 </div>
               </div>
             )}
 
             {activeModal === 'exit' && (
-              <div className="space-y-3.5 text-left">
-                <div className="flex items-center gap-2">
-                  <LogOut className="text-emerald-500" size={18} />
-                  <h4 className="text-xs font-black uppercase tracking-wider">Detalles de Salida</h4>
+              <div className="space-y-4 text-left">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <LogOut className="w-5 h-5 text-teal-600 shrink-0" />
+                    <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
+                      Resumen de Turno
+                    </h3>
+                  </div>
+                  <span className="bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-650 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                    ✓ Cumplido
+                  </span>
                 </div>
-                
-                <div className="space-y-2 text-[10px]">
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Hora de Registro</span>
-                    <span className="font-mono font-bold">06:00:00 PM</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Tiempo Trabajado</span>
-                    <span className="font-bold">8 horas 55 minutos</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1 dark:border-slate-800">
-                    <span className="text-slate-400">Resumen de Turno</span>
-                    <span className="text-emerald-500 font-bold">Excelente (Sin desvíos)</span>
-                  </div>
+
+                <div className="p-4 rounded-2xl border bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:text-emerald-350 dark:bg-slate-900/40 dark:border-slate-800 leading-relaxed text-xs font-semibold">
+                  ¡Hola, <strong className="font-black text-slate-955 dark:text-white">Francisco Vega</strong>! Tu jornada de hoy finalizó con éxito. Completaste <strong className="text-emerald-650 dark:text-emerald-400 font-bold">8 horas 55 minutos</strong> de trabajo sin desvíos registrados. ¡Excelente desempeño hoy! 🎉
                 </div>
               </div>
             )}

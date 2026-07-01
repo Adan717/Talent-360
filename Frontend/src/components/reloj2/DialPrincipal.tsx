@@ -207,9 +207,9 @@ export default function DialPrincipal({
             </div>
 
             {/* CENTRAL ZONE: Digital Time */}
-            <div className={`flex items-baseline font-mono font-black tracking-tight mt-1 mb-2 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-3xl' : 'text-4xl md:text-5xl leading-none'}`}>
+            <div className={`flex items-baseline font-mono font-black tracking-tight mt-1 mb-2 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-[22px]' : 'text-4xl md:text-5xl leading-none'}`}>
               <span>{formattedTime.split(' ')[0]}</span>
-              <span className={`uppercase font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-xs ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
+              <span className={`uppercase font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-[10px] ml-0.5' : 'text-xs md:text-sm ml-1.5'}`}>{formattedTime.split(' ')[1].toLowerCase()}</span>
             </div>
 
             {/* LOWER ZONE: Bottom Label */}

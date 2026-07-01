@@ -186,28 +186,28 @@ export default function DialPrincipal({
       <div className="relative flex-shrink-0 flex items-center justify-center">
         {/* Landing-Page-aligned Shimmer Glow Ring */}
         {getDialGlowClasses() ? (
-          <div className={`absolute w-44 h-44 rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
+          <div className={`absolute w-[158px] h-[158px] rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
         ) : null}
 
         <button 
           onClick={handleDialClick} 
           disabled={!isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'))} 
-          className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-4 ${getDialColorClasses()} ${
-            isMobile ? 'w-52 h-52' : 'w-56 h-56'
+          className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-3.5 ${getDialColorClasses()} ${
+            isMobile ? 'w-[185px] h-[185px]' : 'w-[200px] h-[200px]'
           } ${
             isEffectivelyDisabled
               ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
               : ''
           }`}
         >
-          <div className="flex flex-col items-center justify-center h-full w-full py-2 select-none">
+          <div className="flex flex-col items-center justify-center h-full w-full py-1.5 select-none">
             {/* UPPER ZONE: Prominent Icon */}
-            <div className={`flex-grow flex items-center justify-center mt-3 ${isGpsError ? 'text-white' : 'text-slate-800'}`}>
+            <div className={`flex-grow flex items-center justify-center mt-2.5 ${isGpsError ? 'text-white' : 'text-slate-800'}`}>
               {getDialIcon(size)}
             </div>
 
             {/* CENTRAL ZONE: Digital Time */}
-            <div className={`flex items-baseline font-mono font-black tracking-tight mt-1 mb-2 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-[22px]' : 'text-4xl md:text-5xl leading-none'}`}>
+            <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-[19px]' : 'text-3xl md:text-4xl leading-none'}`}>
               <span>
                 {(() => {
                   const timePart = formattedTime.split(' ')[0];
@@ -224,14 +224,14 @@ export default function DialPrincipal({
                   return timePart;
                 })()}
               </span>
-              <span className={`font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-[10px] ml-1' : 'text-xs md:text-sm ml-2'}`}>
+              <span className={`font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-[9px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
                 {formattedTime.split(' ')[1] ? formattedTime.split(' ')[1].toLowerCase() : ''}
               </span>
             </div>
 
             {/* LOWER ZONE: Bottom Label */}
-            <div className={`px-2 text-center w-full min-h-[36px] flex flex-col items-center justify-center mb-2 ${isGpsError ? 'text-white' : 'text-slate-700'} ${isMobile ? 'max-w-[170px]' : 'max-w-[190px]'}`}>
-              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[10px] md:text-[10.5px]' : 'text-[11px] md:text-[12px]'} ${isGpsError ? 'text-white font-extrabold' : ''}`}>
+            <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-white' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
+              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[9px] md:text-[9.5px]' : 'text-[10px] md:text-[11px]'} ${isGpsError ? 'text-white font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
               {btnProps.subtext && (

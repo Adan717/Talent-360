@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
@@ -454,28 +454,40 @@ export const SaaSLandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75 pointer-events-none"></div>
               
               {activeTab === 'checador' && (
-                <div className="flex justify-center p-1.5 bg-slate-100/90 rounded-2xl max-w-sm w-full mx-auto border border-slate-200 shadow-sm shrink-0 mb-4 order-2 md:absolute md:-top-16 md:left-1/2 md:-translate-x-1/2 md:z-20">
-                  <button 
-                    type="button" 
-                    onClick={() => setSimulatedTier('free')}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer outline-none border-none ${
-                      simulatedTier === 'free' 
-                        ? 'bg-white text-slate-800 shadow-md shadow-slate-200/50' 
-                        : 'text-slate-400 hover:text-slate-650 font-bold'
-                    }`}
+                <div className="flex items-center gap-2 max-w-sm w-full mx-auto mb-4 order-2 md:absolute md:-top-16 md:left-1/2 md:-translate-x-1/2 md:z-20 justify-center">
+                  <div className="flex p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 shadow-sm flex-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setSimulatedTier('free')}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                        simulatedTier === 'free' 
+                          ? 'bg-white text-slate-800 shadow-md shadow-slate-200/50' 
+                          : 'text-slate-400 hover:text-slate-650 font-bold'
+                      }`}
+                    >
+                      <span>🔓</span> Básica
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setSimulatedTier('pro')}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
+                        simulatedTier === 'pro' 
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/10' 
+                          : 'text-slate-400 hover:text-slate-650 font-bold'
+                      }`}
+                    >
+                      <span>👑</span> Pro
+                    </button>
+                  </div>
+                  
+                  {/* Botón de Reinicio Rápido */}
+                  <button
+                    type="button"
+                    title="Reiniciar Simulación"
+                    onClick={() => setSimKey(prev => prev + 1)}
+                    className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
                   >
-                    <span>🔓</span> Versión Básica
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setSimulatedTier('pro')}
-                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer outline-none border-none ${
-                      simulatedTier === 'pro' 
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/10' 
-                        : 'text-slate-400 hover:text-slate-650 font-bold'
-                    }`}
-                  >
-                    <span>👑</span> Versión Pro
+                    <RotateCcw size={15} />
                   </button>
                 </div>
               )}
@@ -560,15 +572,7 @@ export const SaaSLandingPage = () => {
                           </>
                         )}
                       </ul>
-                      <div className="border-t border-slate-100 pt-4 mt-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setSimKey(prev => prev + 1)}
-                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 px-4 rounded-2xl text-[9px] uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          🔄 Reiniciar Simulación del Checador
-                        </button>
-                      </div>
+
                     </div>
                   </div>
                 </div>

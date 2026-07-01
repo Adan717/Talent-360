@@ -3068,88 +3068,61 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               );
 
               return (
-                <div className="space-y-6">
-                  {/* Status Banner */}
-                  <div className="text-center">
+                <div className="space-y-4">
+                  {/* Minimal Header */}
+                  <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 text-left">
+                      <Utensils className="w-5 h-5 text-amber-550 shrink-0" />
+                      <h3 className="font-black text-slate-800 text-sm">
+                        Horario de Almuerzo
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                        isActive ? 'bg-amber-50 border-amber-100 text-amber-650' :
+                        hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-650' :
+                        isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-650' :
+                        'bg-blue-50 border-blue-100 text-blue-650'
+                      }`}>
+                        {isActive ? '⏳ En curso' :
+                         hasExceeded ? '⚠️ Límite Excedido' :
+                         isDone ? '✓ Cumplido' : '🍽️ Sin Registro'}
+                      </span>
+                      <button onClick={() => setShowMealDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer ml-1 select-none">✕</button>
+                    </div>
+                  </div>
+
+                  {/* Colored status container */}
+                  <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
+                    isActive ? 'bg-amber-50/40 border-amber-100/60 text-amber-900' :
+                    hasExceeded ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' :
+                    isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900' :
+                    'bg-slate-50/50 border-slate-150 text-slate-700'
+                  }`}>
                     {isActive ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-amber-100 animate-pulse">
-                          ⏳
-                        </div>
-                        <h3 className="text-base font-black text-amber-605">Almuerzo en Curso</h3>
-                      </div>
+                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu tiempo de comida reservado. Recuerda registrar tu reingreso a tiempo para cumplir tus metas de asistencia.</>
                     ) : hasExceeded ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-rose-100">
-                          ⚠️
-                        </div>
-                        <h3 className="text-base font-black text-rose-600">Límite Superado</h3>
-                      </div>
+                      <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-rose-600 font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info?.extra} minutos</strong>. Por favor, planifica mejor tus tiempos de almuerzo. ⚠️</>
                     ) : isDone ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-emerald-100">
-                          ✓
-                        </div>
-                        <h3 className="text-base font-black text-emerald-650">Comida Registrada</h3>
-                      </div>
+                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-600 font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación y cuidado de tus tiempos! 🌟</>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-slate-150">
-                          🍔
-                        </div>
-                        <h3 className="text-base font-black text-slate-700">Horario de Comida</h3>
-                      </div>
+                      <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Aún no registras tu salida a almorzar ni has reservado un bloque de horario para hoy. Te sugerimos hacerlo pronto para coordinar el aforo con tus compañeros.</>
                     )}
                   </div>
 
-                  {/* Motivational message */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
-                    <p className="text-xs font-semibold leading-relaxed text-slate-700">
-                      {isActive ? (
-                        <>¡Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu bloque de comida. Recuerda registrar tu reingreso a tiempo para cumplir tus metas de asistencia.</>
-                      ) : hasExceeded ? (
-                        <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-rose-600">{info?.duration} minutos</strong>, excediendo el límite establecido de {limit} minutos por <strong className="text-rose-600">{info?.extra} minutos</strong>. Te sugerimos planificar mejor tus tiempos en tus próximos turnos. ⚠️</>
-                      ) : isDone ? (
-                        <>¡Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-600 font-bold">{info?.duration} minutos</strong>, dentro del límite establecido de {limit} minutos. ¡Excelente control de tus tiempos para el equipo! 🌟</>
-                      ) : (
-                        <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Aún no registras tu salida a comer ni has apartado tu horario de hoy. Recuerda coordinarte con tus compañeros del mismo puesto.</>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Specific details */}
-                  {info && !info.isReserved && (
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left space-y-2">
-                      <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                        <span>Límite Asignado:</span>
-                        <span className="text-slate-800">{limit} minutos</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                        <span>Duración Real:</span>
-                        <span className="text-slate-800">{info.duration} minutos</span>
-                      </div>
-                      {info.extra > 0 && (
-                        <div className="flex justify-between items-center text-xs font-black text-rose-600">
-                          <span>Tiempo Excedido:</span>
-                          <span>+{info.extra} minutos</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Booking controls / swaps */}
+                  {/* Booking / Swaps */}
                   {(isDone || isActive) ? (
                     <div className="space-y-4">
                       {mySlots.length > 0 && (
-                        <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl text-center">
-                          <span className="text-[10px] font-extrabold uppercase text-amber-700 block">Horario Reservado original</span>
-                          <span className="text-sm font-black text-amber-600">{mySlots.join(' - ')}</span>
+                        <div className="p-3 bg-amber-50/45 border border-amber-100/60 rounded-xl text-center">
+                          <span className="text-[10px] font-extrabold uppercase text-amber-700 block">Horario Reservado</span>
+                          <span className="text-xs font-black text-amber-600">{mySlots.join(' - ')}</span>
                         </div>
                       )}
 
                       {candidateColleagues.length > 0 ? (
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left">
-                          <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-left">
+                          <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1">
                             <span>🔄</span> Intercambiar con un compañero
                           </h4>
                           <select 
@@ -3166,7 +3139,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                                 }
                               }
                             }}
-                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none select-none text-slate-800"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none select-none text-slate-800"
                           >
                             <option value="" disabled>Selecciona un compañero...</option>
                             {candidateColleagues.map((partner: any) => {
@@ -3192,7 +3165,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                           }}
                           className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
                         >
-                          Liberar y Cancelar Horario
+                          Liberar Reserva
                         </button>
                       )}
                     </div>
@@ -3204,7 +3177,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                             setShowMealDetailsModal(false);
                             setShowMealReservationModal(true);
                           }}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
                         >
                           Reservar Horario Ahora
                         </button>
@@ -3215,7 +3188,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                               confirmMealReservation(0);
                               setShowMealDetailsModal(false);
                             }}
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-4 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
                           >
                             Registrar Salida a Comer
                           </button>
@@ -3223,13 +3196,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       )}
                     </div>
                   )}
-
-                  <button 
-                    onClick={() => setShowMealDetailsModal(false)} 
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none cursor-pointer"
-                  >
-                    Cerrar Ventana
-                  </button>
                 </div>
               );
             })()}
@@ -3248,61 +3214,35 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               const delayMins = actualIn !== undefined ? Math.max(0, actualIn - expectedInMins) : 0;
 
               return (
-                <div className="space-y-6">
-                  {/* Status Banner */}
-                  <div className="text-center">
+                <div className="space-y-4">
+                  {/* Minimal Header */}
+                  <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 text-left">
+                      <LogIn className="w-5 h-5 text-indigo-600 shrink-0" />
+                      <h3 className="font-black text-slate-800 text-sm">
+                        Registro de Entrada
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                        isLate ? 'bg-rose-50 border-rose-100 text-rose-650' : 'bg-emerald-50 border-emerald-100 text-emerald-650'
+                      }`}>
+                        {isLate ? '⚠️ Retardo' : '✓ Puntual'}
+                      </span>
+                      <button onClick={() => setShowEntryDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer ml-1 select-none">✕</button>
+                    </div>
+                  </div>
+
+                  {/* Colored status container */}
+                  <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
+                    isLate ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' : 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900'
+                  }`}>
                     {isLate ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-rose-100">
-                          ⚠️
-                        </div>
-                        <h3 className="text-base font-black text-rose-600">Registro de Retardo</h3>
-                      </div>
+                      <>Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>. Buen día. Registraste tu entrada hoy a las <strong className="text-rose-600 font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}), acumulando un retardo de <strong className="text-rose-600 font-bold">{delayMins} minutos</strong>. Recuerda ingresar a tiempo para proteger tu bono de puntualidad mensual. ¡Mucho éxito en el turno de hoy! 💪</>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-emerald-100">
-                          ✓
-                        </div>
-                        <h3 className="text-base font-black text-emerald-650">Ingreso Puntual</h3>
-                      </div>
+                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Buen día. Registraste tu entrada de forma puntual hoy a las <strong className="text-emerald-650 font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}). ¡Excelente inicio de jornada! Sigue así para asegurar tu bono de puntualidad. ⭐</>
                     )}
                   </div>
-
-                  {/* Motivational Personal Message */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
-                    <p className="text-xs font-semibold leading-relaxed text-slate-700">
-                      {isLate ? (
-                        <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Buen día. Hoy registraste tu entrada con un retardo de <strong className="text-rose-600 font-bold">{delayMins} minutos</strong>. Recuerda llegar a tiempo y aprovechar la tolerancia para mantener tu bono mensual de puntualidad. ¡Mañana es un nuevo día para lograrlo! 💪</>
-                      ) : (
-                        <>¡Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>! Buen día. Muchas gracias por tu puntualidad. Has ingresado a tiempo. Sigue así, ¡estás muy cerca de asegurar tu bono mensual por asistencia y puntualidad! ⭐</>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Details metrics */}
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left space-y-2.5">
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-550">
-                      <span>Tu hora de llegada registrada:</span>
-                      <span className="text-slate-900 font-black">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-550">
-                      <span>Horario de Entrada Asignado:</span>
-                      <span className="text-slate-705 font-black">{formatStringToTimeClean(expectedInStr)}</span>
-                    </div>
-                    {isLate && (
-                      <div className="flex justify-between items-center text-xs font-black text-rose-600">
-                        <span>Tiempo de Retardo:</span>
-                        <span>{delayMins} minutos</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button 
-                    onClick={() => setShowEntryDetailsModal(false)} 
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
-                  >
-                    Cerrar Ventana
-                  </button>
                 </div>
               );
             })()}
@@ -3319,15 +3259,18 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               if (!info) {
                 return (
                   <div className="space-y-4">
+                    <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
+                      <div className="flex items-center gap-2 text-left">
+                        <Coffee className="w-5 h-5 text-purple-600 shrink-0" />
+                        <h3 className="font-black text-slate-800 text-sm">
+                          Registro de Descanso
+                        </h3>
+                      </div>
+                      <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer select-none">✕</button>
+                    </div>
                     <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 italic">
                       Aún no has tomado ningún descanso durante el turno de hoy.
                     </div>
-                    <button 
-                      onClick={() => setShowBreakDetailsModal(false)} 
-                      className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl text-xs border-none cursor-pointer"
-                    >
-                      Cerrar Ventana
-                    </button>
                   </div>
                 );
               }
@@ -3335,70 +3278,43 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               const hasExceeded = info.extra > 0;
 
               return (
-                <div className="space-y-6">
-                  {/* Status Banner */}
-                  <div className="text-center">
+                <div className="space-y-4">
+                  {/* Minimal Header */}
+                  <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 text-left">
+                      <Coffee className="w-5 h-5 text-purple-600 shrink-0" />
+                      <h3 className="font-black text-slate-800 text-sm">
+                        Registro de Descanso
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                        info.isActive ? 'bg-purple-50 border-purple-100 text-purple-650' :
+                        hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-650' :
+                        'bg-emerald-50 border-emerald-100 text-emerald-650'
+                      }`}>
+                        {info.isActive ? '⏳ En curso' :
+                         hasExceeded ? '⚠️ Límite Excedido' :
+                         '✓ Cumplido'}
+                      </span>
+                      <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer ml-1 select-none">✕</button>
+                    </div>
+                  </div>
+
+                  {/* Colored status container */}
+                  <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
+                    info.isActive ? 'bg-purple-50/40 border-purple-100/60 text-purple-900' :
+                    hasExceeded ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' :
+                    'bg-emerald-50/40 border-emerald-100/60 text-emerald-900'
+                  }`}>
                     {info.isActive ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-purple-100 animate-pulse">
-                          ⏳
-                        </div>
-                        <h3 className="text-base font-black text-purple-650">Descanso Activo</h3>
-                      </div>
+                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso de hoy, iniciado a las <strong className="text-purple-600 font-bold">{formatMinsToTimeClean(info.start)}</strong>. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
                     ) : hasExceeded ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-rose-100">
-                          ⚠️
-                        </div>
-                        <h3 className="text-base font-black text-rose-600">Descanso Excedido</h3>
-                      </div>
+                      <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-rose-600 font-bold">{info.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info.extra} minutos</strong>. Te sugerimos cuidar más tus tiempos en tus siguientes descansos. ⚠️</>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-emerald-100">
-                          ✓
-                        </div>
-                        <h3 className="text-base font-black text-emerald-650">Descanso Cumplido</h3>
-                      </div>
+                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-emerald-650 font-bold">{info.duration} minutos</strong> (dentro de tu límite regular de {limit} minutos). ¡Excelente coordinación con tus tiempos de descanso! ☕</>
                     )}
                   </div>
-
-                  {/* Personal Message */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
-                    <p className="text-xs font-semibold leading-relaxed text-slate-700">
-                      {info.isActive ? (
-                        <>¡Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
-                      ) : hasExceeded ? (
-                        <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Hoy tu descanso duró <strong className="text-rose-600">{info.duration} minutos</strong>, lo cual excede el límite permitido de {limit} minutos por <strong className="text-rose-600">{info.extra} minutos</strong>. Por favor, cuida tus tiempos en los siguientes descansos. ⚠️</>
-                      ) : (
-                        <>¡Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>! Tu descanso de hoy duró <strong className="text-emerald-600 font-bold">{info.duration} minutos</strong>, respetando perfectamente el límite de {limit} minutos. ¡Gracias por coordinarte con el equipo! ☕</>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Metrics */}
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                      <span>Límite de Descanso:</span>
-                      <span className="text-slate-800">{limit} minutos</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                      <span>Duración de tu descanso:</span>
-                      <span className="text-slate-800">{info.duration} minutos</span>
-                    </div>
-                    {info.extra > 0 && (
-                      <div className="flex justify-between items-center text-xs font-black text-rose-600">
-                        <span>Tiempo Excedido:</span>
-                        <span>+{info.extra} minutos</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button 
-                    onClick={() => setShowBreakDetailsModal(false)} 
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
-                  >
-                    Cerrar Ventana
-                  </button>
                 </div>
               );
             })()}
@@ -3425,59 +3341,35 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               if (hasMealExceeded) devList.push(`exceso de almuerzo (+${mealInfo.extra}m)`);
 
               return (
-                <div className="space-y-6">
-                  {/* Status Banner */}
-                  <div className="text-center">
+                <div className="space-y-4">
+                  {/* Minimal Header */}
+                  <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 text-left">
+                      <LogOut className="w-5 h-5 text-teal-600 shrink-0" />
+                      <h3 className="font-black text-slate-800 text-sm">
+                        Resumen de Turno
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                        hasAnyDeviation ? 'bg-amber-50 border-amber-100 text-amber-650' : 'bg-emerald-50 border-emerald-100 text-emerald-650'
+                      }`}>
+                        {hasAnyDeviation ? '⚠️ Con Novedad' : '🏆 Impecable'}
+                      </span>
+                      <button onClick={() => setShowExitDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer ml-1 select-none">✕</button>
+                    </div>
+                  </div>
+
+                  {/* Colored status container */}
+                  <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
+                    hasAnyDeviation ? 'bg-amber-50/40 border-amber-100/60 text-amber-900' : 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900'
+                  }`}>
                     {hasAnyDeviation ? (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-amber-100">
-                          ⚠️
-                        </div>
-                        <h3 className="text-base font-black text-amber-600">Turno Finalizado</h3>
-                      </div>
+                      <>Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>. Concluiste tu turno con <strong className="text-slate-950">{workedHours} horas</strong> registradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Registramos algunas novedades: <strong className="text-rose-600">{devList.join(', ')}</strong>. ¡No te preocupes, mañana será una gran oportunidad para retomar tu récord de puntualidad! Buen descanso. 🌟</>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-3xl mb-3 shadow-inner border border-emerald-100">
-                          🏆
-                        </div>
-                        <h3 className="text-base font-black text-emerald-650">¡Jornada Impecable!</h3>
-                      </div>
+                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Excelente trabajo hoy. Finalizaste tu jornada con <strong className="text-emerald-650 font-bold">{workedHours} horas</strong> laboradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Cumpliste perfectamente con tus horarios y límites de asistencia. ¡Muchas gracias por tu compromiso y descansa! 🏆</>
                     )}
                   </div>
-
-                  {/* Motivational Personal Message */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left">
-                    <p className="text-xs font-semibold leading-relaxed text-slate-700">
-                      {hasAnyDeviation ? (
-                        <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Has finalizado tu turno con <strong className="text-slate-900">{workedHours} horas</strong> registradas hoy. Registramos algunos eventos fuera de límites: <strong className="text-rose-600">{devList.join(', ')}</strong>. ¡No te preocupes, mañana es una gran oportunidad para retomar tu récord de asistencia impecable! Que tengas un excelente descanso. 🌟</>
-                      ) : (
-                        <>¡Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>! Excelente trabajo hoy. Has finalizado tu jornada con <strong className="text-emerald-650">{workedHours} horas</strong> laboradas. Cumpliste de forma totalmente puntual, respetando todos tus descansos y alimentos. ¡Muchas gracias por tu compromiso, que tengas un excelente y merecido descanso! 🏆</>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Metrics details */}
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left space-y-2.5">
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                      <span>Jornada Total Registrada:</span>
-                      <span className="text-slate-800 font-black">{workedHours} horas</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                      <span>Tu hora de llegada registrada:</span>
-                      <span className="text-slate-800">{checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                      <span>Tu hora de salida registrada:</span>
-                      <span className="text-slate-800">{checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => setShowExitDetailsModal(false)} 
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-xs transition-colors border-none mt-2 cursor-pointer"
-                  >
-                    Cerrar Ventana
-                  </button>
                 </div>
               );
             })()}
@@ -3485,7 +3377,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
         </div>
       )}
 
-                    {/* Modal MealReservation */}
+                              {/* Modal MealReservation */}
           {showMealReservationModal && (
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">

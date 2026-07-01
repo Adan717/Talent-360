@@ -722,7 +722,8 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<SaaSLandingPage />} />
+      <Route path="/register" element={<Navigate to="/inicio" replace />} />
+      <Route path="/inicio" element={<SaaSLandingPage />} />
       <Route path="/vacantes/:slug" element={
         <Suspense fallback={<LoadingScreen message="Cargando bolsa de trabajo..." />}>
           <WebPublica />

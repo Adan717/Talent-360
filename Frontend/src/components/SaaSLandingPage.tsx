@@ -348,7 +348,7 @@ export const SaaSLandingPage = () => {
           <div className="hidden md:flex gap-8 text-sm font-bold text-slate-500">
             <a href="#features" className="hover:text-slate-900 transition-colors">Plataforma</a>
             <a href="#pricing" className="hover:text-slate-900 transition-colors">Precios</a>
-            <a href="#demo" className="hover:text-slate-900 transition-colors">Demostraciones</a>
+            <a href="#simulador" className="hover:text-slate-900 transition-colors">Simulador</a>
           </div>
           
           {/* Desktop Auth Buttons */}
@@ -400,11 +400,11 @@ export const SaaSLandingPage = () => {
                 <ChevronRight size={16} className="text-slate-400" />
               </a>
               <a 
-                href="#demo" 
+                href="#simulador" 
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
               >
-                <span>Demostraciones</span>
+                <span>Simulador</span>
                 <ChevronRight size={16} className="text-slate-400" />
               </a>
             </nav>
@@ -957,7 +957,7 @@ export const SaaSLandingPage = () => {
       </section>
 
       {/* DEMO SECTION */}
-      <section id="demo" className="py-24 px-6 bg-white border-y border-slate-100">
+      <section id="simulador" className="py-24 px-6 bg-white border-y border-slate-100">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h3 className="text-3xl md:text-5xl font-black text-slate-900 mb-4">Módulos en Acción</h3>

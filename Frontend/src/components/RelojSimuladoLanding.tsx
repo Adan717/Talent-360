@@ -267,27 +267,27 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     }
 
     return (
-      <div className={`absolute top-3 left-3 right-3 z-[75] flex items-center justify-between px-3.5 py-2.5 text-left rounded-2xl border transition-all duration-200 select-none ${
+      <div className={`absolute top-2.5 left-2.5 right-2.5 z-[75] flex items-center justify-between px-3 py-2.5 text-left rounded-xl border transition-all duration-200 select-none ${
         isDark 
           ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-slate-100' 
           : 'bg-white/95 backdrop-blur-md border-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.05)] text-slate-900'
       }`}>
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
-            {icon && React.cloneElement(icon, { className: 'w-8 h-8' })}
+            {icon && React.cloneElement(icon, { className: 'w-6 h-6' })}
           </div>
           <div className="flex flex-col min-w-0 justify-center text-left">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-xs font-black tracking-tight leading-none truncate max-w-[120px]">
+              <h3 className="text-[10.5px] font-black tracking-tight leading-none truncate max-w-[120px]">
                 {title}
               </h3>
               {badgeText && (
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[7px] font-black tracking-wider uppercase ${badgeColorClass}`}>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[6.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
                   {badgeText}
                 </span>
               )}
             </div>
-            <p className={`text-[8.5px] font-bold mt-0.5 leading-none truncate ${
+            <p className={`text-[7.5px] font-bold mt-0.5 leading-none truncate ${
               isDark ? 'text-slate-400' : 'text-[#525f7f]'
             }`}>
               {desc}
@@ -297,19 +297,19 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
         <div className="flex items-center gap-2 shrink-0 min-w-0">
           <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-            <span className={`text-[9.5px] font-black uppercase tracking-wider ${
+            <span className={`text-[8.5px] font-black uppercase tracking-wider ${
               isDark ? 'text-indigo-400' : 'text-[#8a2be2]'
             }`}>
               Decorarte 365
             </span>
-            <span className="text-[9px] font-bold truncate max-w-[90px]">
+            <span className="text-[8px] font-bold truncate max-w-[90px]">
               {currentUser.name}
             </span>
           </div>
           <img 
             src={currentUser.avatar} 
             alt="Avatar" 
-            className={`w-9 h-9 rounded-full object-cover border-2 shadow-sm ${
+            className={`w-[28px] h-[28px] rounded-full object-cover border-2 shadow-sm ${
               isDark ? 'border-slate-700' : 'border-slate-200'
             }`} 
           />

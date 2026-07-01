@@ -14,6 +14,7 @@ import DialPrincipal from './DialPrincipal';
 
 export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?: boolean }) {
   const { currentTier, isFeatureUnlocked, isSandboxMode } = useAppStore();
+  const isPro = currentTier === 'pro' || currentTier === 'enterprise';
 
   const {
     currentSimTime,
@@ -182,7 +183,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     initiateKeyTransfer,
     checkPendingKeyTransfers,
     respondToKeyTransfer,
-    reportAbandonment
+    reportAbandonment,
+    pendingBreakRequests,
+    requestBreak,
+    approveBreakRequest,
+    rejectBreakRequest
   } = useClockContext2();
 
   // Estados locales para nuevas herramientas operativas
@@ -713,7 +718,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             const isAccessible = isBreakDone || isActive;
             return (
               <div 
-                onClick={() => isAccessible && setShowBreakDetailsModal(true)}
+                onClick={() => setShowBreakDetailsModal(true)}
                 className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
@@ -748,7 +753,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             const isAccessible = isMealDone || isActive;
             return (
               <div 
-                onClick={() => isAccessible && setShowMealDetailsModal(true)}
+                onClick={() => setShowMealDetailsModal(true)}
                 className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
@@ -1001,20 +1006,19 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
   const [pwaInstallPrompt, setPwaInstallPrompt] = useState<any>(null);
   const [showPwaBanner, setShowPwaBanner] = useState(false);
   const [showMealDetailsModal, setShowMealDetailsModal] = useState(false);
+  const [pendingSwapPartner, setPendingSwapPartner] = useState<any>(null);
+  const [isSwappingLoading, setIsSwappingLoading] = useState<boolean>(false);
   const [showEntryDetailsModal, setShowEntryDetailsModal] = useState(false);
   const [showBreakDetailsModal, setShowBreakDetailsModal] = useState(false);
   const [showExitDetailsModal, setShowExitDetailsModal] = useState(false);
 
-  // Time format helper removing leading zeros and :00 if exact hour
+  // Time format helper showing full hh:mm format
   const formatMinsToTimeClean = (mins: number) => {
     if (mins === undefined || mins === null) return '--:--';
     const h = Math.floor(mins / 60);
     const m = mins % 60;
     const ampmStr = h >= 12 ? 'pm' : 'am';
     const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    if (m === 0) {
-      return `${displayH} ${ampmStr}`;
-    }
     return `${displayH}:${m.toString().padStart(2, '0')} ${ampmStr}`;
   };
 
@@ -1022,13 +1026,68 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     if (!timeStr) return '';
     const parts = timeStr.split(':');
     const h = parseInt(parts[0], 10);
-    const m = parseInt(parts[1], 10);
+    const m = parseInt(parts[1], 10) || 0;
     const ampmStr = h >= 12 ? 'pm' : 'am';
     const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    if (m === 0) {
-      return `${displayH} ${ampmStr}`;
-    }
     return `${displayH}:${m.toString().padStart(2, '0')} ${ampmStr}`;
+  };
+
+  const renderBreakApprovalBanner = () => {
+    const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+    const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
+    const isSupervisor = currentUser?.role?.toLowerCase()?.includes('sup') || 
+                          currentUser?.role?.toLowerCase()?.includes('admin') || 
+                          currentUser?.role?.toLowerCase()?.includes('gerente') || 
+                          ['Encargado Titular', 'Segundo Encargado', 'Supervisor', 'Administrador / Gerente'].includes(userPositionName);
+
+    const pendingRequests = pendingBreakRequests || {};
+    const pendingCount = Object.keys(pendingRequests).length;
+
+    if (!isSupervisor || pendingCount === 0) return null;
+
+    return (
+      <div className="bg-purple-650 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-purple-500/20">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🧘</span>
+          <div>
+            <p className="font-black text-xs sm:text-sm">Solicitudes de Descanso Pendientes (Ley Silla)</p>
+            <p className="text-[9px] sm:text-[10px] text-purple-100 opacity-90 leading-tight">Colaboradores solicitando descanso activo</p>
+          </div>
+        </div>
+        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+          {Object.entries(pendingRequests).map(([empId, req]: any) => {
+            const emp = globalUsers.find(u => String(u.id) === String(empId));
+            if (!emp) return null;
+            
+            const empCheckInMins = checkInTimes[emp.id];
+            const elapsedMins = empCheckInMins !== undefined ? Math.max(0, currentSimTime - empCheckInMins) : 0;
+            
+            return (
+              <div key={empId} className="bg-purple-700/40 border border-purple-500/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex flex-col text-left">
+                  <span className="text-xs font-black text-white">{emp.name}</span>
+                  <span className="text-[10px] text-purple-100">Trabajado: <strong className="text-white font-bold">{elapsedMins} min</strong> de pie hoy</span>
+                </div>
+                <div className="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
+                  <button 
+                    onClick={() => approveBreakRequest(emp.id)}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                  >
+                    ✓ Aprobar
+                  </button>
+                  <button 
+                    onClick={() => rejectBreakRequest(emp.id)}
+                    className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-[9.5px] px-2.5 py-1.5 rounded-lg border-none cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                  >
+                    ✕ Rechazar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   const getUserKeysIcon = (userId: number) => {
@@ -2003,6 +2062,58 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   </div>
                 </button>
 
+                {isPro && clockState === 'active' && (
+                  <button 
+                    onClick={() => {
+                      setIsFabSheetOpen(false);
+                      setShowTempExitModal(true);
+                    }} 
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-teal-50/50 text-teal-650 flex items-center justify-center shrink-0">
+                      <LogOut size={16} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs">Pase de Salida Temporal 🚪</p>
+                      <p className="text-[9.5px] text-slate-505 font-medium">Registrar una salida temporal de la tienda con GPS activo</p>
+                    </div>
+                  </button>
+                )}
+
+                {isPro && clockState === 'active' && mealStartTimes[currentUser.id] === undefined && (
+                  <button 
+                    onClick={() => {
+                      setIsFabSheetOpen(false);
+                      setShowMealSwapModal(true);
+                    }} 
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-amber-50/50 text-amber-600 flex items-center justify-center shrink-0">
+                      <Utensils size={16} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs">Intercambio de Comida 🍽️</p>
+                      <p className="text-[9.5px] text-slate-505 font-medium">Intercambiar rápidamente tu horario de comida con un compañero</p>
+                    </div>
+                  </button>
+                )}
+
+                <button 
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setShowPanicModal(true);
+                  }} 
+                  className="p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-rose-50 hover:bg-rose-100/50 text-rose-800 cursor-pointer"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <AlertTriangle size={16} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs text-rose-900">🚨 BOTÓN DE PÁNICO</p>
+                    <p className="text-[9.5px] text-rose-700 font-medium">Declarar una emergencia crítica inmediata en la sucursal</p>
+                  </div>
+                </button>
+
                 <button 
                   onClick={() => {
                     setIsFabSheetOpen(false);
@@ -2670,6 +2781,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     </button>
                   </div>
                 )}
+
+                {renderBreakApprovalBanner()}
                 
                 {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
                 {renderBarraCronologica(true)}
@@ -2692,7 +2805,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                   shiftConfigs={shiftConfigs}
                   parseTimeToMins={parseTimeToMins}
                   handleAction={handleAction}
-                  renderGPSView={renderGPSView}
+                  gpsStatus={gpsStatus}
+                  onRequestGPS={requestGPS}
                 />
                 
                 {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
@@ -2878,7 +2992,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
             {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
               <div className="bg-violet-600 text-white px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-start gap-2.5">
                   <span className="text-base">📋</span>
                   <span className="text-xs font-black">Pase de lista de apertura pendiente. Pasa asistencia al equipo de apertura.</span>
                 </div>
@@ -2890,6 +3004,8 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 </button>
               </div>
             )}
+                
+                {renderBreakApprovalBanner()}
                 
                 {/* Timeline Progress (No outer rectangular border - Unified) */}
                 {renderBarraCronologica(false)}
@@ -2923,7 +3039,6 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     </div>
                   )}
 
-                  {renderGPSView(88, false) || (
                     <DialPrincipal
                       isMobile={false}
                       isOpeningPremium={isOpeningPremium}
@@ -2941,9 +3056,9 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                       shiftConfigs={shiftConfigs}
                       parseTimeToMins={parseTimeToMins}
                       handleAction={handleAction}
-                      renderGPSView={renderGPSView}
+                      gpsStatus={gpsStatus}
+                      onRequestGPS={requestGPS}
                     />
-                  )}
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}
                   <div className="flex items-center justify-center gap-3 mt-5.5 w-full max-w-[340px] mx-auto">
@@ -3642,12 +3757,77 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             </div>
           )}
 
-          {/* Modal KeyDelegation */}
-          {showKeyDelegationModal && (
+          {/* Modal KeyDelegation / Entrega de Turno (Shift Handover) */}
+          {showKeyDelegationModal && !isHandoverCompleted && (
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
+              <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
+                <h3 className="font-bold text-cyan-600 mb-2 text-xl flex items-center gap-2"><span>🗝️</span> Entrega de Turno</h3>
+                <p className="text-sm text-slate-650 mb-4 bg-cyan-50 p-3 rounded-xl border border-cyan-100">
+                  Para registrar tu salida, debes realizar el arqueo de caja y delegar las llaves de la sucursal.
+                </p>
+                
+                <div className="mb-5">
+                  <label className="block text-xs font-bold text-slate-505 uppercase tracking-wider mb-2">Arqueo de Caja (Efectivo en Caja)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3 font-bold text-slate-400">$</span>
+                    <input 
+                      type="number" 
+                      placeholder="0.00" 
+                      value={cashCount} 
+                      onChange={(e) => setCashCount(e.target.value)} 
+                      className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-lg font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-5">
+                  <label className="block text-xs font-bold text-slate-505 uppercase tracking-wider mb-2">Entregar llaves a:</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id).map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => setNextDayEncargadoId(u.id)}
+                        className={`w-full p-3.5 rounded-xl border-2 flex items-center justify-between transition-all ${nextDayEncargadoId === u.id ? 'border-cyan-500 bg-cyan-50' : 'border-slate-100 bg-white hover:bg-slate-50'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
+                          <div className="text-left">
+                            <p className="font-bold text-slate-800 text-xs">{u.name}</p>
+                            <p className="text-[9px] text-slate-505">{u.role}</p>
+                          </div>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${nextDayEncargadoId === u.id ? 'border-cyan-500' : 'border-slate-300'}`}>
+                          {nextDayEncargadoId === u.id && <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setShowKeyDelegationModal(false)}
+                    className="w-1/3 border border-slate-200 text-slate-500 font-bold py-4 rounded-2xl"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => completeHandover(nextDayEncargadoId, parseFloat(cashCount) || 0)} 
+                    disabled={!nextDayEncargadoId || !cashCount}
+                    className="w-2/3 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 rounded-2xl shadow-md disabled:opacity-50 transition-opacity"
+                  >
+                    Confirmar Entrega
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showKeyDelegationModal && isHandoverCompleted && (
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
                 <h3 className="font-bold text-indigo-600 mb-2 text-xl flex items-center gap-2"><span>🔑</span> Entregar Llaves</h3>
-                <p className="text-sm text-slate-600 mb-4 bg-indigo-50 p-3 rounded-xl border border-indigo-100">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
+                <p className="text-sm text-slate-665 mb-4 bg-indigo-50 p-3 rounded-xl border border-indigo-100">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
                 
                 <div className="space-y-2 mb-6">
                   {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id).map(u => (
@@ -3660,7 +3840,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                         <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
                         <div className="text-left">
                           <p className="font-bold text-slate-800 text-sm">{u.name}</p>
-                          <p className="text-[10px] text-slate-500">{u.role}</p>
+                          <p className="text-[10px] text-slate-505">{u.role}</p>
                         </div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${nextDayEncargadoId === u.id ? 'border-indigo-500' : 'border-slate-300'}`}>
@@ -3683,161 +3863,334 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
             </div>
           )}
 
-          {/* Modal MealDetailsModal */}
-      {showMealDetailsModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-            {(() => {
-              const mySlots = userReservedMealSlots[currentUser?.id] || [];
-              const isDone = hasReservedMeal[currentUser?.id];
-              const isActive = clockState === 'meal';
-              const isMealReservationUnlocked = useAppStore.getState().isFeatureUnlocked('meal_reservation');
-              
-              const info = getMealInfo();
-              const limit = shiftConfigs[currentUser.id]?.mealMinutes || timeBankConfigs.mealMinutes || 45;
-              const hasExceeded = info && !info.isReserved && info.extra > 0;
-
-              const candidateColleagues = globalUsers.filter((u: any) => 
-                u.id !== currentUser?.id && 
-                u.is_active_employee !== false && 
-                Number(u.job_role_id) === Number(currentUser?.job_role_id)
-              );
-
-              return (
-                <div className="space-y-4">
-                  {/* Minimal Header */}
-                  <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
-                    <div className="flex items-center gap-2 text-left">
-                      <Utensils className="w-5 h-5 text-amber-550 shrink-0" />
-                      <h3 className="font-black text-slate-800 text-sm">
-                        Horario de Almuerzo
-                      </h3>
+          {/* Modal Ley Silla Task Selection */}
+          {showBreakSeatModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+              <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                <h3 className="font-extrabold text-purple-700 mb-2 text-xl flex items-center gap-2"><span>🧘</span> Descanso Ley Silla</h3>
+                <p className="text-sm text-slate-600 mb-5">
+                  De acuerdo con la <strong>Ley Silla</strong>, puedes tomar un descanso de 15 minutos. Selecciona una tarea que puedas realizar sentado durante este periodo:
+                </p>
+                
+                <div className="space-y-2.5 mb-6 max-h-60 overflow-y-auto pr-1">
+                  {useTaskStore.getState().tasks.filter(t => t.canBeDoneSitting).map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => startBreakWithSittingTask(t.id)}
+                      className="w-full p-4 rounded-2xl border border-purple-100 bg-purple-50/30 hover:bg-purple-50 text-left transition-colors flex justify-between items-center"
+                    >
+                      <div>
+                        <p className="font-bold text-purple-950 text-sm">{t.title}</p>
+                        <p className="text-[10px] text-purple-700 mt-0.5">⏱️ {t.estimatedMins} min | 🏆 {t.points} pts</p>
+                      </div>
+                      <span className="text-purple-650 bg-purple-100 p-1.5 rounded-full">🪑</span>
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={() => startBreakWithSittingTask(9999)}
+                    className="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-bold text-slate-800 text-sm">Monitoreo de seguridad desde silla</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">⏱️ 15 min | Tarea predeterminada</p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                        isActive ? 'bg-amber-50 border-amber-100 text-amber-650' :
-                        hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-650' :
-                        isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-650' :
-                        'bg-blue-50 border-blue-100 text-blue-650'
-                      }`}>
-                        {isActive ? '⏳ En curso' :
-                         hasExceeded ? '⚠️ Límite Excedido' :
-                         isDone ? '✓ Cumplido' : '🍽️ Sin Registro'}
-                      </span>
-                      <button onClick={() => setShowMealDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer ml-1 select-none">✕</button>
-                    </div>
-                  </div>
+                    <span className="text-slate-505 bg-slate-200 p-1.5 rounded-full">🪑</span>
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={() => setShowBreakSeatModal(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-655 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                >
+                  Cancelar Descanso
+                </button>
+              </div>
+            </div>
+          )}
 
-                  {/* Colored status container */}
-                  <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
-                    isActive ? 'bg-amber-50/40 border-amber-100/60 text-amber-900' :
-                    hasExceeded ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' :
-                    isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900' :
-                    'bg-slate-50/50 border-slate-150 text-slate-700'
-                  }`}>
-                    {isActive ? (
-                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu tiempo de comida reservado. Recuerda registrar tu reingreso a tiempo para cumplir tus metas de asistencia.</>
-                    ) : hasExceeded ? (
-                      <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-rose-600 font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info?.extra} minutos</strong>. Por favor, planifica mejor tus tiempos de almuerzo. ⚠️</>
-                    ) : isDone ? (
-                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-600 font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación y cuidado de tus tiempos! 🌟</>
-                    ) : (
-                      <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Aún no registras tu salida a almorzar ni has reservado un bloque de horario para hoy. Te sugerimos hacerlo pronto para coordinar el aforo con tus compañeros.</>
-                    )}
-                  </div>
+          {/* Modal Pase de Salida Temporal */}
+          {showTempExitModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+              <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                <h3 className="font-extrabold text-teal-700 mb-2 text-xl flex items-center gap-2"><span>🚪</span> Pase de Salida Temporal</h3>
+                <p className="text-sm text-slate-600 mb-5">
+                  Selecciona el motivo de tu salida temporal. El sistema monitoreará tu ubicación GPS y alertará en caso de sobrepasar el límite configurado.
+                </p>
+                
+                <div className="space-y-2 mb-6">
+                  {['Depósito Bancario', 'Trámite de Tienda', 'Consulta Médica', 'Comida Externa', 'Otro'].map(reason => (
+                    <button
+                      key={reason}
+                      onClick={() => startTempExit(reason)}
+                      className="w-full p-4 rounded-2xl border border-slate-100 hover:border-teal-200 bg-white hover:bg-teal-50/35 text-slate-800 font-bold text-sm text-left transition-all flex justify-between items-center"
+                    >
+                      <span>{reason}</span>
+                      <span className="text-xs text-teal-650 font-normal">Solicitar ➡️</span>
+                    </button>
+                  ))}
+                </div>
+                
+                <button 
+                  onClick={() => setShowTempExitModal(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
 
-                  {/* Booking / Swaps */}
-                  {(isDone || isActive) ? (
-                    <div className="space-y-4">
-                      {mySlots.length > 0 && (
-                        <div className="p-3 bg-amber-50/45 border border-amber-100/60 rounded-xl text-center">
-                          <span className="text-[10px] font-extrabold uppercase text-amber-700 block">Horario Reservado</span>
-                          <span className="text-xs font-black text-amber-600">{mySlots.join(' - ')}</span>
+          {/* Modal Botón de Pánico */}
+          {showPanicModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+              <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                <h3 className="font-extrabold text-rose-655 mb-2 text-xl flex items-center gap-2"><span>🚨</span> Botón de Pánico</h3>
+                <p className="text-sm text-slate-600 mb-5">
+                  Reporta una emergencia crítica en la sucursal de forma inmediata. Se bloqueará la pantalla y se avisará a todos los supervisores.
+                </p>
+                
+                <div className="space-y-2.5 mb-6">
+                  {['Fallo General de Energía', 'Robo / Asalto', 'Incendio', 'Emergencia Médica'].map(emergency => (
+                    <button
+                      key={emergency}
+                      onClick={() => triggerPanic(emergency, `Reportado por ${currentUser.name}`)}
+                      className="w-full p-4 rounded-2xl border border-rose-100 hover:border-rose-300 bg-rose-50/20 hover:bg-rose-50 text-rose-950 font-bold text-sm text-left transition-all animate-pulse"
+                    >
+                      🚨 {emergency}
+                    </button>
+                  ))}
+                </div>
+                
+                <button 
+                  onClick={() => setShowPanicModal(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-605 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                >
+                  Cancelar Reporte
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Intercambio Rápido de Comida */}
+          {showMealSwapModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+              <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                <h3 className="font-extrabold text-amber-700 mb-2 text-xl flex items-center gap-2"><span>🔄</span> Intercambio de Comida</h3>
+                <p className="text-sm text-slate-600 mb-5">
+                  Selecciona un compañero de turno que tenga reservación de comida para intercambiar su horario por el tuyo de forma rápida.
+                </p>
+                
+                <div className="space-y-2 mb-6 max-h-60 overflow-y-auto pr-1">
+                  {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).map(u => (
+                    <button
+                      key={u.id}
+                      onClick={async () => {
+                        await swapMealSlots(currentUser.id, u.id);
+                        setShowMealSwapModal(false);
+                      }}
+                      className="w-full p-3.5 rounded-2xl border border-slate-100 hover:border-amber-250 bg-white hover:bg-amber-50/20 text-left transition-colors flex justify-between items-center"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
+                        <div>
+                          <p className="font-bold text-slate-800 text-xs">{u.name}</p>
+                          <p className="text-[9px] text-slate-500">Slot: {userReservedMealSlots[u.id]?.[0] || 'Reservado'}</p>
                         </div>
-                      )}
-
-                      {candidateColleagues.length > 0 ? (
-                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-left">
-                          <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-                            <span>🔄</span> Intercambiar con un compañero
-                          </h4>
-                          <select 
-                            id="swap-colleague-select"
-                            defaultValue=""
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              if (val) {
-                                const partnerId = Number(val);
-                                const partner = globalUsers.find((u: any) => u.id === partnerId);
-                                if (partner && confirm(`¿Confirmas que deseas intercambiar tu horario de comida con ${partner.name}?`)) {
-                                  await swapMealSlots(currentUser.id, partnerId);
-                                  setShowMealDetailsModal(false);
-                                }
-                              }
-                            }}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none select-none text-slate-800"
-                          >
-                            <option value="" disabled>Selecciona un compañero...</option>
-                            {candidateColleagues.map((partner: any) => {
-                              const pSlots = userReservedMealSlots[partner.id] || [];
-                              const pSlotsDesc = pSlots.length > 0 ? pSlots.join(' - ') : 'Sin Reserva';
-                              return (
-                                <option key={partner.id} value={partner.id}>
-                                  {partner.name} ({pSlotsDesc})
-                                </option>
-                              );
-                            })}
-                          </select>
-                        </div>
-                      ) : null}
-
-                      {!isActive && (
-                        <button 
-                          onClick={async () => {
-                            if (confirm('¿Deseas liberar tu horario de comida reservado?')) {
-                              await cancelMealReservation(currentUser.id);
-                              setShowMealDetailsModal(false);
-                            }
-                          }}
-                          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
-                        >
-                          Liberar Reserva
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {isMealReservationUnlocked ? (
-                        <button 
-                          onClick={() => {
-                            setShowMealDetailsModal(false);
-                            setShowMealReservationModal(true);
-                          }}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
-                        >
-                          Reservar Horario Ahora
-                        </button>
-                      ) : (
-                        <div className="space-y-3">
-                          <button 
-                            onClick={async () => {
-                              confirmMealReservation(0);
-                              setShowMealDetailsModal(false);
-                            }}
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm"
-                          >
-                            Registrar Salida a Comer
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                      <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md">Intercambiar</span>
+                    </button>
+                  ))}
+                  {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).length === 0 && (
+                    <p className="text-slate-500 text-sm text-center py-4 bg-slate-55 rounded-2xl">No hay compañeros con reservas activas hoy para realizar intercambio.</p>
                   )}
                 </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+                
+                <button 
+                  onClick={() => setShowMealSwapModal(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-605 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Overlay de Bloqueo de Pánico */}
+          {isPanicActive && (
+            <div className="fixed inset-0 bg-rose-955/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+              <div className="w-24 h-24 bg-rose-600 rounded-full flex items-center justify-center animate-ping absolute opacity-20"></div>
+              <div className="bg-rose-900 border-4 border-rose-500 text-white rounded-full p-6 mb-6 animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.6)]">
+                <AlertOctagon size={48} />
+              </div>
+              <h2 className="text-3xl font-black text-rose-500 mb-2 tracking-wide uppercase animate-pulse">SUCURSAL EN PARO DE EMERGENCIA</h2>
+              <p className="text-rose-200 text-sm max-w-md mb-8">
+                Se ha activado el botón de pánico de la sucursal. Los sistemas de fichaje y control están bloqueados temporalmente por motivos de seguridad.
+              </p>
+              
+              <button 
+                onClick={resolvePanic} 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-8 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 border-none cursor-pointer text-sm uppercase tracking-wider"
+              >
+                🔓 Desactivar Alerta (Administración)
+              </button>
+            </div>
+          )}
+
+          {/* Modal MealDetailsModal */}
+          {showMealDetailsModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+              <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                {(() => {
+                  const mySlots = userReservedMealSlots[currentUser?.id] || [];
+                  const hasFinishedEating = mealEndTimes[currentUser?.id] !== undefined;
+                  const isActive = clockState === 'meal';
+                  const isMealReservationUnlocked = useAppStore.getState().isFeatureUnlocked('meal_reservation');
+                  
+                  const info = getMealInfo();
+                  const limit = shiftConfigs[currentUser.id]?.mealMinutes || timeBankConfigs.mealMinutes || 45;
+                  const hasExceeded = info && !info.isReserved && info.extra > 0;
+
+                  const candidateColleagues = globalUsers.filter((u: any) => 
+                    u.id !== currentUser?.id && 
+                    u.is_active_employee !== false && 
+                    Number(u.job_role_id) === Number(currentUser?.job_role_id)
+                  );
+
+                  let modalState: 'active' | 'completed' | 'reserved_pending' | 'unreserved_pending' = 'unreserved_pending';
+                  if (isActive) {
+                    modalState = 'active';
+                  } else if (hasFinishedEating) {
+                    modalState = 'completed';
+                  } else if (mySlots.length > 0) {
+                    modalState = 'reserved_pending';
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Minimal Header */}
+                      <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
+                        <div className="flex items-center gap-2 text-left">
+                          <Utensils className="w-5 h-5 text-amber-550 shrink-0" />
+                          <h3 className="font-black text-slate-800 text-sm">
+                            Horario de Almuerzo
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                            modalState === 'active' ? 'bg-amber-50 border-amber-100 text-amber-650' :
+                            modalState === 'completed' ? (hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-650' : 'bg-emerald-50 border-emerald-100 text-emerald-650') :
+                            modalState === 'reserved_pending' ? 'bg-indigo-50 border-indigo-100 text-indigo-650' :
+                            'bg-slate-50 border-slate-150 text-slate-500'
+                          }`}>
+                            {modalState === 'active' ? '⏳ En curso' :
+                             modalState === 'completed' ? (hasExceeded ? '⚠️ Límite Excedido' : '✓ Cumplido') :
+                             modalState === 'reserved_pending' ? '📅 Reservado' : '🍽️ Sin Registro'}
+                          </span>
+                          <button onClick={() => setShowMealDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer ml-1 select-none">✕</button>
+                        </div>
+                      </div>
+
+                      {/* Colored status container */}
+                      <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
+                        modalState === 'active' ? 'bg-amber-50/40 border-amber-100/60 text-amber-900' :
+                        modalState === 'completed' ? (hasExceeded ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' : 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900') :
+                        modalState === 'reserved_pending' ? 'bg-indigo-50/40 border-indigo-100/60 text-indigo-900' :
+                        'bg-slate-50/50 border-slate-150 text-slate-700'
+                      }`}>
+                        {modalState === 'active' ? (
+                          <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu tiempo de comida reservado. Recuerda registrar tu reingreso a tiempo.</>
+                        ) : modalState === 'completed' ? (
+                          hasExceeded ? (
+                            <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-rose-600 font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info?.extra} minutos</strong>. ⚠️</>
+                          ) : (
+                            <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-650 font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación! 🌟</>
+                          )
+                        ) : modalState === 'reserved_pending' ? (
+                          <>Hola, tu horario de comida es a las <strong className="text-indigo-600 font-bold">{mySlots[0]}</strong>.</>
+                        ) : (
+                          <>Hola, <strong className="font-black text-slate-900">{currentUser?.name}</strong>. Aún no has elegido tu horario de comida para hoy. Te sugerimos hacerlo pronto para coordinar el aforo con tus compañeros.</>
+                        )}
+                      </div>
+
+                      {/* Booking / Swaps y Acciones */}
+                      {(modalState === 'active' || modalState === 'completed') ? (
+                        <div className="space-y-4">
+                          {mySlots.length > 0 && (
+                            <div className="p-3 bg-amber-50/45 border border-amber-100/60 rounded-xl text-center">
+                              <span className="text-[10px] font-extrabold uppercase text-amber-700 block">Horario Reservado</span>
+                              <span className="text-xs font-black text-amber-660">{mySlots.join(' - ')}</span>
+                            </div>
+                          )}
+
+                          {candidateColleagues.length > 0 && modalState === 'active' ? (
+                            <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-left">
+                              <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                <span>🔄</span> Intercambiar con un compañero
+                              </h4>
+                              <select 
+                                id="swap-colleague-select"
+                                defaultValue=""
+                                onChange={async (e) => {
+                                  const val = e.target.value;
+                                  if (val) {
+                                    const partnerId = Number(val);
+                                    const partner = globalUsers.find((u: any) => u.id === partnerId);
+                                    if (partner && confirm(`¿Confirmas que deseas intercambiar tu horario de comida con ${partner.name}?`)) {
+                                      await swapMealSlots(currentUser.id, partnerId);
+                                      setShowMealDetailsModal(false);
+                                    }
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none select-none text-slate-800"
+                              >
+                                <option value="" disabled>Selecciona un compañero...</option>
+                                {candidateColleagues.map((partner: any) => {
+                                  const pSlots = userReservedMealSlots[partner.id] || [];
+                                  const pSlotsDesc = pSlots.length > 0 ? pSlots.join(' - ') : 'Sin Reserva';
+                                  return (
+                                    <option key={partner.id} value={partner.id}>
+                                      {partner.name} ({pSlotsDesc})
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : modalState === 'unreserved_pending' ? (
+                        <div className="space-y-4">
+                          {isMealReservationUnlocked ? (
+                            <button 
+                              onClick={() => {
+                                setShowMealDetailsModal(false);
+                                setShowMealReservationModal(true);
+                              }}
+                              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm active:scale-98"
+                            >
+                              Apartar Horario de Comida
+                            </button>
+                          ) : (
+                            <div className="space-y-3">
+                              <button 
+                                onClick={async () => {
+                                  confirmMealReservation(0);
+                                  setShowMealDetailsModal(false);
+                                }}
+                                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm active:scale-98"
+                              >
+                                Registrar Salida a Comer
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
 
       {showEntryDetailsModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
@@ -3893,20 +4246,79 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               const info = getBreakInfo();
               const limit = leySillaConfig?.breakMinutes || 15;
               if (!info) {
+                const hasCheckedInUser = checkInTimes[currentUser.id] !== undefined;
+                const elapsedMins = hasCheckedInUser ? Math.max(0, currentSimTime - checkInTimes[currentUser.id]) : 0;
+                const consecutiveMinutes = leySillaConfig?.consecutiveMinutes || 120;
+                const remainingMins = Math.max(0, consecutiveMinutes - elapsedMins);
+                
+                const isRequested = !!pendingBreakRequests[currentUser.id];
+
                 return (
-                  <div className="space-y-4">
+                  <div className="space-y-4 text-left">
                     <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
-                      <div className="flex items-center gap-2 text-left">
+                      <div className="flex items-center gap-2">
                         <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
                         <h3 className="font-black text-slate-800 text-sm">
-                          Registro de Descanso
+                          Solicitud de Descanso (Ley Silla)
                         </h3>
                       </div>
                       <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer select-none">✕</button>
                     </div>
-                    <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 italic">
-                      Aún no has tomado ningún descanso durante el turno de hoy.
+
+                    <div className="p-4 rounded-2xl border bg-purple-50/40 border-purple-100/60 text-purple-900 leading-relaxed text-xs font-semibold">
+                      <p className="mb-2">
+                        La <strong>Ley Silla</strong> establece tu derecho a tomar un descanso periódico para mitigar la fatiga laboral de pie.
+                      </p>
+                      {hasCheckedInUser ? (
+                        <div className="space-y-1 mt-2">
+                          <p>⏱️ Tiempo de pie acumulado hoy: <strong className="text-purple-700">{elapsedMins} minutos</strong>.</p>
+                          {remainingMins > 0 ? (
+                            <p>⏳ Tiempo restante para el descanso de ley: <strong className="text-amber-600">{remainingMins} minutos</strong>.</p>
+                          ) : (
+                            <p className="text-emerald-650 font-black">✓ Ya tienes derecho a tomar tu descanso de {leySillaConfig?.breakMinutes || 15} min.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-rose-600 font-black mt-2">⚠️ Registra tu entrada primero para calcular tu tiempo acumulado.</p>
+                      )}
                     </div>
+
+                    {/* Sugerencias de Tareas en Silla */}
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                      <h4 className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                        <span>💡</span> Sugerencia de Tareas en Silla:
+                      </h4>
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
+                        Si necesitas descansar pero prefieres seguir activo, puedes solicitar al supervisor realizar temporalmente tareas sentado, tales como:
+                      </p>
+                      <ul className="text-[10.5px] text-slate-600 font-semibold space-y-1 list-disc pl-4 leading-tight">
+                        <li>Responder correos y mensajes de clientes.</li>
+                        <li>Capturar reportes, bitácoras e inventario.</li>
+                        <li>Realizar capacitaciones teóricas en la <strong>Academia LMS</strong>.</li>
+                        <li>Organizar documentación administrativa.</li>
+                      </ul>
+                    </div>
+
+                    {/* Botón de Acción */}
+                    {hasCheckedInUser && (
+                      <div className="pt-2">
+                        {isRequested ? (
+                          <div className="w-full bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold py-3.5 rounded-xl text-center flex items-center justify-center gap-2 animate-pulse">
+                            <span>⏳</span> Esperando validación del supervisor...
+                          </div>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              await requestBreak(currentUser.id);
+                              setShowBreakDetailsModal(false);
+                            }}
+                            className="w-full bg-purple-600 hover:bg-purple-750 text-white font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider border-none cursor-pointer shadow-md shadow-purple-500/10 active:scale-98"
+                          >
+                            Solicitar Descanso al Supervisor
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               }
@@ -3944,7 +4356,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     'bg-emerald-50/40 border-emerald-100/60 text-emerald-900'
                   }`}>
                     {info.isActive ? (
-                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso de hoy, iniciado a las <strong className="text-purple-600 font-bold">{formatMinsToTimeClean(info.start)}</strong>. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
+                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso de hoy, iniciado a las <strong className="text-purple-600 font-bold">{formatMinsToTimeClean(info.start)}</strong>. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
                     ) : hasExceeded ? (
                       <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-rose-600 font-bold">{info.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info.extra} minutos</strong>. Te sugerimos cuidar más tus tiempos en tus siguientes descansos. ⚠️</>
                     ) : (
@@ -4015,126 +4427,211 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
 
                               {/* Modal MealReservation */}
           {showMealReservationModal && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
-              <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
-                {(() => {
-                  const isFreemiumExpired = !isFeatureUnlocked('meal_reservation');
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative overflow-hidden">
+                {isSwappingLoading && pendingSwapPartner ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mx-auto"></div>
+                    <h3 className="font-bold text-slate-800 text-lg">Enviando Solicitud...</h3>
+                    <p className="text-xs text-slate-500 max-w-xs leading-relaxed mx-auto">
+                      Se ha enviado una notificación a <strong>{pendingSwapPartner.name}</strong> para intercambiar tu horario de comida por su horario reservado (<strong>{userReservedMealSlots[pendingSwapPartner.id]?.[0] || 'Reservado'}</strong>).
+                    </p>
+                  </div>
+                ) : (
+                  (() => {
+                    const isFreemiumExpired = !isFeatureUnlocked('meal_reservation');
 
-                  if (isFreemiumExpired) {
+                    const areRolesCompatibleForSwap = (roleA: string, roleB: string) => {
+                      if (!roleA || !roleB) return false;
+                      const rA = roleA.toLowerCase();
+                      const rB = roleB.toLowerCase();
+                      if (rA === rB) return true;
+                      const isSupA = rA.includes('supervisor') || rA.includes('sup.');
+                      const isSupB = rB.includes('supervisor') || rB.includes('sup.');
+                      if (isSupA || isSupB) {
+                        return isSupA && isSupB;
+                      }
+                      const isOperativeA = rA.includes('ayudante') || rA.includes('asesor') || rA.includes('ventas') || rA.includes('atencion') || rA.includes('cliente') || rA.includes('almacenista');
+                      const isOperativeB = rB.includes('ayudante') || rB.includes('asesor') || rB.includes('ventas') || rB.includes('atencion') || rB.includes('cliente') || rB.includes('almacenista');
+                      if (isOperativeA && isOperativeB) return true;
+                      return false;
+                    };
+
+                    if (isFreemiumExpired) {
+                      return (
+                        <>
+                          <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Registro de Almuerzo</h3>
+                          
+                          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
+                            <p className="text-xs text-slate-600 leading-relaxed mb-4 text-left">
+                              Como usuario del plan gratuito, puedes registrar tu salida a comer directamente sin reserva de horario previa.
+                            </p>
+                            
+                            <button 
+                              onClick={() => {
+                                confirmMealReservation(0);
+                                setShowMealReservationModal(false);
+                              }}
+                              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl shadow-md transition-colors border-none cursor-pointer"
+                            >
+                              Registrar Salida a Comer
+                            </button>
+                          </div>
+
+                          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-150 rounded-2xl mb-6 flex items-start gap-3">
+                            <span className="text-lg">⭐</span>
+                            <div className="text-left">
+                              <h4 className="font-black text-blue-900 text-xs uppercase tracking-wider mb-0.5">Accede al Comedor Pro</h4>
+                              <p className="text-blue-700 text-[10px] leading-relaxed">
+                                El plan gratuito no incluye la cuadrícula interactiva de comedor, aforo por horarios ni prevención de choque de puestos. ¡Pásate al plan Profesional!
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <button onClick={() => setShowMealReservationModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl border-none cursor-pointer">Cancelar</button>
+                        </>
+                      );
+                    }
+
+                    // Candidatos compatibles para el intercambio rápido
+                    const swapCandidates = globalUsers.filter(u => 
+                      u.is_active_employee !== false && 
+                      u.id !== currentUser.id && 
+                      hasReservedMeal[u.id] && 
+                      areRolesCompatibleForSwap(currentUser.role, u.role)
+                    );
+
                     return (
                       <>
-                        <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Registro de Almuerzo</h3>
+                        <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
+                        <p className="text-xs text-slate-500 mb-4 bg-amber-50 p-3 rounded-xl border border-amber-100/60 leading-normal">
+                          Selecciona tu horario o solicita un intercambio con un compañero compatible de tu mismo rango. (Aforo máximo: {mealSettings?.maxChairs || 3})
+                        </p>
                         
-                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
-                          <p className="text-xs text-slate-600 leading-relaxed mb-4 text-left">
-                            Como usuario del plan gratuito, puedes registrar tu salida a comer directamente sin reserva de horario previa.
-                          </p>
-                          
-                          <button 
-                            onClick={() => {
-                              confirmMealReservation(0);
-                              setShowMealReservationModal(false);
-                            }}
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl shadow-md transition-colors"
-                          >
-                            Registrar Salida a Comer
-                          </button>
+                        <div className="grid grid-cols-2 gap-2.5 mb-5 max-h-36 overflow-y-auto custom-scrollbar pr-2">
+                          {(() => {
+                            const safeStart = mealSettings?.startHour ?? 13;
+                            const safeEnd = mealSettings?.endHour ?? 17;
+                            const safeStep = mealSettings?.stepMins ?? 15;
+                            const totalLength = Math.max(0, (safeEnd - safeStart) * (60 / safeStep));
+                            
+                            return Array.from({length: totalLength}).map((_, i) => {
+                              const totalMins = safeStart * 60 + (i * safeStep);
+                              const h = Math.floor(totalMins / 60);
+                              const m = totalMins % 60;
+                              const ampm = h >= 12 ? 'PM' : 'AM';
+                              const slotStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,'0')} ${ampm}`;
+                              
+                              const userMealMinutes = currentUser?.mealMinutes || timeBankConfigs?.mealMinutes || 60;
+                              const stepMins = mealSettings?.stepMins || 15;
+                              const neededBlocks = Math.ceil(userMealMinutes / stepMins);
+                              const totalPossibleBlocks = ((mealSettings?.endHour ?? 17) - (mealSettings?.startHour ?? 13)) * (60 / stepMins);
+                              
+                              let canReserve = true;
+                              let blockReason = '';
+                              let firstBlockReservations = reservedMeals[slotStr] || [];
+                              
+                              if (i + neededBlocks > totalPossibleBlocks) {
+                                 canReserve = false;
+                                 blockReason = 'Tiempo insuficiente';
+                              } else {
+                                 for(let j=0; j<neededBlocks; j++) {
+                                    const checkMins = (mealSettings?.startHour ?? 13) * 60 + ((i + j) * stepMins);
+                                    const ch = Math.floor(checkMins / 60);
+                                    const cm = checkMins % 60;
+                                    const campm = ch >= 12 ? 'PM' : 'AM';
+                                    const checkSlotStr = `${ch > 12 ? ch - 12 : ch}:${cm.toString().padStart(2,'0')} ${campm}`;
+                                    
+                                    const res = reservedMeals[checkSlotStr] || [];
+                                    if (res.length >= (mealSettings?.maxChairs || 3)) {
+                                       canReserve = false;
+                                       blockReason = 'Aforo Lleno';
+                                       break;
+                                    }
+                                    if (mealSettings?.preventRoleOverlap && res.some(r => r.role === currentUser.role)) {
+                                       canReserve = false;
+                                       blockReason = `Choque: ${currentUser.role}`;
+                                       break;
+                                    }
+                                 }
+                              }
+                              
+                              const disabled = !canReserve;
+
+                              if (disabled && mealSettings?.hideFullSlots && (blockReason === 'Aforo Lleno' || blockReason.startsWith('Choque'))) {
+                                 return null;
+                              }
+                              
+                              return (
+                                <button 
+                                  key={slotStr}
+                                  onClick={() => confirmMealReservation(i)}
+                                  disabled={disabled}
+                                  className={`p-2.5 rounded-xl border-2 flex flex-col items-center justify-center transition-colors border-none cursor-pointer ${disabled ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400' : 'bg-white border-amber-200 hover:border-amber-400 active:bg-amber-50 text-slate-800'}`}
+                                >
+                                  <span className="font-bold text-xs">{slotStr}</span>
+                                  <span className="text-[9px] mt-0.5 font-bold text-center leading-tight">
+                                    {disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.length}`}
+                                  </span>
+                                </button>
+                              );
+                            });
+                          })()}
                         </div>
 
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-150 rounded-2xl mb-6 flex items-start gap-3">
-                          <span className="text-lg">⭐</span>
-                          <div className="text-left">
-                            <h4 className="font-black text-blue-900 text-xs uppercase tracking-wider mb-0.5">Accede al Comedor Pro</h4>
-                            <p className="text-blue-700 text-[10px] leading-relaxed">
-                              El plan gratuito no incluye la cuadrícula interactiva de comedor, aforo por horarios ni prevención de choque de puestos. ¡Pásate al plan Profesional!
-                            </p>
+                        {/* Listado Deslizable de Intercambio Filtrado */}
+                        {swapCandidates.length > 0 && (
+                          <div className="border-t border-slate-100 pt-3.5 mb-4">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                              <span>🔄</span> ¿Intercambiar horario con un compañero?
+                            </h4>
+                            <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar">
+                              {swapCandidates.map(u => {
+                                const pSlots = userReservedMealSlots[u.id] || [];
+                                const pSlotsDesc = pSlots.length > 0 ? pSlots.join(' - ') : 'Reservado';
+                                return (
+                                  <div 
+                                    key={u.id}
+                                    onClick={() => {
+                                      setPendingSwapPartner(u);
+                                      setIsSwappingLoading(true);
+                                      setTimeout(async () => {
+                                        await swapMealSlots(currentUser.id, u.id);
+                                        setIsSwappingLoading(false);
+                                        setPendingSwapPartner(null);
+                                        setShowMealReservationModal(false);
+                                        showCustomAlert(`🟢 ${u.name} ha aceptado tu solicitud de intercambio de comida.`);
+                                      }, 3000);
+                                    }}
+                                    className="p-2 rounded-xl border border-slate-100 hover:border-amber-300 bg-slate-50/50 hover:bg-amber-50/20 transition-all flex justify-between items-center cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <img src={u.avatar} alt="Avatar" className="w-6 h-6 rounded-full shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-slate-700 text-xs truncate leading-tight">{u.name}</p>
+                                        <p className="text-[9px] text-slate-400 font-semibold truncate leading-tight mt-0.5">{u.role} • {pSlotsDesc}</p>
+                                      </div>
+                                    </div>
+                                    <button className="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-2.5 py-1 rounded-lg border-none shrink-0 cursor-pointer hover:bg-amber-200 transition-colors">
+                                      Intercambiar
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
-                        <button onClick={() => setShowMealReservationModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl">Cancelar</button>
+                        <button 
+                          onClick={() => setShowMealReservationModal(false)} 
+                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl border-none cursor-pointer transition-colors text-xs uppercase tracking-wider"
+                        >
+                          Cerrar
+                        </button>
                       </>
                     );
-                  }
-
-                  return (
-                    <>
-                      <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
-                      <p className="text-sm text-slate-600 mb-4 bg-amber-50 p-3 rounded-xl border border-amber-100">Selecciona en qué horario saldrás a comer. (Aforo máximo: {mealSettings?.maxChairs || 3})</p>
-                      
-                      <div className="grid grid-cols-2 gap-3 mb-6 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                        {(() => {
-                          const safeStart = mealSettings?.startHour ?? 13;
-                          const safeEnd = mealSettings?.endHour ?? 17;
-                          const safeStep = mealSettings?.stepMins ?? 15;
-                          const totalLength = Math.max(0, (safeEnd - safeStart) * (60 / safeStep));
-                          
-                          return Array.from({length: totalLength}).map((_, i) => {
-                          const totalMins = safeStart * 60 + (i * safeStep);
-                          const h = Math.floor(totalMins / 60);
-                          const m = totalMins % 60;
-                          const ampm = h >= 12 ? 'PM' : 'AM';
-                          const slotStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,'0')} ${ampm}`;
-                          
-                          const userMealMinutes = currentUser?.mealMinutes || timeBankConfigs?.mealMinutes || 60;
-                          const stepMins = mealSettings?.stepMins || 15;
-                          const neededBlocks = Math.ceil(userMealMinutes / stepMins);
-                          const totalPossibleBlocks = ((mealSettings?.endHour ?? 17) - (mealSettings?.startHour ?? 13)) * (60 / stepMins);
-                          
-                          let canReserve = true;
-                          let blockReason = '';
-                          let firstBlockReservations = reservedMeals[slotStr] || [];
-                          
-                          if (i + neededBlocks > totalPossibleBlocks) {
-                             canReserve = false;
-                             blockReason = 'Tiempo insuficiente';
-                          } else {
-                             for(let j=0; j<neededBlocks; j++) {
-                                const checkMins = (mealSettings?.startHour ?? 13) * 60 + ((i + j) * stepMins);
-                                const ch = Math.floor(checkMins / 60);
-                                const cm = checkMins % 60;
-                                const campm = ch >= 12 ? 'PM' : 'AM';
-                                const checkSlotStr = `${ch > 12 ? ch - 12 : ch}:${cm.toString().padStart(2,'0')} ${campm}`;
-                                
-                                const res = reservedMeals[checkSlotStr] || [];
-                                if (res.length >= (mealSettings?.maxChairs || 3)) {
-                                   canReserve = false;
-                                   blockReason = 'Aforo Lleno';
-                                   break;
-                                }
-                                if (mealSettings?.preventRoleOverlap && res.some(r => r.role === currentUser.role)) {
-                                   canReserve = false;
-                                   blockReason = `Choque: ${currentUser.role}`;
-                                   break;
-                                }
-                             }
-                          }
-                          
-                          const disabled = !canReserve;
-
-                          if (disabled && mealSettings?.hideFullSlots && (blockReason === 'Aforo Lleno' || blockReason.startsWith('Choque'))) {
-                             return null;
-                          }
-                          
-                          return (
-                            <button 
-                              key={slotStr}
-                              onClick={() => confirmMealReservation(i)}
-                              disabled={disabled}
-                              className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-colors ${disabled ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400' : 'bg-white border-amber-200 hover:border-amber-400 active:bg-amber-50 text-slate-800'}`}
-                            >
-                              <span className="font-bold">{slotStr}</span>
-                              <span className="text-[10px] mt-1 font-bold text-center leading-tight">
-                                {disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.length}`}
-                              </span>
-                            </button>
-                          );
-                        })})()}
-                      </div>
-                      
-                      <button onClick={() => setShowMealReservationModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl">Cancelar Entrada</button>
-                    </>
-                  );
-                })()}
+                  })()
+                )}
               </div>
             </div>
           )}

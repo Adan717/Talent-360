@@ -28,6 +28,7 @@ interface AppState {
   globalMealStartTimes?: Record<number, number>;
   globalMealEndTimes?: Record<number, number>;
   globalCheckOutTimes?: Record<number, number>;
+  globalPendingBreakRequests?: Record<number, any>;
   
   // Comida State
   reservedMeals: Record<string, { userId: number, role: string }[]>;
@@ -107,6 +108,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   globalMealStartTimes: {},
   globalMealEndTimes: {},
   globalCheckOutTimes: {},
+  globalPendingBreakRequests: {},
   reservedMeals: {},
   userReservedMealSlots: {},
   hasReservedMeal: {},
@@ -484,6 +486,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             const mealStartTimes: Record<number, number> = {};
             const mealEndTimes: Record<number, number> = {};
             const checkOutTimes: Record<number, number> = {};
+            const pendingBreakRequests: Record<number, any> = {};
 
             const parseTimeToMins = (timeStr: string) => {
               if (!timeStr) return 0;
@@ -511,15 +514,21 @@ export const useAppStore = create<AppState>((set, get) => ({
               } else if (entry.type === 'meal_end') {
                 clockStates[userId] = 'active';
                 mealEndTimes[userId] = timeMins;
+              } else if (entry.type === 'break_request') {
+                pendingBreakRequests[userId] = { time: timeMins, details: entry.details };
               } else if (entry.type === 'break_start') {
                 clockStates[userId] = 'short_break';
                 breakStartTimes[userId] = timeMins;
+                delete pendingBreakRequests[userId];
+              } else if (entry.type === 'break_rejected') {
+                delete pendingBreakRequests[userId];
               } else if (entry.type === 'break_end') {
                 clockStates[userId] = 'active';
                 breakEndTimes[userId] = timeMins;
               } else if (entry.type === 'check_out') {
                 clockStates[userId] = 'inactive';
                 checkOutTimes[userId] = timeMins;
+                delete pendingBreakRequests[userId];
               } else if (entry.type === 'contingency') {
                 clockStates[userId] = 'contingency';
               }
@@ -534,6 +543,7 @@ export const useAppStore = create<AppState>((set, get) => ({
               globalMealStartTimes: mealStartTimes,
               globalMealEndTimes: mealEndTimes,
               globalCheckOutTimes: checkOutTimes,
+              globalPendingBreakRequests: pendingBreakRequests,
             });
           }
         }
@@ -552,6 +562,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                assistantType: t.assistant_type,
                assistantPrompt: t.assistant_prompt,
                isAutoCapture: t.is_auto_capture ? true : false,
+               validationMode: t.validation_mode,
+               canBeDoneSitting: t.can_be_done_sitting ? true : false,
                historicalMins: []
            }));
            useTaskStore.getState().setTasks(camelCaseTasks);

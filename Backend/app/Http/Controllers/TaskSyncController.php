@@ -41,6 +41,7 @@ class TaskSyncController extends Controller
                         'is_auto_capture' => $task['isAutoCapture'] ?? $task['is_auto_capture'] ?? false,
                         'points' => $task['points'] ?? 10,
                         'validation_mode' => $task['validationMode'] ?? $task['validation_mode'] ?? 'forced',
+                        'can_be_done_sitting' => $task['canBeDoneSitting'] ?? $task['can_be_done_sitting'] ?? false,
                         'tenant_id' => $tenantId,
                     ];
                     

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow } from 'lucide-react';
+import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, Routine } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -63,6 +63,7 @@ export function PanelTareasRutinas() {
     const [newTaskAssistant, setNewTaskAssistant] = useState<'ninguno'|'evidencia_foto'|'captura_numero'|'texto'>('ninguno');
     const [newTaskPrompt, setNewTaskPrompt] = useState('');
     const [newTaskValidationMode, setNewTaskValidationMode] = useState<'forced'|'auto'|'dynamic'>('forced');
+    const [newTaskCanBeDoneSitting, setNewTaskCanBeDoneSitting] = useState(false);
 
     // Formulario Nueva Rutina
     const [creatorMode, setCreatorMode] = useState<'tarea'|'rutina'>('tarea');
@@ -82,6 +83,7 @@ export function PanelTareasRutinas() {
         setNewTaskAssistant('ninguno');
         setNewTaskPrompt('');
         setNewTaskValidationMode('forced');
+        setNewTaskCanBeDoneSitting(false);
         setNewRoutineTitle('');
         setNewRoutineRole(globalRoles && globalRoles.length > 0 ? globalRoles[0].name : 'Ayudante General');
         setNewRoutineTrigger('on_checkin');
@@ -100,6 +102,7 @@ export function PanelTareasRutinas() {
         setNewTaskAssistant(t.assistantType as any);
         setNewTaskPrompt(t.assistantPrompt || '');
         setNewTaskValidationMode(t.validationMode || 'forced');
+        setNewTaskCanBeDoneSitting(t.canBeDoneSitting || false);
         setCreatorMode('tarea');
         setShowCreator(true);
     };
@@ -127,7 +130,8 @@ export function PanelTareasRutinas() {
                 assistantType: newTaskAssistant as any,
                 assistantPrompt: newTaskPrompt,
                 isAutoCapture: newTaskAutoCap,
-                validationMode: newTaskValidationMode
+                validationMode: newTaskValidationMode,
+                canBeDoneSitting: newTaskCanBeDoneSitting
             });
         } else {
             addTask({
@@ -143,12 +147,14 @@ export function PanelTareasRutinas() {
                 assistantPrompt: newTaskPrompt,
                 isAutoCapture: newTaskAutoCap,
                 historicalMins: [],
-                validationMode: newTaskValidationMode
+                validationMode: newTaskValidationMode,
+                canBeDoneSitting: newTaskCanBeDoneSitting
             });
         }
         setShowCreator(false);
         setNewTaskTitle('');
         setNewTaskValidationMode('forced');
+        setNewTaskCanBeDoneSitting(false);
         setEditingTask(null);
     };
 
@@ -274,6 +280,11 @@ export function PanelTareasRutinas() {
                                     {t.isAutoCapture && (
                                         <span className="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-md flex items-center gap-1">
                                             <Brain size={12}/> Autocaptura
+                                        </span>
+                                    )}
+                                    {t.canBeDoneSitting && (
+                                        <span className="px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-bold rounded-md flex items-center gap-1">
+                                            <Armchair size={12}/> Ley Silla (Sentado)
                                         </span>
                                     )}
                                     {t.assistantType !== 'ninguno' && (
@@ -406,12 +417,19 @@ export function PanelTareasRutinas() {
                                             <label className="block text-sm font-bold text-slate-700 mb-2">Tiempo Estimado (Mins)</label>
                                             <input value={newTaskMins} onChange={e => setNewTaskMins(parseInt(e.target.value))} type="number" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
                                         </div>
-                                        <div className="flex flex-col justify-end">
-                                            <label className="flex items-center gap-3 p-3.5 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100 transition-colors">
-                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <label className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100 transition-colors">
+                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300 animate-fade-in" />
                                                 <div>
-                                                    <span className="font-bold text-blue-900 block text-xs sm:text-sm flex items-center gap-1"><Brain size={14}/> Modo Autocaptura (IA)</span>
-                                                    <span className="text-[9px] sm:text-[10px] text-blue-700">Aprenderá tiempos reales.</span>
+                                                    <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Modo Autocaptura (IA)</span>
+                                                    <span className="text-[9px] text-blue-700">Aprenderá tiempos reales.</span>
+                                                </div>
+                                            </label>
+                                            <label className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100 transition-colors">
+                                                <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-purple-600 rounded border-slate-300 animate-fade-in" />
+                                                <div>
+                                                    <span className="font-bold text-purple-900 block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
+                                                    <span className="text-[9px] text-purple-700">Apta para tomar durante descansos.</span>
                                                 </div>
                                             </label>
                                         </div>

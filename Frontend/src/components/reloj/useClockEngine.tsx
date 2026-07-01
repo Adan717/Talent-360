@@ -605,33 +605,7 @@ export function useClockEngine(overrideUser?: any) {
     }
   }, [currentSimTime, storeStatus, storeOpenSimTime, paseListaDone, showPaseListaModal, currentUser.id, activeEncargadoId, activePushNotification]);
 
-  // Push Notification: Reserva de Comida Escalonada
-  useEffect(() => {
-    if (storeStatus !== 'open' || !featureFlags.comidas) return;
-    
-    const isCheckIn = globalClockStates[currentUser.id] === 'active' || globalClockStates[currentUser.id] === 'short_break';
-    const noReserved = !hasReservedMeal[currentUser.id];
-    
-    if (isCheckIn && noReserved && globalCheckInTimes[currentUser.id] !== undefined) {
-        const myCheckInTime = globalCheckInTimes[currentUser.id];
-        const sameTimeUsers = globalUsers.filter(x => globalCheckInTimes[x.id] === myCheckInTime).sort((a, b) => a.id - b.id);
-        const myIndex = sameTimeUsers.findIndex(x => x.id === currentUser.id);
-        
-        const targetTime = myCheckInTime + 5 + (myIndex * 2);
-        
-        if (currentSimTime >= targetTime && activePushNotification?.type !== 'comida') {
-            setActivePushNotification({
-               type: 'comida',
-               text: `🍔 Es tu turno para reservar tu horario de comida.`,
-               action: () => {
-                  setActivePushNotification(null);
-                  setPhoneTab('checador');
-                  setShowMealReservationModal(true);
-               }
-            });
-        }
-    }
-  }, [currentSimTime, storeStatus, featureFlags.comidas, checkInTimes, hasReservedMeal, globalClockStates, currentUser.id, activePushNotification, globalUsers]);
+
 
   // Push Notification: Tareas Retrasadas
   useEffect(() => {

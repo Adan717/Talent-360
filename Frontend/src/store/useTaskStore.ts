@@ -31,6 +31,7 @@ export interface Task {
     isAutoCapture: boolean;
     historicalMins: number[]; // Para calcular el promedio de autocaptura
     validationMode?: 'forced' | 'auto' | 'dynamic';
+    canBeDoneSitting?: boolean;
 }
 
 export interface Routine {

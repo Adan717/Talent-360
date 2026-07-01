@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
     Coffee, Play, Check, Clock, Lock, Brain, Camera, Bot, 
     Pause, Trash2, Plus, X, AlertCircle, ChevronRight, User, HelpCircle,
-    Search, RefreshCw, CheckCircle, XCircle, ShieldAlert, Sparkles, ClipboardList
+    Search, RefreshCw, CheckCircle, XCircle, ShieldAlert, Sparkles, ClipboardList,
+    Briefcase, FileCheck
 } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
@@ -49,7 +50,7 @@ export function FichaTarea({
         badgeClass = 'bg-rose-100 text-rose-800 border-rose-200';
         cardClass = 'bg-rose-50/50 border-rose-300 hover:-translate-y-0.5 shadow-rose-100/50';
     } else if (assignment.status === 'awaiting_validation') {
-        badgeText = 'Firma Pendiente';
+        badgeText = 'Por Validar';
         badgeClass = 'bg-amber-50 text-amber-700 border-amber-200/50';
         cardClass = 'bg-amber-50/10 border-amber-200 hover:-translate-y-0.5 shadow-amber-50/50';
     } else if (isFromPool) {
@@ -201,6 +202,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore(); // Filtros y pestañas locales
     const [filterTab, setFilterTab] = useState<'todos' | 'firma_pendiente' | 'mis_tareas' | 'bolsa'>('todos');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [localInput, setLocalInput] = useState('');
@@ -467,102 +469,145 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-y-auto">
             {/* Buscador de tareas y Volver */}
-            <div className="mb-4 shrink-0 flex gap-2.5 items-center">
-                <button 
-                    onClick={onBack}
-                    className="bg-white hover:bg-slate-50 text-slate-655 font-extrabold text-[10px] uppercase px-3 py-2.5 rounded-xl border border-slate-200/80 shadow-xs cursor-pointer active:scale-95 transition-all select-none shrink-0"
-                >
-                    <span>← Volver</span>
-                </button>
-                <div className="relative flex-1">
-                    <input 
-                        type="text" 
-                        placeholder="Buscar tareas por título..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold shadow-sm transition-all"
-                    />
-                    <div className="absolute left-3 top-3 text-slate-400">
-                        <Search size={14} />
+            {isSearchOpen ? (
+                /* Buscador a ancho completo cuando está abierto */
+                <div className="mb-4 shrink-0 flex gap-2 items-center animate-in fade-in duration-200">
+                    <div className="relative flex-1">
+                        <input 
+                            type="text" 
+                            placeholder="Buscar tareas por título..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold shadow-sm transition-all"
+                        />
+                        <div className="absolute left-3 top-3 text-slate-400">
+                            <Search size={14} />
+                        </div>
+                        {searchQuery && (
+                            <button 
+                                onClick={() => setSearchQuery('')} 
+                                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
-                    {searchQuery && (
-                        <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer">
-                            <X size={14} />
-                        </button>
-                    )}
+                    <button 
+                        onClick={() => {
+                            setIsSearchOpen(false);
+                            setSearchQuery('');
+                        }}
+                        className="bg-slate-105 hover:bg-slate-200 text-slate-600 font-extrabold text-[10px] uppercase px-3.5 py-2.5 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
+                    >
+                        <span>Cerrar</span>
+                    </button>
                 </div>
-            </div>
-
-            {/* Filtros Rápidos Táctiles */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-1.5 scrollbar-none shrink-0 -mx-1 px-1">
-                <button
-                    onClick={() => setFilterTab('todos')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
-                        filterTab === 'todos'
-                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-sm'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                    🔍 Todas
-                    <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                        filterTab === 'todos' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                        {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
-                    </span>
-                </button>
-
-                {(isSupervisor || awaitingValidationFiltered.length > 0) && (
+            ) : (
+                /* Fila fija de botones (Grid responsivo a ancho completo) */
+                <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-5' : 'grid-cols-4'} gap-1.5 mb-4 shrink-0 select-none`}>
+                    {/* Botón 1: Todas */}
                     <button
-                        onClick={() => setFilterTab('firma_pendiente')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
-                            filterTab === 'firma_pendiente'
-                                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                        type="button"
+                        onClick={() => setFilterTab('todos')}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                            filterTab === 'todos'
+                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                         }`}
                     >
-                        ✍️ Firma Pendiente
-                        {awaitingValidationFiltered.length > 0 && (
-                            <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                                filterTab === 'firma_pendiente' ? 'bg-white/20 text-white' : 'bg-rose-105 text-rose-700'
+                        <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
+                        <span className="text-[9px] font-black uppercase mt-1">Todas</span>
+                        <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                            filterTab === 'todos' 
+                                ? 'bg-white text-[#8a2be2] border-white' 
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                            {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                        </span>
+                    </button>
+
+                    {/* Botón 2: Por Validar - Solo si es supervisor o hay tareas por validar */}
+                    {(isSupervisor || awaitingValidationFiltered.length > 0) && (
+                        <button
+                            type="button"
+                            onClick={() => setFilterTab('firma_pendiente')}
+                            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                                filterTab === 'firma_pendiente'
+                                    ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
+                                    : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                            }`}
+                        >
+                            <FileCheck size={18} className={filterTab === 'firma_pendiente' ? 'text-white' : 'text-slate-400'} />
+                            <span className="text-[8.5px] font-black uppercase mt-1 leading-none text-center">Por Validar</span>
+                            {awaitingValidationFiltered.length > 0 && (
+                                <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border animate-pulse ${
+                                    filterTab === 'firma_pendiente'
+                                        ? 'bg-white text-amber-700 border-white'
+                                        : 'bg-rose-500 text-white border-rose-450'
+                                }`}>
+                                    {awaitingValidationFiltered.length}
+                                </span>
+                            )}
+                        </button>
+                    )}
+
+                    {/* Botón 3: Mis Tareas */}
+                    <button
+                        type="button"
+                        onClick={() => setFilterTab('mis_tareas')}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                            filterTab === 'mis_tareas'
+                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                        }`}
+                    >
+                        <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
+                        <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
+                        {activeAssignmentsFiltered.length > 0 && (
+                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                                filterTab === 'mis_tareas'
+                                    ? 'bg-white text-[#8a2be2] border-white'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}>
-                                {awaitingValidationFiltered.length}
+                                {activeAssignmentsFiltered.length}
                             </span>
                         )}
                     </button>
-                )}
 
-                <button
-                    onClick={() => setFilterTab('mis_tareas')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
-                        filterTab === 'mis_tareas'
-                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-sm'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                    📋 Mis Tareas
-                    <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                        filterTab === 'mis_tareas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                        {activeAssignmentsFiltered.length}
-                    </span>
-                </button>
+                    {/* Botón 4: Bolsa */}
+                    <button
+                        type="button"
+                        onClick={() => setFilterTab('bolsa')}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                            filterTab === 'bolsa'
+                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                        }`}
+                    >
+                        <Briefcase size={18} className={filterTab === 'bolsa' ? 'text-white' : 'text-slate-400'} />
+                        <span className="text-[9px] font-black uppercase mt-1">Bolsa</span>
+                        {puestoAssignmentsFiltered.length > 0 && (
+                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                                filterTab === 'bolsa'
+                                    ? 'bg-white text-[#8a2be2] border-white'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}>
+                                {puestoAssignmentsFiltered.length}
+                            </span>
+                        )}
+                    </button>
 
-                <button
-                    onClick={() => setFilterTab('bolsa')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all shrink-0 cursor-pointer ${
-                        filterTab === 'bolsa'
-                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-sm'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                    🤝 Bolsa
-                    <span className={`ml-1 text-[8.5px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                        filterTab === 'bolsa' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                        {puestoAssignmentsFiltered.length}
-                    </span>
-                </button>
-            </div>
+                    {/* Botón 5: Buscar (Lupa) */}
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchOpen(true)}
+                        className="flex flex-col items-center justify-center py-2 px-1 rounded-2xl border border-slate-200/85 bg-white hover:bg-slate-50 text-slate-500 transition-all cursor-pointer"
+                    >
+                        <Search size={18} className="text-slate-400" />
+                        <span className="text-[9px] font-black uppercase mt-1">Buscar</span>
+                    </button>
+                </div>
+            )}
 
             {/* Listado principal */}
             <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar pr-1 -mr-1">
@@ -733,8 +778,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                         a.status === 'awaiting_validation' ? 'bg-amber-50 text-amber-700 border-amber-250/50' :
                                                         'bg-rose-50 text-rose-700 border-rose-250/50'
                                                     }`}>
+                                                    <span>
                                                         {a.status === 'completed' ? 'Completada' :
-                                                         a.status === 'awaiting_validation' ? 'Firma Pendiente' : 'Omitida'}
+                                                         a.status === 'awaiting_validation' ? 'Por Validar' : 'Omitida'}
+                                                    </span>
                                                     </span>
                                                     <span className="text-[9px] text-slate-450 font-extrabold flex items-center gap-1">
                                                         <Clock size={10} />
@@ -903,7 +950,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                             a.status === 'paused' ? 'bg-slate-100 text-slate-600 border-slate-200' :
                                             'bg-indigo-50 text-indigo-755 border-indigo-200'
                                         }`}>
-                                            {a.status === 'awaiting_validation' ? 'Firma Pendiente' :
+                                            {a.status === 'awaiting_validation' ? 'Por Validar' :
                                              a.userId === null ? 'Bolsa de Trabajo' :
                                              a.status === 'in_progress' ? 'En Curso' :
                                              a.status === 'paused' ? 'Pausada' : 'Pendiente'}

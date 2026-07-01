@@ -11,6 +11,8 @@ import Academia from './Academia';
 import Evaluacion360 from './Evaluacion360';
 
 export default function RelojVisual() {
+  const [pendingSwapPartner, setPendingSwapPartner] = useState<any>(null);
+  const [isSwappingLoading, setIsSwappingLoading] = useState<boolean>(false);
   const { currentTier, isFeatureUnlocked } = useAppStore();
   const {
     currentSimTime,
@@ -1039,140 +1041,211 @@ export default function RelojVisual() {
           )}
 
           {showMealReservationModal && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
-              <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up">
-                {(() => {
-                  const isTrialActive = () => {
-                    const tenant = currentUser?.tenant;
-                    if (!tenant) return false;
-                    if (tenant.subscription_status === 'trial' || !tenant.subscription_status) {
-                      if (tenant.trial_ends_at) {
-                        const endsAt = new Date(tenant.trial_ends_at);
-                        return endsAt.getTime() > Date.now();
-                      }
-                    }
-                    return false;
-                  };
-                  const isFreemiumExpired = !isFeatureUnlocked('meal_reservation');
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative overflow-hidden">
+                {isSwappingLoading && pendingSwapPartner ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mx-auto"></div>
+                    <h3 className="font-bold text-slate-800 text-lg">Enviando Solicitud...</h3>
+                    <p className="text-xs text-slate-500 max-w-xs leading-relaxed mx-auto">
+                      Se ha enviado una notificación a <strong>{pendingSwapPartner.name}</strong> para intercambiar tu horario de comida por su horario reservado (<strong>{userReservedMealSlots[pendingSwapPartner.id]?.[0] || 'Reservado'}</strong>).
+                    </p>
+                  </div>
+                ) : (
+                  (() => {
+                    const isFreemiumExpired = !isFeatureUnlocked('meal_reservation');
 
-                  if (isFreemiumExpired) {
+                    const areRolesCompatibleForSwap = (roleA: string, roleB: string) => {
+                      if (!roleA || !roleB) return false;
+                      const rA = roleA.toLowerCase();
+                      const rB = roleB.toLowerCase();
+                      if (rA === rB) return true;
+                      const isSupA = rA.includes('supervisor') || rA.includes('sup.');
+                      const isSupB = rB.includes('supervisor') || rB.includes('sup.');
+                      if (isSupA || isSupB) {
+                        return isSupA && isSupB;
+                      }
+                      const isOperativeA = rA.includes('ayudante') || rA.includes('asesor') || rA.includes('ventas') || rA.includes('atencion') || rA.includes('cliente') || rA.includes('almacenista');
+                      const isOperativeB = rB.includes('ayudante') || rB.includes('asesor') || rB.includes('ventas') || rB.includes('atencion') || rB.includes('cliente') || rB.includes('almacenista');
+                      if (isOperativeA && isOperativeB) return true;
+                      return false;
+                    };
+
+                    if (isFreemiumExpired) {
+                      return (
+                        <>
+                          <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Registro de Almuerzo</h3>
+                          
+                          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
+                            <p className="text-xs text-slate-600 leading-relaxed mb-4 text-left">
+                              Como usuario del plan gratuito, puedes registrar tu salida a comer directamente sin reserva de horario previa.
+                            </p>
+                            
+                            <button 
+                              onClick={() => {
+                                confirmMealReservation(0);
+                                setShowMealReservationModal(false);
+                              }}
+                              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl shadow-md transition-colors border-none cursor-pointer"
+                            >
+                              Registrar Salida a Comer
+                            </button>
+                          </div>
+
+                          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-150 rounded-2xl mb-6 flex items-start gap-3">
+                            <span className="text-lg">⭐</span>
+                            <div className="text-left">
+                              <h4 className="font-black text-blue-900 text-xs uppercase tracking-wider mb-0.5">Accede al Comedor Pro</h4>
+                              <p className="text-blue-700 text-[10px] leading-relaxed">
+                                El plan gratuito no incluye la cuadrícula interactiva de comedor, aforo por horarios ni prevención de choque de puestos. ¡Pásate al plan Profesional!
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <button onClick={() => setShowMealReservationModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl border-none cursor-pointer">Cancelar</button>
+                        </>
+                      );
+                    }
+
+                    // Candidatos compatibles para el intercambio rápido
+                    const swapCandidates = globalUsers.filter(u => 
+                      u.is_active_employee !== false && 
+                      u.id !== currentUser.id && 
+                      hasReservedMeal[u.id] && 
+                      areRolesCompatibleForSwap(currentUser.role, u.role)
+                    );
+
                     return (
                       <>
-                        <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Registro de Almuerzo</h3>
+                        <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
+                        <p className="text-xs text-slate-500 mb-4 bg-amber-50 p-3 rounded-xl border border-amber-100/60 leading-normal">
+                          Selecciona tu horario o solicita un intercambio con un compañero compatible de tu mismo rango. (Aforo máximo: {mealSettings?.maxChairs || 3})
+                        </p>
                         
-                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-6">
-                          <p className="text-xs text-slate-600 leading-relaxed mb-4 text-left">
-                            Como usuario del plan gratuito, puedes registrar tu salida a comer directamente sin reserva de horario previa.
-                          </p>
-                          
-                          <button 
-                            onClick={() => {
-                              confirmMealReservation(0);
-                              setShowMealReservationModal(false);
-                            }}
-                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl shadow-md transition-colors"
-                          >
-                            Registrar Salida a Comer
-                          </button>
+                        <div className="grid grid-cols-2 gap-2.5 mb-5 max-h-36 overflow-y-auto custom-scrollbar pr-2">
+                          {(() => {
+                            const safeStart = mealSettings?.startHour ?? 13;
+                            const safeEnd = mealSettings?.endHour ?? 17;
+                            const safeStep = mealSettings?.stepMins ?? 15;
+                            const totalLength = Math.max(0, (safeEnd - safeStart) * (60 / safeStep));
+                            
+                            return Array.from({length: totalLength}).map((_, i) => {
+                              const totalMins = safeStart * 60 + (i * safeStep);
+                              const h = Math.floor(totalMins / 60);
+                              const m = totalMins % 60;
+                              const ampm = h >= 12 ? 'PM' : 'AM';
+                              const slotStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,'0')} ${ampm}`;
+                              
+                              const userMealMinutes = currentUser?.mealMinutes || timeBankConfigs?.mealMinutes || 60;
+                              const stepMins = mealSettings?.stepMins || 15;
+                              const neededBlocks = Math.ceil(userMealMinutes / stepMins);
+                              const totalPossibleBlocks = ((mealSettings?.endHour ?? 17) - (mealSettings?.startHour ?? 13)) * (60 / stepMins);
+                              
+                              let canReserve = true;
+                              let blockReason = '';
+                              let firstBlockReservations = reservedMeals[slotStr] || [];
+                              
+                              if (i + neededBlocks > totalPossibleBlocks) {
+                                 canReserve = false;
+                                 blockReason = 'Tiempo insuficiente';
+                              } else {
+                                 for(let j=0; j<neededBlocks; j++) {
+                                    const checkMins = (mealSettings?.startHour ?? 13) * 60 + ((i + j) * stepMins);
+                                    const ch = Math.floor(checkMins / 60);
+                                    const cm = checkMins % 60;
+                                    const campm = ch >= 12 ? 'PM' : 'AM';
+                                    const checkSlotStr = `${ch > 12 ? ch - 12 : ch}:${cm.toString().padStart(2,'0')} ${campm}`;
+                                    
+                                    const res = reservedMeals[checkSlotStr] || [];
+                                    if (res.length >= (mealSettings?.maxChairs || 3)) {
+                                       canReserve = false;
+                                       blockReason = 'Aforo Lleno';
+                                       break;
+                                    }
+                                    if (mealSettings?.preventRoleOverlap && res.some(r => r.role === currentUser.role)) {
+                                       canReserve = false;
+                                       blockReason = `Choque: ${currentUser.role}`;
+                                       break;
+                                    }
+                                 }
+                              }
+                              
+                              const disabled = !canReserve;
+
+                              if (disabled && mealSettings?.hideFullSlots && (blockReason === 'Aforo Lleno' || blockReason.startsWith('Choque'))) {
+                                 return null;
+                              }
+                              
+                              return (
+                                <button 
+                                  key={slotStr}
+                                  onClick={() => confirmMealReservation(i)}
+                                  disabled={disabled}
+                                  className={`p-2.5 rounded-xl border-2 flex flex-col items-center justify-center transition-colors border-none cursor-pointer ${disabled ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400' : 'bg-white border-amber-200 hover:border-amber-400 active:bg-amber-50 text-slate-800'}`}
+                                >
+                                  <span className="font-bold text-xs">{slotStr}</span>
+                                  <span className="text-[9px] mt-0.5 font-bold text-center leading-tight">
+                                    {disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.length}`}
+                                  </span>
+                                </button>
+                              );
+                            });
+                          })()}
                         </div>
 
-                        {/* Discrete Pro Upgrade Banner */}
-                        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-150 rounded-2xl mb-6 flex items-start gap-3">
-                          <span className="text-lg">⭐</span>
-                          <div className="text-left">
-                            <h4 className="font-black text-blue-900 text-xs uppercase tracking-wider mb-0.5">Accede al Comedor Pro</h4>
-                            <p className="text-blue-700 text-[10px] leading-relaxed">
-                              El plan gratuito no incluye la cuadrícula interactiva de comedor, aforo por horarios ni prevención de choque de puestos. ¡Pásate al plan Profesional!
-                            </p>
+                        {/* Listado Deslizable de Intercambio Filtrado */}
+                        {swapCandidates.length > 0 && (
+                          <div className="border-t border-slate-100 pt-3.5 mb-4">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                              <span>🔄</span> ¿Intercambiar horario con un compañero?
+                            </h4>
+                            <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar">
+                              {swapCandidates.map(u => {
+                                const pSlots = userReservedMealSlots[u.id] || [];
+                                const pSlotsDesc = pSlots.length > 0 ? pSlots.join(' - ') : 'Reservado';
+                                return (
+                                  <div 
+                                    key={u.id}
+                                    onClick={() => {
+                                      setPendingSwapPartner(u);
+                                      setIsSwappingLoading(true);
+                                      setTimeout(async () => {
+                                        await swapMealSlots(currentUser.id, u.id);
+                                        setIsSwappingLoading(false);
+                                        setPendingSwapPartner(null);
+                                        setShowMealReservationModal(false);
+                                        showCustomAlert(`🟢 ${u.name} ha aceptado tu solicitud de intercambio de comida.`);
+                                      }, 3000);
+                                    }}
+                                    className="p-2 rounded-xl border border-slate-100 hover:border-amber-300 bg-slate-50/50 hover:bg-amber-50/20 transition-all flex justify-between items-center cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <img src={u.avatar} alt="Avatar" className="w-6 h-6 rounded-full shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-slate-700 text-xs truncate leading-tight">{u.name}</p>
+                                        <p className="text-[9px] text-slate-400 font-semibold truncate leading-tight mt-0.5">{u.role} • {pSlotsDesc}</p>
+                                      </div>
+                                    </div>
+                                    <button className="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-2.5 py-1 rounded-lg border-none shrink-0 cursor-pointer hover:bg-amber-200 transition-colors">
+                                      Intercambiar
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
-                        <button onClick={() => setShowMealReservationModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl">Cancelar</button>
+                        <button 
+                          onClick={() => setShowMealReservationModal(false)} 
+                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl border-none cursor-pointer transition-colors text-xs uppercase tracking-wider"
+                        >
+                          Cerrar
+                        </button>
                       </>
                     );
-                  }
-
-                  return (
-                    <>
-                      <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
-                      <p className="text-sm text-slate-600 mb-4 bg-amber-50 p-3 rounded-xl border border-amber-100">Selecciona en qué horario saldrás a comer. (Aforo máximo: {mealSettings.maxChairs})</p>
-                      
-                      <div className="grid grid-cols-2 gap-3 mb-6 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                        {(() => {
-                          const safeStart = mealSettings?.startHour ?? 13;
-                          const safeEnd = mealSettings?.endHour ?? 17;
-                          const safeStep = mealSettings?.stepMins ?? 15;
-                          const totalLength = Math.max(0, (safeEnd - safeStart) * (60 / safeStep));
-                          
-                          return Array.from({length: totalLength}).map((_, i) => {
-                          const totalMins = safeStart * 60 + (i * safeStep);
-                          const h = Math.floor(totalMins / 60);
-                          const m = totalMins % 60;
-                          const ampm = h >= 12 ? 'PM' : 'AM';
-                          const slotStr = `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,'0')} ${ampm}`;
-                          
-                          const userMealMinutes = currentUser.mealMinutes || timeBankConfigs.mealMinutes || 60;
-                          const stepMins = mealSettings.stepMins;
-                          const neededBlocks = Math.ceil(userMealMinutes / stepMins);
-                          const totalPossibleBlocks = (mealSettings.endHour - mealSettings.startHour) * (60 / stepMins);
-                          
-                          let canReserve = true;
-                          let blockReason = '';
-                          let firstBlockReservations = reservedMeals[slotStr] || [];
-                          
-                          if (i + neededBlocks > totalPossibleBlocks) {
-                             canReserve = false;
-                             blockReason = 'Tiempo insuficiente';
-                          } else {
-                             for(let j=0; j<neededBlocks; j++) {
-                                const checkMins = mealSettings.startHour * 60 + ((i + j) * stepMins);
-                                const ch = Math.floor(checkMins / 60);
-                                const cm = checkMins % 60;
-                                const campm = ch >= 12 ? 'PM' : 'AM';
-                                const checkSlotStr = `${ch > 12 ? ch - 12 : ch}:${cm.toString().padStart(2,'0')} ${campm}`;
-                                
-                                const res = reservedMeals[checkSlotStr] || [];
-                                if (res.length >= mealSettings.maxChairs) {
-                                   canReserve = false;
-                                   blockReason = 'Aforo Lleno';
-                                   break;
-                                }
-                                if (mealSettings.preventRoleOverlap && res.some(r => r.role === currentUser.role)) {
-                                   canReserve = false;
-                                   blockReason = `Choque: ${currentUser.role}`;
-                                   break;
-                                }
-                             }
-                          }
-                          
-                          const disabled = !canReserve;
-
-                          if (disabled && mealSettings.hideFullSlots && (blockReason === 'Aforo Lleno' || blockReason.startsWith('Choque'))) {
-                             return null;
-                          }
-                          
-                          return (
-                            <button 
-                              key={slotStr}
-                              onClick={() => confirmMealReservation(i)}
-                              disabled={disabled}
-                              className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-colors
-                                ${disabled ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed' : 'bg-white border-amber-200 hover:border-amber-400 active:bg-amber-50'}
-                              `}
-                            >
-                              <span className={`font-bold ${disabled ? 'text-slate-400' : 'text-amber-700'}`}>{slotStr}</span>
-                              <span className="text-[10px] text-slate-500 mt-1 font-bold text-center leading-tight">
-                                {disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${mealSettings.maxChairs - firstBlockReservations.length}`}
-                              </span>
-                            </button>
-                          );
-                        })})()}
-                      </div>
-                      
-                      <button onClick={() => setShowMealReservationModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl">Cancelar Entrada</button>
-                    </>
-                  );
-                })()}
+                  })()
+                )}
               </div>
             </div>
           )}

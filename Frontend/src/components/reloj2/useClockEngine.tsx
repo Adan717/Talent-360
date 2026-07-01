@@ -44,7 +44,8 @@ export function useClockEngine(overrideUser?: any) {
     globalBreakEndTimes,
     globalMealStartTimes,
     globalMealEndTimes,
-    globalCheckOutTimes
+    globalCheckOutTimes,
+    globalPendingBreakRequests
   } = useAppStore();
   
   const currentUser = overrideUser || globalUser;
@@ -544,6 +545,31 @@ export function useClockEngine(overrideUser?: any) {
      localStorage.setItem('clock_break_end_times', JSON.stringify(localBreakEndTimes));
   }, [localBreakEndTimes]);
 
+  const [localPendingBreakRequests, setLocalPendingBreakRequests] = useState<Record<number, any>>(() => {
+     try {
+       const saved = localStorage.getItem('clock_pending_break_requests');
+       return saved ? JSON.parse(saved) : {};
+     } catch {
+       return {};
+     }
+  });
+
+  useEffect(() => {
+     localStorage.setItem('clock_pending_break_requests', JSON.stringify(localPendingBreakRequests));
+  }, [localPendingBreakRequests]);
+
+  const pendingBreakRequests = isSandboxMode ? localPendingBreakRequests : (globalPendingBreakRequests || {});
+
+  const setPendingBreakRequests = (updater: any) => {
+    if (isSandboxMode) {
+      setLocalPendingBreakRequests(prev => typeof updater === 'function' ? updater(prev) : updater);
+    } else {
+      useAppStore.setState((state: any) => ({
+        globalPendingBreakRequests: typeof updater === 'function' ? updater(state.globalPendingBreakRequests || {}) : updater
+      }));
+    }
+  };
+
   const breakStartTimes = isSandboxMode ? localBreakStartTimes : (globalBreakStartTimes || {});
   const breakEndTimes = isSandboxMode ? localBreakEndTimes : (globalBreakEndTimes || {});
   const mealStartTimes = isSandboxMode ? localMealStartTimes : (globalMealStartTimes || {});
@@ -941,8 +967,37 @@ export function useClockEngine(overrideUser?: any) {
   const [showEvalModal, setShowEvalModal] = useState(false);
   const [showForzosaModal, setShowForzosaModal] = useState(false);
   const [showPaseListaModal, setShowPaseListaModal] = useState(false);
-  
+  const [showBreakSeatModal, setShowBreakSeatModal] = useState(false);
+  const [showTempExitModal, setShowTempExitModal] = useState(false);
+  const [showPanicModal, setShowPanicModal] = useState(false);
+  const [isPanicActive, setIsPanicActive] = useState(false);
+  const [showMealSwapModal, setShowMealSwapModal] = useState(false);
+  const [isHandoverCompleted, setIsHandoverCompleted] = useState(false);
+
+  // Alerta de GPS al salir del perímetro sin pase de salida
+  const lastAlertSentRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (clockState === 'active' && gpsStatus === 'success' && currentUser?.id) {
+      const alertThreshold = clockOpConfig.gpsAlertRangeMeters || 100;
+      if (gpsDistance > alertThreshold) {
+        const now = Date.now();
+        if (!lastAlertSentRef.current || now - lastAlertSentRef.current > 60000) {
+          lastAlertSentRef.current = now;
+          useAppStore.getState().addMatrixEvent(
+            '🚨 Abandono de Sucursal Detectado',
+            `El colaborador ${currentUser.name} se encuentra fuera del perímetro permitido (${Math.round(gpsDistance)} metros de distancia) sin un pase registrado.`,
+            'warning',
+            currentUser.id
+          );
+          showCustomAlert(`⚠️ Alerta: Estás a ${Math.round(gpsDistance)}m de la sucursal. Se ha notificado al supervisor por abandono de perímetro.`);
+        }
+      }
+    }
+  }, [gpsDistance, clockState, gpsStatus, currentUser?.name, currentUser?.id, clockOpConfig.gpsAlertRangeMeters]);
+
   const [paseListaEmployees, setPaseListaEmployees] = useState([]);
+  const [cashCount, setCashCount] = useState("");
   const [kioscoInput, setKioscoInput] = useState('');
   const [evalStars, setEvalStars] = useState(0);
   const [storeOpenLog, setStoreOpenLog] = useState<{time: string, type: 'normal'|'forzosa'} | null>(null);
@@ -1223,6 +1278,145 @@ export function useClockEngine(overrideUser?: any) {
       console.error(e);
     }
   };
+
+  const requestBreak = async (userId: number) => {
+    try {
+      const timeStr = formattedTime;
+      
+      if (isSandboxMode) {
+        setLocalPendingBreakRequests(prev => ({
+          ...prev,
+          [userId]: { time: currentSimTime }
+        }));
+        
+        useAppStore.getState().addMatrixEvent(
+          '🧘 Solicitud de Descanso',
+          `${currentUser.name} ha solicitado iniciar un descanso de Ley Silla (15 min).`,
+          'info',
+          userId
+        );
+      } else {
+        await axiosInstance.post('/clock/punch', {
+          user_id: userId,
+          type: 'break_request',
+          time: timeStr,
+          details: { note: 'Solicitud de descanso Ley Silla' }
+        });
+        
+        useAppStore.setState((s: any) => ({
+          globalPendingBreakRequests: {
+            ...s.globalPendingBreakRequests,
+            [userId]: { time: parseTimeToMins(timeStr), details: 'Solicitud de descanso Ley Silla' }
+          }
+        }));
+      }
+      showCustomAlert('✅ Solicitud de descanso enviada al supervisor.');
+      window.dispatchEvent(new Event('db_sync_updated'));
+    } catch (e) {
+      console.error(e);
+      showCustomAlert('⚠️ Error al enviar la solicitud de descanso.');
+    }
+  };
+
+  const approveBreakRequest = async (targetUserId: number) => {
+    try {
+      const timeStr = formattedTime;
+      const targetUser = globalUsers.find((u: any) => u.id === targetUserId) || currentUser;
+
+      if (isSandboxMode) {
+        setLocalPendingBreakRequests(prev => {
+          const next = { ...prev };
+          delete next[targetUserId];
+          return next;
+        });
+        
+        setBreakStartTimes((prev: any) => ({
+          ...prev,
+          [targetUserId]: currentSimTime
+        }));
+        
+        updateClockState(targetUserId, 'short_break');
+
+        useAppStore.getState().addMatrixEvent(
+          '🧘 Descanso Aprobado',
+          `El supervisor aprobó el descanso de Ley Silla para ${targetUser.name}.`,
+          'success',
+          targetUserId
+        );
+      } else {
+        await axiosInstance.post('/clock/punch', {
+          user_id: targetUserId,
+          type: 'break_start',
+          time: timeStr,
+          details: { note: 'Aprobado por el supervisor' }
+        });
+
+        useAppStore.setState((s: any) => {
+          const nextPending = { ...s.globalPendingBreakRequests };
+          delete nextPending[targetUserId];
+          
+          return {
+            globalPendingBreakRequests: nextPending,
+            globalClockStates: {
+              ...s.globalClockStates,
+              [targetUserId]: 'short_break'
+            },
+            globalBreakStartTimes: {
+              ...s.globalBreakStartTimes,
+              [targetUserId]: parseTimeToMins(timeStr)
+            }
+          };
+        });
+      }
+      showCustomAlert(`✅ Descanso aprobado para ${targetUser.name}.`);
+      window.dispatchEvent(new Event('db_sync_updated'));
+    } catch (e) {
+      console.error(e);
+      showCustomAlert('⚠️ Error al aprobar la solicitud.');
+    }
+  };
+
+  const rejectBreakRequest = async (targetUserId: number) => {
+    try {
+      const timeStr = formattedTime;
+      const targetUser = globalUsers.find((u: any) => u.id === targetUserId) || currentUser;
+
+      if (isSandboxMode) {
+        setLocalPendingBreakRequests(prev => {
+          const next = { ...prev };
+          delete next[targetUserId];
+          return next;
+        });
+
+        useAppStore.getState().addMatrixEvent(
+          '🧘 Descanso Rechazado',
+          `El supervisor rechazó la solicitud de descanso para ${targetUser.name}.`,
+          'warning',
+          targetUserId
+        );
+      } else {
+        await axiosInstance.post('/clock/punch', {
+          user_id: targetUserId,
+          type: 'break_rejected',
+          time: timeStr,
+          details: { note: 'Rechazado por el supervisor' }
+        });
+
+        useAppStore.setState((s: any) => {
+          const nextPending = { ...s.globalPendingBreakRequests };
+          delete nextPending[targetUserId];
+          return {
+            globalPendingBreakRequests: nextPending
+          };
+        });
+      }
+      showCustomAlert(`❌ Descanso rechazado para ${targetUser.name}.`);
+      window.dispatchEvent(new Event('db_sync_updated'));
+    } catch (e) {
+      console.error(e);
+      showCustomAlert('⚠️ Error al rechazar la solicitud.');
+    }
+  };
   
   // Fase 1: Portadores de Llaves
   const [keyholders, setKeyholders] = useState<number[]>([]);
@@ -1340,7 +1534,8 @@ export function useClockEngine(overrideUser?: any) {
     }
   }, [activeEncargadoId, currentDay, globalUsers, shiftConfigs]);
 
-  // Push Notification: Reserva de Comida Escalonada
+  // Push Notification: Reserva de Comida Escalonada (Desactivado a solicitud del usuario)
+  /*
   useEffect(() => {
     if (storeStatus !== 'open' || !featureFlags.comidas) return;
     
@@ -1363,10 +1558,11 @@ export function useClockEngine(overrideUser?: any) {
                   setPhoneTab('checador');
                   setShowMealReservationModal(true);
                }
-            });
+             });
         }
     }
   }, [currentSimTime, storeStatus, featureFlags.comidas, checkInTimes, hasReservedMeal, globalClockStates, currentUser.id, activePushNotification, globalUsers]);
+  */
 
   // Push Notification: Apertura de Emergencia por Relevo de Llaves
   useEffect(() => {
@@ -1867,6 +2063,8 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'meal_end') newState = 'active';
           else if (type === 'break_start') newState = 'short_break';
           else if (type === 'break_end') newState = 'active';
+          else if (type === 'temp_exit_start') newState = 'temp_exit';
+          else if (type === 'temp_exit_end') newState = 'active';
           else if (type === 'check_out') newState = 'inactive';
           else if (type === 'contingency') newState = 'contingency';
           
@@ -1891,6 +2089,8 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'meal_end') newState = 'active';
           else if (type === 'break_start') newState = 'short_break';
           else if (type === 'break_end') newState = 'active';
+          else if (type === 'temp_exit_start') newState = 'temp_exit';
+          else if (type === 'temp_exit_end') newState = 'active';
           else if (type === 'check_out') newState = 'inactive';
           else if (type === 'contingency') newState = 'contingency';
 
@@ -1913,6 +2113,8 @@ export function useClockEngine(overrideUser?: any) {
              else if (type === 'meal_end') newState = 'active';
              else if (type === 'break_start') newState = 'short_break';
              else if (type === 'break_end') newState = 'active';
+             else if (type === 'temp_exit_start') newState = 'temp_exit';
+             else if (type === 'temp_exit_end') newState = 'active';
              else if (type === 'check_out') newState = 'inactive';
              else if (type === 'contingency') newState = 'contingency';
 
@@ -1962,17 +2164,13 @@ export function useClockEngine(overrideUser?: any) {
         return;
       }
     }
-
-    if (btnProps.isReport) {
-      const res = await syncToDB('check_in', false, 0, 'Reporte de tienda cerrada');
-      if (!res?.offline) {
-        showCustomAlert(`🚨 [${formattedTime}] Reporte crítico enviado a Administración: "Tienda Cerrada y Personal Afuera".`);
-      }
+    if (gpsStatus !== 'success' && !clockOpConfig.allowManualCheckIn) {
+      showCustomAlert("⚠️ Error de GPS: No se ha podido validar tu ubicación actual.");
       return;
     }
 
-    if (storeStatus === 'closed') {
-      if (Number(currentUser.id) === Number(activeEncargadoId)) {
+    if (!isWithinPerimeter && !clockOpConfig.allowManualCheckIn) {
+      if (isOpeningPremium && storeStatus === 'closed' && currentUser.id === activeEncargadoId) {
         if (globalPermissions.includes('manage_contingencies')) {
           setShowAmnestyModal(true);
           return;
@@ -1987,8 +2185,9 @@ export function useClockEngine(overrideUser?: any) {
         showCustomAlert("En perímetro. Esperando apertura de tienda...");
       }
     } else {
-      if (clockState === 'inactive' || clockState === 'waiting_room' || clockState === 'waiting') {
-        // Lógica de retardos movida al backend (Server-Authoritative)
+      const actionText = btnProps.text;
+      
+      if (actionText === 'Registrar Entrada' || actionText === 'Registrar Entrada Manual') {
         const res = await syncToDB('check_in');
         if (res && res.entry && res.entry.late_type) {
             showCustomAlert(`🟢 Fichaje registrado. Se detectó: ${res.entry.late_type} (${res.entry.penalty_applied}% descuento)`);
@@ -1998,28 +2197,150 @@ export function useClockEngine(overrideUser?: any) {
         } else {
             showCustomAlert(`🟢 Fichaje registrado a tiempo.`);
         }
-
-      } else if (clockState === 'active') {
+      } else if (actionText === 'Abrir Tienda') {
+        handleOpenStore(false);
+      } else if (actionText === 'Iniciar Horario de Comida') {
         await syncToDB('meal_start');
-      } else if (clockState === 'meal') {
+      } else if (actionText === 'Regresar de Comida') {
         const res = await syncToDB('meal_end');
         if (!res?.offline) {
           showCustomAlert('🏃 Has regresado de comer.');
         }
-      } else if (clockState === 'short_break') {
-        const res = await syncToDB('break_end');
-        if (!res?.offline) {
-          showCustomAlert('🏃 Has regresado de tu descanso.');
-        }
+      } else if (actionText === 'Descanso Ley Silla') {
+        await handleBreakStart();
+      } else if (actionText === 'Regresar de Descanso') {
+        await handleBreakEnd();
+      } else if (actionText === 'Entrega de Turno') {
+        handleHandoverStart();
+      } else if (actionText === 'Registrar Salida') {
+        handleClockOutRequest();
+      } else if (actionText === 'Registrar Reingreso') {
+        await endTempExit();
       }
     }
   };
 
+  const handleBreakEnd = async () => {
+    const res = await syncToDB('break_end');
+    if (!res?.offline) {
+      // Marcar la tarea sentada como completada
+      useTaskStore.setState(state => {
+        const updated = state.assignments.map(a => {
+          if (a.userId === currentUser.id && a.status === 'in_progress' && a.id.startsWith('seat_')) {
+            return {
+              ...a,
+              status: 'completed' as const,
+              completedAtMins: currentSimTime
+            };
+          }
+          return a;
+        });
+        return { assignments: updated };
+      });
+      useTaskStore.getState().syncToBackend();
+      showCustomAlert('🏃 Has regresado de tu descanso. Tarea de Ley Silla completada.');
+    }
+  };
+
   const handleBreakStart = async () => {
-      const res = await syncToDB('break_start');
-      if (!res?.offline) {
-        showCustomAlert('🧘 Has iniciado tu descanso (Ley Silla).');
+      const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+      if (isPro) {
+        setShowBreakSeatModal(true);
+      } else {
+        const res = await syncToDB('break_start');
+        if (!res?.offline) {
+          showCustomAlert('🧘 Has iniciado tu descanso (Ley Silla - Básico).');
+        }
       }
+  };
+
+  const startBreakWithSittingTask = async (taskId: number) => {
+    const res = await syncToDB('break_start');
+    if (res?.offline) return;
+    
+    const assignmentId = `seat_${currentUser.id}_${Date.now()}`;
+    const newTaskAssignment = {
+      id: assignmentId,
+      taskId,
+      userId: currentUser.id,
+      status: 'in_progress' as const,
+      startedAtMins: currentSimTime,
+      completedAtMins: null,
+      accumulatedMins: 0
+    };
+    
+    useTaskStore.setState(state => ({
+      assignments: [...state.assignments, newTaskAssignment]
+    }));
+    useTaskStore.getState().syncToBackend();
+    
+    setShowBreakSeatModal(false);
+    showCustomAlert('🧘 Descanso (Ley Silla) iniciado y tarea sentado asignada.');
+  };
+
+  const startTempExit = async (reason: string) => {
+    const res = await syncToDB('temp_exit_start', false, 0, reason);
+    if (!res?.offline) {
+      setShowTempExitModal(false);
+      showCustomAlert(`🚪 Pase de Salida Temporal registrado: "${reason}".`);
+    }
+  };
+
+  const endTempExit = async () => {
+    const res = await syncToDB('temp_exit_end');
+    if (!res?.offline) {
+      showCustomAlert('🚶 Reingreso de salida temporal registrado.');
+    }
+  };
+
+  const triggerPanic = (emergencyType: string, description: string) => {
+    setIsPanicActive(true);
+    useAppStore.getState().addMatrixEvent(
+      `🚨 EMERGENCIA CRÍTICA: ${emergencyType}`,
+      `Se ha reportado un incidente de tipo [${emergencyType.toUpperCase()}]: ${description}. La sucursal ha entrado en modo bloqueo de pánico.`,
+      'error',
+      currentUser.id
+    );
+    setShowPanicModal(false);
+    showCustomAlert(`🚨 Alerta de pánico activada: ${emergencyType}. Se ha notificado a administración.`);
+  };
+
+  const resolvePanic = () => {
+    setIsPanicActive(false);
+    useAppStore.getState().addMatrixEvent(
+      `💚 EMERGENCIA RESUELTA`,
+      `El modo pánico de la sucursal ha sido desactivado y la operación vuelve a la normalidad.`,
+      'success',
+      currentUser.id
+    );
+    showCustomAlert('💚 Modo pánico desactivado. Retornando a operaciones normales.');
+  };
+
+  const handleHandoverStart = () => {
+    setShowKeyDelegationModal(true);
+  };
+
+  const completeHandover = async (delegatedToUserId: number, cashAmt: number) => {
+    if (useAppStore.getState().isSandboxMode) {
+      useAppStore.getState().addMatrixEvent(
+        '🔑 Entrega de Turno Completada',
+        `El encargado ${currentUser.name} entregó el turno a ${globalUsers.find(u => u.id === delegatedToUserId)?.name} con un arqueo de $${cashAmt}.`,
+        'success',
+        currentUser.id
+      );
+    } else {
+      try {
+        await axiosInstance.post('/key-transfers', {
+          recipient_id: delegatedToUserId,
+          notes: `Entrega de turno. Arqueo de caja: $${cashAmt}`
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setIsHandoverCompleted(true);
+    setShowKeyDelegationModal(false);
+    showCustomAlert('🔑 Entrega de turno y arqueo de caja registrados con éxito. Ahora puedes registrar tu salida.');
   };
 
   const handleClockOutRequest = () => {
@@ -2111,7 +2432,24 @@ export function useClockEngine(overrideUser?: any) {
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', disabled: true };
 
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
+
+    const shiftStartStr = shiftConfigs[currentUser?.id]?.start || '09:00';
+    const shiftStartMins = parseTimeToMins(shiftStartStr);
+
+    const hasCheckedIn = checkInTimes[currentUser?.id] !== undefined;
+    const isLate = currentSimTime > (shiftStartMins + 10);
+    
+    if (!hasCheckedIn && isLate && clockState === 'inactive') {
+      return {
+        text: '⚠️ Reportar Ausencia/Retardo',
+        bg: 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold shadow-[0_0_20px_rgba(239,68,68,0.35)] animate-pulse',
+        icon: '⚠️',
+        isIncidenceReport: true,
+        subtext: 'Has superado el límite de tolerancia de tu turno de entrada.'
+      };
+    }
 
     if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
       let responsibleId = 1;
@@ -2165,10 +2503,10 @@ export function useClockEngine(overrideUser?: any) {
           const ampm = h >= 12 ? 'pm' : 'am';
           return `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,'0')} ${ampm}`;
         };
-        return { text: `Disponible a las ${formatLimit()}`, bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true };
+        return { text: `🔒 Disponible a las ${formatLimit()}`, bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true, subtext: 'Antes de la ventana de apertura programada' };
       }
 
-      let responsibleId = 11; // Fallback to Francisco
+      let responsibleId = 11;
       if (openingStatus) {
         responsibleId = openingStatus.current_responsible_employee_id;
       } else {
@@ -2205,10 +2543,8 @@ export function useClockEngine(overrideUser?: any) {
       return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️' };
     }
     if (storeStatus === 'closed') {
-      const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));
-      
       if (clockState === 'inactive') {
-        const limitMins = shiftStartMins - 30;
+        const limitMins = shiftStartMins - 60;
         if (currentSimTime < limitMins) {
           const formatLimit = () => {
             const h = Math.floor(limitMins / 60);
@@ -2216,9 +2552,9 @@ export function useClockEngine(overrideUser?: any) {
             const ampm = h >= 12 ? 'pm' : 'am';
             return `${h > 12 ? h - 12 : h}:${m.toString().padStart(2,'0')} ${ampm}`;
           };
-          return { text: `Disponible a las ${formatLimit()}`, bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true };
+          return { text: `🔒 Disponible a las ${formatLimit()}`, bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true, subtext: 'Tienda inactiva antes de turno' };
         }
-        return { text: '👋 Ya Llegué', bg: 'bg-slate-800 hover:bg-slate-900', icon: '📍' };
+        return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢' };
       }
       if (clockState === 'waiting_room') {
         if (currentSimTime >= shiftStartMins) {
@@ -2228,31 +2564,67 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
     if (clockState === 'inactive' || clockState === 'waiting_room') {
-      return { text: 'Registrar Entrada Manual', bg: 'bg-emerald-500 hover:bg-emerald-600', icon: '🟢' };
+      return { text: 'Registrar Entrada Manual', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold', icon: '🟢' };
     }
-     if (clockState === 'active') {
-      const mealReservationUnlocked = useAppStore.getState().isFeatureUnlocked('meal_reservation');
-      if (featureFlags.comidas && mealReservationUnlocked) {
-        const mySlots = userReservedMealSlots[currentUser.id] || [];
-        if (mySlots.length > 0) {
-           const [sh, sm] = mySlots[0].split(' ')[0].split(':');
-           const isPm = mySlots[0].includes('PM');
-           let hour = parseInt(sh);
-           if (isPm && hour !== 12) hour += 12;
-           if (!isPm && hour === 12) hour = 0;
-           const firstSlotMins = hour * 60 + parseInt(sm);
-           
-           if (currentSimTime < firstSlotMins - 5) {
-              return { text: 'Iniciar Horario de Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Tu turno inicia a las ${mySlots[0]}` };
-           }
-        } else {
-           return { text: 'Reserva tu horario primero', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true };
+
+    if (clockState === 'active') {
+      const hasTakenMeal = mealStartTimes[currentUser.id] !== undefined;
+      if (!hasTakenMeal) {
+        const mealReservationUnlocked = useAppStore.getState().isFeatureUnlocked('meal_reservation');
+        if (isPro && featureFlags.comidas && mealReservationUnlocked) {
+          const mySlots = userReservedMealSlots[currentUser.id] || [];
+          if (mySlots.length > 0) {
+             const [sh, sm] = mySlots[0].split(' ')[0].split(':');
+             const isPm = mySlots[0].includes('PM');
+             let hour = parseInt(sh);
+             if (isPm && hour !== 12) hour += 12;
+             if (!isPm && hour === 12) hour = 0;
+             const firstSlotMins = hour * 60 + parseInt(sm);
+             
+             if (currentSimTime < firstSlotMins - 5) {
+                return { text: 'Iniciar Horario de Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
+             }
+          } else {
+             return { text: 'Reserva tu horario primero', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true };
+          }
         }
+        return { text: 'Iniciar Horario de Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔' };
       }
-      return { text: 'Iniciar Horario de Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950', icon: '🍔' };
+
+      const hasReturnedFromMeal = mealEndTimes[currentUser.id] !== undefined;
+      const hasTakenBreak = breakStartTimes[currentUser.id] !== undefined;
+      if (isPro && hasReturnedFromMeal && !hasTakenBreak) {
+        return { 
+          text: 'Descanso Ley Silla', 
+          bg: 'bg-purple-600 hover:bg-purple-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse', 
+          icon: '🧘' 
+        };
+      }
+
+      const isManager = ['Encargado Titular', 'Segundo Encargado', 'Supervisor', 'Gerente'].includes(currentUser.role);
+      if (isPro && isManager && !isHandoverCompleted) {
+        return { 
+          text: 'Entrega de Turno', 
+          bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse', 
+          icon: '🗝️' 
+        };
+      }
+
+      return { 
+        text: 'Registrar Salida', 
+        bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]', 
+        icon: '🚪' 
+      };
     }
+
     if (clockState === 'meal') {
-      return { text: 'Regresar de Comida', bg: 'bg-emerald-500 hover:bg-emerald-600', icon: '🏃' };
+      return { text: 'Regresar de Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃' };
+    }
+    if (clockState === 'short_break') {
+      return { text: 'Regresar de Descanso', bg: 'bg-indigo-650 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃' };
+    }
+    if (clockState === 'temp_exit') {
+      return { text: 'Registrar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶' };
     }
     if (clockState === 'absent') {
       return { text: 'Ausencia Registrada', bg: 'bg-rose-100 text-rose-500 cursor-not-allowed', icon: '🚷', disabled: true };
@@ -2718,6 +3090,30 @@ export function useClockEngine(overrideUser?: any) {
     initiateKeyTransfer,
     checkPendingKeyTransfers,
     respondToKeyTransfer,
-    reportAbandonment
+    reportAbandonment,
+    showBreakSeatModal,
+    setShowBreakSeatModal,
+    showTempExitModal,
+    setShowTempExitModal,
+    showPanicModal,
+    setShowPanicModal,
+    isPanicActive,
+    setIsPanicActive,
+    showMealSwapModal,
+    setShowMealSwapModal,
+    isHandoverCompleted,
+    setIsHandoverCompleted,
+    startBreakWithSittingTask,
+    startTempExit,
+    endTempExit,
+    triggerPanic,
+    resolvePanic,
+    completeHandover,
+    cashCount,
+    setCashCount,
+    pendingBreakRequests,
+    requestBreak,
+    approveBreakRequest,
+    rejectBreakRequest
   };
 }

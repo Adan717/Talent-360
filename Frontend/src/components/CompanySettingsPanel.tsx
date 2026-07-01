@@ -1466,6 +1466,21 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                 <div className="flex justify-between items-center">
                   <div>
+                    <h4 className="font-bold text-slate-800">Distancia Máxima de Alerta GPS (Metros)</h4>
+                    <p className="text-xs text-slate-500 mt-1">Radio máximo permitido en metros antes de alertar al supervisor en salidas temporales.</p>
+                  </div>
+                  <input 
+                    type="number" 
+                    className="w-24 p-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                    value={formData.clockOpConfig?.gpsAlertRangeMeters ?? 100} 
+                    onChange={(e) => handleNestedChange('clockOpConfig', 'gpsAlertRangeMeters', parseInt(e.target.value) || 0)} 
+                  />
+                </div>
+
+                <div className="h-[1px] bg-slate-200"></div>
+
+                <div className="flex justify-between items-center">
+                  <div>
                     <h4 className="font-bold text-slate-800">Permitir Fichajes Manuales</h4>
                     <p className="text-xs text-slate-500 mt-1">Habilitar botones de Entrada/Salida manuales sin validación de geolocalización GPS.</p>
                   </div>

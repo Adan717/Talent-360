@@ -8,10 +8,15 @@ import { useAppStore } from '../../store/useAppStore';
 export function PanelTareasRutinas() {
     const { tasks, routines, addTask, addRoutine, updateTask, updateRoutine } = useTaskStore();
     
+    const { globalRoles } = useAppStore();
+
     const getRoleName = (id: number) => {
+        const found = globalRoles?.find((r: any) => r.id === id);
+        if (found) return found.name;
         if (id === 1) return 'Gerente';
         if (id === 5) return 'Cajero';
         if (id === 6) return 'Ayudante';
+        if (id === 0) return 'Todos';
         return `Rol #${id}`;
     };
     
@@ -26,6 +31,9 @@ export function PanelTareasRutinas() {
     const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
     
     const getRoleIdFromRoleName = (roleName: string): number => {
+        if (roleName === 'Todos') return 0;
+        const found = globalRoles?.find((r: any) => r.name === roleName);
+        if (found) return found.id;
         if (roleName === 'Ayudante General') return 6;
         if (roleName === 'Cajera') return 5;
         if (roleName === 'Encargado') return 1;
@@ -33,6 +41,9 @@ export function PanelTareasRutinas() {
     };
 
     const getRoleNameFromRoleId = (id: number): string => {
+        if (id === 0) return 'Todos';
+        const found = globalRoles?.find((r: any) => r.id === id);
+        if (found) return found.name;
         if (id === 6) return 'Ayudante General';
         if (id === 5) return 'Cajera';
         if (id === 1) return 'Encargado';
@@ -56,7 +67,7 @@ export function PanelTareasRutinas() {
     // Formulario Nueva Rutina
     const [creatorMode, setCreatorMode] = useState<'tarea'|'rutina'>('tarea');
     const [newRoutineTitle, setNewRoutineTitle] = useState('');
-    const [newRoutineRole, setNewRoutineRole] = useState('Ayudante General');
+    const [newRoutineRole, setNewRoutineRole] = useState(() => (globalRoles && globalRoles.length > 0 ? globalRoles[0].name : 'Ayudante General'));
     const [newRoutineTrigger, setNewRoutineTrigger] = useState<'on_checkin'|'scheduled'>('on_checkin');
     const [newRoutineAssignMode, setNewRoutineAssignMode] = useState<'checklist'|'equitativo'|'bolsa_trabajo'>('checklist');
     const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
@@ -72,7 +83,7 @@ export function PanelTareasRutinas() {
         setNewTaskPrompt('');
         setNewTaskValidationMode('forced');
         setNewRoutineTitle('');
-        setNewRoutineRole('Ayudante General');
+        setNewRoutineRole(globalRoles && globalRoles.length > 0 ? globalRoles[0].name : 'Ayudante General');
         setNewRoutineTrigger('on_checkin');
         setNewRoutineAssignMode('checklist');
         setSelectedTasks([]);
@@ -447,10 +458,21 @@ export function PanelTareasRutinas() {
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-2">Rol Destino</label>
                                             <select value={newRoutineRole} onChange={e => setNewRoutineRole(e.target.value)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
-                                                <option value="Ayudante General">Ayudante General</option>
-                                                <option value="Cajera">Cajera</option>
-                                                <option value="Encargado">Encargado</option>
-                                                <option value="Todos">Todos</option>
+                                                {globalRoles && globalRoles.length > 0 ? (
+                                                    <>
+                                                        {globalRoles.map((r: any) => (
+                                                            <option key={r.id} value={r.name}>{r.name}</option>
+                                                        ))}
+                                                        <option value="Todos">Todos</option>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <option value="Ayudante General">Ayudante General</option>
+                                                        <option value="Cajera">Cajera</option>
+                                                        <option value="Encargado">Encargado</option>
+                                                        <option value="Todos">Todos</option>
+                                                    </>
+                                                )}
                                             </select>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

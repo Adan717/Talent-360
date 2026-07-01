@@ -45,7 +45,8 @@ export function useClockEngine(overrideUser?: any) {
     globalMealStartTimes,
     globalMealEndTimes,
     globalCheckOutTimes,
-    globalPendingBreakRequests
+    globalPendingBreakRequests,
+    currentTier
   } = useAppStore();
   
   const currentUser = overrideUser || globalUser;

@@ -70,15 +70,19 @@ def main():
             return
             
         print("\n--- STEP 4: Running migrations and clearing cache (non-destructive) ---")
+        # Fix permissions on storage and cache to prevent write lock issues
+        run_remote_cmd(ssh, "chmod -R 777 /var/www/talent360/Backend/storage /var/www/talent360/Backend/bootstrap/cache")
         # Run migrations safely
         run_remote_cmd(ssh, "docker exec talent360-backend php artisan migrate --force")
         # Clear config and cache
         run_remote_cmd(ssh, "docker exec talent360-backend php artisan config:clear")
         run_remote_cmd(ssh, "docker exec talent360-backend php artisan cache:clear")
         
-        print("\n--- STEP 5: Rebuilding Frontend container ---")
+        print("\n--- STEP 5: Rebuilding Frontend and restarting Backend containers ---")
         # Rebuild frontend container so changes take effect immediately
         run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose up -d --build frontend")
+        # Restart backend services to refresh mounts and reload code changes
+        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose restart backend backend-web reverb")
         
         print("\nDeployment completed successfully!")
         

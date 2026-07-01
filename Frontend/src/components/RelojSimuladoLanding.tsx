@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Fingerprint, Clock, Armchair, Utensils, AlertTriangle, 
-  Check, Lock, Star, GraduationCap, Briefcase, Settings, 
-  MapPin, Camera, Send, ShieldCheck
+  LogIn, LogOut, Armchair, Utensils, Clock, Briefcase, 
+  GraduationCap, Settings, MapPin, Camera, Lock, Check,
+  AlertTriangle, Star, ShieldCheck, HeartHandshake, Award, Send
 } from 'lucide-react';
+import DialPrincipal from './reloj2/DialPrincipal';
+import { MobileBottomNav } from './reloj2/MobileBottomNav';
 
 interface RelojSimuladoLandingProps {
   tier: 'free' | 'pro';
@@ -14,146 +16,389 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   tier,
   setTier
 }) => {
-  const [clockState, setClockState] = useState<'inactive' | 'active' | 'break' | 'meal' | 'finished'>('inactive');
-  const [phoneTab, setPhoneTab] = useState<'reloj' | 'tareas' | 'academia' | 'herramientas'>('reloj');
-  const [simulatedTime, setSimulatedTime] = useState('09:00:00 AM');
-  const [simulatedMins, setSimulatedMins] = useState(540); // 09:00 AM
+  const [clockState, setClockState] = useState<'inactive' | 'active' | 'short_break' | 'meal' | 'finished'>('inactive');
+  const [phoneTab, setPhoneTab] = useState<string>('checador');
+  const [innerTool, setInnerTool] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
-  const [simTask1Done, setSimTask1Done] = useState(true);
-  const [simTask2Done, setSimTask2Done] = useState(false);
 
-  // Simular avance del tiempo en el checador
+  // Datos simulados de tiempo
+  const [currentSimTime, setCurrentSimTime] = useState(540); // 09:00 AM
+  const [formattedTime, setFormattedTime] = useState('09:00:00 AM');
+
+  // Estados de fichajes simulados para Francisco Vega (ID: 99)
+  const [arrivalTimes, setArrivalTimes] = useState<Record<number, number>>({});
+  const [checkInTimes, setCheckInTimes] = useState<Record<number, number>>({});
+  const [checkOutTimes, setCheckOutTimes] = useState<Record<number, number>>({});
+  const [breakStartTimes, setBreakStartTimes] = useState<Record<number, number>>({});
+  const [breakEndTimes, setBreakEndTimes] = useState<Record<number, number>>({});
+  const [mealStartTimes, setMealStartTimes] = useState<Record<number, number>>({});
+  const [mealEndTimes, setMealEndTimes] = useState<Record<number, number>>({});
+  const [breaksTaken, setBreaksTaken] = useState<Record<number, number>>({});
+  const [hasReservedMeal, setHasReservedMeal] = useState<Record<number, boolean>>({});
+
+  const currentUser = {
+    id: 99,
+    name: 'Francisco Vega',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces',
+    role: 'empleado',
+    job_role_id: 1,
+    tenant: { name: 'Decorarte 365' }
+  };
+
+  const shiftConfigs = {
+    99: { restDay: 'Domingo', start: '09:00', end: '18:00', mealMinutes: 45 }
+  };
+
+  const currentDay = 'Lunes';
+
+  // Simular avance del tiempo
   useEffect(() => {
-    let interval: any;
+    let timer: any;
     if (clockState === 'active') {
-      interval = setInterval(() => {
-        setSimulatedMins(prev => {
+      timer = setInterval(() => {
+        setCurrentSimTime(prev => {
           const next = prev + 1;
           const hrs = Math.floor(next / 60);
           const mins = next % 60;
           const displayHrs = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs;
           const ampm = hrs >= 12 ? 'PM' : 'AM';
-          setSimulatedTime(`${displayHrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00 ${ampm}`);
+          setFormattedTime(`${displayHrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00 ${ampm}`);
           return next;
         });
-      }, 3000); // 1 minuto simulado cada 3 segundos
+      }, 4000);
     }
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [clockState]);
 
-  const handleDialClick = () => {
-    const stateStr = clockState as string;
-    if (stateStr === 'inactive') {
+  // Transiciones de estado del dial
+  const handleAction = () => {
+    if (clockState === 'inactive') {
       setClockState('active');
-      setSimulatedMins(545); // 09:05 AM
-      setSimulatedTime('09:05:00 AM');
-    } else if (stateStr === 'active') {
-      setClockState('break');
-      setSimulatedMins(720); // 12:00 PM
-      setSimulatedTime('12:00:00 PM');
-    } else if (stateStr === 'break') {
+      setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
+      setCurrentSimTime(545);
+      setFormattedTime('09:05:00 AM');
+    } else if (clockState === 'active') {
+      // Simular descanso
+      setClockState('short_break');
+      setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
+      setCurrentSimTime(720);
+      setFormattedTime('12:00:00 PM');
+    } else if (clockState === 'short_break') {
+      // Regresar descanso
       setClockState('active');
-      setSimulatedMins(735); // 12:15 PM
-      setSimulatedTime('12:15:00 PM');
-    } else if (stateStr === 'active' || stateStr === 'finished') {
-      setClockState('meal');
-      setSimulatedMins(840); // 02:00 PM
-      setSimulatedTime('02:00:00 PM');
-    } else if (stateStr === 'meal') {
+      setBreakEndTimes({ 99: 735 }); // Regreso 12:15 PM
+      setBreaksTaken({ 99: 1 });
+      setCurrentSimTime(735);
+      setFormattedTime('12:15:00 PM');
+    } else if (clockState === 'meal') {
+      // Regresar comida
       setClockState('active');
-      setSimulatedMins(885); // 02:45 PM
-      setSimulatedTime('02:45:00 PM');
+      setMealEndTimes({ 99: 885 }); // Regreso 02:45 PM
+      setHasReservedMeal({ 99: true });
+      setCurrentSimTime(885);
+      setFormattedTime('02:45:00 PM');
     }
   };
 
-  const handleClockOut = () => {
+  const handleStartMealSim = () => {
+    setClockState('meal');
+    setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
+    setCurrentSimTime(840);
+    setFormattedTime('02:00:00 PM');
+  };
+
+  const handleClockOutSim = () => {
     setClockState('finished');
-    setSimulatedMins(1080); // 06:00 PM
-    setSimulatedTime('06:00:00 PM');
+    setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
+    setCurrentSimTime(1080);
+    setFormattedTime('06:00:00 PM');
   };
 
-  const handleReset = () => {
+  const handleResetSim = () => {
     setClockState('inactive');
-    setSimulatedMins(540); // 09:00 AM
-    setSimulatedTime('09:00:00 AM');
+    setCheckInTimes({});
+    setCheckOutTimes({});
+    setBreakStartTimes({});
+    setBreakEndTimes({});
+    setMealStartTimes({});
+    setMealEndTimes({});
+    setBreaksTaken({});
+    setHasReservedMeal({});
+    setCurrentSimTime(540);
+    setFormattedTime('09:00:00 AM');
   };
 
-  // Cálculos para la barra de progreso
-  const startMins = 540; // 09:00 AM
-  const endMins = 1080;  // 06:00 PM
-  const totalMins = endMins - startMins;
-  
-  const getProgressPercent = () => {
-    if (clockState === 'inactive') return 0;
-    if (clockState === 'finished') return 100;
-    const currentDiff = Math.max(0, simulatedMins - startMins);
-    return Math.min(100, Math.round((currentDiff / totalMins) * 100));
+  // Ayudantes de conversión
+  const parseTimeToMins = (timeStr: string) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
   };
 
-  const progressPercent = getProgressPercent();
+  const formatStringToTimeClean = (timeStr: string) => {
+    const [h, m] = timeStr.split(':');
+    const hrs = Number(h);
+    const ampm = hrs >= 12 ? 'pm' : 'am';
+    const displayHrs = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs;
+    return `${displayHrs}:${m} ${ampm}`;
+  };
 
-  return (
-    <div className={`w-full h-full flex flex-col font-sans transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
-      
-      {/* Barra superior de pestañas (Estilo RelojChecador2) */}
-      <div className={`px-3 pt-3 pb-2 border-b flex justify-between items-center ${isDark ? 'bg-slate-900 border-slate-850' : 'bg-white border-slate-200'} shadow-sm`}>
-        <div className="flex gap-1 overflow-x-auto scrollbar-none w-full max-w-[80%]">
-          {[
-            { id: 'reloj', label: 'Reloj', icon: Clock },
-            { id: 'tareas', label: 'Tareas', icon: Briefcase },
-            { id: 'academia', label: 'Academia', icon: GraduationCap },
-            { id: 'herramientas', label: 'Menú', icon: Settings },
-          ].map(t => {
-            const Icon = t.icon;
-            const isActive = phoneTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setPhoneTab(t.id as any)}
-                className={`flex items-center gap-1 px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wider transition-all duration-300 ${
-                  isActive 
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10' 
-                    : (isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100')
-                }`}
-              >
-                <Icon size={10} />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
+  const formatMinsToTimeClean = (mins: number) => {
+    const hrs = Math.floor(mins / 60);
+    const m = mins % 60;
+    const displayHrs = hrs > 12 ? hrs - 12 : hrs === 0 ? 12 : hrs;
+    const ampm = hrs >= 12 ? 'pm' : 'am';
+    return `${displayHrs}:${m.toString().padStart(2, '0')} ${ampm}`;
+  };
+
+  // Propiedades dinámicas del dial
+  const getDialProps = () => {
+    if (clockState === 'inactive') {
+      return { disabled: false, text: 'Registrar Entrada', subtext: 'Francisco Vega' };
+    }
+    if (clockState === 'active') {
+      const hasBreak = breaksTaken[99] !== undefined;
+      const hasMeal = mealEndTimes[99] !== undefined;
+      if (!hasBreak) {
+        return { disabled: false, text: 'Descanso Ley Silla', subtext: 'Tomar 15 Minutos' };
+      }
+      if (!hasMeal) {
+        return { disabled: false, text: 'Iniciar Horario de Comida', subtext: 'Tomar 45 Minutos' };
+      }
+      return { disabled: false, text: 'Registrar Salida', subtext: 'Fichaje de Salida' };
+    }
+    if (clockState === 'short_break') {
+      return { disabled: false, text: 'Regresar de Descanso', subtext: 'Retomar Turno' };
+    }
+    if (clockState === 'meal') {
+      return { disabled: false, text: 'Regresar de Comida', subtext: 'Retomar Turno' };
+    }
+    return { disabled: true, text: 'Jornada Finalizada', subtext: 'Turno Completado' };
+  };
+
+  const btnProps = getDialProps();
+
+  // Variables para render de barra cronológica
+  const hasCheckedIn = checkInTimes[99] !== undefined;
+  const hasCheckedOut = checkOutTimes[99] !== undefined;
+
+  const renderBarraCronologica = () => {
+    const isLateIn = false;
+    const isBreakExceeded = false;
+    const isMealExceeded = false;
+    const hasAnyDeviation = false;
+
+    const tStart = 540; // 09:00 AM
+    const tEnd = 1080;  // 06:00 PM
+    const tDuration = tEnd - tStart;
+    const limitPos = hasCheckedOut ? 1080 : currentSimTime;
+    const elapsedTotal = limitPos - tStart;
+
+    const eventsList: { start: number; end: number; type: 'break' | 'meal' }[] = [];
+    const bStart = breakStartTimes[99];
+    if (bStart !== undefined) {
+      const bEnd = breakEndTimes[99] !== undefined ? breakEndTimes[99] : (clockState === 'short_break' ? currentSimTime : bStart + 15);
+      eventsList.push({ start: bStart, end: bEnd, type: 'break' });
+    }
+    const mStart = mealStartTimes[99];
+    if (mStart !== undefined) {
+      const mEnd = mealEndTimes[99] !== undefined ? mealEndTimes[99] : (clockState === 'meal' ? currentSimTime : mStart + 45);
+      eventsList.push({ start: mStart, end: mEnd, type: 'meal' });
+    }
+
+    eventsList.sort((a, b) => a.start - b.start);
+    const segmentsList: { mins: number; type: 'work' | 'break' | 'meal' }[] = [];
+    let currentPos = tStart;
+
+    eventsList.forEach(ev => {
+      const evStart = Math.max(currentPos, Math.min(ev.start, limitPos));
+      const evEnd = Math.max(evStart, Math.min(ev.end, limitPos));
+      if (evStart > currentPos) {
+        segmentsList.push({ mins: evStart - currentPos, type: 'work' });
+      }
+      if (evEnd > evStart) {
+        segmentsList.push({ mins: evEnd - evStart, type: ev.type });
+      }
+      currentPos = evEnd;
+    });
+
+    if (limitPos > currentPos) {
+      segmentsList.push({ mins: limitPos - currentPos, type: 'work' });
+    }
+
+    const progressPercent = tDuration > 0 ? Math.min(100, Math.max(0, (elapsedTotal / tDuration) * 100)) : 0;
+
+    return (
+      <div className="py-2 px-1 text-left w-full select-none shrink-0">
+        <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9.5px] mb-4 px-1">
+          <div className="flex items-center select-none">
+            <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>🏪 Sucursal Abierta</span>
+            </span>
+          </div>
+
+          <div className="flex items-center select-none">
+            {hasCheckedOut ? (
+              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+                <span>Turno Finalizado ✓</span>
+              </span>
+            ) : hasCheckedIn ? (
+              <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Turno Activo ✓</span>
+              </span>
+            ) : (
+              <span className="text-slate-400 dark:text-slate-550 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-600"></span>
+                <span>Turno Inactivo</span>
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Botón de Modo Oscuro */}
-        <button 
-          onClick={() => setIsDark(!isDark)}
-          className={`p-1.5 rounded-lg border transition-all ${
-            isDark ? 'border-slate-800 bg-slate-800 text-amber-400' : 'border-slate-200 bg-slate-100 text-slate-600'
-          }`}
-        >
-          {isDark ? '☀️' : '🌙'}
-        </button>
-      </div>
+        {/* Nodos de Fichaje */}
+        <div className="flex w-full z-10 relative px-0 mb-0 mt-1">
+          {/* Entrada Node */}
+          <div className="w-1/4 flex flex-col items-center relative transition-all duration-300">
+            <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-indigo-650 dark:text-indigo-400">Entrada</span>
+            <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 ${
+              hasCheckedIn 
+                ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105' 
+                : 'border-slate-200 bg-white text-slate-400'
+            }`}>
+              <LogIn size={18} className={!hasCheckedIn ? "animate-pulse" : ""} />
+              {hasCheckedIn && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+            </div>
+          </div>
 
-      {/* Contenido Dinámico de la Pestaña */}
-      <div className="flex-grow overflow-y-auto p-4 custom-scrollbar">
+          {/* Descanso Node */}
+          {(() => {
+            const isDone = breaksTaken[99] !== undefined;
+            const isActive = clockState === 'short_break';
+            return (
+              <div className="w-1/4 flex flex-col items-center relative transition-all duration-300">
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-purple-650 dark:text-purple-400">Descanso</span>
+                <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 ${
+                  isDone || isActive
+                    ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105' 
+                    : 'border-slate-200 bg-white text-slate-400'
+                }`}>
+                  <Armchair size={18} className={isActive ? "animate-bounce" : ""} />
+                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Comida Node */}
+          {(() => {
+            const isDone = mealEndTimes[99] !== undefined;
+            const isActive = clockState === 'meal';
+            return (
+              <div className="w-1/4 flex flex-col items-center relative transition-all duration-300">
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-amber-650 dark:text-amber-400">Comida</span>
+                <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 ${
+                  isDone || isActive
+                    ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105' 
+                    : 'border-slate-200 bg-white text-slate-400'
+                }`}>
+                  <Utensils size={18} className={isActive ? "animate-bounce" : ""} />
+                  {isDone && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Salida Node */}
+          <div className="w-1/4 flex flex-col items-center relative transition-all duration-300">
+            <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-emerald-650 dark:text-emerald-400">Salida</span>
+            <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 ${
+              hasCheckedOut 
+                ? 'border-emerald-500 bg-emerald-500 text-white font-extrabold scale-105' 
+                : 'border-slate-200 bg-white text-slate-400'
+            }`}>
+              <LogOut size={18} />
+              {hasCheckedOut && <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm">✓</div>}
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline Bar - Thicker, Larger, and Innovatively Styled */}
+        <div className="relative w-full z-0 px-2 mb-2 mt-1.5">
+          <div className="relative w-full h-5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-350/20 shadow-inner overflow-hidden">
+            {hasCheckedIn && elapsedTotal > 0 && (
+              <div 
+                className="absolute top-0 left-0 h-full rounded-2xl overflow-hidden flex transition-all duration-700 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              >
+                {segmentsList.map((seg, sIdx) => {
+                  let segBg = 'bg-gradient-to-r from-emerald-400 to-teal-500';
+                  if (seg.type === 'break') segBg = 'bg-gradient-to-r from-purple-500 to-indigo-650';
+                  if (seg.type === 'meal') segBg = 'bg-gradient-to-r from-amber-500 to-orange-500';
+                  return (
+                    <div 
+                      key={sIdx}
+                      style={{ width: `${(seg.mins / elapsedTotal) * 100}%` }}
+                      className={`h-full ${segBg} shrink-0`}
+                    ></div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[10.5px] font-mono font-bold text-slate-500 dark:text-slate-400">
+              <span>
+                {hasCheckedIn ? formatMinsToTimeClean(545) : '09:00 am'}
+              </span>
+              <span>
+                {hasCheckedOut ? formatMinsToTimeClean(1080) : '06:00 pm'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`w-full h-full flex flex-col justify-between overflow-hidden relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-850'}`}>
+      
+      {/* Contenido Principal con Scrollable */}
+      <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
         
-        {phoneTab === 'reloj' && (
-          <div className="space-y-4">
+        {/* Header Móvil Uniforme */}
+        <div className={`w-full px-4 pt-4 pb-3 flex justify-between items-center shrink-0 border-b relative z-30 transition-colors duration-300 ${
+          isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-100'
+        } backdrop-blur-md`}>
+          <div className="flex flex-col text-left">
+            <h1 className="text-xs font-black uppercase tracking-widest text-indigo-500">Talent 360</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Sucursal: Decorarte 365</p>
+          </div>
+          <button 
+            onClick={() => setIsDark(!isDark)}
+            className={`p-1.5 rounded-xl border transition-all text-xs ${
+              isDark ? 'border-slate-800 bg-slate-800 text-amber-400' : 'border-slate-100 bg-slate-50 text-slate-600'
+            }`}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
+        </div>
+
+        {/* Zona de Contenido Móvil */}
+        {phoneTab === 'checador' && (
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-[82px] flex flex-col justify-between gap-2 scrollbar-none">
             
-            {/* Credencial del Empleado */}
+            {/* Credencial Empleado */}
             <div className={`p-3 rounded-2xl border transition-all ${
               isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
-            } shadow-sm flex items-center gap-3`}>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces" 
-                  alt="Avatar" 
-                  className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500 shadow"
-                />
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
-              </div>
-              <div className="flex-grow text-left">
-                <h4 className="text-xs font-bold leading-tight">Francisco Vega</h4>
+            } shadow-sm flex items-center gap-3 text-left`}>
+              <img 
+                src={currentUser.avatar} 
+                alt="Avatar" 
+                className="w-10 h-10 rounded-full border-2 border-emerald-500 object-cover"
+              />
+              <div className="flex-grow">
+                <h4 className="text-xs font-bold leading-tight">{currentUser.name}</h4>
                 <p className="text-[9px] text-slate-400 font-medium">Colaborador • Decorarte 365</p>
               </div>
               <span className="px-2 py-0.5 text-[8px] font-black uppercase rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
@@ -161,144 +406,93 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               </span>
             </div>
 
-            {/* Cronómetro/Hora */}
-            <div className="text-center py-2">
-              <div className="text-2xl font-black tracking-tight font-mono leading-none">
-                {simulatedTime}
-              </div>
-              <p className="text-[9px] text-slate-400 uppercase tracking-widest mt-1">
+            {/* Cronómetro Digital */}
+            <div className="text-center py-2 shrink-0">
+              <div className="text-2xl font-black font-mono tracking-tight">{formattedTime}</div>
+              <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest mt-1">
                 {clockState === 'inactive' && 'Jornada Sin Iniciar'}
                 {clockState === 'active' && '⏱️ Registrando Jornada'}
-                {clockState === 'break' && '💤 En Descanso Corto'}
+                {clockState === 'short_break' && '💤 En Descanso Corto'}
                 {clockState === 'meal' && '🍲 Horario de Comida'}
                 {clockState === 'finished' && '🏁 Jornada Finalizada'}
               </p>
             </div>
 
-            {/* Barra Cronológica Proporcional Ampliada */}
-            <div className={`p-4 rounded-3xl border transition-all ${
-              isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'
-            } shadow-inner`}>
-              <div className="flex justify-between items-center text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                <span>Línea Cronológica</span>
-                <span className="text-indigo-500 font-black">{progressPercent}%</span>
-              </div>
+            {/* Barra Cronológica Proporcional Real */}
+            {renderBarraCronologica()}
 
-              {/* Contenedor de la barra de progreso */}
-              <div className="relative h-6 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner mb-2 flex items-center justify-between px-3">
-                <div 
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-500 ease-out"
-                  style={{ width: `${progressPercent}%` }}
-                ></div>
+            {/* Dial Central Principal (Importado de producción) */}
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <DialPrincipal
+                isMobile={true}
+                isOpeningPremium={true}
+                storeStatus="open"
+                openingStatus={null}
+                currentUser={currentUser}
+                isWithinPerimeter={true}
+                globalUsers={[]}
+                clockState={clockState}
+                formattedTime={formattedTime}
+                btnProps={{
+                  disabled: clockState === 'finished',
+                  text: btnProps.text,
+                  subtext: btnProps.subtext
+                }}
+                lateUsers={{}}
+                currentDay={currentDay}
+                currentSimTime={currentSimTime}
+                shiftConfigs={shiftConfigs}
+                parseTimeToMins={parseTimeToMins}
+                handleAction={handleAction}
+              />
 
-                {/* Marcadores e Hitos proporcionales */}
-                <div className="absolute inset-0 flex justify-between items-center px-4 pointer-events-none z-10 text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400">
-                  <span>09:00</span>
-                  <span>12:00</span>
-                  <span>14:00</span>
-                  <span>18:00</span>
-                </div>
-              </div>
-
-              {/* Leyendas explicativas */}
-              <div className="grid grid-cols-4 gap-1 text-center text-[7px] font-black uppercase text-slate-400 mt-1">
-                <span className={clockState !== 'inactive' ? 'text-indigo-500' : ''}>Entrada</span>
-                <span className={['break', 'meal', 'finished'].includes(clockState) ? 'text-purple-500' : ''}>Descanso</span>
-                <span className={['meal', 'finished'].includes(clockState) ? 'text-pink-500' : ''}>Comida</span>
-                <span className={clockState === 'finished' ? 'text-emerald-500' : ''}>Salida</span>
-              </div>
-            </div>
-
-            {/* Dial Principal Interactivo */}
-            <div className="flex flex-col items-center justify-center py-4">
-              <button
-                onClick={handleDialClick}
-                disabled={clockState === 'finished'}
-                className={`w-28 h-28 rounded-full flex flex-col items-center justify-center transition-all duration-300 transform active:scale-95 shadow-xl ${
-                  clockState === 'inactive' && 'bg-gradient-to-tr from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white shadow-slate-900/20'
-                } ${
-                  clockState === 'active' && 'bg-gradient-to-tr from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white shadow-emerald-500/20 animate-pulse'
-                } ${
-                  clockState === 'break' && 'bg-gradient-to-tr from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white shadow-purple-500/20 animate-pulse'
-                } ${
-                  clockState === 'meal' && 'bg-gradient-to-tr from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-amber-500/20 animate-pulse'
-                } ${
-                  clockState === 'finished' && 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
-                }`}
-              >
-                {clockState === 'inactive' && <Fingerprint size={38} className="stroke-[2]" />}
-                {clockState === 'active' && <Fingerprint size={38} className="stroke-[2.5]" />}
-                {clockState === 'break' && <Armchair size={38} />}
-                {clockState === 'meal' && <Utensils size={38} />}
-                {clockState === 'finished' && <Check size={38} />}
-
-                <span className="text-[8px] font-black uppercase tracking-widest mt-2">
-                  {clockState === 'inactive' && 'Entrada'}
-                  {clockState === 'active' && 'Fichar'}
-                  {clockState === 'break' && 'Volver'}
-                  {clockState === 'meal' && 'Volver'}
-                  {clockState === 'finished' && 'Terminado'}
-                </span>
-              </button>
-
-              {/* Botón secundario para salida */}
+              {/* Botones complementarios del flujo */}
               {clockState === 'active' && (
-                <button
-                  onClick={handleClockOut}
-                  className="mt-3 px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-rose-900/10"
-                >
-                  Fichar Salida
-                </button>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={handleStartMealSim}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-amber-500/10"
+                  >
+                    Ir a Comida
+                  </button>
+                  <button
+                    onClick={handleClockOutSim}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-rose-600/10"
+                  >
+                    Fichar Salida
+                  </button>
+                </div>
               )}
 
-              {/* Reset de simulación */}
               {clockState === 'finished' && (
                 <button
-                  onClick={handleReset}
-                  className="mt-3 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-900/10"
+                  onClick={handleResetSim}
+                  className="mt-4 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-600/10"
                 >
                   Reiniciar Simulación
                 </button>
               )}
             </div>
 
-            {/* Validaciones de Seguridad (GPS, Selfie) */}
-            <div className={`p-3 rounded-2xl border transition-all ${
-              isDark ? 'bg-slate-900/30 border-slate-800/80' : 'bg-slate-100/50 border-slate-200'
-            } text-left`}>
-              <h5 className="text-[9px] font-black uppercase text-slate-400 tracking-wider mb-2">Validaciones del Fichaje</h5>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold flex items-center gap-1.5">
-                    <MapPin size={12} className={tier === 'pro' ? 'text-indigo-500' : 'text-slate-400'} />
-                    Cercanía GPS (Geocerca)
-                  </span>
-                  {tier === 'pro' ? (
-                    <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-0.5">
-                      <Check size={10} className="stroke-[3]" /> Activo
-                    </span>
-                  ) : (
-                    <span className="text-[9px] text-slate-400 font-bold flex items-center gap-0.5">
-                      <Lock size={10} /> Plan PRO
-                    </span>
-                  )}
+            {/* Alertas dinámicas bajo el dial */}
+            <div className="space-y-2 mt-4 shrink-0">
+              <div className={`p-3 border rounded-2xl flex items-center gap-3 text-left ${
+                isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800'
+              }`}>
+                <span className="text-sm shrink-0">⚠️</span>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-rose-700 dark:text-rose-450">Alerta de Tareas</p>
+                  <p className="text-[11px] font-bold mt-0.5 dark:text-slate-300">Tienes 1 tarea operativa pendiente para hoy.</p>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold flex items-center gap-1.5">
-                    <Camera size={12} className={tier === 'pro' ? 'text-indigo-500' : 'text-slate-400'} />
-                    Foto Selfie (Fichaje Seguro)
-                  </span>
-                  {tier === 'pro' ? (
-                    <span className="text-[9px] text-emerald-500 font-bold flex items-center gap-0.5">
-                      <Check size={10} className="stroke-[3]" /> Obligatorio
-                    </span>
-                  ) : (
-                    <span className="text-[9px] text-slate-400 font-bold flex items-center gap-0.5">
-                      <Lock size={10} /> Plan PRO
-                    </span>
-                  )}
+              <div className={`p-3 border rounded-2xl flex items-center gap-3 text-left ${
+                isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
+              }`}>
+                <span className="text-sm shrink-0">📅</span>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-450">Jornada / Horario</p>
+                  <p className="text-[11px] font-bold mt-0.5 dark:text-slate-300">Hora sugerida de comida: 02:00 pm</p>
                 </div>
               </div>
             </div>
@@ -307,14 +501,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         )}
 
         {phoneTab === 'tareas' && (
-          <div className="space-y-3 text-left">
-            <div className="flex justify-between items-center border-b pb-2 mb-2 dark:border-slate-800">
-              <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-wider">Tablero de Tareas</h4>
-              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500">1 Pendiente</span>
-            </div>
-
-            {/* Listado de tareas simulado */}
-            <div className="space-y-2">
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-[82px] text-left">
+            <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-wider border-b pb-2 dark:border-slate-800">Tablero de Tareas</h4>
+            
+            <div className="space-y-2 mt-3">
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
                 isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
               }`}>
@@ -322,12 +512,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   <h5 className="text-[10px] font-bold">Limpieza y sanitización de barra</h5>
                   <p className="text-[8px] text-slate-400 mt-0.5">Prioridad Alta • 10 pts</p>
                 </div>
-                <input 
-                  type="checkbox" 
-                  checked={simTask1Done} 
-                  onChange={() => setSimTask1Done(!simTask1Done)}
-                  className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                />
+                <div className="w-5 h-5 rounded border-2 border-emerald-500 bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">✓</div>
               </div>
 
               <div className={`p-3 rounded-xl border flex items-center justify-between ${
@@ -335,14 +520,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               }`}>
                 <div>
                   <h5 className="text-[10px] font-bold">Arqueo de caja y terminales</h5>
-                  <p className="text-[8px] text-slate-400 mt-0.5">Requiere foto de evidencia • 20 pts</p>
+                  <p className="text-[8px] text-slate-400 mt-0.5">Pendiente de firma de supervisor</p>
                 </div>
-                <input 
-                  type="checkbox" 
-                  checked={simTask2Done} 
-                  onChange={() => setSimTask2Done(!simTask2Done)}
-                  className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                />
+                <div className="w-5 h-5 rounded border border-slate-300"></div>
               </div>
             </div>
 
@@ -358,18 +538,15 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         )}
 
         {phoneTab === 'academia' && (
-          <div className="space-y-3 text-left">
-            <div className="flex justify-between items-center border-b pb-2 mb-2 dark:border-slate-800">
-              <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-wider">Academia de Capacitación</h4>
-              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500">Curso Activo</span>
-            </div>
-
-            <div className={`p-3 rounded-xl border ${
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-[82px] text-left">
+            <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-wider border-b pb-2 dark:border-slate-800">Academia y Capacitación</h4>
+            
+            <div className={`p-3 rounded-xl border mt-3 ${
               isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}>
               <span className="text-[8px] font-black uppercase tracking-wider text-amber-500">Módulo 1</span>
               <h5 className="text-[10px] font-bold mt-0.5">Inducción y Atención al Cliente Premium</h5>
-              <div className="w-full bg-slate-200 dark:bg-slate-800 h-1 rounded-full mt-2 overflow-hidden">
+              <div className="w-full bg-slate-250 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
                 <div className="bg-indigo-500 h-full w-[45%]"></div>
               </div>
               <span className="text-[7px] text-slate-400 block mt-1 font-bold">Avance: 45% (2 / 5 lecciones)</span>
@@ -387,10 +564,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         )}
 
         {phoneTab === 'herramientas' && (
-          <div className="space-y-3 text-left">
-            <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-wider border-b pb-2 dark:border-slate-800">Caja de Herramientas</h4>
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-[82px] text-left">
+            <h4 className="text-[11px] font-black uppercase text-indigo-500 tracking-wider border-b pb-2 dark:border-slate-800">Menú de Herramientas</h4>
             
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mt-3">
               {[
                 { label: 'Chat de Sucursal', icon: Send, pro: true },
                 { label: 'Ley Silla', icon: Star, pro: false },
@@ -404,10 +581,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     key={idx} 
                     className={`p-3 rounded-xl border flex flex-col justify-between aspect-square transition-all ${
                       isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-                    } ${isLocked ? 'opacity-60' : 'hover:scale-[1.02] cursor-pointer'}`}
+                    } ${isLocked ? 'opacity-65' : 'hover:scale-[1.02] cursor-pointer'}`}
                   >
                     <div className="flex justify-between items-start">
-                      <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'} text-indigo-500`}>
+                      <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-850' : 'bg-slate-100'} text-indigo-500`}>
                         <ToolIcon size={14} />
                       </div>
                       {isLocked && <Lock size={12} className="text-slate-400" />}
@@ -420,13 +597,16 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           </div>
         )}
 
-      </div>
+        {/* Menú de Navegación Inferior (Importado de producción) */}
+        <div className="absolute bottom-0 inset-x-0 z-30 shrink-0">
+          <MobileBottomNav 
+            phoneTab={phoneTab} 
+            setPhoneTab={setPhoneTab} 
+            setInnerTool={setInnerTool} 
+            isDark={isDark} 
+          />
+        </div>
 
-      {/* iOS Home Indicator Bar en la base del frame */}
-      <div className={`py-1.5 border-t text-center text-[7.5px] font-bold text-slate-400 uppercase tracking-widest ${
-        isDark ? 'bg-slate-950 border-slate-900' : 'bg-slate-100 border-slate-200'
-      }`}>
-        Simulador Móvil Talent 360
       </div>
 
     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -28,6 +28,13 @@ export const SaaSLandingPage = () => {
 
   const [activeTab, setActiveTab] = useState<'checador' | 'rrhh' | 'reclutamiento'>('checador');
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
+  const [simulatedClockState, setSimulatedClockState] = useState<'inactive' | 'active' | 'break'>('inactive');
+  const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
+  const [atsCandidates, setAtsCandidates] = useState([
+    { id: 1, name: 'Valeria Díaz', vacancy: 'Agente de Ventas', status: 'prospect', time: 'Hace 2 horas' },
+    { id: 2, name: 'Adriana López', vacancy: 'Agente de Ventas', status: 'interview', time: 'Hoy 15:00' },
+    { id: 3, name: 'Cristian Gómez', vacancy: 'Ayudante General', status: 'hired', time: 'PIN: 2514' }
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -142,6 +149,37 @@ export const SaaSLandingPage = () => {
       setTimeout(initGoogleButton, 100);
     }
   }, [showCheckout, showGoogleForm, registrationStep]);
+  const handleDialClick = () => {
+    if (simulatedClockState === 'inactive') {
+      setSimulatedClockState('active');
+    } else if (simulatedClockState === 'active') {
+      setSimulatedClockState('break');
+    } else {
+      setSimulatedClockState('inactive');
+    }
+  };
+
+  const handleCandidateClick = (id: number) => {
+    setAtsCandidates(prev => prev.map(c => {
+      if (c.id === id) {
+        let newStatus: 'prospect' | 'interview' | 'hired' = 'prospect';
+        let newTime = c.time;
+        if (c.status === 'prospect') {
+          newStatus = 'interview';
+          newTime = 'Agendado hoy';
+        } else if (c.status === 'interview') {
+          newStatus = 'hired';
+          newTime = 'PIN: 2514';
+        } else {
+          newStatus = 'prospect';
+          newTime = 'Hace 2 horas';
+        }
+        return { ...c, status: newStatus, time: newTime };
+      }
+      return c;
+    }));
+  };
+
   const handleTraditionalRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!googleEmail || !googleName || !signUpPassword) {
@@ -323,12 +361,12 @@ export const SaaSLandingPage = () => {
 
               {/* Selector de Pestañas Interactivas */}
               <div className="space-y-2.5 border-t border-slate-100 pt-6">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Explora las interfaces clave</p>
-                <div className="flex flex-col gap-2">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Explora las interfaces clave (Toca para interactuar)</p>
+                <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory scroll-smooth">
                   <button
                     type="button"
                     onClick={() => setActiveTab('checador')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border ${activeTab === 'checador' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-650 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'checador' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-650 hover:bg-slate-50'}`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'checador' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                       <Clock size={15} />
@@ -342,7 +380,7 @@ export const SaaSLandingPage = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('rrhh')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border ${activeTab === 'rrhh' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'rrhh' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'rrhh' ? 'bg-indigo-50 text-indigo-650' : 'bg-slate-100 text-slate-500'}`}>
                       <Users size={15} />
@@ -356,7 +394,7 @@ export const SaaSLandingPage = () => {
                   <button
                     type="button"
                     onClick={() => setActiveTab('reclutamiento')}
-                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border ${activeTab === 'reclutamiento' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
+                    className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all border shrink-0 snap-center min-w-[245px] lg:min-w-0 ${activeTab === 'reclutamiento' ? 'bg-white border-blue-100 shadow-md text-blue-600' : 'border-transparent text-slate-655 hover:bg-slate-50'}`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab === 'reclutamiento' ? 'bg-violet-50 text-violet-650' : 'bg-slate-100 text-slate-500'}`}>
                       <UserPlus size={15} />
@@ -368,143 +406,351 @@ export const SaaSLandingPage = () => {
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Columna Derecha: Showcase Interactivo de Producto */}
-            <div className="lg:col-span-7 relative">
+                 {/* Columna Derecha: Showcase Interactivo de Producto */}
+            <div className="lg:col-span-7 relative flex justify-center items-center">
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-300/10 via-purple-300/5 to-transparent rounded-[32px] blur-2xl opacity-75"></div>
               
-              <div className="relative bg-white rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col min-h-[380px] transition-all">
-                {/* Top Browser Bar */}
-                <div className="bg-slate-50/80 border-b border-slate-200/60 px-4 py-3 flex items-center gap-3">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+              {activeTab === 'checador' ? (
+                /* SIMULACIÓN MÓVIL (SMARTPHONE FRAME) PARA EL RELOJ CHECADOR */
+                <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] animate-in fade-in duration-300">
+                  {/* Speaker & Sensor Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
+                    <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700"></div>
                   </div>
-                  <div className="flex-1 max-w-sm mx-auto bg-slate-100 rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
-                    <Lock size={10} className="text-slate-400" />
-                    <span>https://app.talent360.com/{activeTab === 'checador' ? 'reloj' : activeTab === 'rrhh' ? 'organigrama' : 'reclutamiento'}</span>
+
+                  {/* Smartphone Viewport */}
+                  <div className="flex-1 bg-white p-4 pt-8 pb-6 flex flex-col justify-between overflow-hidden select-none">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <img 
+                            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces" 
+                            alt="Francisco" 
+                            className="w-9 h-9 rounded-full object-cover border border-slate-200" 
+                          />
+                          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-white ${simulatedClockState === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                        </div>
+                        <div className="text-left leading-none">
+                          <h4 className="text-[10px] font-black text-slate-800">Francisco Vega</h4>
+                          <span className="text-[8px] font-bold text-slate-400">Sucursal Centro</span>
+                        </div>
+                      </div>
+                      <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${simulatedClockState === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-150'}`}>
+                        {simulatedClockState === 'active' ? 'Turno Activo ✓' : simulatedClockState === 'break' ? 'Descanso ✓' : 'Inactivo'}
+                      </span>
+                    </div>
+
+                    {/* Timeline de Turno (Línea de Progreso Real) */}
+                    <div className="py-2 text-left w-full shrink-0">
+                      <div className="flex justify-between items-center w-full px-2 mb-1 z-10 relative">
+                        {/* Entrada */}
+                        <div className="flex flex-col items-center">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState !== 'inactive' ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
+                            <LogIn size={14} />
+                          </div>
+                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState !== 'inactive' ? '08:45 am' : '-'}</span>
+                        </div>
+                        {/* Descanso */}
+                        <div className="flex flex-col items-center">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border shadow-sm ${simulatedClockState === 'break' ? 'border-purple-500 bg-purple-500 text-white' : 'border-slate-200 bg-white text-slate-400'}`}>
+                            <Coffee size={14} />
+                          </div>
+                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-500">{simulatedClockState === 'break' ? '15 min' : '-'}</span>
+                        </div>
+                        {/* Comida */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-sm">
+                            <Utensils size={14} />
+                          </div>
+                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-400">-</span>
+                        </div>
+                        {/* Salida */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-sm">
+                            <LogOut size={14} />
+                          </div>
+                          <span className="text-[8px] font-mono font-bold mt-1 text-slate-400">-</span>
+                        </div>
+                      </div>
+
+                      {/* Timeline Bar */}
+                      <div className="relative w-full px-2 mt-[-14px] z-0">
+                        <div className="w-full h-1 bg-slate-100 rounded-full"></div>
+                        <div 
+                          className="absolute left-2 top-0 h-1 bg-indigo-500 rounded-full transition-all duration-300"
+                          style={{ width: simulatedClockState === 'inactive' ? '0%' : simulatedClockState === 'active' ? '33%' : '66%' }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Dial Central */}
+                    <div className="flex-1 flex flex-col items-center justify-center my-3 relative">
+                      {/* Glow Ring */}
+                      <div className={`absolute w-36 h-36 rounded-full blur-[8px] animate-shimmer-glow opacity-30 ${simulatedClockState === 'active' ? 'bg-emerald-400' : simulatedClockState === 'break' ? 'bg-purple-400' : 'bg-blue-400'}`}></div>
+                      
+                      <button 
+                        type="button" 
+                        onClick={handleDialClick}
+                        className={`group relative z-10 w-36 h-36 rounded-full border-4 border-double shadow-xl flex flex-col items-center justify-center p-3 transition-all transform active:scale-95 bg-white ${
+                          simulatedClockState === 'active' 
+                            ? 'border-emerald-500 text-emerald-600 shadow-emerald-500/10' 
+                            : simulatedClockState === 'break' 
+                              ? 'border-purple-500 text-purple-600 shadow-purple-500/10' 
+                              : 'border-blue-500 text-blue-600 shadow-blue-500/10'
+                        }`}
+                      >
+                        <Fingerprint size={32} className="mb-1" />
+                        <span className="font-mono text-xl font-black text-slate-800 tracking-tight leading-none mb-1">{liveTime.split(' ')[0]}</span>
+                        <span className="text-[7.5px] font-black uppercase tracking-widest text-slate-500 text-center leading-tight max-w-[90px]">
+                          {simulatedClockState === 'active' ? 'Marcar Salida' : simulatedClockState === 'break' ? 'Terminar Descanso' : 'Marcar Entrada'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Hub de Tareas */}
+                    <div className="bg-slate-50 border border-slate-150 rounded-2xl p-2.5 text-left shrink-0">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between items-center">
+                        <span>Tareas del Día</span>
+                        <span className="text-[7.5px] font-bold text-slate-400 bg-slate-200/55 px-1.5 py-0.5 rounded-full">1/2</span>
+                      </p>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={11} className="text-emerald-500 flex-shrink-0" />
+                          <span className="text-[8.5px] font-bold text-slate-650 line-through">Apertura de sucursal</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full border border-slate-300 flex-shrink-0"></div>
+                          <span className="text-[8.5px] font-bold text-slate-650">Inventario de vitrinas</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* iOS Home Indicator Bar */}
+                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-slate-800 rounded-full z-55"></div>
                 </div>
-
-                {/* Main Viewport Content */}
-                <div className="p-6 flex-1 bg-slate-50/50 flex flex-col justify-center">
-                  {activeTab === 'checador' && (
-                    <div className="space-y-4 animate-in fade-in duration-300">
-                      <div className="max-w-xs mx-auto bg-white border border-slate-200/60 rounded-3xl p-5 shadow-lg shadow-slate-100/30 flex flex-col items-center text-center">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 mb-1">RELOJ CHECADOR</span>
-                        <span className="text-3xl font-black text-slate-800 tracking-tight mb-0.5">{liveTime}</span>
-                        <span className="text-[9px] font-bold text-slate-450 mb-4">Martes, 30 de Junio, 2026</span>
-
-                        <div className="w-full aspect-video bg-slate-100 rounded-2xl mb-4 border border-slate-250/20 relative overflow-hidden flex items-center justify-center">
-                          {/* Simulated Geofence Map */}
-                          <div className="absolute inset-0 bg-blue-50/25 flex flex-col items-center justify-center text-center p-4">
-                            <MapPin size={22} className="text-blue-600 mb-1 animate-bounce" />
-                            <span className="text-[10px] font-black text-slate-700">Sucursal Centro</span>
-                            <span className="text-[8px] font-bold text-emerald-600 flex items-center gap-0.5 mt-0.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                              Dentro de Geocerca (12m)
-                            </span>
-                          </div>
-                        </div>
-
-                        <button type="button" className="w-full py-3 bg-blue-600 text-white rounded-xl font-black text-xs hover:bg-blue-700 shadow-md shadow-blue-500/10 active:scale-98 transition-all flex items-center justify-center gap-1.5">
-                          <Clock size={14} /> Registrar Asistencia
-                        </button>
-                      </div>
+              ) : (
+                /* SIMULACIÓN ESCRITORIO (BROWSER FRAME) PARA ATS Y ORGANIGRAMA */
+                <div className="relative w-full bg-white rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col min-h-[460px] transition-all animate-in fade-in duration-300">
+                  {/* Top Browser Bar */}
+                  <div className="bg-slate-50/80 border-b border-slate-200/60 px-4 py-3 flex items-center gap-3 shrink-0">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-400"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
                     </div>
-                  )}
-
-                  {activeTab === 'rrhh' && (
-                    <div className="space-y-4 animate-in fade-in duration-300">
-                      <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-lg shadow-slate-100/30">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-indigo-650">COLABORADORES</span>
-                          <span className="text-[9px] font-bold text-slate-400">Total: 8 Activos</span>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-black text-xs flex items-center justify-center">
-                                FV
-                              </div>
-                              <div>
-                                <p className="text-xs font-black text-slate-800">Francisco Vega</p>
-                                <p className="text-[9px] text-slate-400 font-bold">Administrador General</p>
-                              </div>
-                            </div>
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[8px] font-black">Activo</span>
-                          </div>
-
-                          <div className="flex items-center justify-between p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-650 font-black text-xs flex items-center justify-center">
-                                LC
-                              </div>
-                              <div>
-                                <p className="text-xs font-black text-slate-800">Liz Camacho</p>
-                                <p className="text-[9px] text-slate-400 font-bold">Supervisor de Sucursal</p>
-                              </div>
-                            </div>
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[8px] font-black">Activo</span>
-                          </div>
-
-                          <div className="flex items-center justify-between p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-650 font-black text-xs flex items-center justify-center">
-                                HC
-                              </div>
-                              <div>
-                                <p className="text-xs font-black text-slate-800">Hiraym Castillo</p>
-                                <p className="text-[9px] text-slate-400 font-bold">Ayudante General</p>
-                              </div>
-                            </div>
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-[8px] font-black">Activo</span>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="flex-1 max-w-sm mx-auto bg-slate-100 rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
+                      <Lock size={10} className="text-slate-400" />
+                      <span>https://app.talent360.com/{activeTab === 'rrhh' ? 'organigrama' : 'reclutamiento'}</span>
                     </div>
-                  )}
+                  </div>
 
-                  {activeTab === 'reclutamiento' && (
-                    <div className="space-y-4 animate-in fade-in duration-300">
-                      <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-lg shadow-slate-100/30">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-violet-650">TABLERO ATS</span>
+                  {/* Main Viewport Content */}
+                  <div className="p-6 flex-1 bg-slate-50/50 flex flex-col justify-center overflow-x-auto">
+                    {activeTab === 'rrhh' && (
+                      <div className="w-full text-center flex flex-col justify-center min-w-[500px]">
+                        <ul className="flex flex-col items-center relative">
+                          {/* Nodo Raíz: Administrador General */}
+                          <li 
+                            className="relative pb-6"
+                            onMouseEnter={() => setHoveredNodeId(1)}
+                            onMouseLeave={() => setHoveredNodeId(null)}
+                          >
+                            <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
+                              hoveredNodeId === 1 ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-102 shadow-indigo-100/50' : hoveredNodeId !== null && (hoveredNodeId === 2 || hoveredNodeId === 3) ? 'border-emerald-500 ring-2 ring-emerald-500/10' : 'border-amber-450 bg-amber-50/5'
+                            }`}>
+                              <div className="mb-1.5">
+                                <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-600">
+                                  Dirección General (Nivel 1)
+                                </span>
+                              </div>
+                              <div className="font-black text-xs text-slate-800 uppercase tracking-widest mb-0.5">ADMINISTRADOR GENERAL</div>
+                              <div className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">Administración</div>
+                              
+                              <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-2xl">
+                                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 font-black text-xs flex items-center justify-center flex-shrink-0">
+                                  FV
+                                </div>
+                                <div className="text-left overflow-hidden">
+                                  <div className="text-[10px] font-black text-slate-800 truncate leading-tight">Francisco Vega</div>
+                                  <div className="text-[7.5px] font-medium text-slate-400 truncate">francisco@decorarte360.com</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Vertical Connector Line */}
+                            <div className="w-0.5 h-6 bg-slate-300 mx-auto mt-0"></div>
+                          </li>
+
+                          {/* Nivel 2: Hijas */}
+                          <li className="flex justify-center gap-8 relative">
+                            {/* Nodo Hijo 1: Supervisor */}
+                            <div 
+                              className="flex flex-col items-center"
+                              onMouseEnter={() => setHoveredNodeId(2)}
+                              onMouseLeave={() => setHoveredNodeId(null)}
+                            >
+                              <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
+                                hoveredNodeId === 2 ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-102 shadow-indigo-100/50' : hoveredNodeId === 1 ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-blue-400 bg-blue-50/5'
+                              }`}>
+                                <div className="mb-1.5">
+                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-blue-300 bg-blue-50 text-blue-650">
+                                    Supervisión (Nivel 2)
+                                  </span>
+                                </div>
+                                <div className="font-black text-xs text-slate-800 uppercase tracking-widest mb-0.5">SUPERVISOR DE VENTAS</div>
+                                <div className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">Ventas</div>
+                                
+                                <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-2xl">
+                                  <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-650 font-black text-xs flex items-center justify-center flex-shrink-0">
+                                    LC
+                                  </div>
+                                  <div className="text-left overflow-hidden">
+                                    <div className="text-[10px] font-black text-slate-800 truncate leading-tight">Liz Camacho</div>
+                                    <div className="text-[7.5px] font-medium text-slate-400 truncate">liz@decorarte360.com</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Nodo Hijo 2: Operario */}
+                            <div 
+                              className="flex flex-col items-center"
+                              onMouseEnter={() => setHoveredNodeId(3)}
+                              onMouseLeave={() => setHoveredNodeId(null)}
+                            >
+                              <div className={`inline-block bg-white border-2 rounded-3xl p-4 text-center min-w-[210px] shadow-sm transition-all duration-300 relative z-10 ${
+                                hoveredNodeId === 3 ? 'border-indigo-500 ring-4 ring-indigo-500/20 scale-102 shadow-indigo-100/50' : hoveredNodeId === 1 ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-emerald-400 bg-emerald-50/5'
+                              }`}>
+                                <div className="mb-1.5">
+                                  <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-650">
+                                    Operaciones (Nivel 3)
+                                  </span>
+                                </div>
+                                <div className="font-black text-xs text-slate-800 uppercase tracking-widest mb-0.5">AYUDANTE GENERAL</div>
+                                <div className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">Producción</div>
+                                
+                                <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-2xl">
+                                  <div className="w-7 h-7 rounded-full bg-violet-100 text-violet-650 font-black text-xs flex items-center justify-center flex-shrink-0">
+                                    HC
+                                  </div>
+                                  <div className="text-left overflow-hidden">
+                                    <div className="text-[10px] font-black text-slate-800 truncate leading-tight">Hiraym Castillo</div>
+                                    <div className="text-[7.5px] font-medium text-slate-400 truncate">hiraym@decorarte360.com</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+
+                    {activeTab === 'reclutamiento' && (
+                      <div className="w-full text-center flex flex-col justify-center min-w-[500px]">
+                        <div className="flex justify-between items-center mb-4 px-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-violet-650">Tablero ATS (Vacantes)</span>
                           <span className="text-[9px] font-bold text-slate-400">Puesto: Agente de Ventas</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          {/* Col 1 */}
-                          <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-100/50">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide">Postulados</p>
-                            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200/40">
-                              <p className="text-[10px] font-black text-slate-700">Valeria Díaz</p>
-                              <p className="text-[8px] text-slate-400 font-medium mt-0.5">Hace 2 horas</p>
+                        <div className="grid grid-cols-3 gap-4">
+                          {/* Col 1: Prospectos */}
+                          <div className="flex flex-col bg-slate-100/70 border border-slate-200/50 rounded-2xl p-2.5">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                              <span>Prospecto</span>
+                              <span className="bg-white text-slate-500 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                                {atsCandidates.filter(c => c.status === 'prospect').length}
+                              </span>
+                            </p>
+                            <div className="flex-1 space-y-2.5 min-h-[220px]">
+                              {atsCandidates.filter(c => c.status === 'prospect').map(c => (
+                                <button
+                                  type="button"
+                                  key={c.id}
+                                  onClick={() => handleCandidateClick(c.id)}
+                                  className="w-full text-left bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all active:scale-98"
+                                >
+                                  <div className="flex justify-between items-start mb-1.5">
+                                    <h5 className="text-[10.5px] font-black text-slate-800 leading-none">{c.name}</h5>
+                                    <span className="text-[7.5px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded-md">CV</span>
+                                  </div>
+                                  <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
+                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                                    <span className="text-[7.5px] text-slate-400 font-medium">{c.time}</span>
+                                    <span className="text-[8px] font-black text-blue-600 flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
+                                  </div>
+                                </button>
+                              ))}
                             </div>
                           </div>
-                          {/* Col 2 */}
-                          <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-100/50">
-                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-wide">Entrevista</p>
-                            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200/40">
-                              <p className="text-[10px] font-black text-slate-700">Adriana López</p>
-                              <p className="text-[8px] text-indigo-650 font-bold mt-0.5">Hoy 15:00</p>
+
+                          {/* Col 2: Entrevista */}
+                          <div className="flex flex-col bg-slate-100/70 border border-slate-200/50 rounded-2xl p-2.5">
+                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                              <span>Entrevista</span>
+                              <span className="bg-white text-indigo-500 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                                {atsCandidates.filter(c => c.status === 'interview').length}
+                              </span>
+                            </p>
+                            <div className="flex-1 space-y-2.5 min-h-[220px]">
+                              {atsCandidates.filter(c => c.status === 'interview').map(c => (
+                                <button
+                                  type="button"
+                                  key={c.id}
+                                  onClick={() => handleCandidateClick(c.id)}
+                                  className="w-full text-left bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all active:scale-98"
+                                >
+                                  <div className="flex justify-between items-start mb-1.5">
+                                    <h5 className="text-[10.5px] font-black text-slate-800 leading-none">{c.name}</h5>
+                                    <span className="text-[7.5px] bg-indigo-50 text-indigo-650 font-bold px-1.5 py-0.5 rounded-md">Cita</span>
+                                  </div>
+                                  <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
+                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                                    <span className="text-[7.5px] text-indigo-500 font-bold">{c.time}</span>
+                                    <span className="text-[8px] font-black text-blue-600 flex items-center gap-0.5">Avance <ChevronRight size={8} /></span>
+                                  </div>
+                                </button>
+                              ))}
                             </div>
                           </div>
-                          {/* Col 3 */}
-                          <div className="space-y-2 bg-slate-50 p-2 rounded-2xl border border-slate-100/50">
-                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-wide">Contratados</p>
-                            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-250/20 border-l-2 border-l-emerald-500">
-                              <p className="text-[10px] font-black text-slate-700">Cristian Gómez</p>
-                              <p className="text-[8px] text-emerald-600 font-bold mt-0.5">Pendiente</p>
+
+                          {/* Col 3: Contratados */}
+                          <div className="flex flex-col bg-slate-100/70 border border-slate-200/50 rounded-2xl p-2.5">
+                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-wider mb-2.5 flex justify-between items-center px-1">
+                              <span>Contratados</span>
+                              <span className="bg-white text-emerald-600 font-bold px-1.5 py-0.5 rounded-full text-[8px] shadow-sm">
+                                {atsCandidates.filter(c => c.status === 'hired').length}
+                              </span>
+                            </p>
+                            <div className="flex-1 space-y-2.5 min-h-[220px]">
+                              {atsCandidates.filter(c => c.status === 'hired').map(c => (
+                                <button
+                                  type="button"
+                                  key={c.id}
+                                  onClick={() => handleCandidateClick(c.id)}
+                                  className="w-full text-left bg-white border border-l-2 border-l-emerald-500 border-slate-200/80 rounded-2xl p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all active:scale-98"
+                                >
+                                  <div className="flex justify-between items-start mb-1.5">
+                                    <h5 className="text-[10.5px] font-black text-slate-800 leading-none">{c.name}</h5>
+                                    <span className="text-[7.5px] bg-emerald-50 text-emerald-650 font-bold px-1.5 py-0.5 rounded-md">Contratado</span>
+                                  </div>
+                                  <p className="text-[8px] text-slate-450 font-bold mb-2.5">{c.vacancy}</p>
+                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                                    <span className="text-[7.5px] text-emerald-600 font-black">{c.time}</span>
+                                    <span className="text-[8px] font-black text-blue-600 flex items-center gap-0.5">Reciclar <ChevronRight size={8} /></span>
+                                  </div>
+                                </button>
+                              ))}
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
             </div>
           </div>
         </div>

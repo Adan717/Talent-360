@@ -29,6 +29,9 @@ try {
     );
  
     // Limpiar tablas para evitar duplicados en el seed de DecorArte
+    DB::table('candidates')->where('tenant_id', 1)->delete();
+    DB::table('vacancies')->where('tenant_id', 1)->delete();
+    DB::table('academy_courses')->where('tenant_id', 1)->delete();
     DB::table('task_assignments')->where('tenant_id', 1)->delete();
     DB::table('routine_task')->delete();
     DB::table('routines')->where('tenant_id', 1)->delete();
@@ -269,15 +272,134 @@ try {
         ['routine' => 'Rutina de Cierre de Producción', 'task' => 'Limpieza y orden del taller de ensamble']
     ];
  
-    foreach ($routineTasks as $rt) {
-        DB::table('routine_task')->insert([
-            'routine_id' => $insertedRoutines[$rt['routine']],
-            'task_id' => $insertedTasks[$rt['task']],
+    }
+
+    // 7. Crear Vacantes para DecorArte (Tenant 1)
+    $vacanciesData = [
+        [
+            'job_role_id' => 11,
+            'title' => 'Gerente de Sucursal DecorArte',
+            'description' => 'Buscamos un gerente de sucursal entusiasta para liderar las operaciones y ventas en DecorArte.',
+            'requirements' => "Licenciatura trunca o terminada.\nExperiencia mínima de 2 años en gerencia.\nManejo de personal y KPIs.",
+            'is_active' => true,
+            'is_hidden' => false,
+            'image_url' => 'https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&q=80&w=1000',
+            'work_type' => 'Tiempo Completo',
+            'schedule' => 'Lunes a Sábado 9:00 AM a 7:00 PM',
+            'salary_range' => '$12,000 - $15,000 Mensuales',
+        ],
+        [
+            'job_role_id' => 12,
+            'title' => 'Supervisor de Tienda y Compras',
+            'description' => 'Responsable de la supervisión de piso de ventas, compras y negociación con proveedores.',
+            'requirements' => "Experiencia en piso de ventas y almacén.\nManejo de inventarios y proveedores.",
+            'is_active' => true,
+            'is_hidden' => false,
+            'image_url' => 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=1000',
+            'work_type' => 'Tiempo Completo',
+            'schedule' => 'Lunes a Sábado 9:00 AM a 7:00 PM',
+            'salary_range' => '$8,000 - $10,000 Mensuales',
+        ],
+        [
+            'job_role_id' => 15,
+            'title' => 'Cajero(a) / Atención al Cliente',
+            'description' => 'Atención al cliente y cobro en cajas de DecorArte.',
+            'requirements' => "Experiencia en cobro y actitud de servicio.\nSecundaria terminada.",
+            'is_active' => true,
+            'is_hidden' => false,
+            'image_url' => 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&q=80&w=1000',
+            'work_type' => 'Tiempo Completo',
+            'schedule' => 'L-D rotativo con descanso entre semana',
+            'salary_range' => '$1,500 - $1,800 Semanales',
+        ]
+    ];
+
+    $insertedVacancies = [];
+    foreach ($vacanciesData as $v) {
+        $vId = DB::table('vacancies')->insertGetId(array_merge($v, [
+            'tenant_id' => 1,
             'created_at' => now(),
             'updated_at' => now()
-        ]);
+        ]));
+        $insertedVacancies[$v['title']] = $vId;
     }
- 
+
+    // 8. Crear Candidatos para DecorArte (Tenant 1)
+    $candidatesData = [
+        [
+            'applied_vacancy_id' => $insertedVacancies['Cajero(a) / Atención al Cliente'],
+            'email' => 'juan.perez@example.com',
+            'name' => 'Juan Pérez López',
+            'phone' => '4621234567',
+            'status' => 'prospect',
+            'hr_notes' => 'Buen perfil, se programará llamada inicial.'
+        ],
+        [
+            'applied_vacancy_id' => $insertedVacancies['Supervisor de Tienda y Compras'],
+            'email' => 'maria.gomez@example.com',
+            'name' => 'María Gómez Ramos',
+            'phone' => '4629876543',
+            'status' => 'interview',
+            'hr_notes' => 'Entrevista agendada para el lunes a las 10:00 AM.'
+        ]
+    ];
+
+    foreach ($candidatesData as $c) {
+        DB::table('candidates')->insert(array_merge($c, [
+            'tenant_id' => 1,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]));
+    }
+
+    // 9. Crear Cursos de la Academia para DecorArte (Tenant 1)
+    $coursesData = [
+        [
+            'title' => 'Inducción DecorArte 360',
+            'description' => 'Conoce nuestra historia, misión, visión y los valores fundamentales de DecorArte.',
+            'course_type' => 'induction',
+            'target_job_role_id' => null,
+            'incentive_bonus_cents' => 0,
+            'video_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            'quiz_data' => json_encode([
+                ['question' => '¿Cuál es el valor principal de DecorArte?', 'options' => ['Puntualidad', 'Creatividad', 'Honestidad'], 'answer' => 'Creatividad']
+            ]),
+            'is_active' => true
+        ],
+        [
+            'title' => 'Entrenamiento: Recepción y Registro en SICAR',
+            'description' => 'Aprende los protocolos de recepción de mercancía y cómo ingresarlos de manera correcta en el sistema SICAR.',
+            'course_type' => 'training',
+            'target_job_role_id' => 12, // Supervisor de Compras
+            'incentive_bonus_cents' => 30000, // $300.00
+            'video_url' => 'https://www.youtube.com/embed/tgbNymZ7vqY',
+            'quiz_data' => json_encode([
+                ['question' => '¿Qué sistema se utiliza para capturar compras?', 'options' => ['Excel', 'SICAR', 'SAP'], 'answer' => 'SICAR']
+            ]),
+            'is_active' => true
+        ],
+        [
+            'title' => 'Entrenamiento: Manejo de Caja y Terminales',
+            'description' => 'Aprende a usar la terminal punto de venta, realizar cobros y hacer cortes de caja.',
+            'course_type' => 'training',
+            'target_job_role_id' => 15, // Atención al Cliente
+            'incentive_bonus_cents' => 20000, // $200.00
+            'video_url' => 'https://www.youtube.com/embed/1k8craCGv14',
+            'quiz_data' => json_encode([
+                ['question' => '¿Qué se debe realizar al finalizar el turno de caja?', 'options' => ['Irse de inmediato', 'Limpieza general', 'Corte y arqueo de caja'], 'answer' => 'Corte y arqueo de caja']
+            ]),
+            'is_active' => true
+        ]
+    ];
+
+    foreach ($coursesData as $course) {
+        DB::table('academy_courses')->insert(array_merge($course, [
+            'tenant_id' => 1,
+            'created_at' => now(),
+            'updated_at' => now()
+        ]));
+    }
+
     DB::commit();
     echo "¡Estructura de DecorArte 360 poblada con éxito en PostgreSQL real!\n";
 } catch (\Exception $e) {

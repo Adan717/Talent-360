@@ -32,7 +32,10 @@ def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     
-    commit_msg = input("Enter commit message (default: 'Auto-deploy updates'): ").strip()
+    try:
+        commit_msg = input("Enter commit message (default: 'Auto-deploy updates'): ").strip()
+    except EOFError:
+        commit_msg = "Auto-deploy updates"
     if not commit_msg:
         commit_msg = "Auto-deploy updates"
         
@@ -74,6 +77,8 @@ def main():
         run_remote_cmd(ssh, "chmod -R 777 /var/www/talent360/Backend/storage /var/www/talent360/Backend/bootstrap/cache")
         # Run migrations safely
         run_remote_cmd(ssh, "docker exec talent360-backend php artisan migrate --force")
+        # Run DecorArte database seeder
+        run_remote_cmd(ssh, "docker exec talent360-backend php scripts_utilidad/seed_decorarte_final.php")
         # Clear config and cache
         run_remote_cmd(ssh, "docker exec talent360-backend php artisan config:clear")
         run_remote_cmd(ssh, "docker exec talent360-backend php artisan cache:clear")

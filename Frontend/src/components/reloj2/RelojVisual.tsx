@@ -1731,8 +1731,10 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     }
 
     return (
-      <div className={`flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3 shrink-0 text-left -mx-4 -mt-4 mb-4 rounded-b-[1.75rem] shadow-[0_4px_16px_rgba(0,0,0,0.03)] border-b transition-colors duration-200 select-none ${
-        isDark ? 'bg-slate-900 border-slate-800/80 shadow-[0_4px_16px_rgba(0,0,0,0.15)]' : 'bg-white border-slate-100/80'
+      <div className={`fixed top-3 left-3 right-3 z-[75] flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3 text-left rounded-[1.25rem] xs:rounded-2xl border transition-all duration-200 select-none ${
+        isDark 
+          ? 'bg-slate-955/80 backdrop-blur-md border-violet-900/40 shadow-[0_8px_32px_rgba(124,58,237,0.15)] text-slate-100' 
+          : 'bg-white/80 backdrop-blur-md border-violet-100/50 shadow-[0_8px_32px_rgba(124,58,237,0.06)] text-slate-900'
       }`}>
         {/* Left: Module Info */}
         <div className="flex items-center gap-1.5 xs:gap-2.5 min-w-0">
@@ -2593,7 +2595,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           {/* MOBILE CONTENT AREA (Scrollable/Overflow depending on module) */}
           {phoneTab === 'checador' && (
             shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up">
+              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[78px] pb-[88px]">
                 <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
                   🌴
                 </div>
@@ -2603,7 +2605,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 </p>
               </div>
             ) : (
-              <div className="flex-1 overflow-hidden px-4 py-3 flex flex-col justify-between gap-2 scrollbar-none">
+              <div className="flex-1 overflow-y-auto px-4 pt-[78px] pb-[88px] flex flex-col justify-between gap-2 scrollbar-none">
                 {/* Banner de transferencia de llaves pendiente */}
                 {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
                   <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
@@ -2748,7 +2750,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
           )}
 
           {phoneTab !== 'checador' && (
-            <div className="flex-1 overflow-y-auto p-4 scrollbar-none">
+            <div className="flex-1 overflow-y-auto p-4 pt-[78px] pb-[88px] scrollbar-none">
               {phoneTab === 'tareas' && (
                 <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
               )}

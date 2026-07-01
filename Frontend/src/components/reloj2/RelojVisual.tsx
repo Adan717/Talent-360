@@ -1876,35 +1876,35 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
       
       {isScrollableMobile && phoneTab === 'checador' && (
         <div className="flex-1 flex flex-col justify-between h-full overflow-hidden">
-          {/* UNIFIED MOBILE HEADER */}
-          <div className="flex items-center justify-between px-4 py-4.5 shrink-0 bg-white dark:bg-slate-800/90 text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-md border-b border-slate-100 dark:border-slate-800/30 backdrop-blur-sm">
+          {/* UNIFIED MOBILE HEADER (Mockup-aligned solid white styling) */}
+          <div className="flex items-center justify-between px-4 py-4 shrink-0 bg-white dark:bg-slate-800 text-left -mx-4 -mt-4 mb-4 rounded-b-[2rem] shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] border-b border-slate-100/80 dark:border-slate-800/40">
             {/* Left: Module Info */}
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div className="shrink-0 flex items-center justify-center">
-                <Clock className="w-10 h-10 text-emerald-500" />
+                <Clock className="w-9 h-9 text-[#2dce89]" />
               </div>
               <div className="flex flex-col min-w-0 justify-center text-left">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-[17px] font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                  <h3 className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                     Reloj Checador
                   </h3>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-350 border border-emerald-500/25">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wider bg-[#e6f4ea] text-[#137333] dark:bg-[#137333]/20 dark:text-[#ceead6] border border-[#ceead6]/20">
                     v2.2.0
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold mt-1 leading-none truncate">
+                <p className="text-[11px] text-[#525f7f] dark:text-slate-400 font-bold mt-1.5 leading-none truncate">
                   Control de Asistencia y Tareas
                 </p>
               </div>
             </div>
 
             {/* Right: Actions & User Profile */}
-            <div className="flex items-center gap-3.5 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               {/* Manual Pass List Trigger inside the header for Supervisors */}
               {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
                 <button 
                   onClick={() => initPaseLista(false)}
-                  className="bg-violet-605 hover:bg-violet-700 text-white font-extrabold text-[9px] uppercase px-3 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
+                  className="bg-violet-605 hover:bg-violet-700 text-white font-extrabold text-[9px] uppercase px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
                 >
                   <span>📋</span>
                   <span>Lista</span>
@@ -1912,7 +1912,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
               )}
 
               <div 
-                className="flex items-center gap-3 text-right cursor-pointer"
+                className="flex items-center gap-2.5 text-right cursor-pointer"
                 onClick={() => {
                   setEditUsername(currentUser?.name || 'Francisco');
                   setEditPassword(currentUser?.pin_code || '1234');
@@ -1921,13 +1921,13 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                 }}
               >
                 <div className="flex flex-col min-w-0 text-right justify-center leading-tight">
-                  <span className="text-[13.5px] font-black text-slate-900 dark:text-slate-100 truncate">
+                  <span className="text-[13px] font-black text-slate-900 dark:text-slate-100 truncate">
                     {currentUser?.name || 'Colaborador'}
                   </span>
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
+                  <span className="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest truncate mt-0.5">
                     {currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador'}
                   </span>
-                  <span className="text-[9.5px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider truncate mt-0.5">
+                  <span className="text-[9px] font-black text-[#8a2be2] dark:text-violet-400 uppercase tracking-wider truncate mt-0.5">
                     {currentUser?.tenant?.name || 'Decorarte 360'}
                   </span>
                 </div>
@@ -1938,7 +1938,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
                     alt="Avatar" 
                     className="w-12 h-12 rounded-full object-cover border border-slate-200/80 shadow-md hover:scale-105 transition-transform" 
                   />
-                  <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 ${isDark ? 'border-slate-955' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                  <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 ${isDark ? 'border-slate-955' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
                 </div>
               </div>
             </div>

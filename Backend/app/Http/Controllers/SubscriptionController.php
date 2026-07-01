@@ -24,8 +24,10 @@ class SubscriptionController extends Controller
         if (!$user && $request->bearerToken()) {
             $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($request->bearerToken());
             if ($tokenModel) {
-                $user = $tokenModel->tokenable;
-                auth('sanctum')->setUser($user);
+                $user = \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find($tokenModel->tokenable_id);
+                if ($user) {
+                    auth('sanctum')->setUser($user);
+                }
             }
         }
         $isInitialRegistration = ($user && $user->tenant_id === null);

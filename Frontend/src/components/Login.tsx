@@ -358,7 +358,11 @@ export const Login = () => {
           <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-xs font-medium text-slate-400">
             <ShieldCheck size={14} className="text-emerald-500" />
             Conexión Segura SSL
-            {/* Social Provider Auth Modal */}
+          </div>
+        </div>
+      </div>
+
+      {/* Social Provider Auth Modal */}
       {showSocialModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-slide-up relative">

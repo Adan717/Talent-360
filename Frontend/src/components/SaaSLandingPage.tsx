@@ -590,6 +590,7 @@ export const SaaSLandingPage = () => {
                     )}
                   </button>
                 </form>
+              )}
             </div>
           </div>
         </div>

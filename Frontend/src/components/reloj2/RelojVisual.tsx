@@ -169,6 +169,7 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
     handleReportAbsencePremium,
     handleReportLatePremium,
     handleReportStoreStillClosedPremium,
+    isOpeningPremium,
     mealSettings,
     leySillaConfig,
     chatMessages,

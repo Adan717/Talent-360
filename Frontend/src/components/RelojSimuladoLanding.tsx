@@ -36,6 +36,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<'entry' | 'break' | 'meal' | 'exit' | null>(null);
   const [showPromoGancho, setShowPromoGancho] = useState(false);
+  const [showBlockProModal, setShowBlockProModal] = useState<string | null>(null);
 
   // Datos simulados de tiempo
   const [currentSimTime, setCurrentSimTime] = useState(540); // 09:00 AM
@@ -115,35 +116,52 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const handleAction = () => {
     const stateStr = clockState as string;
     if (stateStr === 'inactive') {
-      runProVerification(() => {
+      if (tier === 'free') {
+        // En básico, no hay verificación de GPS ni de Selfie
         setClockState('active');
         setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
         setCurrentSimTime(545);
-      });
-    } else if (stateStr === 'active') {
-      const hasTakenBreak = breaksTaken[99] !== undefined;
-      const hasTakenMeal = mealEndTimes[99] !== undefined;
-
-      if (!hasTakenBreak) {
-        // Simular descanso
-        setClockState('short_break');
-        setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
-        setCurrentSimTime(720);
-      } else if (!hasTakenMeal) {
-        // Simular comida
-        setClockState('meal');
-        setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
-        setCurrentSimTime(840);
       } else {
-        // Simular salida
         runProVerification(() => {
-          setClockState('finished');
-          setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
-          setCurrentSimTime(1080);
-          setTimeout(() => {
-            setShowPromoGancho(true);
-          }, 800);
+          setClockState('active');
+          setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
+          setCurrentSimTime(545);
         });
+      }
+    } else if (stateStr === 'active') {
+      if (tier === 'free') {
+        // En básico, salida inmediata al dar click
+        setClockState('finished');
+        setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
+        setCurrentSimTime(1080);
+        setTimeout(() => {
+          setShowPromoGancho(true);
+        }, 800);
+      } else {
+        const hasTakenBreak = breaksTaken[99] !== undefined;
+        const hasTakenMeal = mealEndTimes[99] !== undefined;
+
+        if (!hasTakenBreak) {
+          // Simular descanso
+          setClockState('short_break');
+          setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
+          setCurrentSimTime(720);
+        } else if (!hasTakenMeal) {
+          // Simular comida
+          setClockState('meal');
+          setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
+          setCurrentSimTime(840);
+        } else {
+          // Simular salida
+          runProVerification(() => {
+            setClockState('finished');
+            setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
+            setCurrentSimTime(1080);
+            setTimeout(() => {
+              setShowPromoGancho(true);
+            }, 800);
+          });
+        }
       }
     } else if (stateStr === 'short_break') {
       // Regresar descanso
@@ -202,6 +220,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       return { disabled: false, text: 'Registrar Entrada', subtext: 'Francisco Vega' };
     }
     if (clockState === 'active') {
+      if (tier === 'free') {
+        // En básico, solo entrada y salida
+        return { disabled: false, text: 'Registrar Salida', subtext: 'Fichaje de Salida' };
+      }
       const hasBreak = breaksTaken[99] !== undefined;
       const hasMeal = mealEndTimes[99] !== undefined;
       if (!hasBreak) {
@@ -326,6 +348,39 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   };
 
   const renderBarraCronologica = () => {
+    if (tier === 'free') {
+      return (
+        <div className="py-2 px-1 text-left w-full select-none shrink-0 border-b border-slate-100 dark:border-slate-800 pb-3 mb-2">
+          <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] px-1">
+            <div className="flex items-center select-none">
+              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>🏪 Sucursal Abierta</span>
+              </span>
+            </div>
+
+            <div className="flex items-center select-none">
+              {hasCheckedOut ? (
+                <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5">
+                  <span>Turno Finalizado ✓</span>
+                </span>
+              ) : hasCheckedIn ? (
+                <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span>Turno Activo ✓</span>
+                </span>
+              ) : (
+                <span className="text-slate-400 dark:text-slate-550 font-black flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-600"></span>
+                  <span>Turno Inactivo</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const tStart = 540; // 09:00 AM
     const tEnd = 1080;  // 06:00 PM
     const tDuration = tEnd - tStart;
@@ -794,7 +849,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       <div className="absolute bottom-0 inset-x-0 z-30 shrink-0">
         <MobileBottomNav 
           phoneTab={phoneTab} 
-          setPhoneTab={setPhoneTab} 
+          setPhoneTab={(tab) => {
+            if (tier === 'free' && tab !== 'checador') {
+              setShowBlockProModal(tab);
+            } else {
+              setPhoneTab(tab);
+            }
+          }} 
           setInnerTool={setInnerTool} 
           isDark={isDark} 
         />
@@ -1179,6 +1240,56 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
                 >
                   Reiniciar Simulación
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE BLOQUEO DE MÓDULO EXCLUSIVO PRO */}
+      {showBlockProModal && (
+        <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
+          <div onClick={() => setShowBlockProModal(null)} className="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
+          
+          <div className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-850 text-white shadow-violet-500/10">
+            <button 
+              onClick={() => setShowBlockProModal(null)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 cursor-pointer border-none bg-transparent font-bold text-sm"
+            >
+              ✕
+            </button>
+
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-violet-955 border border-violet-850 flex items-center justify-center text-violet-400">
+                <Lock size={22} className="text-violet-400" />
+              </div>
+
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-violet-300">
+                  Módulo Exclusivo PRO
+                </h3>
+                <p className="text-[9.5px] font-bold text-slate-400 mt-1 leading-normal">
+                  El módulo de {showBlockProModal === 'tareas' ? 'Tareas & Rutinas Operativas' : 'Academia de Capacitación'} solo está disponible en la versión **PRO**.
+                </p>
+              </div>
+
+              <div className="w-full space-y-2 mt-2">
+                <button
+                  onClick={() => {
+                    setShowBlockProModal(null);
+                    if (onActionClick) onActionClick();
+                  }}
+                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-650 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+                >
+                  Mejorar a PRO (14 días gratis)
+                </button>
+                
+                <button
+                  onClick={() => setShowBlockProModal(null)}
+                  className="w-full py-1.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer border-none"
+                >
+                  Seguir en versión Básica
                 </button>
               </div>
             </div>

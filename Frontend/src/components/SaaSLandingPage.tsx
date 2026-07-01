@@ -880,14 +880,14 @@ export const SaaSLandingPage = () => {
       {/* SECCIÓN DEL SIMULADOR EXCLUSIVA PARA MÓVILES */}
       <section 
         id="seccion-simulador" 
-        className="block lg:hidden bg-slate-50 dark:bg-slate-950 py-16 px-4 border-b border-slate-150 dark:border-slate-800"
+        className="block lg:hidden bg-slate-50/50 py-16 px-4 border-b border-slate-150"
       >
         <div className="max-w-md mx-auto flex flex-col items-center text-center space-y-6">
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-indigo-650 bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/40 dark:border-indigo-900/30 dark:text-indigo-400">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider text-indigo-655 bg-indigo-50 border border-indigo-100">
               <Sparkles size={10} /> Demo Interactiva
             </span>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+            <h3 className="text-2xl font-black text-slate-900 leading-tight">
               Prueba el Reloj Checador
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold px-4 max-w-sm">
@@ -897,14 +897,14 @@ export const SaaSLandingPage = () => {
 
           {/* Selector de versión + Botón de reinicio para móviles */}
           <div className="flex items-center gap-2 w-full max-w-[290px] justify-center">
-            <div className="flex p-1 bg-slate-200/50 dark:bg-slate-900/90 rounded-2xl border border-slate-300/30 dark:border-slate-800 flex-1">
+            <div className="flex p-1 bg-slate-150 rounded-2xl border border-slate-200 flex-1">
               <button 
                 type="button" 
                 onClick={() => setSimulatedTier('free')}
                 className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                   simulatedTier === 'free' 
-                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-650'
+                    ? 'bg-white text-slate-800 shadow-md' 
+                    : 'text-slate-400 hover:text-slate-650 bg-transparent'
                 }`}
               >
                 <span>🔓</span> Básica
@@ -915,7 +915,7 @@ export const SaaSLandingPage = () => {
                 className={`flex-1 py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer outline-none border-none ${
                   simulatedTier === 'pro' 
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-655'
+                    : 'text-slate-400 hover:text-slate-655 bg-transparent'
                 }`}
               >
                 <span>👑</span> Pro
@@ -927,7 +927,7 @@ export const SaaSLandingPage = () => {
               type="button"
               title="Reiniciar Simulación"
               onClick={() => setSimKey(prev => prev + 1)}
-              className="p-2.5 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-805 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
+              className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl shadow-sm text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center cursor-pointer active:scale-95 outline-none shrink-0"
             >
               <RotateCcw size={14} />
             </button>

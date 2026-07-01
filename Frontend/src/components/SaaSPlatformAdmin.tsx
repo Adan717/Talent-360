@@ -364,6 +364,18 @@ export const SaaSPlatformAdmin = () => {
   const [globalTrialDays, setGlobalTrialDays] = useState(30);
   const [isSavingFreemium, setIsSavingFreemium] = useState(false);
 
+  // Estados para la configuración bancaria de la plataforma
+  const [isBankConfigOpen, setIsBankConfigOpen] = useState(false);
+  const [bankConfigData, setBankConfigData] = useState({
+    bank_name: '',
+    account_holder: '',
+    clabe: '',
+    card_number: '',
+    instructions: '',
+    is_active: false
+  });
+  const [isSavingBank, setIsSavingBank] = useState(false);
+
   // Estados Real desde la BD
   const [stats, setStats] = useState({
     mrr: 0,
@@ -752,6 +764,52 @@ export const SaaSPlatformAdmin = () => {
       alert("Error al guardar la configuración.");
     } finally {
       setIsSavingFreemium(false);
+    }
+  };
+
+  const handleOpenBankConfig = async () => {
+    setIsBankConfigOpen(true);
+    setIsLoading(true);
+    try {
+      const res = await axiosInstance.get('/platform/bank-config');
+      if (res.data) {
+        setBankConfigData({
+          bank_name: res.data.bank_name || '',
+          account_holder: res.data.account_holder || '',
+          clabe: res.data.clabe || '',
+          card_number: res.data.card_number || '',
+          instructions: res.data.instructions || '',
+          is_active: res.data.is_active || false
+        });
+      }
+    } catch (error) {
+      console.error("Error loading bank config:", error);
+      alert("Error al cargar la configuración bancaria.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveBankConfig = async () => {
+    if (bankConfigData.clabe && bankConfigData.clabe.length !== 18) {
+      alert("La CLABE debe tener exactamente 18 dígitos.");
+      return;
+    }
+    if (bankConfigData.card_number && bankConfigData.card_number.length !== 16) {
+      alert("El número de tarjeta debe tener exactamente 16 dígitos.");
+      return;
+    }
+
+    setIsSavingBank(true);
+    try {
+      await axiosInstance.post('/platform/bank-config', bankConfigData);
+      alert("Configuración bancaria guardada con éxito.");
+      setIsBankConfigOpen(false);
+    } catch (error) {
+      console.error("Error saving bank config:", error);
+      alert("Error al guardar la configuración bancaria.");
+    } finally {
+      setIsSavingBank(false);
     }
   };
 
@@ -1223,6 +1281,13 @@ export const SaaSPlatformAdmin = () => {
                >
                   Configurar Precios
                </button>
+               <button 
+                  onClick={handleOpenBankConfig} 
+                  className="text-xs font-bold text-emerald-600 hover:bg-emerald-100/50 bg-emerald-50 border border-emerald-100 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+               >
+                  <CreditCard size={14} />
+                  Configurar Cuenta Bancaria (SPEI)
+               </button>
             </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1458,6 +1523,123 @@ export const SaaSPlatformAdmin = () => {
             </div>
           </div>
           <button onClick={() => setIsPricingModalOpen(false)} className="w-full mt-8 bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-colors">Guardar y Cerrar</button>
+        </div>
+      </div>
+    )}
+ 
+    {/* MODAL: CONFIGURAR DATOS BANCARIOS (SPEI) */}
+    {isBankConfigOpen && (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl my-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+                <CreditCard className="text-emerald-600" size={24} />
+                Configurar Datos Bancarios (SPEI)
+              </h3>
+              <p className="text-xs text-slate-500 font-semibold mt-1">
+                Establece la cuenta bancaria donde los clientes realizarán transferencias para pagar el servicio.
+              </p>
+            </div>
+            <button 
+              onClick={() => setIsBankConfigOpen(false)}
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="space-y-4 pr-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">Banco Receptor</label>
+                <input 
+                  type="text" 
+                  value={bankConfigData.bank_name} 
+                  onChange={(e) => setBankConfigData({...bankConfigData, bank_name: e.target.value})} 
+                  placeholder="Ej. BBVA Bancomer" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">Titular de la Cuenta</label>
+                <input 
+                  type="text" 
+                  value={bankConfigData.account_holder} 
+                  onChange={(e) => setBankConfigData({...bankConfigData, account_holder: e.target.value})} 
+                  placeholder="Ej. Talent 360 SA de CV" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-semibold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">CLABE Interbancaria (18 dígitos)</label>
+              <input 
+                type="text" 
+                maxLength={18}
+                value={bankConfigData.clabe} 
+                onChange={(e) => setBankConfigData({...bankConfigData, clabe: e.target.value.replace(/\D/g, '').slice(0, 18)})} 
+                placeholder="Ej. 012180004512345678" 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-black text-sm text-slate-800 tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">Número de Tarjeta (16 dígitos, opcional)</label>
+              <input 
+                type="text" 
+                maxLength={16}
+                value={bankConfigData.card_number} 
+                onChange={(e) => setBankConfigData({...bankConfigData, card_number: e.target.value.replace(/\D/g, '').slice(0, 16)})} 
+                placeholder="Ej. 4152313412345678" 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all" 
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">Instrucciones Especiales</label>
+              <textarea 
+                rows={3}
+                value={bankConfigData.instructions} 
+                onChange={(e) => setBankConfigData({...bankConfigData, instructions: e.target.value})} 
+                placeholder="Ej. Una vez hecha tu transferencia SPEI, reporta tu comprobante al correo facturacion@talent360.com para la activación inmediata." 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none" 
+              />
+            </div>
+
+            <div className="flex items-center justify-between bg-slate-50 border border-slate-200/60 p-4 rounded-2xl mt-4">
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">Habilitar en Checkout</span>
+                <span className="text-[10px] text-slate-500 block">Mostrar este método de transferencia como alternativa en la pasarela.</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={bankConfigData.is_active} 
+                  onChange={(e) => setBankConfigData({...bankConfigData, is_active: e.target.checked})}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-8">
+            <button 
+              onClick={() => setIsBankConfigOpen(false)} 
+              className="w-1/3 border border-slate-200 text-slate-500 font-bold py-3 rounded-xl hover:bg-slate-50 transition-colors text-sm"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleSaveBankConfig} 
+              disabled={isSavingBank}
+              className="flex-1 bg-emerald-600 text-white font-black py-3 rounded-xl shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 transition-colors text-sm flex items-center justify-center gap-1.5"
+            >
+              {isSavingBank ? 'Guardando...' : 'Guardar Configuración'}
+            </button>
+          </div>
         </div>
       </div>
     )}

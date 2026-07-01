@@ -887,4 +887,65 @@ class PlatformAdminController extends Controller
 
         return response()->json($logs);
     }
+
+    /**
+     * Get global bank transfer configurations
+     */
+    public function getBankConfig()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $config = \DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'platform_bank_config')
+            ->first();
+
+        $data = $config ? json_decode($config->value, true) : null;
+
+        return response()->json($data ?: [
+            'bank_name' => '',
+            'account_holder' => '',
+            'clabe' => '',
+            'card_number' => '',
+            'instructions' => '',
+            'is_active' => false
+        ]);
+    }
+
+    /**
+     * Save global bank transfer configurations
+     */
+    public function saveBankConfig(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $request->validate([
+            'bank_name' => 'nullable|string|max:255',
+            'account_holder' => 'nullable|string|max:255',
+            'clabe' => 'nullable|string|size:18',
+            'card_number' => 'nullable|string|size:16',
+            'instructions' => 'nullable|string|max:2000',
+            'is_active' => 'required|boolean'
+        ]);
+
+        $value = [
+            'bank_name' => $request->bank_name ?: '',
+            'account_holder' => $request->account_holder ?: '',
+            'clabe' => $request->clabe ?: '',
+            'card_number' => $request->card_number ?: '',
+            'instructions' => $request->instructions ?: '',
+            'is_active' => (bool)$request->is_active
+        ];
+
+        \DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => null, 'key' => 'platform_bank_config'],
+            ['value' => json_encode($value), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        return response()->json(['message' => 'Configuración bancaria guardada con éxito', 'data' => $value]);
+    }
 }

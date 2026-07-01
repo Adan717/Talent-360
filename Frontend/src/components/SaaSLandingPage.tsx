@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2 } from 'lucide-react';
-import { CompanyOnboardingSettings } from './CompanyOnboardingSettings';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -19,6 +18,7 @@ export const SaaSLandingPage = () => {
   const [showGoogleForm, setShowGoogleForm] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -51,6 +51,123 @@ export const SaaSLandingPage = () => {
     setShowGoogleForm(false);
     setError('');
     setShowCheckout(true);
+  };
+  const handleGoogleCredentialResponse = async (response: any) => {
+    setIsProcessing(true);
+    setError('');
+    try {
+      const res = await axiosInstance.post('/login/social', {
+        provider: 'google',
+        id_token: response.credential
+      });
+
+      const { user, token, tenant } = res.data;
+      
+      localStorage.setItem('talent_auth_token', token);
+      
+      if (user.tenant_id) {
+        // Si ya tiene una empresa, inicia sesión directo
+        setCurrentUser(user);
+        setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+        navigate('/app');
+      } else {
+        // Si no tiene empresa (pre-registrado), avanza a configurar la empresa
+        setGoogleUser({
+          name: user.name,
+          email: user.email,
+          google_id: user.google_id || user.email
+        });
+        setRegistrationStep(2);
+        setShowGoogleForm(false);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al autenticar con tu cuenta de Google.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    let script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]') as HTMLScriptElement;
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    const initGoogleButton = () => {
+      const google = (window as any).google;
+      if (google && showCheckout && !showGoogleForm && registrationStep === 1) {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredentialResponse,
+        });
+        
+        const container = document.getElementById('google-signup-btn-container');
+        if (container) {
+          google.accounts.id.renderButton(
+            container,
+            { 
+              theme: 'outline', 
+              size: 'large', 
+              shape: 'rectangular',
+              text: 'continue_with',
+              width: 320
+            }
+          );
+        }
+      }
+    };
+
+    script.onload = () => {
+      initGoogleButton();
+    };
+
+    if ((window as any).google) {
+      setTimeout(initGoogleButton, 100);
+    }
+  }, [showCheckout, showGoogleForm, registrationStep]);
+  const handleTraditionalRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleEmail || !googleName || !signUpPassword) {
+      setError('Por favor, rellena todos los campos obligatorios.');
+      return;
+    }
+    if (signUpPassword.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError('');
+    try {
+      const response = await axiosInstance.post('/register', {
+        name: googleName,
+        email: googleEmail,
+        password: signUpPassword
+      });
+
+      const { user, token } = response.data;
+      localStorage.setItem('talent_auth_token', token);
+      
+      // Pre-registered state - proceed to step 2 (Company Details)
+      setGoogleUser({
+        name: user.name,
+        email: user.email,
+        google_id: ''
+      });
+      setRegistrationStep(2);
+      setShowGoogleForm(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Error al crear la cuenta. El correo podría estar ya registrado.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleGoogleMockLogin = async (mockEmail: string, mockName: string) => {
@@ -112,7 +229,7 @@ export const SaaSLandingPage = () => {
 
         setIsProcessing(false);
         setShowCheckout(false);
-        setShowOnboarding(true);
+        navigate('/app');
       } else if (response.data.init_point) {
         // Paid: Redirect to payment gateway/simulator
         window.location.href = response.data.init_point;
@@ -125,23 +242,6 @@ export const SaaSLandingPage = () => {
       setIsProcessing(false);
     }
   };
-
-  if (showOnboarding) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 animate-in fade-in">
-        <div className="mb-8 text-center">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={32} />
-          </div>
-          <h1 className="text-3xl font-black text-slate-900">¡Estructura Creada!</h1>
-          <p className="text-slate-500 mt-2">Tu instancia de Talent 360 ha sido configurada. Comienza a registrar tu sucursal y tus puestos reales.</p>
-        </div>
-        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
-          <CompanyOnboardingSettings onComplete={() => navigate('/app')} />
-        </div>
-      </div>
-    );
-  }
 
   // Professional pricing calculations
   const pricePerUser = 12; // $12 MXN per user
@@ -453,29 +553,92 @@ export const SaaSLandingPage = () => {
                   {!showGoogleForm ? (
                     <>
                       <div className="space-y-1">
-                        <h4 className="font-extrabold text-slate-800 text-lg">Para empezar, valida tu cuenta</h4>
+                        <h4 className="font-extrabold text-slate-800 text-lg">Crea tu cuenta de Administrador</h4>
                         <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-                          Para garantizar la seguridad de tu base de datos dedicada, debes iniciar sesión con una cuenta de Google.
+                          Valida tu identidad de forma instantánea usando Google o completa los datos para registrar tu cuenta.
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGoogleEmail('');
-                          setGoogleName('');
-                          setShowGoogleForm(true);
-                        }}
-                        className="w-full py-4 px-6 border-2 border-slate-200 hover:border-blue-300 hover:bg-slate-50 rounded-2xl font-black text-sm text-slate-700 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-98"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                          <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
-                          <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
-                          <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
-                          <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
-                        </svg>
-                        Continuar con Google
-                      </button>
+                      {/* Opción 1: Google Sign-in */}
+                      <div className="w-full max-w-xs mx-auto py-1">
+                        {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+                          <div className="w-full flex flex-col items-center">
+                            <div id="google-signup-btn-container" className="w-full min-h-[46px] flex items-center justify-center"></div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGoogleEmail('');
+                              setGoogleName('');
+                              setShowGoogleForm(true);
+                            }}
+                            className="w-full py-3.5 px-4 border border-slate-200 hover:border-blue-300 hover:bg-slate-50 rounded-2xl font-black text-xs text-slate-700 transition-all flex items-center justify-center gap-2.5 shadow-sm active:scale-98"
+                          >
+                            <svg className="w-4.5 h-4.5" viewBox="0 0 24 24">
+                              <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
+                              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
+                              <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
+                              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
+                            </svg>
+                            Continuar con Google (Simulador)
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Divisor */}
+                      <div className="relative flex py-2 items-center w-full max-w-xs mx-auto">
+                        <div className="flex-grow border-t border-slate-200"></div>
+                        <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-black uppercase tracking-wider">o regístrate con tu correo</span>
+                        <div className="flex-grow border-t border-slate-200"></div>
+                      </div>
+
+                      {/* Formulario tradicional */}
+                      <form onSubmit={handleTraditionalRegister} className="space-y-4 text-left w-full max-w-xs mx-auto">
+                        <div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={googleName}
+                            onChange={e => setGoogleName(e.target.value)}
+                            placeholder="Ej. Francisco Vega" 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Correo de Registro</label>
+                          <input 
+                            type="email" 
+                            required 
+                            value={googleEmail}
+                            onChange={e => setGoogleEmail(e.target.value.toLowerCase().trim())}
+                            placeholder="usuario@dominio.com" 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Contraseña</label>
+                          <input 
+                            type="password" 
+                            required 
+                            value={signUpPassword}
+                            onChange={e => setSignUpPassword(e.target.value)}
+                            placeholder="Mínimo 6 caracteres" 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" 
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isProcessing}
+                          className="w-full mt-2 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-xs transition-all shadow-lg shadow-blue-600/10 flex items-center justify-center gap-1.5"
+                        >
+                          {isProcessing ? 'Procesando...' : 'Crear Cuenta y Continuar'}
+                        </button>
+                      </form>
                     </>
                   ) : (
                     <form 

@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff, Fingerprint, KeyRound } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 
 export const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [searchParams] = useSearchParams();
+  const paymentParam = searchParams.get('payment');
+  const emailParam = searchParams.get('email');
+
+  const [email, setEmail] = useState(emailParam || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [socialProvider, setSocialProvider] = useState<'google' | 'apple' | 'samsung' | null>(null);
-  const [socialEmail, setSocialEmail] = useState('');
+  const [socialEmail, setSocialEmail] = useState(emailParam || '');
   const [showPassword, setShowPassword] = useState(false);
   const { setCurrentUser, setCurrentTier } = useAppStore();
 
@@ -24,11 +28,82 @@ export const Login = () => {
   const [biometricStatus, setBiometricStatus] = useState<'idle' | 'scanning' | 'success' | 'failed'>('idle');
 
   useEffect(() => {
+    if (emailParam) {
+      setEmail(emailParam);
+      setSocialEmail(emailParam);
+    }
+  }, [emailParam]);
+
+  useEffect(() => {
     const hasToken = !!localStorage.getItem('talent_auth_token');
-    if (hasToken) {
+    if (hasToken && paymentParam !== 'success') {
       navigate('/app');
     }
-  }, [navigate]);
+  }, [navigate, paymentParam]);
+
+  const handleGoogleCredentialResponse = async (response: any) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await axiosInstance.post('/login/social', {
+        provider: 'google',
+        id_token: response.credential
+      });
+
+      const { user, token, tenant } = res.data;
+      
+      localStorage.setItem('talent_auth_token', token);
+      
+      setCurrentUser(user);
+      setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+      
+      navigate('/app');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Error al autenticar con tu cuenta de Google.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      const google = (window as any).google;
+      if (google) {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredentialResponse,
+        });
+        
+        google.accounts.id.renderButton(
+          document.getElementById('google-signin-btn-container'),
+          { 
+            theme: 'outline', 
+            size: 'large', 
+            shape: 'rectangular',
+            width: 110,
+            type: 'icon'
+          }
+        );
+      }
+    };
+
+    return () => {
+      try {
+        document.head.removeChild(script);
+      } catch (e) {
+        // Ignorar si ya fue removido
+      }
+    };
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +229,16 @@ export const Login = () => {
         {/* Form */}
         <div className="p-8">
           
+          {paymentParam === 'success' && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold p-4 rounded-xl flex items-start gap-2.5 mb-5 shadow-sm">
+              <span className="text-base">✓</span>
+              <div className="text-left">
+                <p className="font-black text-slate-800">¡Empresa Creada con Éxito!</p>
+                <p className="text-xs font-semibold text-emerald-600 mt-0.5 leading-relaxed">Tu suscripción ha sido confirmada y aprovisionada. Inicia sesión abajo para comenzar a configurar tu espacio.</p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-rose-50 border border-rose-200 text-rose-600 text-sm font-bold p-4 rounded-xl flex items-start gap-2 mb-5">
               <span>⚠️</span>
@@ -175,7 +260,7 @@ export const Login = () => {
                     value={email}
                     onChange={e => setEmail(e.target.value.toLowerCase().trim())}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium text-slate-900 placeholder-slate-400"
-                    placeholder="francisco@decorarte360.com"
+                    placeholder="usuario@dominio.com"
                   />
                 </div>
               </div>
@@ -226,6 +311,15 @@ export const Login = () => {
                   <Fingerprint size={20} className="text-blue-600 animate-pulse" />
                 </button>
               </div>
+
+              {paymentParam === 'success' && emailParam && (
+                <div className="bg-blue-50/80 border border-blue-200 text-blue-700 text-xs font-bold p-3.5 rounded-xl mt-3 text-left">
+                  <p className="flex items-center gap-1.5"><span className="text-sm">💡</span> <span className="font-extrabold text-blue-800">Inicio de Sesión Social</span></p>
+                  <p className="font-semibold text-[10px] text-blue-500 mt-1 leading-normal">
+                    Registraste tu cuenta usando tu cuenta social. Haz clic en el botón de **Google** abajo para ingresar directamente y comenzar a configurar tu empresa.
+                  </p>
+                </div>
+              )}
             </form>
           ) : (
             <form onSubmit={handle2FAVerify} className="space-y-5">
@@ -304,23 +398,27 @@ export const Login = () => {
 
           {/* Social Buttons */}
           <div className="grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setSocialProvider('google');
-                setSocialEmail('');
-                setShowSocialModal(true);
-              }}
-              className="flex items-center justify-center py-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
-              title="Iniciar sesión con Google"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
-                <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
-                <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
-                <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
-              </svg>
-            </button>
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+              <div id="google-signin-btn-container" className="h-[42px] overflow-hidden flex items-center justify-center border border-slate-200 rounded-xl bg-white shadow-sm hover:bg-slate-50 transition-colors"></div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setSocialProvider('google');
+                  setSocialEmail('');
+                  setShowSocialModal(true);
+                }}
+                className="flex items-center justify-center py-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+                title="Iniciar sesión con Google (Simulado)"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
+                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
+                  <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
+                  <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
+                </svg>
+              </button>
+            )}
             
             <button
               type="button"

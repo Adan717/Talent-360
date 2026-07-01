@@ -33,6 +33,7 @@ use App\Http\Controllers\SupportTicketController;
 Route::prefix('v1')->middleware('device.security')->group(function () {
     // Auth & SaaS Onboarding (Públicas)
     Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login/social', [AuthController::class, 'loginSocial']);
     Route::post('/tenants', [TenantController::class, 'store']); // Checkout / Compra directa
     Route::post('/subscriptions/create-preference', [SubscriptionController::class, 'createPreference']);
@@ -70,6 +71,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Freemium global configurations & Device Security
         Route::get('/platform/freemium-config', [PlatformAdminController::class, 'getFreemiumConfig']);
         Route::post('/platform/freemium-config', [PlatformAdminController::class, 'saveFreemiumConfig']);
+        Route::get('/platform/bank-config', [PlatformAdminController::class, 'getBankConfig']);
+        Route::post('/platform/bank-config', [PlatformAdminController::class, 'saveBankConfig']);
         Route::get('/platform/security/devices', [PlatformAdminController::class, 'getSuspiciousDevices']);
         Route::post('/platform/security/devices/{id}/ban', [PlatformAdminController::class, 'banDevice']);
         Route::post('/platform/security/devices/{id}/unban', [PlatformAdminController::class, 'unbanDevice']);

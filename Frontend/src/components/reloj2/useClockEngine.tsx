@@ -585,8 +585,10 @@ export function useClockEngine(overrideUser?: any) {
     return R * c; // in meters
   };
 
+  const clockOpConfig = systemSettings.clockOpConfig || {};
+  const isGpsValidationBypassed = !!clockOpConfig.allowManualCheckIn;
   const gpsDistance = getDistanceInMeters(gpsCoordinates.latitude, gpsCoordinates.longitude, STORE_LAT, STORE_LNG);
-  const isWithinPerimeter = gpsDistance <= ALLOWED_RADIUS_METERS && gpsStatus === 'success';
+  const isWithinPerimeter = isGpsValidationBypassed ? true : (gpsDistance <= ALLOWED_RADIUS_METERS && gpsStatus === 'success');
 
   const syncOfflineQueue = async () => {
     let currentQueue: any[] = [];

@@ -175,7 +175,17 @@ class SubscriptionController extends Controller
 
         $confirmUrl = url('/api/subscriptions/simulated-confirm?pref_id=' . $prefId);
 
-        return response()->stream(function() use ($payload, $plan, $price, $confirmUrl) {
+        // Fetch platform bank config
+        $bankConfigRow = \DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'platform_bank_config')
+            ->first();
+        $bank = $bankConfigRow ? json_decode($bankConfigRow->value, true) : null;
+        $bankActive = $bank && ($bank['is_active'] ?? false);
+
+        return response()->stream(function() use ($payload, $plan, $price, $confirmUrl, $bank, $bankActive) {
+            $bankJson = json_encode($bank);
+            $hasBankStr = $bankActive ? 'true' : 'false';
             echo "
             <!DOCTYPE html>
             <html lang='es'>
@@ -183,31 +193,159 @@ class SubscriptionController extends Controller
                 <meta charset='UTF-8'>
                 <title>MercadoPago Sandbox - Talent360</title>
                 <script src='https://cdn.tailwindcss.com'></script>
+                <style>
+                    .tab-active { border-color: #2563eb; color: #2563eb; font-weight: 800; }
+                </style>
             </head>
-            <body class='bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen font-sans'>
-                <div class='bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6'>
-                    <div class='w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center font-black text-3xl text-white shadow-lg shadow-blue-500/20'>
-                        MP
+            <body class='bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen font-sans p-4'>
+                <div class='bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6'>
+                    <div class='flex items-center justify-between'>
+                        <div class='flex items-center gap-2'>
+                            <div class='w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-xl text-white shadow-lg shadow-blue-500/20'>
+                                MP
+                            </div>
+                            <span class='font-extrabold text-sm text-slate-300'>MercadoPago Sandbox</span>
+                        </div>
+                        <span class='bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full'>
+                            Modo Sandbox
+                        </span>
                     </div>
-                    <div class='space-y-2'>
-                        <h2 class='text-2xl font-black tracking-tight'>Pasarela MercadoPago (Pruebas)</h2>
-                        <p class='text-sm text-slate-400'>Estás pagando la suscripción de Talent360</p>
+
+                    <div class='space-y-2 text-center'>
+                        <h2 class='text-2xl font-black tracking-tight text-white'>Procesar Suscripción</h2>
+                        <p class='text-xs text-slate-400'>Estás pagando la suscripción de Talent360</p>
                     </div>
+
                     <div class='bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 text-left space-y-3 text-sm'>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Concepto:</span><span>Plan " . ucfirst($plan) . "</span></div>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Importe:</span><span class='text-emerald-400 font-black'>$" . $price . " MXN/mes</span></div>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Empresa:</span><span>" . htmlspecialchars($payload['company_name']) . "</span></div>
                         <div class='flex justify-between'><span class='text-slate-400 font-bold'>Admin Email:</span><span>" . htmlspecialchars($payload['admin_email']) . "</span></div>
                     </div>
-                    <div class='space-y-3'>
-                        <a href='{$confirmUrl}' class='block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-98 transition-all uppercase tracking-wider text-sm'>
-                            💳 Pagar Simulación
+
+                    <!-- Pestañas de método de pago -->
+                    <div class='flex border-b border-slate-700 text-xs font-semibold'>
+                        <button id='tab-card' onclick='switchTab(\"card\")' class='flex-1 py-3 text-center border-b-2 tab-active transition-all focus:outline-none'>
+                            💳 Tarjeta de Crédito/Débito
+                        </button>
+                        <button id='tab-spei' onclick='switchTab(\"spei\")' class='flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all focus:outline-none " . ($bankActive ? '' : 'hidden') . "'>
+                            🏦 Transferencia SPEI
+                        </button>
+                    </div>
+
+                    <!-- Contenido Pestaña Tarjeta -->
+                    <div id='content-card' class='space-y-4 animate-in fade-in duration-200'>
+                        <p class='text-xs text-slate-400 text-left leading-relaxed'>
+                            Simula un pago inmediato y exitoso utilizando una tarjeta bancaria en modo sandbox. Tu cuenta será activada de inmediato.
+                        </p>
+                        <a href='{$confirmUrl}' class='block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-98 transition-all uppercase tracking-wider text-sm text-center'>
+                            Confirmar Pago con Tarjeta
                         </a>
-                        <a href='" . env('FRONTEND_URL', 'http://localhost:5173') . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm'>
-                            Cancelar pago
+                    </div>
+
+                    <!-- Contenido Pestaña SPEI -->
+                    <div id='content-spei' class='hidden space-y-4 animate-in fade-in duration-200 text-left'>
+                        <div class='bg-slate-900/60 border border-slate-700 rounded-2xl p-4 space-y-3 text-xs'>
+                            <p class='text-[10px] font-bold uppercase tracking-wider text-blue-400'>Datos de Transferencia Bancaria</p>
+                            <div>
+                                <span class='text-slate-400 block'>Banco Receptor:</span>
+                                <span class='font-bold text-white text-sm' id='bank-name'></span>
+                            </div>
+                            <div>
+                                <span class='text-slate-400 block'>Beneficiario:</span>
+                                <span class='font-bold text-white text-sm' id='bank-holder'></span>
+                            </div>
+                            <div class='flex justify-between items-end'>
+                                <div>
+                                    <span class='text-slate-400 block'>CLABE Interbancaria:</span>
+                                    <span class='font-black text-emerald-400 text-base tracking-wider' id='bank-clabe'></span>
+                                </div>
+                                <button onclick='copyText(\"bank-clabe\")' class='text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-2 py-1 rounded transition-colors'>
+                                    Copiar
+                                </button>
+                            </div>
+                            <div class='flex justify-between items-end' id='card-container'>
+                                <div>
+                                    <span class='text-slate-400 block'>Número de Tarjeta:</span>
+                                    <span class='font-bold text-white' id='bank-card'></span>
+                                </div>
+                                <button onclick='copyText(\"bank-card\")' class='text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-2 py-1 rounded transition-colors'>
+                                    Copiar
+                                </button>
+                            </div>
+                            <div class='border-t border-slate-800 pt-2'>
+                                <span class='text-slate-400 block mb-1'>Instrucciones:</span>
+                                <p class='text-[11px] text-slate-300 leading-relaxed' id='bank-instructions'></p>
+                            </div>
+                        </div>
+
+                        <div class='space-y-2'>
+                            <a href='{$confirmUrl}&method=spei' class='block w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 active:scale-98 transition-all uppercase tracking-wider text-sm text-center'>
+                                ⏱ Registrar Transferencia Simulada
+                            </a>
+                            <p class='text-[10px] text-slate-400 text-center leading-relaxed'>
+                                Al hacer clic, registrarás la transferencia simulada. El sistema simulará la confirmación del SPEI y provisionará tu base de datos de inmediato.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <a href='" . env('FRONTEND_URL', 'http://localhost:5173') . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm text-center'>
+                            Cancelar pago y volver
                         </a>
                     </div>
                 </div>
+
+                <script>
+                    const hasBank = {$hasBankStr};
+                    const bankData = {$bankJson};
+
+                    if (hasBank && bankData) {
+                        document.getElementById('bank-name').innerText = bankData.bank_name || '';
+                        document.getElementById('bank-holder').innerText = bankData.account_holder || '';
+                        document.getElementById('bank-clabe').innerText = bankData.clabe || '';
+                        
+                        if (bankData.card_number) {
+                            document.getElementById('bank-card').innerText = bankData.card_number;
+                        } else {
+                            document.getElementById('card-container').classList.add('hidden');
+                        }
+
+                        document.getElementById('bank-instructions').innerText = bankData.instructions || 'Realiza tu transferencia SPEI e introduce tu referencia de pago para activar tu servicio.';
+                    }
+
+                    function switchTab(tab) {
+                        const tabCard = document.getElementById('tab-card');
+                        const tabSpei = document.getElementById('tab-spei');
+                        const contentCard = document.getElementById('content-card');
+                        const contentSpei = document.getElementById('content-spei');
+
+                        if (tab === 'card') {
+                            tabCard.classList.add('tab-active');
+                            tabCard.classList.remove('border-transparent', 'text-slate-400');
+                            tabSpei.classList.remove('tab-active');
+                            tabSpei.classList.add('border-transparent', 'text-slate-400');
+                            
+                            contentCard.classList.remove('hidden');
+                            contentSpei.classList.add('hidden');
+                        } else {
+                            tabSpei.classList.add('tab-active');
+                            tabSpei.classList.remove('border-transparent', 'text-slate-400');
+                            tabCard.classList.remove('tab-active');
+                            tabCard.classList.add('border-transparent', 'text-slate-400');
+                            
+                            contentSpei.classList.remove('hidden');
+                            contentCard.classList.add('hidden');
+                        }
+                    }
+
+                    function copyText(elementId) {
+                        const text = document.getElementById(elementId).innerText;
+                        navigator.clipboard.writeText(text).then(() => {
+                            alert('Copiado al portapapeles: ' + text);
+                        });
+                    }
+                </script>
             </body>
             </html>
             ";

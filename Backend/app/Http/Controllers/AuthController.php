@@ -120,13 +120,44 @@ class AuthController extends Controller
     {
         $request->validate([
             'provider' => 'required|string|in:google,apple,samsung',
-            'provider_id' => 'required|string',
+            'provider_id' => 'required_without:id_token|string',
+            'id_token' => 'nullable|string',
             'email' => 'nullable|email'
         ]);
 
         $provider = $request->provider;
         $providerId = $request->provider_id;
         $email = $request->email;
+        $name = $request->input('name');
+
+        if ($provider === 'google' && $request->has('id_token') && !empty($request->id_token)) {
+            try {
+                $verifyUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" . $request->id_token;
+                $response = \Illuminate\Support\Facades\Http::get($verifyUrl);
+                
+                if ($response->failed()) {
+                    return response()->json(['error' => 'Token de Google inválido o vencido.'], 401);
+                }
+
+                $googleData = $response->json();
+                
+                // Verificar que la audiencia coincida con el Client ID de Google si está configurado en services.php
+                $configuredClientId = config('services.google.client_id');
+                if ($configuredClientId && isset($googleData['aud']) && $googleData['aud'] !== $configuredClientId) {
+                    return response()->json(['error' => 'Validación de cliente de Google fallida.'], 401);
+                }
+
+                $email = $googleData['email'] ?? null;
+                $name = $googleData['name'] ?? null;
+                $providerId = $googleData['sub'] ?? null;
+
+                if (!$email || !$providerId) {
+                    return response()->json(['error' => 'Datos de Google incompletos.'], 400);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Error al validar con Google: ' . $e->getMessage()], 500);
+            }
+        }
 
         // Determine column name
         $column = $provider . '_id';
@@ -201,6 +232,32 @@ class AuthController extends Controller
             'tenant' => $isPlatformUser ? null : $user->tenant,
             'token' => $token
         ]);
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6'
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'admin',
+            'tenant_id' => null,
+            'is_active' => true
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Pre-registro exitoso',
+            'user' => $user,
+            'token' => $token
+        ], 201);
     }
 
     public function updateProfile(Request $request)

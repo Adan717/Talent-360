@@ -565,6 +565,11 @@ export default function RelojVisual({ isMobileFrame = false }: { isMobileFrame?:
   const isDark = userSettings.theme === 'dark';
  
   const renderGPSView = (dialSize = 76, isMobile = true) => {
+    const clockOpConfig = systemSettings?.clockOpConfig || {};
+    if (!!clockOpConfig.allowManualCheckIn) {
+      return null;
+    }
+
     if (gpsStatus === 'seeking') {
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center animate-pulse min-h-[220px]">

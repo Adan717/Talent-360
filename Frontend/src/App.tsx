@@ -44,7 +44,7 @@ const RootRoute = () => {
   }
 
   if (!hasToken) {
-    return <Navigate to="/login" replace />;
+    return <SaaSLandingPage />;
   }
 
   if (isLoadingDB && currentUser?.role === 'Loading') {

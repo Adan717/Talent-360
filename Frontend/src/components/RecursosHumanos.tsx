@@ -1573,7 +1573,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                         setEditingUser({
                                           ...editingUser, 
                                           role: allow ? 'supervisor' : 'empleado',
-                                          is_active: allow
+                                          is_active: true
                                         });
                                       }} 
                                       className="w-5 h-5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500/20" 

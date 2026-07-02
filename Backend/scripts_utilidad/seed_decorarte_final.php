@@ -30,6 +30,17 @@ try {
     );
  
     // Limpiar tablas para evitar duplicados en el seed de DecorArte
+    $demoEmails = [
+        'francisco@decorarte360.com',
+        'liz@decorarte360.com',
+        'joseline@decorarte360.com',
+        'hiraym@decorarte360.com',
+        'agnela@decorarte360.com',
+        'adriana@decorarte360.com',
+        'cristina@decorarte360.com',
+        'valeria@decorarte360.com',
+        'paloma@decorarte360.com'
+    ];
     DB::table('candidates')->where('tenant_id', 1)->delete();
     DB::table('vacancies')->where('tenant_id', 1)->delete();
     DB::table('academy_courses')->where('tenant_id', 1)->delete();
@@ -37,9 +48,10 @@ try {
     DB::table('routine_task')->delete();
     DB::table('routines')->where('tenant_id', 1)->delete();
     DB::table('tasks')->where('tenant_id', 1)->delete();
-    DB::table('employees')->where('tenant_id', 1)->delete();
-    DB::table('users')->where('tenant_id', 1)->delete();
-    DB::table('job_roles')->where('tenant_id', 1)->delete();
+    DB::table('employees')->where('tenant_id', 1)->whereIn('email', $demoEmails)->delete();
+    DB::table('users')->where('tenant_id', 1)->whereIn('email', $demoEmails)->delete();
+    DB::table('job_roles')->where('tenant_id', 1)->whereIn('id', [11, 12, 13, 14, 15, 16, 17])->delete();
+
  
     // 2. Insertar Puestos de DecorArte
     $rolesData = [
@@ -154,6 +166,17 @@ try {
             'shift_end' => '17:30',
             'meal_minutes' => 30,
             'rest_day' => 'Miércoles'
+        ],
+        [
+            'name' => 'Paloma',
+            'email' => 'paloma@decorarte360.com',
+            'role' => 'empleado',
+            'job_role_id' => 11, // Puesto: Administrador Gerente
+            'portador_llaves' => 'ninguno',
+            'shift_start' => '09:00',
+            'shift_end' => '17:00',
+            'meal_minutes' => 30,
+            'rest_day' => 'Domingo'
         ]
     ];
  

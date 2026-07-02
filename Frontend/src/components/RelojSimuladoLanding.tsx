@@ -603,7 +603,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       <div className="flex-1 overflow-y-auto px-4 pt-[74px] pb-[92px] flex flex-col justify-between gap-2 scrollbar-none relative z-10">
         
         {phoneTab === 'checador' && (
-          <div className="flex-grow flex flex-col justify-between gap-2 py-2">
+          <div className="flex-grow flex flex-col justify-start gap-1.5 py-1">
             
 
 
@@ -613,7 +613,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             </div>
 
             {/* Dial Central Principal (Importado de producción) */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'center' }} className="flex flex-col items-center justify-center shrink-0 my-auto">
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'center' }} className="flex flex-col items-center justify-center shrink-0 my-1.5">
               <DialPrincipal
                 isMobile={true}
                 isOpeningPremium={true}
@@ -640,7 +640,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             </div>
 
             {/* Alertas dinámicas bajo el dial */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-2 mt-2 shrink-0">
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-1.5 mt-1 shrink-0">
               <div className={`p-3 border rounded-2xl flex items-center gap-3 text-left ${
                 isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800'
               }`}>

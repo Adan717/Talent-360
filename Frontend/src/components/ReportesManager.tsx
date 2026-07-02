@@ -14,6 +14,7 @@ export default function ReportesManager() {
   const [payrollData, setPayrollData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedEmpId, setExpandedEmpId] = useState<number | null>(null);
 
   const totalBase = payrollData.reduce((acc, curr) => acc + (curr.base || 0), 0);
   const totalPenalties = payrollData.reduce((acc, curr) => acc + (curr.penalty || 0), 0);
@@ -23,7 +24,7 @@ export default function ReportesManager() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await axiosInstance.get('/admin/payroll');
+      const res = await axiosInstance.get('/admin/payroll?detailed=true');
       setPayrollData(res.data || []);
     } catch (e) {
       console.error(e);
@@ -230,33 +231,100 @@ export default function ReportesManager() {
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                         {payrollData.map((emp) => (
-                          <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-slate-800">{emp.name}</td>
-                            <td className="px-6 py-4 text-slate-500">{emp.role}</td>
-                            <td className="px-6 py-4 text-center">
-                              {emp.lates > 0 ? <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">{emp.lates}</span> : <span className="text-slate-300">-</span>}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              {emp.absences > 0 ? <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold">{emp.absences}</span> : <span className="text-slate-300">-</span>}
-                            </td>
-                            <td className="px-6 py-4 text-right text-slate-600">
-                              {emp.salary_pending ? (
-                                <span className="text-rose-500 font-semibold text-xs bg-rose-50 px-2 py-1 rounded">Pendiente</span>
-                              ) : (
-                                `$${emp.base?.toLocaleString('es-MX')}`
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-right text-rose-600 font-medium">
-                              {emp.salary_pending ? '-' : (emp.penalty > 0 ? `-$${emp.penalty.toLocaleString('es-MX')}` : '-')}
-                            </td>
-                            <td className="px-6 py-4 text-right font-black text-emerald-600 text-base">
-                              {emp.salary_pending ? (
-                                <span className="text-slate-400 text-xs italic">Ajustar Salario</span>
-                              ) : (
-                                `$${emp.net?.toLocaleString('es-MX')}`
-                              )}
-                            </td>
-                          </tr>
+                          <React.Fragment key={emp.id}>
+                            <tr 
+                              onClick={() => setExpandedEmpId(expandedEmpId === emp.id ? null : emp.id)}
+                              className="hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
+                              <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-2">
+                                <span className="text-[10px] text-slate-400">{expandedEmpId === emp.id ? '▼' : '▶'}</span>
+                                {emp.name}
+                              </td>
+                              <td className="px-6 py-4 text-slate-500">{emp.role}</td>
+                              <td className="px-6 py-4 text-center">
+                                {emp.lates > 0 ? <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">{emp.lates}</span> : <span className="text-slate-300">-</span>}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                {emp.absences > 0 ? <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold">{emp.absences}</span> : <span className="text-slate-300">-</span>}
+                              </td>
+                              <td className="px-6 py-4 text-right text-slate-600">
+                                {emp.salary_pending ? (
+                                  <span className="text-rose-500 font-semibold text-xs bg-rose-50 px-2 py-1 rounded">Pendiente</span>
+                                ) : (
+                                  `$${emp.base?.toLocaleString('es-MX')}`
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-right text-rose-600 font-medium">
+                                {emp.salary_pending ? '-' : (emp.penalty > 0 ? `-$${emp.penalty.toLocaleString('es-MX')}` : '-')}
+                              </td>
+                              <td className="px-6 py-4 text-right font-black text-emerald-600 text-base">
+                                {emp.salary_pending ? (
+                                  <span className="text-slate-400 text-xs italic">Ajustar Salario</span>
+                                ) : (
+                                  `$${emp.net?.toLocaleString('es-MX')}`
+                                )}
+                              </td>
+                            </tr>
+                            {expandedEmpId === emp.id && emp.days_details && (
+                              <tr>
+                                <td colSpan={7} className="px-8 py-5 bg-slate-50/50 border-t border-b border-slate-100">
+                                  <div className="space-y-4">
+                                    <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                                      <Bot size={14} className="text-emerald-500 animate-pulse" /> Detalle Diario de Asistencia LFT
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      {emp.days_details.map((day: any) => {
+                                        const hasCheckIn = day.entries.some((e: any) => e.type === 'check_in');
+                                        const hasCheckOut = day.entries.some((e: any) => e.type === 'check_out');
+                                        return (
+                                          <div key={day.date} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-xs space-y-3">
+                                            <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                              <span className="font-extrabold text-slate-700 capitalize">{day.day_name}</span>
+                                              <span className="text-[10px] text-slate-400 font-bold">{day.date}</span>
+                                            </div>
+                                            
+                                            {day.is_rest_day ? (
+                                              <div className="text-[10.5px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded inline-block">Día de Descanso</div>
+                                            ) : hasCheckIn ? (
+                                              <div className="space-y-1.5">
+                                                <div className="flex flex-col gap-1 text-slate-500 text-[10.5px]">
+                                                  <span>🕒 Entrada: <strong>{day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</strong></span>
+                                                  <span>🕒 Salida: <strong>{day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</strong></span>
+                                                </div>
+                                                {/* Excesos */}
+                                                {day.entries.filter((e: any) => e.type === 'meal_end').map((e: any) => {
+                                                  const d = JSON.parse(e.details || '{}');
+                                                  if (d.duration_minutes && d.duration_minutes > 60) {
+                                                    return (
+                                                      <div key={e.id} className="text-[9.5px] text-rose-500 font-bold bg-rose-50/50 p-1.5 rounded-lg border border-rose-100">
+                                                        ⚠️ Exceso Comida: {d.duration_minutes - 60} min
+                                                      </div>
+                                                    );
+                                                  }
+                                                  return null;
+                                                })}
+                                              </div>
+                                            ) : (
+                                              <div className="text-[10.5px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded inline-block">Falta / Inasistencia</div>
+                                            )}
+                                            
+                                            <div className="flex justify-between items-center text-[10px] pt-2 border-t border-slate-100">
+                                              <span className="text-slate-400">Firma Diaria:</span>
+                                              <span className={`font-extrabold px-2 py-0.5 rounded-full ${
+                                                day.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                              }`}>
+                                                {day.approval_status === 'approved' ? 'Firmado' : 'Pendiente'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         ))}
                       </tbody>
                     </table>

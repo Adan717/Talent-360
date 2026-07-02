@@ -6,6 +6,7 @@ import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';
 import Academia from './Academia';
 import Evaluacion360 from './Evaluacion360';
+import NominaColaborador from './NominaColaborador';
 import axiosInstance from '../../lib/axios';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import { MobileBottomNav } from './MobileBottomNav';
@@ -3150,6 +3151,9 @@ export default function RelojVisual({
                   {phoneTab === 'academia' && (
                     <Academia onBack={() => setPhoneTab('checador')} />
                   )}
+                  {phoneTab === 'nomina' && (
+                    <NominaColaborador isDark={isDark} />
+                  )}
                   {phoneTab === 'evaluacion360' && (
                     <Evaluacion360 onBack={() => setPhoneTab('herramientas')} />
                   )}
@@ -3537,6 +3541,18 @@ export default function RelojVisual({
               isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-250 shadow-sm'
             }`}>
               <Academia onBack={() => setPhoneTab('checador')} />
+            </div>
+          )}
+
+          {/* Desktop Nómina */}
+          {phoneTab === 'nomina' && (
+            <div className={`w-full mx-auto border flex flex-col animate-fade-in-up p-6 md:p-8 rounded-3xl max-w-4xl transition-colors ${
+              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-250 shadow-sm'
+            }`}>
+              <h3 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
+                <span>💵</span> Resumen y Liquidación de Pagos
+              </h3>
+              <NominaColaborador isDark={isDark} />
             </div>
           )}
 

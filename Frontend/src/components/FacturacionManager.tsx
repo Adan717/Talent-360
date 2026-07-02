@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, FileText, CheckCircle2, AlertCircle, 
   Upload, Key, Clock, ShieldCheck, Download, Trash2, 
-  RefreshCw, CheckCircle, BarChart3, Receipt, Settings2, FileCode, CheckSquare
+  RefreshCw, CheckCircle, BarChart3, Receipt, Settings2, FileCode, CheckSquare, Printer
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
@@ -39,6 +39,43 @@ export const FacturacionManager = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados de nómina y ticket LFT
+  const [payrollSummary, setPayrollSummary] = useState<any[]>([]);
+  const fetchPayrollSummary = async () => {
+    try {
+      const res = await axiosInstance.get('/admin/payroll');
+      setPayrollSummary(res.data || []);
+    } catch (e) {
+      console.error("Error al obtener resúmenes de nómina", e);
+    }
+  };
+
+  const handlePrintTicket = async (employeeId: number) => {
+    try {
+      const response = await axiosInstance.get(`/admin/payroll/ticket/${employeeId}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ticket_nomina_${employeeId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Error al descargar el ticket de 80 mm.');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'timbrado') {
+      fetchPayrollSummary();
+    }
+  }, [activeTab]);
 
   // Cargar datos fiscales guardados en el tenant
   useEffect(() => {
@@ -513,8 +550,9 @@ export const FacturacionManager = () => {
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">RFC / CURP</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Salario Base</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Percepciones / Deducciones</th>
+                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Firma Colaborador</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado Timbrado</th>
-                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider text-center">Descargar CFDI</th>
+                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150">
@@ -522,6 +560,7 @@ export const FacturacionManager = () => {
                     const isSelected = selectedEmployees.includes(emp.id);
                     const status = payrollStatus[emp.id];
                     const baseSalary = emp.base_salary || 8500.00;
+                    const summary = payrollSummary.find(p => p.id === emp.id);
                     
                     return (
                       <tr 
@@ -564,6 +603,17 @@ export const FacturacionManager = () => {
                           <div>➖ Retención IMSS: ${ (baseSalary * 0.035).toFixed(2) }</div>
                         </td>
                         <td className="py-4 px-6">
+                          {summary?.approval_status === 'approved_by_employee' || summary?.approval_status === 'finalized' ? (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50">
+                              🟢 Aceptado
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
+                              🟡 Pendiente
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6">
                           {!status ? (
                             <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
                               Pendiente Timbrar
@@ -584,24 +634,31 @@ export const FacturacionManager = () => {
                           )}
                         </td>
                         <td className="py-4 px-6 text-center">
-                          {status?.status === 'success' ? (
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                title="Descargar PDF"
-                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
-                              >
-                                <Download size={12} />
-                              </button>
-                              <button
-                                title="Ver XML"
-                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
-                              >
-                                <FileCode size={12} />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-semibold">-</span>
-                          )}
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handlePrintTicket(emp.id)}
+                              title="Imprimir Ticket 80mm"
+                              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
+                            >
+                              <Printer size={12} />
+                            </button>
+                            {status?.status === 'success' ? (
+                              <>
+                                <button
+                                  title="Descargar PDF"
+                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
+                                >
+                                  <Download size={12} />
+                                </button>
+                                <button
+                                  title="Ver XML"
+                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
+                                >
+                                  <FileCode size={12} />
+                                </button>
+                              </>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     );

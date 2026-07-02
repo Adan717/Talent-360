@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckSquare, GraduationCap } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, DollarSign } from 'lucide-react';
 
 export interface MobileBottomNavProps {
   phoneTab: string;
@@ -43,6 +43,16 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark }:
       >
         <GraduationCap size={22} className={phoneTab === 'academia' ? 'text-[#8a2be2]' : ''} />
         <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Academia</span>
+      </button>
+
+      <button 
+        onClick={() => { setInnerTool(null); setPhoneTab('nomina'); }}
+        className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
+          phoneTab === 'nomina' ? 'text-[#8a2be2] font-extrabold scale-105' : 'hover:text-slate-850 dark:hover:text-slate-200'
+        }`}
+      >
+        <DollarSign size={22} className={phoneTab === 'nomina' ? 'text-[#8a2be2]' : ''} />
+        <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Nómina</span>
       </button>
     </nav>
   );

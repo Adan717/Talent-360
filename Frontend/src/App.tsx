@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, GraduationCap, Clock, 
   CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase,
   FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User,
-  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt
+  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale
 } from 'lucide-react';
 import { useAppStore } from './store/useAppStore';
 import axiosInstance from './lib/axios';
@@ -26,6 +26,7 @@ const ReportesManager = lazy(() => import('./components/ReportesManager'));
 const SaaSAccountSettings = lazy(() => import('./components/SaaSAccountSettings').then(m => ({ default: m.SaaSAccountSettings })));
 const GestorDocumentos = lazy(() => import('./components/GestorDocumentos').then(module => ({ default: module.GestorDocumentos })));
 const FacturacionManager = lazy(() => import('./components/FacturacionManager').then(m => ({ default: m.FacturacionManager })));
+const LftManager = lazy(() => import('./components/LftManager'));
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
 import { SaaSPlatformAdmin } from './components/SaaSPlatformAdmin';
@@ -177,7 +178,7 @@ function MainLayout() {
     }
     
     if (activeTier === 'pro') {
-      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'];
+      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal', 'lft'];
       return activeMods.includes(targetModuleId);
     }
     
@@ -283,6 +284,15 @@ function MainLayout() {
       icon: <Terminal size={20} />,
       color: 'bg-slate-100 text-slate-800 border-slate-200',
       minTier: 'freemium',
+      version: 'v1.0'
+    },
+    {
+      id: 'lft',
+      title: 'Ley Federal del Trabajo',
+      desc: 'Reglamento y tolerancias',
+      icon: <Scale size={20} />,
+      color: 'bg-amber-50 text-amber-650 border-amber-100',
+      minTier: 'pro',
       version: 'v1.0'
     },
     {
@@ -692,6 +702,7 @@ function MainLayout() {
             {activeModule === 'reloj2' && <RelojChecador2 />}
             {activeModule === 'reportes' && <ReportesManager />}
             {activeModule === 'matrix' && <PanelSimulador />}
+            {activeModule === 'lft' && <LftManager />}
             {activeModule === 'settings' && <SaaSAccountSettings initialTab={settingsTab} />}
           </Suspense>
         </div>

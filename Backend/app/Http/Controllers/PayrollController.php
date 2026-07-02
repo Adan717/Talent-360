@@ -3,13 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
+use App\Models\Employee;
 use App\Models\TimeEntry;
 use Carbon\Carbon;
-use App\Enums\UserRole;
-use App\Models\PayrollPolicy;
-
-
+use App\Services\ClockService;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -17,81 +14,78 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PayrollController extends Controller
 {
-    private function calculatePayrollData()
+    protected ClockService $clockService;
+
+    public function __construct(ClockService $clockService)
     {
-        // Obtener todos los empleados activos del tenant
-        $employees = \App\Models\Employee::where('is_active_employee', '!=', false)
-            ->with('user')
-            ->get();
+        $this->clockService = $clockService;
+    }
 
-        // Buscar la política de nómina del tenant actual
-        $policy = PayrollPolicy::where('tenant_id', auth()->user()->tenant_id)->first();
-        $latePenalty = $policy ? $policy->late_penalty : 250;
-        $absencePenalty = $policy ? $policy->absence_penalty : 1000;
+    private function getPeriodDates(Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
-        $payroll = [];
-
-        foreach ($employees as $employee) {
-            // Salario base de la quincena (si es quincenal, supongamos que es el base_salary mensual / 2, o directo base_salary si es por periodo. Si base_salary no existe, usamos $employee->salary).
-            $baseSalary = $employee->base_salary ?? $employee->salary;
-            $salaryPending = ($baseSalary === null || (float)$baseSalary <= 0);
-            if ($salaryPending) {
-                $baseSalary = null;
-            }
-            
-            // Consultar las entradas de tiempo en el rango (por defecto últimos 15 días)
-            $startDate = Carbon::now()->subDays(15)->startOfDay();
-            $endDate = Carbon::now()->endOfDay();
-
-            $entries = TimeEntry::where('user_id', $employee->user_id)
-                ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-                ->get();
-
-            // Calcular retardos
-            $latesCount = $entries->where('type', 'check_in')->where('is_late', true)->count();
-            $lateMinutes = $entries->where('type', 'check_in')->sum('late_minutes');
-
-            // Calcular faltas
-            $daysWithAttendance = $entries->pluck('date')->unique()->count();
-            
-            if ($daysWithAttendance > 0) {
-                $expectedWorkingDays = 12;
-                $absencesCount = max(0, $expectedWorkingDays - $daysWithAttendance);
-            } else {
-                $absencesCount = 1;
-            }
-
-            // Penalización dinámica según política
-            $penalty = ($latesCount * $latePenalty) + ($absencesCount * $absencePenalty);
-
-            // Evitar salarios negativos
-            $netPay = $salaryPending ? null : max(0, $baseSalary - $penalty);
-
-            $payroll[] = [
-                'id' => $employee->user_id ?? $employee->id,
-                'name' => $employee->name,
-                'role' => $employee->role ?? 'Colaborador',
-                'lates' => $latesCount,
-                'absences' => $absencesCount,
-                'base' => $salaryPending ? null : (float)$baseSalary,
-                'penalty' => (float)$penalty,
-                'net' => $salaryPending ? null : (float)$netPay,
-                'salary_pending' => $salaryPending
-            ];
+        if (!$startDate || !$endDate) {
+            // Predeterminado a la semana actual (Lunes a Domingo)
+            $now = Carbon::now();
+            $startDate = $now->copy()->startOfWeek()->toDateString();
+            $endDate = $now->copy()->endOfWeek()->toDateString();
         }
 
-        return $payroll;
+        return [$startDate, $endDate];
+    }
+
+    private function calculatePayrollData(Request $request)
+    {
+        // Obtener todos los empleados activos del tenant
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $employees = Employee::where('tenant_id', $tenantId)
+            ->where('is_active_employee', '!=', false)
+            ->get();
+
+        [$startDate, $endDate] = $this->getPeriodDates($request);
+
+        $payrollList = [];
+
+        foreach ($employees as $employee) {
+            $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
+            $payrollRow = [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'role' => $employee->role ?? 'Colaborador',
+                'lates' => $payroll['incidents']['lates'],
+                'absences' => $payroll['incidents']['total_absences'],
+                'base' => $payroll['salary']['base'],
+                'penalty' => $payroll['deductions_breakdown']['total'],
+                'net' => $payroll['salary']['net'],
+                'salary_pending' => ($payroll['salary']['base'] === null || $payroll['salary']['base'] <= 0),
+                'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
+                'approval_status' => $payroll['approval']['status']
+            ];
+
+            if ($request->query('detailed') === 'true') {
+                $payrollRow['days_details'] = $payroll['days_details'];
+                $payrollRow['incidents'] = $payroll['incidents'];
+                $payrollRow['deductions_breakdown'] = $payroll['deductions_breakdown'];
+            }
+
+            $payrollList[] = $payrollRow;
+        }
+
+        return $payrollList;
     }
 
     public function getPayrollData(Request $request)
     {
-        return response()->json($this->calculatePayrollData());
+        return response()->json($this->calculatePayrollData($request));
     }
 
     public function exportReport(Request $request)
     {
         $format = $request->query('format', 'xlsx');
-        $payroll = $this->calculatePayrollData();
+        $payroll = $this->calculatePayrollData($request);
+        [$startDate, $endDate] = $this->getPeriodDates($request);
 
         $totalBase = 0;
         $totalPenalties = 0;
@@ -108,12 +102,14 @@ class PayrollController extends Controller
                 'payroll' => $payroll,
                 'totalBase' => $totalBase,
                 'totalPenalties' => $totalPenalties,
-                'totalNet' => $totalNet
+                'totalNet' => $totalNet,
+                'startDate' => $startDate,
+                'endDate' => $endDate
             ]);
-            return $pdf->download('prenomina_' . now()->format('Y-m-d') . '.pdf');
+            return $pdf->download('prenomina_' . $startDate . '_' . $endDate . '.pdf');
         }
 
-        // Default to Excel/XLSX
+        // Predeterminado a Excel/XLSX
         $exportData = [];
         foreach ($payroll as $emp) {
             $exportData[] = [
@@ -124,6 +120,7 @@ class PayrollController extends Controller
                 $emp['salary_pending'] ? 'Pendiente' : $emp['base'],
                 $emp['salary_pending'] ? 0 : $emp['penalty'],
                 $emp['salary_pending'] ? 'Pendiente' : $emp['net'],
+                $emp['approval_status']
             ];
         }
 
@@ -132,16 +129,44 @@ class PayrollController extends Controller
             public function __construct(array $data) { $this->data = $data; }
             public function array(): array { return $this->data; }
             public function headings(): array {
-                return ["Colaborador", "Puesto", "Retardos", "Faltas", "Salario Base", "Penalización", "Neto a Pagar"];
+                return ["Colaborador", "Puesto", "Retardos", "Faltas", "Salario Base", "Penalización", "Neto a Pagar", "Firma Empleado"];
             }
-        }, 'prenomina_' . now()->format('Y-m-d') . '.xlsx');
+        }, 'prenomina_' . $startDate . '_' . $endDate . '.xlsx');
     }
 
     public function approvePayroll(Request $request)
     {
         return response()->json([
             'status' => 'success',
-            'message' => 'Nómina aprobada y timbrada con éxito'
+            'message' => 'Nómina aprobada y lista para timbrar.'
         ]);
+    }
+
+    /**
+     * Descarga el ticket de nómina de 80 mm para el empleado especificado.
+     */
+    public function printTicket(Request $request, $employeeId)
+    {
+        try {
+            $tenantId = auth()->user()->tenant_id ?? 1;
+            $employee = Employee::where('tenant_id', $tenantId)->where('id', $employeeId)->firstOrFail();
+            [$startDate, $endDate] = $this->getPeriodDates($request);
+
+            $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
+
+            $pdf = Pdf::loadView('reports.ticket', [
+                'payroll' => $payroll
+            ]);
+
+            // Formato de papel ticket 80mm (80 mm por 200 mm)
+            $pdf->setPaper([0, 0, 226.77, 566.92]); 
+
+            return $pdf->download('ticket_nomina_' . $employee->id . '_' . now()->format('Ymd') . '.pdf');
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 }

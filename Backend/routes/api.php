@@ -32,6 +32,8 @@ use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\TeamChatController;
 use App\Http\Controllers\IncidentReportController;
 use App\Http\Controllers\KeyTransferController;
+use App\Http\Controllers\LftSettingController;
+use App\Http\Controllers\EmployeePayrollController;
 
 
 Route::prefix('v1')->middleware('device.security')->group(function () {
@@ -170,11 +172,16 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
         Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
 
+        // Ley Federal del Trabajo (LFT) settings
+        Route::get('/admin/lft-settings', [LftSettingController::class, 'getSettings']);
+        Route::post('/admin/lft-settings', [LftSettingController::class, 'saveSettings']);
+
         // Nómina y Reportes Avanzados
         Route::middleware('tenant.module:reportes')->group(function () {
             Route::get('/admin/payroll', [PayrollController::class, 'getPayrollData']);
             Route::get('/admin/reports/export', [PayrollController::class, 'exportReport']);
             Route::post('/admin/payroll/approve', [PayrollController::class, 'approvePayroll']);
+            Route::get('/admin/payroll/ticket/{id}', [PayrollController::class, 'printTicket']);
         });
 
         // Onboarding (Administración e Invitaciones)
@@ -214,6 +221,12 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // 3. empleado (General - Operaciones de Colaboradores Autenticados)
     // =========================================================================
     Route::middleware(['auth:sanctum', 'role:empleado,employee,admin,supervisor,platform_admin', 'tenant.active'])->group(function () {
+        // Colaborador - Flujo de Aprobación de Asistencias y Nómina
+        Route::get('/employee/daily-records', [EmployeePayrollController::class, 'getDailyRecords']);
+        Route::post('/employee/daily-records/approve', [EmployeePayrollController::class, 'approveDailyRecord']);
+        Route::get('/employee/payroll-weekly', [EmployeePayrollController::class, 'getPayrollWeekly']);
+        Route::post('/employee/payroll-weekly/approve', [EmployeePayrollController::class, 'approvePayrollWeekly']);
+
         // Sesión
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);

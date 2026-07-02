@@ -14,7 +14,7 @@ import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 const moduleAudits = [
   {
     id: 'rrhh',
-    name: 'Directorio HR',
+    name: 'Recursos Humanos',
     score: 9,
     description: 'Gestión de expedientes de colaboradores, contratos e información básica de empleados.',
     details: {
@@ -26,7 +26,7 @@ const moduleAudits = [
   },
   {
     id: 'reloj',
-    name: 'Reloj Checador (PWA)',
+    name: 'Reloj Checador (Original)',
     score: 8,
     description: 'Registro de asistencia, turnos, geolocalización GPS y verificación facial selfie.',
     details: {

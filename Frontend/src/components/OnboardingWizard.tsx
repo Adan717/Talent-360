@@ -19,7 +19,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { fetchState, updateSetting, currentUser, setCurrentUser, isModuleUnlocked, globalRoles } = useAppStore();
 
   const activePlanModules = [
-    { id: 'rrhh', name: 'Directorio HR', icon: Users, tag: 'Gratis', color: 'emerald' },
+    { id: 'rrhh', name: 'Recursos Humanos', icon: Users, tag: 'Gratis', color: 'emerald' },
     { id: 'reloj', name: 'Reloj Checador (PWA)', icon: Clock, tag: 'Gratis', color: 'emerald' },
     { id: 'operativo', name: 'Bolsa de Trabajo', icon: Briefcase, tag: 'Gratis', color: 'emerald' },
     { id: 'ats', name: 'Reclutamiento ATS', icon: UserPlus, tag: 'Prueba', color: 'indigo' },

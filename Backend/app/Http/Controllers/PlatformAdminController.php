@@ -727,7 +727,7 @@ class PlatformAdminController extends Controller
         return response()->json([
             [
                 'id' => 'rrhh',
-                'name' => 'Directorio HR',
+                'name' => 'Recursos Humanos',
                 'score' => $hrScore,
                 'description' => 'Gestión de expedientes de colaboradores, contratos e información básica de empleados.',
                 'details' => [

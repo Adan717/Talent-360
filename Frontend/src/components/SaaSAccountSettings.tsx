@@ -1043,7 +1043,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     {configuringModule && (() => {
                       const mapModuleToTab = (moduleName: string) => {
                         switch (moduleName) {
+                          case 'Recursos Humanos':
                           case 'Directorio HR': return 'onboarding';
+                          case 'Reloj':
                           case 'Reloj Checador':
                           case 'Reloj Checador (Original)':
                           case 'Reloj Checador 2':

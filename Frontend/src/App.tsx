@@ -193,7 +193,7 @@ function MainLayout() {
       icon: <LayoutDashboard size={20} />,
       color: 'bg-blue-50 text-blue-600 border-blue-100',
       minTier: 'freemium',
-      version: 'v2.1'
+      version: 'v3.0'
     },
     {
       id: 'rrhh',
@@ -202,7 +202,7 @@ function MainLayout() {
       icon: <Users size={20} />,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
       minTier: 'freemium',
-      version: 'v3.0'
+      version: 'v3.1'
     },
     {
       id: 'reloj',
@@ -220,7 +220,7 @@ function MainLayout() {
       icon: <Clock size={20} />,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       minTier: 'freemium',
-      version: 'v4.2'
+      version: 'v4.3'
     },
     {
       id: 'operativo',

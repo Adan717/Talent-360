@@ -229,6 +229,38 @@ export default function PanelSimulador() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [simIntervalMs, setSimIntervalMs] = useState(1000); // Frecuencia por defecto de 1s (1000ms)
+  const [resetKey, setResetKey] = useState(0);
+
+  const parseMinsToTime = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const displayH = h > 12 ? h - 12 : h;
+    return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
+  };
+
+  const getUserKeysIcon = (userId: number) => {
+    try {
+      const isSandbox = useAppStore.getState().isSandboxMode;
+      const savedAss = localStorage.getItem('store_opening_assignments');
+      const assignments = savedAss ? JSON.parse(savedAss) : (
+        isSandbox ? [
+          { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
+          { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
+          { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
+        ] : [
+          { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
+          { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
+          { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
+        ]
+      );
+      const match = assignments.find((a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
+      if (match) {
+        return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
+      }
+    } catch {}
+    return '';
+  };
 
   useEffect(() => {
      // Polling de 5 segundos para mantener la QA Matrix sincronizada con los fichajes reales del backend
@@ -252,11 +284,16 @@ export default function PanelSimulador() {
         setGlobalSimTime((prev: number) => {
           const nextTime = prev + globalSimSpeed;
           
-          // Watchdog: Alerta de retraso de apertura a las 8:15 AM (495 minutos)
-          if (!hasAlertedStoreDelay && nextTime >= 495 && storeStatus === 'closed') {
+          // Watchdog: Alerta de retraso de apertura basado en storeSchedule.openTime (tolerancia de 15 minutos)
+          const storeOpenTime = useAppStore.getState().systemSettings?.storeSchedule?.openTime || '08:00';
+          const openTimeParts = storeOpenTime.split(':');
+          const openTimeMins = parseInt(openTimeParts[0]) * 60 + parseInt(openTimeParts[1]);
+          const alertTimeMins = openTimeMins + 15; // 15 minutos de tolerancia
+          
+          if (!hasAlertedStoreDelay && nextTime >= alertTimeMins && storeStatus === 'closed') {
              addMatrixEvent(
                 'Alerta Crítica: Retraso de Apertura',
-                'El reloj cruzó las 8:15 AM y la sucursal aún permanece cerrada físicamente. Se recomienda contactar al Encargado.',
+                `El reloj cruzó las ${parseMinsToTime(alertTimeMins)} y la sucursal aún permanece cerrada físicamente. Se recomienda contactar al Encargado.`,
                 'error'
              );
              setHasAlertedStoreDelay(true);
@@ -297,21 +334,29 @@ export default function PanelSimulador() {
   const handleReset = async () => {
     if (confirm('¿Estás seguro de que deseas limpiar la bitácora y reiniciar el estado de todos los empleados a las 7:30 AM?')) {
       try {
+        localStorage.removeItem('clock_sync_queue');
+        localStorage.removeItem('clock_break_start_times');
+        localStorage.removeItem('clock_break_end_times');
+        localStorage.removeItem('clock_meal_start_times');
+        localStorage.removeItem('clock_meal_end_times');
+        localStorage.removeItem('clock_checkout_times');
+        localStorage.removeItem('store_daily_opening_status');
+        localStorage.removeItem('store_opening_assignments');
+        localStorage.removeItem('opening_checklist_completed');
+        localStorage.removeItem('opening_roll_call_completed');
+        for (let i = 0; i < 5; i++) {
+          localStorage.removeItem(`open_task_${i}`);
+        }
+
+        await axiosInstance.post('/sync/reset');
         await resetGlobalSimulation();
-        alert('Simulación y registros del día reiniciados con éxito.');
+        setResetKey(prev => prev + 1);
+        alert('Simulación y base de datos reiniciadas con éxito.');
       } catch (err) {
-        console.error('Error al reiniciar la simulación:', err);
-        alert('Error al conectar con el servidor backend para reiniciar la simulación.');
+        console.error('Error al reiniciar base de datos de simulación:', err);
+        alert('Error al conectar con el servidor backend para limpiar la base de datos.');
       }
     }
-  };
-
-  const parseMinsToTime = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    const ampm = h >= 12 ? 'pm' : 'am';
-    const displayH = h > 12 ? h - 12 : h;
-    return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
   };
 
   // Obtener roles únicos de la lista global de usuarios (solo activos)
@@ -629,7 +674,7 @@ export default function PanelSimulador() {
               </div>
             ) : (
               filteredUsers.map(user => (
-                <div key={user.id} className="flex flex-col items-center transition-all duration-300">
+                <div key={`${user.id}-${resetKey}`} className="flex flex-col items-center transition-all duration-300">
                   <div 
                     className="bg-slate-800 px-3 py-1.5 rounded-t-2xl border-t border-l border-r border-slate-700 text-center z-10 transition-all duration-300 truncate"
                     style={{ width: `${400 * phoneScale}px` }}
@@ -638,7 +683,7 @@ export default function PanelSimulador() {
                       className="text-emerald-400 font-bold truncate" 
                       style={{ fontSize: `${Math.max(10, Math.min(14, 14 * (phoneScale / 0.65)))}px` }}
                     >
-                      {user.name}
+                      {user.name}{getUserKeysIcon(user.id)}
                     </p>
                     <p 
                       className="text-slate-500 uppercase font-black tracking-widest truncate" 

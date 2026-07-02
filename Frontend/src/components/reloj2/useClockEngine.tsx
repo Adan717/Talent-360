@@ -455,10 +455,33 @@ export function useClockEngine(overrideUser?: any) {
   const [gpsStatus, setGpsStatus] = useState<'seeking' | 'success' | 'error'>('seeking');
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
 
+  const fetchIpLocation = async () => {
+    try {
+      console.log("Intentando obtener ubicación por IP...");
+      const res = await fetch('https://ipapi.co/json/');
+      if (!res.ok) throw new Error("Fallo en API de IP");
+      const data = await res.json();
+      if (data && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+        console.log("Ubicación IP obtenida con éxito:", data.latitude, data.longitude);
+        setGpsCoordinates({
+          latitude: data.latitude,
+          longitude: data.longitude
+        });
+        setGpsStatus('success');
+      } else {
+        throw new Error("Coordenadas de IP inválidas");
+      }
+    } catch (err) {
+      console.error("Fallo definitivo en geolocalización por IP:", err);
+      setGpsStatus('error');
+    }
+  };
+
   const requestGPS = () => {
     setGpsStatus('seeking');
     if (!navigator.geolocation) {
-      setGpsStatus('error');
+      console.warn("API de Geolocalización no soportada por el navegador, recurriendo a IP...");
+      fetchIpLocation();
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -470,16 +493,21 @@ export function useClockEngine(overrideUser?: any) {
         setGpsStatus('success');
       },
       (error) => {
-        console.error("GPS Error:", error);
-        setGpsStatus('error');
+        console.warn("Error en Geolocation nativa del navegador, intentando fallback por IP...", error);
+        fetchIpLocation();
       },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
   useEffect(() => {
-    requestGPS();
-  }, []);
+    const clockOpConfig = systemSettings.clockOpConfig || {};
+    if (clockOpConfig.gpsValidationEnabled === false) {
+      setGpsStatus('success');
+    } else {
+      requestGPS();
+    }
+  }, [systemSettings.clockOpConfig?.gpsValidationEnabled]);
 
   const [localBreakStartTimes, setLocalBreakStartTimes] = useState<Record<number, number>>(() => {
      try {
@@ -2255,12 +2283,12 @@ export function useClockEngine(overrideUser?: any) {
         return;
       }
     }
-    if (gpsStatus !== 'success' && !clockOpConfig.allowManualCheckIn) {
+    if (!isGpsValidationBypassed && gpsStatus !== 'success' && !clockOpConfig.allowManualCheckIn) {
       showCustomAlert("⚠️ Error de GPS: No se ha podido validar tu ubicación actual.");
       return;
     }
 
-    if (!isWithinPerimeter && !clockOpConfig.allowManualCheckIn) {
+    if (!isGpsValidationBypassed && !isWithinPerimeter && !clockOpConfig.allowManualCheckIn) {
       if (isOpeningPremium && storeStatus === 'closed' && currentUser.id === activeEncargadoId) {
         if (globalPermissions.includes('manage_contingencies')) {
           setShowAmnestyModal(true);
@@ -3142,6 +3170,7 @@ export function useClockEngine(overrideUser?: any) {
     gpsStatus,
     setGpsStatus,
     gpsDistance,
+    isGpsValidationBypassed,
     isWithinPerimeter,
     isSimulatedOffline,
     setIsSimulatedOffline,

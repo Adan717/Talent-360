@@ -215,7 +215,7 @@ function MainLayout() {
     },
     {
       id: 'reloj2',
-      title: 'Reloj Checador',
+      title: 'Reloj',
       desc: 'Control de asistencia inteligente',
       icon: <Clock size={20} />,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
@@ -247,7 +247,7 @@ function MainLayout() {
       icon: <Briefcase size={20} />,
       color: 'bg-purple-50 text-purple-600 border-purple-100',
       minTier: 'pro',
-      version: 'v1.1 (Beta)'
+      version: 'v1.1'
     },
     {
       id: 'academia',

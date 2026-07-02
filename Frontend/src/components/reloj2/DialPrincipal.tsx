@@ -42,6 +42,7 @@ interface DialPrincipalProps {
   renderGPSView?: (size: number, isMobile: boolean) => React.ReactNode;
   gpsStatus?: 'seeking' | 'success' | 'error';
   onRequestGPS?: () => void;
+  isGpsValidationBypassed?: boolean;
 }
 
 export default function DialPrincipal({
@@ -62,12 +63,13 @@ export default function DialPrincipal({
   parseTimeToMins,
   handleAction,
   gpsStatus,
-  onRequestGPS
+  onRequestGPS,
+  isGpsValidationBypassed = false
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
 
-  const isGpsError = gpsStatus === 'error';
+  const isGpsError = gpsStatus === 'error' && !isGpsValidationBypassed;
   const isGpsSeeking = gpsStatus === 'seeking';
 
   // Effectively disable the button visually and behaviorally (without block events)
@@ -258,51 +260,29 @@ export default function DialPrincipal({
             </button>
 
             {/* Modal Icon Header */}
-            <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
-              <AlertTriangle size={26} className="animate-bounce" />
+            <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
+              <MapPin size={22} className="animate-bounce" />
             </div>
 
             {/* Modal Title */}
-            <h3 className="text-base font-black text-slate-900 text-center tracking-tight mb-2">
-              Permiso de GPS Requerido
+            <h3 className="text-sm font-black text-slate-900 text-center tracking-tight mb-2">
+              Ubicación Requerida
             </h3>
             
             {/* Message */}
-            <p className="text-[11.5px] text-slate-505 text-center leading-relaxed mb-6 px-1 font-medium">
-              Para cumplir con las normas del SAT 2027 y validar tu perímetro de trabajo en DecorArte, es obligatorio activar la ubicación.
+            <p className="text-[10.5px] text-slate-500 text-center leading-relaxed mb-5 px-2 font-bold">
+              Para realizar tu registro, por favor activa los datos y la ubicación en la barra de ajustes de tu celular, luego presiona el botón de abajo.
             </p>
             
-            {/* Steps Container */}
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-[11px] space-y-3 mb-6">
-              <p className="font-extrabold text-slate-850 font-sans">
-                ¿Cómo dar permiso de ubicación?
-              </p>
-              
-              <div className="flex gap-2.5 text-slate-600 font-medium font-sans items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-650 flex items-center justify-center font-black text-[10px]">1</span>
-                <span className="mt-0.5 leading-snug">Haz clic en el candado 🔒 (junto a la URL del navegador).</span>
-              </div>
-              
-              <div className="flex gap-2.5 text-slate-600 font-medium font-sans items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-650 flex items-center justify-center font-black text-[10px]">2</span>
-                <span className="mt-0.5 leading-snug">Cambia el permiso de <strong>Ubicación</strong> a <strong>Permitir</strong>.</span>
-              </div>
-              
-              <div className="flex gap-2.5 text-slate-600 font-medium font-sans items-start">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-650 flex items-center justify-center font-black text-[10px]">3</span>
-                <span className="mt-0.5 leading-snug">Presiona el botón de abajo para reintentar.</span>
-              </div>
-            </div>
-            
             {/* Modal Actions */}
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2">
               <button 
                 type="button"
                 onClick={handleRetryGps}
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-violet-500/25 transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <MapPin size={14} />
-                Reintentar Solicitar GPS
+                <MapPin size={12} />
+                Reintentar Ubicación
               </button>
             </div>
           </div>

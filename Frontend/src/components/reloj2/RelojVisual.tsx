@@ -262,6 +262,7 @@ export default function RelojVisual({
     setGpsCoordinates,
     requestGPS,
     isWithinPerimeter,
+    isGpsValidationBypassed,
     gpsDistance,
     isSimulatedOffline,
     setIsSimulatedOffline,
@@ -2939,6 +2940,7 @@ export default function RelojVisual({
                     handleAction={handleAction}
                     gpsStatus={gpsStatus}
                     onRequestGPS={requestGPS}
+                    isGpsValidationBypassed={isGpsValidationBypassed}
                   />
                 </div>
                 
@@ -3339,6 +3341,7 @@ export default function RelojVisual({
                       handleAction={handleAction}
                       gpsStatus={gpsStatus}
                       onRequestGPS={requestGPS}
+                      isGpsValidationBypassed={isGpsValidationBypassed}
                     />
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}

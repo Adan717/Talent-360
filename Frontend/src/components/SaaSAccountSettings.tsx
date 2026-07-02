@@ -582,7 +582,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reloj Checador', 
+                    name: 'Reloj', 
                     desc: 'Control de asistencia inteligente', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
@@ -633,7 +633,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     desc: 'Bolsa de trabajo interna', 
                     tier: 'pro', 
                     active: isModuleUnlocked('ats'), 
-                    version: 'v1.1 (Beta)',
+                    version: 'v1.1',
                     icon: <Briefcase size={20} />,
                     iconColor: 'bg-purple-50 text-purple-600',
                     moduleId: 'ats',

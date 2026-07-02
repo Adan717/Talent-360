@@ -300,11 +300,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     }
 
     return (
-      <div className={`absolute top-2.5 left-2.5 right-2.5 z-[75] flex items-center justify-between px-3 py-2.5 text-left rounded-xl border transition-all duration-200 select-none ${
-        isDark 
-          ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-slate-100' 
-          : 'bg-white/95 backdrop-blur-md border-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.05)] text-slate-900'
-      }`}>
+      <div 
+        className={`absolute top-2.5 left-2.5 right-2.5 z-[75] flex items-center justify-between px-3 py-2.5 text-left rounded-xl border transition-all duration-200 select-none ${
+          isDark 
+            ? 'bg-slate-900/90 backdrop-blur-md border-slate-800 shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-slate-100' 
+            : 'bg-white/95 backdrop-blur-md border-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.05)] text-slate-900'
+        }`}
+        style={{ transform: 'scale(1.05)', transformOrigin: 'top center' }}
+      >
         <div className="flex items-center gap-2 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
             {icon && React.cloneElement(icon, { className: 'w-6 h-6' })}
@@ -605,10 +608,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
 
             {/* Barra Cronológica Proporcional Real */}
-            {renderBarraCronologica()}
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0">
+              {renderBarraCronologica()}
+            </div>
 
             {/* Dial Central Principal (Importado de producción) */}
-            <div className="flex flex-col items-center justify-center shrink-0 my-auto">
+            <div style={{ transform: 'scale(0.8)', transformOrigin: 'center' }} className="flex flex-col items-center justify-center shrink-0 my-auto">
               <DialPrincipal
                 isMobile={true}
                 isOpeningPremium={true}
@@ -850,7 +855,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       </div>
 
       {/* RENDER MOBILE BOTTOM NAVIGATION */}
-      <div className="absolute bottom-0 inset-x-0 z-30 shrink-0">
+      <div style={{ transform: 'scale(0.85)', transformOrigin: 'bottom center' }} className="absolute bottom-0 inset-x-0 z-30 shrink-0">
         <MobileBottomNav 
           phoneTab={phoneTab} 
           setPhoneTab={(tab) => {
@@ -1026,9 +1031,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="absolute inset-0 z-[100] flex items-center justify-center p-4">
           <div onClick={() => setActiveModal(null)} className="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
           
-          <div className={`relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up ${
-            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-850'
-          }`}>
+          <div 
+            className={`relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up ${
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-850'
+            }`}
+            style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
+          >
             <button 
               onClick={() => setActiveModal(null)}
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent font-bold text-sm"
@@ -1183,7 +1191,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
           <div onClick={() => setShowPromoGancho(false)} className="absolute inset-0 bg-slate-955/80 backdrop-blur-xs"></div>
           
-          <div className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10">
+          <div 
+            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10"
+            style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
+          >
             <button 
               onClick={() => setShowPromoGancho(false)}
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 cursor-pointer border-none bg-transparent font-bold text-sm"
@@ -1256,7 +1267,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
           <div onClick={() => setShowBlockProModal(null)} className="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
           
-          <div className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-850 text-white shadow-violet-500/10">
+          <div 
+            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-850 text-white shadow-violet-500/10"
+            style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
+          >
             <button 
               onClick={() => setShowBlockProModal(null)}
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 cursor-pointer border-none bg-transparent font-bold text-sm"

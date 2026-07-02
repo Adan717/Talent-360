@@ -26,7 +26,9 @@ class RecruitmentController extends Controller
 
         $vacancies = Vacancy::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->where('is_hidden', false)
+            ->where(function ($q) {
+                $q->where('is_hidden', false)->orWhereNull('is_hidden');
+            })
             ->with('jobRole:id,name')
             ->get();
 

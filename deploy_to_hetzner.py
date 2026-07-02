@@ -87,10 +87,10 @@ def main():
         run_remote_cmd(ssh, "chmod -R 777 /var/www/talent360/Backend/storage /var/www/talent360/Backend/bootstrap/cache")
         
         print("\n--- STEP 5: Rebuilding Frontend and restarting Backend containers ---")
-        # Rebuild frontend container so changes take effect immediately
-        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose up -d --build frontend")
         # Restart backend services to refresh mounts and reload code changes
         run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose restart backend backend-web reverb")
+        # Finally, restart frontend to clear Nginx DNS resolver cache of backend-web IP (prevent 502 Bad Gateway)
+        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose restart frontend")
         
         print("\nDeployment completed successfully!")
         

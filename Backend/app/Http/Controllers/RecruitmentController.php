@@ -45,12 +45,26 @@ class RecruitmentController extends Controller
             return $v;
         });
 
+        $customSettings = $tenant->portal_custom_settings_json ? json_decode($tenant->portal_custom_settings_json, true) : [];
+        $customSettings = array_merge([
+            'header_title' => '',
+            'header_subtitle' => '',
+            'header_bg_url' => '',
+            'footer_text' => '',
+            'contact_email' => '',
+            'contact_phone' => '',
+            'social_facebook' => '',
+            'social_instagram' => '',
+            'social_linkedin' => '',
+        ], $customSettings);
+
         return response()->json([
             'tenant' => [
                 'name' => $tenant->name,
                 'logo_url' => $tenant->logo_url ?: '',
                 'brand_color' => $tenant->brand_color ?: '#3b82f6',
                 'public_portal_enabled' => (bool)($tenant->public_portal_enabled ?? true),
+                'custom_settings' => $customSettings
             ],
             'vacancies' => $vacancies
         ]);
@@ -198,12 +212,26 @@ class RecruitmentController extends Controller
             return response()->json(['message' => 'No se encontró la información de la empresa.'], 404);
         }
 
+        $customSettings = $tenant->portal_custom_settings_json ? json_decode($tenant->portal_custom_settings_json, true) : [];
+        $customSettings = array_merge([
+            'header_title' => '',
+            'header_subtitle' => '',
+            'header_bg_url' => '',
+            'footer_text' => '',
+            'contact_email' => '',
+            'contact_phone' => '',
+            'social_facebook' => '',
+            'social_instagram' => '',
+            'social_linkedin' => '',
+        ], $customSettings);
+
         return response()->json([
             'name' => $tenant->name,
             'public_slug' => $tenant->public_slug ?: \Illuminate\Support\Str::slug($tenant->subdomain),
             'brand_color' => $tenant->brand_color ?: '#3b82f6',
             'logo_url' => $tenant->logo_url ?: '',
             'public_portal_enabled' => (bool)($tenant->public_portal_enabled ?? true),
+            'custom_settings' => $customSettings
         ]);
     }
 
@@ -219,14 +247,34 @@ class RecruitmentController extends Controller
             'brand_color' => 'nullable|string|max:50',
             'logo_url' => 'nullable|string|max:2048',
             'public_portal_enabled' => 'required|boolean',
+            'custom_settings' => 'nullable|array',
         ]);
 
-        $tenant->update([
+        $updateData = [
             'public_slug' => $request->public_slug,
             'brand_color' => $request->brand_color,
             'logo_url' => $request->logo_url,
             'public_portal_enabled' => $request->public_portal_enabled,
-        ]);
+        ];
+
+        if ($request->has('custom_settings')) {
+            $updateData['portal_custom_settings_json'] = json_encode($request->custom_settings);
+        }
+
+        $tenant->update($updateData);
+
+        $customSettings = $tenant->portal_custom_settings_json ? json_decode($tenant->portal_custom_settings_json, true) : [];
+        $customSettings = array_merge([
+            'header_title' => '',
+            'header_subtitle' => '',
+            'header_bg_url' => '',
+            'footer_text' => '',
+            'contact_email' => '',
+            'contact_phone' => '',
+            'social_facebook' => '',
+            'social_instagram' => '',
+            'social_linkedin' => '',
+        ], $customSettings);
 
         return response()->json([
             'message' => 'Configuración del portal público actualizada con éxito',
@@ -236,6 +284,7 @@ class RecruitmentController extends Controller
                 'brand_color' => $tenant->brand_color,
                 'logo_url' => $tenant->logo_url,
                 'public_portal_enabled' => (bool)$tenant->public_portal_enabled,
+                'custom_settings' => $customSettings
             ]
         ]);
     }

@@ -12,6 +12,7 @@ class Tenant extends Model
     protected $fillable = [
         'name', 'subdomain', 'plan', 'max_users',
         'public_slug', 'brand_color', 'logo_url', 'public_portal_enabled',
+        'portal_custom_settings_json',
         'subscription_status', 'trial_ends_at',
         'stripe_customer_id', 'stripe_subscription_id', 'stripe_price_id',
         'billing_plan_id', 'allowed_modules_json',

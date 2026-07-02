@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
-import { Briefcase, CalendarDays, CircleDollarSign, CheckCircle2, Building2, ArrowRight, X, Share2, Copy, Check, Send, ChevronDown } from 'lucide-react';
+import { Briefcase, CalendarDays, CircleDollarSign, CheckCircle2, Building2, ArrowRight, X, Share2, Copy, Check, Send, ChevronDown, Mail, Phone } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
+
+const Facebook = ({ size = 16 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+);
+const Instagram = ({ size = 16 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+);
+const Linkedin = ({ size = 16 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+);
 
 // Tipos base para la vista pública
 interface PublicVacancy {
@@ -185,6 +195,11 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
     );
   }
 
+  const customSettings = tenant.custom_settings || {};
+  const headerTitle = customSettings.header_title || `Únete a ${tenant.name}`;
+  const headerSubtitle = customSettings.header_subtitle || "No solo ofrecemos trabajo, construimos carreras. Encuentra tu lugar en nuestra familia.";
+  const headerBgUrl = customSettings.header_bg_url || "";
+
   return (
     <div className="w-full min-h-[calc(100vh-100px)] bg-slate-50 font-sans">
       <style dangerouslySetInnerHTML={{__html: `
@@ -222,9 +237,15 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
       `}} />
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-white text-slate-900 rounded-3xl p-12 text-center shadow-sm border border-slate-200 mb-12">
-        <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: tenant.brand_color || '#3b82f6' }}></div>
-        <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
+      <div 
+        className="relative overflow-hidden bg-white text-slate-900 rounded-3xl p-12 text-center shadow-sm border border-slate-200 mb-12 bg-cover bg-center"
+        style={{ 
+          backgroundImage: headerBgUrl ? `url(${headerBgUrl})` : undefined,
+        }}
+      >
+        {headerBgUrl && <div className="absolute inset-0 bg-slate-950/60 z-0"></div>}
+        <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: tenant.brand_color || '#3b82f6', zIndex: 10 }}></div>
+        <div className={`relative z-10 max-w-2xl mx-auto flex flex-col items-center ${headerBgUrl ? 'text-white' : 'text-slate-900'}`}>
           {/* Contenedor de Logo o Iniciales */}
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-slate-150 overflow-hidden bg-white">
             {tenant.logo_url ? (
@@ -253,11 +274,11 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
             </div>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight text-slate-900">
-            Únete a {tenant.name}
+          <h1 className={`text-4xl md:text-5xl font-black mb-4 tracking-tight ${headerBgUrl ? 'text-white' : 'text-slate-900'}`}>
+            {headerTitle}
           </h1>
-          <p className="text-lg text-slate-500 mb-8 font-medium">
-            No solo ofrecemos trabajo, construimos carreras. Encuentra tu lugar en nuestra familia.
+          <p className={`text-lg mb-8 font-medium ${headerBgUrl ? 'text-slate-200' : 'text-slate-500'}`}>
+            {headerSubtitle}
           </p>
           <button 
             className="btn-brand text-white px-8 py-3 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2"
@@ -358,6 +379,83 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
           </div>
         )})}
       </div>
+
+      {/* Footer Premium */}
+      <footer className="w-full bg-slate-900 text-slate-400 py-12 px-6 rounded-t-[2.5rem] mt-12 border-t border-slate-800 relative z-10">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Logo y Nombre */}
+          <div className="space-y-4 text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center border border-slate-800 shadow-sm shrink-0">
+                {tenant.logo_url ? (
+                  <img src={tenant.logo_url} alt={tenant.name} className="w-full h-full object-contain p-1" onError={(e) => { (e.target as any).style.display = 'none'; }} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white font-extrabold text-sm" style={{ backgroundColor: tenant.brand_color || '#3b82f6' }}>
+                    {tenant.name.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <span className="text-white font-black text-lg tracking-tight">{tenant.name}</span>
+            </div>
+            <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+              Descubre grandes oportunidades y únete a un equipo excepcional enfocado en el crecimiento profesional y personal.
+            </p>
+          </div>
+
+          {/* Información de Contacto */}
+          <div className="space-y-4 text-left">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider pl-1">Contacto</h4>
+            <div className="space-y-2.5 text-xs">
+              {customSettings.contact_email && (
+                <div className="flex items-center gap-2">
+                  <Mail size={14} className="text-brand" />
+                  <a href={`mailto:${customSettings.contact_email}`} className="hover:text-white transition-colors">{customSettings.contact_email}</a>
+                </div>
+              )}
+              {customSettings.contact_phone && (
+                <div className="flex items-center gap-2">
+                  <Phone size={14} className="text-brand" />
+                  <span className="text-slate-450">{customSettings.contact_phone}</span>
+                </div>
+              )}
+              {!customSettings.contact_email && !customSettings.contact_phone && (
+                <p className="text-slate-500 italic">No se ha especificado información de contacto.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Redes Sociales */}
+          <div className="space-y-4 text-left">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider pl-1">Redes Sociales</h4>
+            <div className="flex gap-2">
+              {customSettings.social_facebook && (
+                <a href={customSettings.social_facebook} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-slate-800 hover:bg-brand hover:text-white text-slate-400 rounded-xl transition-all shadow-sm flex items-center justify-center border border-slate-700/50">
+                  <Facebook size={16} />
+                </a>
+              )}
+              {customSettings.social_instagram && (
+                <a href={customSettings.social_instagram} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-slate-800 hover:bg-brand hover:text-white text-slate-400 rounded-xl transition-all shadow-sm flex items-center justify-center border border-slate-700/50">
+                  <Instagram size={16} />
+                </a>
+              )}
+              {customSettings.social_linkedin && (
+                <a href={customSettings.social_linkedin} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-slate-800 hover:bg-brand hover:text-white text-slate-400 rounded-xl transition-all shadow-sm flex items-center justify-center border border-slate-700/50">
+                  <Linkedin size={16} />
+                </a>
+              )}
+              {!customSettings.social_facebook && !customSettings.social_instagram && !customSettings.social_linkedin && (
+                <p className="text-slate-500 italic text-xs">Síguenos en nuestras plataformas oficiales.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Línea inferior de copyright */}
+        <div className="max-w-6xl mx-auto border-t border-slate-800/80 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
+          <span>{customSettings.footer_text || `© ${new Date().getFullYear()} ${tenant.name}. Todos los derechos reservados.`}</span>
+          <span className="flex items-center gap-1 font-semibold">Desarrollado con <span className="text-rose-500">♥</span> por <span className="text-white">Talent360</span></span>
+        </div>
+      </footer>
 
       {/* Modal de Detalles de Vacante */}
       {showDetailModal && selectedVacancy && (() => {

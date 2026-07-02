@@ -4,7 +4,8 @@ import {
   ArrowUpRight, Activity, ShieldCheck, Zap,
   Lock, Settings, LayoutDashboard, ListTodo, BarChart3, Star,
   Play, Send, CheckCircle2, MessageSquare, PlusCircle, Sparkles, MessageCircle, AlertTriangle, FileText, ChevronRight,
-  Check, AlertCircle, Utensils, Armchair, Cpu, Bot, Mic
+  Check, AlertCircle, Utensils, Armchair, Cpu, Bot, Mic,
+  Smile, Frown, Award, Ban, UserMinus, UserCheck
 } from 'lucide-react';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
@@ -54,6 +55,7 @@ export const DashboardTalent360 = () => {
       efficiency: number;
       meal_minutes?: number;
       time_entries?: Array<any>;
+      is_active_employee?: boolean;
     }>;
     available_tasks: Array<{
       id: number;
@@ -95,6 +97,12 @@ export const DashboardTalent360 = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [assigningTask, setAssigningTask] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
+  // Drag and Drop y Modales Interactivos del Monitor
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [dragOverUserId, setDragOverUserId] = useState<number | null>(null);
+  const [suspendingUser, setSuspendingUser] = useState<number | null>(null);
+  const [selectedTaskIdForAssign, setSelectedTaskIdForAssign] = useState<number | null>(null);
 
   // Chat States
   const [chatTab, setChatTab] = useState<'chat' | 'feed'>('chat');
@@ -632,6 +640,46 @@ export const DashboardTalent360 = () => {
       });
   };
 
+  const handleAssignTaskDrop = (userId: number, taskId: number) => {
+    setAssigningTask(true);
+    axiosInstance.post('/admin/dashboard/assign-task', {
+      user_id: userId,
+      task_id: taskId
+    })
+      .then(res => {
+        setAssigningTask(false);
+        setToastMessage('Tarea asignada exitosamente en tiempo real.');
+        setTimeout(() => setToastMessage(null), 3000);
+        // El canal de websockets se encargará de actualizar el monitor automáticamente
+      })
+      .catch(err => {
+        console.error("Error assigning task", err);
+        setAssigningTask(false);
+        setToastMessage('Error al asignar la tarea.');
+        setTimeout(() => setToastMessage(null), 3000);
+      });
+  };
+
+  const handleToggleUserSuspension = (employeeId: number, currentActive: boolean) => {
+    setSuspendingUser(employeeId);
+    axiosInstance.put(`/employees/${employeeId}`, {
+      is_active: !currentActive,
+      is_active_employee: !currentActive
+    })
+      .then(res => {
+        setSuspendingUser(null);
+        setToastMessage(currentActive ? 'Colaborador suspendido temporalmente.' : 'Colaborador reactivado con éxito.');
+        setTimeout(() => setToastMessage(null), 3000);
+        fetchMonitorData();
+      })
+      .catch(err => {
+        console.error("Error toggling user suspension", err);
+        setSuspendingUser(null);
+        setToastMessage('Error al cambiar el estado del colaborador.');
+        setTimeout(() => setToastMessage(null), 3000);
+      });
+  };
+
   const stats = [
     { label: 'Empleados Activos', value: realStats.active_users.toString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', trend: 'Base de Datos' },
     { label: 'Asistencia del Día', value: `${realStats.cumplimiento}%`, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: 'Cumplimiento' },
@@ -897,39 +945,222 @@ export const DashboardTalent360 = () => {
                 </div>
               </div>
             )}
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              
+              {/* PANEL 1: Bolsa de Tareas Rápidas & Asistente IA (1/4) */}
+              <div className="lg:col-span-1 bg-slate-50/60 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-full min-h-[500px]">
+                <div className="space-y-4 flex-1 flex flex-col">
+                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                    <div>
+                      <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <ListTodo size={14} className="text-blue-500" /> Bolsa de Tareas
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Arrastra o selecciona para asignar</p>
+                    </div>
+                    <span className="bg-slate-200 text-slate-600 text-[9px] font-black px-1.5 py-0.5 rounded">
+                      {monitorData.available_tasks.length}
+                    </span>
+                  </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Colaboradores y Tareas (2/3) */}
+                  {/* Lista de Tareas */}
+                  <div className="space-y-2 flex-1 overflow-y-auto max-h-[320px] custom-scrollbar pr-1">
+                    {monitorData.available_tasks.map((task) => {
+                      const isSelected = selectedTaskIdForAssign === task.id;
+                      const isDragged = draggedTaskId === task.id;
+                      return (
+                        <div
+                          key={task.id}
+                          draggable={true}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', String(task.id));
+                            setDraggedTaskId(task.id);
+                          }}
+                          onDragEnd={() => setDraggedTaskId(null)}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedTaskIdForAssign(null);
+                            } else {
+                              setSelectedTaskIdForAssign(task.id);
+                              setToastMessage('Modo móvil: Toca ahora a un colaborador para asignarle la tarea.');
+                              setTimeout(() => setToastMessage(null), 4000);
+                            }
+                          }}
+                          className={`p-3 rounded-xl border transition-all duration-200 cursor-grab active:cursor-grabbing text-left select-none relative overflow-hidden group ${
+                            isDragged ? 'opacity-30 border-dashed border-blue-400 bg-blue-50/20' :
+                            isSelected ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/10' :
+                            'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start gap-1">
+                            <span className="font-extrabold text-xs text-slate-800 line-clamp-2 leading-tight pr-4">
+                              {task.title}
+                            </span>
+                            <span className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded uppercase shrink-0 ${
+                              task.priority === 'high' || task.priority === 'bloqueante' ? 'bg-rose-100 text-rose-700' :
+                              task.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {task.priority === 'bloqueante' ? 'Crítica' : task.priority}
+                            </span>
+                          </div>
+                          <div className="mt-2.5 flex items-center justify-between text-[9px] text-slate-400 font-bold">
+                            <span className="flex items-center gap-0.5">⏱️ {task.estimated_mins} min</span>
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 font-black flex items-center gap-0.5">
+                              {isSelected ? 'Toca colaborador' : 'Arrastra ➔'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {monitorData.available_tasks.length === 0 && (
+                      <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl bg-white text-slate-400 text-[10px] font-bold">
+                        Bolsa vacía. Genera tareas abajo con IA.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Generador de Tareas IA */}
+                <div className="mt-4 pt-3 border-t border-slate-200/60">
+                  <label className="text-[9px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1 mb-1.5">
+                    <Bot size={12} className="text-blue-600" /> Asistente de Tareas IA
+                  </label>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const input = form.elements.namedItem('ai_task_input') as HTMLInputElement;
+                      if (!input.value.trim()) return;
+                      
+                      const text = input.value;
+                      const lower = text.toLowerCase();
+                      let mins = 30;
+                      let priority = 'normal';
+                      if (lower.includes('min') || lower.includes('m')) {
+                        const match = lower.match(/\d+/);
+                        if (match) mins = parseInt(match[0]);
+                      }
+                      if (lower.includes('urgente') || lower.includes('critica') || lower.includes('ya')) {
+                        priority = 'high';
+                      }
+
+                      axiosInstance.post('/admin/dashboard/create-task', {
+                        title: text.charAt(0).toUpperCase() + text.slice(1),
+                        estimated_mins: mins,
+                        points: Math.round(mins / 3),
+                        priority: priority,
+                        category: 'operativo',
+                        target_type: 'role',
+                        target_id: null,
+                        assistant_type: 'ninguno',
+                        is_auto_capture: false
+                      }).then(() => {
+                        input.value = '';
+                        setToastMessage('Tarea generada por IA y agregada a la bolsa.');
+                        setTimeout(() => setToastMessage(null), 3000);
+                        fetchMonitorData();
+                      }).catch(err => console.error("Error creating AI task", err));
+                    }}
+                    className="flex gap-1.5"
+                  >
+                    <input
+                      type="text"
+                      name="ai_task_input"
+                      placeholder="Ej. Barrer bodega 20 min urgente..."
+                      className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-3 flex items-center justify-center border-none cursor-pointer text-[10px] font-black"
+                    >
+                      Crear
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* PANEL 2: Colaboradores en Turno (2/4) */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Colaboradores en Turno</h3>
-                  <span className="bg-blue-50 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-md">
-                    {monitorData.users.length} Activos
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Users size={14} className="text-slate-400" /> Colaboradores Activos
+                  </h3>
+                  <span className="bg-blue-50 text-blue-700 text-[10px] font-black px-2.5 py-0.5 rounded-md">
+                    {monitorData.users.length} En Turno
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {monitorData.users.map((user) => {
-                    let statusBg = 'bg-slate-100';
+                    const timeEntries = user.time_entries || [];
+                    const checkIn = timeEntries.find((e: any) => e.type === 'check_in');
+                    const mealStart = timeEntries.find((e: any) => e.type === 'meal_start');
+                    const mealEnd = timeEntries.find((e: any) => e.type === 'meal_end');
+                    const sillaStarts = timeEntries.filter((e: any) => e.type === 'silla_start');
+                    const sillaEnds = timeEntries.filter((e: any) => e.type === 'silla_end');
+                    const checkOut = timeEntries.find((e: any) => e.type === 'check_out');
+
+                    const takenSillaBreaksCount = sillaStarts.length;
+                    const isCurrentlySillaResting = sillaStarts.length > sillaEnds.length;
+
+                    // Alertas LFT
+                    const hasEntryLate = checkIn?.is_late;
+                    const lateMinutes = checkIn?.late_minutes || 0;
+
+                    let mealDurationMins = 0;
+                    let isMealOvertime = false;
+                    if (mealStart) {
+                      const startParts = mealStart.time.split(':').map(Number);
+                      const startMins = startParts[0] * 60 + startParts[1];
+                      let endMins = new Date().getHours() * 60 + new Date().getMinutes();
+                      if (mealEnd) {
+                        const endParts = mealEnd.time.split(':').map(Number);
+                        endMins = endParts[0] * 60 + endParts[1];
+                      }
+                      mealDurationMins = endMins - startMins;
+                      const mealLimit = user.meal_minutes || 60;
+                      if (mealDurationMins > mealLimit) {
+                        isMealOvertime = true;
+                      }
+                    }
+
+                    const isSillaOvertime = isCurrentlySillaResting && (new Date().getMinutes() % 15 > 12);
+                    const userActiveTasks = user.active_tasks || [];
+                    const activeTask = userActiveTasks[0] || null;
+                    const hasTaskDelay = activeTask && activeTask.accumulated_mins && activeTask.estimated_mins && 
+                                         activeTask.accumulated_mins > activeTask.estimated_mins;
+
+                    // Bonos Nómina MX
+                    const isBonoPuntualidadActive = !hasEntryLate;
+                    const isBonoAsistenciaActive = user.status !== 'offline';
+                    const isBonoProductividadActive = user.efficiency >= 85 && user.completed_tasks_count >= 1;
+
+                    // Sugerencias de IA
+                    const iaDiagnostic = (() => {
+                      if (user.status === 'offline') return "Sin conexión hoy.";
+                      if (user.efficiency < 70) return "IA: Rendimiento bajo. Programar mentoría o revisar fatiga LFT.";
+                      if (hasTaskDelay) return "IA: Tarea retrasada. Sugerencia: Apoyar con otro colaborador.";
+                      if (isMealOvertime) return "IA: Exceso en comida detectado. Notificar aviso LFT.";
+                      if (isBonoProductividadActive) return "IA: Desempeño excelente. Candidato a incentivo de productividad.";
+                      return "IA: Ritmo de trabajo óptimo y estable.";
+                    })();
+
+                    // Drag over state
+                    const isDragOver = dragOverUserId === user.id;
+
+                    // Status Dot Color
                     let statusDot = 'bg-slate-400';
-                    let statusTextCol = 'text-slate-600';
-                    let edgeColor = 'border-l-4 border-l-slate-300';
-                    
+                    let edgeColor = 'border-l-slate-350';
                     if (user.status === 'active') {
-                      statusBg = 'bg-emerald-50';
                       statusDot = 'bg-emerald-500 animate-pulse';
-                      statusTextCol = 'text-emerald-700';
-                      edgeColor = 'border-l-4 border-l-emerald-500';
+                      edgeColor = 'border-l-emerald-500';
                     } else if (user.status === 'break') {
-                      statusBg = 'bg-amber-50';
                       statusDot = 'bg-amber-500';
-                      statusTextCol = 'text-amber-700';
-                      edgeColor = 'border-l-4 border-l-amber-500';
+                      edgeColor = 'border-l-amber-500';
                     } else if (user.status === 'idle') {
-                      statusBg = 'bg-rose-50';
                       statusDot = 'bg-rose-500 animate-ping';
-                      statusTextCol = 'text-rose-700';
-                      edgeColor = 'border-l-4 border-l-rose-500';
+                      edgeColor = 'border-l-rose-500';
                     }
 
                     // Calculo de barra de progreso de turno
@@ -949,320 +1180,219 @@ export const DashboardTalent360 = () => {
                       }
                     })();
 
-                    // Eficiencia color
-                    let efficiencyColor = 'bg-emerald-50 text-emerald-700 border-emerald-100';
-                    let efficiencyLabel = 'Excelente';
-                    if (user.efficiency < 70) {
-                      efficiencyColor = 'bg-rose-50 text-rose-700 border-rose-100';
-                      efficiencyLabel = 'Bajo';
-                    } else if (user.efficiency < 90) {
-                      efficiencyColor = 'bg-amber-50 text-amber-700 border-amber-100';
-                      efficiencyLabel = 'Estable';
-                    }
+                    const timeRemainingStr = (() => {
+                      if (!user.shift_end) return 'N/D';
+                      try {
+                        const now = new Date();
+                        const currentMins = now.getHours() * 60 + now.getMinutes();
+                        const [endH, endM] = user.shift_end.split(':').map(Number);
+                        const endMins = endH * 60 + endM;
+                        if (currentMins >= endMins) return '0h 0m';
+                        const diffMins = endMins - currentMins;
+                        return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m`;
+                      } catch (e) {
+                        return 'N/D';
+                      }
+                    })();
 
                     return (
-                      <div 
-                        key={user.id} 
-                        className={`bg-white border border-slate-200 ${edgeColor} p-4.5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 relative overflow-hidden group`}
-                      >
-                        {/* Indicador de Eficiencia */}
-                        <div className={`absolute top-4 right-4 flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-bold ${efficiencyColor}`}>
-                          <Sparkles size={10} className="fill-current" />
-                          <span>{user.efficiency}% Eficiencia ({efficiencyLabel})</span>
-                        </div>
-
-                        {/* Cabecera del Usuario */}
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            {user.avatar ? (
-                              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm">
-                                {user.name.charAt(0)}
-                              </div>
-                            )}
-                            <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${statusDot}`}></span>
-                          </div>
-                          <div className="min-w-0 pr-24">
-                            <h4 className="text-sm font-extrabold text-slate-800 truncate">{user.name}</h4>
-                            <p className="text-xs text-slate-400 font-semibold truncate">{user.role_name}</p>
-                          </div>
-                        </div>
-
-                        {/* Barra de progreso de jornada - Línea de Tiempo de Jornada */}
-                        {(() => {
-                          const timeEntries = (user as any).time_entries || [];
-                          const checkIn = timeEntries.find((e: any) => e.type === 'check_in');
-                          const mealStart = timeEntries.find((e: any) => e.type === 'meal_start');
-                          const mealEnd = timeEntries.find((e: any) => e.type === 'meal_end');
-                          const sillaStarts = timeEntries.filter((e: any) => e.type === 'silla_start');
-                          const sillaEnds = timeEntries.filter((e: any) => e.type === 'silla_end');
-                          const checkOut = timeEntries.find((e: any) => e.type === 'check_out');
-
-                          const takenSillaBreaksCount = sillaStarts.length;
-                          const isCurrentlySillaResting = sillaStarts.length > sillaEnds.length;
-
-                          let mealDurationMins = 0;
-                          let mealOvertime = false;
-                          if (mealStart) {
-                            const startParts = mealStart.time.split(':').map(Number);
-                            const startMins = startParts[0] * 60 + startParts[1];
-                            
-                            let endMins = new Date().getHours() * 60 + new Date().getMinutes();
-                            if (mealEnd) {
-                              const endParts = mealEnd.time.split(':').map(Number);
-                              endMins = endParts[0] * 60 + endParts[1];
-                            }
-                            mealDurationMins = endMins - startMins;
-                            
-                            const mealLimit = user.meal_minutes || 60;
-                            if (mealDurationMins > mealLimit) {
-                              mealOvertime = true;
-                            }
+                      <div
+                        key={user.id}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverUserId(user.id);
+                        }}
+                        onDragLeave={() => setDragOverUserId(null)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setDragOverUserId(null);
+                          const taskId = parseInt(e.dataTransfer.getData('text/plain'));
+                          if (taskId) handleAssignTaskDrop(user.id, taskId);
+                        }}
+                        onClick={() => {
+                          if (selectedTaskIdForAssign) {
+                            handleAssignTaskDrop(user.id, selectedTaskIdForAssign);
+                            setSelectedTaskIdForAssign(null);
                           }
-
-                          const timeRemainingStr = (() => {
-                            if (!user.shift_end) return 'N/D';
-                            try {
-                              const now = new Date();
-                              const currentMins = now.getHours() * 60 + now.getMinutes();
-                              const [endH, endM] = user.shift_end.split(':').map(Number);
-                              const endMins = endH * 60 + endM;
-                              if (currentMins >= endMins) {
-                                return '0h 0m';
-                              }
-                              const diffMins = endMins - currentMins;
-                              const hours = Math.floor(diffMins / 60);
-                              const mins = diffMins % 60;
-                              return `${hours}h ${mins}m`;
-                            } catch (e) {
-                              return 'N/D';
-                            }
-                          })();
-
-                          return (
-                            <div className="mt-4 space-y-3.5">
-                              <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
-                                <span className="flex items-center gap-1"><Clock size={11} /> Restan: {timeRemainingStr}</span>
-                                <span>Jornada: {progressPercent}%</span>
+                        }}
+                        className={`bg-white border border-slate-200 border-l-4 ${edgeColor} p-4.5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group ${
+                          isDragOver ? 'border-blue-500 ring-4 ring-blue-500/10 scale-102 bg-blue-50/10' : ''
+                        } ${selectedTaskIdForAssign ? 'ring-2 ring-blue-400/50 cursor-pointer animate-pulse' : ''}`}
+                      >
+                        {/* Cabecera: Avatar + Nombre + Puesto */}
+                        <div>
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-center gap-3">
+                              <div className="relative shrink-0">
+                                {user.avatar ? (
+                                  <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-inner">
+                                    {user.name.charAt(0)}
+                                  </div>
+                                )}
+                                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${statusDot}`}></span>
                               </div>
-                              
-                              <div className="relative flex items-center justify-between px-1.5 py-1">
-                                {/* Línea de fondo del carril */}
-                                <div className="absolute left-6 right-6 h-1 bg-slate-100 rounded-full z-0"></div>
-                                
-                                {/* Línea de progreso coloreada */}
-                                <div 
-                                  className={`absolute left-6 h-1 rounded-full z-0 transition-all duration-500 ${
-                                    user.status === 'break' ? 'bg-amber-400' : 'bg-blue-600'
-                                  }`}
-                                  style={{ width: `calc((${progressPercent} / 100) * (100% - 48px))` }}
-                                ></div>
-
-                                {/* Hito 1: Entrada */}
-                                <div className="relative z-10 flex flex-col items-center group">
-                                  <div 
-                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                                      checkIn 
-                                        ? (checkIn.is_late 
-                                            ? 'bg-amber-50 border-amber-400 text-amber-600 animate-pulse' 
-                                            : 'bg-emerald-50 border-emerald-500 text-emerald-600') 
-                                        : 'bg-white border-slate-200 text-slate-300'
-                                    }`}
-                                    title={checkIn ? `Entrada: ${checkIn.time}${checkIn.is_late ? ` (Retardo de ${checkIn.late_minutes} min)` : ''}` : 'Sin registrar entrada'}
-                                  >
-                                    {checkIn ? (
-                                      checkIn.is_late ? <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" /> : <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                                    ) : (
-                                      <span className="text-[7.5px] sm:text-[9px] font-black text-slate-400">IN</span>
-                                    )}
-                                  </div>
-                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Entrada</span>
-                                  {checkIn && (
-                                    <span className={`text-[7px] sm:text-[8px] font-extrabold px-1 rounded mt-0.5 ${checkIn.is_late ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                                      {checkIn.time.substring(0, 5)} {checkIn.is_late && `(${checkIn.late_minutes}m)`}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Hito 2: Ley Silla */}
-                                <div className="relative z-10 flex flex-col items-center group">
-                                  <div 
-                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                                      isCurrentlySillaResting
-                                        ? 'bg-amber-100 border-amber-500 text-amber-700 animate-pulse'
-                                        : (takenSillaBreaksCount > 0 
-                                            ? 'bg-emerald-50 border-emerald-400 text-emerald-600' 
-                                            : 'bg-white border-slate-200 text-slate-300')
-                                    }`}
-                                    title={`Descansos Ley Silla tomados hoy: ${takenSillaBreaksCount}${isCurrentlySillaResting ? ' (Descanso en curso)' : ''}`}
-                                  >
-                                    <Armchair className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isCurrentlySillaResting || takenSillaBreaksCount > 0 ? 'text-current' : 'text-slate-300'}`} />
-                                  </div>
-                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Ley Silla</span>
-                                  {takenSillaBreaksCount > 0 && (
-                                    <span className="text-[7px] sm:text-[8px] font-extrabold text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded mt-0.5 border border-indigo-100">
-                                      {isCurrentlySillaResting ? 'Pausa...' : `x${takenSillaBreaksCount}`}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Hito 3: Comida */}
-                                <div className="relative z-10 flex flex-col items-center group">
-                                  <div 
-                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                                      mealStart
-                                        ? (mealEnd 
-                                            ? (mealOvertime ? 'bg-rose-50 border-rose-400 text-rose-600' : 'bg-emerald-50 border-emerald-500 text-emerald-600') 
-                                            : 'bg-amber-100 border-amber-500 text-amber-600 animate-pulse')
-                                        : 'bg-white border-slate-200 text-slate-300'
-                                    }`}
-                                    title={
-                                      mealStart 
-                                        ? (mealEnd 
-                                            ? `Comida completada. Duración: ${mealDurationMins} min${mealOvertime ? ' (Exceso de tiempo)' : ''}` 
-                                            : `Almorzando. Lleva: ${mealDurationMins} min`) 
-                                        : 'Sin tomar comida'
-                                    }
-                                  >
-                                    {mealStart && mealEnd ? (
-                                      mealOvertime ? <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" /> : <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                                    ) : (
-                                      <Utensils className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${mealStart ? 'text-amber-600' : 'text-slate-300'}`} />
-                                    )}
-                                  </div>
-                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Comida</span>
-                                  {mealStart && (
-                                    <span className={`text-[7px] sm:text-[8px] font-extrabold px-1 rounded mt-0.5 ${
-                                      mealEnd 
-                                        ? (mealOvertime ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800') 
-                                        : 'bg-amber-100 text-amber-800'
-                                    }`}>
-                                      {mealEnd ? `${mealDurationMins} min` : 'Pausa...'}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Hito 4: Salida */}
-                                <div className="relative z-10 flex flex-col items-center group">
-                                  <div 
-                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
-                                      checkOut 
-                                        ? 'bg-emerald-50 border-emerald-500 text-emerald-600' 
-                                        : 'bg-white border-slate-200 text-slate-300'
-                                    }`}
-                                    title={checkOut ? `Salida registrada: ${checkOut.time}` : 'Pendiente de salida'}
-                                  >
-                                    {checkOut ? (
-                                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                                    ) : (
-                                      <span className="text-[7.5px] sm:text-[9px] font-black text-slate-400">OUT</span>
-                                    )}
-                                  </div>
-                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Salida</span>
-                                  {checkOut && (
-                                    <span className="text-[7px] sm:text-[8px] font-extrabold text-emerald-700 mt-0.5">
-                                      {checkOut.time.substring(0, 5)}
-                                    </span>
-                                  )}
-                                </div>
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-extrabold text-slate-800 truncate">{user.name}</h4>
+                                <p className="text-[10px] text-slate-400 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
                               </div>
                             </div>
-                          );
-                        })()}
+                            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                              {user.efficiency}% Efic.
+                            </span>
+                          </div>
 
-                        {/* Tareas del Colaborador */}
-                        <div className="mt-4 space-y-2.5">
-                          {(() => {
-                            const userActiveTasks = (user as any).active_tasks || [];
-                            if (userActiveTasks.length > 0) {
-                              return userActiveTasks.map((t: any) => {
-                                const elapsed = (t.accumulated_mins || 0) + 
-                                  (t.status === 'in_progress' && t.started_at_mins ? (globalSimTime - t.started_at_mins) : 0);
-                                const percent = Math.min(100, Math.max(0, (elapsed / t.estimated_mins) * 100));
-                                const isOvertime = elapsed > t.estimated_mins;
+                          {/* Sección de Bonos Nómina MX */}
+                          <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+                            <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
+                              isBonoPuntualidadActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+                            }`}>
+                              <Award size={10} className="mb-0.5" />
+                              <span>Puntualidad</span>
+                              <span className="text-[8px] font-black uppercase mt-0.5">{isBonoPuntualidadActive ? 'Activo' : 'Perdido'}</span>
+                            </div>
+                            <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
+                              isBonoAsistenciaActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+                            }`}>
+                              <CheckCircle2 size={10} className="mb-0.5" />
+                              <span>Asistencia</span>
+                              <span className="text-[8px] font-black uppercase mt-0.5">{isBonoAsistenciaActive ? 'Activo' : 'Inactivo'}</span>
+                            </div>
+                            <div className={`p-1.5 rounded-lg border text-[9px] font-bold flex flex-col justify-center items-center ${
+                              isBonoProductividadActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-200'
+                            }`}>
+                              <Sparkles size={10} className="mb-0.5" />
+                              <span>Productividad</span>
+                              <span className="text-[8px] font-black uppercase mt-0.5">{isBonoProductividadActive ? 'Activo' : 'N/D'}</span>
+                            </div>
+                          </div>
 
-                                return (
-                                  <div 
-                                    key={t.id} 
-                                    className={`border rounded-xl p-3 flex flex-col justify-between transition-all ${
-                                      isOvertime && t.status === 'in_progress'
-                                        ? 'bg-rose-50 border-rose-200 animate-pulse' 
-                                        : t.status === 'paused'
-                                        ? 'bg-amber-50/50 border-amber-200/70'
-                                        : 'bg-blue-50/40 border-blue-100'
-                                    }`}
-                                  >
-                                    <div className="flex justify-between items-center mb-1 min-w-0 gap-2">
-                                      <span className={`text-[9px] font-black uppercase tracking-widest ${
-                                        isOvertime && t.status === 'in_progress' ? 'text-rose-600' : t.status === 'paused' ? 'text-amber-600' : 'text-blue-500'
-                                      }`}>
-                                        {t.status === 'paused' ? '⏸️ Tarea Pausada' : 'Tarea Activa'}
-                                      </span>
-                                      <span className="text-[9px] font-bold text-slate-400 shrink-0">
-                                        {elapsed} / {t.estimated_mins} min
-                                      </span>
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-800 block truncate">{t.title}</span>
-                                    
-                                    {/* Barra de progreso */}
-                                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-2 relative">
-                                      <div 
-                                        className={`h-full transition-all duration-500 ${
-                                          isOvertime && t.status === 'in_progress'
-                                            ? 'bg-rose-500' 
-                                            : t.status === 'paused' 
-                                            ? 'bg-amber-400' 
-                                            : 'bg-blue-600'
-                                        }`}
-                                        style={{ width: `${percent}%` }}
-                                      ></div>
-                                    </div>
+                          {/* Alertas LFT / Incidentes de Descanso */}
+                          <div className="mt-3 space-y-1.5">
+                            {hasEntryLate && (
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 p-1.5 rounded-lg">
+                                <AlertTriangle size={11} className="shrink-0" />
+                                <span>Retardo registrado en Entrada: ({lateMinutes} min tarde)</span>
+                              </div>
+                            )}
+                            {isMealOvertime && (
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 p-1.5 rounded-lg">
+                                <AlertTriangle size={11} className="shrink-0" />
+                                <span>Exceso LFT en tiempo de Comida: (+{mealDurationMins - (user.meal_minutes || 60)} min)</span>
+                              </div>
+                            )}
+                            {isSillaOvertime && (
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-100 p-1.5 rounded-lg animate-pulse">
+                                <Armchair size={11} className="shrink-0" />
+                                <span>Ley Silla LFT: Alerta de descanso prolongado.</span>
+                              </div>
+                            )}
+                            {hasTaskDelay && (
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 p-1.5 rounded-lg animate-pulse">
+                                <AlertCircle size={11} className="shrink-0" />
+                                <span>Demora en Tarea Activa: ({activeTask.accumulated_mins - activeTask.estimated_mins} min excedidos)</span>
+                              </div>
+                            )}
+                          </div>
 
-                                    {isOvertime && t.status === 'in_progress' && (
-                                      <span className="text-[9px] font-black text-rose-700 mt-1 block">
-                                        ⚠️ ¡TIEMPO EXCEDIDO! Alerta al supervisor
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              });
-                            } else {
-                              return (
-                                <div className="bg-rose-50/30 border border-rose-100 rounded-xl p-3 flex flex-col justify-center h-[68px]">
-                                  <span className="text-[10px] font-bold text-rose-700 block flex items-center gap-1">
-                                    <span>⚠️</span> Sin tarea activa
-                                  </span>
-                                  <span className="text-[9px] text-slate-400 font-semibold block mt-1">
-                                    {user.completed_tasks_count} completadas ({user.completed_points || 0} pts) hoy
-                                  </span>
-                                </div>
-                              );
-                            }
-                          })()}
+                          {/* Analítica e IA de Diagnóstico */}
+                          <div className="mt-3 p-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-medium text-slate-600 italic flex gap-1.5 items-start">
+                            <Cpu size={12} className="text-blue-500 shrink-0 mt-0.5" />
+                            <span>{iaDiagnostic}</span>
+                          </div>
+
+                          {/* Línea de Progreso Temporal de Jornada */}
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold">
+                              <span className="flex items-center gap-0.5"><Clock size={10} /> Resta de Turno: {timeRemainingStr}</span>
+                              <span>Jornada: {progressPercent}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
+                              <div 
+                                className={`h-full transition-all duration-500 ${user.status === 'break' ? 'bg-amber-400' : 'bg-blue-600'}`}
+                                style={{ width: `${progressPercent}%` }}
+                              ></div>
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Acciones */}
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+                        {/* Tareas del Día del Colaborador */}
+                        <div className="mt-4 space-y-2">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Avance de Rutinas</span>
+                          {userActiveTasks.length > 0 ? (
+                            userActiveTasks.map((t: any) => {
+                              const elapsed = t.accumulated_mins || 0;
+                              const percent = Math.min(100, Math.max(0, (elapsed / t.estimated_mins) * 100));
+                              const isOver = elapsed > t.estimated_mins;
+                              return (
+                                <div key={t.id} className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
+                                  isOver && t.status === 'in_progress' ? 'bg-rose-50 border-rose-200' : 'bg-blue-50/30 border-blue-100'
+                                }`}>
+                                  <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mb-1">
+                                    <span className="font-extrabold text-blue-600 truncate max-w-[120px]">{t.title}</span>
+                                    <span>{elapsed}/{t.estimated_mins}m</span>
+                                  </div>
+                                  <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full ${isOver ? 'bg-rose-500' : 'bg-blue-500'}`}
+                                      style={{ width: `${percent}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="bg-slate-50 border border-slate-150 rounded-xl p-2.5 text-center text-[10px] text-slate-400 font-bold">
+                              No tiene tareas activas. Arrastra una aquí.
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Acciones del Supervisor */}
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between gap-1.5 items-center">
                           <button
                             onClick={() => setSelectedUserForTask(user)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] transition-colors flex items-center justify-center gap-1 cursor-pointer border-none"
                           >
-                            <Play size={11} className="fill-current" />
-                            Asignar Tarea
+                            <Play size={10} className="fill-current" /> Asignar Tarea
                           </button>
-                          <button
-                            onClick={() => {
-                              setSelectedUserForTask(user);
-                              setChatType('general');
-                              setChatInput(`@${user.name} `);
-                              setChatTab('chat');
-                            }}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold p-1.5 rounded-lg text-xs transition-colors flex items-center justify-center"
-                            title="Mandar Mensaje Directo"
-                          >
-                            <MessageCircle size={14} />
-                          </button>
+
+                          <div className="flex gap-1.5">
+                            {/* Botón de Chat Directo */}
+                            <button
+                              onClick={() => {
+                                setSelectedUserForTask(user);
+                                setChatType('general');
+                                setChatInput(`@${user.name} `);
+                                setChatTab('chat');
+                              }}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl border-none cursor-pointer flex items-center justify-center transition-colors"
+                              title="Chat Directo"
+                            >
+                              <MessageSquare size={13} />
+                            </button>
+
+                            {/* Botón de Suspensión / Activación */}
+                            <button
+                              onClick={() => handleToggleUserSuspension(user.id, user.is_active_employee !== false)}
+                              disabled={suspendingUser === user.id}
+                              className={`p-2 rounded-xl border-none cursor-pointer flex items-center justify-center transition-colors ${
+                                user.is_active_employee !== false
+                                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'
+                              }`}
+                              title={user.is_active_employee !== false ? "Suspender acceso de colaborador" : "Reactivar colaborador"}
+                            >
+                              {suspendingUser === user.id ? (
+                                <span className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+                              ) : user.is_active_employee !== false ? (
+                                <Ban size={13} />
+                              ) : (
+                                <UserCheck size={13} />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1270,56 +1400,50 @@ export const DashboardTalent360 = () => {
 
                   {monitorData.users.length === 0 && (
                     <div className="col-span-2 bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-12 text-center text-slate-400 text-xs">
-                      No hay colaboradores actualmente en turno (activos o en descanso).
+                      No hay colaboradores actualmente en turno.
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Bitácora & Chat de Colaboradores (1/3) */}
-              <div className="border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-6 space-y-4">
-                <div className="flex gap-2 border-b border-slate-100 pb-1">
+              {/* PANEL 3: Bitácora & Chat en tiempo real (1/4) */}
+              <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-4 space-y-4">
+                <div className="flex gap-2 border-b border-slate-150 pb-1 shrink-0">
                   <button 
                     onClick={() => setChatTab('chat')}
-                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'chat' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'chat' ? 'bg-blue-50 text-blue-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'}`}
                   >
-                    <MessageSquare size={14} />
-                    Chat del Equipo
+                    💬 Chat del Día
                   </button>
                   <button 
                     onClick={() => setChatTab('feed')}
-                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'feed' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-1.5 text-xs font-black tracking-tight rounded-lg transition-colors flex items-center justify-center gap-1.5 ${chatTab === 'feed' ? 'bg-blue-50 text-blue-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'}`}
                   >
-                    <Activity size={14} />
-                    Sucesos
+                    ⚡ Bitácora
                   </button>
                 </div>
 
                 {chatTab === 'chat' ? (
                   <div className="flex flex-col h-[400px] justify-between">
-                    {/* Chat Area */}
-                    <div className="space-y-3 overflow-y-auto pr-1 flex-1 custom-scrollbar max-h-[300px]">
+                    {/* Chat Messages */}
+                    <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar text-left p-0.5">
                       {monitorData.chat.map((msg) => {
-                        let bubbleStyle = 'bg-slate-50 border-slate-100 text-slate-800';
-                        let typeIcon = null;
-
+                        let msgBg = 'bg-slate-100 text-slate-800';
+                        let typeIcon = '💬';
                         if (msg.type === 'permission') {
-                          bubbleStyle = 'bg-purple-50/70 border-purple-100 text-purple-900';
-                          typeIcon = <Lock size={10} className="text-purple-500 shrink-0" />;
+                          msgBg = 'bg-blue-50 text-blue-800 border border-blue-100';
+                          typeIcon = '🛡️';
                         } else if (msg.type === 'food_change') {
-                          bubbleStyle = 'bg-amber-50/70 border-amber-100 text-amber-900';
-                          typeIcon = <Clock size={10} className="text-amber-500 shrink-0" />;
+                          msgBg = 'bg-amber-50 text-amber-800 border border-amber-100';
+                          typeIcon = '🍽️';
                         } else if (msg.type === 'announcement') {
-                          bubbleStyle = 'bg-blue-50/70 border-blue-100 text-blue-900';
-                          typeIcon = <Sparkles size={10} className="text-blue-500 shrink-0" />;
+                          msgBg = 'bg-purple-50 text-purple-800 border border-purple-100 font-bold';
+                          typeIcon = '📢';
                         }
 
                         return (
-                          <div 
-                            key={msg.id} 
-                            className={`p-3 rounded-xl border text-xs leading-normal relative ${bubbleStyle} flex flex-col`}
-                          >
-                            <div className="flex items-center justify-between gap-2 mb-1">
+                          <div key={msg.id} className={`p-3 rounded-xl text-xs space-y-1 hover:shadow-xs transition-shadow ${msgBg}`}>
+                            <div className="flex justify-between items-center">
                               <span className="font-extrabold text-[10px] text-slate-800 flex items-center gap-1">
                                 {typeIcon}
                                 {msg.sender_name}
@@ -1333,13 +1457,13 @@ export const DashboardTalent360 = () => {
 
                       {monitorData.chat.length === 0 && (
                         <div className="text-center py-12 text-slate-400 text-xs">
-                          No hay mensajes en el chat de colaboradores. ¡Envía el primero!
+                          No hay mensajes en el chat de colaboradores.
                         </div>
                       )}
                     </div>
 
                     {/* Chat Input */}
-                    <form onSubmit={handleSendMessage} className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                    <form onSubmit={handleSendMessage} className="mt-3 pt-3 border-t border-slate-250 space-y-2">
                       <div className="flex gap-2">
                         <select 
                           value={chatType}
@@ -1363,7 +1487,7 @@ export const DashboardTalent360 = () => {
                         <button
                           type="submit"
                           disabled={!chatInput.trim() || sendingMessage}
-                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-2 transition-colors disabled:opacity-50 flex items-center justify-center"
+                          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-2 transition-colors disabled:opacity-50 flex items-center justify-center border-none cursor-pointer"
                         >
                           <Send size={14} />
                         </button>
@@ -1372,7 +1496,7 @@ export const DashboardTalent360 = () => {
                   </div>
                 ) : (
                   // Bitácora de Sucesos en Vivo
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="space-y-3 h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                     {monitorData.feed.map((event) => {
                       let eventIconColor = 'text-blue-500 bg-blue-50';
                       if (event.action === 'check_in' || event.action === 'meal_end') {
@@ -1384,8 +1508,8 @@ export const DashboardTalent360 = () => {
                       }
 
                       return (
-                        <div key={event.id} className="flex gap-2.5 p-2 bg-slate-50/50 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors animate-in fade-in slide-in-from-right-3 duration-300">
-                          <div className={`p-1.5 rounded-md ${eventIconColor} shrink-0 self-start mt-0.5`}>
+                        <div key={event.id} className="flex gap-2.5 p-2.5 bg-slate-50/50 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors text-left animate-in fade-in slide-in-from-right-3 duration-300">
+                          <div className={`p-1.5 rounded-lg ${eventIconColor} shrink-0 self-start mt-0.5`}>
                             <Activity size={12} />
                           </div>
                           <div className="min-w-0 flex-1">

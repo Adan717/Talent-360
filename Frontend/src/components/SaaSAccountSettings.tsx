@@ -54,13 +54,18 @@ const ModuleCard = ({
   setConfiguringModule: (mod: any) => void;
 }) => {
   const activeClasses = 
-    mod.tier === 'freemium' ? 'border-l-emerald-500 bg-emerald-50/10 hover:border-l-emerald-600 hover:shadow-md hover:shadow-emerald-100/50' :
-    mod.tier === 'pro' ? 'border-l-blue-500 bg-blue-50/10 hover:border-l-blue-600 hover:shadow-md hover:shadow-blue-100/50' :
-    'border-l-purple-500 bg-purple-50/10 hover:border-l-purple-600 hover:shadow-md hover:shadow-purple-100/50';
+    mod.tier === 'freemium' ? 'border-l-emerald-500 bg-emerald-50/10 hover:bg-emerald-100/50 hover:shadow-lg hover:shadow-emerald-500/10' :
+    mod.tier === 'pro' ? 'border-l-blue-500 bg-blue-50/10 hover:bg-blue-100/50 hover:shadow-lg hover:shadow-blue-500/10' :
+    'border-l-purple-500 bg-purple-50/10 hover:bg-purple-100/50 hover:shadow-lg hover:shadow-purple-500/10';
 
   const cardClasses = mod.active 
     ? activeClasses 
     : 'border-l-slate-300 bg-slate-50/50 opacity-80 grayscale-[20%] hover:shadow-sm';
+
+  const versionBadgeColor = !mod.active ? 'bg-slate-200 text-slate-500' :
+    mod.tier === 'freemium' ? 'bg-emerald-100 text-emerald-800' :
+    mod.tier === 'pro' ? 'bg-blue-100 text-blue-800' :
+    'bg-purple-100 text-purple-800';
 
   return (
     <div 
@@ -69,7 +74,7 @@ const ModuleCard = ({
       {/* Fondo Temático Alusivo (Marca de Agua Dinámica) */}
       {mod.icon && React.cloneElement(mod.icon as React.ReactElement<any>, { 
         size: 110, 
-        className: `absolute -right-4 -bottom-6 opacity-[0.06] pointer-events-none transform rotate-12 transition-all duration-500 group-hover:rotate-6 group-hover:scale-105 ${
+        className: `absolute -right-4 -bottom-6 opacity-[0.05] pointer-events-none transform rotate-12 transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 group-hover:opacity-[0.12] ${
           mod.active 
             ? (mod.tier === 'freemium' ? 'text-emerald-500' : mod.tier === 'pro' ? 'text-blue-500' : 'text-purple-500') 
             : 'text-slate-400'
@@ -77,118 +82,120 @@ const ModuleCard = ({
       } as any)}
 
       <div className="relative z-10 flex-grow">
-        {/* Cabecera: Icono, Nombre y Badges */}
-        <div className="flex items-start justify-between gap-2.5 mb-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${mod.iconColor} shadow-inner shrink-0`}>
-              {mod.icon}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h4 className={`font-black text-sm md:text-base leading-tight truncate ${mod.active ? 'text-blue-900' : 'text-slate-700'}`}>
-                  {mod.name}
-                </h4>
-                {mod.version && (
-                  <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded whitespace-nowrap ${mod.active ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-500'}`}>
-                    {mod.version}
-                  </span>
-                )}
-              </div>
-            </div>
+        {/* Cabecera Principal (Horizontal): Icono Grande + Textos a la Derecha */}
+        <div className="flex items-start gap-3.5 mb-3">
+          {/* Icono del Módulo */}
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${mod.iconColor} shadow-inner shrink-0 [&>svg]:w-5.5 [&>svg]:h-5.5`}>
+            {mod.icon}
           </div>
-
-          {/* Acciones y Status */}
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <div className="flex items-center gap-1.5">
-              {mod.moduleId && mod.active && (() => {
-                const hiddenModules = systemSettings?.hiddenMenuModules || [];
-                const isHidden = hiddenModules.includes(mod.moduleId);
-                const isAdmin = currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin';
-                
-                return (
-                  <div className="flex items-center gap-1.5">
-                    {/* Botón de Edición (Lapicito) */}
-                    <button
-                      disabled={!isAdmin}
-                      onClick={() => {
-                        const defaultIcons: Record<string, string> = {
-                          reloj: 'Clock',
-                          reloj2: 'Clock',
-                          rrhh: 'Users',
-                          operativo: 'CheckSquare',
-                          ats: 'Briefcase',
-                          reportes: 'FileText',
-                          academia: 'GraduationCap',
-                          documentos: 'FileText',
-                          facturacion: 'Receipt',
-                          comidas: 'Coffee',
-                          portal: 'Globe',
-                          matrix: 'Monitor'
-                        };
-                        setEditingCustomModule({
-                          id: mod.moduleId,
-                          title: mod.name,
-                          desc: mod.desc,
-                          iconName: defaultIcons[mod.moduleId] || 'LayoutGrid',
-                          ...(systemSettings?.moduleCustomizations?.[mod.moduleId] || {})
-                        });
-                      }}
-                      className={`p-1 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-xs ${
-                        !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
-                        'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                      }`}
-                      title={!isAdmin ? "Solo los administradores pueden cambiar el nombre/icono." : "Editar módulo."}
-                    >
-                      <Pencil size={11} />
-                    </button>
-
-                    {/* Botón de Visibilidad (Ojo) */}
-                    <button
-                      disabled={!isAdmin}
-                      onClick={() => {
-                        const newHidden = isHidden
-                          ? hiddenModules.filter((id: string) => id !== mod.moduleId)
-                          : [...hiddenModules, mod.moduleId];
-                        updateSetting('hiddenMenuModules', newHidden);
-                      }}
-                      className={`p-1 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-xs ${
-                        !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
-                        isHidden
-                          ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
-                          : 'bg-emerald-50 text-emerald-665 border-emerald-200 hover:bg-emerald-100'
-                      }`}
-                      title={!isAdmin ? "Solo los administradores pueden cambiar la visibilidad." : isHidden ? "Mostrar en menú." : "Ocultar en menú."}
-                    >
-                      {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
-                    </button>
-                  </div>
-                );
-              })()}
-              
-              {mod.active && (
-                <span className="bg-emerald-50 text-emerald-700 text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full border border-emerald-200/50 flex items-center gap-0.5 whitespace-nowrap">
-                  <CheckCircle2 size={8} /> Activo
+          
+          {/* Nombre, Versión y Descripción */}
+          <div className="min-w-0 text-left">
+            <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+              <h4 className={`font-black text-sm sm:text-base leading-tight break-words ${mod.active ? 'text-slate-900' : 'text-slate-500'}`}>
+                {mod.name}
+              </h4>
+              {mod.version && (
+                <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded whitespace-nowrap ${versionBadgeColor}`}>
+                  {mod.version}
                 </span>
               )}
-              
-              <span className={`text-[8px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border whitespace-nowrap ${
-                mod.tier === 'freemium' ? 'bg-slate-100 text-slate-700 border-slate-200' :
-                mod.tier === 'pro' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                'bg-purple-100 text-purple-700 border-purple-200'
-              }`}>
-                {mod.tier === 'freemium' ? 'Incluido' : `Requiere ${mod.tier}`}
-              </span>
+              {trialActive && mod.tier !== 'freemium' && (
+                <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-amber-500 text-white uppercase tracking-wider whitespace-nowrap animate-pulse">
+                  Prueba
+                </span>
+              )}
             </div>
+            <p className={`text-xs font-medium leading-relaxed ${mod.active ? 'text-slate-500' : 'text-slate-400'}`}>
+              {mod.desc}
+            </p>
           </div>
         </div>
 
-        {/* Descripción reducida */}
-        <p className={`text-xs mb-3 font-medium ${mod.active ? 'text-slate-500' : 'text-slate-400'}`}>
-          {mod.desc}
-        </p>
+        {/* Fila de Acciones y Badges de Estado (Justo abajo de la descripción) */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {mod.moduleId && mod.active && (() => {
+            const hiddenModules = systemSettings?.hiddenMenuModules || [];
+            const isHidden = hiddenModules.includes(mod.moduleId);
+            const isAdmin = currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin';
+            
+            return (
+              <div className="flex items-center gap-1.5 mr-1">
+                {/* Botón de Edición (Lapicito) */}
+                <button
+                  disabled={!isAdmin}
+                  onClick={() => {
+                    const defaultIcons: Record<string, string> = {
+                      reloj: 'Clock',
+                      reloj2: 'Clock',
+                      rrhh: 'Users',
+                      operativo: 'CheckSquare',
+                      ats: 'Briefcase',
+                      reportes: 'FileText',
+                      academia: 'GraduationCap',
+                      documentos: 'FileText',
+                      facturacion: 'Receipt',
+                      comidas: 'Coffee',
+                      portal: 'Globe',
+                      matrix: 'Monitor'
+                    };
+                    setEditingCustomModule({
+                      id: mod.moduleId,
+                      title: mod.name,
+                      desc: mod.desc,
+                      iconName: defaultIcons[mod.moduleId] || 'LayoutGrid',
+                      ...(systemSettings?.moduleCustomizations?.[mod.moduleId] || {})
+                    });
+                  }}
+                  className={`p-1 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-xs ${
+                    !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                    'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                  }`}
+                  title={!isAdmin ? "Solo los administradores pueden cambiar el nombre/icono." : "Editar módulo."}
+                >
+                  <Pencil size={11} />
+                </button>
+
+                {/* Botón de Visibilidad (Ojo) */}
+                <button
+                  disabled={!isAdmin}
+                  onClick={() => {
+                    const newHidden = isHidden
+                      ? hiddenModules.filter((id: string) => id !== mod.moduleId)
+                      : [...hiddenModules, mod.moduleId];
+                    updateSetting('hiddenMenuModules', newHidden);
+                  }}
+                  className={`p-1 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-xs ${
+                    !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                    isHidden
+                      ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
+                      : 'bg-emerald-50 text-emerald-665 border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                  title={!isAdmin ? "Solo los administradores pueden cambiar la visibilidad." : isHidden ? "Mostrar en menú." : "Ocultar en menú."}
+                >
+                  {isHidden ? <EyeOff size={11} /> : <Eye size={11} />}
+                </button>
+              </div>
+            );
+          })()}
+          
+          {mod.active && (
+            <span className="bg-emerald-50 text-emerald-700 text-[8px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-emerald-200/50 flex items-center gap-0.5 whitespace-nowrap">
+              <CheckCircle2 size={8} /> Activo
+            </span>
+          )}
+          
+          <span className={`text-[8px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
+            mod.tier === 'freemium' ? 'bg-slate-100 text-slate-700 border-slate-200' :
+            mod.tier === 'pro' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+            'bg-purple-100 text-purple-700 border-purple-200'
+          }`}>
+            {mod.tier === 'freemium' ? 'Incluido' : `Requiere ${mod.tier}`}
+          </span>
+        </div>
       </div>
 
-      {/* Fila Inferior de Acciones */}
+      {/* Fila Inferior (Footer): Ver más... y Engranaje */}
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 relative z-10">
         <button 
           onClick={() => setSelectedModuleForDetail(mod)}

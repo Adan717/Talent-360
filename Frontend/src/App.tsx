@@ -271,6 +271,10 @@ function MainLayout() {
   const activeModuleData = modules.find(m => m.id === activeModule);
 
   const visibleModules = modules.filter(mod => {
+    // Ocultar Reloj Checador original por solicitud
+    if (mod.id === 'reloj') {
+      return false;
+    }
     if (currentUser?.role === 'supervisor') {
       return !['reportes', 'matrix', 'settings'].includes(mod.id);
     }

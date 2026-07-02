@@ -2836,8 +2836,8 @@ export default function RelojVisual({
           {/* MOBILE CONTENT AREA (Scrollable/Overflow depending on module) */}
           {phoneTab === 'checador' && (
             shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[82px] pb-[88px]">
-                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
+              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[82px] pb-[100px]">
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-955/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
                   🌴
                 </div>
                 <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-200 mb-1.5">Día de Descanso</h2>
@@ -2846,7 +2846,7 @@ export default function RelojVisual({
                 </p>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-4 pt-[82px] pb-[88px] flex flex-col justify-between gap-2 scrollbar-none">
+              <div className="flex-1 overflow-y-auto px-4 pt-[82px] pb-[100px] flex flex-col justify-between gap-2 scrollbar-none">
                 {/* Banner de transferencia de llaves pendiente */}
                 {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
                   <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
@@ -2994,7 +2994,7 @@ export default function RelojVisual({
           )}
 
           {phoneTab !== 'checador' && (
-            <div className="flex-1 overflow-y-auto p-4 pt-[82px] pb-[88px] scrollbar-none flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4 pt-[82px] pb-[100px] scrollbar-none flex flex-col">
               {isSimulated && simulatedTier === 'free' ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
                   <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">

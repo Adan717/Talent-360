@@ -173,12 +173,12 @@ function MainLayout() {
     
     // Non-trial checks
     if (activeTier === 'freemium') {
-      const freeAllowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo'];
+      const freeAllowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo', 'lft', 'reportes', 'facturacion'];
       return freeAllowed.includes(targetModuleId);
     }
     
     if (activeTier === 'pro') {
-      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal', 'lft'];
+      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal', 'lft', 'facturacion'];
       return activeMods.includes(targetModuleId);
     }
     

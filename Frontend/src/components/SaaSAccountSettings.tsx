@@ -766,15 +766,17 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       const enterpriseModules = customizedModulesWithDetails.filter(m => m.tier === 'enterprise');
 
                       const renderModuleCard = (mod: any, idx: number) => {
-                        const activeBorderClass = 
-                          mod.tier === 'freemium' ? 'border-emerald-200 bg-emerald-50/10 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100/50' :
-                          mod.tier === 'pro' ? 'border-blue-100 bg-blue-50/10 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50' :
-                          'border-purple-200 bg-purple-50/10 hover:border-purple-300 hover:shadow-md hover:shadow-purple-100/50';
+                        const activeClasses = 
+                          mod.tier === 'freemium' ? 'border-l-emerald-500 bg-emerald-50/10 hover:border-l-emerald-600 hover:shadow-md hover:shadow-emerald-100/50' :
+                          mod.tier === 'pro' ? 'border-l-blue-500 bg-blue-50/10 hover:border-l-blue-600 hover:shadow-md hover:shadow-blue-100/50' :
+                          'border-l-purple-500 bg-purple-50/10 hover:border-l-purple-600 hover:shadow-md hover:shadow-purple-100/50';
+
+                        const cardClasses = mod.active 
+                          ? activeClasses 
+                          : 'border-l-slate-300 bg-slate-50/50 opacity-80 grayscale-[20%] hover:shadow-sm';
 
                         return (
-                          <div key={idx} className={`p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between relative overflow-hidden ${
-                            mod.active ? activeBorderClass : 'border-slate-100 bg-slate-50 opacity-80 grayscale-[20%]'
-                          }`}>
+                          <div key={idx} className={`p-6 rounded-2xl border border-slate-200 border-l-4 transition-all duration-300 flex flex-col justify-between relative overflow-hidden hover:border-slate-300 ${cardClasses}`}>
                             <div>
                             {/* Top Row: Icon & Plan Badge */}
                             <div className="flex items-center justify-between mb-4">

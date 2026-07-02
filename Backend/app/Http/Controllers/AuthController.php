@@ -266,7 +266,9 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'avatar' => 'nullable|string',
-            'phone' => 'nullable|string|max:30'
+            'phone' => 'nullable|string|max:30|unique:users,phone,' . $user->id
+        ], [
+            'phone.unique' => 'Este número de WhatsApp ya se encuentra registrado con otra empresa.'
         ]);
 
         $updates = [

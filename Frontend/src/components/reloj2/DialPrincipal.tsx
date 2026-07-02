@@ -76,7 +76,7 @@ export default function DialPrincipal({
   const getDialColorClasses = () => {
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300';
-    if (isGpsError) return 'bg-rose-500 border-rose-650 text-white shadow-rose-500/30 animate-pulse hover:bg-rose-600';
+    if (isGpsError) return 'bg-white border-rose-350 text-rose-500 shadow-none animate-pulse hover:border-rose-450';
     if (btnProps.isIncidenceReport) return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
 
     const text = btnProps.text || '';
@@ -115,7 +115,7 @@ export default function DialPrincipal({
   };
 
   const getDialIcon = (sizeValue: number) => {
-    if (isGpsError) return <MapPin size={sizeValue} className="text-white shrink-0 animate-bounce" />;
+    if (isGpsError) return <MapPin size={sizeValue} className="text-rose-505 shrink-0 animate-bounce" />;
     if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return <Sun size={sizeValue} className="text-slate-400 shrink-0" />;
@@ -202,12 +202,12 @@ export default function DialPrincipal({
         >
           <div className="flex flex-col items-center justify-center h-full w-full py-1.5 select-none">
             {/* UPPER ZONE: Prominent Icon */}
-            <div className={`flex-grow flex items-center justify-center mt-2.5 ${isGpsError ? 'text-white' : 'text-slate-800'}`}>
+            <div className={`flex-grow flex items-center justify-center mt-2.5 ${isGpsError ? 'text-rose-500' : 'text-slate-800'}`}>
               {getDialIcon(size)}
             </div>
 
             {/* CENTRAL ZONE: Digital Time */}
-            <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${isGpsError ? 'text-white' : 'text-slate-800'} ${isMobile ? 'text-[19px]' : 'text-3xl md:text-4xl leading-none'}`}>
+            <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-800'} ${isMobile ? 'text-[19px]' : 'text-3xl md:text-4xl leading-none'}`}>
               <span>
                 {(() => {
                   const timePart = formattedTime.split(' ')[0];
@@ -216,7 +216,7 @@ export default function DialPrincipal({
                     return (
                       <>
                         {h}
-                        <span className="animate-[pulse_1s_infinite] select-none mx-0.5 text-indigo-500 font-bold">:</span>
+                        <span className={`animate-[pulse_1s_infinite] select-none mx-0.5 font-bold ${isGpsError ? 'text-rose-400' : 'text-indigo-500'}`}>:</span>
                         {m}
                       </>
                     );
@@ -224,18 +224,18 @@ export default function DialPrincipal({
                   return timePart;
                 })()}
               </span>
-              <span className={`font-bold ${isGpsError ? 'text-rose-100' : 'text-slate-500'} ${isMobile ? 'text-[9px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
+              <span className={`font-bold ${isGpsError ? 'text-rose-450' : 'text-slate-500'} ${isMobile ? 'text-[9px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
                 {formattedTime.split(' ')[1] ? formattedTime.split(' ')[1].toLowerCase() : ''}
               </span>
             </div>
 
             {/* LOWER ZONE: Bottom Label */}
-            <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-white' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
-              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[9px] md:text-[9.5px]' : 'text-[10px] md:text-[11px]'} ${isGpsError ? 'text-white font-extrabold' : ''}`}>
+            <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
+              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[9px] md:text-[9.5px]' : 'text-[10px] md:text-[11px]'} ${isGpsError ? 'text-rose-600 font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
               {btnProps.subtext && (
-                <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-rose-105' : 'text-slate-500 dark:text-slate-400'}`}>
+                <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-rose-500' : 'text-slate-550 dark:text-slate-400'}`}>
                   {btnProps.subtext}
                 </span>
               )}

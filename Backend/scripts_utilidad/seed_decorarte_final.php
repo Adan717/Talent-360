@@ -17,7 +17,8 @@ try {
         ['id' => 1],
         [
             'name' => 'DecorArte 360',
-            'subdomain' => 'decorarte',
+            'subdomain' => 'decorarte360',
+            'public_slug' => 'decorarte360',
             'plan' => 'pro',
             'brand_color' => '#8b5cf6', // Morado/Lila brillante
             'logo_url' => 'https://decorarte360.com/logo.png',

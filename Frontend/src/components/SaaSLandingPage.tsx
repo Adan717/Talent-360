@@ -29,6 +29,7 @@ export const SaaSLandingPage = () => {
     company_name: '',
     subdomain: ''
   });
+  const [isSubdomainManual, setIsSubdomainManual] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'checador' | 'rrhh' | 'reclutamiento'>('checador');
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
@@ -1469,7 +1470,15 @@ export const SaaSLandingPage = () => {
                       <input 
                         type="text" 
                         value={formData.company_name} 
-                        onChange={e => setFormData({...formData, company_name: e.target.value})} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          const autoSub = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '').slice(0, 30);
+                          setFormData(prev => ({
+                            ...prev,
+                            company_name: val,
+                            subdomain: isSubdomainManual ? prev.subdomain : autoSub
+                          }));
+                        }} 
                         required 
                         placeholder="Ej. DashComputer" 
                         className="w-full bg-white px-4 py-3 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
@@ -1481,14 +1490,20 @@ export const SaaSLandingPage = () => {
                         <input 
                           type="text" 
                           value={formData.subdomain} 
-                          onChange={e => setFormData({...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')})} 
+                          onChange={e => {
+                            setIsSubdomainManual(true);
+                            setFormData({...formData, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')});
+                          }} 
                           required 
                           placeholder="dashcomputer" 
                           className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-slate-800" 
                         />
                         <div className="bg-slate-50 px-2.5 sm:px-4 py-3 text-[10px] sm:text-xs text-slate-500 font-black border-l border-slate-200 flex items-center shrink-0">.talent360.com</div>
                       </div>
-                      <p className="text-[9px] text-slate-400 mt-1 font-semibold">Tus empleados ingresarán desde: {formData.subdomain || 'subdominio'}.talent360.com</p>
+                      <p className="text-[9.5px] text-blue-600 bg-blue-50/70 border border-blue-100 rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
+                        <span className="text-xs">🌐</span>
+                        <span>Tus empleados ingresarán a registrar asistencia desde: <strong className="font-black text-blue-800">{formData.subdomain || 'mi-empresa'}.talent360.com</strong></span>
+                      </p>
                     </div>
                   </div>
 

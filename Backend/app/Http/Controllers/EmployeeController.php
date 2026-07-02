@@ -51,7 +51,8 @@ class EmployeeController extends Controller
         }
 
         // 2. Validar límite de cuentas administrativas (Seats) por plan
-        $role = $request->input('role', 'empleado');
+        $role = strtolower($request->input('role', 'empleado'));
+        $request->merge(['role' => $role]);
         if ($tenant && in_array($role, ['admin', 'supervisor'])) {
             $adminCount = User::where('tenant_id', $tenant->id)
                 ->whereIn('role', ['admin', 'supervisor'])
@@ -197,6 +198,10 @@ class EmployeeController extends Controller
 
         // Validar límite de cuentas administrativas (Seats) por plan en actualización
         $role = $request->input('role');
+        if ($role) {
+            $role = strtolower($role);
+            $request->merge(['role' => $role]);
+        }
         if ($tenant && $role && in_array($role, ['admin', 'supervisor']) && $employee->role !== $role) {
             $adminCount = User::where('tenant_id', $tenant->id)
                 ->whereIn('role', ['admin', 'supervisor'])

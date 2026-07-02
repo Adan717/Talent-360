@@ -106,6 +106,15 @@ class TenantController extends Controller
 
             DB::commit();
 
+            // Enviar Correo de Bienvenida de Forma Segura
+            try {
+                \Illuminate\Support\Facades\Mail::to($admin->email)->send(
+                    new \App\Mail\WelcomeMail($admin->name, $tenant->name, $tenant->subdomain)
+                );
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Falla al enviar correo de bienvenida a {$admin->email}: " . $e->getMessage());
+            }
+
             // Login Admin automatically
             $token = $admin->createToken('auth_token')->plainTextToken;
 

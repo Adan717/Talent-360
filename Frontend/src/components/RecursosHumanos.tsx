@@ -571,13 +571,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
               id: Date.now(),
               name: newUserName,
               job_role_id: Number(newUserRole),
-              role: 'Empleado',
+              role: 'empleado',
               avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + newUserName,
               is_active: true,
               is_active_employee: true,
               salary: newUserSalary ? parseFloat(newUserSalary) : undefined,
               email: `${newUserName.toLowerCase().replace(/\s/g, '')}${companyDomain}`,
-              system_role: 'Empleado',
+              system_role: 'empleado',
               tenant_id: 1
           };
           setUsers([...users, newUser]);
@@ -593,7 +593,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         contract_type: contractType,
         email: `${newUserName.toLowerCase().replace(/\s/g, '')}${companyDomain}`,
         password: 'password123',
-        role: 'Empleado',
+        role: 'empleado',
         salary: newUserSalary ? parseFloat(newUserSalary) : null
       });
       setShowForm(false);

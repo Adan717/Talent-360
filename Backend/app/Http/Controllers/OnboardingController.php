@@ -17,7 +17,14 @@ class OnboardingController extends Controller
     public function getSettings(Request $request)
     {
         $tenantId = auth()->user()->tenant_id ?? 1;
-        $company = Company::findOrFail($tenantId);
+        $company = Company::find($tenantId);
+        if (!$company) {
+            $company = new Company();
+            $company->id = $tenantId;
+            $company->name = auth()->user()->tenant ? auth()->user()->tenant->name : 'Mi Empresa';
+            $company->is_active = true;
+            $company->save();
+        }
         return response()->json([
             'welcomeTitle' => $company->welcome_title ?? '',
             'welcomeMessage' => $company->welcome_message ?? '',
@@ -39,13 +46,19 @@ class OnboardingController extends Controller
 
         $tenantId = auth()->user()->tenant_id ?? 1;
 
-        $company = Company::findOrFail($tenantId);
-        $company->update([
-            'welcome_title' => $request->welcomeTitle,
-            'welcome_message' => $request->welcomeMessage,
-            'welcome_image_url' => $request->welcomeImageUrl,
-            'welcome_video_url' => $request->welcomeVideoUrl,
-        ]);
+        $company = Company::find($tenantId);
+        if (!$company) {
+            $company = new Company();
+            $company->id = $tenantId;
+            $company->name = auth()->user()->tenant ? auth()->user()->tenant->name : 'Mi Empresa';
+            $company->is_active = true;
+        }
+
+        $company->welcome_title = $request->welcomeTitle;
+        $company->welcome_message = $request->welcomeMessage;
+        $company->welcome_image_url = $request->welcomeImageUrl;
+        $company->welcome_video_url = $request->welcomeVideoUrl;
+        $company->save();
 
         return response()->json(['status' => 'success', 'company' => $company]);
     }

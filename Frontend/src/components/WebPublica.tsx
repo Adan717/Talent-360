@@ -33,7 +33,17 @@ function splitSchedule(scheduleText: string): { days: string; hours: string } {
   return { days: scheduleText, hours: '' };
 }
 
-export function WebPublica() {
+interface WebPublicaProps {
+  previewTenant?: {
+    name: string;
+    logo_url: string;
+    brand_color: string;
+    public_portal_enabled: boolean;
+  };
+  previewVacancies?: any[];
+}
+
+export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps = {}) {
   const [searchParams] = useSearchParams();
   const { slug: routeSlug } = useParams();
   const currentUser = useAppStore(state => state.currentUser);
@@ -48,6 +58,13 @@ export function WebPublica() {
   const [showInduction, setShowInduction] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   
+  const [tenant, setTenant] = useState<any>({
+    name: 'Talent360',
+    logo_url: '',
+    brand_color: '#3b82f6',
+    public_portal_enabled: true
+  });
+
   const [candidateForm, setCandidateForm] = useState({
     name: '',
     email: '',
@@ -116,17 +133,28 @@ export function WebPublica() {
   };
 
   useEffect(() => {
+    if (previewTenant) {
+      setTenant(previewTenant);
+      setVacancies(previewVacancies || []);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     axiosInstance.get(`/public/vacancies/${activeSlug}`)
       .then(res => {
-        setVacancies(res.data);
+        if (res.data.tenant) {
+          setTenant(res.data.tenant);
+        }
+        const vacs = res.data.vacancies || [];
+        setVacancies(vacs);
         setLoading(false);
 
         // Auto-select if vacancy_id is in params
         const vId = searchParams.get('vacancy_id');
         if (vId) {
           const idNum = Number(vId);
-          const found = res.data.find((v: any) => v.id === idNum);
+          const found = vacs.find((v: any) => v.id === idNum);
           if (found) {
             setSelectedVacancy(found);
             setShowDetailModal(true);
@@ -137,35 +165,114 @@ export function WebPublica() {
         console.error("Error fetching vacancies", err);
         setLoading(false);
       });
-  }, [activeSlug, searchParams]);
+  }, [activeSlug, searchParams, previewTenant, previewVacancies]);
 
   if (loading) {
-    return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-500">Cargando Bolsa de Trabajo...</div>;
+    return <div className="min-h-[400px] flex items-center justify-center font-bold text-slate-500">Cargando Bolsa de Trabajo...</div>;
+  }
+
+  if (!tenant.public_portal_enabled && !previewTenant) {
+    return (
+      <div className="w-full min-h-[500px] flex flex-col items-center justify-center bg-slate-50 p-8 text-center rounded-3xl border border-slate-200">
+        <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-3xl flex items-center justify-center mb-6 border border-slate-200 shadow-sm animate-pulse">
+          <Briefcase size={36} />
+        </div>
+        <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Portal no disponible</h2>
+        <p className="text-slate-500 max-w-md leading-relaxed text-sm font-medium">
+          El portal público de vacantes de esta organización no está activo en este momento. Por favor, vuelve a intentarlo más tarde o ponte en contacto con Recursos Humanos.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="w-full min-h-[calc(100vh-100px)] bg-slate-50 font-sans">
+      <style dangerouslySetInnerHTML={{__html: `
+        :root {
+          --brand-color: ${tenant.brand_color || '#3b82f6'};
+          --brand-color-hover: ${(tenant.brand_color || '#3b82f6')}dd;
+          --brand-color-light: ${(tenant.brand_color || '#3b82f6')}15;
+          --brand-color-border: ${(tenant.brand_color || '#3b82f6')}33;
+        }
+        .btn-brand {
+          background-color: var(--brand-color) !important;
+          color: white !important;
+        }
+        .btn-brand:hover {
+          background-color: var(--brand-color-hover) !important;
+        }
+        .text-brand {
+          color: var(--brand-color) !important;
+        }
+        .bg-brand-light {
+          background-color: var(--brand-color-light) !important;
+        }
+        .border-brand-light {
+          border-color: var(--brand-color-border) !important;
+        }
+        .group:hover .bg-brand-hover-target {
+          background-color: var(--brand-color) !important;
+        }
+        .group:hover .group-hover-text-brand {
+          color: var(--brand-color) !important;
+        }
+        .group:hover .group-hover-border-brand {
+          border-color: var(--brand-color) !important;
+        }
+      `}} />
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-white text-slate-900 rounded-3xl p-12 text-center shadow-sm border border-slate-200 mb-12">
-        <div className="absolute top-0 left-0 w-full h-1 bg-blue-600"></div>
+        <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: tenant.brand_color || '#3b82f6' }}></div>
         <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
-          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
-            <Building2 size={32} />
+          {/* Contenedor de Logo o Iniciales */}
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-slate-150 overflow-hidden bg-white">
+            {tenant.logo_url ? (
+              <img 
+                src={tenant.logo_url} 
+                alt={tenant.name} 
+                className="w-full h-full object-contain p-2" 
+                onError={(e) => { 
+                  (e.target as any).style.display = 'none';
+                  const parent = (e.target as any).parentElement;
+                  if (parent) {
+                    const fallback = parent.querySelector('.logo-fallback');
+                    if (fallback) fallback.style.display = 'flex';
+                  }
+                }} 
+              />
+            ) : null}
+            <div 
+              className="logo-fallback w-full h-full flex items-center justify-center text-white font-black text-2xl" 
+              style={{ 
+                backgroundColor: tenant.brand_color || '#3b82f6',
+                display: tenant.logo_url ? 'none' : 'flex'
+              }}
+            >
+              {tenant.name.substring(0, 2).toUpperCase()}
+            </div>
           </div>
+
           <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight text-slate-900">
-            Únete al Equipo Talent360
+            Únete a {tenant.name}
           </h1>
           <p className="text-lg text-slate-500 mb-8 font-medium">
             No solo ofrecemos trabajo, construimos carreras. Encuentra tu lugar en nuestra familia.
           </p>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2">
+          <button 
+            className="btn-brand text-white px-8 py-3 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2"
+            onClick={() => {
+              const el = document.getElementById('vacancies-grid');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
             Ver Vacantes Abiertas <ArrowRight size={18} />
           </button>
         </div>
       </div>
 
       {/* Grid de Vacantes (Glassmorphism) */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12 px-4">
+      <div id="vacancies-grid" className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12 px-4">
         {vacancies.map(vacancy => {
           const isActive = vacancy.is_active === 1 || vacancy.is_active === true;
           const { days, hours } = splitSchedule(vacancy.schedule);
@@ -177,9 +284,9 @@ export function WebPublica() {
               setSelectedVacancy(vacancy);
               setShowDetailModal(true);
             }}
-            className={`group relative bg-white border rounded-3xl overflow-hidden shadow-sm transition-all flex flex-col h-full ${isActive ? 'border-slate-200 hover:shadow-md hover:border-blue-300 cursor-pointer hover:-translate-y-1' : 'border-slate-150 opacity-85 hover:shadow-md cursor-pointer'}`}
+            className={`group relative bg-white border rounded-3xl overflow-hidden shadow-sm transition-all flex flex-col h-full ${isActive ? 'border-slate-200 hover:shadow-md group-hover-border-brand cursor-pointer hover:-translate-y-1' : 'border-slate-150 opacity-85 hover:shadow-md cursor-pointer'}`}
           >
-            <div className={`absolute top-0 left-0 w-full h-1 z-10 transition-colors ${isActive ? 'bg-slate-100 group-hover:bg-blue-500' : 'bg-slate-300'}`}></div>
+            <div className={`absolute top-0 left-0 w-full h-1 z-10 transition-colors ${isActive ? 'bg-brand-hover-target' : 'bg-slate-300'}`}></div>
             
             {/* Imagen Alusiva Limpia y Clara */}
             <div className="h-48 w-full relative overflow-hidden bg-slate-100">
@@ -206,7 +313,7 @@ export function WebPublica() {
 
             <div className="p-6 flex-grow flex flex-col bg-white text-left">
               {/* Título en tipografía oscura de alto contraste */}
-              <h3 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight leading-snug mb-3 group-hover:text-blue-600 transition-colors text-left">
+              <h3 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight leading-snug mb-3 group-hover-text-brand transition-colors text-left">
                 {vacancy.title}
               </h3>
               
@@ -214,13 +321,13 @@ export function WebPublica() {
               <div className="flex flex-col gap-1.5 mb-4 text-[11px] font-bold text-slate-500 text-left">
                 {days && (
                   <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1.5 rounded-lg w-fit text-left">
-                    <CalendarDays className="text-blue-500 shrink-0" size={13} /> 
+                    <CalendarDays className="text-brand shrink-0" size={13} /> 
                     <span className="truncate max-w-[220px]">{days}</span>
                   </div>
                 )}
                 {hours && (
                   <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1.5 rounded-lg w-fit text-left">
-                    <CalendarDays className="text-blue-500 shrink-0" size={13} /> 
+                    <CalendarDays className="text-brand shrink-0" size={13} /> 
                     <span className="truncate max-w-[220px]">{hours}</span>
                   </div>
                 )}
@@ -242,7 +349,7 @@ export function WebPublica() {
                   setSelectedVacancy(vacancy);
                   setShowDetailModal(true);
                 }}
-                className="w-full bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 border border-slate-200 hover:border-blue-200 py-3 rounded-xl font-bold text-sm transition-all flex justify-center items-center gap-2 mt-auto"
+                className="w-full bg-slate-50 hover:bg-brand-light hover:text-brand text-slate-700 border border-slate-200 hover:border-brand-light py-3 rounded-xl font-bold text-sm transition-all flex justify-center items-center gap-2 mt-auto"
               >
                 <span>Ver Detalles</span>
                 <ArrowRight size={16} />
@@ -305,7 +412,7 @@ export function WebPublica() {
                 {/* Bloque de Información General (Dos filas de horario, sueldo) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shrink-0 text-left">
                   <div className="flex items-start gap-3">
-                    <CalendarDays className="text-blue-500 shrink-0 mt-0.5" size={18} />
+                    <CalendarDays className="text-brand shrink-0 mt-0.5" size={18} />
                     <div className="text-left">
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jornada y Horario</span>
                       <span className="block text-sm font-bold text-slate-700 mt-0.5">{days || 'No especificado'}</span>
@@ -336,7 +443,7 @@ export function WebPublica() {
                     <div className="space-y-3 bg-slate-50/50 border border-slate-100 p-5 rounded-2xl text-left">
                       {selectedVacancy.requirements.map((req: string, idx: number) => (
                         <div key={idx} className="flex items-start gap-3 text-sm text-slate-700 font-medium text-left">
-                          <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={18} />
+                          <CheckCircle2 className="text-brand shrink-0 mt-0.5" size={18} />
                           <span>{req}</span>
                         </div>
                       ))}
@@ -352,7 +459,7 @@ export function WebPublica() {
                     onClick={() => {
                       handlePostularse(selectedVacancy);
                     }}
-                    className="w-full sm:flex-grow bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 text-sm"
+                    className="w-full sm:flex-grow btn-brand text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 text-sm"
                   >
                     Postularse a esta Vacante
                   </button>
@@ -361,7 +468,7 @@ export function WebPublica() {
                     onClick={() => {
                       handleNotificarme(selectedVacancy);
                     }}
-                    className="w-full sm:flex-grow bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 text-sm"
+                    className="w-full sm:flex-grow btn-brand text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 text-sm"
                   >
                     Notificarme Disponibilidad
                   </button>
@@ -795,7 +902,7 @@ export function WebPublica() {
                       alert("Hubo un error al enviar tu postulación. Intenta nuevamente.");
                     }
                   }}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] text-center"
+                  className="btn-brand text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md text-center"
                   type="button"
                 >
                   Terminar y Enviar Expediente
@@ -824,16 +931,18 @@ export function WebPublica() {
                   ></iframe>
                </div>
                <div className="w-full md:w-1/2 p-10 flex flex-col justify-center bg-white">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+                  <div 
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-brand-light bg-brand-light text-brand"
+                  >
                      <Building2 size={24} />
                   </div>
-                  <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Bienvenido a Talent360</h2>
+                  <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Bienvenido a {tenant.name}</h2>
                   <p className="text-slate-500 mb-8 text-lg leading-relaxed">
                      Somos más que una empresa; somos una familia enfocada en la excelencia y el desarrollo de nuestro talento. Descubre por qué trabajar con nosotros es tu mejor decisión.
                   </p>
                   <button 
                      onClick={() => setShowWelcomeModal(false)}
-                     className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 w-full"
+                     className="btn-brand text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 w-full"
                   >
                      Ver Vacantes Disponibles <ArrowRight size={18} />
                   </button>

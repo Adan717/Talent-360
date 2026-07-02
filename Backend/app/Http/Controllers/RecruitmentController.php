@@ -45,7 +45,15 @@ class RecruitmentController extends Controller
             return $v;
         });
 
-        return response()->json($vacancies);
+        return response()->json([
+            'tenant' => [
+                'name' => $tenant->name,
+                'logo_url' => $tenant->logo_url ?: '',
+                'brand_color' => $tenant->brand_color ?: '#3b82f6',
+                'public_portal_enabled' => (bool)($tenant->public_portal_enabled ?? true),
+            ],
+            'vacancies' => $vacancies
+        ]);
     }
 
     public function storeVacancyAlert(Request $request)
@@ -181,5 +189,54 @@ class RecruitmentController extends Controller
         $vacancy->delete();
         
         return response()->json(['message' => 'Vacancy deleted successfully']);
+    }
+
+    public function getPortalSettings(Request $request)
+    {
+        $tenant = auth()->user()->tenant;
+        if (!$tenant) {
+            return response()->json(['message' => 'No se encontró la información de la empresa.'], 404);
+        }
+
+        return response()->json([
+            'name' => $tenant->name,
+            'public_slug' => $tenant->public_slug ?: \Illuminate\Support\Str::slug($tenant->subdomain),
+            'brand_color' => $tenant->brand_color ?: '#3b82f6',
+            'logo_url' => $tenant->logo_url ?: '',
+            'public_portal_enabled' => (bool)($tenant->public_portal_enabled ?? true),
+        ]);
+    }
+
+    public function updatePortalSettings(Request $request)
+    {
+        $tenant = auth()->user()->tenant;
+        if (!$tenant) {
+            return response()->json(['message' => 'No se encontró la información de la empresa.'], 404);
+        }
+
+        $request->validate([
+            'public_slug' => 'required|string|alpha_dash|max:100|unique:tenants,public_slug,' . $tenant->id,
+            'brand_color' => 'nullable|string|max:50',
+            'logo_url' => 'nullable|string|max:2048',
+            'public_portal_enabled' => 'required|boolean',
+        ]);
+
+        $tenant->update([
+            'public_slug' => $request->public_slug,
+            'brand_color' => $request->brand_color,
+            'logo_url' => $request->logo_url,
+            'public_portal_enabled' => $request->public_portal_enabled,
+        ]);
+
+        return response()->json([
+            'message' => 'Configuración del portal público actualizada con éxito',
+            'settings' => [
+                'name' => $tenant->name,
+                'public_slug' => $tenant->public_slug,
+                'brand_color' => $tenant->brand_color,
+                'logo_url' => $tenant->logo_url,
+                'public_portal_enabled' => (bool)$tenant->public_portal_enabled,
+            ]
+        ]);
     }
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RecruitmentBoard } from './RecruitmentBoard';
 import GestorVacantes from './GestorVacantes';
 import { WebPublica } from './WebPublica';
+import AtsPortalSettings from './AtsPortalSettings';
 import { Briefcase, ClipboardList, Calendar, Plus, Trash2, Clock, User, MessageSquare, X, Globe } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -134,7 +135,7 @@ export function AtsManager() {
       <div className="bg-transparent">
         {activeTab === 'vacantes' && <GestorVacantes />}
         {activeTab === 'kanban' && <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px] animate-fade-in"><RecruitmentBoard /></div>}
-        {activeTab === 'publico' && <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px] animate-fade-in"><WebPublica /></div>}
+        {activeTab === 'publico' && <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px] animate-fade-in"><AtsPortalSettings /></div>}
         {activeTab === 'entrevistas' && (
            <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px] animate-fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

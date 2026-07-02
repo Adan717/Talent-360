@@ -136,7 +136,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/admin/vacancies', [RecruitmentController::class, 'getAdminVacancies']);
             Route::post('/admin/vacancies', [RecruitmentController::class, 'createVacancy']);
             Route::put('/admin/vacancies/{id}', [RecruitmentController::class, 'updateVacancy']);
-            Route::delete('/admin/vacancies/{id}', [RecruitmentController::class, 'deleteVacancy']);
+            Route::get('/admin/tenant/portal-settings', [RecruitmentController::class, 'getPortalSettings']);
+            Route::put('/admin/tenant/portal-settings', [RecruitmentController::class, 'updatePortalSettings']);
             
             Route::get('/admin/candidates', [CandidateController::class, 'index']);
             Route::put('/admin/candidates/{id}', [CandidateController::class, 'update']);

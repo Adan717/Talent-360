@@ -13,6 +13,26 @@ import { BackupPanel } from './BackupPanel';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import axiosInstance from '../lib/axios';
 
+const IconMap: Record<string, React.ReactNode> = {
+  Building2: <Building2 size={20} />,
+  LayoutGrid: <LayoutGrid size={20} />,
+  Globe: <Globe size={20} />,
+  Receipt: <Receipt size={20} />,
+  Database: <Database size={20} />,
+  Users: <Users size={20} />,
+  Clock: <Clock size={20} />,
+  CheckSquare: <CheckSquare size={20} />,
+  Briefcase: <Briefcase size={20} />,
+  FileText: <FileText size={20} />,
+  GraduationCap: <GraduationCap size={20} />,
+  Settings: <Settings size={20} />,
+  Coffee: <Coffee size={20} />,
+  Calendar: <Calendar size={20} />,
+  MapPin: <MapPin size={20} />,
+  Heart: <Heart size={20} />,
+  Bell: <Bell size={20} />
+};
+
 export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: 'profile' | 'billing' | 'modules' | 'backups' }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'modules' | 'backups'>(initialTab);
   const [selectedModuleForDetail, setSelectedModuleForDetail] = useState<any | null>(null);
@@ -530,8 +550,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               {(() => {
                 const modulesWithDetails = [
                   { 
-                    name: 'Directorio HR', 
-                    desc: 'Control de expedientes y RBAC', 
+                    name: 'Recursos Humanos', 
+                    desc: 'Directorio y Gestión de Expedientes', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('rrhh'), 
                     version: 'v3.0',
@@ -705,10 +725,29 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   }
                 ];
 
+                const customizedModulesWithDetails = modulesWithDetails.map(mod => {
+                  const customizations = mod.moduleId ? systemSettings?.moduleCustomizations?.[mod.moduleId] : undefined;
+                  if (customizations) {
+                    return {
+                      ...mod,
+                      name: customizations.title || mod.name,
+                      desc: customizations.desc || mod.desc,
+                      icon: customizations.iconName && IconMap[customizations.iconName] 
+                        ? IconMap[customizations.iconName] 
+                        : mod.icon
+                    };
+                  }
+                  return mod;
+                });
+
                 return (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {modulesWithDetails.map((mod, idx) => (
+                    {(() => {
+                      const freeModules = customizedModulesWithDetails.filter(m => m.tier === 'freemium');
+                      const proModules = customizedModulesWithDetails.filter(m => m.tier === 'pro');
+                      const enterpriseModules = customizedModulesWithDetails.filter(m => m.tier === 'enterprise');
+
+                      const renderModuleCard = (mod: any, idx: number) => (
                         <div key={idx} className={`p-6 rounded-2xl border-2 transition-all flex flex-col justify-between relative overflow-hidden ${
                           mod.active ? 'border-blue-100 bg-blue-50/10' : 'border-slate-100 bg-slate-50 opacity-80 grayscale-[20%]'
                         }`}>
@@ -826,7 +865,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                               mod.active ? (
                                 <button 
                                   onClick={() => setConfiguringModule(mod)}
-                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg hover:rotate-90 transition-all duration-300"
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg hover:rotate-90 transition-all duration-300 border-none bg-transparent cursor-pointer"
                                   title={`Configurar ${mod.name}`}
                                 >
                                   <Settings size={16} />
@@ -834,7 +873,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                               ) : (
                                 <button 
                                   disabled
-                                  className="p-1.5 text-slate-300 cursor-not-allowed"
+                                  className="p-1.5 text-slate-300 cursor-not-allowed border-none bg-transparent"
                                   title="Requiere plan superior para configurar"
                                 >
                                   <Lock size={16} className="opacity-50" />
@@ -843,8 +882,60 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             ) : null}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+
+                      return (
+                        <div className="space-y-10">
+                          {/* SECCIÓN 1: FREE */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-emerald-200/50">
+                                  Plan Free
+                                </span>
+                                <h3 className="text-base font-black text-slate-800">Módulos del Plan Gratuito</h3>
+                              </div>
+                              <span className="text-xs text-slate-450 font-bold">Herramientas básicas incluidas</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {freeModules.map((mod, idx) => renderModuleCard(mod, idx))}
+                            </div>
+                          </div>
+
+                          {/* SECCIÓN 2: PRO */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="bg-blue-100 text-blue-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-blue-200/50 flex items-center gap-1">
+                                  🚀 Plan Pro
+                                </span>
+                                <h3 className="text-base font-black text-slate-800">Módulos Profesionales</h3>
+                              </div>
+                              <span className="text-xs text-slate-450 font-bold">Cálculo de nóminas, reportes e integraciones SAT</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {proModules.map((mod, idx) => renderModuleCard(mod, idx))}
+                            </div>
+                          </div>
+
+                          {/* SECCIÓN 3: ENTERPRISE */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="bg-purple-100 text-purple-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-purple-200/50 flex items-center gap-1">
+                                  👑 Plan Enterprise
+                                </span>
+                                <h3 className="text-base font-black text-slate-800">Módulos Corporativos Premium</h3>
+                              </div>
+                              <span className="text-xs text-slate-450 font-bold">LMS, expedientes avanzados y sitio de vacantes público</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {enterpriseModules.map((mod, idx) => renderModuleCard(mod, idx))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Modal de Detalle de Módulo */}
                     {selectedModuleForDetail && (
@@ -1150,13 +1241,13 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                 <h3 className="text-lg font-black text-slate-800">Recorrido de Módulos</h3>
                               </div>
                               <span className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                                Módulo {tutorialStep + 1} de {modulesWithDetails.length}
+                                Módulo {tutorialStep + 1} de {customizedModulesWithDetails.length}
                               </span>
                             </div>
 
                             {/* Contenido del Paso del Tutorial */}
                             {(() => {
-                              const mod = modulesWithDetails[tutorialStep];
+                              const mod = customizedModulesWithDetails[tutorialStep];
                               if (!mod) return null;
                               return (
                                 <div className="space-y-6">
@@ -1202,7 +1293,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                             {/* Progress Dots */}
                             <div className="flex gap-1.5">
-                              {modulesWithDetails.map((_, dotIdx) => (
+                              {customizedModulesWithDetails.map((_, dotIdx) => (
                                 <div 
                                   key={dotIdx}
                                   className={`w-2 h-2 rounded-full transition-all ${dotIdx === tutorialStep ? 'bg-blue-600 w-4' : 'bg-slate-200'}`}
@@ -1212,7 +1303,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                             <button 
                               onClick={() => {
-                                if (tutorialStep < modulesWithDetails.length - 1) {
+                                if (tutorialStep < customizedModulesWithDetails.length - 1) {
                                   setTutorialStep(tutorialStep + 1);
                                 } else {
                                   setTutorialStep(null);
@@ -1220,7 +1311,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                               }}
                               className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center gap-1.5"
                             >
-                              {tutorialStep === modulesWithDetails.length - 1 ? 'Finalizar' : 'Siguiente'} <ArrowRight size={14} />
+                              {tutorialStep === customizedModulesWithDetails.length - 1 ? 'Finalizar' : 'Siguiente'} <ArrowRight size={14} />
                             </button>
                           </div>
                         </div>

@@ -89,8 +89,8 @@ def main():
         print("\n--- STEP 5: Rebuilding Frontend and restarting Backend containers ---")
         # Restart backend services to refresh mounts and reload code changes
         run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose restart backend backend-web reverb")
-        # Finally, restart frontend to clear Nginx DNS resolver cache of backend-web IP (prevent 502 Bad Gateway)
-        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose restart frontend")
+        # Rebuild frontend image and recreate container to apply new assets
+        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose up -d --build frontend")
         
         print("\nDeployment completed successfully!")
         

@@ -948,4 +948,75 @@ class PlatformAdminController extends Controller
 
         return response()->json(['message' => 'Configuración bancaria guardada con éxito', 'data' => $value]);
     }
+
+    /**
+     * Get simulator config for platform admin
+     */
+    public function getSimulatorConfig()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $config = \DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'landing_simulator_config')
+            ->first();
+
+        $data = $config ? json_decode($config->value, true) : null;
+
+        return response()->json($data ?: [
+            'scale' => 90,
+            'emp_name' => 'Francisco Vega',
+            'store_name' => 'Decorarte 365'
+        ]);
+    }
+
+    /**
+     * Save simulator config
+     */
+    public function saveSimulatorConfig(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $request->validate([
+            'scale' => 'required|integer|min:50|max:150',
+            'emp_name' => 'required|string|max:255',
+            'store_name' => 'required|string|max:255'
+        ]);
+
+        $value = [
+            'scale' => (int)$request->scale,
+            'emp_name' => $request->emp_name,
+            'store_name' => $request->store_name
+        ];
+
+        \DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => null, 'key' => 'landing_simulator_config'],
+            ['value' => json_encode($value), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        return response()->json(['message' => 'Configuración del simulador guardada con éxito', 'data' => $value]);
+    }
+
+    /**
+     * Get public simulator config for landing page
+     */
+    public function getPublicSimulatorConfig()
+    {
+        $config = \DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'landing_simulator_config')
+            ->first();
+
+        $data = $config ? json_decode($config->value, true) : null;
+
+        return response()->json($data ?: [
+            'scale' => 90,
+            'emp_name' => 'Francisco Vega',
+            'store_name' => 'Decorarte 365'
+        ]);
+    }
 }

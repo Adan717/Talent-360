@@ -5,7 +5,7 @@ import {
   ArrowUpRight, ShieldAlert, ShieldCheck, GraduationCap, Loader2,
   User, LogOut, ChevronDown, Search, Filter, Eye, Key, LogIn, Ban, 
   Info, RefreshCw, X, ShieldX, KeyRound, CheckCircle2, Settings,
-  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles
+  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
@@ -375,6 +375,48 @@ export const SaaSPlatformAdmin = () => {
     is_active: false
   });
   const [isSavingBank, setIsSavingBank] = useState(false);
+
+  // Estados para la configuración del simulador de la landing page
+  const [isSimulatorConfigOpen, setIsSimulatorConfigOpen] = useState(false);
+  const [simulatorConfig, setSimulatorConfig] = useState({
+    scale: 90,
+    emp_name: 'Francisco Vega',
+    store_name: 'Decorarte 365'
+  });
+  const [isSavingSimulator, setIsSavingSimulator] = useState(false);
+
+  const handleOpenSimulatorConfig = async () => {
+    setIsSimulatorConfigOpen(true);
+    setIsLoading(true);
+    try {
+      const res = await axiosInstance.get('/platform/landing-simulator-settings');
+      if (res.data) {
+        setSimulatorConfig({
+          scale: res.data.scale || 90,
+          emp_name: res.data.emp_name || 'Francisco Vega',
+          store_name: res.data.store_name || 'Decorarte 365'
+        });
+      }
+    } catch (error) {
+      console.error("Error loading simulator config:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveSimulatorConfig = async () => {
+    setIsSavingSimulator(true);
+    try {
+      await axiosInstance.post('/platform/landing-simulator-settings', simulatorConfig);
+      alert("Configuración del simulador guardada y actualizada con éxito.");
+      setIsSimulatorConfigOpen(false);
+    } catch (error: any) {
+      console.error("Error saving simulator config:", error);
+      alert(error.response?.data?.error || "Error al guardar la configuración del simulador.");
+    } finally {
+      setIsSavingSimulator(false);
+    }
+  };
 
   // Estados Real desde la BD
   const [stats, setStats] = useState({
@@ -1288,6 +1330,13 @@ export const SaaSPlatformAdmin = () => {
                   <CreditCard size={14} />
                   Configurar Cuenta Bancaria (SPEI)
                </button>
+               <button 
+                  onClick={handleOpenSimulatorConfig} 
+                  className="text-xs font-bold text-violet-600 hover:bg-violet-100/50 bg-violet-50 border border-violet-100 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
+               >
+                  <Monitor size={14} />
+                  Ajustes del Simulador Landing
+               </button>
             </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1784,6 +1833,94 @@ export const SaaSPlatformAdmin = () => {
                 </>
               ) : (
                 'Guardar Configuración'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* MODAL: CONFIGURAR SIMULADOR DE LANDING PAGE */}
+    {isSimulatorConfigOpen && (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl my-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                <Monitor className="text-indigo-600" size={22} />
+                Ajustes del Simulador Landing
+              </h3>
+              <p className="text-xs text-slate-500 font-semibold mt-1">Configura las dimensiones y contenidos de la simulación en la página de inicio.</p>
+            </div>
+            <button 
+              onClick={() => setIsSimulatorConfigOpen(false)}
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="space-y-4 text-left">
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">Escala del Reloj (Porcentaje)</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="range" 
+                  min="50" 
+                  max="150" 
+                  value={simulatorConfig.scale} 
+                  onChange={(e) => setSimulatorConfig({...simulatorConfig, scale: parseInt(e.target.value)})}
+                  className="flex-1 accent-indigo-650 cursor-pointer" 
+                />
+                <span className="text-xs font-black text-slate-700 w-10 text-right">{simulatorConfig.scale}%</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1 font-medium">Permite reducir o agrandar el smartphone del simulador en la landing page para que encaje mejor.</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">Nombre del Colaborador</label>
+              <input 
+                type="text" 
+                value={simulatorConfig.emp_name} 
+                onChange={(e) => setSimulatorConfig({...simulatorConfig, emp_name: e.target.value})}
+                placeholder="Francisco Vega"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" 
+              />
+              <p className="text-[10px] text-slate-400 mt-1 font-medium">El nombre ficticio del empleado que se mostrará en el simulador.</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">Nombre de la Sucursal</label>
+              <input 
+                type="text" 
+                value={simulatorConfig.store_name} 
+                onChange={(e) => setSimulatorConfig({...simulatorConfig, store_name: e.target.value})}
+                placeholder="Decorarte 365"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all" 
+              />
+              <p className="text-[10px] text-slate-400 mt-1 font-medium">El nombre de la sucursal ficticia que se mostrará en el simulador.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-8 border-t border-slate-100 pt-6">
+            <button 
+              onClick={() => setIsSimulatorConfigOpen(false)} 
+              className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors text-sm border-none cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleSaveSimulatorConfig}
+              disabled={isSavingSimulator}
+              className="flex-1 py-3 rounded-xl font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition-all text-sm flex items-center justify-center gap-2 border-none cursor-pointer"
+            >
+              {isSavingSimulator ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Ajustes'
               )}
             </button>
           </div>

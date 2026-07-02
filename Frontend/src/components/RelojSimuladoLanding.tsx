@@ -13,12 +13,16 @@ interface RelojSimuladoLandingProps {
   tier: 'free' | 'pro';
   setTier?: (tier: 'free' | 'pro') => void;
   onActionClick?: () => void;
+  empName?: string;
+  storeName?: string;
 }
 
 export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   tier,
   setTier,
-  onActionClick
+  onActionClick,
+  empName = 'Francisco Vega',
+  storeName = 'Decorarte 365'
 }) => {
   const [clockState, setClockState] = useState<'inactive' | 'active' | 'short_break' | 'meal' | 'finished'>('inactive');
   const [phoneTab, setPhoneTab] = useState<string>('checador');
@@ -67,11 +71,11 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   const currentUser = {
     id: 99,
-    name: 'Francisco Vega',
+    name: empName,
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces',
     role: 'empleado',
     job_role_id: 1,
-    tenant: { name: 'Decorarte 365' }
+    tenant: { name: storeName }
   };
 
   const shiftConfigs = {
@@ -217,7 +221,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   // Propiedades dinámicas del dial
   const getDialProps = () => {
     if (clockState === 'inactive') {
-      return { disabled: false, text: 'Registrar Entrada', subtext: 'Francisco Vega' };
+      return { disabled: false, text: 'Registrar Entrada', subtext: empName };
     }
     if (clockState === 'active') {
       if (tier === 'free') {

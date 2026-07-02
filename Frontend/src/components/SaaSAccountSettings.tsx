@@ -5,7 +5,8 @@ import {
   Smartphone, Upload, Globe, ChevronRight,
   Receipt, Database, Loader2, MessageSquare, Send, X,
   Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap,
-  Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee
+  Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee,
+  Eye, EyeOff
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { BackupPanel } from './BackupPanel';
@@ -535,6 +536,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v3.0',
                     icon: <Users size={20} />,
                     iconColor: 'bg-blue-50 text-blue-600',
+                    moduleId: 'rrhh',
                     features: [
                       'Expedientes digitales completos de colaboradores.',
                       'Control de roles y permisos (RBAC) personalizados.',
@@ -550,11 +552,28 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v4.2',
                     icon: <Clock size={20} />,
                     iconColor: 'bg-teal-50 text-teal-600',
+                    moduleId: 'reloj',
                     features: [
                       'Registro de asistencia en tiempo real mediante PWA móvil.',
                       'Validación de geolocalización GPS para evitar fraudes.',
                       'Reconocimiento facial (selfie de entrada/salida).',
                       'Modo sin conexión con sincronización automática al recuperar red.'
+                    ]
+                  },
+                  { 
+                    name: 'Reloj Checador 2', 
+                    desc: 'Asistencia con geolocalización (V2)', 
+                    tier: 'freemium', 
+                    active: isModuleUnlocked('reloj'), 
+                    version: 'v4.2-cloned',
+                    icon: <Clock size={20} />,
+                    iconColor: 'bg-emerald-50 text-emerald-600',
+                    moduleId: 'reloj2',
+                    features: [
+                      'Segunda instancia del reloj checador para flujos de pruebas.',
+                      'Configuración y logs de eventos de asistencia independientes.',
+                      'Geocercas (geofencing) y validaciones faciales alternativas.',
+                      'Cola de sincronización y modo offline aislado.'
                     ]
                   },
                   { 
@@ -580,6 +599,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v1.5',
                     icon: <CheckSquare size={20} />,
                     iconColor: 'bg-green-50 text-green-600',
+                    moduleId: 'operativo',
                     features: [
                       'Creación de listas de tareas diarias para personal de piso.',
                       'Evidencias fotográficas y firmas digitales de finalización.',
@@ -595,6 +615,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v1.1 (Beta)',
                     icon: <Briefcase size={20} />,
                     iconColor: 'bg-purple-50 text-purple-600',
+                    moduleId: 'ats',
                     features: [
                       'Publicación automática de vacantes en portal de empleo.',
                       'Embudo de reclutamiento (pipeline) con etapas personalizadas.',
@@ -610,6 +631,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v2.0',
                     icon: <FileText size={20} />,
                     iconColor: 'bg-emerald-50 text-emerald-600',
+                    moduleId: 'reportes',
                     features: [
                       'Reportes de asistencia consolidados (horas trabajadas, retardos).',
                       'Cálculo automático de incidencias listas para prenómina.',
@@ -640,6 +662,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v2.8',
                     icon: <GraduationCap size={20} />,
                     iconColor: 'bg-indigo-50 text-indigo-600',
+                    moduleId: 'academia',
                     features: [
                       'Plataforma de capacitación interna (LMS) para onboarding.',
                       'Creación de cursos interactivos con videos y cuestionarios.',
@@ -655,6 +678,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v1.0',
                     icon: <FileText size={20} />,
                     iconColor: 'bg-yellow-50 text-yellow-600',
+                    moduleId: 'documentos',
                     features: [
                       'Expedientes digitales ordenados por colaborador.',
                       'Subida de documentos oficiales (INE, RFC, Acta de Nacimiento).',
@@ -678,6 +702,32 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                 {mod.icon}
                               </div>
                               <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                {mod.moduleId && mod.active && (() => {
+                                  const hiddenModules = systemSettings?.hiddenMenuModules || [];
+                                  const isHidden = hiddenModules.includes(mod.moduleId);
+                                  const isAdmin = currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin';
+                                  
+                                  return (
+                                    <button
+                                      disabled={!isAdmin}
+                                      onClick={() => {
+                                        const newHidden = isHidden
+                                          ? hiddenModules.filter((id: string) => id !== mod.moduleId)
+                                          : [...hiddenModules, mod.moduleId];
+                                        updateSetting('hiddenMenuModules', newHidden);
+                                      }}
+                                      className={`p-1.5 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-sm ${
+                                        !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                                        isHidden
+                                          ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
+                                          : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                                      }`}
+                                      title={!isAdmin ? "Solo los administradores pueden cambiar la visibilidad." : isHidden ? "Oculto en el menú lateral. Haz clic para mostrar." : "Visible en el menú lateral. Haz clic para ocultar."}
+                                    >
+                                      {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                                    </button>
+                                  );
+                                })()}
                                 {mod.active && (
                                   <span className="bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-emerald-200/50 flex items-center gap-1">
                                     <CheckCircle2 size={10} /> Activo

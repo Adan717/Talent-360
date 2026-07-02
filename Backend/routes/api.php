@@ -51,6 +51,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/public/vacancy-alerts', [RecruitmentController::class, 'storeVacancyAlert']);
     Route::post('/public/onboarding/verify', [OnboardingController::class, 'verifyPin']);
     Route::post('/public/onboarding/complete', [OnboardingController::class, 'completeActivation']);
+    Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);
@@ -76,6 +77,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/platform/freemium-config', [PlatformAdminController::class, 'saveFreemiumConfig']);
         Route::get('/platform/bank-config', [PlatformAdminController::class, 'getBankConfig']);
         Route::post('/platform/bank-config', [PlatformAdminController::class, 'saveBankConfig']);
+        Route::get('/platform/landing-simulator-settings', [PlatformAdminController::class, 'getSimulatorConfig']);
+        Route::post('/platform/landing-simulator-settings', [PlatformAdminController::class, 'saveSimulatorConfig']);
         Route::get('/platform/security/devices', [PlatformAdminController::class, 'getSuspiciousDevices']);
         Route::post('/platform/security/devices/{id}/ban', [PlatformAdminController::class, 'banDevice']);
         Route::post('/platform/security/devices/{id}/unban', [PlatformAdminController::class, 'unbanDevice']);

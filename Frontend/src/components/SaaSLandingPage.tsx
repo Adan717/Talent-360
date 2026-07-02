@@ -31,6 +31,31 @@ export const SaaSLandingPage = () => {
   });
   const [isSubdomainManual, setIsSubdomainManual] = useState(false);
 
+  // Configuraciones del simulador cargadas desde el panel de Super Admin
+  const [simSettings, setSimSettings] = useState({
+    scale: 90,
+    emp_name: 'Francisco Vega',
+    store_name: 'Decorarte 365'
+  });
+
+  useEffect(() => {
+    const fetchSimSettings = async () => {
+      try {
+        const res = await axiosInstance.get('/public/landing-simulator-settings');
+        if (res.data) {
+          setSimSettings({
+            scale: res.data.scale || 90,
+            emp_name: res.data.emp_name || 'Francisco Vega',
+            store_name: res.data.store_name || 'Decorarte 365'
+          });
+        }
+      } catch (e) {
+        console.error("Error loading simulator landing settings:", e);
+      }
+    };
+    fetchSimSettings();
+  }, []);
+
   const [activeTab, setActiveTab] = useState<'checador' | 'rrhh' | 'reclutamiento'>('checador');
   const [liveTime, setLiveTime] = useState(new Date().toLocaleTimeString());
   const [simulatedClockState, setSimulatedClockState] = useState<string>('inactive');
@@ -511,7 +536,10 @@ export const SaaSLandingPage = () => {
                 <div className="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-10 w-full animate-in fade-in duration-300 mt-14 md:mt-8">
 
                   {/* SMARTPHONE FRAME (Utiliza el RelojVisual clon real en modo simulado) */}
-                  <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2">
+                  <div 
+                    className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 order-2 transition-transform duration-300"
+                    style={{ transform: `scale(${simSettings.scale / 100})`, transformOrigin: 'top center' }}
+                  >
                     {/* Speaker & Sensor Notch */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
                       <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
@@ -524,6 +552,8 @@ export const SaaSLandingPage = () => {
                         tier={simulatedTier}
                         setTier={setSimulatedTier}
                         onActionClick={() => handleBuy('Professional')}
+                        empName={simSettings.emp_name}
+                        storeName={simSettings.store_name}
                       />
                     </div>
 
@@ -935,7 +965,10 @@ export const SaaSLandingPage = () => {
           </div>
 
           {/* SMARTPHONE FRAME (Perfectamente centrado en celulares) */}
-          <div className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0">
+          <div 
+            className="relative w-full max-w-[290px] border-8 border-slate-900 bg-slate-950 rounded-[42px] shadow-2xl overflow-hidden flex flex-col aspect-[9/19] shrink-0 transition-transform duration-300"
+            style={{ transform: `scale(${simSettings.scale / 100})`, transformOrigin: 'top center' }}
+          >
             {/* Speaker & Notch */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-slate-900 rounded-b-2xl z-55 flex items-center justify-center gap-1.5">
               <div className="w-12 h-1 bg-slate-800 rounded-full"></div>
@@ -948,6 +981,8 @@ export const SaaSLandingPage = () => {
                 tier={simulatedTier}
                 setTier={setSimulatedTier}
                 onActionClick={() => handleBuy('Professional')}
+                empName={simSettings.emp_name}
+                storeName={simSettings.store_name}
               />
             </div>
 

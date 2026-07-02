@@ -271,8 +271,9 @@ function MainLayout() {
   const activeModuleData = modules.find(m => m.id === activeModule);
 
   const visibleModules = modules.filter(mod => {
-    // Ocultar Reloj Checador original por solicitud
-    if (mod.id === 'reloj') {
+    // Filtrar módulos que el administrador decidió ocultar de la barra lateral
+    const hiddenModules = systemSettings?.hiddenMenuModules || [];
+    if (hiddenModules.includes(mod.id)) {
       return false;
     }
     if (currentUser?.role === 'supervisor') {

@@ -605,6 +605,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v2.1',
                     icon: <Coffee size={20} />,
                     iconColor: 'bg-amber-50 text-amber-600',
+                    moduleId: 'comidas',
                     features: [
                       'Registro básico de comidas y descansos largos.',
                       'Límite de sillas y prevención de solapes (Plan PRO).',
@@ -668,6 +669,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     version: 'v1.0',
                     icon: <Globe size={20} />,
                     iconColor: 'bg-sky-50 text-sky-600',
+                    moduleId: 'portal',
                     features: [
                       'Sitio web corporativo de vacantes personalizado con tu dominio.',
                       'Formulario de aplicación amigable para postulantes móviles.',
@@ -778,7 +780,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                             reportes: 'FileText',
                                             academia: 'GraduationCap',
                                             documentos: 'FileText',
-                                            facturacion: 'Receipt'
+                                            facturacion: 'Receipt',
+                                            comidas: 'Coffee',
+                                            portal: 'Globe'
                                           };
                                           setEditingCustomModule({
                                             id: mod.moduleId,
@@ -1105,7 +1109,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                         { name: 'Calendar', label: 'Calendario' },
                         { name: 'MapPin', label: 'Ubicaciones' },
                         { name: 'Heart', label: 'Salud/Clima' },
-                        { name: 'Bell', label: 'Notificaciones' }
+                        { name: 'Bell', label: 'Notificaciones' },
+                        { name: 'Globe', label: 'Portal Web' },
+                        { name: 'Receipt', label: 'Facturación' }
                       ];
 
                       const renderIcon = (name: string) => {
@@ -1122,6 +1128,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           case 'MapPin': return <MapPin size={22} />;
                           case 'Heart': return <Heart size={22} />;
                           case 'Bell': return <Bell size={22} />;
+                          case 'Globe': return <Globe size={22} />;
+                          case 'Receipt': return <Receipt size={22} />;
                           default: return <Settings size={22} />;
                         }
                       };

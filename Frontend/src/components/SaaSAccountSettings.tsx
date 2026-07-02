@@ -765,11 +765,17 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       const proModules = customizedModulesWithDetails.filter(m => m.tier === 'pro');
                       const enterpriseModules = customizedModulesWithDetails.filter(m => m.tier === 'enterprise');
 
-                      const renderModuleCard = (mod: any, idx: number) => (
-                        <div key={idx} className={`p-6 rounded-2xl border-2 transition-all flex flex-col justify-between relative overflow-hidden ${
-                          mod.active ? 'border-blue-100 bg-blue-50/10' : 'border-slate-100 bg-slate-50 opacity-80 grayscale-[20%]'
-                        }`}>
-                          <div>
+                      const renderModuleCard = (mod: any, idx: number) => {
+                        const activeBorderClass = 
+                          mod.tier === 'freemium' ? 'border-emerald-200 bg-emerald-50/10 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100/50' :
+                          mod.tier === 'pro' ? 'border-blue-100 bg-blue-50/10 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50' :
+                          'border-purple-200 bg-purple-50/10 hover:border-purple-300 hover:shadow-md hover:shadow-purple-100/50';
+
+                        return (
+                          <div key={idx} className={`p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col justify-between relative overflow-hidden ${
+                            mod.active ? activeBorderClass : 'border-slate-100 bg-slate-50 opacity-80 grayscale-[20%]'
+                          }`}>
+                            <div>
                             {/* Top Row: Icon & Plan Badge */}
                             <div className="flex items-center justify-between mb-4">
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${mod.iconColor} shadow-inner`}>
@@ -904,6 +910,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           </div>
                         </div>
                       );
+                    };
 
                       return (
                         <div className="space-y-10">

@@ -551,8 +551,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               {(() => {
                 const modulesWithDetails = [
                   { 
-                    name: 'Recursos Humanos', 
-                    desc: 'Directorio y Gestión de Expedientes', 
+                    name: 'Expediente Digital', 
+                    desc: 'Estructura y contratos', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('rrhh'), 
                     version: 'v3.1',
@@ -567,8 +567,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reloj Checador (Original)', 
-                    desc: 'Asistencia con geolocalización', 
+                    name: 'Reloj Checador GPS', 
+                    desc: 'Asistencia y selfie', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
                     version: 'v4.2',
@@ -583,8 +583,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reloj', 
-                    desc: 'Control de asistencia inteligente', 
+                    name: 'Checador Inteligente', 
+                    desc: 'Ley Silla y descansos', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
                     version: 'v4.3',
@@ -599,8 +599,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Checador de Comida', 
-                    desc: 'Control y reserva de comedor', 
+                    name: 'Control de Comedor', 
+                    desc: 'Turnos y reserva de comida', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
                     version: 'v2.1',
@@ -615,8 +615,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Rutinas y Tareas', 
-                    desc: 'Asignación de checklists operativos', 
+                    name: 'Bitácora de Tareas', 
+                    desc: 'Checklists por voz', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('operativo'), 
                     version: 'v1.5',
@@ -631,8 +631,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reclutamiento ATS', 
-                    desc: 'Bolsa de trabajo interna', 
+                    name: 'Bolsa de Trabajo ATS', 
+                    desc: 'Vacantes y postulantes', 
                     tier: 'pro', 
                     active: isModuleUnlocked('ats'), 
                     version: 'v1.1',
@@ -647,8 +647,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reportes y Analítica', 
-                    desc: 'Nómina e incidencias', 
+                    name: 'Reportes y Prenómina IA', 
+                    desc: 'Cálculo de incidencias', 
                     tier: 'pro', 
                     active: isModuleUnlocked('reportes'), 
                     version: 'v2.0',
@@ -663,8 +663,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Portal Web (Vacantes)', 
-                    desc: 'Sitio público para la empresa', 
+                    name: 'Portal de Empleo Web', 
+                    desc: 'Sitio web de vacantes', 
                     tier: 'enterprise', 
                     active: isModuleUnlocked('portal'), 
                     version: 'v1.0',
@@ -679,8 +679,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Academia LMS', 
-                    desc: 'Cursos de inducción', 
+                    name: 'Academia y Cursos', 
+                    desc: 'Capacitación e inducción', 
                     tier: 'enterprise', 
                     active: isModuleUnlocked('academia'), 
                     version: 'v2.8',
@@ -695,8 +695,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Gestor Documental', 
-                    desc: 'Expedientes y manuales', 
+                    name: 'Bóveda de Contratos', 
+                    desc: 'Firma y resguardo', 
                     tier: 'enterprise', 
                     active: isModuleUnlocked('documentos'), 
                     version: 'v1.0',
@@ -711,8 +711,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Facturación Electrónica', 
-                    desc: 'Timbrado de nómina CFDI 4.0', 
+                    name: 'Nómina CFDI 4.0', 
+                    desc: 'Timbrado masivo del SAT', 
                     tier: 'pro', 
                     active: isModuleUnlocked('facturacion'), 
                     version: 'v1.0',
@@ -726,8 +726,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Simulador Matrix', 
-                    desc: 'Entorno de simulación de celulares y bitácora QA', 
+                    name: 'Simulador Matrix QA', 
+                    desc: 'Pruebas del reloj', 
                     tier: 'pro', 
                     active: isModuleUnlocked('matrix'), 
                     version: 'v1.2',

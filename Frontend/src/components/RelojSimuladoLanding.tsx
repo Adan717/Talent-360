@@ -608,7 +608,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
 
             {/* Barra Cronológica Proporcional Real */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-6px]">
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-12px]">
               {renderBarraCronologica()}
             </div>
 
@@ -640,7 +640,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             </div>
 
             {/* Alertas dinámicas bajo el dial */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-1 mt-0.5 shrink-0">
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-1 mt-[-2.5px] shrink-0">
               <div className={`p-3 border rounded-2xl flex items-center gap-3 text-left ${
                 isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800'
               }`}>

@@ -75,13 +75,16 @@ def main():
         print("\n--- STEP 4: Running migrations and clearing cache (non-destructive) ---")
         # Fix permissions on storage and cache to prevent write lock issues
         run_remote_cmd(ssh, "chmod -R 777 /var/www/talent360/Backend/storage /var/www/talent360/Backend/bootstrap/cache")
-        # Run migrations safely
-        run_remote_cmd(ssh, "docker exec talent360-backend php artisan migrate --force")
-        # Run DecorArte database seeder
-        run_remote_cmd(ssh, "docker exec talent360-backend php scripts_utilidad/seed_decorarte_final.php")
-        # Clear config and cache
-        run_remote_cmd(ssh, "docker exec talent360-backend php artisan config:clear")
-        run_remote_cmd(ssh, "docker exec talent360-backend php artisan cache:clear")
+        # Run migrations safely as www-data to prevent root ownership of logs/caches
+        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan migrate --force")
+        # Run DecorArte database seeder as www-data
+        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php scripts_utilidad/seed_decorarte_final.php")
+        # Clear config and cache as www-data
+        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan config:clear")
+        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan cache:clear")
+        # Double check permissions after commands execution to prevent lockouts
+        run_remote_cmd(ssh, "docker exec talent360-backend chmod -R 777 /var/www/storage /var/www/bootstrap/cache")
+        run_remote_cmd(ssh, "chmod -R 777 /var/www/talent360/Backend/storage /var/www/talent360/Backend/bootstrap/cache")
         
         print("\n--- STEP 5: Rebuilding Frontend and restarting Backend containers ---")
         # Rebuild frontend container so changes take effect immediately

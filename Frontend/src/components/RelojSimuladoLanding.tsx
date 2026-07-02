@@ -429,8 +429,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
     const progressPercent = tDuration > 0 ? Math.min(100, Math.max(0, (elapsedTotal / tDuration) * 100)) : 0;
 
     return (
-      <div className="py-2 px-1 text-left w-full select-none shrink-0">
-        <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] mb-3 px-1">
+      <div className="py-1 px-1 text-left w-full select-none shrink-0">
+        <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] mb-1.5 px-1">
           <div className="flex items-center select-none">
             <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -608,7 +608,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
 
             {/* Barra Cronológica Proporcional Real */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0">
+            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-6px]">
               {renderBarraCronologica()}
             </div>
 

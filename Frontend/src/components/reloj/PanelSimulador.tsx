@@ -13,6 +13,31 @@ import { ClockContext2 } from '../store/ClockContext2';
 import { useClockEngine as useClockEngineClone } from '../reloj2/useClockEngine';
 import RelojVisualClone from '../reloj2/RelojVisual';
 
+class PhoneErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Phone simulated crash:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full bg-rose-955/40 text-rose-400 p-4 text-center border border-rose-500/30">
+          <span className="text-2xl">🛑</span>
+          <span className="text-xs font-bold mt-2">Error de Ejecución</span>
+          <span className="text-[9px] opacity-75 mt-1">Revisa la consola del navegador</span>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function MiniaturaCelularNormal({ user, scale }: { user: any; scale: number }) {
   const engine = useClockEngineNormal(user);
 
@@ -20,22 +45,40 @@ function MiniaturaCelularNormal({ user, scale }: { user: any; scale: number }) {
   const { setGlobalClockState, setGlobalCheckInTime, setGlobalArrivalTime } = useAppStore();
   
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && engine && !engine.isGlobalLoading && !engine.dbEmpty) {
       setGlobalClockState(user.id, engine.clockState);
     }
-  }, [engine.clockState, user?.id]);
+  }, [engine?.clockState, user?.id]);
 
   useEffect(() => {
-    if (user?.id && (engine.checkInTimes || {})[user.id] !== undefined) {
+    if (user?.id && engine && !engine.isGlobalLoading && !engine.dbEmpty && (engine.checkInTimes || {})[user.id] !== undefined) {
       setGlobalCheckInTime(user.id, engine.checkInTimes[user.id]);
     }
-  }, [engine.checkInTimes, user?.id]);
+  }, [engine?.checkInTimes, user?.id]);
 
   useEffect(() => {
-    if (user?.id && (engine.arrivalTimes || {})[user.id] !== undefined) {
+    if (user?.id && engine && !engine.isGlobalLoading && !engine.dbEmpty && (engine.arrivalTimes || {})[user.id] !== undefined) {
       setGlobalArrivalTime(user.id, engine.arrivalTimes[user.id]);
     }
-  }, [engine.arrivalTimes, user?.id]);
+  }, [engine?.arrivalTimes, user?.id]);
+
+  if (!engine || engine.isGlobalLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-900 text-slate-400 p-4 text-center animate-pulse">
+        <span className="text-xl">🔄</span>
+        <span className="text-xs font-bold mt-2">Cargando...</span>
+      </div>
+    );
+  }
+
+  if (engine.dbEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-900 text-slate-500 p-4 text-center">
+        <span className="text-xl">⚠️</span>
+        <span className="text-xs font-bold mt-2">Base de Datos Vacía</span>
+      </div>
+    );
+  }
 
   return (
     <ClockContext.Provider value={engine}>
@@ -97,22 +140,40 @@ function MiniaturaCelularClone({ user, scale }: { user: any; scale: number }) {
   const { setGlobalClockState, setGlobalCheckInTime, setGlobalArrivalTime } = useAppStore();
   
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && engine && !engine.isGlobalLoading && !engine.dbEmpty) {
       setGlobalClockState(user.id, engine.clockState);
     }
-  }, [engine.clockState, user?.id]);
+  }, [engine?.clockState, user?.id]);
 
   useEffect(() => {
-    if (user?.id && (engine.checkInTimes || {})[user.id] !== undefined) {
+    if (user?.id && engine && !engine.isGlobalLoading && !engine.dbEmpty && (engine.checkInTimes || {})[user.id] !== undefined) {
       setGlobalCheckInTime(user.id, engine.checkInTimes[user.id]);
     }
-  }, [engine.checkInTimes, user?.id]);
+  }, [engine?.checkInTimes, user?.id]);
 
   useEffect(() => {
-    if (user?.id && (engine.arrivalTimes || {})[user.id] !== undefined) {
+    if (user?.id && engine && !engine.isGlobalLoading && !engine.dbEmpty && (engine.arrivalTimes || {})[user.id] !== undefined) {
       setGlobalArrivalTime(user.id, engine.arrivalTimes[user.id]);
     }
-  }, [engine.arrivalTimes, user?.id]);
+  }, [engine?.arrivalTimes, user?.id]);
+
+  if (!engine || engine.isGlobalLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-900 text-slate-400 p-4 text-center animate-pulse">
+        <span className="text-xl">🔄</span>
+        <span className="text-xs font-bold mt-2">Cargando...</span>
+      </div>
+    );
+  }
+
+  if (engine.dbEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-slate-900 text-slate-500 p-4 text-center">
+        <span className="text-xl">⚠️</span>
+        <span className="text-xs font-bold mt-2">Base de Datos Vacía</span>
+      </div>
+    );
+  }
 
   return (
     <ClockContext2.Provider value={engine}>
@@ -667,11 +728,13 @@ export default function PanelSimulador() {
                     className="bg-slate-800 rounded-b-2xl rounded-t-none border border-slate-700 shadow-2xl overflow-hidden relative transition-all duration-300"
                     style={{ width: `${400 * phoneScale}px`, height: `${(850 * phoneScale) + 38}px` }}
                   >
-                     {clockVersion === 'clone' ? (
-                       <MiniaturaCelularClone user={user} scale={phoneScale} />
-                     ) : (
-                       <MiniaturaCelularNormal user={user} scale={phoneScale} />
-                     )}
+                     <PhoneErrorBoundary>
+                       {clockVersion === 'clone' ? (
+                         <MiniaturaCelularClone user={user} scale={phoneScale} />
+                       ) : (
+                         <MiniaturaCelularNormal user={user} scale={phoneScale} />
+                       )}
+                     </PhoneErrorBoundary>
                   </div>
                 </div>
               ))

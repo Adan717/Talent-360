@@ -4,7 +4,8 @@ import { Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-rou
 import { 
   LayoutDashboard, Users, GraduationCap, Clock, 
   CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase,
-  FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User
+  FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User,
+  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt
 } from 'lucide-react';
 import { useAppStore } from './store/useAppStore';
 import axiosInstance from './lib/axios';
@@ -24,6 +25,7 @@ const AtsManager = lazy(() => import('./components/AtsManager').then(module => (
 const ReportesManager = lazy(() => import('./components/ReportesManager'));
 const SaaSAccountSettings = lazy(() => import('./components/SaaSAccountSettings').then(m => ({ default: m.SaaSAccountSettings })));
 const GestorDocumentos = lazy(() => import('./components/GestorDocumentos').then(module => ({ default: module.GestorDocumentos })));
+const FacturacionManager = lazy(() => import('./components/FacturacionManager').then(m => ({ default: m.FacturacionManager })));
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
 import { SaaSPlatformAdmin } from './components/SaaSPlatformAdmin';
@@ -32,6 +34,23 @@ import { Login } from './components/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { MyAccountModal } from './components/MyAccountModal';
 import { SupportChatCopilot } from './components/SupportChatCopilot';
+
+const IconMap: Record<string, React.ReactNode> = {
+  LayoutDashboard: <LayoutDashboard size={20} />,
+  Users: <Users size={20} />,
+  Clock: <Clock size={20} />,
+  CheckSquare: <CheckSquare size={20} />,
+  Briefcase: <Briefcase size={20} />,
+  FileText: <FileText size={20} />,
+  GraduationCap: <GraduationCap size={20} />,
+  Coffee: <Coffee size={20} />,
+  Calendar: <Calendar size={20} />,
+  MapPin: <MapPin size={20} />,
+  Heart: <Heart size={20} />,
+  Bell: <Bell size={20} />,
+  Database: <Database size={20} />,
+  Globe: <Globe size={20} />
+};
 
 const RootRoute = () => {
   const [searchParams] = useSearchParams();
@@ -187,7 +206,7 @@ function MainLayout() {
     },
     {
       id: 'reloj',
-      title: 'Reloj Checador',
+      title: 'Reloj Checador (Original)',
       desc: 'Control de Asistencia',
       icon: <Clock size={20} />,
       color: 'bg-teal-50 text-teal-600 border-teal-100',
@@ -196,12 +215,12 @@ function MainLayout() {
     },
     {
       id: 'reloj2',
-      title: 'Reloj Checador 2',
-      desc: 'Control de Asistencia (V2)',
+      title: 'Reloj Checador',
+      desc: 'Control de asistencia inteligente',
       icon: <Clock size={20} />,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       minTier: 'freemium',
-      version: 'v4.2-cloned'
+      version: 'v4.2'
     },
     {
       id: 'operativo',
@@ -249,6 +268,15 @@ function MainLayout() {
       version: 'v1.0'
     },
     {
+      id: 'facturacion',
+      title: 'Facturación Electrónica',
+      desc: 'Timbrado de nómina CFDI',
+      icon: <Receipt size={20} />,
+      color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+      minTier: 'pro',
+      version: 'v1.0'
+    },
+    {
       id: 'matrix',
       title: 'QA Matrix',
       desc: 'Simulador Dev',
@@ -268,9 +296,25 @@ function MainLayout() {
     }
   ];
 
-  const activeModuleData = modules.find(m => m.id === activeModule);
+  // Aplicar personalizaciones dinámicas del administrador
+  const customizedModules = modules.map(mod => {
+    const customizations = systemSettings?.moduleCustomizations?.[mod.id];
+    if (customizations) {
+      return {
+        ...mod,
+        title: customizations.title || mod.title,
+        desc: customizations.desc || mod.desc,
+        icon: customizations.iconName && IconMap[customizations.iconName] 
+          ? IconMap[customizations.iconName] 
+          : mod.icon
+      };
+    }
+    return mod;
+  });
 
-  const visibleModules = modules.filter(mod => {
+  const activeModuleData = customizedModules.find(m => m.id === activeModule);
+
+  const visibleModules = customizedModules.filter(mod => {
     // Filtrar módulos que el administrador decidió ocultar de la barra lateral
     const hiddenModules = systemSettings?.hiddenMenuModules || [];
     if (hiddenModules.includes(mod.id)) {
@@ -643,6 +687,7 @@ function MainLayout() {
             {activeModule === 'operativo' && <PanelTareasRutinas />}
             {activeModule === 'academia' && <GestorAcademia />}
 {activeModule === 'documentos' && <GestorDocumentos />}
+            {activeModule === 'facturacion' && <FacturacionManager />}
             {activeModule === 'reloj' && <RelojChecador />}
             {activeModule === 'reloj2' && <RelojChecador2 />}
             {activeModule === 'reportes' && <ReportesManager />}

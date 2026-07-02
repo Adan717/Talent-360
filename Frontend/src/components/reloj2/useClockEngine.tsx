@@ -935,7 +935,7 @@ export function useClockEngine(overrideUser?: any) {
             else if (prevState === 'meal' && state === 'active') type = 'meal_end';
             
             const startMins = shiftConfigs[userId]?.start ? parseInt(shiftConfigs[userId].start.split(':')[0])*60 + parseInt(shiftConfigs[userId].start.split(':')[1]) : 480;
-            const isLate = type === 'check_in' && currentSimTime > startMins + (shiftConfigs[userId]?.tolerance || 10);
+             const isLate = type === 'check_in' && currentSimTime > startMins + (shiftConfigs[userId]?.tolerance ?? (timeBankConfigs.maxLateMinsAllowed ?? 15));
             const lateMins = isLate ? currentSimTime - startMins : 0;
             
             syncToBackend('clock/punch', {
@@ -1764,7 +1764,7 @@ export function useClockEngine(overrideUser?: any) {
     // const clockState = globalClockStates[currentUser.id];
     
     if (clockState === 'inactive') {
-      const limitMins = shiftStartMins - 30;
+      const limitMins = shiftStartMins - (clockOpConfig.arrivalWindowMins ?? 30);
       if (currentSimTime >= limitMins && !playedAlarms.ya_llegue) {
         playAlarm('ya_llegue');
         setPlayedAlarms(prev => ({...prev, ya_llegue: true}));
@@ -2014,12 +2014,12 @@ export function useClockEngine(overrideUser?: any) {
       showCustomAlert("⚠️ El Pase de Lista es una función PRO. Por favor, actualiza tu plan.");
       return;
     }
-    if (conAmnistia) setAmnestyActive(true);
+    if (conAmnistia) setAmnistiaActive(true);
     
     const empleadosEnPuerta = globalUsers.filter(u => u.id !== currentUser.id && (globalClockStates[u.id] === 'waiting_room' || globalClockStates[u.id] === 'waiting')).map((u) => {
       const arrTime = globalArrivalTimes[u.id] || 0;
       const shiftStartMins = parseTimeToMins(shiftConfigs[u.id]?.start || '09:00');
-      const toleranceEndMins = shiftStartMins + 10;
+      const toleranceEndMins = shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15);
       const isOnTime = arrTime <= toleranceEndMins; 
       
       const arrH = Math.floor(arrTime / 60);
@@ -2236,7 +2236,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));
-    const toleranceEndMins = shiftStartMins + 10;
+    const toleranceEndMins = shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15);
   
 
 
@@ -2547,7 +2547,7 @@ export function useClockEngine(overrideUser?: any) {
     const shiftStartMins = parseTimeToMins(shiftStartStr);
 
     const hasCheckedIn = checkInTimes[currentUser?.id] !== undefined;
-    const isLate = currentSimTime > (shiftStartMins + 10);
+     const isLate = currentSimTime > (shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15));
     
     if (!hasCheckedIn && isLate && clockState === 'inactive') {
       return {
@@ -2605,7 +2605,7 @@ export function useClockEngine(overrideUser?: any) {
           icon: '🗝️',
           isOpeningActive: true 
         };
-      } else if (globalSimTime >= openTimeMins && openingSettings.allow_store_closed_report && openingStatus?.status !== 'opened') {
+      } else if (globalSimTime >= (openTimeMins + (clockOpConfig.storeClosedReportDelayMins || 0)) && openingSettings.allow_store_closed_report && openingStatus?.status !== 'opened') {
         return { 
           text: '⚠️ Reportar Tienda Cerrada', 
           bg: 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold shadow-[0_0_20px_rgba(239,68,68,0.2)]', 
@@ -2621,7 +2621,7 @@ export function useClockEngine(overrideUser?: any) {
     }
     if (storeStatus === 'closed') {
       if (clockState === 'inactive') {
-        const limitMins = shiftStartMins - 60;
+        const limitMins = shiftStartMins - (clockOpConfig.arrivalWindowMins ?? 30);
         if (currentSimTime < limitMins) {
           const formatLimit = () => {
             const h = Math.floor(limitMins / 60);
@@ -2634,7 +2634,7 @@ export function useClockEngine(overrideUser?: any) {
         return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢', subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}` };
       }
       if (clockState === 'waiting_room') {
-        if (currentSimTime >= shiftStartMins) {
+        if (currentSimTime >= (shiftStartMins + (clockOpConfig.storeClosedReportDelayMins || 0))) {
           return { text: '⚠️ Reportar tienda cerrada', bg: 'bg-rose-500 hover:bg-rose-600 text-white', icon: '🚨', isReport: true, subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}` };
         }
         return { text: 'En perímetro. Esperando...', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '⏳', disabled: true, subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}` };

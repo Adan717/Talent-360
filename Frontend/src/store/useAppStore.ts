@@ -328,8 +328,12 @@ export const useAppStore = create<AppState>((set, get) => ({
             const meUser = meRes.data.user;
             set({ currentUser: { ...meUser, system_role: meUser.role } });
             const tenant = meUser.tenant || meRes.data.tenant;
-            if (!get().simulatedTierOverride && tenant?.plan) {
-              set({ currentTier: tenant.plan.toLowerCase() as any });
+            if (!get().simulatedTierOverride) {
+              if (meUser.tenant_id === 1) {
+                set({ currentTier: 'enterprise' });
+              } else if (tenant?.plan) {
+                set({ currentTier: tenant.plan.toLowerCase() as any });
+              }
             }
             if (meUser.role === 'platform_admin') {
               try {
@@ -463,7 +467,9 @@ export const useAppStore = create<AppState>((set, get) => ({
               });
             }
           } else {
-            if (data.tenant_plan) {
+            if (get().currentUser?.tenant_id === 1) {
+              set({ currentTier: 'enterprise' });
+            } else if (data.tenant_plan) {
               set({ currentTier: data.tenant_plan.toLowerCase() as any });
             }
             if (data.tenant_allowed_modules) {
@@ -648,7 +654,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedModules } = get();
     if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'matrix') return true;
     if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') return true;
-    if (currentTier === 'enterprise') return true;
+    if (currentTier === 'enterprise' || currentUser?.tenant_id === 1) return true;
     
     // Check if trial is active
     const tenant = currentUser?.tenant;

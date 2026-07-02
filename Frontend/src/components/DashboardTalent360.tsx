@@ -1062,7 +1062,7 @@ export const DashboardTalent360 = () => {
                                 {/* Hito 1: Entrada */}
                                 <div className="relative z-10 flex flex-col items-center group">
                                   <div 
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
+                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
                                       checkIn 
                                         ? (checkIn.is_late 
                                             ? 'bg-amber-50 border-amber-400 text-amber-600 animate-pulse' 
@@ -1072,14 +1072,14 @@ export const DashboardTalent360 = () => {
                                     title={checkIn ? `Entrada: ${checkIn.time}${checkIn.is_late ? ` (Retardo de ${checkIn.late_minutes} min)` : ''}` : 'Sin registrar entrada'}
                                   >
                                     {checkIn ? (
-                                      checkIn.is_late ? <AlertCircle size={14} className="stroke-[2.5]" /> : <Check size={14} className="stroke-[2.5]" />
+                                      checkIn.is_late ? <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" /> : <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                                     ) : (
-                                      <span className="text-[9px] font-black text-slate-400">IN</span>
+                                      <span className="text-[7.5px] sm:text-[9px] font-black text-slate-400">IN</span>
                                     )}
                                   </div>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1">Entrada</span>
+                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Entrada</span>
                                   {checkIn && (
-                                    <span className={`text-[8px] font-extrabold px-1 rounded mt-0.5 ${checkIn.is_late ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                    <span className={`text-[7px] sm:text-[8px] font-extrabold px-1 rounded mt-0.5 ${checkIn.is_late ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                                       {checkIn.time.substring(0, 5)} {checkIn.is_late && `(${checkIn.late_minutes}m)`}
                                     </span>
                                   )}
@@ -1088,7 +1088,7 @@ export const DashboardTalent360 = () => {
                                 {/* Hito 2: Ley Silla */}
                                 <div className="relative z-10 flex flex-col items-center group">
                                   <div 
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
+                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
                                       isCurrentlySillaResting
                                         ? 'bg-amber-100 border-amber-500 text-amber-700 animate-pulse'
                                         : (takenSillaBreaksCount > 0 
@@ -1097,11 +1097,11 @@ export const DashboardTalent360 = () => {
                                     }`}
                                     title={`Descansos Ley Silla tomados hoy: ${takenSillaBreaksCount}${isCurrentlySillaResting ? ' (Descanso en curso)' : ''}`}
                                   >
-                                    <Armchair size={13} className={isCurrentlySillaResting || takenSillaBreaksCount > 0 ? 'text-current' : 'text-slate-300'} />
+                                    <Armchair className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isCurrentlySillaResting || takenSillaBreaksCount > 0 ? 'text-current' : 'text-slate-300'}`} />
                                   </div>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1">Ley Silla</span>
+                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Ley Silla</span>
                                   {takenSillaBreaksCount > 0 && (
-                                    <span className="text-[8px] font-extrabold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded mt-0.5 border border-indigo-100">
+                                    <span className="text-[7px] sm:text-[8px] font-extrabold text-indigo-700 bg-indigo-50 px-1 py-0.5 rounded mt-0.5 border border-indigo-100">
                                       {isCurrentlySillaResting ? 'Pausa...' : `x${takenSillaBreaksCount}`}
                                     </span>
                                   )}
@@ -1110,7 +1110,7 @@ export const DashboardTalent360 = () => {
                                 {/* Hito 3: Comida */}
                                 <div className="relative z-10 flex flex-col items-center group">
                                   <div 
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
+                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
                                       mealStart
                                         ? (mealEnd 
                                             ? (mealOvertime ? 'bg-rose-50 border-rose-400 text-rose-600' : 'bg-emerald-50 border-emerald-500 text-emerald-600') 
@@ -1126,14 +1126,14 @@ export const DashboardTalent360 = () => {
                                     }
                                   >
                                     {mealStart && mealEnd ? (
-                                      mealOvertime ? <AlertTriangle size={13} className="stroke-[2.5]" /> : <Check size={14} className="stroke-[2.5]" />
+                                      mealOvertime ? <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5]" /> : <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                                     ) : (
-                                      <Utensils size={13} className={mealStart ? 'text-amber-600' : 'text-slate-300'} />
+                                      <Utensils className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${mealStart ? 'text-amber-600' : 'text-slate-300'}`} />
                                     )}
                                   </div>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1">Comida</span>
+                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Comida</span>
                                   {mealStart && (
-                                    <span className={`text-[8px] font-extrabold px-1 rounded mt-0.5 ${
+                                    <span className={`text-[7px] sm:text-[8px] font-extrabold px-1 rounded mt-0.5 ${
                                       mealEnd 
                                         ? (mealOvertime ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800') 
                                         : 'bg-amber-100 text-amber-800'
@@ -1146,7 +1146,7 @@ export const DashboardTalent360 = () => {
                                 {/* Hito 4: Salida */}
                                 <div className="relative z-10 flex flex-col items-center group">
                                   <div 
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
+                                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center border-2 transition-all shadow-sm ${
                                       checkOut 
                                         ? 'bg-emerald-50 border-emerald-500 text-emerald-600' 
                                         : 'bg-white border-slate-200 text-slate-300'
@@ -1154,14 +1154,14 @@ export const DashboardTalent360 = () => {
                                     title={checkOut ? `Salida registrada: ${checkOut.time}` : 'Pendiente de salida'}
                                   >
                                     {checkOut ? (
-                                      <Check size={14} className="stroke-[2.5]" />
+                                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                                     ) : (
-                                      <span className="text-[9px] font-black text-slate-400">OUT</span>
+                                      <span className="text-[7.5px] sm:text-[9px] font-black text-slate-400">OUT</span>
                                     )}
                                   </div>
-                                  <span className="text-[9px] font-bold text-slate-400 mt-1">Salida</span>
+                                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-1">Salida</span>
                                   {checkOut && (
-                                    <span className="text-[8px] font-extrabold text-emerald-700 mt-0.5">
+                                    <span className="text-[7px] sm:text-[8px] font-extrabold text-emerald-700 mt-0.5">
                                       {checkOut.time.substring(0, 5)}
                                     </span>
                                   )}

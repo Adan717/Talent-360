@@ -77,8 +77,8 @@ def main():
         run_remote_cmd(ssh, "chmod -R 777 /var/www/talent360/Backend/storage /var/www/talent360/Backend/bootstrap/cache")
         # Run migrations safely as www-data to prevent root ownership of logs/caches
         run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan migrate --force")
-        # Run DecorArte database seeder as www-data
-        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php scripts_utilidad/seed_decorarte_final.php")
+        # Run DecorArte database seeder as www-data (Commented out to prevent data loss in production)
+        # run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php scripts_utilidad/seed_decorarte_final.php")
         # Clear config and cache as www-data
         run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan config:clear")
         run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan cache:clear")

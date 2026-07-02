@@ -88,7 +88,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
                 Log::info("Facturapi Organization created successfully with ID: {$orgId}");
 
                 // Proactively upload CSD if they exist
-                $this->uploadCsdToOrganization($orgId);
+                $this->uploadCsd($orgId);
 
                 return $orgId;
             } else {
@@ -104,7 +104,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
     /**
      * Upload CSD certificates (decrypted from Postgres) to the tenant's Facturapi organization.
      */
-    protected function uploadCsdToOrganization(string $orgId): bool
+    public function uploadCsd(string $orgId): bool
     {
         if (!$this->tenant || !$this->tenant->csd_certificate || !$this->tenant->csd_private_key) {
             Log::info("Skipping CSD upload: No certificates stored for Tenant ID: {$this->tenant->id}");
@@ -289,5 +289,36 @@ class FacturapiBillingProvider implements BillingProviderInterface
     public function getInvoicePdf(string $invoiceId): string
     {
         return "{$this->baseUrl}/invoices/{$invoiceId}/pdf";
+    }
+
+    /**
+     * List invoices from the billing provider.
+     */
+    public function listInvoices(array $params = []): array
+    {
+        try {
+            $response = Http::withHeaders($this->getHeaders())
+                ->withBasicAuth($this->apiKey, '')
+                ->get("{$this->baseUrl}/invoices", $params);
+
+            if ($response->successful()) {
+                $json = $response->json();
+                return [
+                    'success' => true,
+                    'data' => $json['data'] ?? $json
+                ];
+            } else {
+                $errorMsg = $response->json()['message'] ?? $response->body();
+                return [
+                    'success' => false,
+                    'error' => $errorMsg
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 }

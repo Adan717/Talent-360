@@ -6,7 +6,7 @@ import {
   Receipt, Database, Loader2, MessageSquare, Send, X,
   Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap,
   Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee,
-  Eye, EyeOff
+  Eye, EyeOff, Pencil, Calendar, MapPin, Heart, Bell
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { BackupPanel } from './BackupPanel';
@@ -17,6 +17,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
   const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'modules' | 'backups'>(initialTab);
   const [selectedModuleForDetail, setSelectedModuleForDetail] = useState<any | null>(null);
   const [configuringModule, setConfiguringModule] = useState<any | null>(null);
+  const [editingCustomModule, setEditingCustomModule] = useState<any | null>(null);
   const [tutorialStep, setTutorialStep] = useState<number | null>(null);
 
   useEffect(() => {
@@ -545,7 +546,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reloj Checador (PWA)', 
+                    name: 'Reloj Checador (Original)', 
                     desc: 'Asistencia con geolocalización', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
@@ -561,11 +562,11 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reloj Checador 2', 
-                    desc: 'Asistencia con geolocalización (V2)', 
+                    name: 'Reloj Checador', 
+                    desc: 'Control de asistencia inteligente', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
-                    version: 'v4.2-cloned',
+                    version: 'v4.2',
                     icon: <Clock size={20} />,
                     iconColor: 'bg-emerald-50 text-emerald-600',
                     moduleId: 'reloj2',
@@ -685,6 +686,22 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       'Gestión de manuales de operación y protocolos de seguridad.',
                       'Vinculación directa de manuales a cursos de Academia 360.'
                     ]
+                  },
+                  { 
+                    name: 'Facturación Electrónica', 
+                    desc: 'Timbrado de nómina CFDI 4.0', 
+                    tier: 'pro', 
+                    active: isModuleUnlocked('facturacion'), 
+                    version: 'v1.0',
+                    icon: <Receipt size={20} />,
+                    iconColor: 'bg-emerald-50 text-emerald-650',
+                    moduleId: 'facturacion',
+                    features: [
+                      'Configuración de Sellos CSD y certificados fiscales encriptados.',
+                      'Timbrado masivo y generación de archivos PDF/XML en el SAT.',
+                      'Historial completo de recibos de nómina emitidos.',
+                      'Integración directa con el cálculo de la pre-nómina.'
+                    ]
                   }
                 ];
 
@@ -708,24 +725,59 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                   const isAdmin = currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin';
                                   
                                   return (
-                                    <button
-                                      disabled={!isAdmin}
-                                      onClick={() => {
-                                        const newHidden = isHidden
-                                          ? hiddenModules.filter((id: string) => id !== mod.moduleId)
-                                          : [...hiddenModules, mod.moduleId];
-                                        updateSetting('hiddenMenuModules', newHidden);
-                                      }}
-                                      className={`p-1.5 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-sm ${
-                                        !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
-                                        isHidden
-                                          ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
-                                          : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
-                                      }`}
-                                      title={!isAdmin ? "Solo los administradores pueden cambiar la visibilidad." : isHidden ? "Oculto en el menú lateral. Haz clic para mostrar." : "Visible en el menú lateral. Haz clic para ocultar."}
-                                    >
-                                      {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
-                                    </button>
+                                    <div className="flex items-center gap-1.5">
+                                      {/* Botón de Edición (Lapicito) */}
+                                      <button
+                                        disabled={!isAdmin}
+                                        onClick={() => {
+                                          const defaultIcons: Record<string, string> = {
+                                            reloj: 'Clock',
+                                            reloj2: 'Clock',
+                                            rrhh: 'Users',
+                                            operativo: 'CheckSquare',
+                                            ats: 'Briefcase',
+                                            reportes: 'FileText',
+                                            academia: 'GraduationCap',
+                                            documentos: 'FileText',
+                                            facturacion: 'Receipt'
+                                          };
+                                          setEditingCustomModule({
+                                            id: mod.moduleId,
+                                            title: mod.name,
+                                            desc: mod.desc,
+                                            iconName: defaultIcons[mod.moduleId] || 'LayoutGrid',
+                                            ...(systemSettings?.moduleCustomizations?.[mod.moduleId] || {})
+                                          });
+                                        }}
+                                        className={`p-1.5 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-sm ${
+                                          !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                                          'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                                        }`}
+                                        title={!isAdmin ? "Solo los administradores pueden cambiar el nombre/icono." : "Editar nombre, descripción e icono del módulo."}
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+
+                                      {/* Botón de Visibilidad (Ojo) */}
+                                      <button
+                                        disabled={!isAdmin}
+                                        onClick={() => {
+                                          const newHidden = isHidden
+                                            ? hiddenModules.filter((id: string) => id !== mod.moduleId)
+                                            : [...hiddenModules, mod.moduleId];
+                                          updateSetting('hiddenMenuModules', newHidden);
+                                        }}
+                                        className={`p-1.5 rounded-full border transition-all duration-200 flex items-center justify-center hover:scale-110 shadow-sm ${
+                                          !isAdmin ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border-slate-200' :
+                                          isHidden
+                                            ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
+                                            : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                                        }`}
+                                        title={!isAdmin ? "Solo los administradores pueden cambiar la visibilidad." : isHidden ? "Oculto en el menú lateral. Haz clic para mostrar." : "Visible en el menú lateral. Haz clic para ocultar."}
+                                      >
+                                        {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                                      </button>
+                                    </div>
                                   );
                                 })()}
                                 {mod.active && (
@@ -901,6 +953,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       const mapModuleToTab = (moduleName: string) => {
                         switch (moduleName) {
                           case 'Directorio HR': return 'onboarding';
+                          case 'Reloj Checador':
+                          case 'Reloj Checador (Original)':
+                          case 'Reloj Checador 2':
                           case 'Reloj Checador (PWA)': return 'reloj';
                           case 'Checador de Comida': return 'comidas';
                           case 'Rutinas y Tareas': return 'tareas';
@@ -938,6 +993,145 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                             {/* Cuerpo del Modal (Scrollable) */}
                             <div className="flex-1 overflow-y-auto p-6 bg-slate-50 custom-scrollbar">
                               <CompanySettingsPanel initialTab={mapModuleToTab(configuringModule.name)} hideSidebar={true} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {editingCustomModule && (() => {
+                      const iconsList = [
+                        { name: 'LayoutDashboard', label: 'Dashboard' },
+                        { name: 'Users', label: 'Colaboradores' },
+                        { name: 'Clock', label: 'Reloj Checador' },
+                        { name: 'CheckSquare', label: 'Tareas/Checklists' },
+                        { name: 'Briefcase', label: 'Reclutamiento' },
+                        { name: 'FileText', label: 'Documentos' },
+                        { name: 'GraduationCap', label: 'Academia' },
+                        { name: 'Coffee', label: 'Cafetería' },
+                        { name: 'Calendar', label: 'Calendario' },
+                        { name: 'MapPin', label: 'Ubicaciones' },
+                        { name: 'Heart', label: 'Salud/Clima' },
+                        { name: 'Bell', label: 'Notificaciones' }
+                      ];
+
+                      const renderIcon = (name: string) => {
+                        switch (name) {
+                          case 'LayoutDashboard': return <LayoutGrid size={22} />;
+                          case 'Users': return <Users size={22} />;
+                          case 'Clock': return <Clock size={22} />;
+                          case 'CheckSquare': return <CheckSquare size={22} />;
+                          case 'Briefcase': return <Briefcase size={22} />;
+                          case 'FileText': return <FileText size={22} />;
+                          case 'GraduationCap': return <GraduationCap size={22} />;
+                          case 'Coffee': return <Coffee size={22} />;
+                          case 'Calendar': return <Calendar size={22} />;
+                          case 'MapPin': return <MapPin size={22} />;
+                          case 'Heart': return <Heart size={22} />;
+                          case 'Bell': return <Bell size={22} />;
+                          default: return <Settings size={22} />;
+                        }
+                      };
+
+                      const handleSave = () => {
+                        const currentCustoms = systemSettings?.moduleCustomizations || {};
+                        const updatedCustoms = {
+                          ...currentCustoms,
+                          [editingCustomModule.id]: {
+                            title: editingCustomModule.title,
+                            desc: editingCustomModule.desc,
+                            iconName: editingCustomModule.iconName
+                          }
+                        };
+                        updateSetting('moduleCustomizations', updatedCustoms);
+                        setEditingCustomModule(null);
+                      };
+
+                      return (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[101] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                          <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                                  <Pencil size={18} />
+                                </div>
+                                <div>
+                                  <h3 className="font-black text-slate-800 text-base">Personalizar Módulo</h3>
+                                  <p className="text-[11px] text-slate-400 font-medium">Modifica cómo se ve este módulo en el sistema</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setEditingCustomModule(null)}
+                                className="w-8 h-8 flex items-center justify-center bg-slate-150 hover:bg-slate-255 text-slate-500 hover:text-slate-800 rounded-full transition-all border-none cursor-pointer"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+
+                            <div className="p-6 space-y-5">
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider">Nombre del Módulo</label>
+                                <input
+                                  type="text"
+                                  value={editingCustomModule.title || ''}
+                                  onChange={(e) => setEditingCustomModule({ ...editingCustomModule, title: e.target.value })}
+                                  placeholder="Ej. Mi Reloj Inteligente"
+                                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider">Descripción Breve</label>
+                                <input
+                                  type="text"
+                                  value={editingCustomModule.desc || ''}
+                                  onChange={(e) => setEditingCustomModule({ ...editingCustomModule, desc: e.target.value })}
+                                  placeholder="Ej. Registra entradas de manera rápida"
+                                  className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider block">Icono Visual</label>
+                                <div className="grid grid-cols-4 gap-3 bg-slate-50/60 p-3 rounded-2xl border border-slate-100 max-h-[180px] overflow-y-auto custom-scrollbar">
+                                  {iconsList.map((ic) => {
+                                    const isSelected = editingCustomModule.iconName === ic.name;
+                                    return (
+                                      <button
+                                        key={ic.name}
+                                        onClick={() => setEditingCustomModule({ ...editingCustomModule, iconName: ic.name })}
+                                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all duration-200 cursor-pointer ${
+                                          isSelected
+                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-105'
+                                            : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200 hover:scale-102 hover:text-slate-800'
+                                        }`}
+                                        title={ic.label}
+                                      >
+                                        {renderIcon(ic.name)}
+                                        <span className={`text-[9px] mt-1 font-bold truncate max-w-[80px] ${isSelected ? 'text-blue-50' : 'text-slate-400'}`}>
+                                          {ic.label}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                              <button
+                                onClick={() => setEditingCustomModule(null)}
+                                className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-150 text-xs font-bold transition-all cursor-pointer border-none bg-transparent"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={handleSave}
+                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 transition-all cursor-pointer border-none flex items-center gap-1.5"
+                              >
+                                <Save size={14} />
+                                Guardar Cambios
+                              </button>
                             </div>
                           </div>
                         </div>

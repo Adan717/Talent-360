@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet } from 'lucide-react';
+import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet, Receipt } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 
@@ -397,11 +397,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
             Gestor Documental
           </button>
           <button 
-            onClick={() => setActiveTab('reportes')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'reportes' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            onClick={() => setActiveTab('facturacion')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'facturacion' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <FileSpreadsheet size={18} />
-            Centro de Reportes
+            <Receipt size={18} />
+            Facturación SAT
           </button>
           
           {useAppStore.getState().isFeatureUnlocked('store_opening') && (
@@ -1383,6 +1383,73 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Save size={18} /> Guardar Ajustes de Reportes
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'facturacion' && (
+          <div className="max-w-2xl animate-in slide-in-from-right-4">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-black text-slate-800">Ajustes de Facturación SAT</h3>
+                <p className="text-slate-500 text-sm">Gestiona el comportamiento operativo de la facturación y timbrado.</p>
+              </div>
+              {!useAppStore.getState().isModuleUnlocked('facturacion') && (
+                <span className="bg-amber-100 text-amber-800 text-xs font-extrabold uppercase px-3 py-1.5 rounded-full flex items-center gap-1">
+                  <Key size={12} /> Plan PRO requerido
+                </span>
+              )}
+            </div>
+
+            <div className={`space-y-6 ${!useAppStore.getState().isModuleUnlocked('facturacion') && 'opacity-60 pointer-events-none'}`}>
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-bold text-slate-800">Timbrado de Nómina Automático</h4>
+                    <p className="text-sm text-slate-500 mt-1">Timbra automáticamente los recibos CFDI 4.0 al procesar el cierre del periodo quincenal.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={formData.facturacionConfig?.autoTimbrar || false} 
+                      onChange={(e) => handleNestedChange('facturacionConfig', 'autoTimbrar', e.target.checked)} 
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 className="font-bold text-slate-800 mb-2">Ambiente de Operación SAT</h4>
+                <select 
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-700 font-bold focus:outline-none"
+                  value={formData.facturacionConfig?.ambienteSat || 'sandbox'}
+                  onChange={(e) => handleNestedChange('facturacionConfig', 'ambienteSat', e.target.value)}
+                >
+                  <option value="sandbox">Pruebas SAT (Sandbox Facturapi)</option>
+                  <option value="production">Producción Fiscal (Timbrado Real)</option>
+                </select>
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 className="font-bold text-slate-800 mb-2">Email para Recepción de Avisos CFDIs</h4>
+                <input 
+                  type="email"
+                  placeholder="ejemplo@decorarte.com"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-800 font-semibold focus:border-indigo-500 focus:outline-none"
+                  value={formData.facturacionConfig?.correoFiscal || ''}
+                  onChange={(e) => handleNestedChange('facturacionConfig', 'correoFiscal', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button 
+              onClick={() => handleSave('facturacionConfig')} 
+              disabled={isSaving || !useAppStore.getState().isModuleUnlocked('facturacion')}
+              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer border-none"
+            >
+              <Save size={18} /> Guardar Ajustes de Facturación
             </button>
           </div>
         )}

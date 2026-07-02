@@ -46,4 +46,14 @@ interface BillingProviderInterface
      * Retrieve the PDF URL or raw PDF for a generated invoice.
      */
     public function getInvoicePdf(string $invoiceId): string;
+
+    /**
+     * List invoices/receipts from the billing provider.
+     */
+    public function listInvoices(array $params = []): array;
+
+    /**
+     * Upload CSD keys to the billing provider.
+     */
+    public function uploadCsd(string $orgId): bool;
 }

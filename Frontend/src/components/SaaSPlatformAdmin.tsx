@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 
 const moduleAudits = [
   {
@@ -971,6 +972,19 @@ export const SaaSPlatformAdmin = () => {
             }`}
           >
             🛡️ Bitácora de Seguridad
+          </button>
+        )}
+        {isAdmin && (
+          <button 
+            type="button"
+            onClick={() => setActiveTab('billing')}
+            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
+              activeTab === 'billing' 
+                ? 'border-indigo-600 text-indigo-600' 
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            💳 Facturación Global
           </button>
         )}
       </div>
@@ -2885,6 +2899,10 @@ export const SaaSPlatformAdmin = () => {
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === 'billing' && (
+        <SaaSPlatformBilling />
       )}
     </div>
   );

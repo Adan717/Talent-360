@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\ClockController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\RecruitmentController;
 use App\Http\Controllers\AcademyController;
@@ -87,6 +88,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/platform/alerts', [PlatformAdminController::class, 'getAlerts']);
         Route::post('/platform/alerts/resolve', [PlatformAdminController::class, 'resolveAlert']);
         Route::get('/platform/security-logs', [PlatformAdminController::class, 'getSaasAuditLogs']);
+
+        // Facturación Global (SaaS Admin)
+        Route::get('/platform/billing/invoices', [PlatformAdminController::class, 'getSaaSInvoices']);
+        Route::post('/platform/billing/invoice/manual', [PlatformAdminController::class, 'createManualSaaSInvoice']);
 
         // DB Initialization / Reset
         if (app()->isLocal() || app()->runningUnitTests()) {
@@ -194,6 +199,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/store-opening/assignments', [StoreOpeningController::class, 'createAssignment']);
         Route::put('/store-opening/assignments/{id}', [StoreOpeningController::class, 'updateAssignment']);
         Route::delete('/store-opening/assignments/{id}', [StoreOpeningController::class, 'deleteAssignment']);
+
+        // Facturación Electrónica (Tenants)
+        Route::prefix('billing')->group(function () {
+            Route::post('/tax-data', [BillingController::class, 'updateTaxData']);
+            Route::post('/csd', [BillingController::class, 'uploadCsd']);
+            Route::get('/invoices', [BillingController::class, 'getInvoices']);
+            Route::post('/payroll/timbrar', [BillingController::class, 'timbrarNomina']);
+        });
     });
 
     // =========================================================================

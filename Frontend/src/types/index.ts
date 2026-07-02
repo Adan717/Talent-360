@@ -20,6 +20,9 @@ export interface User {
   has_completed_induction?: boolean;
   hire_date?: string;
   tenant?: Tenant;
+  rfc?: string;
+  curp?: string;
+  postal_code?: string;
 }
 
 export interface Tenant {
@@ -35,6 +38,15 @@ export interface Tenant {
   subscription_status?: string;
   trial_ends_at?: string;
   created_at?: string;
+  rfc?: string;
+  tax_name?: string;
+  tax_regimen?: string;
+  postal_code?: string;
+  csd_certificate?: string;
+  csd_private_key?: string;
+  csd_password?: string;
+  billing_email?: string;
+  facturapi_organization_id?: string;
 }
 
 export interface AppModule {

@@ -28,6 +28,17 @@ class Tenant extends Model
         'csd_password' => 'encrypted',
     ];
 
+    protected static function booted()
+    {
+        static::created(function ($tenant) {
+            try {
+                app(\App\Services\TenantInitializationService::class)->initializeSettingsForTenant($tenant->id);
+            } catch (\Exception $e) {
+                \Log::error("Error al inicializar configuraciones para tenant {$tenant->id}: " . $e->getMessage());
+            }
+        });
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);

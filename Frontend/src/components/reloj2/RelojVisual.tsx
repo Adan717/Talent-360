@@ -771,7 +771,7 @@ export default function RelojVisual({
     return (
       <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-2 w-full text-left py-2 select-none"}>
         {/* Two-Column Status Bar: Store Status (Left) & Employee Shift Status (Right) */}
-        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-4 px-1' : 'text-[11px] mb-1 tracking-wider'}`}>
+        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-2 px-1' : 'text-[11px] mb-1 tracking-wider'}`}>
           {/* Left: Store status */}
           <div className="flex items-center select-none">
             {storeStatus === 'open' ? (
@@ -947,7 +947,7 @@ export default function RelojVisual({
         </div>
 
         {/* Timeline Bar - Thicker, Larger, and Innovatively Styled (Glassmorphism & Contrast Text) */}
-        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-2 mt-1.5' : 'px-4 mb-2 mt-1.5'}`}>
+        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-0.5 mt-1' : 'px-4 mb-2 mt-1.5'}`}>
           {/* Progress Container (Slimmer size h-5 - Softest styled gray track with bevel shadow) */}
           <div className="relative w-full h-5 bg-slate-50/20 dark:bg-slate-800/10 rounded-2xl border border-slate-200/20 dark:border-slate-700/15 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.03),_0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
             
@@ -2914,30 +2914,33 @@ export default function RelojVisual({
 
                 {renderBreakApprovalBanner()}
                 
-                {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
-                {renderBarraCronologica(true)}
+                {/* Timeline and Dial Stack Grouped to Tightly Control Spacing */}
+                <div className="flex flex-col items-center w-full gap-1 mt-1 shrink-0">
+                  {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
+                  {renderBarraCronologica(true)}
 
-                {/* Central Clock Circle Action Button (Middle) */}
-                <DialPrincipal
-                  isMobile={true}
-                  isOpeningPremium={isOpeningPremium}
-                  storeStatus={storeStatus}
-                  openingStatus={openingStatus}
-                  currentUser={currentUser}
-                  isWithinPerimeter={isWithinPerimeter}
-                  globalUsers={globalUsers}
-                  clockState={clockState}
-                  formattedTime={formattedTime}
-                  btnProps={btnProps}
-                  lateUsers={lateUsers}
-                  currentDay={currentDay}
-                  currentSimTime={currentSimTime}
-                  shiftConfigs={shiftConfigs}
-                  parseTimeToMins={parseTimeToMins}
-                  handleAction={handleAction}
-                  gpsStatus={gpsStatus}
-                  onRequestGPS={requestGPS}
-                />
+                  {/* Central Clock Circle Action Button (Middle) */}
+                  <DialPrincipal
+                    isMobile={true}
+                    isOpeningPremium={isOpeningPremium}
+                    storeStatus={storeStatus}
+                    openingStatus={openingStatus}
+                    currentUser={currentUser}
+                    isWithinPerimeter={isWithinPerimeter}
+                    globalUsers={globalUsers}
+                    clockState={clockState}
+                    formattedTime={formattedTime}
+                    btnProps={btnProps}
+                    lateUsers={lateUsers}
+                    currentDay={currentDay}
+                    currentSimTime={currentSimTime}
+                    shiftConfigs={shiftConfigs}
+                    parseTimeToMins={parseTimeToMins}
+                    handleAction={handleAction}
+                    gpsStatus={gpsStatus}
+                    onRequestGPS={requestGPS}
+                  />
+                </div>
                 
                 {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
                 <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">

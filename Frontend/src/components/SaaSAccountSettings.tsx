@@ -5,7 +5,7 @@ import {
   Smartphone, Upload, Globe, ChevronRight,
   Receipt, Database, Loader2, MessageSquare, Send, X,
   Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap,
-  Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee,
+  Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee, Monitor,
   Eye, EyeOff, Pencil, Calendar, MapPin, Heart, Bell
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -30,6 +30,7 @@ const IconMap: Record<string, React.ReactNode> = {
   Calendar: <Calendar size={20} />,
   MapPin: <MapPin size={20} />,
   Heart: <Heart size={20} />,
+  Monitor: <Monitor size={20} />,
   Bell: <Bell size={20} />
 };
 
@@ -721,8 +722,23 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     features: [
                       'Configuración de Sellos CSD y certificados fiscales encriptados.',
                       'Timbrado masivo y generación de archivos PDF/XML en el SAT.',
-                      'Historial completo de recibos de nómina emitidos.',
                       'Integración directa con el cálculo de la pre-nómina.'
+                    ]
+                  },
+                  { 
+                    name: 'Simulador Matrix', 
+                    desc: 'Entorno de simulación de celulares y bitácora QA', 
+                    tier: 'pro', 
+                    active: isModuleUnlocked('matrix'), 
+                    version: 'v1.2',
+                    icon: <Monitor size={20} />,
+                    iconColor: 'bg-indigo-50 text-indigo-600',
+                    moduleId: 'matrix',
+                    features: [
+                      'Simulación interactiva de múltiples celulares en simultáneo.',
+                      'Time Machine para alterar el tiempo virtual y probar tolerancias.',
+                      'Bitácora detallada de eventos del motor de asistencia en tiempo real.',
+                      'Prueba integrada de Ley Silla, geocercas y llaves de apertura.'
                     ]
                   }
                 ];
@@ -782,7 +798,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                             documentos: 'FileText',
                                             facturacion: 'Receipt',
                                             comidas: 'Coffee',
-                                            portal: 'Globe'
+                                            portal: 'Globe',
+                                            matrix: 'Monitor'
                                           };
                                           setEditingCustomModule({
                                             id: mod.moduleId,
@@ -1111,7 +1128,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                         { name: 'Heart', label: 'Salud/Clima' },
                         { name: 'Bell', label: 'Notificaciones' },
                         { name: 'Globe', label: 'Portal Web' },
-                        { name: 'Receipt', label: 'Facturación' }
+                        { name: 'Receipt', label: 'Facturación' },
+                        { name: 'Monitor', label: 'Simulador' }
                       ];
 
                       const renderIcon = (name: string) => {
@@ -1130,6 +1148,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           case 'Bell': return <Bell size={22} />;
                           case 'Globe': return <Globe size={22} />;
                           case 'Receipt': return <Receipt size={22} />;
+                          case 'Monitor': return <Monitor size={22} />;
                           default: return <Settings size={22} />;
                         }
                       };

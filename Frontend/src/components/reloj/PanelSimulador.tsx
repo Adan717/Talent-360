@@ -3,107 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import axiosInstance from '../../lib/axios';
 
-// Reloj Normal
-import { ClockContext } from '../store/ClockContext';
-import { useClockEngine as useClockEngineNormal } from './useClockEngine';
-import RelojVisualNormal from './RelojVisual';
-
-// Reloj Clone (V2)
+// Reloj Inteligente (V2)
 import { ClockContext2 } from '../store/ClockContext2';
 import { useClockEngine as useClockEngineClone } from '../reloj2/useClockEngine';
 import RelojVisualClone from '../reloj2/RelojVisual';
 
-function MiniaturaCelularNormal({ user, scale }: { user: any; scale: number }) {
-  const engine = useClockEngineNormal(user);
 
-  // Sincronizar estado local simulado hacia la store global para la tabla dinámica
-  const { setGlobalClockState, setGlobalCheckInTime, setGlobalArrivalTime } = useAppStore();
-  
-  useEffect(() => {
-    if (user?.id) {
-      setGlobalClockState(user.id, engine.clockState);
-    }
-  }, [engine.clockState, user?.id]);
-
-  useEffect(() => {
-    if (user?.id && engine.checkInTimes[user.id] !== undefined) {
-      setGlobalCheckInTime(user.id, engine.checkInTimes[user.id]);
-    }
-  }, [engine.checkInTimes, user?.id]);
-
-  useEffect(() => {
-    if (user?.id && engine.arrivalTimes[user.id] !== undefined) {
-      setGlobalArrivalTime(user.id, engine.arrivalTimes[user.id]);
-    }
-  }, [engine.arrivalTimes, user?.id]);
-
-  return (
-    <ClockContext.Provider value={engine}>
-      <div className="flex flex-col h-full bg-slate-900 select-none w-full">
-        {/* Simulation Controls Overlay */}
-        <div className="bg-slate-800 border-b border-slate-700/80 p-2 flex justify-between items-center text-xs shrink-0 z-20">
-          {/* Offline Simulation Toggle */}
-          <button 
-            onClick={() => engine.setIsSimulatedOffline(!engine.isSimulatedOffline)}
-            className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 border cursor-pointer select-none ${
-              engine.isSimulatedOffline 
-                ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse' 
-                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/35'
-            }`}
-          >
-            {engine.isSimulatedOffline ? '📡 Offline' : '📶 Online'}
-          </button>
-
-          {/* GPS Simulation Quick-Toggle Badge */}
-          {(() => {
-            let label = '';
-            let colorClass = '';
-            if (engine.gpsStatus === 'error') {
-              label = '❌ Falla GPS';
-              colorClass = 'bg-rose-500/20 text-rose-400 border-rose-500/40';
-            } else if (engine.isWithinPerimeter) {
-              label = '📍 En Tienda (5m)';
-              colorClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/35';
-            } else {
-              label = '🏠 En Casa (200m)';
-              colorClass = 'bg-amber-500/20 text-amber-400 border-amber-500/35';
-            }
-            
-            const handleGpsToggle = () => {
-              if (engine.gpsStatus === 'error') {
-                engine.setGpsStatus('success');
-                engine.setGpsCoordinates({ latitude: 19.4326, longitude: -99.1332 });
-              } else if (engine.isWithinPerimeter) {
-                engine.setGpsStatus('success');
-                engine.setGpsCoordinates({ latitude: 19.4344, longitude: -99.1332 });
-              } else {
-                engine.setGpsStatus('error');
-              }
-            };
-
-            return (
-              <button
-                onClick={handleGpsToggle}
-                className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 border cursor-pointer select-none ${colorClass}`}
-              >
-                {label}
-              </button>
-            );
-          })()}
-        </div>
-
-        <div className="flex-grow overflow-hidden relative">
-          <div 
-            className="w-[400px] h-[850px] transform origin-top-left pointer-events-auto"
-            style={{ transform: `scale(${scale})` }}
-          >
-            <RelojVisualNormal />
-          </div>
-        </div>
-      </div>
-    </ClockContext.Provider>
-  );
-}
 
 function MiniaturaCelularClone({ user, scale }: { user: any; scale: number }) {
   const engine = useClockEngineClone(user);
@@ -223,7 +128,6 @@ export default function PanelSimulador() {
   } = useAppStore();
 
   // Estados del Simulador QA Matrix
-  const [clockVersion, setClockVersion] = useState<'normal' | 'clone'>('clone');
   const [phoneScale, setPhoneScale] = useState(0.5); // Default a 50% para ver más celulares simultáneamente
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -488,27 +392,8 @@ export default function PanelSimulador() {
             </div>
           </div>
 
-          {/* BARRA DE HERRAMIENTAS: CAMBIO DE VERSIÓN, ZOOM Y FILTROS */}
+          {/* BARRA DE HERRAMIENTAS: ZOOM Y FILTROS */}
           <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-700/60 flex flex-wrap gap-4 items-end">
-            
-            {/* A. CAMBIADOR DE VERSIÓN DEL RELOJ */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Versión del Reloj</span>
-              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-700">
-                <button 
-                  onClick={() => setClockVersion('normal')}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${clockVersion === 'normal' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-                >
-                  ⏱️ Normal
-                </button>
-                <button 
-                  onClick={() => setClockVersion('clone')}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${clockVersion === 'clone' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
-                >
-                  👥 Clone (V2)
-                </button>
-              </div>
-            </div>
 
             {/* B. CONTROL DE ZOOM / ESCALA */}
             <div className="flex flex-col gap-1.5">
@@ -697,11 +582,7 @@ export default function PanelSimulador() {
                     className="bg-slate-800 rounded-b-2xl rounded-t-none border border-slate-700 shadow-2xl overflow-hidden relative transition-all duration-300"
                     style={{ width: `${400 * phoneScale}px`, height: `${(850 * phoneScale) + 38}px` }}
                   >
-                     {clockVersion === 'clone' ? (
-                       <MiniaturaCelularClone user={user} scale={phoneScale} />
-                     ) : (
-                       <MiniaturaCelularNormal user={user} scale={phoneScale} />
-                     )}
+                      <MiniaturaCelularClone user={user} scale={phoneScale} />
                   </div>
                 </div>
               ))

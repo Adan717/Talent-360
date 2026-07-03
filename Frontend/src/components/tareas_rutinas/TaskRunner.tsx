@@ -536,7 +536,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-y-auto">
+        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-hidden">
             {/* Fila fija de botones (Grid de navegación intacto) */}
             <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-3 shrink-0 select-none`}>
                 {/* Botón 1: Todas */}
@@ -597,15 +597,13 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 >
                     <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
-                    {(activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length) > 0 && (
-                        <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                            filterTab === 'mis_tareas'
-                                ? 'bg-white text-[#8a2be2] border-white'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}>
-                            {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
-                        </span>
-                    )}
+                    <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                        filterTab === 'mis_tareas'
+                            ? 'bg-white text-[#8a2be2] border-white'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                        {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                    </span>
                 </button>
 
                 {/* Botón 4: Buscar */}
@@ -677,7 +675,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
                 {displayedAssignments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
-                        <Coffee size={36} className="text-indigo-400 mb-2 animate-bounce" />
+                        <Sparkles size={36} className="text-[#2dce89] mb-2 animate-pulse" />
                         <p className="text-sm font-black text-slate-700">¡Tablero limpio!</p>
                         <p className="text-xs text-slate-500 mt-1">
                             No se encontraron tareas en esta sección por ahora.

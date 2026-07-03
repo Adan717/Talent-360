@@ -2848,76 +2848,79 @@ export default function RelojVisual({
                 </p>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-4 pt-[82px] pb-[100px] flex flex-col justify-between gap-2 scrollbar-none">
-                {/* Banner de transferencia de llaves pendiente */}
-                {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
-                  <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-3 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
-                    <div className="flex items-start gap-2.5">
-                      <span className="text-xl mt-0.5 shrink-0">🔑</span>
-                      <div>
-                        <p className="font-black text-xs">Propuesta de Transferencia de Cierre</p>
-                        <p className="text-[10px] text-amber-50/90 leading-normal mt-0.5">
-                          {pendingKeyTransfers[0].sender?.name} te ha propuesto cederte la custodia de llaves de la sucursal.
-                        </p>
-                        {pendingKeyTransfers[0].notes && (
-                          <p className="text-[9px] bg-black/10 rounded px-1.5 py-1 mt-1.5 italic">
-                            Nota: "{pendingKeyTransfers[0].notes}"
+              <div className="flex-1 overflow-hidden px-4 pt-[82px] pb-[100px] flex flex-col justify-between gap-1.5 scrollbar-none select-none">
+                {/* Banners Superiores (No empujan el Dial, se agrupan al inicio) */}
+                <div className="w-full shrink-0 flex flex-col gap-1.5">
+                  {/* Banner de transferencia de llaves pendiente */}
+                  {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
+                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-1.5 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
+                      <div className="flex items-start gap-2.5">
+                        <span className="text-xl mt-0.5 shrink-0">🔑</span>
+                        <div>
+                          <p className="font-black text-xs">Propuesta de Transferencia de Cierre</p>
+                          <p className="text-[10px] text-amber-50/90 leading-normal mt-0.5">
+                            {pendingKeyTransfers[0].sender?.name} te ha propuesto cederte la custodia de llaves de la sucursal.
                           </p>
-                        )}
+                          {pendingKeyTransfers[0].notes && (
+                            <p className="text-[9px] bg-black/10 rounded px-1.5 py-1 mt-1.5 italic">
+                              Nota: "{pendingKeyTransfers[0].notes}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end shrink-0">
+                        <button 
+                          onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
+                          className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
+                        >
+                          Aceptar Llaves
+                        </button>
+                        <button 
+                          onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'rejected')}
+                          className="bg-transparent hover:bg-black/10 text-white border border-white/50 font-bold text-[9.5px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Rechazar
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-2 justify-end shrink-0">
+                  )}
+                  
+                  {/* Reminders of Premium opening - Mobile */}
+                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
+                    <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">📋</span>
+                        <span className="text-xs font-bold">Checklist de apertura pendiente.</span>
+                      </div>
                       <button 
-                        onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
-                        className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
+                        onClick={() => setShowOpeningChecklistModal(true)} 
+                        className="bg-white text-emerald-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
                       >
-                        Aceptar Llaves
+                        Completar
                       </button>
+                    </div>
+                  )}
+
+                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
+                    <div className="bg-violet-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">📋</span>
+                        <span className="text-xs font-bold">Pase de lista de apertura pendiente.</span>
+                      </div>
                       <button 
-                        onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'rejected')}
-                        className="bg-transparent hover:bg-black/10 text-white border border-white/50 font-bold text-[9.5px] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        onClick={() => initPaseLista(false)} 
+                        className="bg-white text-violet-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
                       >
-                        Rechazar
+                        Iniciar
                       </button>
                     </div>
-                  </div>
-                )}
-                
-                {/* Reminders of Premium opening - Mobile */}
-                {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
-                  <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">📋</span>
-                      <span className="text-xs font-bold">Checklist de apertura pendiente.</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowOpeningChecklistModal(true)} 
-                      className="bg-white text-emerald-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer"
-                    >
-                      Completar
-                    </button>
-                  </div>
-                )}
+                  )}
 
-                {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
-                  <div className="bg-violet-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">📋</span>
-                      <span className="text-xs font-bold">Pase de lista de apertura pendiente.</span>
-                    </div>
-                    <button 
-                      onClick={() => initPaseLista(false)} 
-                      className="bg-white text-violet-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer"
-                    >
-                      Iniciar
-                    </button>
-                  </div>
-                )}
-
-                {renderBreakApprovalBanner()}
+                  {renderBreakApprovalBanner()}
+                </div>
                 
-                {/* Timeline and Dial Stack Grouped to Tightly Control Spacing */}
-                <div className="flex flex-col items-center w-full gap-1 mt-1 shrink-0">
+                {/* Grupo Centrado del Dial y Alertas (Fijos, sin scroll en el medio de las barras) */}
+                <div className="flex-1 flex flex-col justify-center items-center w-full gap-2 shrink-0 max-w-[350px] mx-auto">
                   {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
                   {renderBarraCronologica(true)}
 
@@ -2943,55 +2946,55 @@ export default function RelojVisual({
                     onRequestGPS={requestGPS}
                     isGpsValidationBypassed={isGpsValidationBypassed}
                   />
-                </div>
-                
-                {/* Alertas Sencillas Abajo del Dial (Legibles y estilizadas) */}
-                <div className="space-y-2 shrink-0 px-2 mt-3 w-full max-w-[360px] mx-auto">
-                  {/* Alerta de Tareas */}
-                  {(() => {
-                    const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-                        className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] focus:outline-none ${
-                          pendingCount > 0
-                            ? (isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800')
-                            : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/70 border-emerald-100/60 text-emerald-800')
-                        }`}
-                      >
-                        <span className="text-lg shrink-0">⚠️</span>
-                        <div className="leading-tight overflow-hidden flex-1">
-                          <p className={`text-[10px] font-black uppercase tracking-widest ${pendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                            Alerta de Tareas
-                          </p>
-                          <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
-                            {pendingCount > 0 
-                              ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
-                              : '¡Todas tus tareas están al día ✓'}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })()}
 
-                  {/* Alerta de Hora de Comida / Turno */}
-                  <div className={`w-full p-3.5 border rounded-2xl flex items-center gap-3 text-left select-none ${
-                    isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
-                  }`}>
-                    <span className="text-lg shrink-0">📅</span>
-                    <div className="leading-tight overflow-hidden flex-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-400">
-                        Jornada / Horario
-                      </p>
-                      <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
-                        {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
-                         clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
-                         clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
-                         clockState === 'meal' ? 'Comida activa: Regresa en 30 minutos' :
-                         hasCheckedOut ? 'Jornada del día completada 🎉' :
-                         'Turno programado en progreso'}
-                      </p>
+                  {/* Alertas Sencillas Abajo del Dial (Siempre pegadas y alineadas directamente bajo el Dial) */}
+                  <div className="space-y-1.5 w-full shrink-0 mt-1">
+                    {/* Alerta de Tareas */}
+                    {(() => {
+                      const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
+                          className={`w-full p-3 border rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] focus:outline-none cursor-pointer ${
+                            pendingCount > 0
+                              ? (isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800')
+                              : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/70 border-emerald-100/60 text-emerald-800')
+                          }`}
+                        >
+                          <span className="text-lg shrink-0">⚠️</span>
+                          <div className="leading-tight overflow-hidden flex-1">
+                            <p className={`text-[10px] font-black uppercase tracking-widest ${pendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                              Alerta de Tareas
+                            </p>
+                            <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
+                              {pendingCount > 0 
+                                ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
+                                : '¡Todas tus tareas están al día ✓'}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })()}
+
+                    {/* Alerta de Hora de Comida / Turno */}
+                    <div className={`w-full p-3 border rounded-2xl flex items-center gap-3 text-left select-none ${
+                      isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
+                    }`}>
+                      <span className="text-lg shrink-0">📅</span>
+                      <div className="leading-tight overflow-hidden flex-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-400">
+                          Jornada / Horario
+                        </p>
+                        <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
+                          {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
+                           clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
+                           clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
+                           clockState === 'meal' ? 'Comida activa: Regresa en 30 minutos' :
+                           hasCheckedOut ? 'Jornada del día completada 🎉' :
+                           'Turno programado en progreso'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3000,7 +3003,7 @@ export default function RelojVisual({
           )}
 
           {phoneTab !== 'checador' && (
-            <div className="flex-1 overflow-y-auto p-4 pt-[82px] pb-[100px] scrollbar-none flex flex-col">
+            <div className="flex-1 overflow-hidden p-4 pt-[82px] pb-[100px] scrollbar-none flex flex-col">
               {isSimulated && simulatedTier === 'free' ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
                   <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">

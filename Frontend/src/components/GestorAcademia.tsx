@@ -364,45 +364,152 @@ export const GestorAcademia = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCourses.map(course => (
-              <div key={course.id} className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all flex flex-col group cursor-pointer relative overflow-hidden">
-                <div className={`absolute top-0 left-0 w-full h-1 ${
-                    course.course_type === 'induction' ? 'bg-sky-500' :
-                    course.course_type === 'training' ? 'bg-emerald-500' :
-                    'bg-purple-500'
-                  }`}></div>
-                <div className="flex justify-between items-start mb-4 mt-2">
-                  <span className={`px-3 py-1 text-[10px] uppercase tracking-wider font-black rounded-lg ${
-                    course.course_type === 'induction' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
-                    course.course_type === 'training' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                    'bg-purple-50 text-purple-700 border border-purple-100'
-                  }`}>
-                    {course.course_type === 'induction' ? 'Inducción' : course.course_type === 'training' ? 'Entrenamiento' : 'Promoción'}
-                  </span>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditingCourse(course); setIsModalOpen(true); }} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><Edit2 size={14}/></button>
-                    <button onClick={() => handleDelete(course.id!)} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"><Trash2 size={14}/></button>
+          <div className="space-y-8">
+            {(() => {
+              if (activeTab === 'all') {
+                const grouped = (() => {
+                  const groups: Record<string, { roleName: string; courses: Course[] }> = {
+                    'general': { roleName: 'Cursos Generales / Inducción Común', courses: [] }
+                  };
+                  jobRoles.forEach(role => {
+                    groups[String(role.id)] = { roleName: `Cursos para ${role.name}`, courses: [] };
+                  });
+                  filteredCourses.forEach(course => {
+                    const roleId = course.target_job_role_id;
+                    if (roleId && groups[String(roleId)]) {
+                      groups[String(roleId)].courses.push(course);
+                    } else {
+                      groups['general'].courses.push(course);
+                    }
+                  });
+                  return Object.entries(groups).filter(([_, g]) => g.courses.length > 0);
+                })();
+
+                if (grouped.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                      <FileBadge size={48} className="text-slate-200 mb-4" />
+                      <p className="text-lg font-medium text-slate-500">No hay cursos disponibles</p>
+                      <p className="text-sm">Agrega un curso nuevo para empezar.</p>
+                    </div>
+                  );
+                }
+
+                return grouped.map(([roleKey, group]) => (
+                  <div key={roleKey} className="space-y-4 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 border-b border-slate-200/60 pb-2">
+                      <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                        <Users size={15} />
+                      </div>
+                      <h4 className="text-sm font-black text-slate-800 tracking-tight uppercase">
+                        {group.roleName}
+                      </h4>
+                      <span className="bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-black px-2 py-0.5 rounded-md">
+                        {group.courses.length} {group.courses.length === 1 ? 'Curso' : 'Cursos'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {group.courses.map(course => (
+                        <div key={course.id} className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between group cursor-pointer relative overflow-hidden">
+                          <div>
+                            <div className={`absolute top-0 left-0 w-full h-1 ${
+                                course.course_type === 'induction' ? 'bg-sky-500' :
+                                course.course_type === 'training' ? 'bg-emerald-500' :
+                                'bg-purple-500'
+                              }`}></div>
+                            <div className="flex justify-between items-start mb-4 mt-1">
+                              <span className={`px-2.5 py-1 text-[9px] uppercase tracking-wider font-black rounded-lg ${
+                                course.course_type === 'induction' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
+                                course.course_type === 'training' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                'bg-purple-50 text-purple-700 border border-purple-100'
+                              }`}>
+                                {course.course_type === 'induction' ? 'Inducción' : course.course_type === 'training' ? 'Entrenamiento' : 'Promoción'}
+                              </span>
+                              <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setIsModalOpen(true); }} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border-none cursor-pointer"><Edit2 size={13}/></button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDelete(course.id!); }} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all border-none cursor-pointer"><Trash2 size={13}/></button>
+                              </div>
+                            </div>
+                            
+                            <h3 className="text-base font-extrabold text-slate-900 mb-2 leading-snug group-hover:text-blue-600 transition-colors">{course.title}</h3>
+                            <p className="text-slate-500 text-xs line-clamp-3 mb-6 font-medium leading-relaxed">{course.description}</p>
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 border-t border-slate-100 pt-4 mt-auto">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1"><Video size={12} className={course.video_url ? 'text-blue-500' : ''}/> {course.video_url ? 'Video' : 'Material'}</div>
+                              <div className="flex items-center gap-1"><FileQuestion size={12} className={course.quiz_data?.length ? 'text-orange-500' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
+                            </div>
+                            <span className="text-blue-600 font-extrabold group-hover:underline flex items-center gap-0.5">
+                              Iniciar <PlayCircle size={12} className="fill-current text-blue-600" />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                
-                <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight">{course.title}</h3>
-                <p className="text-slate-500 text-sm line-clamp-3 mb-6 flex-1">{course.description}</p>
-                
-                <div className="flex items-center gap-4 text-xs font-bold text-slate-400 border-t border-slate-100 pt-4">
-                  <div className="flex items-center gap-1.5"><Video size={14} className={course.video_url ? 'text-blue-500' : ''}/> {course.video_url ? 'Video' : 'Sin Video'}</div>
-                  <div className="flex items-center gap-1.5"><FileQuestion size={14} className={course.quiz_data?.length ? 'text-orange-500' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
-                  {course.certificate_template_id && <div className="flex items-center gap-1.5 text-indigo-500"><FileBadge size={14} /> Con Diploma</div>}
-                </div>
-              </div>
-            ))}
-            {filteredCourses.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-400">
-                <FileBadge size={48} className="text-slate-200 mb-4" />
-                <p className="text-lg font-medium text-slate-500">No hay cursos en esta categoría</p>
-                <p className="text-sm">Agrega un curso nuevo para empezar a entrenar a tu equipo.</p>
-              </div>
-            )}
+                ));
+              } else {
+                // Categoría específica seleccionada
+                if (filteredCourses.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                      <FileBadge size={48} className="text-slate-200 mb-4" />
+                      <p className="text-lg font-medium text-slate-500">No hay cursos en esta categoría</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCourses.map(course => {
+                      const role = jobRoles.find(r => r.id === course.target_job_role_id);
+                      return (
+                        <div key={course.id} className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between group cursor-pointer relative overflow-hidden">
+                          <div>
+                            <div className={`absolute top-0 left-0 w-full h-1 ${
+                                course.course_type === 'induction' ? 'bg-sky-500' :
+                                course.course_type === 'training' ? 'bg-emerald-500' :
+                                'bg-purple-500'
+                              }`}></div>
+                            <div className="flex justify-between items-start mb-4 mt-1">
+                              <span className={`px-2.5 py-1 text-[9px] uppercase tracking-wider font-black rounded-lg ${
+                                course.course_type === 'induction' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
+                                course.course_type === 'training' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                'bg-purple-50 text-purple-700 border border-purple-100'
+                              }`}>
+                                {course.course_type === 'induction' ? 'Inducción' : course.course_type === 'training' ? 'Entrenamiento' : 'Promoción'}
+                              </span>
+                              <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setIsModalOpen(true); }} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border-none cursor-pointer"><Edit2 size={13}/></button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDelete(course.id!); }} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all border-none cursor-pointer"><Trash2 size={13}/></button>
+                              </div>
+                            </div>
+                            
+                            <h3 className="text-base font-extrabold text-slate-900 mb-1 leading-snug group-hover:text-blue-600 transition-colors">{course.title}</h3>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2.5 block">
+                              📌 {role ? role.name : 'Todos los puestos'}
+                            </span>
+                            <p className="text-slate-500 text-xs line-clamp-3 mb-6 font-medium leading-relaxed">{course.description}</p>
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 border-t border-slate-100 pt-4 mt-auto">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1"><Video size={12} className={course.video_url ? 'text-blue-500' : ''}/> {course.video_url ? 'Video' : 'Material'}</div>
+                              <div className="flex items-center gap-1"><FileQuestion size={12} className={course.quiz_data?.length ? 'text-orange-500' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
+                            </div>
+                            <span className="text-blue-600 font-extrabold group-hover:underline flex items-center gap-0.5">
+                              Iniciar <PlayCircle size={12} className="fill-current text-blue-600" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+            })()}
           </div>
         )}
       </div>

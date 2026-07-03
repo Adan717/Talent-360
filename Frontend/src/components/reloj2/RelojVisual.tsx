@@ -335,7 +335,6 @@ export default function RelojVisual({
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
-  const [showPanicModal, setShowPanicModal] = useState(false);
 
   const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
   const [weeklyPayrollData, setWeeklyPayrollData] = useState<any>(null);

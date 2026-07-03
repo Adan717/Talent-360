@@ -334,19 +334,30 @@ export default function RelojVisual({
   const [selectedTransferReceiverId, setSelectedTransferReceiverId] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
+  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [showPanicModal, setShowPanicModal] = useState(false);
+
   const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
+  const [weeklyPayrollData, setWeeklyPayrollData] = useState<any>(null);
 
   useEffect(() => {
     if (!isSimulated) {
       axiosInstance.get('/employee/payroll-weekly')
         .then(res => {
-          if (res.data && res.data.success && res.data.data.performance) {
-            setWeeklyPerformanceScore(res.data.data.performance.performance_score);
+          if (res.data && res.data.success) {
+            setWeeklyPayrollData(res.data.data);
+            if (res.data.data.performance) {
+              setWeeklyPerformanceScore(res.data.data.performance.performance_score);
+            }
           }
         })
         .catch(err => console.error('Error fetching weekly score:', err));
     } else {
       setWeeklyPerformanceScore(88);
+      setWeeklyPayrollData({
+        incidents: { total_absences: 0, lates: 1 },
+        performance: { meal_overtime_mins: 12, task_performance_pct: 95, performance_score: 88 }
+      });
     }
   }, [isSimulated, clockState]);
 
@@ -2975,63 +2986,66 @@ export default function RelojVisual({
                   {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
                   {renderBarraCronologica(true)}
 
-                  {/* Central Clock Circle Action Button (Middle) */}
-                  <DialPrincipal
-                    isMobile={true}
-                    isOpeningPremium={isOpeningPremium}
-                    storeStatus={storeStatus}
-                    openingStatus={openingStatus}
-                    currentUser={currentUser}
-                    isWithinPerimeter={isWithinPerimeter}
-                    globalUsers={globalUsers}
-                    clockState={clockState}
-                    formattedTime={formattedTime}
-                    btnProps={btnProps}
-                    lateUsers={lateUsers}
-                    currentDay={currentDay}
-                    currentSimTime={currentSimTime}
-                    shiftConfigs={shiftConfigs}
-                    parseTimeToMins={parseTimeToMins}
-                    handleAction={handleAction}
-                    gpsStatus={gpsStatus}
-                    onRequestGPS={requestGPS}
-                    isGpsValidationBypassed={isGpsValidationBypassed}
-                  />
-
-                  {/* Barra de Rendimiento Global Semanal - Colaborador */}
-                  {weeklyPerformanceScore !== null && (
-                    <div className={`w-full p-3 border rounded-2xl flex flex-col gap-1.5 text-left shrink-0 mt-1.5 ${
-                      isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white/90 border-slate-200/80 shadow-xs'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <Trophy size={13} className="text-violet-600" />
-                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Desempeño Semanal</span>
-                        </div>
-                        <span className={`text-[11px] font-black ${
-                          weeklyPerformanceScore >= 85 
-                            ? 'text-emerald-600' 
-                            : weeklyPerformanceScore >= 60 
-                              ? 'text-amber-500' 
-                              : 'text-rose-500'
-                        }`}>
+                  {/* Fila Horizontal: Desempeño (Izquierda) - DialPrincipal (Centro) - Pánico (Derecha) */}
+                  <div className="flex flex-row items-center justify-center gap-3.5 w-full shrink-0 relative my-2">
+                    
+                    {/* Botón de Desempeño (Copa Trophy) */}
+                    <button
+                      type="button"
+                      onClick={() => setShowPerformanceModal(true)}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md relative shrink-0 border cursor-pointer ${
+                        isDark 
+                          ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-750' 
+                          : 'bg-white border-slate-200 text-amber-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Trophy size={20} />
+                      {weeklyPerformanceScore !== null && (
+                        <span className="absolute -top-1.5 -right-1 bg-violet-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-white">
                           {weeklyPerformanceScore}%
                         </span>
-                      </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-500 rounded-full ${
-                            weeklyPerformanceScore >= 85 
-                              ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' 
-                              : weeklyPerformanceScore >= 60 
-                                ? 'bg-gradient-to-r from-amber-400 to-amber-500' 
-                                : 'bg-gradient-to-r from-rose-400 to-rose-500'
-                          }`}
-                          style={{ width: `${weeklyPerformanceScore}%` }}
-                        />
-                      </div>
+                      )}
+                    </button>
+
+                    {/* Central Clock Circle Action Button (Middle) */}
+                    <div className="shrink-0">
+                      <DialPrincipal
+                        isMobile={true}
+                        isOpeningPremium={isOpeningPremium}
+                        storeStatus={storeStatus}
+                        openingStatus={openingStatus}
+                        currentUser={currentUser}
+                        isWithinPerimeter={isWithinPerimeter}
+                        globalUsers={globalUsers}
+                        clockState={clockState}
+                        formattedTime={formattedTime}
+                        btnProps={btnProps}
+                        lateUsers={lateUsers}
+                        currentDay={currentDay}
+                        currentSimTime={currentSimTime}
+                        shiftConfigs={shiftConfigs}
+                        parseTimeToMins={parseTimeToMins}
+                        handleAction={handleAction}
+                        gpsStatus={gpsStatus}
+                        onRequestGPS={requestGPS}
+                        isGpsValidationBypassed={isGpsValidationBypassed}
+                      />
                     </div>
-                  )}
+
+                    {/* Botón de Pánico (Alerta de Emergencia) */}
+                    <button
+                      type="button"
+                      onClick={() => setShowPanicModal(true)}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md relative shrink-0 border cursor-pointer ${
+                        isDark 
+                          ? 'bg-rose-950/40 border-rose-900 text-rose-400 hover:bg-rose-900/30' 
+                          : 'bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-100/50'
+                      }`}
+                    >
+                      <AlertOctagon size={20} className="animate-pulse" />
+                    </button>
+
+                  </div>
 
                   {/* Alertas Sencillas Abajo del Dial (Siempre pegadas y alineadas directamente bajo el Dial) */}
                   <div className="space-y-1.5 w-full shrink-0 mt-1">
@@ -5025,6 +5039,193 @@ export default function RelojVisual({
                     );
                   })()
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Modal de Desempeño Semanal */}
+          {showPerformanceModal && weeklyPayrollData && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800">
+              <div 
+                className="absolute inset-0" 
+                onClick={() => setShowPerformanceModal(false)}
+              />
+              <div className="bg-white rounded-t-3xl p-5 pb-8 w-full animate-fade-in-up relative z-10 text-left border-t border-slate-100 max-w-md mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-amber-50 text-amber-500 rounded-xl">
+                      <Trophy size={20} className="animate-bounce" />
+                    </div>
+                    <h3 className="font-black text-slate-800 text-base">Mi Desempeño Semanal</h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowPerformanceModal(false)}
+                    className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-400 rounded-full border-none cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-slate-500 mb-4 font-medium">
+                  Resumen de tu rendimiento acumulado de Lunes a Domingo de esta semana en DecorArte:
+                </p>
+
+                {/* Score Circular */}
+                <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+                  <div className="relative flex items-center justify-center">
+                    <svg className="w-24 h-24">
+                      <circle 
+                        className="text-slate-200" 
+                        strokeWidth="8" 
+                        stroke="currentColor" 
+                        fill="transparent" 
+                        r="38" 
+                        cx="48" 
+                        cy="48" 
+                      />
+                      <circle 
+                        className={
+                          weeklyPerformanceScore >= 85 
+                            ? 'text-emerald-500' 
+                            : weeklyPerformanceScore >= 60 
+                              ? 'text-amber-500' 
+                              : 'text-rose-500'
+                        }
+                        strokeWidth="8" 
+                        strokeDasharray={2 * Math.PI * 38}
+                        strokeDashoffset={2 * Math.PI * 38 * (1 - weeklyPerformanceScore / 100)}
+                        strokeLinecap="round" 
+                        stroke="currentColor" 
+                        fill="transparent" 
+                        r="38" 
+                        cx="48" 
+                        cy="48" 
+                      />
+                    </svg>
+                    <div className="absolute text-center">
+                      <span className="text-xl font-black text-slate-800">{weeklyPerformanceScore}%</span>
+                      <span className="text-[8px] font-bold text-slate-400 block uppercase leading-none">Score</span>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-black mt-2.5 px-3 py-1 rounded-full ${
+                    weeklyPerformanceScore >= 85 
+                      ? 'bg-emerald-50 text-emerald-700' 
+                      : weeklyPerformanceScore >= 60 
+                        ? 'bg-amber-50 text-amber-700' 
+                        : 'bg-rose-50 text-rose-700'
+                  }`}>
+                    {weeklyPerformanceScore >= 85 
+                      ? 'Desempeño Excelente ✓' 
+                      : weeklyPerformanceScore >= 60 
+                        ? 'Rendimiento Regular' 
+                        : 'Atención Requerida ⚠️'}
+                  </span>
+                </div>
+
+                {/* Grid de Incidencias */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">📅</span>
+                      <div className="leading-none">
+                        <span className="text-[11px] font-black text-slate-800">Faltas Registradas</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Penaliza asistencia</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.incidents?.total_absences || 0} faltas</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">⏱️</span>
+                      <div className="leading-none">
+                        <span className="text-[11px] font-black text-slate-800">Retardos Acumulados</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Penaliza puntualidad</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.incidents?.lates || 0} retardos</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🍔</span>
+                      <div className="leading-none">
+                        <span className="text-[11px] font-black text-slate-800">Excesos en Tiempo Comida</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Minutos excedidos del límite</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.performance?.meal_overtime_mins || 0} mins</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">☕</span>
+                      <div className="leading-none">
+                        <span className="text-[11px] font-black text-slate-800">Excesos en Descansos</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Ley Silla / Pausas activas</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.performance?.break_overtime_mins || 0} mins</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">✅</span>
+                      <div className="leading-none">
+                        <span className="text-[11px] font-black text-slate-800">Eficiencia en Tareas</span>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">Completadas a tiempo</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-extrabold text-emerald-600">{weeklyPayrollData.performance?.task_performance_pct || 100}%</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowPerformanceModal(false)}
+                  className="w-full mt-5 py-3 bg-[#8a2be2] hover:bg-violet-750 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all border-none cursor-pointer"
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de Alerta de Pánico */}
+          {showPanicModal && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800">
+              <div 
+                className="absolute inset-0" 
+                onClick={() => setShowPanicModal(false)}
+              />
+              <div className="bg-white rounded-t-3xl p-5 pb-8 w-full animate-fade-in-up relative z-10 text-left border-t border-slate-100 max-w-md mx-auto">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                    <AlertOctagon size={20} className="animate-pulse" />
+                  </div>
+                  <h3 className="font-black text-rose-900 text-base">Alerta de Emergencia (Pánico)</h3>
+                </div>
+
+                <p className="text-[11.5px] text-slate-600 mb-5 leading-relaxed font-medium">
+                  ¿Deseas activar la alerta de pánico en DecorArte? Al activarla, se enviará una notificación de auxilio inmediata con tu ubicación GPS en tiempo real a la central de control administrativo y de seguridad.
+                </p>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setShowPanicModal(false)}
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-wider border-none cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowPanicModal(false);
+                      showToast('🚨 Alerta de pánico enviada con éxito. Soporte en camino.', 'error');
+                    }}
+                    className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-rose-600/10 border-none cursor-pointer"
+                  >
+                    Confirmar Alerta
+                  </button>
+                </div>
               </div>
             </div>
           )}

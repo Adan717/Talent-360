@@ -106,6 +106,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [selectedPrintTemplate, setSelectedPrintTemplate] = useState<any>(null);
   const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
 
   const { currentUser: loggedUser, systemSettings, completeInduction } = useAppStore();
 
@@ -430,7 +431,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   });
 
   return (
-    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden overflow-y-auto scrollbar-none select-none">
+    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden select-none">
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); }
@@ -504,7 +505,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <div className="px-6 pb-6 pt-1 relative z-10 flex flex-col max-w-md mx-auto w-full pb-32">
+      <div className="flex-1 overflow-y-auto scrollbar-none px-6 pb-28 pt-1 relative z-10 flex flex-col max-w-md mx-auto w-full">
         {/* TAB 1: PLAN (Elección de Puesto) */}
         {activeTab === 'plan' && !targetRoleId && (
           <div className="animate-fade-in-up">
@@ -1085,6 +1086,56 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
            template={selectedPrintTemplate?.template || null}
         />
       </div>
+
+      {/* Modal de Bienvenida motivacional */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0" 
+            onClick={() => setShowWelcomeModal(false)}
+          />
+          <div 
+            className="bg-white rounded-3xl p-6 shadow-2xl relative z-10 w-full max-w-sm text-center border-3 animate-fade-in-up"
+            style={{ borderColor: activeColor.hex }}
+          >
+            {/* Botón Cerrar */}
+            <button 
+              onClick={() => setShowWelcomeModal(false)}
+              className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 border-none cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Icono animado */}
+            <div 
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-slow shadow-lg shadow-violet-100"
+              style={{ backgroundColor: `${activeColor.hex}15`, color: activeColor.hex }}
+            >
+              <GraduationCap size={44} />
+            </div>
+
+            {/* Título y texto */}
+            <h3 className="font-black text-xl text-slate-900 mb-1.5 tracking-tight">Elige tu Meta Profesional</h3>
+            <p className="text-[11.5px] text-slate-500 font-bold mb-4">¿A qué puesto deseas ascender? Selecciona tu objetivo para personalizar tu plan de entrenamiento.</p>
+            
+            {/* Mensaje motivacional */}
+            <div 
+              className="p-3.5 rounded-2xl border mb-5 text-[11px] font-medium leading-relaxed"
+              style={{ backgroundColor: `${activeColor.hex}08`, borderColor: `${activeColor.hex}25`, color: activeColor.hex }}
+            >
+              🚀 <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> En DecorArte, cada paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
+            </div>
+
+            <button 
+              onClick={() => setShowWelcomeModal(false)}
+              className="w-full py-3 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all border-none cursor-pointer hover:opacity-90 active:scale-95"
+              style={{ backgroundColor: activeColor.hex }}
+            >
+              Comenzar a Aprender
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

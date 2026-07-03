@@ -241,7 +241,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
     const ytId = extractYouTubeId(activeCourse.video_url);
 
     return (
-      <div className="bg-slate-50 text-slate-800 h-full flex flex-col relative overflow-hidden overflow-y-auto custom-scrollbar">
+      <div className="bg-slate-50 text-slate-800 h-full flex flex-col relative overflow-hidden overflow-y-auto scrollbar-none">
         <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md p-4 border-b border-slate-200 flex items-center justify-between shadow-sm">
           <button onClick={() => setActiveCourse(null)} className="flex items-center text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
             <span className="text-xl mr-2">←</span> Volver al Plan
@@ -393,7 +393,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   });
 
   return (
-    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden overflow-y-auto custom-scrollbar select-none">
+    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden overflow-y-auto scrollbar-none select-none">
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); }
@@ -415,23 +415,30 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
       `}</style>
 
       {/* Cabecera con Pestañas */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs">
-        <div className="p-6 pb-4">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">Academia 360</h2>
-          <p className="text-indigo-600 text-xs mt-0.5 font-bold uppercase tracking-widest">Plan de Desarrollo y Logros</p>
-        </div>
-        <div className="flex gap-4 px-6 border-b border-slate-100">
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 shadow-xs">
+        <div className="flex items-center justify-around py-2.5 px-4">
           <button 
             onClick={() => setActiveTab('plan')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'plan' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+            className={`flex flex-col items-center gap-1 pb-1 transition-all border-none bg-transparent cursor-pointer ${
+              activeTab === 'plan' 
+                ? 'text-violet-650 font-extrabold scale-105' 
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
           >
-            Ruta de Carrera
+            <Map size={20} className={activeTab === 'plan' ? 'text-violet-600 animate-pulse' : 'text-slate-400'} />
+            <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Carrera</span>
           </button>
+          
           <button 
             onClick={() => setActiveTab('logros')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'logros' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+            className={`flex flex-col items-center gap-1 pb-1 transition-all border-none bg-transparent cursor-pointer ${
+              activeTab === 'logros' 
+                ? 'text-violet-650 font-extrabold scale-105' 
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
           >
-            Mis Logros
+            <Trophy size={20} className={activeTab === 'logros' ? 'text-violet-600 animate-pulse' : 'text-slate-400'} />
+            <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Logros</span>
           </button>
         </div>
       </div>
@@ -448,26 +455,26 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
               <p className="text-sm text-slate-500 font-medium">¿A qué puesto deseas ascender? Selecciona tu objetivo para personalizar tu plan de entrenamiento.</p>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-2.5">
               {roles.filter((role: any) => role.is_active !== false).map(role => {
                 const IconComponent = getRoleIcon(role.name);
                 return (
                   <button 
                     key={role.id}
                     onClick={() => setTargetRoleId(role.id)}
-                    className="w-full bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-xs hover:border-indigo-400 hover:shadow-md hover:translate-y-[-2px] transition-all text-left flex items-center gap-4 group animate-fade-in"
+                    className="w-full bg-white py-2.5 px-3.5 rounded-2xl border border-slate-150 shadow-xs hover:border-violet-400 hover:shadow-sm transition-all text-left flex items-center gap-3 group animate-fade-in cursor-pointer"
                   >
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-indigo-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100">
-                      {IconComponent}
+                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-violet-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100 shrink-0">
+                      {IconComponent && React.cloneElement(IconComponent as React.ReactElement, { className: `w-5.5 h-5.5 ${IconComponent.props.className?.replace('w-6 h-6', '') || ''}` })}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-extrabold text-slate-800 text-base truncate group-hover:text-indigo-900 transition-colors">
+                        <h4 className="font-black text-slate-805 text-sm truncate group-hover:text-violet-900 transition-colors">
                           {role.name}
                         </h4>
-                        <ChevronRight className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" size={20} />
+                        <ChevronRight className="text-slate-400 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all shrink-0" size={16} />
                       </div>
-                      <p className="text-xs text-slate-500 font-medium truncate mt-1">
+                      <p className="text-[10.5px] text-slate-500 font-medium truncate mt-0.5">
                         {role.description || "Ruta de certificación requerida"}
                       </p>
                       
@@ -479,21 +486,21 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                         });
                         if (roleCourses.length > 0) {
                           return (
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <div className="flex-1 bg-slate-100 h-1 rounded-full overflow-hidden">
                                 <div 
                                   className="bg-emerald-500 h-full rounded-full transition-all"
                                   style={{ width: `${(completedRoleCourses.length / roleCourses.length) * 100}%` }}
                                 ></div>
                               </div>
-                              <span className="text-[10px] font-bold text-slate-400">
+                              <span className="text-[9px] font-extrabold text-slate-400 shrink-0">
                                 {completedRoleCourses.length}/{roleCourses.length} mod.
                               </span>
                             </div>
                           );
                         }
                         return (
-                          <span className="text-[10px] font-bold text-slate-400 block mt-2">
+                          <span className="text-[9px] font-extrabold text-slate-400 block mt-1.5">
                             Módulos generales únicamente
                           </span>
                         );
@@ -522,37 +529,35 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
               const overallPercent = totalCoursesCount > 0 ? Math.round((completedCoursesCount / totalCoursesCount) * 100) : 0;
 
               return (
-                <div className="w-full bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-5 mb-8 shadow-xl text-white relative overflow-hidden animate-fade-in">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                    <GraduationCap size={120} />
-                  </div>
-                  
-                  <button 
-                    onClick={() => {
-                      setTargetRoleId(null);
-                      setSelectedCourseForDrawer(null);
-                    }}
-                    className="mb-4 text-xs font-bold text-indigo-200 hover:text-white flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-all w-fit"
-                  >
-                    ← Cambiar Meta
-                  </button>
+                <div className="w-full bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm text-slate-800 relative overflow-hidden animate-fade-in text-left">
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 bg-violet-50 text-violet-600 rounded-xl flex items-center justify-center shadow-xs border border-violet-100/50">
+                        {selectedRole ? React.cloneElement(getRoleIcon(selectedRole.name) as React.ReactElement, { className: 'w-5 h-5' }) : <Briefcase size={16} />}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-[13.5px] leading-tight text-slate-900">{selectedRole?.name || 'Ruta de Carrera'}</h4>
+                        <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider">Meta Profesional</p>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shadow-inner">
-                      {selectedRole ? getRoleIcon(selectedRole.name) : <Briefcase className="text-white" />}
-                    </div>
-                    <div>
-                      <h4 className="font-black text-lg leading-tight">{selectedRole?.name || 'Ruta de Carrera'}</h4>
-                      <p className="text-xs text-indigo-200 font-medium">Meta Profesional Seleccionada</p>
-                    </div>
+                    <button 
+                      onClick={() => {
+                        setTargetRoleId(null);
+                        setSelectedCourseForDrawer(null);
+                      }}
+                      className="text-[9.5px] font-black uppercase tracking-wider bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-850 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer border-none bg-transparent"
+                    >
+                      Cambiar
+                    </button>
                   </div>
 
-                  <div className="mt-5">
-                    <div className="flex justify-between items-center text-xs font-bold text-indigo-200 mb-1.5">
+                  <div className="mt-3 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-500 mb-1">
                       <span>Progreso de Certificación</span>
-                      <span>{overallPercent}% ({completedCoursesCount}/{totalCoursesCount})</span>
+                      <span className="text-emerald-600">{overallPercent}% ({completedCoursesCount}/{totalCoursesCount})</span>
                     </div>
-                    <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                       <div 
                         className="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${overallPercent}%` }}
@@ -716,13 +721,13 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   }
                   
                   return (
-                    <div key={idx} className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between animate-fade-in">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 text-white pointer-events-none">
-                        <Trophy size={100} />
+                    <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
+                      <div className="absolute top-0 right-0 p-6 opacity-5 text-slate-900 pointer-events-none">
+                        <Trophy size={60} />
                       </div>
-                      <div className="relative z-10">
-                        <h4 className="text-xl font-black text-white mb-1 leading-tight">{course.title}</h4>
-                        <p className="text-indigo-200 text-sm mb-0">Completado con Excelencia</p>
+                      <div className="relative z-10 flex-1 min-w-0 pr-4">
+                        <h4 className="text-sm font-black text-slate-800 mb-1 leading-tight truncate">{course.title}</h4>
+                        <p className="text-[10px] text-emerald-600 font-extrabold uppercase tracking-wider">Completado con Excelencia ✓</p>
                       </div>
                       <button 
                         onClick={() => {
@@ -731,9 +736,9 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                             window.print();
                           }, 100);
                         }}
-                        className="relative z-10 bg-white/10 hover:bg-white/20 text-white/90 p-4 rounded-2xl backdrop-blur-sm border border-white/20 transition-all shadow-lg flex items-center gap-2 font-bold hover:scale-105 active:scale-95"
+                        className="relative z-10 bg-violet-50 hover:bg-violet-105 text-violet-700 px-3.5 py-2.5 rounded-xl border border-violet-100 font-black text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
-                        <span className="text-xl">🖨️</span> Imprimir
+                        <span>🖨️</span> Imprimir
                       </button>
                     </div>
                   );

@@ -11,6 +11,25 @@ import { useAppStore } from './store/useAppStore';
 import axiosInstance from './lib/axios';
 
 import { LoadingScreen } from './components/ui/LoadingScreen';
+import { ColorMap } from './components/SaaSAccountSettings';
+
+const getIndicatorColor = (modId: string, systemSettings: any) => {
+  const cust = systemSettings?.moduleCustomizations?.[modId];
+  if (cust?.color && ColorMap[cust.color]) {
+    return ColorMap[cust.color].hex;
+  }
+  switch (modId) {
+    case 'asistencia': return '#10b981'; // emerald
+    case 'operativo': return '#2563eb'; // blue
+    case 'reportes': return '#10b981'; // emerald
+    case 'ats': return '#8a2be2'; // purple
+    case 'academia': return '#0ea5e9'; // sky
+    case 'documentos': return '#eab308'; // yellow
+    case 'facturacion': return '#10b981'; // emerald
+    case 'lft': return '#f59e0b'; // amber
+    default: return '#2563eb';
+  }
+};
 
 // Mega-Módulos Cargados de Forma Dinámica (Lazy Loading)
 const RelojChecador = lazy(() => import('./components/RelojChecador'));
@@ -310,13 +329,15 @@ function MainLayout() {
   const customizedModules = modules.map(mod => {
     const customizations = systemSettings?.moduleCustomizations?.[mod.id];
     if (customizations) {
+      const customColor = customizations.color && ColorMap[customizations.color];
       return {
         ...mod,
         title: customizations.title || mod.title,
         desc: customizations.desc || mod.desc,
         icon: customizations.iconName && IconMap[customizations.iconName] 
           ? IconMap[customizations.iconName] 
-          : mod.icon
+          : mod.icon,
+        color: customColor ? customColor.sidebar : mod.color
       };
     }
     return mod;
@@ -460,7 +481,10 @@ function MainLayout() {
                   </div>
                 )}
                 {isActive && isSidebarOpen && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full" />
+                  <div 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full" 
+                    style={{ backgroundColor: getIndicatorColor(mod.id, systemSettings) }}
+                  />
                 )}
               </button>
             );
@@ -574,7 +598,7 @@ function MainLayout() {
 
               {/* Active Module Icon (Pure colored icon, no background box, extra large focal point) */}
               {activeModuleData?.icon && (
-                <div className={`${activeModuleData.color.split(' ').find(c => c.startsWith('text-')) || 'text-slate-600'} shrink-0 flex items-center justify-center [&>svg]:w-[36px] [&>svg]:h-[36px] sm:[&>svg]:w-[48px] sm:[&>svg]:h-[48px] lg:[&>svg]:w-[56px] lg:[&>svg]:h-[56px]`}>
+                <div className={`${activeModuleData.color.split(' ').find((c: string) => c.startsWith('text-')) || 'text-slate-600'} shrink-0 flex items-center justify-center [&>svg]:w-[36px] [&>svg]:h-[36px] sm:[&>svg]:w-[48px] sm:[&>svg]:h-[48px] lg:[&>svg]:w-[56px] lg:[&>svg]:h-[56px]`}>
                   {activeModuleData.icon}
                 </div>
               )}

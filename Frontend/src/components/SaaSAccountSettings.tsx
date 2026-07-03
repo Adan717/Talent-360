@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Building2, CreditCard, LayoutGrid, Save, 
+  Building2, CreditCard, LayoutGrid, Save, Check,
   CheckCircle2, AlertCircle, ShieldCheck, 
   Smartphone, Upload, Globe, ChevronRight,
   Receipt, Database, Loader2, MessageSquare, Send, X,
@@ -12,6 +12,17 @@ import { useAppStore } from '../store/useAppStore';
 import { BackupPanel } from './BackupPanel';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import axiosInstance from '../lib/axios';
+
+export const ColorMap: Record<string, { sidebar: string; hex: string; text: string }> = {
+  violet: { sidebar: 'bg-violet-50 text-violet-650 border-violet-100 dark:bg-violet-955/40 dark:text-violet-400 dark:border-violet-900/30', hex: '#8a2be2', text: 'text-violet-655' },
+  blue: { sidebar: 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-955/40 dark:text-blue-400 dark:border-blue-900/30', hex: '#2563eb', text: 'text-blue-600' },
+  emerald: { sidebar: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-955/40 dark:text-emerald-400 dark:border-emerald-900/30', hex: '#10b981', text: 'text-emerald-600' },
+  indigo: { sidebar: 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-955/40 dark:text-indigo-400 dark:border-indigo-900/30', hex: '#6366f1', text: 'text-indigo-600' },
+  amber: { sidebar: 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-955/40 dark:text-amber-400 dark:border-amber-900/30', hex: '#f59e0b', text: 'text-amber-600' },
+  rose: { sidebar: 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-955/40 dark:text-rose-400 dark:border-rose-900/30', hex: '#f43f5e', text: 'text-rose-600' },
+  sky: { sidebar: 'bg-sky-50 text-sky-650 border-sky-100 dark:bg-sky-955/40 dark:text-sky-400 dark:border-sky-900/30', hex: '#0ea5e9', text: 'text-sky-655' },
+  slate: { sidebar: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700', hex: '#64748b', text: 'text-slate-650' }
+};
 
 const IconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 size={20} />,
@@ -144,6 +155,7 @@ const ModuleCard = ({
                       title: mod.name,
                       desc: mod.desc,
                       iconName: defaultIcons[mod.moduleId] || 'LayoutGrid',
+                      color: 'violet',
                       ...(systemSettings?.moduleCustomizations?.[mod.moduleId] || {})
                     });
                   }}
@@ -1228,7 +1240,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           [editingCustomModule.id]: {
                             title: editingCustomModule.title,
                             desc: editingCustomModule.desc,
-                            iconName: editingCustomModule.iconName
+                            iconName: editingCustomModule.iconName,
+                            color: editingCustomModule.color
                           }
                         };
                         updateSetting('moduleCustomizations', updatedCustoms);
@@ -1277,6 +1290,31 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                                   placeholder="Ej. Registra entradas de manera rápida"
                                   className="w-full px-4 py-2.5 rounded-xl border border-slate-250 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-slate-50/50 text-slate-800 text-sm font-semibold transition-all outline-none"
                                 />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-black text-slate-600 uppercase tracking-wider block">Color del Módulo (Ecosistema)</label>
+                                <div className="flex flex-wrap gap-2.5 p-3.5 bg-slate-50/60 rounded-2xl border border-slate-100">
+                                  {Object.entries(ColorMap).map(([colorKey, colorVal]) => {
+                                    const isSelected = editingCustomModule.color === colorKey || (!editingCustomModule.color && colorKey === 'violet');
+                                    return (
+                                      <button
+                                        key={colorKey}
+                                        type="button"
+                                        onClick={() => setEditingCustomModule({ ...editingCustomModule, color: colorKey })}
+                                        className={`w-8 h-8 rounded-full border-2 transition-all cursor-pointer relative flex items-center justify-center ${
+                                          isSelected ? 'border-blue-600 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
+                                        }`}
+                                        style={{ backgroundColor: colorVal.hex }}
+                                        title={colorKey.toUpperCase()}
+                                      >
+                                        {isSelected && (
+                                          <Check size={14} className="text-white drop-shadow-sm font-black" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
 
                               <div className="space-y-2">

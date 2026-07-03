@@ -537,130 +537,128 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-y-auto">
-            {/* Buscador de tareas y Volver (Con transición suave de deslizamiento) */}
-            <div className="relative mb-4 h-[52px] shrink-0 select-none overflow-hidden">
-                {/* 1. Fila de Botones de Navegación (Se desliza hacia la izquierda cuando el buscador está abierto) */}
-                <div 
-                    className={`absolute inset-0 grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 transition-all duration-300 ease-out transform ${
-                        isSearchOpen ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+            {/* Fila fija de botones (Grid de navegación intacto) */}
+            <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-3 shrink-0 select-none`}>
+                {/* Botón 1: Todas */}
+                <button
+                    type="button"
+                    onClick={() => setFilterTab('todos')}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                        filterTab === 'todos'
+                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                     }`}
                 >
-                    {/* Botón 1: Todas */}
+                    <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
+                    <span className="text-[9px] font-black uppercase mt-1">Todas</span>
+                    <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                        filterTab === 'todos' 
+                            ? 'bg-white text-[#8a2be2] border-white' 
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                        {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                    </span>
+                </button>
+
+                {/* Botón 2: Por Validar */}
+                {(isSupervisor || awaitingValidationFiltered.length > 0) && (
                     <button
                         type="button"
-                        onClick={() => setFilterTab('todos')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer border-solid bg-transparent relative ${
-                            filterTab === 'todos'
-                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                        onClick={() => setFilterTab('firma_pendiente')}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                            filterTab === 'firma_pendiente'
+                                ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
                                 : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                         }`}
                     >
-                        <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
-                        <span className="text-[9px] font-black uppercase mt-1">Todas</span>
-                        <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                            filterTab === 'todos' 
-                                ? 'bg-white text-[#8a2be2] border-white' 
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}>
-                            {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
-                        </span>
-                    </button>
-
-                    {/* Botón 2: Por Validar - Solo si es supervisor o hay tareas por validar */}
-                    {(isSupervisor || awaitingValidationFiltered.length > 0) && (
-                        <button
-                            type="button"
-                            onClick={() => setFilterTab('firma_pendiente')}
-                            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer border-solid bg-transparent relative ${
+                        <FileCheck size={18} className={filterTab === 'firma_pendiente' ? 'text-white' : 'text-slate-400'} />
+                        <span className="text-[8.5px] font-black uppercase mt-1 leading-none text-center">Por Validar</span>
+                        {awaitingValidationFiltered.length > 0 && (
+                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border animate-pulse ${
                                 filterTab === 'firma_pendiente'
-                                    ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
-                                    : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                            }`}
-                        >
-                            <FileCheck size={18} className={filterTab === 'firma_pendiente' ? 'text-white' : 'text-slate-400'} />
-                            <span className="text-[8.5px] font-black uppercase mt-1 leading-none text-center">Por Validar</span>
-                            {awaitingValidationFiltered.length > 0 && (
-                                <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border animate-pulse ${
-                                    filterTab === 'firma_pendiente'
-                                        ? 'bg-white text-amber-700 border-white'
-                                        : 'bg-rose-500 text-white border-rose-450'
-                                }`}>
-                                    {awaitingValidationFiltered.length}
-                                </span>
-                            )}
-                        </button>
-                    )}
-
-                    {/* Botón 3: Mis Tareas (Unificado con Bolsa) */}
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('mis_tareas')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer border-solid bg-transparent relative ${
-                            filterTab === 'mis_tareas'
-                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                        }`}
-                    >
-                        <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
-                        <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
-                        {(activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length) > 0 && (
-                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                                filterTab === 'mis_tareas'
-                                    ? 'bg-white text-[#8a2be2] border-white'
-                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                    ? 'bg-white text-amber-700 border-white'
+                                    : 'bg-rose-500 text-white border-rose-450'
                             }`}>
-                                {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                                {awaitingValidationFiltered.length}
                             </span>
                         )}
                     </button>
+                )}
 
-                    {/* Botón 4: Buscar (Lupa) */}
-                    <button
-                        type="button"
-                        onClick={() => setIsSearchOpen(true)}
-                        className="flex flex-col items-center justify-center py-2 px-1 rounded-2xl border border-slate-200/85 bg-white hover:bg-slate-50 text-slate-500 transition-all cursor-pointer border-solid"
-                    >
-                        <Search size={18} className="text-slate-400" />
-                        <span className="text-[9px] font-black uppercase mt-1">Buscar</span>
-                    </button>
-                </div>
-
-                {/* 2. Buscador deslizable a ancho completo (Se desliza desde la derecha cubriendo los botones) */}
-                <div 
-                    className={`absolute inset-0 flex gap-2 items-center transition-all duration-300 ease-out transform ${
-                        isSearchOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+                {/* Botón 3: Mis Tareas */}
+                <button
+                    type="button"
+                    onClick={() => setFilterTab('mis_tareas')}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                        filterTab === 'mis_tareas'
+                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                     }`}
                 >
-                    <div className="relative flex-1">
-                        <input 
-                            type="text" 
-                            placeholder="Buscar tareas por título..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold shadow-sm transition-all"
-                        />
-                        <div className="absolute left-3 top-3 text-slate-400">
-                            <Search size={14} />
-                        </div>
-                        {searchQuery && (
-                            <button 
-                                onClick={() => setSearchQuery('')} 
-                                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
-                            >
-                                <X size={14} />
-                            </button>
-                        )}
+                    <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
+                    <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
+                    {(activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length) > 0 && (
+                        <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                            filterTab === 'mis_tareas'
+                                ? 'bg-white text-[#8a2be2] border-white'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                            {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                        </span>
+                    )}
+                </button>
+
+                {/* Botón 4: Buscar */}
+                <button
+                    type="button"
+                    onClick={() => setIsSearchOpen(!isSearchOpen)}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                        isSearchOpen
+                            ? 'bg-violet-600 text-white border-violet-600 shadow-md scale-[1.02]'
+                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                    }`}
+                >
+                    <Search size={18} className={isSearchOpen ? 'text-white' : 'text-slate-400'} />
+                    <span className="text-[9px] font-black uppercase mt-1">Buscar</span>
+                </button>
+            </div>
+
+            {/* Buscador Deslizable Colapsable con Altura y Opacidad Animadas */}
+            <div 
+                className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center gap-2 shrink-0 ${
+                    isSearchOpen 
+                        ? 'h-12 opacity-100 mb-3 scale-y-100 origin-top' 
+                        : 'h-0 opacity-0 mb-0 scale-y-0 origin-top pointer-events-none'
+                }`}
+            >
+                <div className="relative flex-1">
+                    <input 
+                        type="text" 
+                        placeholder="Buscar tareas por título..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold shadow-sm transition-all"
+                    />
+                    <div className="absolute left-3 top-3 text-slate-400">
+                        <Search size={14} />
                     </div>
-                    <button 
-                        onClick={() => {
-                            setIsSearchOpen(false);
-                            setSearchQuery('');
-                        }}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-605 font-extrabold text-[10px] uppercase px-3.5 py-2.5 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
-                    >
-                        <span>Cerrar</span>
-                    </button>
+                    {searchQuery && (
+                        <button 
+                            onClick={() => setSearchQuery('')} 
+                            className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
                 </div>
+                <button 
+                    onClick={() => {
+                        setSearchQuery('');
+                    }}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-[10px] uppercase px-3.5 py-2.5 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
+                >
+                    <span>Limpiar</span>
+                </button>
             </div>
 
             {/* Listado principal */}

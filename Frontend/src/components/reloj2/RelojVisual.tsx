@@ -334,6 +334,22 @@ export default function RelojVisual({
   const [selectedTransferReceiverId, setSelectedTransferReceiverId] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
+  const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isSimulated) {
+      axiosInstance.get('/employee/payroll-weekly')
+        .then(res => {
+          if (res.data && res.data.success && res.data.data.performance) {
+            setWeeklyPerformanceScore(res.data.data.performance.performance_score);
+          }
+        })
+        .catch(err => console.error('Error fetching weekly score:', err));
+    } else {
+      setWeeklyPerformanceScore(88);
+    }
+  }, [isSimulated, clockState]);
+
   // Auto-scroll para el chat de equipo
   useEffect(() => {
     if (innerTool === 'chat' && chatBottomRef.current) {
@@ -772,9 +788,9 @@ export default function RelojVisual({
     const progressPercent = tDuration > 0 ? Math.min(100, Math.max(0, (elapsedTotal / tDuration) * 100)) : 0;
 
     return (
-      <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-2 w-full text-left py-2 select-none"}>
+      <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-4 w-full text-left py-2 select-none"}>
         {/* Two-Column Status Bar: Store Status (Left) & Employee Shift Status (Right) */}
-        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-2 px-1' : 'text-[11px] mb-1 tracking-wider'}`}>
+        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-4 px-1' : 'text-[11px] mb-2 tracking-wider'}`}>
           {/* Left: Store status */}
           <div className="flex items-center select-none">
             {storeStatus === 'open' ? (
@@ -2981,6 +2997,41 @@ export default function RelojVisual({
                     onRequestGPS={requestGPS}
                     isGpsValidationBypassed={isGpsValidationBypassed}
                   />
+
+                  {/* Barra de Rendimiento Global Semanal - Colaborador */}
+                  {weeklyPerformanceScore !== null && (
+                    <div className={`w-full p-3 border rounded-2xl flex flex-col gap-1.5 text-left shrink-0 mt-1.5 ${
+                      isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white/90 border-slate-200/80 shadow-xs'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Trophy size={13} className="text-violet-600" />
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Desempeño Semanal</span>
+                        </div>
+                        <span className={`text-[11px] font-black ${
+                          weeklyPerformanceScore >= 85 
+                            ? 'text-emerald-600' 
+                            : weeklyPerformanceScore >= 60 
+                              ? 'text-amber-500' 
+                              : 'text-rose-500'
+                        }`}>
+                          {weeklyPerformanceScore}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 rounded-full ${
+                            weeklyPerformanceScore >= 85 
+                              ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' 
+                              : weeklyPerformanceScore >= 60 
+                                ? 'bg-gradient-to-r from-amber-400 to-amber-500' 
+                                : 'bg-gradient-to-r from-rose-400 to-rose-500'
+                          }`}
+                          style={{ width: `${weeklyPerformanceScore}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Alertas Sencillas Abajo del Dial (Siempre pegadas y alineadas directamente bajo el Dial) */}
                   <div className="space-y-1.5 w-full shrink-0 mt-1">

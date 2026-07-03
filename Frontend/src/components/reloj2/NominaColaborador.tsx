@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, CheckCircle2, AlertCircle, Calendar, 
-  Clock, Coffee, Fingerprint, RefreshCw, FileText
+  Clock, Coffee, Fingerprint, RefreshCw, FileText,
+  Trophy, AlertTriangle, Check
 } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
 
@@ -17,6 +18,11 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
   
   // Estado para la aprobación diaria
   const [approvingDate, setApprovingDate] = useState<string | null>(null);
+  
+  // Estado para disputar/aclarar registro
+  const [disputingDate, setDisputingDate] = useState<string | null>(null);
+  const [disputeComment, setDisputeComment] = useState('');
+  const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
   
   // Estado para la aceptación de nómina semanal
   const [isApprovingWeekly, setIsApprovingWeekly] = useState(false);
@@ -56,6 +62,31 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
       setErrorMsg('Error al aprobar el registro diario.');
     } finally {
       setApprovingDate(null);
+    }
+  };
+
+  const handleDisputeDaily = async (date: string) => {
+    if (!disputeComment.trim()) return;
+    setIsSubmittingDispute(true);
+    setErrorMsg('');
+    try {
+      const res = await axiosInstance.post('/employee/daily-records/approve', {
+        date,
+        status: 'disputed',
+        comments: disputeComment
+      });
+      if (res.data && res.data.success) {
+        setSuccessMsg(`Registro del día ${date} enviado a aclaración.`);
+        setDisputeComment('');
+        setDisputingDate(null);
+        setTimeout(() => setSuccessMsg(''), 3000);
+        fetchPayroll();
+      }
+    } catch (e) {
+      console.error(e);
+      setErrorMsg('Error al reportar inconformidad.');
+    } finally {
+      setIsSubmittingDispute(false);
     }
   };
 
@@ -112,39 +143,39 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
   const allDaysApproved = payroll.days_details.every((d: any) => d.is_rest_day || d.approval_status === 'approved');
 
   return (
-    <div className="space-y-5 pb-24 max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="space-y-4 pb-24 max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
       
       {/* Mensajes */}
       {successMsg && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+        <div className="p-3 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
           {successMsg}
         </div>
       )}
 
       {/* Tarjeta de Nómina */}
-      <div className={`p-5 rounded-2xl border shadow-sm relative overflow-hidden transition-all ${
+      <div className={`p-4 rounded-2xl border shadow-xs relative overflow-hidden transition-all ${
         isDark 
           ? 'bg-slate-900 border-slate-800 text-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.2)]' 
           : 'bg-white border-slate-200 text-slate-800 shadow-[0_8px_32px_rgba(124,58,237,0.04)]'
       }`}>
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-violet-500 to-[#8a2be2]"></div>
         
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3.5">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Neto a Recibir</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Neto a Recibir</h3>
             <div className="flex items-baseline gap-0.5">
               <span className="text-2xl font-black">${payroll.salary.net.toFixed(2)}</span>
-              <span className="text-[10px] text-slate-400 font-bold">MXN</span>
+              <span className="text-[9px] text-slate-400 font-bold">MXN</span>
             </div>
           </div>
-          <div className="p-2.5 bg-violet-55 text-violet-600 rounded-xl border border-violet-100/50">
-            <DollarSign size={20} className="text-[#8a2be2]" />
+          <div className="p-2 bg-violet-50 text-violet-600 rounded-xl border border-violet-100/50">
+            <DollarSign size={18} className="text-[#8a2be2]" />
           </div>
         </div>
 
         {/* Desglose */}
-        <div className="space-y-2 border-t border-dashed border-slate-200 dark:border-slate-800 pt-3 text-xs">
+        <div className="space-y-2 border-t border-dashed border-slate-200 dark:border-slate-800 pt-3 text-[11px]">
           <div className="flex justify-between">
             <span className="text-slate-400 font-medium">Sueldo Base (6 días):</span>
             <span className="font-bold">${payroll.salary.base.toFixed(2)}</span>
@@ -159,28 +190,85 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
           {payroll.deductions_breakdown.total > 0 && (
             <div className="border-t border-slate-100 dark:border-slate-800/55 pt-2 space-y-1">
-              <div className="text-[10px] font-black uppercase text-rose-500 tracking-wider">Deducciones LFT</div>
+              <div className="text-[9px] font-black uppercase text-rose-500 tracking-wider">Deducciones LFT</div>
               
               {payroll.deductions_breakdown.absences > 0 && (
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-[10.5px]">
                   <span className="text-slate-400 font-medium">Faltas ({payroll.incidents.total_absences} días):</span>
                   <span className="font-bold text-rose-600">-${payroll.deductions_breakdown.absences.toFixed(2)}</span>
                 </div>
               )}
               {payroll.deductions_breakdown.rest_day > 0 && (
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-slate-400 font-medium">Descuento Descanso Proporcional:</span>
+                <div className="flex justify-between text-[10.5px]">
+                  <span className="text-slate-400 font-medium">Descanso Proporcional LFT:</span>
                   <span className="font-bold text-rose-600">-${payroll.deductions_breakdown.rest_day.toFixed(2)}</span>
                 </div>
               )}
               {payroll.deductions_breakdown.lates > 0 && (
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-[10.5px]">
                   <span className="text-slate-400 font-medium">Retardos ({payroll.incidents.lates} mins):</span>
                   <span className="font-bold text-rose-600">-${payroll.deductions_breakdown.lates.toFixed(2)}</span>
                 </div>
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Barra de Rendimiento Global Semanal (KPIs) */}
+      <div className={`p-4 rounded-2xl border ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Trophy size={14} className="text-violet-600" />
+            <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400">Rendimiento Semanal</h4>
+          </div>
+          <span className={`text-sm font-black ${
+            payroll.performance.performance_score >= 85 
+              ? 'text-emerald-600' 
+              : payroll.performance.performance_score >= 60 
+                ? 'text-amber-500' 
+                : 'text-rose-500'
+          }`}>
+            {payroll.performance.performance_score}%
+          </span>
+        </div>
+
+        {/* Barra de Progreso */}
+        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden mb-3">
+          <div 
+            className={`h-full transition-all duration-500 rounded-full ${
+              payroll.performance.performance_score >= 85 
+                ? 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                : payroll.performance.performance_score >= 60 
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500' 
+                  : 'bg-gradient-to-r from-rose-400 to-rose-500'
+            }`}
+            style={{ width: `${payroll.performance.performance_score}%` }}
+          />
+        </div>
+
+        {/* Métricas del Historial */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-slate-50 dark:bg-slate-950/20 p-2 rounded-xl border border-slate-100 dark:border-slate-800/60">
+            <span className="text-[9px] text-slate-400 font-bold block">Faltas / Retardos</span>
+            <span className="text-[10.5px] font-black text-slate-700 dark:text-slate-200">
+              {payroll.incidents.total_absences} F / {payroll.incidents.lates} R
+            </span>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-950/20 p-2 rounded-xl border border-slate-100 dark:border-slate-800/60">
+            <span className="text-[9px] text-slate-400 font-bold block">Desvíos Comida</span>
+            <span className="text-[10.5px] font-black text-slate-700 dark:text-slate-200">
+              {payroll.performance.meal_overtime_mins} min
+            </span>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-950/20 p-2 rounded-xl border border-slate-100 dark:border-slate-800/60">
+            <span className="text-[9px] text-slate-400 font-bold block">Tareas a Tiempo</span>
+            <span className="text-[10.5px] font-black text-slate-700 dark:text-slate-200">
+              {payroll.performance.task_performance_pct}%
+            </span>
+          </div>
         </div>
       </div>
 
@@ -199,42 +287,99 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
             const hasCheckOut = day.entries.some((e: any) => e.type === 'check_out');
             
             return (
-              <div key={day.date} className="py-3 flex items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[12px] font-extrabold capitalize ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{day.day_name}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{day.date}</span>
-                  </div>
-                  
-                  {day.is_rest_day ? (
-                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Día de Descanso</span>
-                  ) : hasCheckIn ? (
-                    <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
-                      <span className="flex items-center gap-0.5"><Clock size={10} /> Ent: {day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</span>
-                      <span className="flex items-center gap-0.5"><Clock size={10} /> Sal: {day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</span>
+              <div key={day.date} className="py-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[12px] font-extrabold capitalize ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{day.day_name}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">{day.date}</span>
                     </div>
-                  ) : (
-                    <span className="text-[10px] text-rose-500 font-bold bg-rose-50 dark:bg-rose-950/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Falta Registrada</span>
-                  )}
+                    
+                    {day.is_rest_day ? (
+                      <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Día de Descanso</span>
+                    ) : hasCheckIn ? (
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                        <span className="flex items-center gap-0.5"><Clock size={10} /> Ent: {day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</span>
+                        <span className="flex items-center gap-0.5"><Clock size={10} /> Sal: {day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-rose-500 font-bold bg-rose-50 dark:bg-rose-950/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Falta Registrada</span>
+                    )}
+                  </div>
+
+                  {/* Acciones de Firma o Disputa */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {day.is_rest_day ? null : day.approval_status === 'approved' ? (
+                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                        <Check size={10} /> Firmado
+                      </span>
+                    ) : day.approval_status === 'disputed' ? (
+                      <span className="text-[10px] font-black text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                        <AlertTriangle size={10} /> En Aclaración
+                      </span>
+                    ) : hasCheckIn ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={approvingDate === day.date}
+                          onClick={() => handleApproveDaily(day.date)}
+                          className="px-2 py-1 bg-[#8a2be2] hover:bg-violet-750 text-white rounded-lg text-[10.5px] font-black shadow-xs transition-all border-none cursor-pointer flex items-center gap-0.5 active:scale-95 disabled:opacity-50"
+                        >
+                          {approvingDate === day.date ? '...' : 'Firmar'}
+                        </button>
+                        <button
+                          disabled={approvingDate === day.date}
+                          onClick={() => {
+                            setDisputingDate(day.date);
+                            setDisputeComment('');
+                          }}
+                          className="px-2 py-1 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg text-[10.5px] font-black border border-slate-200 hover:border-rose-200 transition-all cursor-pointer active:scale-95"
+                        >
+                          Reclamar
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10.5px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                        <AlertCircle size={10} /> Falta
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Acción de Firma diaria */}
-                {day.is_rest_day ? null : day.approval_status === 'approved' ? (
-                  <span className="text-[10.5px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <CheckCircle2 size={12} /> Firmado
-                  </span>
-                ) : hasCheckIn ? (
-                  <button
-                    disabled={approvingDate === day.date}
-                    onClick={() => handleApproveDaily(day.date)}
-                    className="px-3 py-1.5 bg-[#8a2be2] hover:bg-violet-750 text-white rounded-lg text-[10.5px] font-extrabold shadow-sm transition-all border-none cursor-pointer flex items-center gap-1 active:scale-95 disabled:opacity-50"
-                  >
-                    {approvingDate === day.date ? 'Firmando...' : 'Firmar Registro'}
-                  </button>
-                ) : (
-                  <span className="text-[10.5px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <AlertCircle size={12} /> Falta
-                  </span>
+                {/* Comentarios de aclaración */}
+                {day.approval_status === 'disputed' && day.comments && (
+                  <div className="text-[9.5px] bg-rose-50/50 dark:bg-rose-955/10 text-rose-700 p-2 rounded-xl border border-rose-100/50 font-medium">
+                    <span className="font-extrabold block mb-0.5">Motivo reportado:</span>
+                    "{day.comments}"
+                  </div>
+                )}
+
+                {/* Formulario inline de disputa */}
+                {disputingDate === day.date && (
+                  <div className="bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-200/60 flex flex-col gap-2 animate-fade-in text-left">
+                    <span className="text-[9.5px] font-black text-slate-500">¿Por qué no estás de acuerdo con este registro diario?</span>
+                    <textarea
+                      rows={2}
+                      value={disputeComment}
+                      onChange={(e) => setDisputeComment(e.target.value)}
+                      placeholder="Describe el inconveniente o corrección necesaria (ej. Horario incorrecto)..."
+                      className="w-full text-[11px] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-rose-400 font-medium resize-none"
+                    />
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        onClick={() => setDisputingDate(null)}
+                        className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-500 rounded-lg text-[9.5px] font-bold border border-slate-200 transition-all cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        disabled={isSubmittingDispute || !disputeComment.trim()}
+                        onClick={() => handleDisputeDaily(day.date)}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[9.5px] font-black shadow-xs transition-all border-none cursor-pointer disabled:opacity-40"
+                      >
+                        {isSubmittingDispute ? 'Enviando...' : 'Enviar Aclaración'}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             );
@@ -254,9 +399,9 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           </p>
         </div>
       ) : (
-        <div className={`p-5 rounded-2xl border ${
+        <div className={`p-4 rounded-2xl border ${
           isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        } space-y-4`}>
+        } space-y-3.5`}>
           <div className="flex gap-2">
             <Fingerprint size={20} className="text-[#8a2be2] shrink-0" />
             <div>

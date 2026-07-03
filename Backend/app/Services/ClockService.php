@@ -266,6 +266,34 @@ class ClockService
                     : null
             ];
         }
+
+        // 6. Calcular Rendimiento de Tareas
+        $assignments = \DB::table('task_assignments')
+            ->where('user_id', $employee->user_id)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->get();
+
+        $totalTasks = $assignments->count();
+        $completedTasksOnTime = 0;
+        foreach ($assignments as $asn) {
+            if ($asn->status === 'completed') {
+                $completedAt = $asn->completed_at_mins ?? 0;
+                $expectedEnd = $asn->expected_end_time_mins ?? 0;
+                if ($expectedEnd === 0 || $completedAt <= $expectedEnd) {
+                    $completedTasksOnTime++;
+                }
+            }
+        }
+        $taskPerformancePct = $totalTasks > 0 ? (int)round(($completedTasksOnTime / $totalTasks) * 100) : 100;
+
+        // 7. Calcular Score Global de Rendimiento (Evaluación Ley/Comportamiento)
+        // Base 100, restamos 15 por falta, 5 por retardo, 1 por cada 5 min de exceso en comida/descanso
+        $attendanceScore = 100 - ($totalAbsences * 15) - ($latesCount * 5) - (int)floor($mealExcessMinutes / 5) - (int)floor($restExcessMinutes / 5);
+        $attendanceScore = max(0, $attendanceScore);
+        
+        // El score global es 60% asistencia/puntualidad y 40% desempeño de tareas
+        $performanceScore = (int)round(($attendanceScore * 0.6) + ($taskPerformancePct * 0.4));
+        $performanceScore = max(0, min(100, $performanceScore));
         
         // Buscar si ya se guardó y aprobó la nómina de esta semana
         $weeklyPayrollRecord = \App\Models\WeeklyPayroll::where('employee_id', $employee->id)
@@ -295,6 +323,12 @@ class ClockService
                 'rest_day_proportion' => (float)$restDayProportion,
                 'meal_excess_minutes' => $mealExcessMinutes,
                 'rest_excess_minutes' => $restExcessMinutes,
+            ],
+            'performance' => [
+                'meal_overtime_mins' => $mealExcessMinutes,
+                'break_overtime_mins' => $restExcessMinutes,
+                'task_performance_pct' => $taskPerformancePct,
+                'performance_score' => $performanceScore
             ],
             'deductions_breakdown' => [
                 'absences' => (float)$deductionAbsence,

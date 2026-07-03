@@ -517,7 +517,16 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
             </div>
             
             <div className="grid grid-cols-1 gap-2.5">
-              {roles.filter((role: any) => role.is_active !== false).map(role => {
+              {roles.filter((role: any) => {
+                if (role.is_active === false) return false;
+                const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                if (roleCourses.length === 0) return false;
+                const completedRoleCourses = roleCourses.filter(c => {
+                  const p = userProgress.find(up => up.course_id === c.id);
+                  return p?.status === 'completed';
+                });
+                return completedRoleCourses.length < roleCourses.length;
+              }).map(role => {
                 const IconComponent = getRoleIcon(role.name);
                 return (
                   <button 
@@ -766,10 +775,63 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
 
         {/* TAB 2: LOGROS */}
         {activeTab === 'logros' && (
-          <div className="animate-fade-in-up">
-            <h3 className="font-black text-2xl text-slate-900 mb-6 tracking-tight">Mis Certificados</h3>
-            <div className="space-y-4">
-               {filteredCourses.filter(course => {
+          <div className="animate-fade-in-up space-y-6">
+            {/* Carreras Culminadas */}
+            <div>
+              <h3 className="font-black text-xl text-slate-905 mb-4 tracking-tight">Metas Profesionales Alcanzadas</h3>
+              <div className="space-y-3">
+                {roles.filter((role: any) => {
+                  if (role.is_active === false) return false;
+                  const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                  if (roleCourses.length === 0) return false;
+                  const completedRoleCourses = roleCourses.filter(c => {
+                    const p = userProgress.find(up => up.course_id === c.id);
+                    return p?.status === 'completed';
+                  });
+                  return completedRoleCourses.length === roleCourses.length;
+                }).map((role) => {
+                  const IconComponent = getRoleIcon(role.name);
+                  return (
+                    <div key={role.id} className="bg-gradient-to-r from-violet-500 to-indigo-600 rounded-3xl p-4 text-white shadow-lg relative overflow-hidden flex items-center gap-3.5 animate-fade-in text-left">
+                      <div className="absolute top-0 right-0 p-6 opacity-10 text-white pointer-events-none">
+                        <Crown size={80} className="rotate-12" />
+                      </div>
+                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
+                        {IconComponent && React.cloneElement(IconComponent as React.ReactElement<any>, { className: "w-6 h-6 text-white" })}
+                      </div>
+                      <div className="relative z-10 flex-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-black tracking-widest bg-amber-400 text-amber-955 px-2 py-0.5 rounded-full uppercase">Puesto Alcanzado</span>
+                        </div>
+                        <h4 className="text-sm font-black truncate mt-1 leading-tight">{role.name}</h4>
+                        <p className="text-[10px] text-white/80 font-bold truncate mt-0.5">{role.description || "Ruta culminada con éxito"}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {roles.filter((role: any) => {
+                  if (role.is_active === false) return false;
+                  const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                  if (roleCourses.length === 0) return false;
+                  const completedRoleCourses = roleCourses.filter(c => {
+                    const p = userProgress.find(up => up.course_id === c.id);
+                    return p?.status === 'completed';
+                  });
+                  return completedRoleCourses.length === roleCourses.length;
+                }).length === 0 ? (
+                  <div className="bg-slate-100/60 border border-slate-200/50 rounded-2xl p-4 text-center">
+                    <p className="text-slate-400 font-bold text-[10.5px]">Ninguna meta profesional completada aún.</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Certificados individuales */}
+            <div>
+              <h3 className="font-black text-xl text-slate-905 mb-4 tracking-tight">Mis Certificados</h3>
+              <div className="space-y-3">
+                {filteredCourses.filter(course => {
                   const prog = userProgress.find((p: any) => p.course_id === course.id);
                   return prog?.status === 'completed' && course.certificate_template_id;
                 }).map((course, idx) => {
@@ -782,13 +844,13 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   }
                   
                   return (
-                    <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
+                    <div key={idx} className="bg-white border border-slate-250/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
                       <div className="absolute top-0 right-0 p-6 opacity-5 text-slate-900 pointer-events-none">
                         <Trophy size={60} />
                       </div>
                       <div className="relative z-10 flex-1 min-w-0 pr-4">
-                        <h4 className="text-sm font-black text-slate-800 mb-1 leading-tight truncate">{course.title}</h4>
-                        <p className="text-[10px] text-emerald-600 font-extrabold uppercase tracking-wider">Completado con Excelencia ✓</p>
+                        <h4 className="text-xs font-black text-slate-800 mb-0.5 leading-tight truncate">{course.title}</h4>
+                        <p className="text-[9.5px] text-emerald-600 font-extrabold uppercase tracking-wider">Completado con Excelencia ✓</p>
                       </div>
                       <button 
                         onClick={() => {
@@ -797,7 +859,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                             window.print();
                           }, 100);
                         }}
-                        className="relative z-10 bg-violet-50 hover:bg-violet-105 text-violet-700 px-3.5 py-2.5 rounded-xl border border-violet-100 font-black text-xs transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                        className="relative z-10 bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl border border-violet-150 font-black text-[11px] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
                         <span>🖨️</span> Imprimir
                       </button>
@@ -809,29 +871,89 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   const prog = userProgress.find((p: any) => p.course_id === course.id);
                   return prog?.status === 'completed' && course.certificate_template_id;
                 }).length === 0 ? (
-                  <div className="bg-slate-100 rounded-3xl p-8 text-center border border-slate-200 shadow-inner">
-                    <Trophy size={48} className="text-slate-300 mx-auto mb-4" />
-                    <p className="text-slate-500 font-bold">Aún no tienes certificados disponibles.</p>
-                    <p className="text-xs text-slate-400 mt-2">Completa cursos con diplomas para verlos aquí.</p>
+                  <div className="bg-slate-100/60 rounded-2xl p-5 text-center border border-slate-200/50 shadow-inner">
+                    <Trophy size={36} className="text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-400 font-bold text-[10.5px]">Aún no tienes certificados disponibles.</p>
                   </div>
                 ) : null}
+              </div>
             </div>
 
-            <h4 className="font-black text-slate-800 mt-8 mb-4 tracking-tight">Insignias Obtenidas</h4>
-            <div className="grid grid-cols-3 gap-4">
-               {/* Insignia Mock */}
-               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 shadow-inner">
-                     <Star size={24} />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 leading-tight">Servicio al Cliente</span>
-               </div>
-               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2 shadow-inner">
-                     <ShieldCheck size={24} />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 leading-tight">Seguridad</span>
-               </div>
+            {/* Insignias Obtenidas */}
+            <div>
+              <h4 className="font-black text-slate-805 mb-3.5 tracking-tight flex items-center justify-between">
+                <span>Insignias de Desempeño</span>
+                <span className="text-[10px] text-violet-600 bg-violet-50 px-2.5 py-0.5 rounded-full font-black">
+                  {(() => {
+                    const is1Done = courses.some(c => c.title.toLowerCase().includes('atención') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                    const is2Done = courses.some(c => c.title.toLowerCase().includes('seguridad') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                    const isAllInductionsDone = courses.filter(c => c.course_type === 'induction').length > 0 && courses.filter(c => c.course_type === 'induction').every(c => userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                    
+                    return (is1Done ? 1 : 0) + (is2Done ? 1 : 0) + (isAllInductionsDone ? 1 : 0);
+                  })()} / 3 obtenidas
+                </span>
+              </h4>
+              
+              {/* Carrusel Horizontal de Insignias */}
+              <div className="flex overflow-x-auto gap-3.5 pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory">
+                {(() => {
+                  const is1Done = courses.some(c => c.title.toLowerCase().includes('atención') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                  const is2Done = courses.some(c => c.title.toLowerCase().includes('seguridad') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                  const isAllInductionsDone = courses.filter(c => c.course_type === 'induction').length > 0 && courses.filter(c => c.course_type === 'induction').every(c => userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+
+                  return (
+                    <>
+                      {/* Insignia 1: Atención de Excelencia */}
+                      <div className={`snap-center flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 w-28 shrink-0 relative bg-white shadow-xs ${
+                        is1Done 
+                          ? 'border-amber-200 shadow-sm scale-100 hover:scale-105' 
+                          : 'border-slate-200/60 opacity-40 grayscale'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                          is1Done ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <Star size={26} className={is1Done ? 'animate-pulse' : ''} />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-800 leading-tight">Atención Excelencia</span>
+                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Curso Atención</span>
+                        {!is1Done && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
+                      </div>
+
+                      {/* Insignia 2: Guardián de Seguridad */}
+                      <div className={`snap-center flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 w-28 shrink-0 relative bg-white shadow-xs ${
+                        is2Done 
+                          ? 'border-blue-200 shadow-sm scale-100 hover:scale-105' 
+                          : 'border-slate-200/60 opacity-40 grayscale'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                          is2Done ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <ShieldCheck size={26} />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-800 leading-tight">Guardián de Seguridad</span>
+                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Curso Seguridad</span>
+                        {!is2Done && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
+                      </div>
+
+                      {/* Insignia 3: Líder Multitareas */}
+                      <div className={`snap-center flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 w-28 shrink-0 relative bg-white shadow-xs ${
+                        isAllInductionsDone 
+                          ? 'border-violet-200 shadow-sm scale-100 hover:scale-105' 
+                          : 'border-slate-200/60 opacity-40 grayscale'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                          isAllInductionsDone ? 'bg-violet-50 text-violet-600' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <Crown size={26} />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-800 leading-tight">Líder Multitareas</span>
+                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Inducción Completa</span>
+                        {!isAllInductionsDone && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         )}

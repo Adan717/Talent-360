@@ -158,6 +158,10 @@ class EmployeePayrollController extends Controller
                     'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
                     'deductions' => $payroll['deductions_breakdown']['total'],
                     'net_pay' => $payroll['salary']['net'],
+                    'meal_overtime_mins' => $payroll['performance']['meal_overtime_mins'],
+                    'break_overtime_mins' => $payroll['performance']['break_overtime_mins'],
+                    'task_performance_pct' => $payroll['performance']['task_performance_pct'],
+                    'performance_score' => $payroll['performance']['performance_score'],
                     'employee_approved_at' => Carbon::now(),
                     'status' => 'approved_by_employee'
                 ]

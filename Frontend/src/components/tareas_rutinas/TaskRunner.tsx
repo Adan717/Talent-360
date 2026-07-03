@@ -145,6 +145,11 @@ export function FichaTarea({
                                 ⚠️ Obligatoria
                             </span>
                         )}
+                        {task.scheduledTime && (
+                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md border bg-sky-50 text-sky-700 border-sky-200/60 flex items-center gap-0.5 shrink-0">
+                                ⏰ {task.scheduledTime}
+                            </span>
+                        )}
                         {/* Badge de Origen de la Tarea */}
                         {isFromPool ? (
                             <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-violet-50 text-violet-700 border-violet-200/60 shadow-xs animate-pulse">
@@ -1026,7 +1031,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                             {/* Content */}
                             <div className="space-y-4 flex-1">
                                 {/* Metadata Row */}
-                                <div className="grid grid-cols-2 gap-3 bg-slate-55 p-3 rounded-2xl border border-slate-100/50 text-xs text-slate-605 font-bold">
+                                <div className={`grid ${t.scheduledTime ? 'grid-cols-3' : 'grid-cols-2'} gap-3 bg-slate-55 p-3 rounded-2xl border border-slate-100/50 text-xs text-slate-605 font-bold`}>
                                     <div className="space-y-1">
                                         <p className="text-[9px] uppercase tracking-wider text-slate-400">Responsable</p>
                                         <p className="text-slate-800 font-black flex items-center gap-1">
@@ -1041,6 +1046,15 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                             {a.status === 'pending' ? `${t.estimatedMins} min est.` : `${elapsed} min real`}
                                         </p>
                                     </div>
+                                    {t.scheduledTime && (
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] uppercase tracking-wider text-slate-400">Programado</p>
+                                            <p className="text-slate-800 font-black flex items-center gap-1">
+                                                <span className="text-slate-400 font-black">⏰</span>
+                                                {t.scheduledTime} hrs
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {t.description && (

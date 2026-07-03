@@ -15,7 +15,7 @@ class Task extends Model
     protected $fillable = [
         'id', 'title', 'estimated_mins', 'points', 'priority', 'category', 'target_type',
         'target_id', 'assistant_type', 'assistant_prompt', 'is_auto_capture', 'validation_mode',
-        'can_be_done_sitting'
+        'can_be_done_sitting', 'scheduled_time'
     ];
 
     protected $casts = [

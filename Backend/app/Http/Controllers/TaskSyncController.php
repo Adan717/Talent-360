@@ -42,6 +42,7 @@ class TaskSyncController extends Controller
                         'points' => $task['points'] ?? 10,
                         'validation_mode' => $task['validationMode'] ?? $task['validation_mode'] ?? 'forced',
                         'can_be_done_sitting' => $task['canBeDoneSitting'] ?? $task['can_be_done_sitting'] ?? false,
+                        'scheduled_time' => $task['scheduledTime'] ?? $task['scheduled_time'] ?? null,
                         'tenant_id' => $tenantId,
                     ];
                     

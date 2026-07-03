@@ -570,6 +570,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                isAutoCapture: t.is_auto_capture ? true : false,
                validationMode: t.validation_mode,
                canBeDoneSitting: t.can_be_done_sitting ? true : false,
+               scheduledTime: t.scheduled_time,
                historicalMins: []
            }));
            useTaskStore.getState().setTasks(camelCaseTasks);

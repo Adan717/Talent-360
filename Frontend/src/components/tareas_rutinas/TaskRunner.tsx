@@ -557,7 +557,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-hidden">
+        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-4 pb-4 pt-1.5 select-none relative overflow-hidden">
             {/* Fila fija de botones (Grid de navegación intacto) */}
             <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-3 shrink-0 select-none`}>
                 {/* Botón 1: Todas */}

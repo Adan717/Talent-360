@@ -5,6 +5,7 @@ import {
   Store, Coffee, Package, Settings, Truck, HeartHandshake, Check, Sparkles, ChevronRight, X 
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { ColorMap } from '../SaaSAccountSettings';
 import YouTube from 'react-youtube';
 import { CertificadoImprimible } from './CertificadoImprimible';
 import axiosInstance from '../../lib/axios';
@@ -107,6 +108,42 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
 
   const { currentUser: loggedUser, systemSettings, completeInduction } = useAppStore();
+
+  const getModuleColor = (modId: string) => {
+    const cust = systemSettings?.moduleCustomizations?.[modId];
+    if (cust?.color && ColorMap[cust.color]) {
+      return ColorMap[cust.color];
+    }
+    switch (modId) {
+      case 'asistencia': return ColorMap.emerald;
+      case 'operativo': return ColorMap.blue;
+      case 'academia': return ColorMap.violet;
+      case 'facturacion': return ColorMap.rose;
+      default: return ColorMap.violet;
+    }
+  };
+  const activeColor = getModuleColor('academia');
+
+  // Calcular conteo de carreras
+  const pendingCareersCount = roles.filter(role => {
+    const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+    if (roleCourses.length === 0) return false;
+    const completedRoleCourses = roleCourses.filter(c => {
+      const p = userProgress.find(up => up.course_id === c.id);
+      return p?.status === 'completed';
+    });
+    return completedRoleCourses.length < roleCourses.length;
+  }).length;
+
+  const completedCareersCount = roles.filter(role => {
+    const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+    if (roleCourses.length === 0) return false;
+    const completedRoleCourses = roleCourses.filter(c => {
+      const p = userProgress.find(up => up.course_id === c.id);
+      return p?.status === 'completed';
+    });
+    return completedRoleCourses.length === roleCourses.length;
+  }).length;
 
   useEffect(() => {
     axiosInstance.get('/academy/courses')
@@ -414,36 +451,60 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
         }
       `}</style>
 
-      {/* Cabecera con Pestañas */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/60 shadow-xs">
-        <div className="flex items-center justify-around py-2.5 px-4">
-          <button 
+      {/* Cabecera con Pestañas (Grid de navegación sincronizado y elevado) */}
+      <div className="pt-1.5 px-4 mb-3 shrink-0 select-none">
+        <div className="grid grid-cols-2 gap-1.5">
+          {/* Botón 1: Carrera */}
+          <button
+            type="button"
             onClick={() => setActiveTab('plan')}
-            className={`flex flex-col items-center gap-1 pb-1 transition-all border-none bg-transparent cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+              activeTab === 'plan'
+                ? 'text-white shadow-md scale-[1.02]'
+                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+            }`}
+            style={activeTab === 'plan' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
+          >
+            <Map size={18} className={activeTab === 'plan' ? 'text-white' : 'text-slate-400'} />
+            <span className="text-[9px] font-black uppercase mt-1">Carrera</span>
+            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
               activeTab === 'plan' 
-                ? 'text-violet-650 font-extrabold scale-105' 
-                : 'text-slate-400 hover:text-slate-600'
+                ? 'bg-white border-white' 
+                : 'bg-slate-100 text-slate-600 border-slate-200'
             }`}
-          >
-            <Map size={20} className={activeTab === 'plan' ? 'text-violet-600 animate-pulse' : 'text-slate-400'} />
-            <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Carrera</span>
+              style={activeTab === 'plan' ? { color: activeColor.hex } : {}}
+            >
+              {pendingCareersCount}
+            </span>
           </button>
-          
-          <button 
+
+          {/* Botón 2: Logros */}
+          <button
+            type="button"
             onClick={() => setActiveTab('logros')}
-            className={`flex flex-col items-center gap-1 pb-1 transition-all border-none bg-transparent cursor-pointer ${
-              activeTab === 'logros' 
-                ? 'text-violet-650 font-extrabold scale-105' 
-                : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+              activeTab === 'logros'
+                ? 'text-white shadow-md scale-[1.02]'
+                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
             }`}
+            style={activeTab === 'logros' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
           >
-            <Trophy size={20} className={activeTab === 'logros' ? 'text-violet-600 animate-pulse' : 'text-slate-400'} />
-            <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Logros</span>
+            <Trophy size={18} className={activeTab === 'logros' ? 'text-white' : 'text-slate-400'} />
+            <span className="text-[9px] font-black uppercase mt-1">Logros</span>
+            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+              activeTab === 'logros' 
+                ? 'bg-white border-white' 
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}
+              style={activeTab === 'logros' ? { color: activeColor.hex } : {}}
+            >
+              {completedCareersCount}
+            </span>
           </button>
         </div>
       </div>
 
-      <div className="p-6 relative z-10 flex flex-col max-w-md mx-auto w-full pb-32">
+      <div className="px-6 pb-6 pt-1 relative z-10 flex flex-col max-w-md mx-auto w-full pb-32">
         {/* TAB 1: PLAN (Elección de Puesto) */}
         {activeTab === 'plan' && !targetRoleId && (
           <div className="animate-fade-in-up">

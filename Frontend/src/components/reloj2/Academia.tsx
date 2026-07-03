@@ -465,7 +465,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                     className="w-full bg-white py-2.5 px-3.5 rounded-2xl border border-slate-150 shadow-xs hover:border-violet-400 hover:shadow-sm transition-all text-left flex items-center gap-3 group animate-fade-in cursor-pointer"
                   >
                     <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-violet-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100 shrink-0">
-                      {IconComponent && React.cloneElement(IconComponent as React.ReactElement, { className: `w-5.5 h-5.5 ${IconComponent.props.className?.replace('w-6 h-6', '') || ''}` })}
+                      {IconComponent && React.cloneElement(IconComponent as React.ReactElement<any>, { className: `w-5.5 h-5.5 ${IconComponent.props.className?.replace('w-6 h-6', '') || ''}` })}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
@@ -533,7 +533,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   <div className="flex items-center justify-between mb-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-9 h-9 bg-violet-50 text-violet-600 rounded-xl flex items-center justify-center shadow-xs border border-violet-100/50">
-                        {selectedRole ? React.cloneElement(getRoleIcon(selectedRole.name) as React.ReactElement, { className: 'w-5 h-5' }) : <Briefcase size={16} />}
+                        {selectedRole ? React.cloneElement(getRoleIcon(selectedRole.name) as React.ReactElement<any>, { className: 'w-5 h-5' }) : <Briefcase size={16} />}
                       </div>
                       <div>
                         <h4 className="font-black text-[13.5px] leading-tight text-slate-900">{selectedRole?.name || 'Ruta de Carrera'}</h4>

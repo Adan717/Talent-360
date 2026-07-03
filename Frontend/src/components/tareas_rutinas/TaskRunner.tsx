@@ -537,10 +537,100 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans p-4 select-none relative overflow-y-auto">
-            {/* Buscador de tareas y Volver */}
-            {isSearchOpen ? (
-                /* Buscador a ancho completo cuando está abierto */
-                <div className="mb-4 shrink-0 flex gap-2 items-center animate-in fade-in duration-200">
+            {/* Buscador de tareas y Volver (Con transición suave de deslizamiento) */}
+            <div className="relative mb-4 h-[52px] shrink-0 select-none overflow-hidden">
+                {/* 1. Fila de Botones de Navegación (Se desliza hacia la izquierda cuando el buscador está abierto) */}
+                <div 
+                    className={`absolute inset-0 grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 transition-all duration-300 ease-out transform ${
+                        isSearchOpen ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+                    }`}
+                >
+                    {/* Botón 1: Todas */}
+                    <button
+                        type="button"
+                        onClick={() => setFilterTab('todos')}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer border-solid bg-transparent relative ${
+                            filterTab === 'todos'
+                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                        }`}
+                    >
+                        <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
+                        <span className="text-[9px] font-black uppercase mt-1">Todas</span>
+                        <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                            filterTab === 'todos' 
+                                ? 'bg-white text-[#8a2be2] border-white' 
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                            {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                        </span>
+                    </button>
+
+                    {/* Botón 2: Por Validar - Solo si es supervisor o hay tareas por validar */}
+                    {(isSupervisor || awaitingValidationFiltered.length > 0) && (
+                        <button
+                            type="button"
+                            onClick={() => setFilterTab('firma_pendiente')}
+                            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer border-solid bg-transparent relative ${
+                                filterTab === 'firma_pendiente'
+                                    ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
+                                    : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                            }`}
+                        >
+                            <FileCheck size={18} className={filterTab === 'firma_pendiente' ? 'text-white' : 'text-slate-400'} />
+                            <span className="text-[8.5px] font-black uppercase mt-1 leading-none text-center">Por Validar</span>
+                            {awaitingValidationFiltered.length > 0 && (
+                                <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border animate-pulse ${
+                                    filterTab === 'firma_pendiente'
+                                        ? 'bg-white text-amber-700 border-white'
+                                        : 'bg-rose-500 text-white border-rose-450'
+                                }`}>
+                                    {awaitingValidationFiltered.length}
+                                </span>
+                            )}
+                        </button>
+                    )}
+
+                    {/* Botón 3: Mis Tareas (Unificado con Bolsa) */}
+                    <button
+                        type="button"
+                        onClick={() => setFilterTab('mis_tareas')}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer border-solid bg-transparent relative ${
+                            filterTab === 'mis_tareas'
+                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                        }`}
+                    >
+                        <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
+                        <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
+                        {(activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length) > 0 && (
+                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                                filterTab === 'mis_tareas'
+                                    ? 'bg-white text-[#8a2be2] border-white'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}>
+                                {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* Botón 4: Buscar (Lupa) */}
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchOpen(true)}
+                        className="flex flex-col items-center justify-center py-2 px-1 rounded-2xl border border-slate-200/85 bg-white hover:bg-slate-50 text-slate-500 transition-all cursor-pointer border-solid"
+                    >
+                        <Search size={18} className="text-slate-400" />
+                        <span className="text-[9px] font-black uppercase mt-1">Buscar</span>
+                    </button>
+                </div>
+
+                {/* 2. Buscador deslizable a ancho completo (Se desliza desde la derecha cubriendo los botones) */}
+                <div 
+                    className={`absolute inset-0 flex gap-2 items-center transition-all duration-300 ease-out transform ${
+                        isSearchOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+                    }`}
+                >
                     <div className="relative flex-1">
                         <input 
                             type="text" 
@@ -566,94 +656,12 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                             setIsSearchOpen(false);
                             setSearchQuery('');
                         }}
-                        className="bg-slate-105 hover:bg-slate-200 text-slate-600 font-extrabold text-[10px] uppercase px-3.5 py-2.5 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-605 font-extrabold text-[10px] uppercase px-3.5 py-2.5 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
                     >
                         <span>Cerrar</span>
                     </button>
                 </div>
-            ) : (
-                /* Fila fija de botones (Grid responsivo a ancho completo) */
-                <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-4 shrink-0 select-none`}>
-                    {/* Botón 1: Todas */}
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('todos')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
-                            filterTab === 'todos'
-                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                        }`}
-                    >
-                        <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
-                        <span className="text-[9px] font-black uppercase mt-1">Todas</span>
-                        <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                            filterTab === 'todos' 
-                                ? 'bg-white text-[#8a2be2] border-white' 
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}>
-                            {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
-                        </span>
-                    </button>
-
-                    {/* Botón 2: Por Validar - Solo si es supervisor o hay tareas por validar */}
-                    {(isSupervisor || awaitingValidationFiltered.length > 0) && (
-                        <button
-                            type="button"
-                            onClick={() => setFilterTab('firma_pendiente')}
-                            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
-                                filterTab === 'firma_pendiente'
-                                    ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
-                                    : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                            }`}
-                        >
-                            <FileCheck size={18} className={filterTab === 'firma_pendiente' ? 'text-white' : 'text-slate-400'} />
-                            <span className="text-[8.5px] font-black uppercase mt-1 leading-none text-center">Por Validar</span>
-                            {awaitingValidationFiltered.length > 0 && (
-                                <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border animate-pulse ${
-                                    filterTab === 'firma_pendiente'
-                                        ? 'bg-white text-amber-700 border-white'
-                                        : 'bg-rose-500 text-white border-rose-450'
-                                }`}>
-                                    {awaitingValidationFiltered.length}
-                                </span>
-                            )}
-                        </button>
-                    )}
-
-                    {/* Botón 3: Mis Tareas (Unificado con Bolsa) */}
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('mis_tareas')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
-                            filterTab === 'mis_tareas'
-                                ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                        }`}
-                    >
-                        <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
-                        <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
-                        {(activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length) > 0 && (
-                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
-                                filterTab === 'mis_tareas'
-                                    ? 'bg-white text-[#8a2be2] border-white'
-                                    : 'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}>
-                                {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* Botón 4: Buscar (Lupa) */}
-                    <button
-                        type="button"
-                        onClick={() => setIsSearchOpen(true)}
-                        className="flex flex-col items-center justify-center py-2 px-1 rounded-2xl border border-slate-200/85 bg-white hover:bg-slate-50 text-slate-500 transition-all cursor-pointer"
-                    >
-                        <Search size={18} className="text-slate-400" />
-                        <span className="text-[9px] font-black uppercase mt-1">Buscar</span>
-                    </button>
-                </div>
-            )}
+            </div>
 
             {/* Listado principal */}
             <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar pr-1 -mr-1">

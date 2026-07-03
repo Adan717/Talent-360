@@ -1,7 +1,8 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { ColorMap } from '../SaaSAccountSettings';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext2 } from '../store/ClockContext2';
 import Academia from './Academia';
@@ -1864,65 +1865,89 @@ export default function RelojVisual({
     let desc = '';
     let icon = null;
     let badgeText = '';
-    let badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
 
     switch (phoneTab) {
       case 'checador':
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
         icon = <Clock className="text-[#2dce89]" />;
-        badgeText = 'v4.2-pro';
-        badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
+        badgeText = 'v4.3';
         break;
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión y seguimiento operativo';
         icon = <CheckSquare className="text-indigo-500" />;
-        badgeText = 'Tareas';
-        badgeColorClass = 'bg-indigo-50 dark:bg-indigo-955/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30';
+        badgeText = 'v1.5';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Capacitación y desarrollo';
         icon = <GraduationCap className="text-violet-500 animate-bounce" />;
-        badgeText = 'Cursos';
-        badgeColorClass = 'bg-violet-50 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
+        badgeText = 'v2.8';
+        break;
+      case 'nomina':
+        title = 'Nómina';
+        desc = 'Recibos y timbrados CFDI';
+        icon = <DollarSign className="text-emerald-500" />;
+        badgeText = 'v1.0';
         break;
       case 'herramientas':
         title = 'Herramientas';
         desc = 'Simulador y bitácoras';
         icon = <Settings className="text-slate-500 animate-spin" style={{ animationDuration: '6s' }} />;
-        badgeText = 'Utilidades';
-        badgeColorClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
+        badgeText = 'v1.0';
         break;
       case 'evaluacion360':
         title = 'Evaluación 360';
         desc = 'Evaluación de compañeros';
         icon = <Star className="text-amber-500" />;
-        badgeText = 'Feedback';
-        badgeColorClass = 'bg-amber-50 dark:bg-amber-955/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30';
+        badgeText = 'v1.1';
         break;
       case 'organigrama':
         title = 'Organigrama';
         desc = 'Estructura de la empresa';
         icon = <Network className="text-emerald-500" />;
-        badgeText = 'Puestos';
-        badgeColorClass = 'bg-emerald-50 dark:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30';
+        badgeText = 'v1.3';
         break;
       case 'perfil':
         title = 'Mi Perfil';
         desc = 'Credencial y ajustes';
         icon = <ClipboardList className="text-blue-500" />;
-        badgeText = 'Usuario';
-        badgeColorClass = 'bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
+        badgeText = 'v1.2';
         break;
       default:
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
         icon = <Clock className="text-[#2dce89]" />;
-        badgeText = 'v4.2-pro';
-        badgeColorClass = 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20';
+        badgeText = 'v4.3';
     }
+
+    let moduleId = 'asistencia';
+    switch (phoneTab) {
+      case 'checador': moduleId = 'asistencia'; break;
+      case 'tareas': moduleId = 'operativo'; break;
+      case 'academia': moduleId = 'academia'; break;
+      case 'nomina': moduleId = 'facturacion'; break;
+      case 'herramientas': moduleId = 'matrix'; break;
+      case 'evaluacion360': moduleId = 'reportes'; break;
+      case 'organigrama': moduleId = 'rrhh'; break;
+      case 'perfil': moduleId = 'settings'; break;
+    }
+
+    const getModuleColor = (modId: string) => {
+      const cust = systemSettings?.moduleCustomizations?.[modId];
+      if (cust?.color && ColorMap[cust.color]) {
+        return ColorMap[cust.color];
+      }
+      switch (modId) {
+        case 'asistencia': return ColorMap.emerald;
+        case 'operativo': return ColorMap.blue;
+        case 'academia': return ColorMap.violet;
+        case 'facturacion': return ColorMap.rose;
+        default: return ColorMap.slate;
+      }
+    };
+    const activeColor = getModuleColor(moduleId);
 
     return (
       <div className={`fixed top-3 left-3 right-3 z-[75] flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3.5 text-left rounded-[1.25rem] xs:rounded-2xl border transition-all duration-200 select-none ${
@@ -1933,7 +1958,10 @@ export default function RelojVisual({
         {/* Columna Izquierda: Info de Módulo */}
         <div className="flex items-center gap-2.5 xs:gap-3.5 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
-            {icon && React.cloneElement(icon, { className: `w-8 h-8 xs:w-10 xs:h-10 ${icon.props.className || ''}` })}
+            {icon && React.cloneElement(icon, { 
+              className: `w-8 h-8 xs:w-10 xs:h-10 ${icon.props.className || ''}`,
+              style: { color: activeColor.hex }
+            })}
           </div>
           <div className="flex flex-col min-w-0 justify-center text-left">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1943,7 +1971,14 @@ export default function RelojVisual({
                 {title}
               </h3>
               {badgeText && (
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase ${badgeColorClass}`}>
+                <span 
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[7.5px] font-black tracking-wider uppercase border border-solid"
+                  style={{ 
+                    backgroundColor: activeColor.hex + '10', 
+                    color: activeColor.hex, 
+                    borderColor: activeColor.hex + '20' 
+                  }}
+                >
                   {badgeText}
                 </span>
               )}

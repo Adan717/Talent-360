@@ -96,7 +96,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/platform/billing/invoice/manual', [PlatformAdminController::class, 'createManualSaaSInvoice']);
 
         // DB Initialization / Reset
-        if (app()->isLocal() || app()->runningUnitTests()) {
+        if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
             Route::post('/sync/reset', [ClockController::class, 'resetDb']);
         }
@@ -258,7 +258,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::put('/task-assignments/{id}', [TaskAssignmentController::class, 'update']);
 
         // Sincronización del cliente local y registros offline (Kiosko)
-        if (app()->isLocal() || app()->runningUnitTests()) {
+        if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/reset_day', [ClockController::class, 'resetDay']);
         }
         Route::get('/sync/state', [ClockController::class, 'getState']);

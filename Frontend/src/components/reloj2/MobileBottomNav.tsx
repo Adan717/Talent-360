@@ -21,8 +21,8 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark }:
     switch (modId) {
       case 'asistencia': return '#10b981'; // emerald
       case 'operativo': return '#2563eb'; // blue
-      case 'academia': return '#0ea5e9'; // sky
-      case 'facturacion': return '#10b981'; // emerald
+      case 'academia': return '#8a2be2'; // violet
+      case 'facturacion': return '#f43f5e'; // rose
       default: return defaultHex;
     }
   };

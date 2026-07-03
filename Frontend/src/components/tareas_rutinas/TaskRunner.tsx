@@ -8,6 +8,7 @@ import {
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
+import { ColorMap } from '../SaaSAccountSettings';
 
 // Componente para tarjeta de tarea unificada (Ficha de Tarea)
 export interface FichaTareaProps {
@@ -246,7 +247,22 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         pauseTask, completeTask, omitAssignment, createDynamicTask,
         validateTaskAssignment, reserveTaskFromPool, releaseTask
     } = useTaskStore();
-    const { globalSimTime, addMatrixEvent, globalRoles, globalUsers } = useAppStore(); // Filtros y pestañas locales
+    const { globalSimTime, addMatrixEvent, globalRoles, globalUsers, systemSettings } = useAppStore(); // Filtros y pestañas locales
+    
+    const getModuleColor = (modId: string) => {
+        const cust = systemSettings?.moduleCustomizations?.[modId];
+        if (cust?.color && ColorMap[cust.color]) {
+            return ColorMap[cust.color];
+        }
+        switch (modId) {
+            case 'asistencia': return ColorMap.emerald;
+            case 'operativo': return ColorMap.blue;
+            case 'academia': return ColorMap.violet;
+            case 'facturacion': return ColorMap.rose;
+            default: return ColorMap.violet;
+        }
+    };
+    const activeColor = getModuleColor('operativo');
     const [filterTab, setFilterTab] = useState<'todos' | 'firma_pendiente' | 'mis_tareas' | 'bolsa'>('todos');
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -550,17 +566,20 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     onClick={() => setFilterTab('todos')}
                     className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
                         filterTab === 'todos'
-                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                            ? 'text-white shadow-md scale-[1.02]'
                             : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                     }`}
+                    style={filterTab === 'todos' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
                     <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1">Todas</span>
                     <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                         filterTab === 'todos' 
-                            ? 'bg-white text-[#8a2be2] border-white' 
+                            ? 'bg-white border-white' 
                             : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}>
+                    }`}
+                        style={filterTab === 'todos' ? { color: activeColor.hex } : {}}
+                    >
                         {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
                     </span>
                 </button>
@@ -596,17 +615,20 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     onClick={() => setFilterTab('mis_tareas')}
                     className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
                         filterTab === 'mis_tareas'
-                            ? 'bg-[#8a2be2] text-white border-[#8a2be2] shadow-md scale-[1.02]'
+                            ? 'text-white shadow-md scale-[1.02]'
                             : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                     }`}
+                    style={filterTab === 'mis_tareas' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
                     <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
                     <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                         filterTab === 'mis_tareas'
-                            ? 'bg-white text-[#8a2be2] border-white'
+                            ? 'bg-white border-white'
                             : 'bg-slate-100 text-slate-600 border-slate-200'
-                    }`}>
+                    }`}
+                        style={filterTab === 'mis_tareas' ? { color: activeColor.hex } : {}}
+                    >
                         {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
                     </span>
                 </button>
@@ -617,9 +639,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     onClick={() => setIsSearchOpen(!isSearchOpen)}
                     className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
                         isSearchOpen
-                            ? 'bg-violet-600 text-white border-violet-600 shadow-md scale-[1.02]'
+                            ? 'text-white shadow-md scale-[1.02]'
                             : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
                     }`}
+                    style={isSearchOpen ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
                     <Search size={18} className={isSearchOpen ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1">Buscar</span>

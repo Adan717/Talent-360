@@ -55,7 +55,7 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        // 2. Curso de Ventas (Cajero/Ventas - Puesto ID 5)
+        // 2. Curso de Ventas (Cajero/Ventas - Puesto ID 15)
         DB::table('academy_courses')->insert([
             'tenant_id' => 1,
             'title' => 'Técnicas de Ventas y Atención al Cliente en DecorArte',
@@ -63,7 +63,7 @@ return new class extends Migration
             'course_type' => 'training',
             'video_url' => 'https://www.youtube.com/watch?v=R9Z8b_zV5Wc',
             'is_active' => true,
-            'target_job_role_id' => 5,
+            'target_job_role_id' => 15,
             'quiz_data' => json_encode([
                 [
                     'question' => '¿Cuál es el primer paso en la venta consultiva de decoración y muebles?',
@@ -88,7 +88,7 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        // 3. Curso de Almacén (Ayudante General - Puesto ID 6)
+        // 3. Curso de Almacén (Ayudante General - Puesto ID 16)
         DB::table('academy_courses')->insert([
             'tenant_id' => 1,
             'title' => 'Logística, PEPS y Orden en Bodega DecorArte',
@@ -96,7 +96,7 @@ return new class extends Migration
             'course_type' => 'training',
             'video_url' => 'https://www.youtube.com/watch?v=3-n5mO2W9yM',
             'is_active' => true,
-            'target_job_role_id' => 6,
+            'target_job_role_id' => 16,
             'quiz_data' => json_encode([
                 [
                     'question' => '¿Qué significa el método PEPS en el manejo de mercancía en bodega?',
@@ -121,7 +121,7 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        // 4. Curso de Liderazgo (Gerente - Puesto ID 1)
+        // 4. Curso de Liderazgo (Gerente - Puesto ID 11)
         DB::table('academy_courses')->insert([
             'tenant_id' => 1,
             'title' => 'Liderazgo, Gestión y Auditoría en DecorArte',
@@ -129,7 +129,7 @@ return new class extends Migration
             'course_type' => 'promotion',
             'video_url' => 'https://www.youtube.com/watch?v=Z61Bv_DsgqQ',
             'is_active' => true,
-            'target_job_role_id' => 1,
+            'target_job_role_id' => 11,
             'quiz_data' => json_encode([
                 [
                     'question' => 'Si el monitor en tiempo real muestra a un colaborador inactivo por más de 15 minutos en turno laboral, ¿cómo debe actuar el Gerente?',

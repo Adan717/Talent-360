@@ -46,6 +46,7 @@ const SaaSAccountSettings = lazy(() => import('./components/SaaSAccountSettings'
 const GestorDocumentos = lazy(() => import('./components/GestorDocumentos').then(module => ({ default: module.GestorDocumentos })));
 const FacturacionManager = lazy(() => import('./components/FacturacionManager').then(m => ({ default: m.FacturacionManager })));
 const LftManager = lazy(() => import('./components/LftManager'));
+import { HeaderStats } from './components/HeaderStats';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
 import { SaaSPlatformAdmin } from './components/SaaSPlatformAdmin';
@@ -614,6 +615,11 @@ function MainLayout() {
                   </p>
                 )}
               </div>
+            </div>
+
+            {/* Middle Section: Header Stats */}
+            <div className="flex flex-1 justify-center px-2 sm:px-4 min-w-0">
+              <HeaderStats activeModule={activeModule} setActiveModule={setActiveModule} />
             </div>
 
             {/* Right Section: User Profile & Subscription License & Trial Countdown */}

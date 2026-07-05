@@ -1142,22 +1142,19 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                     {/* Modal Flotante de Configuración del Módulo */}
                     {configuringModule && (() => {
-                      const mapModuleToTab = (moduleName: string) => {
-                        switch (moduleName) {
-                          case 'Recursos Humanos':
-                          case 'Directorio HR': return 'onboarding';
-                          case 'Reloj':
-                          case 'Reloj Checador':
-                          case 'Reloj Checador (Original)':
-                          case 'Reloj Checador 2':
-                          case 'Reloj Checador (PWA)': return 'reloj';
-                          case 'Checador de Comida': return 'comidas';
-                          case 'Rutinas y Tareas': return 'tareas';
-                          case 'Reclutamiento ATS': return 'ats';
-                          case 'Reportes y Analítica': return 'reportes';
-                          case 'Portal Web (Vacantes)': return 'ats';
-                          case 'Academia LMS': return 'academia';
-                          case 'Gestor Documental': return 'documentos';
+                      const mapModuleToTab = (moduleId: string) => {
+                        switch (moduleId) {
+                          case 'rrhh': return 'onboarding';
+                          case 'reloj':
+                          case 'reloj2': return 'reloj';
+                          case 'comidas': return 'comidas';
+                          case 'operativo': return 'tareas';
+                          case 'ats':
+                          case 'portal': return 'ats';
+                          case 'reportes': return 'reportes';
+                          case 'academia': return 'academia';
+                          case 'documentos': return 'documentos';
+                          case 'facturacion': return 'facturacion';
                           default: return 'general';
                         }
                       };
@@ -1186,7 +1183,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
 
                             {/* Cuerpo del Modal (Scrollable) */}
                             <div className="flex-1 overflow-y-auto p-6 bg-slate-50 custom-scrollbar">
-                              <CompanySettingsPanel initialTab={mapModuleToTab(configuringModule.name)} hideSidebar={true} />
+                              <CompanySettingsPanel initialTab={mapModuleToTab(configuringModule.moduleId)} hideSidebar={true} />
                             </div>
                           </div>
                         </div>

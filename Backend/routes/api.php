@@ -94,8 +94,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Facturación Global (SaaS Admin)
         Route::get('/platform/billing/invoices', [PlatformAdminController::class, 'getSaaSInvoices']);
         Route::post('/platform/billing/invoice/manual', [PlatformAdminController::class, 'createManualSaaSInvoice']);
+    });
 
-        // DB Initialization / Reset
+    // DB Initialization / Reset (QA Simulator helper)
+    Route::middleware(['auth:sanctum', 'role:platform_admin,admin'])->group(function () {
         if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
             Route::post('/sync/reset', [ClockController::class, 'resetDb']);

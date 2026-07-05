@@ -73,6 +73,86 @@ class DashboardController extends Controller
                 ->where('updated_at', '>=', \Carbon\Carbon::now()->subHours(24))
                 ->exists();
 
+            // Calcular salud de Empleados
+            $clockedInUsers = [];
+            $activeEmployeeIds = DB::table('employees')
+                ->where('tenant_id', $tenantId)
+                ->where('is_active_employee', true)
+                ->pluck('user_id')
+                ->filter()
+                ->toArray();
+                
+            if (!empty($activeEmployeeIds)) {
+                $todayEntries = DB::table('time_entries')
+                    ->where('tenant_id', $tenantId)
+                    ->where('date', $today)
+                    ->whereIn('user_id', $activeEmployeeIds)
+                    ->orderBy('id', 'asc')
+                    ->get()
+                    ->groupBy('user_id');
+                    
+                foreach ($todayEntries as $userId => $entries) {
+                    $latest = $entries->last();
+                    if ($latest->type === 'check_in' || $latest->type === 'meal_end') {
+                        $clockedInUsers[] = $userId;
+                    }
+                }
+            }
+            
+            $clockedInCount = count($clockedInUsers);
+            $idleCount = 0;
+            
+            if ($clockedInCount > 0) {
+                $activeUserIdsWithTasks = DB::table('task_assignments')
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('user_id', $clockedInUsers)
+                    ->where('status', 'in_progress')
+                    ->where('date', $today)
+                    ->pluck('user_id')
+                    ->toArray();
+                    
+                $idleCount = count(array_diff($clockedInUsers, $activeUserIdsWithTasks));
+            }
+            
+            if ($clockedInCount === 0) {
+                $employeesHealth = 'gray';
+            } elseif ($idleCount > 0) {
+                $employeesHealth = 'red';
+            } else {
+                $employeesHealth = 'green';
+            }
+
+            // Calcular salud de Tareas
+            $todayAssignments = DB::table('task_assignments')
+                ->where('tenant_id', $tenantId)
+                ->where('date', $today)
+                ->select('status')
+                ->get();
+                
+            $totalTodayAssignments = $todayAssignments->count();
+            $completedTodayAssignments = $todayAssignments->where('status', 'completed')->count();
+            $tasksPendingCount = $todayAssignments->whereIn('status', ['pending', 'in_progress', 'paused', 'awaiting_validation'])->count();
+            
+            if ($totalTodayAssignments === 0) {
+                $tasksHealth = 'gray';
+            } else {
+                $completionRate = round(($completedTodayAssignments / $totalTodayAssignments) * 100);
+                if ($completionRate >= 80) {
+                    $tasksHealth = 'green';
+                } elseif ($completionRate >= 40) {
+                    $tasksHealth = 'amber';
+                } else {
+                    $tasksHealth = 'red';
+                }
+            }
+
+            // Calcular salud de Prospectos
+            if ($candidates === 0) {
+                $prospectsHealth = 'gray';
+            } else {
+                $prospectsHealth = $candidatesRecentActivity ? 'green' : 'amber';
+            }
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -83,7 +163,16 @@ class DashboardController extends Controller
                     'retardos_hoy' => $retardosHoy, 
                     'cumplimiento' => $cumplimiento,
                     'candidates_count' => $candidates,
-                    'candidates_recent_activity' => $candidatesRecentActivity
+                    'candidates_recent_activity' => $candidatesRecentActivity,
+                    'employees_health' => $employeesHealth,
+                    'employees_clocked_in_count' => $clockedInCount,
+                    'employees_idle_count' => $idleCount,
+                    'tasks_health' => $tasksHealth,
+                    'tasks_pending_count' => $tasksPendingCount,
+                    'tasks_completed_count' => $completedTodayAssignments,
+                    'tasks_total_today' => $totalTodayAssignments,
+                    'prospects_health' => $prospectsHealth,
+                    'prospects_count' => $candidates
                 ]
             ]);
         } catch (\Exception $e) {

@@ -186,8 +186,9 @@ export function PanelTareasRutinas() {
     };
 
     return (
-        <div className="h-full bg-slate-50 flex flex-col font-sans">
-             <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-8">
+        <div className="max-w-7xl mx-auto space-y-6 font-sans">
+             {/* Tarjeta Superior: Menú y Buscador */}
+             <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
                 {/* Tabs & Search */}
                 {isFeatureUnlocked('routines_management') ? (
                     <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 shrink-0">
@@ -252,10 +253,13 @@ export function PanelTareasRutinas() {
                     </div>
                   </div>
                 )}
+             </div>
 
-                {/* Contenido Tareas */}
-                {activeTab === 'tareas' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 overflow-y-auto pb-20 custom-scrollbar">
+             {/* Tarjeta Inferior: Contenido principal */}
+             <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px]">
+                 {/* Contenido Tareas */}
+                 {activeTab === 'tareas' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-6">
                         {filteredTasks.length === 0 && (
                             <div className="col-span-full text-center py-10 text-slate-500 text-sm font-medium">No se encontraron tareas con esa búsqueda.</div>
                         )}
@@ -333,7 +337,7 @@ export function PanelTareasRutinas() {
                 )}
 
                 {activeTab === 'rutinas' && isFeatureUnlocked('routines_management') && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20 custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
                         {filteredRoutines.length === 0 && (
                             <div className="col-span-full text-center py-10 text-slate-500 text-sm font-medium">No se encontraron rutinas con esa búsqueda.</div>
                         )}

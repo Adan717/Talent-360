@@ -617,11 +617,6 @@ function MainLayout() {
               </div>
             </div>
 
-            {/* Middle Section: Header Stats */}
-            <div className="flex flex-1 justify-center px-2 sm:px-4 min-w-0">
-              <HeaderStats activeModule={activeModule} setActiveModule={setActiveModule} />
-            </div>
-
             {/* Right Section: User Profile & Subscription License & Trial Countdown */}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {/* Trial Countdown Indicator (Dynamic pill badge next to profile) */}
@@ -721,7 +716,7 @@ function MainLayout() {
         {/* Dynamic Canvas */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar relative z-10">
           <Suspense fallback={<LoadingScreen message="Cargando Módulo..." />}>
-            {activeModule === 'dashboard' && <DashboardTalent360 />}
+            {activeModule === 'dashboard' && <DashboardTalent360 setActiveModule={setActiveModule} />}
             {activeModule === 'rrhh' && <RecursosHumanos />}
             {activeModule === 'ats' && <AtsManager />}
             {activeModule === 'operativo' && <PanelTareasRutinas />}

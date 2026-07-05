@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
+import { HeaderStats } from './HeaderStats';
 
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
@@ -18,7 +19,7 @@ import { echoInstance } from '../lib/echo';
 // Keep active utterances in memory to prevent Chrome garbage collection bug
 let activeUtterances: SpeechSynthesisUtterance[] = [];
 
-export const DashboardTalent360 = () => {
+export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod: string) => void }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'onboarding'>('overview');
   const { globalUsers, currentTier, currentUser, globalSimTime, systemSettings, fetchState, isFeatureUnlocked } = useAppStore();
   const { tasks, assignments, validateTaskAssignment } = useTaskStore();
@@ -747,6 +748,13 @@ export const DashboardTalent360 = () => {
         <>
           {showSetupWizard && (
             <OnboardingWizard onComplete={() => setShowSetupWizard(false)} />
+          )}
+
+          {/* Píldoras de Salud y Estadísticas Interactivas */}
+          {setActiveModule && (
+            <div className="flex justify-start animate-in fade-in slide-in-from-top-4 duration-300">
+              <HeaderStats activeModule="dashboard" setActiveModule={setActiveModule} />
+            </div>
           )}
 
           {/* Banner de Progreso de Configuración (Wizard Stepper Banner) */}

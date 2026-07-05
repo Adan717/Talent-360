@@ -4,7 +4,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, 
   Smartphone, Upload, Globe, ChevronRight,
   Receipt, Database, Loader2, MessageSquare, Send, X,
-  Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap,
+  Users, Clock, CheckSquare, Briefcase, FileText, GraduationCap, ListTodo,
   Info, ArrowLeft, ArrowRight, Zap, Settings, Lock, Coffee, Monitor,
   Eye, EyeOff, Pencil, Calendar, MapPin, Heart, Bell
 } from 'lucide-react';
@@ -32,7 +32,8 @@ const IconMap: Record<string, React.ReactNode> = {
   Database: <Database size={20} />,
   Users: <Users size={20} />,
   Clock: <Clock size={20} />,
-  CheckSquare: <CheckSquare size={20} />,
+  CheckSquare: <ListTodo size={20} />,
+  ListTodo: <ListTodo size={20} />,
   Briefcase: <Briefcase size={20} />,
   FileText: <FileText size={20} />,
   GraduationCap: <GraduationCap size={20} />,
@@ -140,7 +141,7 @@ const ModuleCard = ({
                       reloj: 'Clock',
                       reloj2: 'Clock',
                       rrhh: 'Users',
-                      operativo: 'CheckSquare',
+                      operativo: 'ListTodo',
                       ats: 'Briefcase',
                       reportes: 'FileText',
                       academia: 'GraduationCap',
@@ -1195,7 +1196,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                         { name: 'LayoutDashboard', label: 'Dashboard' },
                         { name: 'Users', label: 'Colaboradores' },
                         { name: 'Clock', label: 'Reloj Checador' },
-                        { name: 'CheckSquare', label: 'Tareas/Checklists' },
+                        { name: 'ListTodo', label: 'Tareas/Checklists' },
                         { name: 'Briefcase', label: 'Reclutamiento' },
                         { name: 'FileText', label: 'Documentos' },
                         { name: 'GraduationCap', label: 'Academia' },
@@ -1214,7 +1215,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                           case 'LayoutDashboard': return <LayoutGrid size={22} />;
                           case 'Users': return <Users size={22} />;
                           case 'Clock': return <Clock size={22} />;
-                          case 'CheckSquare': return <CheckSquare size={22} />;
+                          case 'CheckSquare':
+                          case 'ListTodo': return <ListTodo size={22} />;
                           case 'Briefcase': return <Briefcase size={22} />;
                           case 'FileText': return <FileText size={22} />;
                           case 'GraduationCap': return <GraduationCap size={22} />;

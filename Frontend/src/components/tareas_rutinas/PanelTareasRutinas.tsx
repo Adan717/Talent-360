@@ -187,76 +187,95 @@ export function PanelTareasRutinas() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 font-sans">
-             {/* Tarjeta Superior: Menú y Buscador */}
-             <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
-                {/* Tabs & Search */}
-                {isFeatureUnlocked('routines_management') ? (
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 shrink-0">
-                        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/60 sm:bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full md:w-auto overflow-x-auto whitespace-nowrap scrollbar-none border border-slate-200">
-                            <button 
-                                onClick={() => setActiveTab('tareas')} 
-                                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'tareas' ? 'bg-white text-blue-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                                <LayoutList size={18} className={activeTab === 'tareas' ? 'text-blue-600' : 'text-slate-400'} />
-                                <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tareas</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${activeTab === 'tareas' ? 'bg-blue-50 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>{tasks.length}</span>
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('rutinas')} 
-                                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'rutinas' ? 'bg-white text-blue-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                                <Workflow size={18} className={activeTab === 'rutinas' ? 'text-blue-600' : 'text-slate-400'} />
-                                <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Rutinas</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${activeTab === 'rutinas' ? 'bg-blue-50 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>{routines.length}</span>
-                            </button>
-                        </div>
-                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-between md:justify-end">
-                            <div className="hidden sm:block relative w-full md:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                <input ref={searchInputRef} type="text" placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
-                            </div>
-                            <button onClick={handleOpenCreator} className="hidden sm:flex justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm items-center gap-2 shrink-0">
-                                <Plus size={16} /> Crear Nuevo
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6 shrink-0">
-                        <div className="text-sm font-bold text-slate-600 w-full md:w-auto text-left">
-                            Listado de Tareas de la Bolsa de Trabajo ({tasks.length})
-                        </div>
-                        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-between md:justify-end">
-                            <div className="hidden sm:block relative w-full md:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                <input ref={searchInputRef} type="text" placeholder="Buscar tarea..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" />
-                            </div>
-                            <button onClick={handleOpenCreator} className="hidden sm:flex justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm items-center gap-2 shrink-0">
-                                <Plus size={16} /> Crear Nuevo
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* BUSCADOR MÓVIL CONDICIONAL */}
-                {showMobileSearch && (
-                  <div className="block sm:hidden mb-6 relative">
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."}
-                      className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
-                    />
-                    <div className="absolute left-3.5 top-3.5 text-slate-400">
-                       <Search size={16} />
-                    </div>
+              {/* Tarjeta Superior: Menú de Pestañas */}
+              <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/60 sm:bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none border border-slate-200">
+                      <button 
+                          onClick={() => setActiveTab('tareas')} 
+                          className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                              activeTab === 'tareas' 
+                                  ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
+                                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                          }`}
+                      >
+                          <LayoutList size={18} className={activeTab === 'tareas' ? 'text-blue-600' : 'text-slate-400'} />
+                          <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tareas</span>
+                          {/* Counter Badge */}
+                          <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                              activeTab === 'tareas' 
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                                  : 'bg-slate-200 text-slate-600 border border-slate-300'
+                          }`}>
+                              {tasks.length}
+                          </span>
+                      </button>
+                      <button 
+                          onClick={() => setActiveTab('rutinas')} 
+                          className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                              activeTab === 'rutinas' 
+                                  ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
+                                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                          }`}
+                      >
+                          <Workflow size={18} className={activeTab === 'rutinas' ? 'text-blue-600' : 'text-slate-400'} />
+                          <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Rutinas</span>
+                          {/* Counter Badge */}
+                          <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                              activeTab === 'rutinas' 
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                                  : 'bg-slate-200 text-slate-600 border border-slate-300'
+                          }`}>
+                              {routines.length}
+                          </span>
+                      </button>
                   </div>
-                )}
-             </div>
+              </div>
 
-             {/* Tarjeta Inferior: Contenido principal */}
-             <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px]">
+              {/* Tarjeta Inferior: Contenido principal */}
+              <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px]">
+                  {/* Encabezado Interno y Controles (Buscador & Crear) - Oculto en móvil */}
+                  <div className="hidden sm:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 pb-4 w-full">
+                      <div className="flex items-center gap-2">
+                          <h2 className="text-slate-800 font-extrabold text-base sm:text-lg">
+                              {activeTab === 'tareas' ? 'Catálogo de Tareas' : 'Rutinas Automatizadas'}
+                          </h2>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-between md:justify-end">
+                          <div className="relative w-full md:w-64">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                              <input 
+                                  ref={searchInputRef} 
+                                  type="text" 
+                                  placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."} 
+                                  value={searchQuery} 
+                                  onChange={(e) => setSearchQuery(e.target.value)} 
+                                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" 
+                              />
+                          </div>
+                          <button onClick={handleOpenCreator} className="flex justify-center bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm items-center gap-2 shrink-0">
+                              <Plus size={16} /> Crear Nuevo
+                          </button>
+                      </div>
+                  </div>
+
+                  {/* BUSCADOR MÓVIL CONDICIONAL */}
+                  {showMobileSearch && (
+                      <div className="block sm:hidden mb-6 relative">
+                          <input
+                              ref={searchInputRef}
+                              type="text"
+                              value={searchQuery}
+                              onChange={e => setSearchQuery(e.target.value)}
+                              placeholder={activeTab === 'tareas' ? "Buscar tarea..." : "Buscar rutina..."}
+                              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"
+                          />
+                          <div className="absolute left-3.5 top-3.5 text-slate-400">
+                              <Search size={16} />
+                          </div>
+                      </div>
+                  )}
+
                  {/* Contenido Tareas */}
                  {activeTab === 'tareas' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-6">

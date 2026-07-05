@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -1588,7 +1588,7 @@ export default function RelojVisual({
         return {
           title: 'Tareas y Rutinas',
           desc: 'Gestión y seguimiento de asignaciones operativas',
-          icon: <CheckSquare className="w-8 h-8 text-indigo-500" />,
+          icon: <ListTodo className="w-8 h-8 text-indigo-500" />,
           badge: null
         };
       case 'academia':
@@ -1647,10 +1647,10 @@ export default function RelojVisual({
               <button 
                 onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                  isDark ? 'bg-slate-950/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-205 hover:bg-slate-100 text-slate-700'
+                  isDark ? 'bg-slate-955/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-205 hover:bg-slate-100 text-slate-700'
                 }`}
               >
-                <CheckSquare size={20} className="text-emerald-500" />
+                <ListTodo size={20} className="text-emerald-500" />
                 <span className="text-[10px] font-black uppercase tracking-wider mt-1">Tareas</span>
               </button>
 
@@ -1902,7 +1902,7 @@ export default function RelojVisual({
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión y seguimiento operativo';
-        icon = <CheckSquare className="text-indigo-500" />;
+        icon = <ListTodo className="text-indigo-500" />;
         badgeText = 'v1.5';
         break;
       case 'academia':

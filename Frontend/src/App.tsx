@@ -3,7 +3,7 @@ import type { AppModule } from './types';
 import { Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, GraduationCap, Clock, 
-  CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase,
+  CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase, ListTodo,
   FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User,
   Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale
 } from 'lucide-react';
@@ -60,7 +60,8 @@ const IconMap: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={20} />,
   Users: <Users size={20} />,
   Clock: <Clock size={20} />,
-  CheckSquare: <CheckSquare size={20} />,
+  CheckSquare: <ListTodo size={20} />,
+  ListTodo: <ListTodo size={20} />,
   Briefcase: <Briefcase size={20} />,
   FileText: <FileText size={20} />,
   GraduationCap: <GraduationCap size={20} />,
@@ -247,7 +248,7 @@ function MainLayout() {
       id: 'operativo',
       title: 'Bitácora de Tareas',
       desc: 'Checklists por voz',
-      icon: <CheckSquare size={20} />,
+      icon: <ListTodo size={20} />,
       color: 'bg-blue-50 text-blue-600 border-blue-100',
       minTier: 'freemium',
       version: 'v1.5'

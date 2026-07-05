@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, Key, WifiOff, ClipboardList, UserX, AlertTriangle, ListTodo } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { MOCK_USERS, MOCK_STORE } from '../../mockData';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
@@ -558,7 +558,7 @@ export default function RelojVisual() {
               <span className="text-[10px] font-bold">Checador</span>
             </button>
             <button onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} className={`${phoneTab === 'tareas' ? 'text-emerald-500' : 'text-slate-500 hover:text-emerald-400'} flex flex-col items-center group transition-colors gap-1.5`}>
-              <CheckSquare size={22} className={`group-active:scale-90 transition-transform ${phoneTab === 'tareas' ? 'scale-110' : ''}`} />
+              <ListTodo size={22} className={`group-active:scale-90 transition-transform ${phoneTab === 'tareas' ? 'scale-110' : ''}`} />
               <span className="text-[10px] font-bold">Tareas</span>
             </button>
             <button onClick={() => { setInnerTool(null); setPhoneTab('academia'); }} className={`${phoneTab === 'academia' ? 'text-sky-500' : 'text-slate-500 hover:text-sky-400'} flex flex-col items-center group transition-colors gap-1.5`}>

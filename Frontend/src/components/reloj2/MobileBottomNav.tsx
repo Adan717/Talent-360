@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckSquare, GraduationCap, DollarSign } from 'lucide-react';
+import { Clock, ListTodo, GraduationCap, DollarSign } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 
@@ -56,7 +56,7 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark }:
         }`}
         style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
       >
-        <CheckSquare size={22} className="" style={phoneTab === 'tareas' ? { color: tareasColor } : {}} />
+        <ListTodo size={22} className="" style={phoneTab === 'tareas' ? { color: tareasColor } : {}} />
         <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Tareas</span>
       </button>
       

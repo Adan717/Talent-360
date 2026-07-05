@@ -752,8 +752,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
           {/* Píldoras de Salud y Estadísticas Interactivas */}
           {setActiveModule && (
-            <div className="flex justify-start animate-in fade-in slide-in-from-top-4 duration-300">
-              <HeaderStats activeModule="dashboard" setActiveModule={setActiveModule} />
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
+              <h2 className="text-xs font-black text-slate-400 tracking-wider uppercase">Salud y Control Operativo</h2>
+              <div className="flex justify-start">
+                <HeaderStats activeModule="dashboard" setActiveModule={setActiveModule} />
+              </div>
             </div>
           )}
 

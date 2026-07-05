@@ -135,11 +135,11 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({ activeModule, setActiv
   const renderHealthIndicator = (health: 'green' | 'amber' | 'red' | 'gray') => {
     const colors = getHealthColors(health);
     return (
-      <span className="relative flex h-2 w-2 shrink-0">
+      <span className="relative flex h-2.5 w-2.5 shrink-0">
         {health !== 'gray' && (
           <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${colors.pulse}`}></span>
         )}
-        <span className={`relative inline-flex rounded-full h-2 w-2 ${colors.bg}`}></span>
+        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${colors.bg}`}></span>
       </span>
     );
   };
@@ -148,13 +148,13 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({ activeModule, setActiv
     const isActive = activeModule === modId;
     const colors = getHealthColors(health);
     
-    const baseClass = "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs transition-all duration-300 cursor-pointer select-none font-bold";
+    const baseClass = "flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs sm:text-sm transition-all duration-300 cursor-pointer select-none font-black shadow-sm";
     
     if (isActive) {
       return `${baseClass} border-blue-600 bg-blue-50 text-blue-700 shadow-md shadow-blue-500/10 scale-102`;
     }
     
-    return `${baseClass} border-slate-200 bg-white text-slate-600 ${colors.bgPill} hover:shadow-sm active:scale-98`;
+    return `${baseClass} border-slate-200 bg-white text-slate-700 ${colors.bgPill} hover:shadow-md active:scale-98`;
   };
 
   // Cantidad de Empleados: Activos totales
@@ -165,16 +165,16 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({ activeModule, setActiv
   const displayProspects = stats.prospects_count;
 
   return (
-    <div className="flex items-center gap-1.5 sm:gap-2.5 bg-slate-50/60 p-1 rounded-2xl border border-slate-100/80 shadow-inner max-w-full overflow-x-auto scrollbar-none shrink-0">
+    <div className="flex items-center gap-2 sm:gap-3 bg-slate-100/50 p-1.5 rounded-3xl border border-slate-200/60 shadow-inner max-w-full overflow-x-auto scrollbar-none shrink-0">
       {/* Empleados Pill */}
       <div 
         onClick={() => setActiveModule('rrhh')}
         className={getPillClassName('rrhh', stats.employees_health)}
         title={`Empleados activos: ${displayEmployees}. Salud: ${stats.employees_health.toUpperCase()}`}
       >
-        <Users size={14} className={activeModule === 'rrhh' ? "text-blue-600" : "text-slate-400"} />
-        <span className="hidden md:inline">Empleados</span>
-        <span className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold leading-none shrink-0">
+        <Users size={16} className={activeModule === 'rrhh' ? "text-blue-600" : "text-slate-400"} />
+        <span>Empleados</span>
+        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-lg text-xs font-black leading-none shrink-0">
           {displayEmployees}
         </span>
         {renderHealthIndicator(stats.employees_health)}
@@ -186,9 +186,9 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({ activeModule, setActiv
         className={getPillClassName('operativo', stats.tasks_health)}
         title={`Tareas pendientes hoy: ${displayTasks}. Salud: ${stats.tasks_health.toUpperCase()}`}
       >
-        <ListTodo size={14} className={activeModule === 'operativo' ? "text-blue-600" : "text-slate-400"} />
-        <span className="hidden md:inline">Tareas</span>
-        <span className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold leading-none shrink-0">
+        <ListTodo size={16} className={activeModule === 'operativo' ? "text-blue-600" : "text-slate-400"} />
+        <span>Tareas</span>
+        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-lg text-xs font-black leading-none shrink-0">
           {displayTasks}
         </span>
         {renderHealthIndicator(stats.tasks_health)}
@@ -200,9 +200,9 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({ activeModule, setActiv
         className={getPillClassName('ats', stats.prospects_health)}
         title={`Prospectos en reclutamiento: ${displayProspects}. Salud: ${stats.prospects_health.toUpperCase()}`}
       >
-        <Briefcase size={14} className={activeModule === 'ats' ? "text-blue-600" : "text-slate-400"} />
-        <span className="hidden md:inline">Prospectos</span>
-        <span className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold leading-none shrink-0">
+        <Briefcase size={16} className={activeModule === 'ats' ? "text-blue-600" : "text-slate-400"} />
+        <span>Prospectos</span>
+        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-lg text-xs font-black leading-none shrink-0">
           {displayProspects}
         </span>
         {renderHealthIndicator(stats.prospects_health)}

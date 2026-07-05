@@ -264,7 +264,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       case 'checador':
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
-        icon = <Clock className="text-[#2dce89]" />;
+        icon = <Clock className="text-[#2dce89] animate-spin-once" />;
         badgeText = tier === 'pro' ? 'v4.2-pro' : 'Gratuito';
         badgeColorClass = tier === 'pro' 
           ? 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20' 
@@ -273,21 +273,21 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión operativa';
-        icon = <CheckSquare className="text-indigo-500" />;
+        icon = <CheckSquare className="text-indigo-500 animate-wiggle-once" />;
         badgeText = 'Tareas';
         badgeColorClass = 'bg-indigo-50 dark:bg-indigo-955/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Desarrollo de personal';
-        icon = <GraduationCap className="text-violet-500 animate-bounce" />;
+        icon = <GraduationCap className="text-violet-500 animate-bounce-twice" />;
         badgeText = 'Cursos';
         badgeColorClass = 'bg-violet-50 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
         break;
       case 'herramientas':
         title = 'Herramientas';
         desc = 'Bitácoras rápidas';
-        icon = <Settings className="text-slate-500 animate-spin" style={{ animationDuration: '6s' }} />;
+        icon = <Settings className="text-slate-500 animate-spin-once" />;
         badgeText = 'Menú';
         badgeColorClass = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
         break;
@@ -310,7 +310,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       >
         <div className="flex items-center gap-2 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
-            {icon && React.cloneElement(icon, { className: 'w-6 h-6' })}
+            {icon && React.cloneElement(icon, { 
+              key: phoneTab,
+              className: `${icon.props.className || ''} w-6 h-6` 
+            })}
           </div>
           <div className="flex flex-col min-w-0 justify-center text-left">
             <div className="flex items-center gap-1.5 flex-wrap">

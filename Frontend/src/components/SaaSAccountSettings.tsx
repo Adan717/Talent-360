@@ -758,8 +758,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
               {(() => {
                 const modulesWithDetails = [
                   { 
-                    name: 'Expediente Digital', 
-                    desc: 'Estructura y contratos', 
+                    name: 'Directorio Digital', 
+                    desc: 'Estructura y Contratos', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('rrhh'), 
                     version: 'v3.1',
@@ -790,8 +790,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Checador Inteligente', 
-                    desc: 'Ley Silla y descansos', 
+                    name: 'Reloj Checador IA', 
+                    desc: 'Asistencia y Ley Silla', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
                     version: 'v4.3',
@@ -822,8 +822,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Bitácora de Tareas', 
-                    desc: 'Checklists por voz', 
+                    name: 'Tareas IA', 
+                    desc: 'Automatiza Rutinas', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('operativo'), 
                     version: 'v1.5',
@@ -839,7 +839,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   },
                   { 
                     name: 'Bolsa de Trabajo ATS', 
-                    desc: 'Vacantes y postulantes', 
+                    desc: 'Vacantes y Prospectos', 
                     tier: 'pro', 
                     active: isModuleUnlocked('ats'), 
                     version: 'v1.1',
@@ -854,8 +854,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reportes y Prenómina IA', 
-                    desc: 'Cálculo de incidencias', 
+                    name: 'Reportes IA', 
+                    desc: 'Analítica Nómina e incidencias', 
                     tier: 'pro', 
                     active: isModuleUnlocked('reportes'), 
                     version: 'v2.0',
@@ -886,8 +886,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Academia y Cursos', 
-                    desc: 'Capacitación e inducción', 
+                    name: 'Academia 360', 
+                    desc: 'Inducción y Capacitación', 
                     tier: 'enterprise', 
                     active: isModuleUnlocked('academia'), 
                     version: 'v2.8',
@@ -902,8 +902,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Bóveda de Contratos', 
-                    desc: 'Firma y resguardo', 
+                    name: 'Archivo Digital', 
+                    desc: 'Expedientes y Manuales', 
                     tier: 'enterprise', 
                     active: isModuleUnlocked('documentos'), 
                     version: 'v1.0',
@@ -933,8 +933,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Simulador Matrix QA', 
-                    desc: 'Pruebas del reloj', 
+                    name: 'Matrix QA', 
+                    desc: 'Entorno de simulación', 
                     tier: 'pro', 
                     active: isModuleUnlocked('matrix'), 
                     version: 'v1.2',

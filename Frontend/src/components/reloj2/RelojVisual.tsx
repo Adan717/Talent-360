@@ -1896,49 +1896,49 @@ export default function RelojVisual({
       case 'checador':
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
-        icon = <Clock className="text-[#2dce89]" />;
+        icon = <Clock className="text-[#2dce89] animate-spin-once" />;
         badgeText = 'v4.3';
         break;
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión y seguimiento operativo';
-        icon = <ListTodo className="text-indigo-500" />;
+        icon = <ListTodo className="text-indigo-500 animate-wiggle-once" />;
         badgeText = 'v1.5';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Capacitación y desarrollo';
-        icon = <GraduationCap className="text-violet-500 animate-bounce" />;
+        icon = <GraduationCap className="text-violet-500 animate-bounce-twice" />;
         badgeText = 'v2.8';
         break;
       case 'nomina':
         title = 'Nómina';
         desc = 'Recibos y timbrados CFDI';
-        icon = <DollarSign className="text-emerald-500" />;
+        icon = <DollarSign className="text-emerald-500 animate-pulse-once" />;
         badgeText = 'v1.0';
         break;
       case 'herramientas':
         title = 'Herramientas';
         desc = 'Simulador y bitácoras';
-        icon = <Settings className="text-slate-500 animate-spin" style={{ animationDuration: '6s' }} />;
+        icon = <Settings className="text-slate-500 animate-spin-once" />;
         badgeText = 'v1.0';
         break;
       case 'evaluacion360':
         title = 'Evaluación 360';
         desc = 'Evaluación de compañeros';
-        icon = <Star className="text-amber-500" />;
+        icon = <Star className="text-amber-500 animate-pulse-once" />;
         badgeText = 'v1.1';
         break;
       case 'organigrama':
         title = 'Organigrama';
         desc = 'Estructura de la empresa';
-        icon = <Network className="text-emerald-500" />;
+        icon = <Network className="text-emerald-500 animate-wiggle-once" />;
         badgeText = 'v1.3';
         break;
       case 'perfil':
         title = 'Mi Perfil';
         desc = 'Credencial y ajustes';
-        icon = <ClipboardList className="text-blue-500" />;
+        icon = <ClipboardList className="text-blue-500 animate-pulse-once" />;
         badgeText = 'v1.2';
         break;
       default:
@@ -1985,6 +1985,7 @@ export default function RelojVisual({
         <div className="flex items-center gap-2.5 xs:gap-3.5 min-w-0">
           <div className="shrink-0 flex items-center justify-center">
             {icon && React.cloneElement(icon, { 
+              key: phoneTab,
               className: `w-8 h-8 xs:w-10 xs:h-10 ${icon.props.className || ''}`,
               style: { color: activeColor.hex }
             })}

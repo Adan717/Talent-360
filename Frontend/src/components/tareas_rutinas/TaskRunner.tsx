@@ -153,7 +153,7 @@ export function FichaTarea({
                         )}
                         {/* Badge de Origen de la Tarea */}
                         {isFromPool ? (
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-violet-50 text-violet-700 border-violet-200/60 shadow-xs animate-pulse">
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200/60 shadow-xs animate-pulse">
                                 ✨ Bolsa (+Bono)
                             </span>
                         ) : assignment.reservedAtMins !== null && assignment.reservedAtMins !== undefined && assignment.status === 'pending' ? (
@@ -250,6 +250,9 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const { globalSimTime, addMatrixEvent, globalRoles, globalUsers, systemSettings } = useAppStore(); // Filtros y pestañas locales
     
     const getModuleColor = (modId: string) => {
+        if (modId === 'operativo') {
+            return ColorMap.blue;
+        }
         const cust = systemSettings?.moduleCustomizations?.[modId];
         if (cust?.color && ColorMap[cust.color]) {
             return ColorMap[cust.color];
@@ -663,7 +666,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         placeholder="Buscar tareas por título..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold shadow-sm transition-all"
+                        className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold shadow-sm transition-all"
                     />
                     <div className="absolute left-3 top-3 text-slate-400">
                         <Search size={14} />
@@ -774,7 +777,8 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     if (aiInputEl) (aiInputEl as HTMLInputElement).focus();
                                 }, 100);
                             }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-[#8a2be2] hover:bg-violet-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black hover:bg-blue-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
+                            style={{ color: activeColor.hex }}
                         >
                             🤖 Crear con Asistente de IA
                         </button>
@@ -894,8 +898,8 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         </div>
 
                         {/* Asistente IA Rápido */}
-                        <div className="bg-violet-50/50 border border-violet-100 rounded-2xl p-4 mb-4 space-y-2">
-                            <p className="font-black text-xs text-[#8a2be2] flex items-center gap-1">
+                        <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 mb-4 space-y-2">
+                            <p className="font-black text-xs text-blue-600 flex items-center gap-1">
                                 <Sparkles size={13} /> Asistente de Creación Rápida con IA
                             </p>
                             <p className="text-[10px] text-slate-500 font-semibold leading-normal">
@@ -907,13 +911,13 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     value={aiInput}
                                     onChange={e => setAiInput(e.target.value)}
                                     placeholder="Ej: Contar inventario de mermas por 20 minutos urgente para cajero"
-                                    className="flex-1 p-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold focus:ring-1 focus:ring-violet-500"
+                                    className="flex-1 p-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-semibold focus:ring-1 focus:ring-blue-500"
                                 />
                                 <button
                                     type="button"
                                     onClick={handleAIParsing}
                                     disabled={!aiInput}
-                                    className="px-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-xl border-none cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
+                                    className="px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl border-none cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
                                     title="Interpretar texto con IA"
                                 >
                                     <Sparkles size={13} />
@@ -932,7 +936,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     onChange={e => setNewTitle(e.target.value)}
                                     placeholder="Ej: Limpieza de cafetera industrial..."
                                     required
-                                    className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                    className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
                                 />
                             </div>
 
@@ -943,7 +947,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                 <select 
                                     value={newTargetRole}
                                     onChange={e => setNewTargetRole(Number(e.target.value))}
-                                    className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                    className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
                                 >
                                     <option value={0}>Cualquiera (Bolsa de Trabajo General)</option>
                                     {globalRoles?.map((role: any) => (
@@ -964,7 +968,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                         value={newMins}
                                         onChange={e => setNewMins(Number(e.target.value))}
                                         required
-                                        className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                        className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
                                     />
                                 </div>
 
@@ -975,7 +979,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     <select 
                                         value={newPriority}
                                         onChange={e => setNewPriority(e.target.value as any)}
-                                        className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none text-xs font-semibold"
+                                        className="w-full p-2.5 border border-slate-200 bg-slate-55 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold"
                                     >
                                         <option value="normal">Normal</option>
                                         <option value="bloqueante">Bloqueante (Obligatoria)</option>
@@ -1113,7 +1117,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     <div className="space-y-3 pt-2 border-t border-slate-100">
                                         {a.assistantData && (
                                             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                                                <p className="font-extrabold text-violet-750 flex items-center gap-1.5 mb-1.5">
+                                                <p className="font-extrabold text-blue-700 flex items-center gap-1.5 mb-1.5">
                                                     📸 Evidencia presentada:
                                                 </p>
                                                 <p className="text-slate-800 font-black bg-white p-2.5 rounded-lg border border-slate-150">

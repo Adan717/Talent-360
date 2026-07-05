@@ -1902,7 +1902,7 @@ export default function RelojVisual({
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión y seguimiento operativo';
-        icon = <ListTodo className="text-indigo-500 animate-wiggle-once" />;
+        icon = <ListTodo className="text-blue-600 animate-wiggle-once" />;
         badgeText = 'v1.5';
         break;
       case 'academia':
@@ -1961,6 +1961,9 @@ export default function RelojVisual({
     }
 
     const getModuleColor = (modId: string) => {
+      if (modId === 'operativo') {
+        return ColorMap.blue;
+      }
       const cust = systemSettings?.moduleCustomizations?.[modId];
       if (cust?.color && ColorMap[cust.color]) {
         return ColorMap[cust.color];

@@ -273,9 +273,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       case 'tareas':
         title = 'Tareas y Rutinas';
         desc = 'Gestión operativa';
-        icon = <CheckSquare className="text-indigo-500 animate-wiggle-once" />;
+        icon = <CheckSquare className="text-blue-600 animate-wiggle-once" />;
         badgeText = 'Tareas';
-        badgeColorClass = 'bg-indigo-50 dark:bg-indigo-955/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30';
+        badgeColorClass = 'bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
         break;
       case 'academia':
         title = 'Academia';

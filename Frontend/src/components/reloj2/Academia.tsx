@@ -97,7 +97,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [roles, setRoles] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
-  const [targetRoleId, setTargetRoleId] = useState<number | null>(null);
+  const [targetRoleId, setTargetRoleId] = useState<number | null>(() => useAppStore.getState().currentUser?.job_role_id || null);
   const [activeTab, setActiveTab] = useState<'plan' | 'logros'>('plan');
   const [loading, setLoading] = useState(true);
   const [activeCourse, setActiveCourse] = useState<any>(null);
@@ -106,7 +106,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [selectedPrintTemplate, setSelectedPrintTemplate] = useState<any>(null);
   const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => localStorage.getItem('decorarte_academy_welcome_dismissed') !== 'true');
 
   const { currentUser: loggedUser, systemSettings, completeInduction } = useAppStore();
 
@@ -520,6 +520,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
             <div className="grid grid-cols-1 gap-2.5">
               {roles.filter((role: any) => {
                 if (role.is_active === false) return false;
+                if (loggedUser && role.id === loggedUser.job_role_id) return true;
                 const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
                 if (roleCourses.length === 0) return false;
                 const completedRoleCourses = roleCourses.filter(c => {
@@ -1120,10 +1121,29 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
             
             {/* Mensaje motivacional */}
             <div 
-              className="p-3.5 rounded-2xl border mb-5 text-[11px] font-medium leading-relaxed"
+              className="p-3.5 rounded-2xl border mb-4 text-[11px] font-medium leading-relaxed"
               style={{ backgroundColor: `${activeColor.hex}08`, borderColor: `${activeColor.hex}25`, color: activeColor.hex }}
             >
               🚀 <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> En DecorArte, cada paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
+            </div>
+
+            {/* Checkbox No volver a mostrar */}
+            <div className="flex items-center justify-center gap-2 mb-4 select-none">
+              <input 
+                type="checkbox" 
+                id="dontShowAgain" 
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    localStorage.setItem('decorarte_academy_welcome_dismissed', 'true');
+                  } else {
+                    localStorage.removeItem('decorarte_academy_welcome_dismissed');
+                  }
+                }}
+                className="w-3.5 h-3.5 text-violet-600 border-slate-350 rounded focus:ring-violet-500 cursor-pointer"
+              />
+              <label htmlFor="dontShowAgain" className="text-[10px] text-slate-500 font-bold cursor-pointer">
+                No volver a mostrar este mensaje
+              </label>
             </div>
 
             <button 

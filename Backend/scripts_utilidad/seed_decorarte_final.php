@@ -202,7 +202,6 @@ try {
             'role' => $emp['role'],
             'job_role_id' => $emp['job_role_id'],
             'is_active' => true,
-            'portadorLlaves' => $emp['portadorLlaves'],
             'created_at' => now(),
             'updated_at' => now()
         ]);

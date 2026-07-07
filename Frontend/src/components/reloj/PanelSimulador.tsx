@@ -6,6 +6,31 @@ import { useClockEngine } from './useClockEngine';
 import RelojVisual from './RelojVisual';
 import axiosInstance from '../../lib/axios';
 
+class PhoneErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("Phone Render Crash:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full bg-slate-950 p-4 text-center select-none border border-rose-500/20">
+          <span className="text-2xl mb-2">📱💥</span>
+          <h4 className="text-[10px] font-black uppercase tracking-wider text-rose-400">Error de Celular</h4>
+          <p className="text-[9px] text-slate-500 mt-1 leading-normal max-w-[180px]">Ocurrió un fallo al renderizar el dispositivo simulado.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
   const engine = useClockEngine(user);
 
@@ -13,22 +38,38 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
   const { setGlobalClockState, setGlobalCheckInTime, setGlobalArrivalTime } = useAppStore();
   
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && engine.clockState !== undefined) {
       setGlobalClockState(user.id, engine.clockState);
     }
   }, [engine.clockState, user?.id]);
 
   useEffect(() => {
-    if (user?.id && engine.checkInTimes[user.id] !== undefined) {
+    if (user?.id && engine.checkInTimes?.[user.id] !== undefined) {
       setGlobalCheckInTime(user.id, engine.checkInTimes[user.id]);
     }
   }, [engine.checkInTimes, user?.id]);
 
   useEffect(() => {
-    if (user?.id && engine.arrivalTimes[user.id] !== undefined) {
+    if (user?.id && engine.arrivalTimes?.[user.id] !== undefined) {
       setGlobalArrivalTime(user.id, engine.arrivalTimes[user.id]);
     }
   }, [engine.arrivalTimes, user?.id]);
+
+  if (engine.isGlobalLoading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-slate-900 text-slate-500 text-xs">
+        <span className="animate-pulse">Cargando cel...</span>
+      </div>
+    );
+  }
+
+  if (engine.dbEmpty) {
+    return (
+      <div className="flex items-center justify-center h-full bg-slate-900 text-rose-500 text-xs">
+        <span>Error: BD vacía</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-900 select-none">
@@ -468,7 +509,9 @@ export default function PanelSimulador() {
                   className="bg-slate-800 rounded-b-2xl rounded-t-none border border-slate-700 shadow-2xl overflow-hidden relative transition-all duration-300"
                   style={{ width: `${400 * phoneScale}px`, height: `${(850 * phoneScale) + 38}px` }}
                 >
-                   <MiniaturaCelular user={user} scale={phoneScale} />
+                  <PhoneErrorBoundary>
+                    <MiniaturaCelular user={user} scale={phoneScale} />
+                  </PhoneErrorBoundary>
                 </div>
               </div>
             ))}

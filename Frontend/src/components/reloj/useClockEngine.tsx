@@ -865,7 +865,40 @@ export function useClockEngine(overrideUser?: any) {
     }
     return () => clearInterval(interval);
   }, [isRealTimeMode]);
-  const currentSimTime = globalSimTime;
+  const getRealTimeMins = () => {
+    try {
+      const tz = systemSettings?.timezone || 'America/Mexico_City';
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(new Date());
+      const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+      const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+      return h * 60 + m;
+    } catch (e) {
+      const now = new Date();
+      return now.getHours() * 60 + now.getMinutes();
+    }
+  };
+
+  const isSimulatedMode = !!overrideUser;
+  const [realTimeMins, setRealTimeMins] = useState(getRealTimeMins());
+
+  useEffect(() => {
+    if (!isSimulatedMode) {
+      const updateClock = () => {
+        setRealTimeMins(getRealTimeMins());
+      };
+      updateClock();
+      const interval = setInterval(updateClock, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isSimulatedMode, systemSettings?.timezone]);
+
+  const currentSimTime = isSimulatedMode ? globalSimTime : realTimeMins;
   // Aliases to avoid breaking RelojVisual (Moved to top to prevent TDZ)
   const checkInTimes = globalCheckInTimes;
   const arrivalTimes = globalArrivalTimes;

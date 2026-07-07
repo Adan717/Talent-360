@@ -261,6 +261,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
   const [welcomeTitle, setWelcomeTitle] = useState('');
   const [welcomeText, setWelcomeText] = useState('');
   const [companyLogo, setCompanyLogo] = useState('');
+  const [timezone, setTimezone] = useState('America/Mexico_City');
 
   // Sync state with store/database once loaded
   useEffect(() => {
@@ -272,6 +273,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     setWelcomeTitle(systemSettings?.welcome_title || `¡Bienvenido a ${currentCompany}!`);
     setWelcomeText(systemSettings?.welcome_text || 'Nos emociona tenerte en el equipo. Por favor, instala esta App para tu control de asistencia.');
     setCompanyLogo(systemSettings?.company_logo || '');
+    setTimezone(systemSettings?.timezone || 'America/Mexico_City');
   }, [systemSettings, currentUser]);
 
   // PWA Invite States
@@ -384,7 +386,8 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
         updateSetting('subdomain', subdomain),
         updateSetting('welcome_title', welcomeTitle),
         updateSetting('welcome_text', welcomeText),
-        updateSetting('company_logo', companyLogo)
+        updateSetting('company_logo', companyLogo),
+        updateSetting('timezone', timezone)
       ]);
       alert("Configuración guardada exitosamente.");
     } catch (e) {
@@ -516,6 +519,21 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-l border-slate-200">.talent360.com</div>
                     </div>
                     <p className="text-xs text-slate-400 mt-2">Esta es la URL que tus empleados usarán para entrar al sistema.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Zona Horaria del Reloj Checador</label>
+                    <select
+                      value={timezone}
+                      onChange={e => setTimezone(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                    >
+                      <option value="America/Mexico_City">Tiempo del Centro - CDMX, GDL, MTY (América/Mexico_City)</option>
+                      <option value="America/Cancun">Tiempo del Sureste - Cancún, Q. Roo (América/Cancun)</option>
+                      <option value="America/Tijuana">Tiempo del Noroeste - Tijuana, B.C. (América/Tijuana)</option>
+                      <option value="America/Mazatlan">Tiempo del Pacífico - Mazatlán, Chihuahua, Sinaloa (América/Mazatlan)</option>
+                      <option value="America/Hermosillo">Tiempo de Sonora - Hermosillo (América/Hermosillo)</option>
+                    </select>
+                    <p className="text-xs text-slate-400 mt-2">Determina el huso horario oficial con el que se registrarán las entradas y salidas de los colaboradores.</p>
                   </div>
                 </div>
               </div>

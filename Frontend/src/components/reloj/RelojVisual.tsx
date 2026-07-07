@@ -381,6 +381,26 @@ export default function RelojVisual({
     }
   }, [isSimulated, clockState]);
 
+  const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
+
+  useEffect(() => {
+    if (isSimulated) {
+      setPendingCoursesCount(currentUser?.has_completed_induction ? 0 : 2);
+    } else {
+      axiosInstance.get('/academy/courses')
+        .then(res => {
+          const data = res.data;
+          if (data && Array.isArray(data.courses)) {
+            const filtered = data.courses.filter((c: any) => !c.target_job_role_id || c.target_job_role_id === currentUser?.job_role_id);
+            const completed = (data.user_progress || []).filter((up: any) => up.status === 'completed').map((up: any) => up.course_id);
+            const pending = filtered.filter((c: any) => !completed.includes(c.id));
+            setPendingCoursesCount(pending.length);
+          }
+        })
+        .catch(err => console.error('Error fetching academy courses for notifications:', err));
+    }
+  }, [isSimulated, currentUser?.id, currentUser?.has_completed_induction, clockState]);
+
   // Auto-scroll para el chat de equipo
   useEffect(() => {
     if (innerTool === 'chat' && chatBottomRef.current) {
@@ -749,6 +769,7 @@ export default function RelojVisual({
   };
 
     const renderBarraCronologica = (isMobile: boolean) => {
+    if (!hasCheckedIn) return null;
     // Check for any deviations in the current turn
     const isLateIn = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
     const breakInfoObj = getBreakInfo();
@@ -1041,6 +1062,269 @@ export default function RelojVisual({
               </span>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+
+  const renderModuloNotificaciones = (isMobile: boolean) => {
+    const isDark = false; // Forced light mode by system policy
+    const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
+    const sameMealRes = Object.values(reservedMeals).flat().some(r => r.userId === currentUser.id);
+    const needsMealRes = clockState === 'active' && !sameMealRes && hasMealReservation;
+    const keyTransfer = pendingKeyTransfers && pendingKeyTransfers.length > 0 ? pendingKeyTransfers[0] : null;
+    const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
+    const needsRollCall = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted;
+
+    const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+    const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
+    const isSupervisor = currentUser?.role?.toLowerCase()?.includes('sup') || 
+                          currentUser?.role?.toLowerCase()?.includes('admin') || 
+                          currentUser?.role?.toLowerCase()?.includes('gerente') || 
+                          ['Encargado Titular', 'Segundo Encargado', 'Supervisor', 'Administrador / Gerente'].includes(userPositionName);
+    const pendingBreakReqs = isSupervisor ? Object.entries(pendingBreakRequests || {}) : [];
+    const pm = privateMessages[currentUser.id];
+    const bAlerts = buddyAlerts[currentUser.id] || [];
+
+    const notificationsList: any[] = [];
+
+    if (pm) {
+      notificationsList.push({
+        id: 'admin_pm',
+        type: 'error',
+        title: 'Administración',
+        desc: pm,
+        icon: <AlertOctagon className="text-rose-500 w-4 h-4" />
+      });
+    }
+
+    if (keyTransfer) {
+      notificationsList.push({
+        id: 'key_transfer',
+        type: 'warning',
+        title: 'Custodia de Llaves',
+        desc: `${keyTransfer.sender?.name} te propuso cederte las llaves de la sucursal.`,
+        icon: <Key className="text-amber-505 w-4 h-4" />,
+        buttons: [
+          { text: 'Aceptar', onClick: () => respondToKeyTransfer(keyTransfer.id, 'accepted'), variant: 'success' },
+          { text: 'Rechazar', onClick: () => respondToKeyTransfer(keyTransfer.id, 'danger'), variant: 'secondary' }
+        ]
+      });
+    }
+
+    if (isSupervisor && pendingBreakReqs.length > 0) {
+      pendingBreakReqs.forEach(([empId, req]: any) => {
+        const emp = globalUsers.find(u => String(u.id) === String(empId));
+        if (emp) {
+          const empCheckInMins = checkInTimes[emp.id];
+          const elapsedMins = empCheckInMins !== undefined ? Math.max(0, currentSimTime - empCheckInMins) : 0;
+          notificationsList.push({
+            id: `break_req_${empId}`,
+            type: 'info',
+            title: 'Descanso Ley Silla',
+            desc: `${emp.name} solicita descanso (De pie: ${elapsedMins} min).`,
+            icon: <Coffee className="text-purple-500 w-4 h-4" />,
+            buttons: [
+              { text: '✓ Aprobar', onClick: () => approveBreakRequest(emp.id), variant: 'success' },
+              { text: '✕ Rechazar', onClick: () => rejectBreakRequest(emp.id), variant: 'danger' }
+            ]
+          });
+        }
+      });
+    }
+
+    if (needsChecklist) {
+      notificationsList.push({
+        id: 'opening_checklist',
+        type: 'warning',
+        title: 'Checklist de Apertura',
+        desc: 'Tienes tareas de apertura pendientes.',
+        icon: <ClipboardList className="text-amber-500 w-4 h-4" />,
+        action: () => setShowOpeningChecklistModal(true),
+        actionText: 'Completar'
+      });
+    }
+
+    if (needsRollCall) {
+      notificationsList.push({
+        id: 'opening_rollcall',
+        type: 'warning',
+        title: 'Pase de Lista',
+        desc: 'Pase de lista de apertura pendiente.',
+        icon: <ClipboardList className="text-amber-500 w-4 h-4" />,
+        action: () => initPaseLista(false),
+        actionText: 'Iniciar'
+      });
+    }
+
+    if (bAlerts.length > 0) {
+      bAlerts.forEach((ba: any, idx: number) => {
+        notificationsList.push({
+          id: `buddy_alert_${idx}`,
+          type: 'error',
+          title: 'Alerta Operativa',
+          desc: ba.msg,
+          icon: <AlertTriangle className="text-rose-500 w-4 h-4" />
+        });
+      });
+    }
+
+    if (needsMealRes) {
+      notificationsList.push({
+        id: 'meal_res',
+        type: 'warning',
+        title: 'Reserva de Comida',
+        desc: 'Aparta tu horario de comida hoy.',
+        icon: <Utensils className="text-amber-505 w-4 h-4" />,
+        action: () => setShowMealReservationModal(true),
+        actionText: 'Reservar'
+      });
+    }
+
+    if (pendingCount > 0) {
+      notificationsList.push({
+        id: 'tasks_pending',
+        type: 'warning',
+        title: 'Tareas Pendientes',
+        desc: `Tienes ${pendingCount} ${pendingCount === 1 ? 'tarea' : 'tareas'} por realizar hoy.`,
+        icon: <CheckSquare className="text-rose-500 w-4 h-4" />,
+        action: () => { setInnerTool(null); setPhoneTab('tareas'); },
+        actionText: 'Ver tareas'
+      });
+    } else {
+      notificationsList.push({
+        id: 'tasks_all_done',
+        type: 'success',
+        title: 'Tareas al Día',
+        desc: 'Todas tus tareas están al día.',
+        icon: <CheckSquare className="text-emerald-505 w-4 h-4" />,
+        action: () => { setInnerTool(null); setPhoneTab('tareas'); },
+        actionText: 'Ir a tareas'
+      });
+    }
+
+    if (currentUser?.has_completed_induction === false) {
+      notificationsList.push({
+        id: 'induction_pending',
+        type: 'warning',
+        title: 'Inducción Pendiente',
+        desc: 'Completa tu inducción en la Academia.',
+        icon: <GraduationCap className="text-amber-505 w-4 h-4" />,
+        action: () => { setInnerTool(null); setPhoneTab('academia'); },
+        actionText: 'Completar'
+      });
+    } else if (pendingCoursesCount > 0) {
+      notificationsList.push({
+        id: 'courses_pending',
+        type: 'warning',
+        title: 'Cursos Pendientes',
+        desc: `Tienes ${pendingCoursesCount} ${pendingCoursesCount === 1 ? 'curso pendiente' : 'cursos pendientes'} de tu plan.`,
+        icon: <GraduationCap className="text-amber-555 w-4 h-4" />,
+        action: () => { setInnerTool(null); setPhoneTab('academia'); },
+        actionText: 'Estudiar'
+      });
+    }
+
+    let shiftStatusText = 'Turno programado en progreso.';
+    if (clockState === 'inactive') {
+      shiftStatusText = `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}`;
+    } else if (clockState === 'active') {
+      shiftStatusText = 'Hora sugerida de comida: 02:00 pm.';
+    } else if (clockState === 'short_break') {
+      shiftStatusText = 'Descanso activo: Regresa en 15 minutos.';
+    } else if (clockState === 'meal') {
+      shiftStatusText = 'Comida activa: Regresa en 30 minutos.';
+    } else if (hasCheckedOut) {
+      shiftStatusText = 'Jornada del día completada 🎉';
+    }
+
+    notificationsList.push({
+      id: 'shift_status',
+      type: 'info',
+      title: 'Jornada y Horarios',
+      desc: shiftStatusText,
+      icon: <Clock className="text-blue-500 w-4 h-4" />
+    });
+
+    return (
+      <div className={`w-full border rounded-2xl p-4 flex flex-col gap-2.5 text-left transition-all ${
+        isDark 
+          ? 'bg-slate-900/60 border-slate-800 text-white' 
+          : 'bg-white/80 border-slate-200/60 text-slate-800 shadow-sm'
+      }`}>
+        <div className="flex justify-between items-center border-b pb-2 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+            </span>
+            <h5 className="font-extrabold text-[11px] uppercase tracking-wider text-violet-600 dark:text-violet-400">
+              Notificaciones de Turno
+            </h5>
+          </div>
+          <span className="text-[9px] text-slate-400 font-bold">
+            {notificationsList.length} activa{notificationsList.length !== 1 && 's'}
+          </span>
+        </div>
+
+        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin">
+          {notificationsList.length === 0 ? (
+            <p className="text-[11px] text-slate-400 italic text-center py-4">Sin notificaciones de turno.</p>
+          ) : (
+            notificationsList.map((item) => {
+              const bgSeverity = item.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-800' :
+                                item.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' :
+                                item.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
+                                'bg-blue-50 border-blue-100 text-blue-800';
+              
+              const isClickable = !!item.action;
+
+              return (
+                <div 
+                  key={item.id}
+                  onClick={() => isClickable && item.action()}
+                  className={`flex flex-col gap-2 p-2.5 border rounded-xl transition-all duration-200 text-[11px] leading-tight ${bgSeverity} ${
+                    isClickable ? 'cursor-pointer hover:scale-[1.01] hover:border-slate-350 active:scale-[0.99]' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="p-1 rounded-lg bg-white/80 shrink-0 border border-slate-200/10 shadow-xs">
+                      {item.icon}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-extrabold uppercase text-[9px] tracking-wider opacity-90">{item.title}</p>
+                      <p className="font-semibold text-[11px] mt-0.5 opacity-95">{item.desc}</p>
+                    </div>
+                    {isClickable && item.actionText && (
+                      <span className="bg-white/90 font-black text-[8px] uppercase tracking-wider px-2 py-1 rounded-md shrink-0 border border-slate-200/20 shadow-xs hover:bg-white text-slate-750">
+                        {item.actionText} →
+                      </span>
+                    )}
+                  </div>
+
+                  {item.buttons && item.buttons.length > 0 && (
+                    <div className="flex gap-1.5 justify-end mt-1">
+                      {item.buttons.map((btn: any, bIdx: number) => {
+                        const btnColor = btn.variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
+                                         btn.variant === 'danger' ? 'bg-rose-600 hover:bg-rose-700 text-white' :
+                                         'bg-slate-200 hover:bg-slate-300 text-slate-700';
+                        return (
+                          <button
+                            key={bIdx}
+                            onClick={(e) => { e.stopPropagation(); btn.onClick(); }}
+                            className={`font-black text-[9px] uppercase tracking-wider px-2.5 py-1 rounded-lg border-none shadow-xs transition-all active:scale-95 ${btnColor}`}
+                          >
+                            {btn.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     );
@@ -3027,16 +3311,24 @@ export default function RelojVisual({
                     {/* Botón de Desempeño (Copa Trophy) */}
                     <button
                       type="button"
-                      onClick={() => setShowPerformanceModal(true)}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md relative shrink-0 border cursor-pointer ${
-                        isDark 
-                          ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-750' 
-                          : 'bg-white border-slate-200 text-amber-500 hover:bg-slate-50'
+                      onClick={() => {
+                        if (!hasCheckedIn) {
+                          showCustomAlert("⚠️ Para ver tu desempeño semanal, primero debes registrar tu entrada.");
+                          return;
+                        }
+                        setShowPerformanceModal(true);
+                      }}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-md relative shrink-0 border ${
+                        !hasCheckedIn
+                          ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
+                          : isDark 
+                            ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-750 active:scale-95 cursor-pointer' 
+                            : 'bg-white border-slate-202 text-amber-500 hover:bg-slate-50 active:scale-95 cursor-pointer'
                       }`}
                     >
                       <Trophy size={20} />
-                      {weeklyPerformanceScore !== null && (
-                        <span className="absolute -top-1.5 -right-1 bg-violet-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-white">
+                      {hasCheckedIn && weeklyPerformanceScore !== null && (
+                        <span className="absolute -top-1.5 -right-1 bg-violet-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-white">
                           {weeklyPerformanceScore}%
                         </span>
                       )}
@@ -3086,56 +3378,8 @@ export default function RelojVisual({
 
                   </div>
 
-                  {/* Alertas Sencillas Abajo del Dial (Siempre pegadas y alineadas directamente bajo el Dial) */}
-                  <div className="space-y-1.5 w-full shrink-0 mt-1">
-                    {/* Alerta de Tareas */}
-                    {(() => {
-                      const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
-                          className={`w-full p-3 border rounded-2xl flex items-center gap-3 text-left transition-all active:scale-[0.98] focus:outline-none cursor-pointer ${
-                            pendingCount > 0
-                              ? (isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/70 border-rose-100/60 text-rose-800')
-                              : (isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/70 border-emerald-100/60 text-emerald-800')
-                          }`}
-                        >
-                          <span className="text-lg shrink-0">⚠️</span>
-                          <div className="leading-tight overflow-hidden flex-1">
-                            <p className={`text-[10px] font-black uppercase tracking-widest ${pendingCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                              Alerta de Tareas
-                            </p>
-                            <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
-                              {pendingCount > 0 
-                                ? `Pendiente: ${pendingCount} ${pendingCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`
-                                : '¡Todas tus tareas están al día ✓'}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })()}
-
-                    {/* Alerta de Hora de Comida / Turno */}
-                    <div className={`w-full p-3 border rounded-2xl flex items-center gap-3 text-left select-none ${
-                      isDark ? 'bg-blue-955/20 border-blue-900/40 text-blue-300' : 'bg-blue-50/70 border-blue-100/60 text-blue-800'
-                    }`}>
-                      <span className="text-lg shrink-0">📅</span>
-                      <div className="leading-tight overflow-hidden flex-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-800 dark:text-blue-400">
-                          Jornada / Horario
-                        </p>
-                        <p className={`text-[12px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
-                          {clockState === 'inactive' ? `Inicio programado: ${formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')}` :
-                           clockState === 'active' ? 'Hora sugerida de comida: 02:00 pm' :
-                           clockState === 'short_break' ? 'Descanso activo: Regresa en 15 minutos' :
-                           clockState === 'meal' ? 'Comida activa: Regresa en 30 minutos' :
-                           hasCheckedOut ? 'Jornada del día completada 🎉' :
-                           'Turno programado en progreso'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Módulo de Notificaciones del Turno - Activo una vez registrada la entrada */}
+                  {hasCheckedIn && renderModuloNotificaciones(true)}
                 </div>
               </div>
             )
@@ -3493,6 +3737,13 @@ export default function RelojVisual({
                       onEarlyDepartureClick={handleEarlyDepartureClick}
                       onOvertimeClick={handleOvertimeClick}
                     />
+
+                    {/* Módulo de Notificaciones de Turno para Desktop */}
+                    {hasCheckedIn && (
+                      <div className="w-full max-w-[340px] mt-6 mx-auto animate-fade-in">
+                        {renderModuloNotificaciones(false)}
+                      </div>
+                    )}
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}
                   <div className="flex items-center justify-center gap-3 mt-5.5 w-full max-w-[340px] mx-auto">

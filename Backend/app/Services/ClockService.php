@@ -10,16 +10,30 @@ class ClockService
 {
     public function processPunch(User $user, $type, $simTime = null, $details = [])
     {
-        $settings = \DB::table('system_settings')->pluck('value', 'key')->toArray();
+        $tenantId = $user->tenant_id ?? 1;
+        $settings = \DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->pluck('value', 'key')
+            ->toArray();
+            
         $isSimulated = isset($settings['time_mode']) ? json_decode($settings['time_mode'], true) === 'simulated' : false;
+        
+        $timezone = isset($settings['timezone']) ? trim($settings['timezone'], '"') : 'America/Mexico_City';
+        
+        try {
+            $now = Carbon::now($timezone);
+        } catch (\Exception $e) {
+            $now = Carbon::now('America/Mexico_City');
+            $timezone = 'America/Mexico_City';
+        }
+        
+        $date = $now->format('Y-m-d');
 
-        $date = Carbon::now()->format('Y-m-d');
         if ($isSimulated && $simTime) {
             // El simulador envía algo como "09:30:00", usamos eso
             $time = $simTime;
-            $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time");
+            $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time", $timezone);
         } else {
-            $now = Carbon::now();
             $time = $now->format('H:i:s');
         }
 

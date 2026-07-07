@@ -100,7 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   globalSimSpeed: 5,
   matrixTimeline: [],
   hasAlertedStoreDelay: false,
-  isSandboxMode: false,
+  isSandboxMode: true,
   activeEncargadoId: 1,
   globalSimDay: 'Sábado',
   globalBreakStartTimes: {},

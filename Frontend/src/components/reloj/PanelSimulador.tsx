@@ -180,6 +180,7 @@ export default function PanelSimulador() {
   };
 
   useEffect(() => {
+     useAppStore.getState().setIsSandboxMode(true);
      // Polling de 5 segundos para mantener la QA Matrix sincronizada con los fichajes reales del backend
      const interval = setInterval(() => {
          fetchState();

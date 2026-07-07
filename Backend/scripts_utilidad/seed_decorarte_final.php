@@ -64,7 +64,8 @@ try {
         ['id' => 3, 'name' => 'Sup. Cajas', 'esAperturador' => true, 'jerarquiaLlaves' => 0, 'area' => 'Cajas', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 15, 'requiereJustificante' => true],
         ['id' => 4, 'name' => 'Sup. Producción', 'esAperturador' => false, 'jerarquiaLlaves' => 0, 'area' => 'Producción', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 10, 'requiereJustificante' => true],
         ['id' => 5, 'name' => 'Cajeros', 'esAperturador' => false, 'jerarquiaLlaves' => 0, 'area' => 'Cajas', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 10, 'requiereJustificante' => false],
-        ['id' => 6, 'name' => 'Ayudante Integral', 'esAperturador' => false, 'jerarquiaLlaves' => 3, 'area' => 'Piso', 'portadorLlaves' => 'cierre', 'tiempoTolerancia' => 10, 'requiereJustificante' => false]
+        ['id' => 6, 'name' => 'Ayudante Integral', 'esAperturador' => false, 'jerarquiaLlaves' => 3, 'area' => 'Piso', 'portadorLlaves' => 'cierre', 'tiempoTolerancia' => 10, 'requiereJustificante' => false],
+        ['id' => 7, 'name' => 'Apoyo Operativo de Temporada', 'esAperturador' => false, 'jerarquiaLlaves' => 0, 'area' => 'Piso', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 10, 'requiereJustificante' => false]
     ];
  
     foreach ($rolesData as $r) {

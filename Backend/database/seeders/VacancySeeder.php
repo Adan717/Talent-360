@@ -13,7 +13,7 @@ class VacancySeeder extends Seeder
 
         $vacancies = [
             [
-                'job_role_id' => 1,
+                'job_role_id' => 11,
                 'title' => 'Gerente de Sucursal',
                 'description' => 'Buscamos un líder estratégico con experiencia en retail, capaz de gestionar equipos, metas de ventas y la operación integral de la tienda.',
                 'requirements' => "Licenciatura trunca o terminada.\nExperiencia mínima de 2 años en gerencia.\nManejo de KPIs y personal.",
@@ -25,7 +25,7 @@ class VacancySeeder extends Seeder
                 'salary_range' => '$12,000 - $15,000 Mensuales',
             ],
             [
-                'job_role_id' => 2,
+                'job_role_id' => 12,
                 'title' => 'Supervisor(a) de Tienda y Compras',
                 'description' => 'Responsable de la supervisión de piso de ventas, atención a proveedores, resurtido de mercancía y apoyo general a gerencia.',
                 'requirements' => "Experiencia en piso de ventas y almacén.\nHabilidad de negociación con proveedores.\nManejo de inventarios.",
@@ -37,7 +37,7 @@ class VacancySeeder extends Seeder
                 'salary_range' => '$8,000 - $10,000 Mensuales',
             ],
             [
-                'job_role_id' => 3,
+                'job_role_id' => 13,
                 'title' => 'Supervisor(a) de Cajas',
                 'description' => 'Asegurar el correcto funcionamiento de las cajas, realización de arqueos, cortes y atención a quejas o devoluciones.',
                 'requirements' => "Experiencia de 1 año como cajero principal o supervisor.\nManejo avanzado de terminales y efectivo.\nHonestidad y organización.",
@@ -49,7 +49,7 @@ class VacancySeeder extends Seeder
                 'salary_range' => '$7,500 - $8,500 Mensuales',
             ],
             [
-                'job_role_id' => 4,
+                'job_role_id' => 14,
                 'title' => 'Supervisor(a) de Producción (Taller)',
                 'description' => 'Coordinar las actividades del taller, asegurando la calidad y tiempos de entrega de la producción de artículos Talent360.',
                 'requirements' => "Habilidad manual y supervisión de procesos de manufactura ligera.\nManejo de personal operativo.",
@@ -61,7 +61,7 @@ class VacancySeeder extends Seeder
                 'salary_range' => '$7,500 - $8,500 Mensuales',
             ],
             [
-                'job_role_id' => 5,
+                'job_role_id' => 15,
                 'title' => 'Cajero(a) de Sucursal',
                 'description' => 'Atención cálida y rápida en la línea de cajas, cobro de mercancía y empaque.',
                 'requirements' => "Experiencia de 6 meses en cajas o sin experiencia con actitud.\nSecundaria terminada.",
@@ -73,7 +73,7 @@ class VacancySeeder extends Seeder
                 'salary_range' => '$1,500 - $1,800 Semanales',
             ],
             [
-                'job_role_id' => 6,
+                'job_role_id' => 16,
                 'title' => 'Ayudante Integral (Piso y Almacén)',
                 'description' => 'Apoyo dinámico en limpieza, acomodo de mercancía, carga y descarga de inventario y atención a dudas de clientes.',
                 'requirements' => "Energía y actitud de servicio.\nDisponibilidad para esfuerzo físico medio.",
@@ -85,7 +85,7 @@ class VacancySeeder extends Seeder
                 'salary_range' => '$1,400 - $1,600 Semanales',
             ],
             [
-                'job_role_id' => 7,
+                'job_role_id' => 17,
                 'title' => 'Apoyo Operativo de Temporada',
                 'description' => 'Vacante exclusiva para reingresos (personas que ya trabajaron con nosotros) para apoyo en temporada navideña o alta.',
                 'requirements' => "Haber trabajado previamente en Talent360.\nBuena referencia de salida.",

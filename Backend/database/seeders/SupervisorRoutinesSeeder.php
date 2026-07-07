@@ -13,7 +13,7 @@ class SupervisorRoutinesSeeder extends Seeder
         $routineId1 = DB::table('routines')->insertGetId([
             'tenant_id' => 1,
             'title' => 'Documento 17: Checklist Diario de Apertura',
-            'target_role_id' => 2,
+            'target_role_id' => 12,
             'trigger' => 'apertura',
             'assign_mode' => 'fijo',
             'created_at' => now(),
@@ -34,7 +34,7 @@ class SupervisorRoutinesSeeder extends Seeder
                 'title' => $t,
                 'priority' => 'bloqueante',
                 'target_type' => 'role',
-                'target_id' => 2,
+                'target_id' => 12,
                 'assistant_type' => str_contains($t, 'foto') ? 'evidencia_foto' : 'ninguno',
                 'created_at' => now(),
                 'updated_at' => now()
@@ -46,7 +46,7 @@ class SupervisorRoutinesSeeder extends Seeder
         $routineId2 = DB::table('routines')->insertGetId([
             'tenant_id' => 1,
             'title' => 'Documento 18: Checklist Diario de Operación',
-            'target_role_id' => 2,
+            'target_role_id' => 12,
             'trigger' => 'hora_fija', // Se podría disparar a medio día
             'assign_mode' => 'fijo',
             'created_at' => now(),
@@ -66,7 +66,7 @@ class SupervisorRoutinesSeeder extends Seeder
                 'title' => $t,
                 'priority' => 'normal',
                 'target_type' => 'role',
-                'target_id' => 2,
+                'target_id' => 12,
                 'assistant_type' => 'ninguno',
                 'created_at' => now(),
                 'updated_at' => now()
@@ -78,7 +78,7 @@ class SupervisorRoutinesSeeder extends Seeder
         $routineId3 = DB::table('routines')->insertGetId([
             'tenant_id' => 1,
             'title' => 'Documento 19: Checklist Diario de Cierre',
-            'target_role_id' => 2,
+            'target_role_id' => 12,
             'trigger' => 'cierre',
             'assign_mode' => 'fijo',
             'created_at' => now(),
@@ -99,7 +99,7 @@ class SupervisorRoutinesSeeder extends Seeder
                 'title' => $t,
                 'priority' => 'bloqueante',
                 'target_type' => 'role',
-                'target_id' => 2,
+                'target_id' => 12,
                 'assistant_type' => 'ninguno',
                 'created_at' => now(),
                 'updated_at' => now()

@@ -32,12 +32,15 @@ try {
     // Limpiar tablas para evitar duplicados en el seed de DecorArte
     $demoEmails = [
         'francisco@decorarte360.com',
-        'paloma@decorarte360.com',
-        'adan@decorarte360.com',
+        'liz@decorarte360.com',
         'joseline@decorarte360.com',
         'hiraym@decorarte360.com',
         'agnela@decorarte360.com',
         'adriana@decorarte360.com',
+        'cristina@decorarte360.com',
+        'valeria@decorarte360.com',
+        'paloma@decorarte360.com',
+        'adan@decorarte360.com',
         'cristian@decorarte360.com'
     ];
     
@@ -59,15 +62,106 @@ try {
  
     // 2. Insertar Puestos de DecorArte con la tolerancia, justificante y jerarquía de llaves correctos
     $rolesData = [
-        ['id' => 1, 'name' => 'Administrador / Gerente', 'esAperturador' => true, 'jerarquiaLlaves' => 1, 'area' => 'Administración', 'portadorLlaves' => 'ambos', 'tiempoTolerancia' => 15, 'requiereJustificante' => true],
-        ['id' => 2, 'name' => 'Sup. Tienda y Compras', 'esAperturador' => true, 'jerarquiaLlaves' => 2, 'area' => 'Piso', 'portadorLlaves' => 'apertura', 'tiempoTolerancia' => 15, 'requiereJustificante' => true],
-        ['id' => 3, 'name' => 'Sup. Cajas', 'esAperturador' => true, 'jerarquiaLlaves' => 0, 'area' => 'Cajas', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 15, 'requiereJustificante' => true],
-        ['id' => 4, 'name' => 'Sup. Producción', 'esAperturador' => false, 'jerarquiaLlaves' => 0, 'area' => 'Producción', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 10, 'requiereJustificante' => true],
-        ['id' => 5, 'name' => 'Cajeros', 'esAperturador' => false, 'jerarquiaLlaves' => 0, 'area' => 'Cajas', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 10, 'requiereJustificante' => false],
-        ['id' => 6, 'name' => 'Ayudante Integral', 'esAperturador' => false, 'jerarquiaLlaves' => 3, 'area' => 'Piso', 'portadorLlaves' => 'cierre', 'tiempoTolerancia' => 10, 'requiereJustificante' => false],
-        ['id' => 7, 'name' => 'Apoyo Operativo de Temporada', 'esAperturador' => false, 'jerarquiaLlaves' => 0, 'area' => 'Piso', 'portadorLlaves' => 'ninguno', 'tiempoTolerancia' => 10, 'requiereJustificante' => false]
+        [
+            'id' => 11,
+            'name' => 'Administrador Gerente',
+            'area' => 'Administración',
+            'esAperturador' => true,
+            'jerarquiaLlaves' => 1,
+            'portadorLlaves' => 'ambos',
+            'tiempoTolerancia' => 15,
+            'requiereJustificante' => true,
+            'reports_to_role_id' => null,
+            'org_parent_role_id' => null,
+            'reports_to_role_ids' => null,
+            'nivel_mando' => 1
+        ],
+        [
+            'id' => 12,
+            'name' => 'Supervisor de Compras',
+            'area' => 'Compras',
+            'esAperturador' => true,
+            'jerarquiaLlaves' => 2,
+            'portadorLlaves' => 'apertura',
+            'tiempoTolerancia' => 15,
+            'requiereJustificante' => true,
+            'reports_to_role_id' => 11,
+            'org_parent_role_id' => 11,
+            'reports_to_role_ids' => json_encode([11]),
+            'nivel_mando' => 2
+        ],
+        [
+            'id' => 13,
+            'name' => 'Supervisor de Ventas',
+            'area' => 'Ventas',
+            'esAperturador' => true,
+            'jerarquiaLlaves' => 2,
+            'portadorLlaves' => 'apertura',
+            'tiempoTolerancia' => 15,
+            'requiereJustificante' => true,
+            'reports_to_role_id' => 11,
+            'org_parent_role_id' => 11,
+            'reports_to_role_ids' => json_encode([11]),
+            'nivel_mando' => 2
+        ],
+        [
+            'id' => 14,
+            'name' => 'Supervisor de Producción',
+            'area' => 'Producción',
+            'esAperturador' => false,
+            'jerarquiaLlaves' => 0,
+            'portadorLlaves' => 'ninguno',
+            'tiempoTolerancia' => 10,
+            'requiereJustificante' => true,
+            'reports_to_role_id' => 11,
+            'org_parent_role_id' => 11,
+            'reports_to_role_ids' => json_encode([11]),
+            'nivel_mando' => 2
+        ],
+        [
+            'id' => 15,
+            'name' => 'Atención al Cliente',
+            'area' => 'Atención',
+            'esAperturador' => false,
+            'jerarquiaLlaves' => 0,
+            'portadorLlaves' => 'ninguno',
+            'tiempoTolerancia' => 10,
+            'requiereJustificante' => false,
+            'reports_to_role_id' => 13,
+            'org_parent_role_id' => 13,
+            'reports_to_role_ids' => json_encode([13]),
+            'nivel_mando' => 3
+        ],
+        [
+            'id' => 16,
+            'name' => 'Ayudante Integral',
+            'area' => 'Piso',
+            'esAperturador' => false,
+            'jerarquiaLlaves' => 3,
+            'portadorLlaves' => 'cierre',
+            'tiempoTolerancia' => 10,
+            'requiereJustificante' => false,
+            'reports_to_role_id' => 12,
+            'org_parent_role_id' => 12,
+            'reports_to_role_ids' => json_encode([12]),
+            'nivel_mando' => 3
+        ],
+        [
+            'id' => 17,
+            'name' => 'Apoyo Eventual',
+            'area' => 'Piso',
+            'esAperturador' => false,
+            'jerarquiaLlaves' => 0,
+            'portadorLlaves' => 'ninguno',
+            'tiempoTolerancia' => 10,
+            'requiereJustificante' => false,
+            'reports_to_role_id' => 12,
+            'org_parent_role_id' => 12,
+            'reports_to_role_ids' => json_encode([12]),
+            'nivel_mando' => 4
+        ]
     ];
- 
+  
     foreach ($rolesData as $r) {
         DB::table('job_roles')->insert([
             'id' => $r['id'],
@@ -79,11 +173,15 @@ try {
             'portadorLlaves' => $r['portadorLlaves'],
             'tiempoTolerancia' => $r['tiempoTolerancia'],
             'requiereJustificante' => $r['requiereJustificante'],
+            'reports_to_role_id' => $r['reports_to_role_id'],
+            'org_parent_role_id' => $r['org_parent_role_id'],
+            'reports_to_role_ids' => $r['reports_to_role_ids'],
+            'nivel_mando' => $r['nivel_mando'],
             'created_at' => now(),
             'updated_at' => now()
         ]);
     }
- 
+  
     // 3. Crear Usuarios y Empleados por defecto para DecorArte
     $employeesData = [
         [
@@ -91,72 +189,59 @@ try {
             'name' => 'Francisco',
             'email' => 'francisco@decorarte360.com',
             'role' => 'admin',
-            'job_role_id' => 1,
+            'job_role_id' => 11,
             'portadorLlaves' => 'ambos',
             'shiftStart' => '08:20',
             'shiftEnd' => '18:00',
             'mealMinutes' => 60,
             'restDay' => 'Domingo',
-            'reliefBuddyId' => 9
+            'reliefBuddyId' => 2
         ],
         [
-            'id' => 9,
-            'name' => 'Paloma',
-            'email' => 'paloma@decorarte360.com',
+            'id' => 2,
+            'name' => 'Liz',
+            'email' => 'liz@decorarte360.com',
             'role' => 'supervisor',
-            'job_role_id' => 2,
+            'job_role_id' => 12,
             'portadorLlaves' => 'apertura',
-            'shiftStart' => '09:00',
-            'shiftEnd' => '17:00',
+            'shiftStart' => '08:20',
+            'shiftEnd' => '18:00',
             'mealMinutes' => 60,
-            'restDay' => 'Domingo',
-            'reliefBuddyId' => 8
-        ],
-        [
-            'id' => 8,
-            'name' => 'Adán',
-            'email' => 'adan@decorarte360.com',
-            'role' => 'empleado',
-            'job_role_id' => 6,
-            'portadorLlaves' => 'cierre',
-            'shiftStart' => '09:00',
-            'shiftEnd' => '17:30',
-            'mealMinutes' => 30,
-            'restDay' => 'Miércoles',
-            'reliefBuddyId' => 1
+            'restDay' => 'Lunes',
+            'reliefBuddyId' => 3
         ],
         [
             'id' => 3,
             'name' => 'Joseline',
             'email' => 'joseline@decorarte360.com',
             'role' => 'supervisor',
-            'job_role_id' => 3,
-            'portadorLlaves' => 'ninguno',
+            'job_role_id' => 13,
+            'portadorLlaves' => 'apertura',
             'shiftStart' => '08:20',
             'shiftEnd' => '18:00',
             'mealMinutes' => 60,
             'restDay' => 'Martes',
-            'reliefBuddyId' => 9
+            'reliefBuddyId' => 2
         ],
         [
             'id' => 4,
             'name' => 'Hiraym',
             'email' => 'hiraym@decorarte360.com',
             'role' => 'supervisor',
-            'job_role_id' => 4,
+            'job_role_id' => 14,
             'portadorLlaves' => 'ninguno',
             'shiftStart' => '09:00',
             'shiftEnd' => '18:00',
             'mealMinutes' => 60,
             'restDay' => 'Miércoles',
-            'reliefBuddyId' => 8
+            'reliefBuddyId' => 1
         ],
         [
             'id' => 5,
             'name' => 'Agnela',
             'email' => 'agnela@decorarte360.com',
             'role' => 'empleado',
-            'job_role_id' => 5,
+            'job_role_id' => 15,
             'portadorLlaves' => 'ninguno',
             'shiftStart' => '08:30',
             'shiftEnd' => '17:00',
@@ -169,7 +254,7 @@ try {
             'name' => 'Adriana',
             'email' => 'adriana@decorarte360.com',
             'role' => 'empleado',
-            'job_role_id' => 5,
+            'job_role_id' => 15,
             'portadorLlaves' => 'ninguno',
             'shiftStart' => '08:30',
             'shiftEnd' => '17:00',
@@ -179,16 +264,29 @@ try {
         ],
         [
             'id' => 7,
-            'name' => 'Cristian',
-            'email' => 'cristian@decorarte360.com',
+            'name' => 'Cristina',
+            'email' => 'cristina@decorarte360.com',
             'role' => 'empleado',
-            'job_role_id' => 6,
+            'job_role_id' => 16,
             'portadorLlaves' => 'ninguno',
             'shiftStart' => '08:30',
             'shiftEnd' => '17:00',
             'mealMinutes' => 30,
             'restDay' => 'Martes',
             'reliefBuddyId' => 8
+        ],
+        [
+            'id' => 8,
+            'name' => 'Valeria',
+            'email' => 'valeria@decorarte360.com',
+            'role' => 'empleado',
+            'job_role_id' => 16,
+            'portadorLlaves' => 'ninguno',
+            'shiftStart' => '09:00',
+            'shiftEnd' => '17:30',
+            'mealMinutes' => 30,
+            'restDay' => 'Miércoles',
+            'reliefBuddyId' => 7
         ]
     ];
  

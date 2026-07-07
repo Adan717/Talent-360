@@ -99,12 +99,13 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
     const userObj = globalUsers.find(u => u.id === userId);
     if (!userObj) return;
 
+    const empId = userObj.employee_id || userObj.id;
     const nextOrder = assignments.length > 0 ? Math.max(...assignments.map(a => a.priority_order)) + 1 : 1;
 
     if (isSandbox) {
       const newAss = {
         id: Date.now(),
-        employee_id: userId,
+        employee_id: empId,
         priority_order: nextOrder,
         can_open_store: true,
         can_close_store: true,
@@ -118,7 +119,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
     } else {
       try {
         const res = await axiosInstance.post('/store-opening/assignments', {
-          employee_id: userId,
+          employee_id: empId,
           priority_order: nextOrder,
           can_open_store: true,
           can_close_store: true,
@@ -1034,7 +1035,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   >
                     <option value="">-- Selecciona Colaborador --</option>
                     {globalUsers
-                      .filter(u => (u as any).is_active_employee !== false && !assignments.some(a => a.employee_id === u.id))
+                      .filter(u => (u as any).is_active_employee !== false && !assignments.some(a => a.employee_id === (u.employee_id || u.id)))
                       .map(u => (
                         <option key={u.id} value={u.id}>{u.name} ({u.role || 'Colaborador'})</option>
                       ))}

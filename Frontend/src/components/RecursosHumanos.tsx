@@ -56,9 +56,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         .filter((a: any) => a.is_active && a.can_open_store)
         .map((a: any) => Number(a.employee_id));
 
-      const roleUsers = users.filter((u: any) => u.job_role_id === roleId && authorizedUserIds.includes(u.user_id ? Number(u.user_id) : Number(u.id)));
+      const roleUsers = users.filter((u: any) => u.job_role_id === roleId && authorizedUserIds.includes(u.employee_id ? Number(u.employee_id) : Number(u.id)));
       if (roleUsers.length > 0) {
-        const roleAssignments = assignments.filter((a: any) => a.is_active && a.can_open_store && roleUsers.some((u: any) => Number(u.user_id ? u.user_id : u.id) === Number(a.employee_id)));
+        const roleAssignments = assignments.filter((a: any) => a.is_active && a.can_open_store && roleUsers.some((u: any) => Number(u.employee_id ? u.employee_id : u.id) === Number(a.employee_id)));
         const minPriority = Math.min(...roleAssignments.map((a: any) => a.priority_order));
         return minPriority === 1 ? ' 🔑' : ' 🔑🔑';
       }
@@ -1098,7 +1098,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                     className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"
                   />
                   <div className="text-left overflow-hidden">
-                    <div className="text-[11px] font-black text-slate-800 truncate leading-tight">{c.name}{getUserKeysIcon(c.user_id ? Number(c.user_id) : Number(c.id))}</div>
+                    <div className="text-[11px] font-black text-slate-800 truncate leading-tight">{c.name}{getUserKeysIcon(c.employee_id ? Number(c.employee_id) : Number(c.id))}</div>
                     <div className="text-[8px] font-medium text-slate-400 truncate">{c.email}</div>
                   </div>
                 </div>
@@ -1304,7 +1304,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                            <div className="flex items-center gap-3 sm:gap-4 mb-4">
                              <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} alt={u.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-slate-100" />
                              <div className="pr-16 sm:pr-20">
-                               <h4 className="font-bold text-slate-800 text-base sm:text-lg leading-tight">{formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.user_id ? Number(u.user_id) : Number(u.id))}</h4>
+                               <h4 className="font-bold text-slate-800 text-base sm:text-lg leading-tight">{formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.employee_id ? Number(u.employee_id) : Number(u.id))}</h4>
                                <div className="flex gap-1.5 items-center mt-1 flex-wrap">
                                  <p className="text-indigo-600 font-bold text-xs sm:text-sm">{userRole?.name || 'Sin Puesto'}{userRole && getJobRoleKeysIcon(userRole.id)}</p>
                                  {directorioSubTab === 'inactivos' && (
@@ -2238,7 +2238,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                         className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100 cursor-grab active:cursor-grabbing hover:bg-indigo-50/50 transition-all duration-200"
                                       >
                                         <img src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`} className="w-5 h-5 rounded-full border border-white" alt={c.name} />
-                                        <span className="text-[10px] font-bold text-slate-700 truncate">{c.name} {getUserKeysIcon(c.user_id ? Number(c.user_id) : Number(c.id))}</span>
+                                        <span className="text-[10px] font-bold text-slate-700 truncate">{c.name} {getUserKeysIcon(c.employee_id ? Number(c.employee_id) : Number(c.id))}</span>
                                       </div>
                                     ))
                                   ) : (

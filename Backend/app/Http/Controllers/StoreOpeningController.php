@@ -119,7 +119,7 @@ class StoreOpeningController extends Controller
         $tenantId = $user->tenant_id ?? 1;
 
         $validated = $request->validate([
-            'employee_id' => 'required|exists:users,id',
+            'employee_id' => 'required|exists:employees,id',
             'priority_order' => 'integer|min:1',
             'can_open_store' => 'boolean',
             'can_close_store' => 'boolean',

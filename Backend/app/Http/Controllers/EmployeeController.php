@@ -264,9 +264,16 @@ class EmployeeController extends Controller
                     $userUpdates = [];
                     if ($request->has('name')) $userUpdates['name'] = $request->name;
                     if ($request->has('email')) $userUpdates['email'] = $request->email;
-                    if ($request->has('role')) $userUpdates['role'] = $request->role;
+                    if ($request->has('role')) {
+                        $userUpdates['role'] = $request->role;
+                        if ($request->role === 'empleado') {
+                            $userUpdates['is_active'] = false;
+                        }
+                    }
                     if ($request->has('job_role_id')) $userUpdates['job_role_id'] = $request->job_role_id;
-                    if ($request->has('is_active')) $userUpdates['is_active'] = $request->is_active;
+                    if ($request->has('is_active') && (!isset($userUpdates['role']) || $userUpdates['role'] !== 'empleado')) {
+                        $userUpdates['is_active'] = $request->is_active;
+                    }
                     if ($request->has('google_id')) $userUpdates['google_id'] = $request->google_id;
                     if ($request->has('apple_id')) $userUpdates['apple_id'] = $request->apple_id;
                     if ($request->has('samsung_id')) $userUpdates['samsung_id'] = $request->samsung_id;

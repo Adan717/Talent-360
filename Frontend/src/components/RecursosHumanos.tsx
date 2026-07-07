@@ -564,29 +564,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     e.preventDefault();
     if (!newUserName || !newUserRole) return;
     try {
-      const appState = useAppStore.getState();
       const companyDomain = getCompanyDomain();
-      if (appState.isSandboxMode) {
-          const newUser = {
-              id: Date.now(),
-              name: newUserName,
-              job_role_id: Number(newUserRole),
-              role: 'empleado',
-              avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + newUserName,
-              is_active: true,
-              is_active_employee: true,
-              salary: newUserSalary ? parseFloat(newUserSalary) : undefined,
-              email: `${newUserName.toLowerCase().replace(/\s/g, '')}${companyDomain}`,
-              system_role: 'empleado',
-              tenant_id: 1
-          };
-          setUsers([...users, newUser]);
-          appState.setGlobalUsers([...appState.globalUsers, newUser]);
-          setShowForm(false);
-          setNewUserName('');
-          setNewUserSalary('');
-          return;
-      }
       const res = await axiosInstance.post('/employees', {
         name: newUserName,
         job_role_id: newUserRole,
@@ -792,13 +770,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (payload.mealMinutes) payload.mealMinutes = parseInt(payload.mealMinutes, 10);
       if (payload.job_role_id) payload.job_role_id = parseInt(payload.job_role_id, 10);
 
-      const appState = useAppStore.getState();
-      if (appState.isSandboxMode) {
-          setUsers(users.map(u => u.id === editingUser.id ? payload : u));
-          appState.setGlobalUsers(appState.globalUsers.map(u => u.id === editingUser.id ? payload : u));
-          setEditingUser(null);
-          return;
-      }
       const res = await axiosInstance.put('/employees/' + (editingUser.employee_id || editingUser.id), payload);
       
       if (res.status !== 200) {
@@ -830,12 +801,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleDeleteUser = async (id: number) => {
     if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
     try {
-      const appState = useAppStore.getState();
-      if (appState.isSandboxMode) {
-          setUsers(users.map(u => u.id === id ? { ...u, is_active_employee: false } : u));
-          appState.setGlobalUsers(appState.globalUsers.map(u => u.id === id ? { ...u, is_active_employee: false } : u));
-          return;
-      }
       const emp = users.find((u: any) => u.id === id);
       const targetId = emp?.employee_id || id;
       const res = await axiosInstance.delete(`/employees/${targetId}`);
@@ -851,12 +816,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleForceDeleteUser = async (id: number) => {
     if(!window.confirm('¿Seguro que deseas eliminar definitivamente a este colaborador? Esta acción no se puede deshacer y borrará permanentemente sus registros de la base de datos.')) return;
     try {
-      const appState = useAppStore.getState();
-      if (appState.isSandboxMode) {
-          setUsers(users.filter(u => u.id !== id));
-          appState.setGlobalUsers(appState.globalUsers.filter(u => u.id !== id));
-          return;
-      }
       const emp = users.find((u: any) => u.id === id);
       const targetId = emp?.employee_id || id;
       const res = await axiosInstance.delete(`/employees/${targetId}/force`);
@@ -872,12 +831,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleRestoreUser = async (id: number) => {
     if(!window.confirm('¿Deseas restaurar a este colaborador? Volverá a aparecer en el directorio activo.')) return;
     try {
-      const appState = useAppStore.getState();
-      if (appState.isSandboxMode) {
-          setUsers(users.map(u => u.id === id ? { ...u, is_active_employee: true } : u));
-          appState.setGlobalUsers(appState.globalUsers.map(u => u.id === id ? { ...u, is_active_employee: true } : u));
-          return;
-      }
       const emp = users.find((u: any) => u.id === id);
       const targetId = emp?.employee_id || id;
       const res = await axiosInstance.put(`/employees/${targetId}`, { is_active_employee: true });

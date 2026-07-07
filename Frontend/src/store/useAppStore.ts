@@ -153,7 +153,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     },
     globalStoreShiftStart: '09:00',
     globalStoreShiftEnd: '18:00',
-    uiState: { menuCollapsed: false, currentTheme: 'dark' }
+    uiState: { menuCollapsed: false, currentTheme: 'light' }
   },
 
   setIsLoadingDB: (loading) => set({ isLoadingDB: loading }),

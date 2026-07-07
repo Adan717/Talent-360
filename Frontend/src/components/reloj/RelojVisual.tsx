@@ -1414,7 +1414,7 @@ export default function RelojVisual({
   }, [storeStatus, currentUser?.id]);
 
   // Mode detections
-  const isDark = userSettings.theme === 'dark';
+  const isDark = false; // Forzado a modo claro por políticas globales de la plataforma
  
   const renderGPSView = (dialSize = 76, isMobile = true) => {
     const clockOpConfig = systemSettings?.clockOpConfig || {};
@@ -1781,26 +1781,23 @@ export default function RelojVisual({
           <div className="space-y-4">
             <div>
               <label className="block text-[9px] font-bold uppercase text-slate-500 mb-1.5">Tema de Aplicación</label>
-              <div className={`flex rounded-lg p-1 border ${isDark ? 'bg-slate-955 border-slate-900' : 'bg-slate-100 border-slate-200'}`}>
+              <div className="flex rounded-lg p-1 border bg-slate-100 border-slate-200">
                 <button 
-                  onClick={() => adminConfigs.allowThemes && setUserSettings(s => ({...s, theme: 'light'}))}
-                  className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${
-                    !isDark ? 'bg-white text-slate-800 shadow-sm font-black' : 'text-slate-500 hover:text-slate-400'
-                  } ${!adminConfigs.allowThemes && 'opacity-50 cursor-not-allowed'}`}
+                  type="button"
+                  className="flex-1 py-1.5 text-[10px] font-black rounded-md bg-white text-slate-800 shadow-sm"
+                  disabled
                 >
-                  ☀️ Claro
+                  ☀️ Claro (Forzado)
                 </button>
                 <button 
-                  onClick={() => adminConfigs.allowThemes && setUserSettings(s => ({...s, theme: 'dark'}))}
-                  className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all ${
-                    isDark ? 'bg-violet-600 text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-650'
-                  } ${!adminConfigs.allowThemes && 'opacity-50'}`}
-                  disabled={!adminConfigs.allowThemes}
+                  type="button"
+                  className="flex-1 py-1.5 text-[10px] font-bold rounded-md text-slate-400 opacity-50 cursor-not-allowed"
+                  disabled
                 >
-                  🌙 Oscuro
+                  🌙 Oscuro (Deshabilitado)
                 </button>
               </div>
-              {!adminConfigs.allowThemes && <p className="text-[9px] text-rose-500 mt-1 font-bold">Bloqueado por políticas corporativas</p>}
+              <p className="text-[9px] text-slate-500 mt-1 font-bold">Modo oscuro deshabilitado por políticas globales de Talent 360</p>
             </div>
 
             <div>
@@ -5659,13 +5656,14 @@ export default function RelojVisual({
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Ajustes de la Aplicación</p>
                     
                     {/* Dark Mode */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold">Tema Oscuro</span>
+                    <div className="flex items-center justify-between opacity-50">
+                      <span className="text-xs font-semibold text-slate-400">Tema Oscuro (No disponible)</span>
                       <button 
-                        onClick={() => setUserSettings({ ...userSettings, theme: isDark ? 'light' : 'dark' })}
-                        className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${isDark ? 'bg-violet-600' : 'bg-slate-300'}`}
+                        disabled
+                        type="button"
+                        className="w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 bg-slate-200 cursor-not-allowed"
                       >
-                        <div className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${isDark ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                        <div className="w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 translate-x-0"></div>
                       </button>
                     </div>
 

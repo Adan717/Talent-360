@@ -23,6 +23,52 @@ class ClockService
             $time = $now->format('H:i:s');
         }
 
+        // Obtener el plan del tenant
+        $tenant = \App\Models\Tenant::find($user->tenant_id ?? 1);
+        $isPro = $tenant && in_array(strtolower($tenant->plan ?? 'freemium'), ['pro', 'enterprise']);
+
+        // 1. IP Lock (Plan Gratuito)
+        if (!$isPro && ($type === 'check_in' || $type === 'check_out')) {
+            $clockOpConfigRaw = $settings['clockOpConfig'] ?? null;
+            $clockOpConfig = $clockOpConfigRaw ? json_decode($clockOpConfigRaw, true) : [];
+            $ipLockEnabled = $clockOpConfig['ip_lock_enabled'] ?? false;
+            $storeIp = $clockOpConfig['store_ip_address'] ?? null;
+            if ($ipLockEnabled && $storeIp) {
+                $clientIp = request()->ip();
+                if ($clientIp !== $storeIp && $clientIp !== '127.0.0.1' && $clientIp !== '::1' && !isset($details['sandbox_bypass'])) {
+                    throw new \Exception("Fichaje Denegado: No estás conectado a la red Wi-Fi autorizada de la sucursal (IP incorrecta).");
+                }
+            }
+        }
+
+        // 2. Bloqueo de entrada si la tienda está cerrada (Plan Gratuito)
+        if (!$isPro && $type === 'check_in') {
+            $openingStatus = \DB::table('store_daily_opening_statuses')
+                ->where('tenant_id', $user->tenant_id)
+                ->where('date', $date)
+                ->first();
+            
+            $isOpened = false;
+            $isOpeningManager = false;
+            if ($openingStatus) {
+                $isOpened = $openingStatus->status === 'opened';
+                $isOpeningManager = intval($user->id) === intval($openingStatus->current_responsible_employee_id);
+            } else {
+                $firstActive = \DB::table('store_opening_assignments')
+                    ->where('tenant_id', $user->tenant_id)
+                    ->where('is_active', true)
+                    ->orderBy('priority_order', 'asc')
+                    ->first();
+                if ($firstActive) {
+                    $isOpeningManager = intval($user->id) === intval($firstActive->employee_id);
+                }
+            }
+
+            if (!$isOpened && !$isOpeningManager) {
+                throw new \Exception("Fichaje Denegado: La tienda física se encuentra cerrada. Debes esperar a que el encargado realice la apertura.");
+            }
+        }
+
         // Obtener la política de horario del empleado
         $expectedTimeStr = $user->shiftStart ?? '09:00:00';
         $expectedTime = Carbon::createFromFormat('H:i:s', $expectedTimeStr);
@@ -35,6 +81,17 @@ class ClockService
         $isLate = false;
         $lateMinutes = 0;
         $hasAmnesty = isset($details['has_amnesty']) && $details['has_amnesty'] === true;
+
+        if ($type === 'check_in' && !$hasAmnesty) {
+            $proximityRecord = \DB::table('time_entries')
+                ->where('user_id', $user->id)
+                ->where('date', $date)
+                ->where('type', 'waiting')
+                ->first();
+            if ($proximityRecord) {
+                $hasAmnesty = true;
+            }
+        }
 
         if ($type === 'check_in' && !$hasAmnesty) {
             if ($now->greaterThan($expectedTime->copy()->addMinutes($toleranceMinutes))) {

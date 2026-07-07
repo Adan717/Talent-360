@@ -329,6 +329,13 @@ export default function RelojVisual({
     setPendingTasksBlocker,
     supervisorPin,
     setSupervisorPin,
+    supervisorQrToken,
+    setSupervisorQrToken,
+    showEarlyDepartureModal,
+    setShowEarlyDepartureModal,
+    earlyDepartureReason,
+    setEarlyDepartureReason,
+    submitEarlyDeparture,
     hasMealReservation,
     authorizeClockOutWithPendingTasks
   } = context;
@@ -3055,6 +3062,7 @@ export default function RelojVisual({
                         isGpsValidationBypassed={isGpsValidationBypassed}
                         hasMealReservation={hasMealReservation}
                         onMealSwapClick={() => setShowMealSwapModal(true)}
+                        onEarlyDepartureClick={handleEarlyDepartureClick}
                       />
                     </div>
 
@@ -3477,6 +3485,7 @@ export default function RelojVisual({
                       isGpsValidationBypassed={isGpsValidationBypassed}
                       hasMealReservation={hasMealReservation}
                       onMealSwapClick={() => setShowMealSwapModal(true)}
+                      onEarlyDepartureClick={handleEarlyDepartureClick}
                     />
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}
@@ -4558,23 +4567,60 @@ export default function RelojVisual({
                   ⚠️ Tareas Pendientes Detectadas
                 </h3>
                 <p className="text-[10.5px] text-slate-505 text-center leading-relaxed mb-5 px-2 font-bold">
-                  No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas para cerrar tu turno o solicita la validación de tu supervisor ingresando su PIN.
+                  {isPro 
+                    ? "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas para cerrar tu turno o solicita la validación de tu supervisor escaneando su QR dinámico de 60s."
+                    : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas para cerrar tu turno o solicita la validación de tu supervisor ingresando su PIN."}
                 </p>
 
-                <div className="space-y-3 mb-5">
-                  <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">PIN del Supervisor</label>
-                  <input
-                    type="password"
-                    maxLength={6}
-                    value={supervisorPin}
-                    onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, ''))}
-                    placeholder="••••"
-                    className="w-full py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center tracking-[0.5em] text-lg focus:outline-none focus:border-rose-500"
-                  />
-                  <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
-                    ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
-                  </p>
-                </div>
+                {isPro ? (
+                  <div className="space-y-3 mb-5">
+                    <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">Token QR del Supervisor</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={supervisorQrToken}
+                        onChange={e => setSupervisorQrToken(e.target.value)}
+                        placeholder="qr_..."
+                        className="flex-1 py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center text-xs focus:outline-none focus:border-violet-500"
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await axiosInstance.post('/sync/supervisor/generate-qr');
+                            if (res.data && res.data.token) {
+                              setSupervisorQrToken(res.data.token);
+                            }
+                          } catch (e) {
+                            alert("Error al simular QR");
+                          }
+                        }}
+                        className="bg-violet-650 hover:bg-violet-750 text-white font-bold px-3 py-2 rounded-2xl border-none cursor-pointer text-[10px]"
+                        title="Simular escaneo de QR"
+                        type="button"
+                      >
+                        [Escaneo Sim.]
+                      </button>
+                    </div>
+                    <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
+                      ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-5">
+                    <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">PIN del Supervisor</label>
+                    <input
+                      type="password"
+                      maxLength={6}
+                      value={supervisorPin}
+                      onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••"
+                      className="w-full py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center tracking-[0.5em] text-lg focus:outline-none focus:border-rose-500"
+                    />
+                    <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
+                      ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <button 
@@ -4588,6 +4634,58 @@ export default function RelojVisual({
                     className="w-1/2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black py-3.5 rounded-2xl shadow-md transition-all border-none cursor-pointer text-xs uppercase tracking-wider"
                   >
                     Autorizar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de Salida Anticipada */}
+          {showEarlyDepartureModal && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800 animate-fade-in">
+              <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
+                  <LogOut size={22} className="animate-pulse" />
+                </div>
+
+                <h3 className="font-extrabold text-slate-900 text-center tracking-tight mb-2 text-base">
+                  🚪 Registrar Salida Anticipada
+                </h3>
+                <p className="text-[10.5px] text-slate-500 text-center leading-relaxed mb-5 px-2 font-bold">
+                  ¿Por qué necesitas retirarte antes de finalizar tu jornada?
+                </p>
+
+                <div className="space-y-3 mb-5">
+                  <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">Motivo de Salida</label>
+                  <select
+                    value={earlyDepartureReason}
+                    onChange={e => setEarlyDepartureReason(e.target.value)}
+                    className="w-full py-3 px-4 border border-slate-200 rounded-2xl text-xs font-bold text-slate-705 bg-white focus:outline-none focus:border-rose-500 cursor-pointer"
+                  >
+                    <option value="Enfermedad">Enfermedad / Malestar</option>
+                    <option value="Urgencia Familiar">Urgencia Familiar</option>
+                    <option value="Asunto Personal">Asunto Personal</option>
+                    <option value="Otro">Otro Motivo</option>
+                  </select>
+                  <p className="text-[9.5px] text-rose-500 font-extrabold text-center uppercase">
+                    {isPro 
+                      ? "⚠️ Se requiere la validación del QR del supervisor para confirmar."
+                      : "ℹ️ Confirmar registrará tu salida de inmediato."}
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setShowEarlyDepartureModal(false)}
+                    className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl transition-colors border-none cursor-pointer text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={submitEarlyDeparture}
+                    className="w-1/2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black py-3.5 rounded-2xl shadow-md transition-all border-none cursor-pointer text-xs uppercase tracking-wider"
+                  >
+                    Confirmar
                   </button>
                 </div>
               </div>

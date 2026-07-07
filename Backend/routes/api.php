@@ -97,7 +97,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     });
 
     // DB Initialization / Reset (QA Simulator helper)
-    Route::middleware(['auth:sanctum', 'role:platform_admin,admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
         if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
             Route::post('/sync/reset', [ClockController::class, 'resetDb']);
@@ -271,6 +271,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/sync/message', [ClockController::class, 'syncMessage']);
         Route::post('/sync/audit_log', [ClockController::class, 'syncAuditLog']);
         Route::post('/sync/settings', [ClockController::class, 'syncSettings']);
+        Route::post('/sync/supervisor/generate-qr', [ClockController::class, 'generateSupervisorQR']);
+        Route::post('/sync/supervisor/validate-qr', [ClockController::class, 'validateSupervisorQR']);
 
         // Academia (Visualización de Cursos LMS)
         Route::middleware('tenant.module:academia')->group(function () {

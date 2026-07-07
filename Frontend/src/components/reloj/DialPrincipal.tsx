@@ -45,6 +45,7 @@ interface DialPrincipalProps {
   isGpsValidationBypassed?: boolean;
   hasMealReservation?: boolean;
   onMealSwapClick?: () => void;
+  onEarlyDepartureClick?: () => void;
 }
 
 export default function DialPrincipal({
@@ -68,7 +69,8 @@ export default function DialPrincipal({
   onRequestGPS,
   isGpsValidationBypassed = false,
   hasMealReservation = false,
-  onMealSwapClick
+  onMealSwapClick,
+  onEarlyDepartureClick
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
@@ -261,6 +263,17 @@ export default function DialPrincipal({
         >
           <Coffee size={12} className="text-amber-550" />
           Intercambiar Comida
+        </button>
+      )}
+
+      {clockState === 'active' && onEarlyDepartureClick && (
+        <button
+          type="button"
+          onClick={onEarlyDepartureClick}
+          className="mt-2.5 py-1.5 px-4 bg-rose-50 dark:bg-rose-955/20 border border-rose-250 hover:border-rose-450 text-rose-700 dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-rose-105 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+        >
+          <LogOut size={12} className="text-rose-500" />
+          Salida Anticipada
         </button>
       )}
 

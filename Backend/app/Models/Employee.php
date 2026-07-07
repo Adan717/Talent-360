@@ -36,6 +36,7 @@ class Employee extends Model
         'invite_token',
         'portadorLlaves',
         'avatar',
+        'lunch_time',
         'clock_preferences'
     ];
 

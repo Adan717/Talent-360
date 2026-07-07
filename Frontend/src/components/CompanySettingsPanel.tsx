@@ -6,6 +6,7 @@ import axiosInstance from '../lib/axios';
 
 export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = false }: { initialTab?: string; hideSidebar?: boolean }) => {
   const { systemSettings, updateSetting } = useAppStore();
+  const currentTier = useAppStore(state => state.currentTier);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1495,6 +1496,275 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 </div>
               </div>
 
+                {/* Ajustes modularizados y premium */}
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-6">
+                <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2">🔒 Configuración de Red Wi-Fi e IP Lock (Básico / Gratis)</h4>
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h5 className="font-bold text-slate-700 text-xs">Bloqueo por IP (IP Lock)</h5>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Exigir que los colaboradores estén conectados al Wi-Fi de la tienda (IP coincidente) para fichar.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={formData.clockOpConfig?.ip_lock_enabled ?? false} 
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'ip_lock_enabled', e.target.checked)} 
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {formData.clockOpConfig?.ip_lock_enabled && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                    <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">Dirección IP de la Red Wi-Fi Autorizada</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650 text-xs"
+                      placeholder="Ej. 192.168.1.254 o IP pública"
+                      value={formData.clockOpConfig?.store_ip_address || ''}
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'store_ip_address', e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className="h-[1px] bg-slate-200"></div>
+
+                <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center justify-between">
+                  <span>⭐️ Controles y Módulos del Reloj (Modular Pro)</span>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-750 px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
+                </h4>
+
+                <div className="space-y-4">
+                  {/* Slider Tiempo de Traslado del Suplente */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-xs">Tiempo de Traslado del Suplente</h5>
+                        <p className="text-[10px] text-slate-505 mt-0.5">Margen de anticipación límite en minutos para alertar/delegar al suplente.</p>
+                      </div>
+                      <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+                        {formData.clockOpConfig?.suplente_travel_time_mins || 45} minutos
+                      </span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="10" 
+                      max="120" 
+                      step="5"
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      value={formData.clockOpConfig?.suplente_travel_time_mins || 45} 
+                      onChange={(e) => handleNestedChange('clockOpConfig', 'suplente_travel_time_mins', parseInt(e.target.value))} 
+                    />
+                  </div>
+
+                  <div className="h-[1px] bg-slate-200 my-2"></div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Switch 1: allow_employee_incidences */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Incidencias Colaborador</h5>
+                        <p className="text-[9px] text-slate-400">Reporte de retardo a las 7:00 AM</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_employee_incidences ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, allow_employee_incidences: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 2: allow_manager_incidences */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Incidencias Encargado</h5>
+                        <p className="text-[9px] text-slate-400">Límite dinámico suplente</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_manager_incidences ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, allow_manager_incidences: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 3: enable_proximity_check */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Ya estoy aquí (Cercanía)</h5>
+                        <p className="text-[9px] text-slate-400">Marcaje de cercanía 8:15-8:30</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_proximity_check ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_proximity_check: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 4: allow_store_closed_report */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Reportar Tienda Cerrada</h5>
+                        <p className="text-[9px] text-slate-400">Reporte preventivo en apertura tardía</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.allow_store_closed_report ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, allow_store_closed_report: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 5: revalidate_gps_on_punch */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Re-validar GPS al Marcar</h5>
+                        <p className="text-[9px] text-slate-400">Exigir geocerca en entrada/salida final</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.revalidate_gps_on_punch ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, revalidate_gps_on_punch: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 6: enable_meal_slots */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Slots de Almuerzo</h5>
+                        <p className="text-[9px] text-slate-400">Reservación y control de horarios</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_meal_slots ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_meal_slots: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 7: enable_ley_silla */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Descanso Ley Silla</h5>
+                        <p className="text-[9px] text-slate-400">Desencadenar descanso tras comida</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_ley_silla ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_ley_silla: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 8: enable_early_departure */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Salida Anticipada</h5>
+                        <p className="text-[9px] text-slate-400">Botón secundario de salida bajo dial</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_early_departure ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_early_departure: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 9: enable_panic_button */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Botón de Pánico</h5>
+                        <p className="text-[9px] text-slate-400">Llamada y alerta de emergencia</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_panic_button ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_panic_button: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch 10: enable_temp_exit */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Salidas Temporales</h5>
+                        <p className="text-[9px] text-slate-400">Registrar reingresos intermedios</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={formData.clockOpConfig?.enabledDialerFeatures?.enable_temp_exit ?? true} 
+                          onChange={(e) => {
+                            const prev = formData.clockOpConfig?.enabledDialerFeatures || {};
+                            handleNestedChange('clockOpConfig', 'enabledDialerFeatures', { ...prev, enable_temp_exit: e.target.checked });
+                          }} 
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Toggles booleanos */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
                 <div className="flex justify-between items-center">
@@ -1509,7 +1779,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       checked={formData.clockOpConfig?.requireExitEvaluation ?? true} 
                       onChange={(e) => handleNestedChange('clockOpConfig', 'requireExitEvaluation', e.target.checked)} 
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-650"></div>
                   </label>
                 </div>
 
@@ -1525,7 +1795,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       checked={formData.clockOpConfig?.gpsValidationEnabled ?? true} 
                       onChange={(e) => handleNestedChange('clockOpConfig', 'gpsValidationEnabled', e.target.checked)} 
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-650"></div>
                   </label>
                 </div>
 
@@ -1534,7 +1804,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <div className="flex justify-between items-center">
                   <div>
                     <h4 className="font-bold text-slate-800">Distancia Máxima de Alerta GPS (Metros)</h4>
-                    <p className="text-xs text-slate-500 mt-1">Radio máximo permitido en metros antes de alertar al supervisor en salidas temporales.</p>
+                    <p className="text-xs text-slate-505 mt-1">Radio máximo permitido en metros antes de alertar al supervisor en salidas temporales.</p>
                   </div>
                   <input 
                     type="number" 
@@ -1558,7 +1828,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       checked={formData.clockOpConfig?.allowManualCheckIn ?? false} 
                       onChange={(e) => handleNestedChange('clockOpConfig', 'allowManualCheckIn', e.target.checked)} 
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-650"></div>
                   </label>
                 </div>
               </div>

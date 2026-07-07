@@ -63,7 +63,7 @@ return new class extends Migration
             'course_type' => 'training',
             'video_url' => 'https://www.youtube.com/watch?v=R9Z8b_zV5Wc',
             'is_active' => true,
-            'target_job_role_id' => 15,
+            'target_job_role_id' => DB::table('job_roles')->where('id', 15)->exists() ? 15 : null,
             'quiz_data' => json_encode([
                 [
                     'question' => '¿Cuál es el primer paso en la venta consultiva de decoración y muebles?',
@@ -96,7 +96,7 @@ return new class extends Migration
             'course_type' => 'training',
             'video_url' => 'https://www.youtube.com/watch?v=3-n5mO2W9yM',
             'is_active' => true,
-            'target_job_role_id' => 16,
+            'target_job_role_id' => DB::table('job_roles')->where('id', 16)->exists() ? 16 : null,
             'quiz_data' => json_encode([
                 [
                     'question' => '¿Qué significa el método PEPS en el manejo de mercancía en bodega?',
@@ -129,7 +129,7 @@ return new class extends Migration
             'course_type' => 'promotion',
             'video_url' => 'https://www.youtube.com/watch?v=Z61Bv_DsgqQ',
             'is_active' => true,
-            'target_job_role_id' => 11,
+            'target_job_role_id' => DB::table('job_roles')->where('id', 11)->exists() ? 11 : null,
             'quiz_data' => json_encode([
                 [
                     'question' => 'Si el monitor en tiempo real muestra a un colaborador inactivo por más de 15 minutos en turno laboral, ¿cómo debe actuar el Gerente?',

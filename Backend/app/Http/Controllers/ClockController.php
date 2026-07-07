@@ -19,7 +19,7 @@ class ClockController extends Controller
     // ⚠️ DEV-ONLY — No usar en producción
     public function resetDb()
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', true)) {
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
@@ -47,7 +47,7 @@ class ClockController extends Controller
     // ⚠️ DEV-ONLY — No usar en producción
     public function resetDay(Request $request)
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', true)) {
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
@@ -235,7 +235,7 @@ class ClockController extends Controller
     // ⚠️ DEV-ONLY — No usar en producción
     public function initDb(Request $request)
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', true)) {
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
@@ -354,6 +354,22 @@ class ClockController extends Controller
         $targetUser = User::find($userId);
         if (!$targetUser) {
             return response()->json(['error' => 'Usuario no encontrado o no pertenece a su empresa.'], 403);
+        }
+
+        // Validación de IP Lock (Wi-Fi de Tienda)
+        $settingsRow = DB::table('system_settings')
+            ->where('key', 'clockOpConfig')
+            ->where('tenant_id', $tenantId)
+            ->first();
+        if ($settingsRow) {
+            $config = json_decode($settingsRow->value, true);
+            if (!empty($config['ip_lock_enabled']) && !empty($config['store_ip_address'])) {
+                $clientIp = $request->ip();
+                $authorizedIp = trim($config['store_ip_address']);
+                if ($clientIp !== '127.0.0.1' && $clientIp !== '::1' && $clientIp !== $authorizedIp) {
+                    return response()->json(['error' => "Acceso denegado: IP del dispositivo ($clientIp) no coincide con el Wi-Fi autorizado ($authorizedIp)."], 403);
+                }
+            }
         }
 
         $date = $request->input('date');
@@ -775,5 +791,61 @@ class ClockController extends Controller
             ]);
         }
         return response()->json(['message' => 'Política actualizada']);
+    }
+
+    public function generateSupervisorQR(Request $request)
+    {
+        $supervisorId = $request->input('supervisor_id') ?? (auth()->id() ?? 1);
+        $token = 'qr_' . bin2hex(random_bytes(16));
+        $expiresAt = now()->addSeconds(60);
+
+        DB::table('supervisor_qr_tokens')->insert([
+            'supervisor_id' => $supervisorId,
+            'token' => $token,
+            'expires_at' => $expiresAt,
+            'is_used' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String()
+        ]);
+    }
+
+    public function validateSupervisorQR(Request $request)
+    {
+        $token = $request->input('token');
+        if (!$token) {
+            return response()->json(['success' => false, 'message' => 'Token no provisto.'], 400);
+        }
+
+        $row = DB::table('supervisor_qr_tokens')
+            ->where('token', $token)
+            ->first();
+
+        if (!$row) {
+            return response()->json(['success' => false, 'message' => 'Token inválido o inexistente.'], 404);
+        }
+
+        if ($row->is_used) {
+            return response()->json(['success' => false, 'message' => 'El código QR ya ha sido utilizado.'], 400);
+        }
+
+        $expiresAt = \Carbon\Carbon::parse($row->expires_at);
+        if ($expiresAt->isPast()) {
+            return response()->json(['success' => false, 'message' => 'El código QR ha expirado (límite 60s).'], 400);
+        }
+
+        DB::table('supervisor_qr_tokens')
+            ->where('id', $row->id)
+            ->update(['is_used' => true, 'updated_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Autorización de supervisor válida.'
+        ]);
     }
 }

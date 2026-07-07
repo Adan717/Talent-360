@@ -97,7 +97,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     });
 
     // DB Initialization / Reset (QA Simulator helper)
-    Route::middleware(['auth:sanctum', 'role:platform_admin,admin'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
         if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
             Route::post('/sync/reset', [ClockController::class, 'resetDb']);

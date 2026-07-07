@@ -2541,6 +2541,13 @@ export function useClockEngine(overrideUser?: any) {
   };
   const handleAction = async () => {
     const btnProps = getButtonProps();
+    if (btnProps.isQrUnlockRequired) {
+      setIsLateEntryValidation(true);
+      setSupervisorPin('');
+      setSupervisorQrToken('');
+      setPendingTasksBlocker(true);
+      return;
+    }
     if (btnProps.isIncidenceReport) {
       setShowAbsenceModal(true);
       return;
@@ -2823,22 +2830,30 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     if (isOvertimeValidation) {
+      const typeStr = isSimulatedHoliday ? 'holiday_unlocked' : 'overtime_unlocked';
+      const detailStr = isSimulatedHoliday ? 'Labor en Día Feriado (LFT Art. 75) habilitado por supervisor' : 'Horas Extras desbloqueadas por supervisor';
+      const eventTitle = isSimulatedHoliday ? '📅 Labor en Feriado Habilitada' : '⏰ Horas Extras Habilitadas';
+      const eventDesc = isSimulatedHoliday 
+        ? `Se autorizó a ${currentUser.name} a laborar en Día Feriado (Natalicio de Benito Juárez) mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'} (Pago Triple LFT aplicable).`
+        : `Se autorizó a ${currentUser.name} a laborar en su día de descanso mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}.`;
+
       try {
         await axiosInstance.post('/sync/audit_log', {
           user_id: currentUser.id,
-          type: 'overtime_unlocked',
+          type: typeStr,
           timestamp_str: getSimTimeStr(currentSimTime),
           reason: `Autorizado por supervisor mediante ${isPro ? 'QR Dinámico' : 'PIN'}`,
-          details: `Horas Extras desbloqueadas por supervisor`
+          details: detailStr
         });
       } catch {}
 
       setIsOvertimeUnlocked(prev => ({ ...prev, [currentUser.id]: true }));
 
       useAppStore.getState().addMatrixEvent(
-        '⏰ Horas Extras Habilitadas',
-        `Se autorizó a ${currentUser.name} a laborar en su día de descanso mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}.`,
-        'success'
+        eventTitle,
+        eventDesc,
+        'success',
+        currentUser.id
       );
 
       setPendingTasksBlocker(false);
@@ -2846,7 +2861,43 @@ export function useClockEngine(overrideUser?: any) {
       setSupervisorPin('');
       setIsOvertimeValidation(false);
       
-      showCustomAlert('⏰ Horas Extras autorizadas por supervisor. Ya puedes registrar tu entrada.');
+      showCustomAlert(isSimulatedHoliday ? '📅 Labor en Día Feriado autorizada. Ya puedes registrar tu entrada.' : '⏰ Horas Extras autorizadas por supervisor. Ya puedes registrar tu entrada.');
+      return;
+    }
+
+    if (isLateEntryValidation) {
+      try {
+        await axiosInstance.post('/sync/audit_log', {
+          user_id: currentUser.id,
+          type: 'late_entry_unlocked',
+          timestamp_str: getSimTimeStr(currentSimTime),
+          reason: `Autorizado por supervisor mediante ${isPro ? 'QR Dinámico' : 'PIN'}`,
+          details: `Entrada tardía autorizada por supervisor`
+        });
+      } catch {}
+
+      const newRetardos = Number(localStorage.getItem('user_retardos_' + currentUser.id) || 0) + 1;
+      localStorage.setItem('user_retardos_' + currentUser.id, String(newRetardos));
+
+      useAppStore.getState().addMatrixEvent(
+        '🔑 Entrada Tardía Autorizada',
+        `Se autorizó la entrada tardía de ${currentUser.name} tras vencer la tolerancia mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}. Retardos acumulados este mes: ${newRetardos}.`,
+        'warning',
+        currentUser.id
+      );
+
+      setPendingTasksBlocker(false);
+      setSupervisorQrToken('');
+      setSupervisorPin('');
+      setIsLateEntryValidation(false);
+
+      if (newRetardos >= 3) {
+        showCustomAlert(`⚠️ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos. Tu checador queda BLOQUEADO hasta completar el curso obligatorio de Puntualidad en la Academia.`);
+      } else {
+        showCustomAlert(`✅ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos este mes.`);
+      }
+
+      await syncToDB('check_in');
       return;
     }
 
@@ -3004,6 +3055,29 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const getButtonProps = () => {
+    const retardosCount = Number(localStorage.getItem('user_retardos_' + currentUser?.id) || 0);
+    const hasPunctualityBlock = retardosCount >= 3;
+
+    if (!hasCheckedIn && clockState === 'inactive' && hasPunctualityBlock) {
+      return {
+        text: '🔒 Fichaje Bloqueado',
+        bg: 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed text-xs font-black shadow-none',
+        icon: '🔒',
+        disabled: true,
+        subtext: 'Acumulaste 3 retardos. Completa el curso de Puntualidad en la Academia.'
+      };
+    }
+
+    if (isSimulatedHoliday && !hasCheckedIn && clockState === 'inactive' && !isOvertimeUnlocked[currentUser?.id]) {
+      return {
+        text: 'DÍA FERIADO (LFT)',
+        bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700 cursor-not-allowed font-extrabold shadow-sm',
+        icon: '📅',
+        disabled: true,
+        subtext: 'Natalicio de Benito Juárez. Descanso de Ley.'
+      };
+    }
+
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
     if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', disabled: true };
 
@@ -3064,7 +3138,7 @@ export function useClockEngine(overrideUser?: any) {
             };
           }
         } else {
-          const employeeDeadlineMins = shiftStartMins - 15;
+          const employeeDeadlineMins = shiftStartMins - 30;
           if (currentSimTime < employeeDeadlineMins && features.allow_employee_incidences !== false) {
             return {
               text: '⚠️ Reportar Ausencia/Retardo',
@@ -3107,11 +3181,11 @@ export function useClockEngine(overrideUser?: any) {
     // Límite de retardo ordinario vencido
     if (!hasCheckedIn && isLate && clockState === 'inactive') {
       return {
-        text: '⚠️ Reportar Ausencia/Retardo',
-        bg: 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold shadow-[0_0_20px_rgba(239,68,68,0.35)] animate-pulse',
-        icon: '⚠️',
-        isIncidenceReport: true,
-        subtext: 'Has superado el límite de tolerancia de tu turno de entrada.'
+        text: '🔒 Acceso Bloqueado',
+        bg: 'bg-slate-700 text-slate-350 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',
+        icon: '🔒',
+        isQrUnlockRequired: true,
+        subtext: 'Tolerancia vencida. Requiere desbloqueo QR de supervisor.'
       };
     }
 
@@ -3217,7 +3291,7 @@ export function useClockEngine(overrideUser?: any) {
              const firstSlotMins = hour * 60 + parseInt(sm);
              
              if (currentSimTime < firstSlotMins - 5) {
-                return { text: 'Iniciar Horario de Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
+                return { text: 'Iniciar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
              }
           } else {
              return { 
@@ -3229,14 +3303,14 @@ export function useClockEngine(overrideUser?: any) {
              };
           }
         }
-        return { text: 'Iniciar Horario de Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔' };
+        return { text: 'Iniciar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔' };
       }
 
       const hasReturnedFromMeal = mealEndTimes[currentUser.id] !== undefined;
       const hasTakenBreak = breakStartTimes[currentUser.id] !== undefined;
       if (isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
         return { 
-          text: 'Descanso Ley Silla', 
+          text: 'Descanso', 
           bg: 'bg-purple-600 hover:bg-purple-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse', 
           icon: '🧘' 
         };
@@ -3277,10 +3351,10 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     if (clockState === 'meal') {
-      return { text: 'Regresar de Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃' };
+      return { text: 'Terminar Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃' };
     }
     if (clockState === 'short_break') {
-      return { text: 'Regresar de Descanso', bg: 'bg-indigo-650 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃' };
+      return { text: 'Terminar Descanso', bg: 'bg-indigo-650 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃' };
     }
     if (clockState === 'temp_exit') {
       return { text: 'Registrar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶' };
@@ -3794,6 +3868,10 @@ export function useClockEngine(overrideUser?: any) {
     isEarlyDepartureValidation,
     isOvertimeUnlocked,
     isOvertimeValidation,
+    isLateEntryValidation,
+    setIsLateEntryValidation,
+    isSimulatedHoliday,
+    setIsSimulatedHoliday,
     handleOvertimeClick,
     hasMealReservation: (userReservedMealSlots[currentUser?.id] || []).length > 0,
     authorizeClockOutWithPendingTasks

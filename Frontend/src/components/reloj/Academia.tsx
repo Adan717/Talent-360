@@ -94,6 +94,29 @@ function ProgressRing({ percentage, color = '#6366F1', size = 96, strokeWidth = 
 
 function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [courses, setCourses] = useState<any[]>([]);
+  const setCoursesSafe = (rawList: any[]) => {
+    let list = Array.isArray(rawList) ? rawList : [];
+    if (!list.some(c => c.title && c.title.toLowerCase().includes('puntualidad'))) {
+      list = [
+        ...list,
+        {
+          id: 999,
+          title: 'Curso de Puntualidad y Compromiso Laboral',
+          description: 'Aprende sobre la importancia de la puntualidad en DecorArte y el impacto de los retardos en el equipo.',
+          course_type: 'training',
+          target_job_role_id: null,
+          incentive_bonus_cents: 0,
+          video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+          quiz_data: JSON.stringify([
+            { question: '¿Cuál es la tolerancia establecida en DecorArte?', options: ['10-15 minutos según el puesto', 'No hay tolerancia', '30 minutos'], answer: '10-15 minutos según el puesto' },
+            { question: '¿Qué consecuencia tiene acumular 3 retardos?', options: ['Ninguna', 'Bloqueo del checador y curso obligatorio', 'Despido directo'], answer: 'Bloqueo del checador y curso obligatorio' }
+          ]),
+          is_active: true
+        }
+      ];
+    }
+    setCourses(list);
+  };
   const [roles, setRoles] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
@@ -151,14 +174,14 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
       .then(res => {
         const data = res.data;
         if (data && data.courses && Array.isArray(data.courses)) {
-          setCourses(data.courses);
+          setCoursesSafe(data.courses);
           setRoles(Array.isArray(data.job_roles) ? data.job_roles : []);
           setUserProgress(Array.isArray(data.user_progress) ? data.user_progress : []);
         } else if (Array.isArray(data)) {
-          setCourses(data); // Legacy fallback
+          setCoursesSafe(data); // Legacy fallback
         } else {
           console.error("API Error or Invalid format:", data);
-          setCourses([]);
+          setCoursesSafe([]);
           setRoles([]);
           setUserProgress([]);
         }
@@ -166,7 +189,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
       })
       .catch(err => {
         console.error('Error fetching courses', err);
-        setCourses([]);
+        setCoursesSafe([]);
         setRoles([]);
         setUserProgress([]);
         setLoading(false);
@@ -236,12 +259,16 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
       .then(res => {
         const data = res.data;
         if (data && data.courses) {
-          setCourses(data.courses);
+          setCoursesSafe(data.courses);
           setUserProgress(data.user_progress || []);
         }
         if (activeCourse.course_type === 'induction' && loggedUser) {
           completeInduction(loggedUser.id);
           alert('Recursos Humanos ha sido notificado. Tu BLOQUEO OPERATIVO ha sido levantado. Ya puedes registrar tu entrada en el Reloj Checador.');
+        }
+        if (activeCourse.title && activeCourse.title.toLowerCase().includes('puntualidad') && loggedUser) {
+          localStorage.setItem('user_retardos_' + loggedUser.id, '0');
+          alert('¡Excelente! Tu checador ha sido desbloqueado tras completar tu capacitación de Puntualidad.');
         }
       })
       .catch(err => {

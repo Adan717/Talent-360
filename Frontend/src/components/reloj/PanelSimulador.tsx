@@ -133,6 +133,7 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
 export default function PanelSimulador() {
   const [phoneScale, setPhoneScale] = useState(0.5); // Default a 50% para ver más celulares simultáneamente
   const [resetKey, setResetKey] = useState(0);
+  const [assignmentsVersion, setAssignmentsVersion] = useState(0);
   const { 
     globalUsers, 
     storeStatus, 
@@ -236,6 +237,12 @@ export default function PanelSimulador() {
     if ((globalUsers || []).length === 0) {
       fetchState();
     }
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => setAssignmentsVersion(v => v + 1);
+    window.addEventListener('store_opening_assignments_updated', handleUpdate);
+    return () => window.removeEventListener('store_opening_assignments_updated', handleUpdate);
   }, []);
 
   // Time Machine Loop
@@ -612,7 +619,7 @@ export default function PanelSimulador() {
                 return a.name.localeCompare(b.name);
               })
               .map(user => (
-              <div key={`${user.id}-${resetKey}`} className="flex flex-col items-center transition-all duration-300">
+              <div key={`${user.id}-${resetKey}-${assignmentsVersion}`} className="flex flex-col items-center transition-all duration-300">
                 <div 
                   className="bg-slate-800 px-3 py-1.5 rounded-t-2xl border-t border-l border-r border-slate-700 text-center z-10 transition-all duration-300 truncate"
                   style={{ width: `${400 * phoneScale}px` }}

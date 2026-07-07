@@ -339,6 +339,10 @@ export default function RelojVisual({
     submitEarlyDeparture,
     isEarlyDepartureValidation,
     isOvertimeValidation,
+    isLateEntryValidation,
+    setIsLateEntryValidation,
+    isSimulatedHoliday,
+    setIsSimulatedHoliday,
     handleOvertimeClick,
     hasMealReservation,
     authorizeClockOutWithPendingTasks
@@ -1128,8 +1132,8 @@ export default function RelojVisual({
     const sameMealRes = Object.values(reservedMeals).flat().some(r => r.userId === currentUser.id);
     const needsMealRes = clockState === 'active' && !sameMealRes && hasMealReservation;
     const keyTransfer = pendingKeyTransfers && pendingKeyTransfers.length > 0 ? pendingKeyTransfers[0] : null;
-    const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
-    const needsRollCall = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted;
+    const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
+    const needsRollCall = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted;
 
     const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
@@ -3334,15 +3338,26 @@ export default function RelojVisual({
           {phoneTab === 'checador' && (
             isStoreClosed ? (
               renderStoreClosedScreen(true)
-            ) : shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
-              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[82px] pb-[100px]">
-                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-955/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
-                  🌴
+            ) : (shiftConfigs[currentUser?.id]?.restDay === currentDay || isSimulatedHoliday) && !isOvertimeUnlocked[currentUser?.id] ? (
+              <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[82px] pb-[100px] gap-4">
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/40 rounded-full flex items-center justify-center text-3xl mb-1 shadow-inner border-2 border-white dark:border-slate-800">
+                  {isSimulatedHoliday ? '📅' : '🌴'}
                 </div>
-                <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-200 mb-1.5">Día de Descanso</h2>
-                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mb-6 leading-relaxed">
-                  ¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día. Tu equipo te cubre hoy. 🌟
+                <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-200 mb-1">
+                  {isSimulatedHoliday ? 'Día Feriado Obligatorio (LFT)' : 'Día de Descanso'}
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium max-w-sm leading-relaxed mb-2">
+                  {isSimulatedHoliday 
+                    ? 'Hoy conmemoramos el Natalicio de Benito Juárez de acuerdo a la Ley Federal del Trabajo. ¡Disfruta tu descanso de ley! 🇲🇽'
+                    : '¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día. Tu equipo te cubre hoy. 🌟'}
                 </p>
+                <button
+                  type="button"
+                  onClick={handleOvertimeClick}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-5 py-2.5 rounded-2xl shadow-md border-none cursor-pointer text-xs transition-all active:scale-95"
+                >
+                  {isSimulatedHoliday ? 'Laborar Día Feriado' : 'Laborar Horas Extras'}
+                </button>
               </div>
             ) : (
               <div className="flex-1 overflow-hidden px-4 pt-[82px] pb-[100px] flex flex-col justify-between gap-1.5 scrollbar-none select-none">
@@ -3383,7 +3398,7 @@ export default function RelojVisual({
                   )}
                   
                   {/* Reminders of Premium opening - Mobile */}
-                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
+                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
                     <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm">📋</span>
@@ -3398,7 +3413,7 @@ export default function RelojVisual({
                     </div>
                   )}
 
-                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
+                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
                     <div className="bg-violet-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm">📋</span>
@@ -3711,17 +3726,28 @@ export default function RelojVisual({
           {phoneTab === 'checador' && (
             isStoreClosed ? (
               renderStoreClosedScreen(false)
-            ) : shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
-              <div className={`w-full border rounded-3xl p-12 flex flex-col items-center justify-center text-center transition-colors ${
+            ) : (shiftConfigs[currentUser?.id]?.restDay === currentDay || isSimulatedHoliday) && !isOvertimeUnlocked[currentUser?.id] ? (
+              <div className={`w-full border rounded-3xl p-12 flex flex-col items-center justify-center text-center transition-colors gap-4 ${
                 isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-202 shadow-md'
               }`}>
-                <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner border-4 border-white dark:border-slate-800">
-                  🌴
+                <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-950/40 rounded-full flex items-center justify-center text-4xl mb-2 shadow-inner border-4 border-white dark:border-slate-800">
+                  {isSimulatedHoliday ? '📅' : '🌴'}
                 </div>
-                <h2 className="text-3xl font-black text-slate-850 dark:text-slate-100 mb-2">Día de Descanso</h2>
-                <p className="text-slate-500 dark:text-slate-400 text-base font-medium max-w-lg mb-8 leading-relaxed font-sans">
-                  ¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día de descanso. Tu equipo de trabajo te cubre hoy. 🌟
+                <h2 className="text-3xl font-black text-slate-850 dark:text-slate-100 mb-1">
+                  {isSimulatedHoliday ? 'Día Feriado Obligatorio (LFT)' : 'Día de Descanso'}
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-base font-medium max-w-lg leading-relaxed font-sans mb-4">
+                  {isSimulatedHoliday 
+                    ? 'Hoy conmemoramos el Natalicio de Benito Juárez de acuerdo a la Ley Federal del Trabajo. ¡Disfruta tu descanso de ley! 🇲🇽'
+                    : '¡Es tu derecho a la desconexión digital! Relájate, recarga energías y disfruta tu día de descanso. Tu equipo de trabajo te cubre hoy. 🌟'}
                 </p>
+                <button
+                  type="button"
+                  onClick={handleOvertimeClick}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md border-none cursor-pointer text-sm transition-all active:scale-95 animate-pulse"
+                >
+                  {isSimulatedHoliday ? 'Laborar Día Feriado' : 'Laborar Horas Extras'}
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-12 gap-8 items-start">
@@ -3766,7 +3792,7 @@ export default function RelojVisual({
               )}
 
             {/* Reminders of Premium opening - Desktop */}
-            {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
+            {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
               <div className="bg-emerald-600 text-white px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
                 <div className="flex items-center gap-2.5">
                   <span className="text-base">📋</span>
@@ -3781,7 +3807,7 @@ export default function RelojVisual({
               </div>
             )}
 
-            {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.opened_by_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
+            {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
               <div className="bg-violet-600 text-white px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
                 <div className="flex items-start gap-2.5">
                   <span className="text-base">📋</span>
@@ -4950,23 +4976,33 @@ export default function RelojVisual({
 
                 <h3 className="font-extrabold text-slate-900 text-center tracking-tight mb-2 text-base">
                   {isOvertimeValidation 
-                    ? "⏰ Autorizar Horas Extras" 
+                    ? (isSimulatedHoliday ? "📅 Autorizar Labor en Feriado" : "⏰ Autorizar Horas Extras")
                     : isEarlyDepartureValidation 
                       ? "🚪 Autorización de Salida Anticipada" 
-                      : "⚠️ Tareas Pendientes Detectadas"}
+                      : isLateEntryValidation
+                        ? "🔑 Autorizar Entrada Tardía"
+                        : "⚠️ Tareas Pendientes Detectadas"}
                 </h3>
-                <p className="text-[10.5px] text-slate-505 text-center leading-relaxed mb-5 px-2 font-bold">
+                <p className="text-[10.5px] text-slate-500 text-center leading-relaxed mb-5 px-2 font-bold">
                   {isPro 
                     ? (isOvertimeValidation 
-                        ? "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, escanea tu código QR dinámico de 60s."
+                        ? (isSimulatedHoliday 
+                            ? "El colaborador se encuentra en su día de descanso obligatorio (Día Feriado LFT). Para habilitar su entrada a laborar (Pago Triple LFT), escanea tu código QR dinámico de 60s."
+                            : "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, escanea tu código QR dinámico de 60s.")
                         : isEarlyDepartureValidation
                           ? "El colaborador está registrando una salida antes de su horario programado. Solicita la validación de tu supervisor escaneando su QR dinámico de 60s."
-                          : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor escaneando su QR dinámico de 60s.")
+                          : isLateEntryValidation
+                            ? "Se superó el límite de tolerancia de entrada. Solicita la validación de tu supervisor escaneando su QR dinámico de 60s para permitir tu ingreso (Sujeto a deducción salarial)."
+                            : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor escaneando su QR dinámico de 60s.")
                     : (isOvertimeValidation
-                        ? "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, ingresa tu PIN de supervisor."
+                        ? (isSimulatedHoliday
+                            ? "El colaborador se encuentra en su día de descanso obligatorio (Día Feriado LFT). Para habilitar su entrada a laborar (Pago Triple LFT), ingresa tu PIN de supervisor."
+                            : "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, ingresa tu PIN de supervisor.")
                         : isEarlyDepartureValidation
                           ? "El colaborador está registrando una salida antes de su horario programado. Solicita la validación de tu supervisor ingresando su PIN."
-                          : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor ingresando su PIN.")}
+                          : isLateEntryValidation
+                            ? "Se superó el límite de tolerancia de entrada. Solicita la validación de tu supervisor ingresando su PIN para permitir tu ingreso (Sujeto a deducción salarial)."
+                            : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor ingresando su PIN.")}
                 </p>
 
                 {isPro ? (
@@ -6159,6 +6195,23 @@ export default function RelojVisual({
                         className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${notifShift ? 'bg-violet-650' : 'bg-slate-300'}`}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${notifShift ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                      </button>
+                    </div>
+
+                    {/* Simulated Holiday LFT */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Simular Día Feriado (LFT)</span>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newVal = !isSimulatedHoliday;
+                          localStorage.setItem('is_simulated_holiday', newVal ? 'true' : 'false');
+                          setIsSimulatedHoliday(newVal);
+                          showCustomAlert(newVal ? '📅 Día Feriado (LFT) activado en el checador.' : '📅 Día Feriado (LFT) desactivado.');
+                        }}
+                        className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${isSimulatedHoliday ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${isSimulatedHoliday ? 'translate-x-5' : 'translate-x-0'}`}></div>
                       </button>
                     </div>
                   </div>

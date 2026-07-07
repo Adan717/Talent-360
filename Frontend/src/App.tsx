@@ -33,7 +33,6 @@ const getIndicatorColor = (modId: string, systemSettings: any) => {
 
 // Mega-Módulos Cargados de Forma Dinámica (Lazy Loading)
 const RelojChecador = lazy(() => import('./components/RelojChecador'));
-const RelojChecador2 = lazy(() => import('./components/RelojChecador2'));
 const RecursosHumanos = lazy(() => import('./components/RecursosHumanos'));
 const DashboardTalent360 = lazy(() => import('./components/DashboardTalent360'));
 const PanelSimulador = lazy(() => import('./components/reloj/PanelSimulador'));
@@ -178,7 +177,7 @@ function MainLayout() {
   }, [currentUser, systemSettings]);
 
   const isModuleUnlocked = (moduleId: string) => {
-    const targetModuleId = moduleId === 'reloj2' ? 'reloj' : moduleId;
+    const targetModuleId = moduleId;
     if (targetModuleId === 'dashboard' || targetModuleId === 'settings' || targetModuleId === 'matrix') {
       return true;
     }
@@ -228,16 +227,7 @@ function MainLayout() {
     },
     {
       id: 'reloj',
-      title: 'Reloj Checador GPS',
-      desc: 'Asistencia y selfie',
-      icon: <Clock size={20} />,
-      color: 'bg-teal-50 text-teal-600 border-teal-100',
-      minTier: 'freemium',
-      version: 'v4.2'
-    },
-    {
-      id: 'reloj2',
-      title: 'Reloj Checador IA',
+      title: 'Reloj Checador',
       desc: 'Asistencia y Ley Silla',
       icon: <Clock size={20} />,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
@@ -725,7 +715,6 @@ function MainLayout() {
 {activeModule === 'documentos' && <GestorDocumentos />}
             {activeModule === 'facturacion' && <FacturacionManager />}
             {activeModule === 'reloj' && <RelojChecador />}
-            {activeModule === 'reloj2' && <RelojChecador2 />}
             {activeModule === 'reportes' && <ReportesManager />}
             {activeModule === 'matrix' && <PanelSimulador />}
             {activeModule === 'lft' && <LftManager />}
@@ -827,7 +816,7 @@ function App() {
         <ProtectedRoute allowedRoles={['empleado']}>
           <div className="w-screen h-[100dvh] bg-slate-50 overflow-hidden flex m-0 p-0 select-none">
             <Suspense fallback={<LoadingScreen message="Iniciando Checador..." />}>
-              <RelojChecador2 />
+              <RelojChecador />
             </Suspense>
           </div>
         </ProtectedRoute>

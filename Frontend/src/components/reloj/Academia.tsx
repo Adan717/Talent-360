@@ -5,6 +5,7 @@ import {
   Store, Coffee, Package, Settings, Truck, HeartHandshake, Check, Sparkles, ChevronRight, X 
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { ColorMap } from '../SaaSAccountSettings';
 import YouTube from 'react-youtube';
 import { CertificadoImprimible } from './CertificadoImprimible';
 import axiosInstance from '../../lib/axios';
@@ -96,7 +97,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [roles, setRoles] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
-  const [targetRoleId, setTargetRoleId] = useState<number | null>(null);
+  const [targetRoleId, setTargetRoleId] = useState<number | null>(() => useAppStore.getState().currentUser?.job_role_id || null);
   const [activeTab, setActiveTab] = useState<'plan' | 'logros'>('plan');
   const [loading, setLoading] = useState(true);
   const [activeCourse, setActiveCourse] = useState<any>(null);
@@ -105,8 +106,45 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [selectedPrintTemplate, setSelectedPrintTemplate] = useState<any>(null);
   const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => localStorage.getItem('decorarte_academy_welcome_dismissed') !== 'true');
 
   const { currentUser: loggedUser, systemSettings, completeInduction } = useAppStore();
+
+  const getModuleColor = (modId: string) => {
+    const cust = systemSettings?.moduleCustomizations?.[modId];
+    if (cust?.color && ColorMap[cust.color]) {
+      return ColorMap[cust.color];
+    }
+    switch (modId) {
+      case 'asistencia': return ColorMap.emerald;
+      case 'operativo': return ColorMap.blue;
+      case 'academia': return ColorMap.violet;
+      case 'facturacion': return ColorMap.rose;
+      default: return ColorMap.violet;
+    }
+  };
+  const activeColor = getModuleColor('academia');
+
+  // Calcular conteo de carreras
+  const pendingCareersCount = roles.filter(role => {
+    const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+    if (roleCourses.length === 0) return false;
+    const completedRoleCourses = roleCourses.filter(c => {
+      const p = userProgress.find(up => up.course_id === c.id);
+      return p?.status === 'completed';
+    });
+    return completedRoleCourses.length < roleCourses.length;
+  }).length;
+
+  const completedCareersCount = roles.filter(role => {
+    const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+    if (roleCourses.length === 0) return false;
+    const completedRoleCourses = roleCourses.filter(c => {
+      const p = userProgress.find(up => up.course_id === c.id);
+      return p?.status === 'completed';
+    });
+    return completedRoleCourses.length === roleCourses.length;
+  }).length;
 
   useEffect(() => {
     axiosInstance.get('/academy/courses')
@@ -241,7 +279,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
     const ytId = extractYouTubeId(activeCourse.video_url);
 
     return (
-      <div className="bg-slate-50 text-slate-800 h-full flex flex-col relative overflow-hidden overflow-y-auto custom-scrollbar">
+      <div className="bg-slate-50 text-slate-800 h-full flex flex-col relative overflow-hidden overflow-y-auto scrollbar-none">
         <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md p-4 border-b border-slate-200 flex items-center justify-between shadow-sm">
           <button onClick={() => setActiveCourse(null)} className="flex items-center text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
             <span className="text-xl mr-2">←</span> Volver al Plan
@@ -393,7 +431,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   });
 
   return (
-    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden overflow-y-auto custom-scrollbar select-none">
+    <div className="bg-slate-50 h-full flex flex-col text-slate-800 relative overflow-hidden select-none">
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); }
@@ -414,29 +452,60 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
         }
       `}</style>
 
-      {/* Cabecera con Pestañas */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs">
-        <div className="p-6 pb-4">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">Academia 360</h2>
-          <p className="text-indigo-600 text-xs mt-0.5 font-bold uppercase tracking-widest">Plan de Desarrollo y Logros</p>
-        </div>
-        <div className="flex gap-4 px-6 border-b border-slate-100">
-          <button 
+      {/* Cabecera con Pestañas (Grid de navegación sincronizado y elevado) */}
+      <div className="pt-1.5 px-4 mb-3 shrink-0 select-none">
+        <div className="grid grid-cols-2 gap-1.5">
+          {/* Botón 1: Carrera */}
+          <button
+            type="button"
             onClick={() => setActiveTab('plan')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'plan' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+              activeTab === 'plan'
+                ? 'text-white shadow-md scale-[1.02]'
+                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+            }`}
+            style={activeTab === 'plan' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
           >
-            Ruta de Carrera
+            <Map size={18} className={activeTab === 'plan' ? 'text-white' : 'text-slate-400'} />
+            <span className="text-[9px] font-black uppercase mt-1">Carrera</span>
+            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+              activeTab === 'plan' 
+                ? 'bg-white border-white' 
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}
+              style={activeTab === 'plan' ? { color: activeColor.hex } : {}}
+            >
+              {pendingCareersCount}
+            </span>
           </button>
-          <button 
+
+          {/* Botón 2: Logros */}
+          <button
+            type="button"
             onClick={() => setActiveTab('logros')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'logros' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+              activeTab === 'logros'
+                ? 'text-white shadow-md scale-[1.02]'
+                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+            }`}
+            style={activeTab === 'logros' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
           >
-            Mis Logros
+            <Trophy size={18} className={activeTab === 'logros' ? 'text-white' : 'text-slate-400'} />
+            <span className="text-[9px] font-black uppercase mt-1">Logros</span>
+            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+              activeTab === 'logros' 
+                ? 'bg-white border-white' 
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}
+              style={activeTab === 'logros' ? { color: activeColor.hex } : {}}
+            >
+              {completedCareersCount}
+            </span>
           </button>
         </div>
       </div>
 
-      <div className="p-6 relative z-10 flex flex-col max-w-md mx-auto w-full pb-32">
+      <div className="flex-1 overflow-y-auto scrollbar-none px-6 pb-28 pt-1 relative z-10 flex flex-col max-w-md mx-auto w-full">
         {/* TAB 1: PLAN (Elección de Puesto) */}
         {activeTab === 'plan' && !targetRoleId && (
           <div className="animate-fade-in-up">
@@ -448,26 +517,36 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
               <p className="text-sm text-slate-500 font-medium">¿A qué puesto deseas ascender? Selecciona tu objetivo para personalizar tu plan de entrenamiento.</p>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
-              {roles.filter((role: any) => role.is_active !== false).map(role => {
+            <div className="grid grid-cols-1 gap-2.5">
+              {roles.filter((role: any) => {
+                if (role.is_active === false) return false;
+                if (loggedUser && role.id === loggedUser.job_role_id) return true;
+                const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                if (roleCourses.length === 0) return false;
+                const completedRoleCourses = roleCourses.filter(c => {
+                  const p = userProgress.find(up => up.course_id === c.id);
+                  return p?.status === 'completed';
+                });
+                return completedRoleCourses.length < roleCourses.length;
+              }).map(role => {
                 const IconComponent = getRoleIcon(role.name);
                 return (
                   <button 
                     key={role.id}
                     onClick={() => setTargetRoleId(role.id)}
-                    className="w-full bg-white p-5 rounded-3xl border-2 border-slate-100 shadow-xs hover:border-indigo-400 hover:shadow-md hover:translate-y-[-2px] transition-all text-left flex items-center gap-4 group animate-fade-in"
+                    className="w-full bg-white py-2.5 px-3.5 rounded-2xl border border-slate-150 shadow-xs hover:border-violet-400 hover:shadow-sm transition-all text-left flex items-center gap-3 group animate-fade-in cursor-pointer"
                   >
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-indigo-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100">
-                      {IconComponent}
+                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-violet-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100 shrink-0">
+                      {IconComponent && React.cloneElement(IconComponent as React.ReactElement<any>, { className: `w-5.5 h-5.5 ${IconComponent.props.className?.replace('w-6 h-6', '') || ''}` })}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-extrabold text-slate-800 text-base truncate group-hover:text-indigo-900 transition-colors">
+                        <h4 className="font-black text-slate-805 text-sm truncate group-hover:text-violet-900 transition-colors">
                           {role.name}
                         </h4>
-                        <ChevronRight className="text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" size={20} />
+                        <ChevronRight className="text-slate-400 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all shrink-0" size={16} />
                       </div>
-                      <p className="text-xs text-slate-500 font-medium truncate mt-1">
+                      <p className="text-[10.5px] text-slate-500 font-medium truncate mt-0.5">
                         {role.description || "Ruta de certificación requerida"}
                       </p>
                       
@@ -479,21 +558,21 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                         });
                         if (roleCourses.length > 0) {
                           return (
-                            <div className="flex items-center gap-2 mt-2">
-                              <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <div className="flex-1 bg-slate-100 h-1 rounded-full overflow-hidden">
                                 <div 
                                   className="bg-emerald-500 h-full rounded-full transition-all"
                                   style={{ width: `${(completedRoleCourses.length / roleCourses.length) * 100}%` }}
                                 ></div>
                               </div>
-                              <span className="text-[10px] font-bold text-slate-400">
+                              <span className="text-[9px] font-extrabold text-slate-400 shrink-0">
                                 {completedRoleCourses.length}/{roleCourses.length} mod.
                               </span>
                             </div>
                           );
                         }
                         return (
-                          <span className="text-[10px] font-bold text-slate-400 block mt-2">
+                          <span className="text-[9px] font-extrabold text-slate-400 block mt-1.5">
                             Módulos generales únicamente
                           </span>
                         );
@@ -522,37 +601,35 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
               const overallPercent = totalCoursesCount > 0 ? Math.round((completedCoursesCount / totalCoursesCount) * 100) : 0;
 
               return (
-                <div className="w-full bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-5 mb-8 shadow-xl text-white relative overflow-hidden animate-fade-in">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                    <GraduationCap size={120} />
-                  </div>
-                  
-                  <button 
-                    onClick={() => {
-                      setTargetRoleId(null);
-                      setSelectedCourseForDrawer(null);
-                    }}
-                    className="mb-4 text-xs font-bold text-indigo-200 hover:text-white flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-all w-fit"
-                  >
-                    ← Cambiar Meta
-                  </button>
+                <div className="w-full bg-white border border-slate-200 rounded-2xl p-4 mb-6 shadow-sm text-slate-800 relative overflow-hidden animate-fade-in text-left">
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 bg-violet-50 text-violet-600 rounded-xl flex items-center justify-center shadow-xs border border-violet-100/50">
+                        {selectedRole ? React.cloneElement(getRoleIcon(selectedRole.name) as React.ReactElement<any>, { className: 'w-5 h-5' }) : <Briefcase size={16} />}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-[13.5px] leading-tight text-slate-900">{selectedRole?.name || 'Ruta de Carrera'}</h4>
+                        <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider">Meta Profesional</p>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shadow-inner">
-                      {selectedRole ? getRoleIcon(selectedRole.name) : <Briefcase className="text-white" />}
-                    </div>
-                    <div>
-                      <h4 className="font-black text-lg leading-tight">{selectedRole?.name || 'Ruta de Carrera'}</h4>
-                      <p className="text-xs text-indigo-200 font-medium">Meta Profesional Seleccionada</p>
-                    </div>
+                    <button 
+                      onClick={() => {
+                        setTargetRoleId(null);
+                        setSelectedCourseForDrawer(null);
+                      }}
+                      className="text-[9.5px] font-black uppercase tracking-wider bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-850 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer border-none bg-transparent"
+                    >
+                      Cambiar
+                    </button>
                   </div>
 
-                  <div className="mt-5">
-                    <div className="flex justify-between items-center text-xs font-bold text-indigo-200 mb-1.5">
+                  <div className="mt-3 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-500 mb-1">
                       <span>Progreso de Certificación</span>
-                      <span>{overallPercent}% ({completedCoursesCount}/{totalCoursesCount})</span>
+                      <span className="text-emerald-600">{overallPercent}% ({completedCoursesCount}/{totalCoursesCount})</span>
                     </div>
-                    <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                       <div 
                         className="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${overallPercent}%` }}
@@ -700,10 +777,63 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
 
         {/* TAB 2: LOGROS */}
         {activeTab === 'logros' && (
-          <div className="animate-fade-in-up">
-            <h3 className="font-black text-2xl text-slate-900 mb-6 tracking-tight">Mis Certificados</h3>
-            <div className="space-y-4">
-               {filteredCourses.filter(course => {
+          <div className="animate-fade-in-up space-y-6">
+            {/* Carreras Culminadas */}
+            <div>
+              <h3 className="font-black text-xl text-slate-905 mb-4 tracking-tight">Metas Profesionales Alcanzadas</h3>
+              <div className="space-y-3">
+                {roles.filter((role: any) => {
+                  if (role.is_active === false) return false;
+                  const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                  if (roleCourses.length === 0) return false;
+                  const completedRoleCourses = roleCourses.filter(c => {
+                    const p = userProgress.find(up => up.course_id === c.id);
+                    return p?.status === 'completed';
+                  });
+                  return completedRoleCourses.length === roleCourses.length;
+                }).map((role) => {
+                  const IconComponent = getRoleIcon(role.name);
+                  return (
+                    <div key={role.id} className="bg-gradient-to-r from-violet-500 to-indigo-600 rounded-3xl p-4 text-white shadow-lg relative overflow-hidden flex items-center gap-3.5 animate-fade-in text-left">
+                      <div className="absolute top-0 right-0 p-6 opacity-10 text-white pointer-events-none">
+                        <Crown size={80} className="rotate-12" />
+                      </div>
+                      <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
+                        {IconComponent && React.cloneElement(IconComponent as React.ReactElement<any>, { className: "w-6 h-6 text-white" })}
+                      </div>
+                      <div className="relative z-10 flex-1 min-w-0 pr-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[8px] font-black tracking-widest bg-amber-400 text-amber-955 px-2 py-0.5 rounded-full uppercase">Puesto Alcanzado</span>
+                        </div>
+                        <h4 className="text-sm font-black truncate mt-1 leading-tight">{role.name}</h4>
+                        <p className="text-[10px] text-white/80 font-bold truncate mt-0.5">{role.description || "Ruta culminada con éxito"}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {roles.filter((role: any) => {
+                  if (role.is_active === false) return false;
+                  const roleCourses = courses.filter(c => c.target_job_role_id === role.id);
+                  if (roleCourses.length === 0) return false;
+                  const completedRoleCourses = roleCourses.filter(c => {
+                    const p = userProgress.find(up => up.course_id === c.id);
+                    return p?.status === 'completed';
+                  });
+                  return completedRoleCourses.length === roleCourses.length;
+                }).length === 0 ? (
+                  <div className="bg-slate-100/60 border border-slate-200/50 rounded-2xl p-4 text-center">
+                    <p className="text-slate-400 font-bold text-[10.5px]">Ninguna meta profesional completada aún.</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Certificados individuales */}
+            <div>
+              <h3 className="font-black text-xl text-slate-905 mb-4 tracking-tight">Mis Certificados</h3>
+              <div className="space-y-3">
+                {filteredCourses.filter(course => {
                   const prog = userProgress.find((p: any) => p.course_id === course.id);
                   return prog?.status === 'completed' && course.certificate_template_id;
                 }).map((course, idx) => {
@@ -716,13 +846,13 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   }
                   
                   return (
-                    <div key={idx} className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between animate-fade-in">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 text-white pointer-events-none">
-                        <Trophy size={100} />
+                    <div key={idx} className="bg-white border border-slate-250/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
+                      <div className="absolute top-0 right-0 p-6 opacity-5 text-slate-900 pointer-events-none">
+                        <Trophy size={60} />
                       </div>
-                      <div className="relative z-10">
-                        <h4 className="text-xl font-black text-white mb-1 leading-tight">{course.title}</h4>
-                        <p className="text-indigo-200 text-sm mb-0">Completado con Excelencia</p>
+                      <div className="relative z-10 flex-1 min-w-0 pr-4">
+                        <h4 className="text-xs font-black text-slate-800 mb-0.5 leading-tight truncate">{course.title}</h4>
+                        <p className="text-[9.5px] text-emerald-600 font-extrabold uppercase tracking-wider">Completado con Excelencia ✓</p>
                       </div>
                       <button 
                         onClick={() => {
@@ -731,9 +861,9 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                             window.print();
                           }, 100);
                         }}
-                        className="relative z-10 bg-white/10 hover:bg-white/20 text-white p-4 rounded-2xl backdrop-blur-sm border border-white/20 transition-all shadow-lg flex items-center gap-2 font-bold hover:scale-105 active:scale-95"
+                        className="relative z-10 bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl border border-violet-150 font-black text-[11px] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
-                        <span className="text-xl">🖨️</span> Imprimir
+                        <span>🖨️</span> Imprimir
                       </button>
                     </div>
                   );
@@ -743,29 +873,89 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   const prog = userProgress.find((p: any) => p.course_id === course.id);
                   return prog?.status === 'completed' && course.certificate_template_id;
                 }).length === 0 ? (
-                  <div className="bg-slate-100 rounded-3xl p-8 text-center border border-slate-200 shadow-inner">
-                    <Trophy size={48} className="text-slate-300 mx-auto mb-4" />
-                    <p className="text-slate-500 font-bold">Aún no tienes certificados disponibles.</p>
-                    <p className="text-xs text-slate-400 mt-2">Completa cursos con diplomas para verlos aquí.</p>
+                  <div className="bg-slate-100/60 rounded-2xl p-5 text-center border border-slate-200/50 shadow-inner">
+                    <Trophy size={36} className="text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-400 font-bold text-[10.5px]">Aún no tienes certificados disponibles.</p>
                   </div>
                 ) : null}
+              </div>
             </div>
 
-            <h4 className="font-black text-slate-800 mt-8 mb-4 tracking-tight">Insignias Obtenidas</h4>
-            <div className="grid grid-cols-3 gap-4">
-               {/* Insignia Mock */}
-               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 shadow-inner">
-                     <Star size={24} />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 leading-tight">Servicio al Cliente</span>
-               </div>
-               <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center opacity-50 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-2 shadow-inner">
-                     <ShieldCheck size={24} />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500 leading-tight">Seguridad</span>
-               </div>
+            {/* Insignias Obtenidas */}
+            <div>
+              <h4 className="font-black text-slate-805 mb-3.5 tracking-tight flex items-center justify-between">
+                <span>Insignias de Desempeño</span>
+                <span className="text-[10px] text-violet-600 bg-violet-50 px-2.5 py-0.5 rounded-full font-black">
+                  {(() => {
+                    const is1Done = courses.some(c => c.title.toLowerCase().includes('atención') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                    const is2Done = courses.some(c => c.title.toLowerCase().includes('seguridad') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                    const isAllInductionsDone = courses.filter(c => c.course_type === 'induction').length > 0 && courses.filter(c => c.course_type === 'induction').every(c => userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                    
+                    return (is1Done ? 1 : 0) + (is2Done ? 1 : 0) + (isAllInductionsDone ? 1 : 0);
+                  })()} / 3 obtenidas
+                </span>
+              </h4>
+              
+              {/* Carrusel Horizontal de Insignias */}
+              <div className="flex overflow-x-auto gap-3.5 pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory">
+                {(() => {
+                  const is1Done = courses.some(c => c.title.toLowerCase().includes('atención') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                  const is2Done = courses.some(c => c.title.toLowerCase().includes('seguridad') && userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+                  const isAllInductionsDone = courses.filter(c => c.course_type === 'induction').length > 0 && courses.filter(c => c.course_type === 'induction').every(c => userProgress.some(up => up.course_id === c.id && up.status === 'completed'));
+
+                  return (
+                    <>
+                      {/* Insignia 1: Atención de Excelencia */}
+                      <div className={`snap-center flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 w-28 shrink-0 relative bg-white shadow-xs ${
+                        is1Done 
+                          ? 'border-amber-200 shadow-sm scale-100 hover:scale-105' 
+                          : 'border-slate-200/60 opacity-40 grayscale'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                          is1Done ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <Star size={26} className={is1Done ? 'animate-pulse' : ''} />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-800 leading-tight">Atención Excelencia</span>
+                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Curso Atención</span>
+                        {!is1Done && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
+                      </div>
+
+                      {/* Insignia 2: Guardián de Seguridad */}
+                      <div className={`snap-center flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 w-28 shrink-0 relative bg-white shadow-xs ${
+                        is2Done 
+                          ? 'border-blue-200 shadow-sm scale-100 hover:scale-105' 
+                          : 'border-slate-200/60 opacity-40 grayscale'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                          is2Done ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <ShieldCheck size={26} />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-800 leading-tight">Guardián de Seguridad</span>
+                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Curso Seguridad</span>
+                        {!is2Done && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
+                      </div>
+
+                      {/* Insignia 3: Líder Multitareas */}
+                      <div className={`snap-center flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 w-28 shrink-0 relative bg-white shadow-xs ${
+                        isAllInductionsDone 
+                          ? 'border-violet-200 shadow-sm scale-100 hover:scale-105' 
+                          : 'border-slate-200/60 opacity-40 grayscale'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 shadow-inner ${
+                          isAllInductionsDone ? 'bg-violet-50 text-violet-600' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <Crown size={26} />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-800 leading-tight">Líder Multitareas</span>
+                        <span className="text-[8px] text-slate-400 font-bold mt-1 text-center leading-none">Inducción Completa</span>
+                        {!isAllInductionsDone && <Lock size={12} className="absolute top-2 right-2 text-slate-400" />}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         )}
@@ -897,6 +1087,75 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
            template={selectedPrintTemplate?.template || null}
         />
       </div>
+
+      {/* Modal de Bienvenida motivacional */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0" 
+            onClick={() => setShowWelcomeModal(false)}
+          />
+          <div 
+            className="bg-white rounded-3xl p-6 shadow-2xl relative z-10 w-full max-w-sm text-center border-3 animate-fade-in-up"
+            style={{ borderColor: activeColor.hex }}
+          >
+            {/* Botón Cerrar */}
+            <button 
+              onClick={() => setShowWelcomeModal(false)}
+              className="absolute top-4 right-4 p-1 hover:bg-slate-100 rounded-full text-slate-400 border-none cursor-pointer transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Icono animado */}
+            <div 
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-slow shadow-lg shadow-violet-100"
+              style={{ backgroundColor: `${activeColor.hex}15`, color: activeColor.hex }}
+            >
+              <GraduationCap size={44} />
+            </div>
+
+            {/* Título y texto */}
+            <h3 className="font-black text-xl text-slate-900 mb-1.5 tracking-tight">Elige tu Meta Profesional</h3>
+            <p className="text-[11.5px] text-slate-500 font-bold mb-4">¿A qué puesto deseas ascender? Selecciona tu objetivo para personalizar tu plan de entrenamiento.</p>
+            
+            {/* Mensaje motivacional */}
+            <div 
+              className="p-3.5 rounded-2xl border mb-4 text-[11px] font-medium leading-relaxed"
+              style={{ backgroundColor: `${activeColor.hex}08`, borderColor: `${activeColor.hex}25`, color: activeColor.hex }}
+            >
+              🚀 <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> En DecorArte, cada paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
+            </div>
+
+            {/* Checkbox No volver a mostrar */}
+            <div className="flex items-center justify-center gap-2 mb-4 select-none">
+              <input 
+                type="checkbox" 
+                id="dontShowAgain" 
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    localStorage.setItem('decorarte_academy_welcome_dismissed', 'true');
+                  } else {
+                    localStorage.removeItem('decorarte_academy_welcome_dismissed');
+                  }
+                }}
+                className="w-3.5 h-3.5 text-violet-600 border-slate-350 rounded focus:ring-violet-500 cursor-pointer"
+              />
+              <label htmlFor="dontShowAgain" className="text-[10px] text-slate-500 font-bold cursor-pointer">
+                No volver a mostrar este mensaje
+              </label>
+            </div>
+
+            <button 
+              onClick={() => setShowWelcomeModal(false)}
+              className="w-full py-3 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all border-none cursor-pointer hover:opacity-90 active:scale-95"
+              style={{ backgroundColor: activeColor.hex }}
+            >
+              Comenzar a Aprender
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

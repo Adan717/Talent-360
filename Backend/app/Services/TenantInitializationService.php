@@ -35,15 +35,13 @@ class TenantInitializationService
                 'storeClosedReportDelayMins' => 0,
             ],
             'moduleCustomizations' => [
-                'reloj2' => [
+                'reloj' => [
                     'title' => 'Reloj Checador',
                     'desc' => 'Control de asistencia inteligente',
                     'iconName' => 'Clock',
                 ]
             ],
-            'hiddenMenuModules' => [
-                'reloj'
-            ]
+            'hiddenMenuModules' => []
         ];
 
         foreach ($defaults as $key => $value) {

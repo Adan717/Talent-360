@@ -6,8 +6,8 @@ import {
   Send, Sparkles, CheckSquare, ClipboardList, Network, Bot, 
   Play, MessageSquare, AlertOctagon, HelpCircle, X, ChevronRight, User
 } from 'lucide-react';
-import DialPrincipal from './reloj2/DialPrincipal';
-import { MobileBottomNav } from './reloj2/MobileBottomNav';
+import DialPrincipal from './reloj/DialPrincipal';
+import { MobileBottomNav } from './reloj/MobileBottomNav';
 
 interface RelojSimuladoLandingProps {
   tier: 'free' | 'pro';
@@ -265,7 +265,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         title = 'Reloj Checador';
         desc = 'Control de Asistencia';
         icon = <Clock className="text-[#2dce89] animate-spin-once" />;
-        badgeText = tier === 'pro' ? 'v4.2-pro' : 'Gratuito';
+        badgeText = tier === 'pro' ? 'v4.3-pro' : 'Gratuito';
         badgeColorClass = tier === 'pro' 
           ? 'bg-[#e6f4ea] text-[#137333] border border-[#ceead6]/20' 
           : 'bg-slate-100 text-slate-600 border border-slate-200';

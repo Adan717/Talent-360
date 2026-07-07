@@ -740,13 +740,13 @@ class PlatformAdminController extends Controller
             ],
             [
                 'id' => 'reloj',
-                'name' => 'Reloj Checador (PWA)',
+                'name' => 'Reloj Checador IA',
                 'score' => $relojScore,
-                'description' => 'Registro de asistencia, turnos, geolocalización GPS y verificación facial selfie.',
+                'description' => 'Registro de asistencia inteligente, control de comedor, Ley Silla y geofencing estricto.',
                 'details' => [
-                    'coverage' => '88% Cobertura de Tests',
+                    'coverage' => '90% Cobertura de Tests',
                     'performance' => 'Modo offline optimizado para registro diferido y sincronización en red local.',
-                    'security' => 'Firmado HMAC de tokens de fichaje y validación en rango GPS.',
+                    'security' => 'Firmado HMAC de tokens de fichaje y geocercas inteligentes.',
                     'status' => $relojScore >= 8 ? 'Estable' : 'Mejorable',
                     'meta' => "Peticiones de fichaje (24h): {$recentPunches}, Contingencias activas: {$contingenciesCount}"
                 ]

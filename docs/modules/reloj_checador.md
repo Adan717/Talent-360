@@ -5,8 +5,8 @@ El módulo de **Reloj Checador** es la puerta de entrada operativa de cada sucur
 ---
 
 ## 1. Archivos Clave del Módulo
-- **Componente Visual**: [RelojVisual.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj2/RelojVisual.tsx) (Dial circular principal de marcación, estados del botón, barra de progreso y modals de comedor).
-- **Lógica de Estado (Engine)**: [useClockEngine.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj2/useClockEngine.tsx) (React Context, marcas de asistencia, geofencing, lógica de llaves de apertura y coordinación de comedores).
+- **Componente Visual**: [RelojVisual.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj/RelojVisual.tsx) (Dial circular principal de marcación, estados del botón, barra de progreso y modals de comedor).
+- **Lógica de Estado (Engine)**: [useClockEngine.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj/useClockEngine.tsx) (React Context, marcas de asistencia, geofencing, lógica de llaves de apertura y coordinación de comedores).
 
 ---
 

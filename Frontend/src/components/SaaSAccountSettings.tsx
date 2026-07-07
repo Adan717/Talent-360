@@ -139,7 +139,6 @@ const ModuleCard = ({
                   onClick={() => {
                     const defaultIcons: Record<string, string> = {
                       reloj: 'Clock',
-                      reloj2: 'Clock',
                       rrhh: 'Users',
                       operativo: 'ListTodo',
                       ats: 'Briefcase',
@@ -774,34 +773,18 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     ]
                   },
                   { 
-                    name: 'Reloj Checador GPS', 
-                    desc: 'Asistencia y selfie', 
-                    tier: 'freemium', 
-                    active: isModuleUnlocked('reloj'), 
-                    version: 'v4.2',
-                    icon: <Clock size={20} />,
-                    iconColor: 'bg-teal-50 text-teal-600',
-                    moduleId: 'reloj',
-                    features: [
-                      'Registro de asistencia en tiempo real mediante PWA móvil.',
-                      'Validación de geolocalización GPS para evitar fraudes.',
-                      'Reconocimiento facial (selfie de entrada/salida).',
-                      'Modo sin conexión con sincronización automática al recuperar red.'
-                    ]
-                  },
-                  { 
-                    name: 'Reloj Checador IA', 
+                    name: 'Reloj Checador', 
                     desc: 'Asistencia y Ley Silla', 
                     tier: 'freemium', 
                     active: isModuleUnlocked('reloj'), 
                     version: 'v4.3',
                     icon: <Clock size={20} />,
                     iconColor: 'bg-emerald-50 text-emerald-600',
-                    moduleId: 'reloj2',
+                    moduleId: 'reloj',
                     features: [
-                      'Segunda instancia del reloj checador para flujos de pruebas.',
-                      'Configuración y logs de eventos de asistencia independientes.',
+                      'Registro de asistencia en tiempo real mediante PWA móvil.',
                       'Geocercas (geofencing) y validaciones faciales alternativas.',
+                      'Configuración y logs de eventos de asistencia independientes.',
                       'Cola de sincronización y modo offline aislado.'
                     ]
                   },
@@ -1146,8 +1129,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       const mapModuleToTab = (moduleId: string) => {
                         switch (moduleId) {
                           case 'rrhh': return 'onboarding';
-                          case 'reloj':
-                          case 'reloj2': return 'reloj';
+                          case 'reloj': return 'reloj';
                           case 'comidas': return 'comidas';
                           case 'operativo': return 'tareas';
                           case 'ats':

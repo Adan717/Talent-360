@@ -5,7 +5,7 @@ El módulo de **Tareas y Rutinas** coordina las actividades operativas del día 
 ---
 
 ## 1. Archivos Clave del Módulo
-- **Componente de Ejecución**: [PanelTareasRutinas.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj2/PanelTareasRutinas.tsx) (Conocido como TaskRunner: interfaz interactiva para realizar tareas desde la perspectiva del empleado en su celular).
+- **Componente de Ejecución**: [PanelTareasRutinas.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/tareas_rutinas/PanelTareasRutinas.tsx) (Conocido como TaskRunner: interfaz interactiva para realizar tareas desde la perspectiva del empleado en su celular).
 - **Gestión de Datos**: `src/store/useTaskStore.ts` (Store de Zustand que almacena asignaciones, tareas completadas, y el pool general de tareas pendientes de la sucursal).
 
 ---

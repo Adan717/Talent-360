@@ -3057,6 +3057,7 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const getButtonProps = () => {
+    const hasCheckedIn = checkInTimes[currentUser?.id] !== undefined;
     const retardosCount = Number(localStorage.getItem('user_retardos_' + currentUser?.id) || 0);
     const hasPunctualityBlock = retardosCount >= 3;
 
@@ -3107,7 +3108,6 @@ export function useClockEngine(overrideUser?: any) {
     const shiftStartStr = shiftConfigs[currentUser?.id]?.start || '08:30';
     const shiftStartMins = parseTimeToMins(shiftStartStr);
 
-    const hasCheckedIn = checkInTimes[currentUser?.id] !== undefined;
     const isLate = currentSimTime > (shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15));
 
     const formatTimeMins = (mins: number) => {

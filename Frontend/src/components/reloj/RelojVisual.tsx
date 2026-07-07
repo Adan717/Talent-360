@@ -320,7 +320,17 @@ export default function RelojVisual({
     resolvePanic,
     completeHandover,
     cashCount,
-    setCashCount
+    setCashCount,
+    userClockPrefs,
+    setUserClockPrefs,
+    showAlarmSettingsModal,
+    setShowAlarmSettingsModal,
+    pendingTasksBlocker,
+    setPendingTasksBlocker,
+    supervisorPin,
+    setSupervisorPin,
+    hasMealReservation,
+    authorizeClockOutWithPendingTasks
   } = context;
 
   // Estados locales para nuevas herramientas operativas
@@ -1811,7 +1821,21 @@ export default function RelojVisual({
               </div>
             </div>
 
-          <button
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowAlarmSettingsModal(true)}
+                className={`w-full py-2.5 px-4 rounded-xl border font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  isDark
+                    ? 'bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>🔔</span> Ajustes de Alarmas y Alertas
+              </button>
+            </div>
+
+            <button
               onClick={() => {
                 localStorage.removeItem('talent_auth_token');
                 window.location.href = '/login';
@@ -3032,6 +3056,8 @@ export default function RelojVisual({
                         gpsStatus={gpsStatus}
                         onRequestGPS={requestGPS}
                         isGpsValidationBypassed={isGpsValidationBypassed}
+                        hasMealReservation={hasMealReservation}
+                        onMealSwapClick={() => setShowMealSwapModal(true)}
                       />
                     </div>
 
@@ -3298,7 +3324,7 @@ export default function RelojVisual({
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}
-          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} />
+          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} />
         </div>
       )}
 
@@ -3452,6 +3478,8 @@ export default function RelojVisual({
                       gpsStatus={gpsStatus}
                       onRequestGPS={requestGPS}
                       isGpsValidationBypassed={isGpsValidationBypassed}
+                      hasMealReservation={hasMealReservation}
+                      onMealSwapClick={() => setShowMealSwapModal(true)}
                     />
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}
@@ -4361,7 +4389,7 @@ export default function RelojVisual({
                     <button
                       key={emergency}
                       onClick={() => triggerPanic(emergency, `Reportado por ${currentUser.name}`)}
-                      className="w-full p-4 rounded-2xl border border-rose-100 hover:border-rose-300 bg-rose-50/20 hover:bg-rose-50 text-rose-950 font-bold text-sm text-left transition-all animate-pulse"
+                      className="w-full p-4 rounded-2xl border border-rose-100 hover:border-rose-300 bg-rose-50/20 hover:bg-rose-50 text-rose-955 font-bold text-sm text-left transition-all animate-pulse"
                     >
                       🚨 {emergency}
                     </button>
@@ -4383,7 +4411,7 @@ export default function RelojVisual({
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-amber-700 mb-2 text-xl flex items-center gap-2"><span>🔄</span> Intercambio de Comida</h3>
-                <p className="text-sm text-slate-600 mb-5">
+                <p className="text-sm text-slate-605 mb-5">
                   Selecciona un compañero de turno que tenga reservación de comida para intercambiar su horario por el tuyo de forma rápida.
                 </p>
                 
@@ -4401,7 +4429,7 @@ export default function RelojVisual({
                         <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
                         <div>
                           <p className="font-bold text-slate-800 text-xs">{u.name}</p>
-                          <p className="text-[9px] text-slate-500">Slot: {userReservedMealSlots[u.id]?.[0] || 'Reservado'}</p>
+                          <p className="text-[9px] text-slate-550">Slot: {userReservedMealSlots[u.id]?.[0] || 'Reservado'}</p>
                         </div>
                       </div>
                       <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md">Intercambiar</span>
@@ -4418,6 +4446,153 @@ export default function RelojVisual({
                 >
                   Cerrar
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Ajustes de Alarmas y Alertas */}
+          {showAlarmSettingsModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
+              <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+                <h3 className="font-extrabold text-violet-750 dark:text-violet-400 mb-2 text-lg flex items-center gap-2">
+                  <span>🔔</span> Alertas y Alarmas
+                </h3>
+                <p className="text-xs text-slate-500 mb-5">
+                  Personaliza tus recordatorios de entrada, comida y Ley Silla.
+                </p>
+
+                <div className="space-y-4 mb-6 text-left">
+                  <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl">
+                    <div>
+                      <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Activar Alertas</p>
+                      <p className="text-[10px] text-slate-500">Tonos de audio para eventos</p>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      checked={userClockPrefs.alarmsEnabled} 
+                      onChange={e => setUserClockPrefs(prev => ({ ...prev, alarmsEnabled: e.target.checked }))}
+                      className="w-4 h-4 accent-violet-650 cursor-pointer"
+                    />
+                  </div>
+
+                  {userClockPrefs.alarmsEnabled && (
+                    <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl">
+                      <label className="font-bold text-xs text-slate-800 dark:text-slate-200 block mb-2">Melodía</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['classic', 'cheerful', 'urgent', 'chime'].map(tone => (
+                          <button
+                            key={tone}
+                            type="button"
+                            onClick={() => {
+                              setUserClockPrefs(prev => ({ ...prev, selectedTone: tone }));
+                              setTimeout(() => {
+                                playAlarm('ya_llegue');
+                              }, 100);
+                            }}
+                            className={`py-2 px-3 text-[10px] uppercase font-black rounded-xl border text-center transition-all cursor-pointer ${
+                              userClockPrefs.selectedTone === tone
+                                ? 'bg-violet-650 text-white border-violet-650 shadow-md'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                            }`}
+                          >
+                            🎵 {tone}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-1 text-[11px]">
+                      <span className="font-bold text-slate-600 dark:text-slate-400">Recordatorio entrada:</span>
+                      <select 
+                        value={userClockPrefs.preShiftReminderMins} 
+                        onChange={e => setUserClockPrefs(prev => ({ ...prev, preShiftReminderMins: Number(e.target.value) }))}
+                        className="p-1 text-xs border rounded-md dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                      >
+                        <option value="15">15 min antes</option>
+                        <option value="30">30 min antes</option>
+                        <option value="60">60 min antes</option>
+                        <option value="90">90 min antes</option>
+                      </select>
+                    </div>
+
+                    <div className="flex justify-between items-center p-1 text-[11px]">
+                      <span className="font-bold text-slate-600 dark:text-slate-400">Alerta Ley Silla:</span>
+                      <input 
+                        type="checkbox" 
+                        checked={userClockPrefs.leySillaAlert} 
+                        onChange={e => setUserClockPrefs(prev => ({ ...prev, leySillaAlert: e.target.checked }))}
+                        className="w-4 h-4 accent-violet-650 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex justify-between items-center p-1 text-[11px]">
+                      <span className="font-bold text-slate-600 dark:text-slate-400">Notificar Tarea Nueva:</span>
+                      <input 
+                        type="checkbox" 
+                        checked={userClockPrefs.newTaskAlert} 
+                        onChange={e => setUserClockPrefs(prev => ({ ...prev, newTaskAlert: e.target.checked }))}
+                        className="w-4 h-4 accent-violet-650 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowAlarmSettingsModal(false)}
+                  className="w-full bg-violet-650 hover:bg-violet-700 text-white font-bold py-3 rounded-2xl transition-colors border-none cursor-pointer text-xs"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Bloqueo de Salida: Validación de Supervisor */}
+          {pendingTasksBlocker && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
+              <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+                <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
+                  <AlertCircle size={22} className="animate-bounce" />
+                </div>
+
+                <h3 className="font-extrabold text-slate-900 text-center tracking-tight mb-2 text-base">
+                  ⚠️ Tareas Pendientes Detectadas
+                </h3>
+                <p className="text-[10.5px] text-slate-505 text-center leading-relaxed mb-5 px-2 font-bold">
+                  No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas para cerrar tu turno o solicita la validación de tu supervisor ingresando su PIN.
+                </p>
+
+                <div className="space-y-3 mb-5">
+                  <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">PIN del Supervisor</label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    value={supervisorPin}
+                    onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="••••"
+                    className="w-full py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center tracking-[0.5em] text-lg focus:outline-none focus:border-rose-500"
+                  />
+                  <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
+                    ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setPendingTasksBlocker(false)}
+                    className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl transition-colors border-none cursor-pointer text-xs"
+                  >
+                    Regresar
+                  </button>
+                  <button 
+                    onClick={authorizeClockOutWithPendingTasks}
+                    className="w-1/2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black py-3.5 rounded-2xl shadow-md transition-all border-none cursor-pointer text-xs uppercase tracking-wider"
+                  >
+                    Autorizar
+                  </button>
+                </div>
               </div>
             </div>
           )}

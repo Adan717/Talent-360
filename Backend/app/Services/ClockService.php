@@ -34,8 +34,9 @@ class ClockService
 
         $isLate = false;
         $lateMinutes = 0;
+        $hasAmnesty = isset($details['has_amnesty']) && $details['has_amnesty'] === true;
 
-        if ($type === 'check_in') {
+        if ($type === 'check_in' && !$hasAmnesty) {
             if ($now->greaterThan($expectedTime->copy()->addMinutes($toleranceMinutes))) {
                 $isLate = true;
                 $lateMinutes = $now->diffInMinutes($expectedTime);
@@ -44,6 +45,11 @@ class ClockService
 
         // Estructurar detalles del retardo o compensación
         $detailsMerge = $details;
+        if ($hasAmnesty) {
+            $detailsMerge['amnesty_applied'] = true;
+            $detailsMerge['amnesty_note'] = 'Amnistía aplicada por apertura tardía de la sucursal.';
+        }
+        
         if ($isLate) {
             $detailsMerge['lft_incident'] = [
                 'type' => 'late',

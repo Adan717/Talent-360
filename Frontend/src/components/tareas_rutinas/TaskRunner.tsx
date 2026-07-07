@@ -300,12 +300,17 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         setToast({ message, type });
     };
 
+    const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
+    const [activeStepIndex, setActiveStepIndex] = useState(0);
+
     const handleSelectAssignment = (id: string | null) => {
         setSelectedAssignmentId(id);
         setLocalInput('');
         setPhotoDone(false);
         setRejectingAssignmentId(null);
         setRejectFeedback('');
+        setCompletedSteps({});
+        setActiveStepIndex(0);
     };
 
     // Cerrar menú flotante si hacen clic fuera
@@ -1093,23 +1098,80 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                     </div>
                                 )}
 
-                                {/* Checklist de subtareas */}
-                                {t.subTasks && t.subTasks.length > 0 && (
-                                    <div className="space-y-1.5">
-                                        <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subtareas obligatorias</h5>
-                                        <div className="space-y-1">
-                                            {t.subTasks.map(sub => (
-                                                <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-150/60 hover:bg-indigo-50/20 cursor-pointer transition-colors shadow-xs">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        defaultChecked={sub.completed}
-                                                        className="w-3.5 h-3.5 text-indigo-650 rounded border-slate-350 focus:ring-indigo-500" 
-                                                    />
-                                                    <span className="text-xs text-slate-700 font-semibold">{sub.text}</span>
-                                                </label>
-                                            ))}
+                                {/* Stepper Visual para Manual de Procedimiento */}
+                                {t.procedureSteps && t.procedureSteps.length > 0 ? (
+                                    <div className="space-y-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-150/60 text-left">
+                                        <h5 className="text-[10px] font-black uppercase text-indigo-650 tracking-wider mb-3 flex items-center gap-1.5">
+                                            <span>📖</span> Manual de Ejecución Paso a Paso
+                                        </h5>
+                                        
+                                        <div className="relative pl-6 space-y-4">
+                                            {/* Linea vertical de conexión */}
+                                            <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-slate-200"></div>
+
+                                            {t.procedureSteps.map((step, idx) => {
+                                                const stepKey = `${step.step_number}_${step.title}`;
+                                                const isStepCompleted = completedSteps[stepKey] || false;
+                                                const isCurrent = idx === activeStepIndex;
+                                                const isLocked = idx > activeStepIndex;
+
+                                                return (
+                                                    <div key={stepKey} className="relative flex gap-3.5 items-start">
+                                                        {/* Círculo indicador del paso */}
+                                                        <button
+                                                            type="button"
+                                                            disabled={isLocked || isStepCompleted}
+                                                            onClick={() => {
+                                                                setCompletedSteps(prev => ({ ...prev, [stepKey]: true }));
+                                                                if (idx === activeStepIndex) {
+                                                                    setActiveStepIndex(idx + 1);
+                                                                }
+                                                            }}
+                                                            className={`absolute -left-6 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black transition-all cursor-pointer ${
+                                                                isStepCompleted
+                                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                                    : isCurrent
+                                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md animate-pulse'
+                                                                    : 'bg-white text-slate-400 border-slate-200'
+                                                            }`}
+                                                        >
+                                                            {isStepCompleted ? '✓' : step.step_number}
+                                                        </button>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-xs font-extrabold ${isCurrent ? 'text-indigo-900' : isLocked ? 'text-slate-400 font-bold' : 'text-slate-400 line-through'}`}>
+                                                                {step.title}
+                                                            </p>
+                                                            {isCurrent && step.detailed_instruction && (
+                                                                <p className="text-[10.5px] text-slate-505 leading-relaxed mt-1 font-medium bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
+                                                                    {step.detailed_instruction}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
+                                ) : (
+                                    /* Checklist de subtareas de respaldo */
+                                    t.subTasks && t.subTasks.length > 0 && (
+                                        <div className="space-y-1.5">
+                                            <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Subtareas obligatorias</h5>
+                                            <div className="space-y-1">
+                                                {t.subTasks.map(sub => (
+                                                    <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-150/60 hover:bg-indigo-50/20 cursor-pointer transition-colors shadow-xs">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            defaultChecked={sub.completed}
+                                                            className="w-3.5 h-3.5 text-indigo-650 rounded border-slate-350 focus:ring-indigo-500" 
+                                                        />
+                                                        <span className="text-xs text-slate-700 font-semibold">{sub.text}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )
                                 )}
 
                                 {/* Caso: Tarea esperando validación (Solo para Supervisor) */}

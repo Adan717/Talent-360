@@ -35,7 +35,8 @@ class Employee extends Model
         'pin_code',
         'invite_token',
         'portadorLlaves',
-        'avatar'
+        'avatar',
+        'clock_preferences'
     ];
 
     protected $appends = ['role'];
@@ -44,7 +45,8 @@ class Employee extends Model
         'is_active_employee' => 'boolean',
         'salary' => 'decimal:2',
         'base_salary' => 'decimal:2',
-        'mealMinutes' => 'integer'
+        'mealMinutes' => 'integer',
+        'clock_preferences' => 'array'
     ];
 
     public function getRoleAttribute()

@@ -46,42 +46,27 @@ function MiniaturaCelular({ user }: { user: any }) {
           {engine.isSimulatedOffline ? '📡 Offline' : '📶 Online'}
         </button>
 
-        {/* GPS Simulation Quick-Toggle Badge */}
-        {(() => {
-          let label = '';
-          let colorClass = '';
-          if (engine.gpsStatus === 'error') {
-            label = '❌ Falla GPS';
-            colorClass = 'bg-rose-500/20 text-rose-400 border-rose-500/40';
-          } else if (engine.isWithinPerimeter) {
-            label = '📍 En Sucursal (5m)';
-            colorClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/35';
-          } else {
-            label = '🏠 En Casa (200m)';
-            colorClass = 'bg-amber-500/20 text-amber-400 border-amber-500/35';
-          }
-          
-          const handleGpsToggle = () => {
-            if (engine.gpsStatus === 'error') {
+        {/* GPS Simulation Quick-Toggle Dropdown */}
+        <select
+          value={engine.gpsStatus === 'error' ? 'off' : (engine.gpsCoordinates?.latitude === 19.4326 ? 'in' : 'out')}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'off') {
+              engine.setGpsStatus('error');
+            } else if (val === 'in') {
               engine.setGpsStatus('success');
               engine.setGpsCoordinates({ latitude: 19.4326, longitude: -99.1332 });
-            } else if (engine.isWithinPerimeter) {
+            } else {
               engine.setGpsStatus('success');
               engine.setGpsCoordinates({ latitude: 19.4344, longitude: -99.1332 });
-            } else {
-              engine.setGpsStatus('error');
             }
-          };
-
-          return (
-            <button
-              onClick={handleGpsToggle}
-              className={`px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 border cursor-pointer select-none ${colorClass}`}
-            >
-              {label}
-            </button>
-          );
-        })()}
+          }}
+          className="bg-slate-900 text-slate-300 border border-slate-700 rounded px-1 py-0.5 text-[9px] font-black uppercase tracking-wider outline-none cursor-pointer"
+        >
+          <option value="in">📍 GPS: En Sucursal</option>
+          <option value="out">🏠 GPS: En Casa</option>
+          <option value="off">❌ GPS: Apagado</option>
+        </select>
       </div>
 
       {/* Scaled Cellphone frame */}
@@ -153,7 +138,7 @@ export default function PanelSimulador() {
   }, []);
 
   useEffect(() => {
-    if (globalUsers.length === 0) {
+    if ((globalUsers || []).length === 0) {
       fetchState();
     }
   }, []);
@@ -449,16 +434,18 @@ export default function PanelSimulador() {
                 La bitácora está vacía. Avanza el tiempo o interactúa con los celulares.
               </div>
             ) : (
-              matrixTimeline.map((event) => {
-                let icon = '🔔';
-                let colorClass = 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
-                
-                if (event.type === 'success') { icon = '✅'; colorClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; }
-                if (event.type === 'warning') { icon = '⚠️'; colorClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30'; }
-                if (event.type === 'error') { icon = '🛑'; colorClass = 'bg-rose-500/20 text-rose-400 border-rose-500/30'; }
-                if (event.type === 'system') { icon = '⚙️'; colorClass = 'bg-slate-500/20 text-slate-300 border-slate-500/30'; }
+              [...matrixTimeline]
+                .sort((a, b) => b.simTime - a.simTime)
+                .map((event) => {
+                  let icon = '🔔';
+                  let colorClass = 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30';
+                  
+                  if (event.type === 'success') { icon = '✅'; colorClass = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'; }
+                  if (event.type === 'warning') { icon = '⚠️'; colorClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30'; }
+                  if (event.type === 'error') { icon = '🛑'; colorClass = 'bg-rose-500/20 text-rose-400 border-rose-500/30'; }
+                  if (event.type === 'system') { icon = '⚙️'; colorClass = 'bg-slate-500/20 text-slate-300 border-slate-500/30'; }
 
-                const actor = globalUsers.find(u => u.id === event.actorId);
+                  const actor = (globalUsers || []).find(u => Number(u.id) === Number(event.actorId));
 
                 return (
                   <div key={event.id} className="relative flex gap-4 animate-fade-in-up items-start">

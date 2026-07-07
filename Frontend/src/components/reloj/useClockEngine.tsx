@@ -51,6 +51,7 @@ export function useClockEngine(overrideUser?: any) {
   
   const currentUser = overrideUser || globalUser;
   const setCurrentUser = overrideUser ? () => {} : setGlobalUser;
+  const isSimulator = !!overrideUser;
   
   let leySillaConfig = systemSettings.leySillaConfig || {};
   const setLeySillaConfig = (v) => updateSetting('leySillaConfig', typeof v === 'function' ? v(leySillaConfig) : v);
@@ -501,13 +502,19 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   useEffect(() => {
+    if (isSimulator) {
+      setGpsStatus('success');
+      setGpsCoordinates({ latitude: 19.4326, longitude: -99.1332 });
+      return;
+    }
+
     const clockOpConfig = systemSettings.clockOpConfig || {};
     if (clockOpConfig.gpsValidationEnabled === false) {
       setGpsStatus('success');
     } else {
       requestGPS();
     }
-  }, [systemSettings.clockOpConfig?.gpsValidationEnabled]);
+  }, [systemSettings.clockOpConfig?.gpsValidationEnabled, isSimulator]);
 
   const [localBreakStartTimes, setLocalBreakStartTimes] = useState<Record<number, number>>(() => {
      try {
@@ -1467,12 +1474,46 @@ export function useClockEngine(overrideUser?: any) {
   const [undoCount, setUndoCount] = useState(0);
   const [playedAlarms, setPlayedAlarms] = useState({ ya_llegue: false, tienda_cerrada: false });
 
+  // Preferencias de Alarma y Alertas por Empleado
+  const [userClockPrefs, setUserClockPrefs] = useState(() => {
+    const saved = localStorage.getItem(`user_clock_prefs_${currentUser?.id || 'default'}`);
+    return saved ? JSON.parse(saved) : {
+      alarmsEnabled: true,
+      selectedTone: 'classic', // classic, cheerful, urgent, chime
+      preShiftReminderMins: 30,
+      mealReminderMins: 5,
+      leySillaAlert: true,
+      newTaskAlert: true,
+      taskExpiryWarningMins: 10,
+    };
+  });
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      localStorage.setItem(`user_clock_prefs_${currentUser.id}`, JSON.stringify(userClockPrefs));
+    }
+  }, [userClockPrefs, currentUser?.id]);
+
+  const [showAlarmSettingsModal, setShowAlarmSettingsModal] = useState(false);
+  const [pendingTasksBlocker, setPendingTasksBlocker] = useState(false);
+  const [supervisorPin, setSupervisorPin] = useState('');
+
+  const [preShiftAlarmPlayed, setPreShiftAlarmPlayed] = useState(false);
+  const [mealReminderAlarmPlayed, setMealReminderAlarmPlayed] = useState(false);
+  const [leySillaAlarmPlayed, setLeySillaAlarmPlayed] = useState(false);
+  const [expiringTasksAlerted, setExpiringTasksAlerted] = useState<Record<string, boolean>>({});
+
   // Reset alarms when user or day changes
   useEffect(() => {
     setPlayedAlarms({ ya_llegue: false, tienda_cerrada: false });
-  }, [currentUser.id, currentDay]);
+    setPreShiftAlarmPlayed(false);
+    setMealReminderAlarmPlayed(false);
+    setLeySillaAlarmPlayed(false);
+    setExpiringTasksAlerted({});
+  }, [currentUser?.id, currentDay]);
 
   const playAlarm = (type: 'ya_llegue' | 'tienda_cerrada' | 'alerta_tiempo') => {
+    if (!userClockPrefs.alarmsEnabled) return;
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -1482,31 +1523,113 @@ export function useClockEngine(overrideUser?: any) {
       osc.connect(gain);
       gain.connect(ctx.destination);
       
-      if (type === 'ya_llegue') {
+      const tone = userClockPrefs.selectedTone;
+
+      if (tone === 'cheerful') {
+        // Melodía Alegre / Arpegio (Sine wave)
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // Do5
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // Mi5
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
-      } else if (type === 'tienda_cerrada') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(400, ctx.currentTime); 
-        osc.frequency.setValueAtTime(300, ctx.currentTime + 0.2);
-        osc.frequency.setValueAtTime(400, ctx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.9);
-      } else if (type === 'alerta_tiempo') {
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        if (type === 'ya_llegue') {
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+          osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.3); // C6
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        } else if (type === 'tienda_cerrada') {
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime + 0.15); // D5
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime + 0.3); // C5
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.7);
+        } else {
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.1); // G5
+          osc.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.2); // D6
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        }
+      } else if (tone === 'urgent') {
+        // Zumbido Urgente / Alerta (Sawtooth wave)
+        osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        if (type === 'ya_llegue') {
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime); // A5
+          osc.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.1); // D6
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.2); // A5
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.45);
+        } else if (type === 'tienda_cerrada') {
+          osc.frequency.setValueAtTime(600, ctx.currentTime);
+          osc.frequency.setValueAtTime(500, ctx.currentTime + 0.15);
+          osc.frequency.setValueAtTime(600, ctx.currentTime + 0.3);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.65);
+        } else {
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime);
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15);
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.3);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.55);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        }
+      } else if (tone === 'chime') {
+        // Campana / Chime suave (Triangle wave)
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // Re5
-        osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); // La5
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        if (type === 'ya_llegue') {
+          osc.frequency.setValueAtTime(1046.50, ctx.currentTime); // C6
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.15); // G5
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.8);
+        } else if (type === 'tienda_cerrada') {
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime); // G5
+          osc.frequency.setValueAtTime(698.46, ctx.currentTime + 0.15); // F5
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime + 0.3); // D5
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+          osc.start();
+          osc.stop(ctx.currentTime + 1.0);
+        } else {
+          osc.frequency.setValueAtTime(698.46, ctx.currentTime); // F5
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.7);
+        }
+      } else {
+        // Tono clásico original
+        if (type === 'ya_llegue') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // Do5
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // Mi5
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        } else if (type === 'tienda_cerrada') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(400, ctx.currentTime); 
+          osc.frequency.setValueAtTime(300, ctx.currentTime + 0.2);
+          osc.frequency.setValueAtTime(400, ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.9);
+        } else if (type === 'alerta_tiempo') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // Re5
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); // La5
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        }
       }
     } catch (e) {
       console.log("Audio no soportado");
@@ -1538,7 +1661,6 @@ export function useClockEngine(overrideUser?: any) {
 
   // Auto-Open Store when Encargado is in perimeter
   useEffect(() => {
-    const isSimulator = !!overrideUser;
     if (isSimulator) return; // No auto-abrir la tienda en el simulador QA Matrix
     
     if (storeStatus === 'closed' && Number(currentUser?.id) === Number(activeEncargadoId) && isWithinPerimeter) {
@@ -1840,6 +1962,75 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
   }, [currentSimTime, currentUser.id, storeStatus, globalClockStates, shiftConfigs, playedAlarms, currentSimTime, activeEncargadoId, absentUsers, lateUsers, currentDay]);
+
+  // Real-time alarm and reminder scheduler
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    
+    const shiftStartStr = shiftConfigs[currentUser.id]?.start || '09:00';
+    const shiftStartMins = parseTimeToMins(shiftStartStr);
+
+    // 1. Pre-shift reminder alarm
+    if (userClockPrefs.alarmsEnabled && clockState === 'inactive') {
+      const minsToStart = shiftStartMins - currentSimTime;
+      if (minsToStart === userClockPrefs.preShiftReminderMins && !preShiftAlarmPlayed) {
+        playAlarm('alerta_tiempo');
+        setPreShiftAlarmPlayed(true);
+        showCustomAlert(`🔔 Alerta de Entrada: Tu turno de entrada inicia en ${userClockPrefs.preShiftReminderMins} minutos.`);
+      }
+    }
+
+    // 2. Meal slot registration reminder (5 minutes after check-in if no reservation)
+    const checkInTime = checkInTimes[currentUser.id];
+    const mySlots = userReservedMealSlots[currentUser.id] || [];
+    const hasMealReservation = mySlots.length > 0;
+    if (userClockPrefs.alarmsEnabled && checkInTime !== undefined && !hasMealReservation && currentSimTime === checkInTime + 5 && !mealReminderAlarmPlayed) {
+      playAlarm('alerta_tiempo');
+      setMealReminderAlarmPlayed(true);
+      showCustomAlert("🍔 Recuerda agendar o confirmar tu horario de almuerzo de hoy.");
+    }
+
+    // 3. Ley Silla alarm (120 minutes after returning from meal)
+    const mealEndTime = mealEndTimes[currentUser.id];
+    if (userClockPrefs.alarmsEnabled && userClockPrefs.leySillaAlert && mealEndTime !== undefined && currentSimTime === mealEndTime + 120 && !leySillaAlarmPlayed) {
+      playAlarm('alerta_tiempo');
+      setLeySillaAlarmPlayed(true);
+      showCustomAlert("🧘 Alerta Ley Silla: Recuerda tomar un descanso de 15 minutos de pie o sentado según la Ley Silla.");
+    }
+
+    // 4. Task expiry alerts
+    if (userClockPrefs.alarmsEnabled) {
+      const userAssignments = useTaskStore.getState().assignments;
+      userAssignments.forEach((a: any) => {
+        if (a.userId === currentUser.id && a.status === 'in_progress' && a.expectedEndTimeMins) {
+          const minsRemaining = a.expectedEndTimeMins - currentSimTime;
+          if (minsRemaining === userClockPrefs.taskExpiryWarningMins && !expiringTasksAlerted[a.id]) {
+            playAlarm('alerta_tiempo');
+            setExpiringTasksAlerted(prev => ({ ...prev, [a.id]: true }));
+            showCustomAlert(`⚠️ Alerta de Tarea: Tu tarea asignada expira en ${userClockPrefs.taskExpiryWarningMins} minutos.`);
+          }
+        }
+      });
+    }
+
+  }, [currentSimTime, currentUser?.id, clockState, shiftConfigs, userClockPrefs, preShiftAlarmPlayed, mealReminderAlarmPlayed, leySillaAlarmPlayed, expiringTasksAlerted, checkInTimes, userReservedMealSlots, mealEndTimes]);
+
+  const prevAssignmentsRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const userAssignments = assignments.filter((a: any) => a.userId === currentUser.id);
+    const activeIds = userAssignments.map(a => a.id);
+    
+    // Check if there is any new assignment ID that wasn't in prevAssignmentsRef
+    if (prevAssignmentsRef.current.length > 0) {
+      const hasNew = activeIds.some(id => !prevAssignmentsRef.current.includes(id));
+      if (hasNew && userClockPrefs.alarmsEnabled && userClockPrefs.newTaskAlert) {
+        playAlarm('ya_llegue');
+        showCustomAlert("📋 ¡Nueva Tarea Asignada! Tienes una nueva tarea en tu panel de actividades.");
+      }
+    }
+    prevAssignmentsRef.current = activeIds;
+  }, [assignments, currentUser?.id, userClockPrefs.alarmsEnabled, userClockPrefs.newTaskAlert]);
 
   const handleDayChange = (newDay: string) => {
     // Guardar log del día actual
@@ -2463,11 +2654,67 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const handleClockOutRequest = () => {
+    const hasPendingTasks = useTaskStore.getState().assignments.some(
+      (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
+    );
+
+    if (hasPendingTasks) {
+      setSupervisorPin('');
+      setPendingTasksBlocker(true);
+      return;
+    }
+
     if (requireEvaluation) {
       setShowEvalModal(true);
       return;
     }
     processFinalClockOut();
+  };
+
+  const authorizeClockOutWithPendingTasks = async () => {
+    if (!supervisorPin || supervisorPin.trim().length < 4) {
+      showCustomAlert("⚠️ PIN de Supervisor inválido o incompleto.");
+      return;
+    }
+
+    // 1. Omitir todas las tareas pendientes del usuario actual
+    const storeState = useTaskStore.getState();
+    const pendingCount = storeState.assignments.filter(
+      (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
+    ).length;
+
+    const updatedAssignments = storeState.assignments.map((a: any) => {
+      if (Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')) {
+        return { ...a, status: 'omitted', validationFeedback: `Omitida al salir por supervisor con PIN.` };
+      }
+      return a;
+    });
+    useTaskStore.setState({ assignments: updatedAssignments });
+    storeState.syncToBackend();
+
+    // 2. Sincronizar log en el backend
+    try {
+      await axiosInstance.post('/clock/uncompleted-tasks-log', {
+        user_id: currentUser.id,
+        supervisor_pin: supervisorPin,
+        pending_count: pendingCount
+      });
+    } catch {}
+
+    // 3. Matrix Event Log
+    useAppStore.getState().addMatrixEvent(
+      '⚠️ Cierre con Pendientes',
+      `${currentUser.name} finalizó jornada con ${pendingCount} tareas pendientes, autorizado por supervisor. Se aplicó penalización en métricas.`,
+      'warning'
+    );
+
+    // 4. Resetear el bloqueador y continuar
+    setPendingTasksBlocker(false);
+    if (requireEvaluation) {
+      setShowEvalModal(true);
+    } else {
+      processFinalClockOut();
+    }
   };
 
   const submitEvaluation = () => {
@@ -3220,6 +3467,16 @@ export function useClockEngine(overrideUser?: any) {
     pendingBreakRequests,
     requestBreak,
     approveBreakRequest,
-    rejectBreakRequest
+    rejectBreakRequest,
+    userClockPrefs,
+    setUserClockPrefs,
+    showAlarmSettingsModal,
+    setShowAlarmSettingsModal,
+    pendingTasksBlocker,
+    setPendingTasksBlocker,
+    supervisorPin,
+    setSupervisorPin,
+    hasMealReservation: (userReservedMealSlots[currentUser?.id] || []).length > 0,
+    authorizeClockOutWithPendingTasks
   };
 }

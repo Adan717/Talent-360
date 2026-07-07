@@ -43,6 +43,8 @@ interface DialPrincipalProps {
   gpsStatus?: 'seeking' | 'success' | 'error';
   onRequestGPS?: () => void;
   isGpsValidationBypassed?: boolean;
+  hasMealReservation?: boolean;
+  onMealSwapClick?: () => void;
 }
 
 export default function DialPrincipal({
@@ -64,7 +66,9 @@ export default function DialPrincipal({
   handleAction,
   gpsStatus,
   onRequestGPS,
-  isGpsValidationBypassed = false
+  isGpsValidationBypassed = false,
+  hasMealReservation = false,
+  onMealSwapClick
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
@@ -84,6 +88,7 @@ export default function DialPrincipal({
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600';
     if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
+    if (text === 'Reserva tu Comida') return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse';
     if (text === 'Iniciar Horario de Comida') return 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600';
     if (text === 'Regresar de Comida') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600';
     if (text === 'Descanso Ley Silla') return 'bg-white border-purple-500 text-purple-600 shadow-purple-500/10 animate-pulse hover:border-purple-600';
@@ -105,6 +110,7 @@ export default function DialPrincipal({
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return 'bg-violet-400';
     if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return 'bg-emerald-400';
+    if (text === 'Reserva tu Comida') return 'bg-amber-400';
     if (text === 'Iniciar Horario de Comida') return 'bg-amber-400';
     if (text === 'Regresar de Comida') return 'bg-emerald-400';
     if (text === 'Descanso Ley Silla') return 'bg-purple-400';
@@ -125,12 +131,13 @@ export default function DialPrincipal({
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return <Key size={sizeValue} className="text-violet-500 animate-pulse shrink-0" />;
     if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return <LogIn size={sizeValue} className="text-emerald-500 shrink-0" />;
+    if (text === 'Reserva tu Comida') return <Coffee size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
     if (text === 'Iniciar Horario de Comida') return <Coffee size={sizeValue} className="text-amber-500 shrink-0" />;
     if (text === 'Regresar de Comida') return <Utensils size={sizeValue} className="text-emerald-500 animate-pulse shrink-0" />;
     if (text === 'Descanso Ley Silla') return <Armchair size={sizeValue} className="text-purple-505 animate-pulse shrink-0" />;
     if (text === 'Regresar de Descanso') return <Armchair size={sizeValue} className="text-indigo-500 animate-pulse shrink-0" />;
     if (text === 'Entrega de Turno') return <Key size={sizeValue} className="text-cyan-500 animate-pulse shrink-0" />;
-    if (text === 'Registrar Salida') return <LogOut size={sizeValue} className="text-rose-500 shrink-0" />;
+    if (text === 'Registrar Salida') return <LogOut size={sizeValue} className="text-rose-505 shrink-0" />;
     if (text === 'Registrar Reingreso') return <LogIn size={sizeValue} className="text-teal-500 shrink-0" />;
     if (text === 'Jornada Finalizada') return <CheckCircle size={sizeValue} className="text-slate-400 shrink-0" />;
 
@@ -245,6 +252,17 @@ export default function DialPrincipal({
           </div>
         </button>
       </div>
+
+      {clockState === 'active' && hasMealReservation && onMealSwapClick && (
+        <button
+          type="button"
+          onClick={onMealSwapClick}
+          className="mt-3.5 py-1.5 px-4 bg-amber-50 dark:bg-amber-955/20 border border-amber-250 hover:border-amber-450 text-amber-700 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+        >
+          <Coffee size={12} className="text-amber-550" />
+          Intercambiar Comida
+        </button>
+      )}
 
       {/* Premium Centered GPS Instruction Modal */}
       {showGpsModal && (

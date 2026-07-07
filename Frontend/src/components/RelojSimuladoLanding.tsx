@@ -876,6 +876,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           }} 
           setInnerTool={setInnerTool} 
           isDark={isDark} 
+          clockState={clockState}
+          showCustomAlert={(msg) => console.log('Landing Alert:', msg)}
         />
       </div>
 

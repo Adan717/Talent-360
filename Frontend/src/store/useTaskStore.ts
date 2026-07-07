@@ -12,6 +12,13 @@ export interface SubTask {
     completed: boolean;
 }
 
+export interface ProcedureStep {
+    step_number: number;
+    title: string;
+    detailed_instruction: string;
+    verification_required: boolean;
+}
+
 export interface Task {
     id: number;
     title: string;
@@ -26,6 +33,7 @@ export interface Task {
     points?: number;
 
     subTasks: SubTask[];
+    procedureSteps?: ProcedureStep[];
     assistantType: AssistantType;
     assistantPrompt?: string; // Ej: "¿Cuántas mermas hubo?"
     isAutoCapture: boolean;

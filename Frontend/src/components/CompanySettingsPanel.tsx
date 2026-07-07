@@ -1550,7 +1550,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 <div className="h-[1px] bg-slate-200"></div>
 
                 <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center justify-between">
-                  <span>⭐️ Controles y Módulos del Reloj (Modular Pro)</span>
+                  <span>⭐️ Controles y Componentes del Reloj (Modular Pro)</span>
                   <span className="text-[10px] bg-indigo-100 text-indigo-750 px-2 py-0.5 rounded-full font-black uppercase">Plan Pro</span>
                 </h4>
 

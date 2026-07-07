@@ -234,17 +234,22 @@ try {
     }
  
     // 4. Sembrar Configuración de Apertura (Establecer por defecto)
-    DB::table('store_opening_status')->truncate();
-    DB::table('store_opening_status')->insert([
-        'store_id' => 101,
-        'tenant_id' => 1,
-        'date' => now()->format('Y-m-d'),
-        'current_responsible_employee_id' => 1, // Francisco empieza con las llaves
-        'opened_by_employee_id' => null,
-        'status' => 'closed',
-        'created_at' => now(),
-        'updated_at' => now()
-    ]);
+    if (\Illuminate\Support\Facades\Schema::hasTable('store_daily_opening_statuses')) {
+        DB::table('store_daily_opening_statuses')->truncate();
+        DB::table('store_daily_opening_statuses')->insert([
+            'store_id' => 101,
+            'tenant_id' => 1,
+            'date' => now()->format('Y-m-d'),
+            'scheduled_opening_time' => '08:30:00',
+            'pre_opening_window_start' => '08:15:00',
+            'report_deadline' => '08:40:00',
+            'current_responsible_employee_id' => 1, // Francisco empieza con las llaves
+            'opened_by_employee_id' => null,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+    }
  
     DB::commit();
     echo "DecorArte seeded successfully!\n";

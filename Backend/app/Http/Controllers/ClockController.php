@@ -19,7 +19,7 @@ class ClockController extends Controller
     // ⚠️ DEV-ONLY — No usar en producción
     public function resetDb()
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', true)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
@@ -47,7 +47,7 @@ class ClockController extends Controller
     // ⚠️ DEV-ONLY — No usar en producción
     public function resetDay(Request $request)
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', true)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
@@ -235,7 +235,7 @@ class ClockController extends Controller
     // ⚠️ DEV-ONLY — No usar en producción
     public function initDb(Request $request)
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', true)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 

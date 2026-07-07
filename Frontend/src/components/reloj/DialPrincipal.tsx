@@ -191,7 +191,7 @@ export default function DialPrincipal({
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-shrink-0 w-full my-3' : ''}`}>
+    <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-shrink-0 my-3' : ''}`}>
 
 
       <div className="relative flex-shrink-0 flex items-center justify-center">

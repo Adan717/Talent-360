@@ -6,7 +6,7 @@ import { useClockEngine } from './useClockEngine';
 import RelojVisual from './RelojVisual';
 import axiosInstance from '../../lib/axios';
 
-function MiniaturaCelular({ user }: { user: any }) {
+function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
   const engine = useClockEngine(user);
 
   // Sincronizar estado local simulado hacia la store global para la tabla dinámica
@@ -72,7 +72,10 @@ function MiniaturaCelular({ user }: { user: any }) {
       {/* Scaled Cellphone frame */}
       <div className="flex-grow overflow-hidden relative">
         <ClockContext.Provider value={engine}>
-          <div className="w-[400px] h-[850px] transform scale-[0.65] origin-top-left pointer-events-auto">
+          <div 
+            className="w-[400px] h-[850px] transform origin-top-left pointer-events-auto"
+            style={{ transform: `scale(${scale})` }}
+          >
             <RelojVisual isMobileFrame={true} />
           </div>
         </ClockContext.Provider>
@@ -82,6 +85,7 @@ function MiniaturaCelular({ user }: { user: any }) {
 }
 
 export default function PanelSimulador() {
+  const [phoneScale, setPhoneScale] = useState(0.5); // Default a 50% para ver más celulares simultáneamente
   const [resetKey, setResetKey] = useState(0);
   const { 
     globalUsers, 
@@ -385,6 +389,47 @@ export default function PanelSimulador() {
               </div>
               <span className="text-xs text-slate-500">7:30 AM - 7:00 PM</span>
             </div>
+
+            <div className="flex justify-between items-center mt-2 border-t border-slate-800 pt-3">
+              <div className="flex flex-col gap-1.5 w-full">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <span>Escala de Visualización</span>
+                  <span className="text-emerald-400">{Math.round(phoneScale * 100)}%</span>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                  <input 
+                    type="range" 
+                    min="0.35" 
+                    max="1.0" 
+                    step="0.05"
+                    value={phoneScale}
+                    onChange={(e) => setPhoneScale(Number(e.target.value))}
+                    className="w-full sm:w-28 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  />
+                  <div className="flex gap-1 flex-wrap justify-center sm:justify-start">
+                    {[
+                      { l: 'Micro', v: 0.35 },
+                      { l: 'Comp.', v: 0.5 },
+                      { l: 'Med.', v: 0.65 },
+                      { l: 'Gde.', v: 0.8 },
+                      { l: '100%', v: 1.0 }
+                    ].map(btn => (
+                      <button 
+                        key={btn.l}
+                        onClick={() => setPhoneScale(btn.v)} 
+                        className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 border ${
+                          phoneScale === btn.v 
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-inner font-bold' 
+                            : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700/60 font-bold'
+                        }`}
+                      >
+                        {btn.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -400,14 +445,30 @@ export default function PanelSimulador() {
                 return a.jerarquiaLlaves - b.jerarquiaLlaves;
               })
               .map(user => (
-              <div key={`${user.id}-${resetKey}`} className="flex flex-col items-center">
-                <div className="bg-slate-800 px-4 py-2 rounded-t-2xl border-t border-l border-r border-slate-700 w-[260px] text-center z-10">
-                  <p className="text-emerald-400 font-bold text-sm truncate">{user.name}{getUserKeysIcon(user.id)}</p>
-                  <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest">{user.role}</p>
+              <div key={`${user.id}-${resetKey}`} className="flex flex-col items-center transition-all duration-300">
+                <div 
+                  className="bg-slate-800 px-3 py-1.5 rounded-t-2xl border-t border-l border-r border-slate-700 text-center z-10 transition-all duration-300 truncate"
+                  style={{ width: `${400 * phoneScale}px` }}
+                >
+                  <p 
+                    className="text-emerald-400 font-bold truncate" 
+                    style={{ fontSize: `${Math.max(10, Math.min(14, 14 * (phoneScale / 0.65)))}px` }}
+                  >
+                    {user.name}{getUserKeysIcon(user.id)}
+                  </p>
+                  <p 
+                    className="text-slate-500 uppercase font-black tracking-widest truncate" 
+                    style={{ fontSize: `${Math.max(8, Math.min(10, 10 * (phoneScale / 0.65)))}px` }}
+                  >
+                    {user.role}
+                  </p>
                 </div>
                 {/* Contenedor wrapper con dimensiones exactas que enmascara el escalado */}
-                <div className="bg-slate-800 rounded-b-2xl rounded-t-none border border-slate-700 w-[260px] h-[588px] shadow-2xl overflow-hidden relative">
-                   <MiniaturaCelular user={user} />
+                <div 
+                  className="bg-slate-800 rounded-b-2xl rounded-t-none border border-slate-700 shadow-2xl overflow-hidden relative transition-all duration-300"
+                  style={{ width: `${400 * phoneScale}px`, height: `${(850 * phoneScale) + 38}px` }}
+                >
+                   <MiniaturaCelular user={user} scale={phoneScale} />
                 </div>
               </div>
             ))}

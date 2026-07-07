@@ -15,6 +15,10 @@ class TenantScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
+        if (app()->runningInConsole()) {
+            return;
+        }
+
         if (static::$resolvingUser) {
             return;
         }

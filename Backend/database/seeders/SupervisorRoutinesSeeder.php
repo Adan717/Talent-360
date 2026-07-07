@@ -11,6 +11,7 @@ class SupervisorRoutinesSeeder extends Seeder
     {
         // 1. Checklist de Apertura
         $routineId1 = DB::table('routines')->insertGetId([
+            'tenant_id' => 1,
             'title' => 'Documento 17: Checklist Diario de Apertura',
             'target_role_id' => 2,
             'trigger' => 'apertura',
@@ -29,6 +30,7 @@ class SupervisorRoutinesSeeder extends Seeder
 
         foreach ($tasksApertura as $t) {
             $taskId = DB::table('tasks')->insertGetId([
+                'tenant_id' => 1,
                 'title' => $t,
                 'priority' => 'bloqueante',
                 'target_type' => 'role',
@@ -42,6 +44,7 @@ class SupervisorRoutinesSeeder extends Seeder
 
         // 2. Checklist de Operación
         $routineId2 = DB::table('routines')->insertGetId([
+            'tenant_id' => 1,
             'title' => 'Documento 18: Checklist Diario de Operación',
             'target_role_id' => 2,
             'trigger' => 'hora_fija', // Se podría disparar a medio día
@@ -59,6 +62,7 @@ class SupervisorRoutinesSeeder extends Seeder
 
         foreach ($tasksOperacion as $t) {
             $taskId = DB::table('tasks')->insertGetId([
+                'tenant_id' => 1,
                 'title' => $t,
                 'priority' => 'normal',
                 'target_type' => 'role',
@@ -72,6 +76,7 @@ class SupervisorRoutinesSeeder extends Seeder
 
         // 3. Checklist de Cierre
         $routineId3 = DB::table('routines')->insertGetId([
+            'tenant_id' => 1,
             'title' => 'Documento 19: Checklist Diario de Cierre',
             'target_role_id' => 2,
             'trigger' => 'cierre',
@@ -90,6 +95,7 @@ class SupervisorRoutinesSeeder extends Seeder
 
         foreach ($tasksCierre as $t) {
             $taskId = DB::table('tasks')->insertGetId([
+                'tenant_id' => 1,
                 'title' => $t,
                 'priority' => 'bloqueante',
                 'target_type' => 'role',

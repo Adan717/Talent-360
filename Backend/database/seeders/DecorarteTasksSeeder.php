@@ -27,8 +27,8 @@ class DecorarteTasksSeeder extends Seeder
 
         // 2. Buscar roles de DecorArte 360
         $roleAyudante = JobRole::where('tenant_id', $tenantId)->where('name', 'like', '%Ayudante%')->first();
-        $roleAtencion = JobRole::where('tenant_id', $tenantId)->where('name', 'like', '%Atención%')->first();
-        $roleSupervisorVentas = JobRole::where('tenant_id', $tenantId)->where('name', 'like', '%Supervisor de Ventas%')->first();
+        $roleAtencion = JobRole::where('tenant_id', $tenantId)->where('name', 'like', '%Cajeros%')->first();
+        $roleSupervisorVentas = JobRole::where('tenant_id', $tenantId)->where('name', 'like', '%Tienda y Compras%')->first();
         $roleGerente = JobRole::where('tenant_id', $tenantId)->where('name', 'like', '%Gerente%')->first();
 
         // Fallbacks por si acaso

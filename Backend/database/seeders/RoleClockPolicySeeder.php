@@ -14,7 +14,7 @@ class RoleClockPolicySeeder extends Seeder
     {
         // 1: Administrador / Gerente
         RoleClockPolicy::updateOrCreate(
-            ['job_role_id' => 1],
+            ['job_role_id' => 1, 'tenant_id' => 1],
             [
                 'policy_name' => 'Perfil Ejecutivo',
                 'config' => [
@@ -31,7 +31,7 @@ class RoleClockPolicySeeder extends Seeder
 
         // 2: Sup. Tienda y Compras
         RoleClockPolicy::updateOrCreate(
-            ['job_role_id' => 2],
+            ['job_role_id' => 2, 'tenant_id' => 1],
             [
                 'policy_name' => 'Perfil Supervisor Maestro',
                 'config' => [
@@ -50,7 +50,7 @@ class RoleClockPolicySeeder extends Seeder
         $supervisores = [3, 4];
         foreach ($supervisores as $roleId) {
             RoleClockPolicy::updateOrCreate(
-                ['job_role_id' => $roleId],
+                ['job_role_id' => $roleId, 'tenant_id' => 1],
                 [
                     'policy_name' => 'Perfil Supervisor Área',
                     'config' => [
@@ -70,7 +70,7 @@ class RoleClockPolicySeeder extends Seeder
         $operativos = [5, 6];
         foreach ($operativos as $roleId) {
             RoleClockPolicy::updateOrCreate(
-                ['job_role_id' => $roleId],
+                ['job_role_id' => $roleId, 'tenant_id' => 1],
                 [
                     'policy_name' => 'Perfil Operativo',
                     'config' => [

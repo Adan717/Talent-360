@@ -101,6 +101,7 @@ class VacancySeeder extends Seeder
         foreach ($vacancies as $vacancy) {
             $vacancy['created_at'] = now();
             $vacancy['updated_at'] = now();
+            $vacancy['tenant_id'] = 1;
             DB::table('vacancies')->insert($vacancy);
         }
     }

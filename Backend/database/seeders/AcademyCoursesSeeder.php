@@ -111,6 +111,7 @@ class AcademyCoursesSeeder extends Seeder
 
         foreach ($courses as $course) {
             DB::table('academy_courses')->insert(array_merge($course, [
+                'tenant_id' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
                 'is_active' => true

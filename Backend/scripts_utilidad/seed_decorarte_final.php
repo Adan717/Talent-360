@@ -213,6 +213,7 @@ try {
             'user_id' => $userId,
             'name' => $emp['name'],
             'email' => $emp['email'],
+            'job_role_id' => $emp['job_role_id'],
             'phone' => '555' . str_pad($emp['id'], 7, '0', STR_PAD_LEFT),
             'pin_code' => '100' . $emp['id'],
             'portadorLlaves' => $emp['portadorLlaves'],
@@ -251,6 +252,13 @@ try {
         ]);
     }
  
+    // Run additional seeders for Tenant 1
+    (new \Database\Seeders\VacancySeeder())->run();
+    (new \Database\Seeders\AcademyCoursesSeeder())->run();
+    (new \Database\Seeders\DecorarteTasksSeeder())->run();
+    (new \Database\Seeders\SupervisorRoutinesSeeder())->run();
+    (new \Database\Seeders\RoleClockPolicySeeder())->run();
+
     DB::commit();
     echo "DecorArte seeded successfully!\n";
 } catch (\Exception $e) {

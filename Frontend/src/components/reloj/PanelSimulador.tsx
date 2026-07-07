@@ -276,6 +276,7 @@ export default function PanelSimulador() {
         localStorage.removeItem('store_opening_assignments');
         localStorage.removeItem('opening_checklist_completed');
         localStorage.removeItem('opening_roll_call_completed');
+        localStorage.removeItem('clock_pending_break_requests');
         for (let i = 0; i < 5; i++) {
           localStorage.removeItem(`open_task_${i}`);
         }
@@ -283,7 +284,8 @@ export default function PanelSimulador() {
         await axiosInstance.post('/sync/reset');
         await resetGlobalSimulation();
         setResetKey(prev => prev + 1);
-        alert('Simulación y base de datos reiniciadas con éxito.');
+        alert('Simulación y base de datos reiniciadas con éxito. Recargando la vista...');
+        window.location.reload();
       } catch (err) {
         console.error('Error al reiniciar base de datos de simulación:', err);
         alert('Error al conectar con el servidor backend para limpiar la base de datos.');

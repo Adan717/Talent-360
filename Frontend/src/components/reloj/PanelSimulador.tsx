@@ -6,13 +6,13 @@ import { useClockEngine } from './useClockEngine';
 import RelojVisual from './RelojVisual';
 import axiosInstance from '../../lib/axios';
 
-class PhoneErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+class PhoneErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
   constructor(props: any) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
   static getDerivedStateFromError(error: any) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
   componentDidCatch(error: any, errorInfo: any) {
     console.error("Phone Render Crash:", error, errorInfo);
@@ -20,10 +20,15 @@ class PhoneErrorBoundary extends React.Component<{ children: React.ReactNode }, 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center h-full bg-slate-950 p-4 text-center select-none border border-rose-500/20">
+        <div className="flex flex-col items-center justify-center h-full bg-slate-950 p-6 text-center select-none border border-rose-500/20 overflow-y-auto">
           <span className="text-2xl mb-2">📱💥</span>
           <h4 className="text-[10px] font-black uppercase tracking-wider text-rose-400">Error de Celular</h4>
-          <p className="text-[9px] text-slate-500 mt-1 leading-normal max-w-[180px]">Ocurrió un fallo al renderizar el dispositivo simulado.</p>
+          <p className="text-[10px] text-rose-300 mt-2 font-mono leading-normal max-w-[240px] break-words">
+            {this.state.error?.message || String(this.state.error)}
+          </p>
+          <pre className="text-[8px] text-slate-500 mt-4 font-mono text-left max-w-full overflow-x-auto leading-tight p-2 bg-slate-900 rounded border border-slate-800">
+            {this.state.error?.stack || 'No stack trace available'}
+          </pre>
         </div>
       );
     }

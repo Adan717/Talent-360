@@ -3699,7 +3699,7 @@ export default function RelojVisual({
       )}
 
       {/* RENDER OPERATIONAL MODALS FOR MOBILE */}
-      {isScrollableMobile && renderFloatingActionButton()}
+      {isScrollableMobile && !isStoreClosed && renderFloatingActionButton()}
       {isScrollableMobile && renderFabOperationsSheet()}
       {isScrollableMobile && renderTaskCreatorModal()}
       {isScrollableMobile && renderCopilotChatDrawer()}

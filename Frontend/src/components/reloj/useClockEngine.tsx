@@ -1076,6 +1076,8 @@ export function useClockEngine(overrideUser?: any) {
   const [isEarlyDepartureValidation, setIsEarlyDepartureValidation] = useState(false);
   const [isOvertimeUnlocked, setIsOvertimeUnlocked] = useState<Record<number, boolean>>({});
   const [isOvertimeValidation, setIsOvertimeValidation] = useState(false);
+  const [isSimulatedHoliday, setIsSimulatedHoliday] = useState(() => localStorage.getItem('is_simulated_holiday') === 'true');
+  const [isLateEntryValidation, setIsLateEntryValidation] = useState(false);
   const [contingencyLogs, setContingencyLogs] = useState<any[]>([]);
   const [contingencyUsed, setContingencyUsed] = useState<Record<number, boolean>>({});
   const [absentUsers, setAbsentUsers] = useState<Record<number, boolean>>({});

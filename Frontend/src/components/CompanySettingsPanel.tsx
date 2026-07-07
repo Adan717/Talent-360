@@ -1496,6 +1496,23 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 </div>
               </div>
 
+              {/* Ventana de Habilitación Previa del Reloj */}
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 className="font-bold text-slate-800 mb-1">Ventana de Acceso Previo al Reloj (Minutos)</h4>
+                <p className="text-xs text-slate-500 mb-3">Minutos antes de la hora oficial de apertura de la tienda en que se habilitará el Reloj Checador para registrar asistencia e incidencias.</p>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="180"
+                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650"
+                    value={formData.clockOpConfig?.preOpeningAccessMins ?? 60}
+                    onChange={(e) => handleNestedChange('clockOpConfig', 'preOpeningAccessMins', parseInt(e.target.value) || 0)}
+                  />
+                  <span className="text-sm text-slate-650 font-bold">Minutos previos permitidos.</span>
+                </div>
+              </div>
+
                 {/* Ajustes modularizados y premium */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-6">
                 <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2">🔒 Configuración de Red Wi-Fi e IP Lock (Básico / Gratis)</h4>

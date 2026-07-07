@@ -33,6 +33,7 @@ class TenantInitializationService
                 'allowManualCheckIn' => false,
                 'arrivalWindowMins' => 30,
                 'storeClosedReportDelayMins' => 0,
+                'preOpeningAccessMins' => 60,
             ],
             'moduleCustomizations' => [
                 'reloj' => [

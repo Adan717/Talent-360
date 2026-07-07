@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -360,14 +360,22 @@ export default function RelojVisual({
   const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
   const [weeklyPayrollData, setWeeklyPayrollData] = useState<any>(null);
 
-  // Helper to check if store is closed based on schedule
+  // Helper to check if store is closed based on schedule and pre-opening access window
   const getStoreClosedInfo = () => {
     const openTimeStr = systemSettings?.storeSchedule?.openTime || '08:00';
     const closeTimeStr = systemSettings?.storeSchedule?.closeTime || '18:00';
+    const preOpeningAccessMins = systemSettings?.clockOpConfig?.preOpeningAccessMins ?? 60;
+    
     const [oh, om] = openTimeStr.split(':').map(Number);
     const [ch, cm] = closeTimeStr.split(':').map(Number);
-    const openMins = oh * 60 + om;
+    const baseOpenMins = oh * 60 + om;
     const closeMins = ch * 60 + cm;
+    
+    // Extend the opening time backwards by preOpeningAccessMins
+    let openMins = baseOpenMins - preOpeningAccessMins;
+    if (openMins < 0) {
+      openMins += 24 * 60;
+    }
     
     let isClosed = false;
     if (openMins < closeMins) {
@@ -386,7 +394,6 @@ export default function RelojVisual({
     }
 
     const hours = Math.floor(remainingMins / 60);
-    const mins = remainingMins % 65 || remainingMins % 60; // Just in case, standard modulo
     const minsFinal = remainingMins % 60;
     let waitTimeText = '';
     if (hours > 0) {
@@ -3219,12 +3226,10 @@ export default function RelojVisual({
                     </button>
 
                     {isProfileMenuOpen && (
-                      <div className={`absolute right-0 mt-2 w-52 border rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 ${
-                        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-850'
-                      }`}>
-                        <div className="px-4 py-2 border-b border-slate-800/20 text-left">
-                          <p className="text-xs font-bold text-slate-505">Sesión Activa</p>
-                          <p className="text-[10px] font-medium truncate text-slate-400">{currentUser?.email || 'empleado@decorarte360.com'}</p>
+                      <div className="absolute right-0 mt-2 w-52 sm:w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="px-4 py-2 border-b border-slate-100 text-left">
+                          <p className="text-xs sm:text-sm font-bold text-slate-800">Sesión Activa</p>
+                          <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'empleado@decorarte360.com'}</p>
                         </div>
                         <div className="p-1.5 space-y-0.5 text-left">
                           <button 
@@ -3235,11 +3240,25 @@ export default function RelojVisual({
                               setShowSettingsModal(true);
                               setIsProfileMenuOpen(false); 
                             }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-800/40 transition-colors flex items-center gap-2 focus:outline-none"
+                            className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2 focus:outline-none"
                           >
-                            🪪 Perfil & Ajustes
+                            <Users size={14} className="text-slate-400" />
+                            Mi Cuenta
                           </button>
-                          <div className="border-t border-slate-800/20 my-1"></div>
+                          
+                          <button 
+                            onClick={() => {
+                              setInnerTool(null);
+                              setPhoneTab('nomina');
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2 focus:outline-none"
+                          >
+                            <DollarSign size={14} className="text-slate-400" />
+                            Historial de Nómina
+                          </button>
+
+                          <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
                           <button 
                             onClick={() => {
                               localStorage.removeItem('talent_auth_token');
@@ -3247,9 +3266,10 @@ export default function RelojVisual({
                               setIsProfileMenuOpen(false);
                               window.location.href = '/login';
                             }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center gap-2 focus:outline-none"
+                            className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2 focus:outline-none"
                           >
-                            🚪 Cerrar Sesión
+                            <Lock size={14} className="text-rose-500" />
+                            Cerrar Sesión
                           </button>
                         </div>
                       </div>
@@ -5943,102 +5963,91 @@ export default function RelojVisual({
           {/* Menú de Perfil Flotante (Popover Contextual debajo del Header) */}
           {showProfileMenu && (
             <div 
-              className="fixed inset-0 z-[85] bg-black/10 dark:bg-black/30 backdrop-blur-xs"
+              className="fixed inset-0 z-[85] bg-black/10 backdrop-blur-xs"
               onClick={() => setShowProfileMenu(false)}
             >
               <div 
-                className={`fixed top-[76px] right-3.5 w-60 z-[90] rounded-2xl border p-4 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200 text-left ${
-                  isDark 
-                    ? 'bg-slate-900 border-slate-850 text-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.5)]' 
-                    : 'bg-white border-slate-150 text-slate-800 shadow-[0_8px_32px_rgba(124,58,237,0.08)]'
-                }`}
+                className="fixed top-[76px] right-3.5 w-52 sm:w-56 z-[90] bg-white border border-slate-200 rounded-2xl shadow-xl py-2 animate-in fade-in slide-in-from-top-3 duration-200 text-left"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header del menú */}
-                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
-                  <img 
-                    src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
-                    alt="Avatar" 
-                    className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" 
-                  />
-                  <div className="leading-tight min-w-0">
-                    <p className="font-black text-xs truncate">{currentUser?.name || 'Colaborador'}</p>
-                    <p className="text-[8.5px] text-slate-400 font-extrabold uppercase tracking-wide truncate mt-0.5">{userPositionName}</p>
-                  </div>
+                <div className="px-4 py-2 border-b border-slate-100 text-left">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800">Sesión Activa</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'empleado@decorarte360.com'}</p>
                 </div>
 
                 {/* Lista de opciones */}
-                <div className="space-y-1">
+                <div className="p-1.5 space-y-0.5">
                   <button 
                     onClick={() => {
                       setShowProfileMenu(false);
                       setShowSettingsModal(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2.5 hover:bg-slate-50 dark:hover:bg-slate-950 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
+                    className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2 focus:outline-none bg-transparent border-none cursor-pointer"
                   >
-                    <span>👤</span> Ver Perfil / Ajustes
+                    <Users size={14} className="text-slate-400" />
+                    Mi Cuenta
                   </button>
 
                   <button 
                     onClick={() => {
                       setShowProfileMenu(false);
-                      showCustomAlert('🕒 Historial de Asistencia y Actividad (Próximamente)');
+                      setInnerTool(null);
+                      setPhoneTab('nomina');
                     }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-955 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
+                    className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2 focus:outline-none bg-transparent border-none cursor-pointer"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <span>🕒</span> Ver Histórico
-                    </div>
-                    <span className="text-[7px] font-black uppercase bg-violet-100 dark:bg-violet-950 text-violet-755 dark:text-violet-300 px-1.5 py-0.5 rounded">Próx</span>
+                    <DollarSign size={14} className="text-slate-400" />
+                    Historial de Nómina
                   </button>
 
-                  <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2">
-                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1.5">Entorno</span>
-                    
-                    {/* Dark/Light mode toggle */}
-                    <button 
-                      onClick={() => setIsDark(!isDark)}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-955 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span>🌓</span> Tema del Dispositivo
-                      </div>
-                      <span className="text-[9px] font-extrabold text-slate-500 capitalize">{isDark ? 'Oscuro' : 'Claro'}</span>
-                    </button>
+                  <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
+                  
+                  {/* Tema del Dispositivo */}
+                  <button 
+                    onClick={() => setIsDark(!isDark)}
+                    className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-between focus:outline-none bg-transparent border-none cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sun size={14} className="text-slate-400" />
+                      <span>Tema Oscuro</span>
+                    </div>
+                    <span className="text-[10px] font-extrabold text-slate-500 capitalize">{isDark ? 'Sí' : 'No'}</span>
+                  </button>
 
-                    {/* Sandbox toggle for admin/supervisor */}
-                    {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
-                      <button 
-                        onClick={() => {
-                          useAppStore.getState().setIsSandboxMode(!isSandboxMode);
-                          showCustomAlert(`🛠️ Modo Sandbox ${!isSandboxMode ? 'activado' : 'desactivado'}.`);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-955 text-slate-700 dark:text-slate-300 border-none bg-transparent cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span>🛠️</span> Modo Simulador
-                        </div>
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${isSandboxMode ? 'bg-emerald-50 border-emerald-250 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
-                          {isSandboxMode ? 'ON' : 'OFF'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Cerrar Sesión */}
-                  <div className="border-t border-slate-100 dark:border-slate-800 pt-2 mt-2">
+                  {/* Sandbox toggle for admin/supervisor */}
+                  {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
                     <button 
                       onClick={() => {
-                        localStorage.removeItem('talent_auth_token');
-                        useAppStore.getState().setCurrentUser(null as any);
-                        setShowProfileMenu(false);
-                        window.location.href = '/login';
+                        useAppStore.getState().setIsSandboxMode(!isSandboxMode);
+                        showCustomAlert(`🛠️ Modo Sandbox ${!isSandboxMode ? 'activado' : 'desactivado'}.`);
                       }}
-                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-black transition-colors flex items-center gap-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border-none cursor-pointer"
+                      className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-between focus:outline-none bg-transparent border-none cursor-pointer"
                     >
-                      <span>🚪</span> Cerrar Sesión
+                      <div className="flex items-center gap-2">
+                        <Settings size={14} className="text-slate-400" />
+                        <span>Modo Simulador</span>
+                      </div>
+                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${isSandboxMode ? 'bg-emerald-50 border-emerald-250 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                        {isSandboxMode ? 'ON' : 'OFF'}
+                      </span>
                     </button>
-                  </div>
+                  )}
+
+                  <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
+
+                  <button 
+                    onClick={() => {
+                      localStorage.removeItem('talent_auth_token');
+                      useAppStore.getState().setCurrentUser(null as any);
+                      setShowProfileMenu(false);
+                      window.location.href = '/login';
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2 focus:outline-none bg-transparent border-none cursor-pointer"
+                  >
+                    <Lock size={14} className="text-rose-500" />
+                    Cerrar Sesión
+                  </button>
                 </div>
               </div>
             </div>

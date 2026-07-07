@@ -142,7 +142,17 @@ class ClockController extends Controller
             }
         }
         $tasks = DB::table('tasks')->where('tenant_id', $tenantId)->get();
-        $routines = DB::table('routines')->where('tenant_id', $tenantId)->get();
+        $routines = DB::table('routines')
+            ->where('tenant_id', $tenantId)
+            ->get()
+            ->map(function ($r) {
+                $taskIds = DB::table('routine_task')
+                    ->where('routine_id', $r->id)
+                    ->pluck('task_id')
+                    ->toArray();
+                $r->task_ids = json_encode($taskIds);
+                return $r;
+            });
         $assignments = DB::table('task_assignments')->where('tenant_id', $tenantId)->get();
  
         // 1. Resolve tenant plan and permissions dynamically

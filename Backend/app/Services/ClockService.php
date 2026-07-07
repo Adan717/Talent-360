@@ -23,6 +23,17 @@ class ClockService
             $time = $now->format('H:i:s');
         }
 
+        // Verificar si es día festivo no laborable y está configurado para bloquear la aplicación
+        $holidayBlock = \DB::table('lft_holidays')
+            ->where('tenant_id', $user->tenant_id ?? 1)
+            ->where('date', $date)
+            ->where('block_app', true)
+            ->first();
+
+        if ($holidayBlock) {
+            throw new \Exception("Fichaje Denegado: Hoy es día festivo oficial obligatorio ({$holidayBlock->name}) y el sistema se encuentra bloqueado.");
+        }
+
         // Obtener el plan del tenant
         $tenant = \App\Models\Tenant::find($user->tenant_id ?? 1);
         $isPro = $tenant && in_array(strtolower($tenant->plan ?? 'freemium'), ['pro', 'enterprise']);
@@ -232,6 +243,15 @@ class ClockService
             }
         }
         
+        // Obtener días festivos registrados para el periodo
+        $holidays = \DB::table('lft_holidays')
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get()
+            ->keyBy('date');
+
+        $holidayWorkedDaysCount = 0;
+
         // 4. Calcular Faltas
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
@@ -257,10 +277,20 @@ class ClockService
             $dateStr = $current->toDateString();
             $analysedDates[] = $dateStr;
             
+            $isHolidayDate = $holidays->has($dateStr);
+
             if ($current->dayOfWeek !== $restDayOfWeek) {
-                $expectedDaysCount++;
-                if (!isset($entriesByDate[$dateStr])) {
-                    $physicalAbsences++;
+                if ($isHolidayDate) {
+                    // Es día festivo
+                    if (isset($entriesByDate[$dateStr])) {
+                        $holidayWorkedDaysCount++;
+                    }
+                    // Si no laboró, NO cuenta como falta física (es descanso pagado obligatorio)
+                } else {
+                    $expectedDaysCount++;
+                    if (!isset($entriesByDate[$dateStr])) {
+                        $physicalAbsences++;
+                    }
                 }
             }
             $current->addDay();
@@ -299,8 +329,11 @@ class ClockService
         
         $totalDeductions = $deductionAbsence + $deductionRestDay + $deductionLates;
         
-        // Sueldo bruto para los 7 días (6 trabajados + 1 descanso)
-        $grossPay = $dailySalary * 7;
+        // Calcular bono por festivo laborado (salario doble adicional por LFT)
+        $holidayBonusPay = $holidayWorkedDaysCount * $dailySalary * 2.0;
+
+        // Sueldo bruto para los 7 días (6 trabajados + 1 descanso) + bono festivo
+        $grossPay = ($dailySalary * 7) + $holidayBonusPay;
         $netPay = max(0, $grossPay - $totalDeductions);
         
         // Obtener estatus de aprobaciones diarias
@@ -375,7 +408,8 @@ class ClockService
                 'base' => (float)$baseSalary,
                 'daily' => (float)$dailySalary,
                 'gross' => (float)$grossPay,
-                'net' => (float)$netPay
+                'net' => (float)$netPay,
+                'holiday_bonus' => (float)$holidayBonusPay
             ],
             'incidents' => [
                 'lates' => $latesCount,
@@ -386,6 +420,7 @@ class ClockService
                 'rest_day_proportion' => (float)$restDayProportion,
                 'meal_excess_minutes' => $mealExcessMinutes,
                 'rest_excess_minutes' => $restExcessMinutes,
+                'holidays_worked' => $holidayWorkedDaysCount
             ],
             'performance' => [
                 'meal_overtime_mins' => $mealExcessMinutes,

@@ -177,6 +177,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Ley Federal del Trabajo (LFT) settings
         Route::get('/admin/lft-settings', [LftSettingController::class, 'getSettings']);
         Route::post('/admin/lft-settings', [LftSettingController::class, 'saveSettings']);
+        Route::get('/admin/lft-holidays', [LftSettingController::class, 'getHolidays']);
+        Route::post('/admin/lft-holidays', [LftSettingController::class, 'saveHoliday']);
+        Route::delete('/admin/lft-holidays/{id}', [LftSettingController::class, 'deleteHoliday']);
 
         // Nómina y Reportes Avanzados
         Route::middleware('tenant.module:reportes')->group(function () {

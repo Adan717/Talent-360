@@ -116,4 +116,91 @@ class PayrollLftTest extends TestCase
         // Neto esperado: $3500 - $1256.67 = $2243.33
         $this->assertEquals(2243.33, round($payroll['salary']['net'], 2));
     }
+
+    public function test_holiday_blocking_and_payroll_bonus(): void
+    {
+        // 1. Crear estructuras
+        $tenant = Tenant::create([
+            'name' => 'Empresa Festivos LFT',
+            'subdomain' => 'test-holidays',
+            'is_active' => true,
+        ]);
+
+        $user = User::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Colaborador Festivo',
+            'email' => 'colab_festivo@test.com',
+            'password' => bcrypt('password'),
+            'role' => 'empleado',
+        ]);
+
+        $this->actingAs($user);
+
+        $employee = Employee::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'name' => 'Colaborador Festivo',
+            'base_salary' => 3000.00, // $500 diario
+            'restDay' => 'Domingo',
+            'mealMinutes' => 60,
+            'is_active_employee' => true,
+        ]);
+
+        // Crear días festivos oficiales
+        // Festivo 1: Miércoles 2026-06-03 (Sin bloqueo, no trabajado). No debe contar como falta.
+        // Festivo 2: Jueves 2026-06-04 (Sin bloqueo, trabajado). Debe pagar doble adicional ($500 * 2 = $1000 de bono).
+        // Festivo 3: Viernes 2026-06-05 (Con bloqueo). Fichajes en este día deben arrojar excepción.
+        \DB::table('lft_holidays')->insert([
+            ['tenant_id' => $tenant->id, 'date' => '2026-06-03', 'name' => 'Festivo No Trabajado', 'block_app' => false, 'created_at' => now(), 'updated_at' => now()],
+            ['tenant_id' => $tenant->id, 'date' => '2026-06-04', 'name' => 'Festivo Trabajado', 'block_app' => false, 'created_at' => now(), 'updated_at' => now()],
+            ['tenant_id' => $tenant->id, 'date' => '2026-06-05', 'name' => 'Festivo Bloqueado', 'block_app' => true, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // Fichajes:
+        // Lunes 2026-06-01: Trabajado normal
+        TimeEntry::create([
+            'user_id' => $user->id, 'tenant_id' => $tenant->id, 'date' => '2026-06-01', 'type' => 'check_in', 'time' => '08:50:00', 'is_late' => false, 'late_minutes' => 0
+        ]);
+        // Martes 2026-06-02: Falta física normal (no es festivo) -> 1 falta física
+        
+        // Miércoles 2026-06-03: Festivo No Trabajado (no tiene checadas). No debe contar como falta.
+        
+        // Jueves 2026-06-04: Festivo Trabajado (tiene checada)
+        TimeEntry::create([
+            'user_id' => $user->id, 'tenant_id' => $tenant->id, 'date' => '2026-06-04', 'type' => 'check_in', 'time' => '08:50:00', 'is_late' => false, 'late_minutes' => 0
+        ]);
+
+        // Sábado 2026-06-06: Trabajado normal
+        TimeEntry::create([
+            'user_id' => $user->id, 'tenant_id' => $tenant->id, 'date' => '2026-06-06', 'type' => 'check_in', 'time' => '08:50:00', 'is_late' => false, 'late_minutes' => 0
+        ]);
+
+        // Calcular nómina
+        $clockService = app(ClockService::class);
+        $payroll = $clockService->calculatePayrollForEmployee($employee, '2026-06-01', '2026-06-07');
+
+        // Validar:
+        // 1. Faltas físicas: Martes 2026-06-02 es la única falta (1 falta).
+        // Miércoles 2026-06-03 (festivo no trabajado) no debe contar como falta.
+        $this->assertEquals(1, $payroll['incidents']['physical_absences']);
+        $this->assertEquals(1, $payroll['incidents']['total_absences']);
+
+        // 2. Festivos laborados: Jueves 2026-06-04 (1 trabajado).
+        $this->assertEquals(1, $payroll['incidents']['holidays_worked']);
+        
+        // 3. Bono por festivo laborado: $500 * 2 = $1000.
+        $this->assertEquals(1000.00, $payroll['salary']['holiday_bonus']);
+
+        // 4. Bloqueo de App: Intentar fichar el Viernes 2026-06-05 (festivo bloqueado) debe fallar con excepción.
+        Carbon::setTestNow(Carbon::parse('2026-06-05 09:00:00'));
+
+        try {
+            $clockService->processPunch($user, 'check_in', '09:00:00', ['sandbox_bypass' => true]);
+            $this->fail("Debería haber lanzado una excepción por día festivo bloqueado.");
+        } catch (\Exception $e) {
+            $this->assertStringContainsString("Hoy es día festivo oficial obligatorio (Festivo Bloqueado) y el sistema se encuentra bloqueado.", $e->getMessage());
+        } finally {
+            Carbon::setTestNow(); // Resetear Carbon
+        }
+    }
 }

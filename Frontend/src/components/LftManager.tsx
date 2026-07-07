@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Scale, Clock, AlertTriangle, ShieldAlert, Award, 
-  HelpCircle, CheckCircle2, Save, RotateCcw, Activity, Coffee, Upload, Sparkles
+  HelpCircle, CheckCircle2, Save, RotateCcw, Activity, Coffee, Upload, Sparkles,
+  Calendar, Plus, Trash2, Lock, Unlock
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -16,6 +17,17 @@ export default function LftManager() {
   const [restToleranceMinutes, setRestToleranceMinutes] = useState(10);
   const [lateActionMode, setLateActionMode] = useState<'deduct' | 'extend_shift'>('deduct');
   const [paidRestDay, setPaidRestDay] = useState(true);
+
+  // Estados para Días Festivos y Pestañas
+  const [activeTab, setActiveTab] = useState<'variables' | 'holidays'>('variables');
+  const [holidays, setHolidays] = useState<any[]>([]);
+  const [holidayDate, setHolidayDate] = useState('');
+  const [holidayName, setHolidayName] = useState('');
+  const [holidayBlockApp, setHolidayBlockApp] = useState(false);
+  const [isHolidaysLoading, setIsHolidaysLoading] = useState(false);
+
+  // Estado para simulación de festivo laborado
+  const [simFestivoTrabajado, setSimFestivoTrabajado] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -141,8 +153,69 @@ export default function LftManager() {
     }
   };
 
+  const fetchHolidays = async () => {
+    setIsHolidaysLoading(true);
+    try {
+      const res = await axiosInstance.get('/admin/lft-holidays');
+      if (res.data && res.data.success) {
+        setHolidays(res.data.data);
+      }
+    } catch (e) {
+      console.error(e);
+      setErrorMsg('No se pudieron cargar los días festivos.');
+    } finally {
+      setIsHolidaysLoading(false);
+    }
+  };
+
+  const handleAddHoliday = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!holidayDate || !holidayName) {
+      setErrorMsg('Por favor completa la fecha y el nombre del festivo.');
+      return;
+    }
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const res = await axiosInstance.post('/admin/lft-holidays', {
+        date: holidayDate,
+        name: holidayName,
+        block_app: holidayBlockApp,
+      });
+      if (res.data && res.data.success) {
+        setSuccessMsg('Día festivo guardado con éxito.');
+        setHolidayDate('');
+        setHolidayName('');
+        setHolidayBlockApp(false);
+        fetchHolidays();
+        setTimeout(() => setSuccessMsg(''), 4000);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e.response?.data?.message || 'Error al guardar el día festivo.');
+    }
+  };
+
+  const handleDeleteHoliday = async (id: number) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este día festivo?')) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const res = await axiosInstance.delete(`/admin/lft-holidays/${id}`);
+      if (res.data && res.data.success) {
+        setSuccessMsg('Día festivo eliminado.');
+        fetchHolidays();
+        setTimeout(() => setSuccessMsg(''), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+      setErrorMsg('Error al eliminar el día festivo.');
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
+    fetchHolidays();
   }, []);
 
   // Cálculos del simulador
@@ -172,6 +245,9 @@ export default function LftManager() {
       alerta = `Llamada de Atención por Escrito (Acumuló ${faltasTotales} faltas)`;
     }
 
+    // Pago por festivo trabajado (salario doble adicional por LFT)
+    const holidayWorkedPay = simFestivoTrabajado ? (simSalarioDiario * 2.0) : 0;
+
     return {
       faltasEquivalentes,
       faltasTotales,
@@ -180,7 +256,8 @@ export default function LftManager() {
       factorProporcional,
       descuentoSeptimoDia,
       alerta,
-      netoSemanal: (simSalarioDiario * 7) - descuentoFaltas - descuentoSeptimoDia
+      holidayWorkedPay,
+      netoSemanal: (simSalarioDiario * 7) + holidayWorkedPay - descuentoFaltas - descuentoSeptimoDia
     };
   };
 
@@ -201,7 +278,7 @@ export default function LftManager() {
         </div>
 
         <button 
-          onClick={fetchSettings}
+          onClick={() => { fetchSettings(); fetchHolidays(); }}
           className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all cursor-pointer border-none"
           title="Recargar configuración"
         >
@@ -289,8 +366,37 @@ export default function LftManager() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Formulario de Variables LFT */}
-            <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
+            {/* Columna Izquierda: Configuración con pestañas */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Selector de Pestañas */}
+              <div className="flex gap-2 border-b border-slate-200 pb-px mb-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('variables')}
+                  className={`pb-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer border-none bg-transparent ${
+                    activeTab === 'variables'
+                      ? 'border-b-amber-500 text-slate-800 font-extrabold'
+                      : 'border-b-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Reglamento y Tolerancias
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('holidays')}
+                  className={`pb-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer border-none bg-transparent ${
+                    activeTab === 'holidays'
+                      ? 'border-b-amber-500 text-slate-800 font-extrabold'
+                      : 'border-b-transparent text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Días Festivos Oficiales
+                </button>
+              </div>
+
+              {activeTab === 'variables' ? (
+                <form onSubmit={handleSave} className="space-y-6">
               
               {/* Sección 1: Tolerancia de Horarios */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
@@ -455,6 +561,119 @@ export default function LftManager() {
                 </button>
               </div>
             </form>
+          ) : (
+            <div className="space-y-6">
+              {/* Formulario rápido para añadir Día Festivo */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Calendar size={16} className="text-amber-500" />
+                  Registrar Nuevo Día Festivo Oficial
+                </h3>
+                
+                <form onSubmit={handleAddHoliday} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500">Fecha del Festivo</label>
+                    <input 
+                      type="date"
+                      value={holidayDate}
+                      onChange={(e) => setHolidayDate(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500">Nombre del Día Festivo</label>
+                    <input 
+                      type="text"
+                      placeholder="Ej: Año Nuevo, Natalicio Juárez"
+                      value={holidayName}
+                      onChange={(e) => setHolidayName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition-all hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer border-none"
+                    >
+                      <Plus size={16} />
+                      Agregar Día
+                    </button>
+                  </div>
+                </form>
+
+                <div className="pt-2">
+                  <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
+                    <input 
+                      type="checkbox"
+                      checked={holidayBlockApp}
+                      onChange={(e) => setHolidayBlockApp(e.target.checked)}
+                      className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                    />
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-800 block">Bloquear la aplicación en esta fecha</span>
+                      <span className="text-[10px] text-slate-400">Si se activa, ningún empleado podrá iniciar jornada o realizar fichajes en esta fecha feriada.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Lista de Festivos Oficiales */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Calendar size={16} className="text-amber-500" />
+                  Festivos Registrados
+                </h3>
+
+                {isHolidaysLoading ? (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <div className="w-8 h-8 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin mb-2"></div>
+                    <p className="text-xs font-semibold text-slate-400">Cargando fechas festivas...</p>
+                  </div>
+                ) : holidays.length === 0 ? (
+                  <p className="text-xs font-semibold text-slate-400 text-center py-6">No hay días festivos oficiales registrados.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {holidays.map((h) => (
+                      <div key={h.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 hover:shadow-sm transition-all hover:bg-white">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                            <Calendar size={16} />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-extrabold text-slate-800">{h.name}</h4>
+                            <p className="text-[10px] text-slate-400 font-bold">{h.date}</p>
+                            {h.block_app ? (
+                              <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-rose-100">
+                                <Lock size={8} /> Bloquea Fichaje
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full border border-emerald-100">
+                                <Unlock size={8} /> Libre (Nómina Doble)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button 
+                          type="button"
+                          onClick={() => handleDeleteHoliday(h.id)}
+                          className="p-2 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 rounded-xl transition-all cursor-pointer"
+                          title="Eliminar Día Festivo"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
             {/* Simulador Interactivo LFT */}
             <div className="space-y-6">
@@ -516,6 +735,21 @@ export default function LftManager() {
                       className="w-full accent-amber-500 cursor-pointer"
                     />
                   </div>
+
+                  <div className="space-y-1 pt-1.5 border-t border-slate-100">
+                    <label className="relative flex items-center gap-3 cursor-pointer p-2.5 bg-amber-500/5 rounded-xl border border-amber-250/50 hover:bg-amber-500/10 transition-colors">
+                      <input 
+                        type="checkbox"
+                        checked={simFestivoTrabajado}
+                        onChange={(e) => setSimFestivoTrabajado(e.target.checked)}
+                        className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                      />
+                      <div>
+                        <span className="text-[11px] font-extrabold text-slate-800 block">¿Laboró en día festivo oficial?</span>
+                        <span className="text-[9.5px] text-slate-400">Si se activa, sumará el pago doble adicional por festivo trabajado (LFT).</span>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Resultados de Simulación */}
@@ -540,6 +774,13 @@ export default function LftManager() {
                     <span className="text-slate-400 font-bold">Descuento 7mo Día:</span>
                     <span className="text-rose-600 font-extrabold">-${simResult.descuentoSeptimoDia.toLocaleString()} MXN</span>
                   </div>
+
+                  {simResult.holidayWorkedPay > 0 && (
+                    <div className="flex justify-between text-xs bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                      <span className="text-emerald-700 font-bold">Bono Festivo (+200% LFT):</span>
+                      <span className="text-emerald-600 font-extrabold">+${simResult.holidayWorkedPay.toLocaleString()} MXN</span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between text-sm items-center pt-1">
                     <span className="text-slate-800 font-black">Neto Semanal a Pagar:</span>

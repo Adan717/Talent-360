@@ -337,6 +337,9 @@ export default function RelojVisual({
     setEarlyDepartureReason,
     handleEarlyDepartureClick,
     submitEarlyDeparture,
+    isEarlyDepartureValidation,
+    isOvertimeValidation,
+    handleOvertimeClick,
     hasMealReservation,
     authorizeClockOutWithPendingTasks
   } = context;
@@ -3064,6 +3067,7 @@ export default function RelojVisual({
                         hasMealReservation={hasMealReservation}
                         onMealSwapClick={() => setShowMealSwapModal(true)}
                         onEarlyDepartureClick={handleEarlyDepartureClick}
+                        onOvertimeClick={handleOvertimeClick}
                       />
                     </div>
 
@@ -3487,6 +3491,7 @@ export default function RelojVisual({
                       hasMealReservation={hasMealReservation}
                       onMealSwapClick={() => setShowMealSwapModal(true)}
                       onEarlyDepartureClick={handleEarlyDepartureClick}
+                      onOvertimeClick={handleOvertimeClick}
                     />
                   
                   {/* Desktop Wait Queue & Absence Helpers - Side by Side */}
@@ -4560,17 +4565,39 @@ export default function RelojVisual({
           {pendingTasksBlocker && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
               <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-                <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
-                  <AlertCircle size={22} className="animate-bounce" />
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border ${
+                  isOvertimeValidation 
+                    ? 'bg-amber-50 border-amber-100 text-amber-500' 
+                    : 'bg-rose-50 border-rose-100 text-rose-500'
+                }`}>
+                  {isOvertimeValidation ? (
+                    <Fingerprint size={22} className="animate-pulse" />
+                  ) : isEarlyDepartureValidation ? (
+                    <LogOut size={22} className="animate-bounce" />
+                  ) : (
+                    <AlertCircle size={22} className="animate-bounce" />
+                  )}
                 </div>
 
                 <h3 className="font-extrabold text-slate-900 text-center tracking-tight mb-2 text-base">
-                  ⚠️ Tareas Pendientes Detectadas
+                  {isOvertimeValidation 
+                    ? "⏰ Autorizar Horas Extras" 
+                    : isEarlyDepartureValidation 
+                      ? "🚪 Autorización de Salida Anticipada" 
+                      : "⚠️ Tareas Pendientes Detectadas"}
                 </h3>
                 <p className="text-[10.5px] text-slate-505 text-center leading-relaxed mb-5 px-2 font-bold">
                   {isPro 
-                    ? "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas para cerrar tu turno o solicita la validación de tu supervisor escaneando su QR dinámico de 60s."
-                    : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas para cerrar tu turno o solicita la validación de tu supervisor ingresando su PIN."}
+                    ? (isOvertimeValidation 
+                        ? "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, escanea tu código QR dinámico de 60s."
+                        : isEarlyDepartureValidation
+                          ? "El colaborador está registrando una salida antes de su horario programado. Solicita la validación de tu supervisor escaneando su QR dinámico de 60s."
+                          : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor escaneando su QR dinámico de 60s.")
+                    : (isOvertimeValidation
+                        ? "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, ingresa tu PIN de supervisor."
+                        : isEarlyDepartureValidation
+                          ? "El colaborador está registrando una salida antes de su horario programado. Solicita la validación de tu supervisor ingresando su PIN."
+                          : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor ingresando su PIN.")}
                 </p>
 
                 {isPro ? (

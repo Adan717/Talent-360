@@ -46,6 +46,7 @@ interface DialPrincipalProps {
   hasMealReservation?: boolean;
   onMealSwapClick?: () => void;
   onEarlyDepartureClick?: () => void;
+  onOvertimeClick?: () => void;
 }
 
 export default function DialPrincipal({
@@ -70,7 +71,8 @@ export default function DialPrincipal({
   isGpsValidationBypassed = false,
   hasMealReservation = false,
   onMealSwapClick,
-  onEarlyDepartureClick
+  onEarlyDepartureClick,
+  onOvertimeClick
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
@@ -82,7 +84,7 @@ export default function DialPrincipal({
   const isEffectivelyDisabled = !isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'));
 
   const getDialColorClasses = () => {
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
+    const isRestDay = btnProps.text === 'DÍA DE DESCANSO';
     if (isRestDay) return 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300';
     if (isGpsError) return 'bg-white border-rose-350 text-rose-500 shadow-none animate-pulse hover:border-rose-450';
     if (btnProps.isIncidenceReport) return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
@@ -104,7 +106,7 @@ export default function DialPrincipal({
   };
 
   const getDialGlowClasses = () => {
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
+    const isRestDay = btnProps.text === 'DÍA DE DESCANSO';
     if (isRestDay) return null;
     if (isGpsError) return 'bg-rose-500';
     if (btnProps.isIncidenceReport) return 'bg-amber-400';
@@ -127,7 +129,7 @@ export default function DialPrincipal({
   const getDialIcon = (sizeValue: number) => {
     if (isGpsError) return <MapPin size={sizeValue} className="text-rose-505 shrink-0 animate-bounce" />;
     if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
+    const isRestDay = btnProps.text === 'DÍA DE DESCANSO';
     if (isRestDay) return <Sun size={sizeValue} className="text-slate-400 shrink-0" />;
 
     const text = btnProps.text || '';
@@ -274,6 +276,17 @@ export default function DialPrincipal({
         >
           <LogOut size={12} className="text-rose-500" />
           Salida Anticipada
+        </button>
+      )}
+
+      {btnProps.text === 'DÍA DE DESCANSO' && onOvertimeClick && (
+        <button
+          type="button"
+          onClick={onOvertimeClick}
+          className="mt-3.5 py-1.5 px-4 bg-amber-50 dark:bg-amber-955/20 border border-amber-250 hover:border-amber-450 text-amber-700 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+        >
+          <Fingerprint size={12} className="text-amber-550 animate-pulse" />
+          Laborar Horas Extras
         </button>
       )}
 

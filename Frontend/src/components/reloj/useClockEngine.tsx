@@ -1041,6 +1041,8 @@ export function useClockEngine(overrideUser?: any) {
   const [showEarlyDepartureModal, setShowEarlyDepartureModal] = useState(false);
   const [earlyDepartureReason, setEarlyDepartureReason] = useState("Enfermedad");
   const [isEarlyDepartureValidation, setIsEarlyDepartureValidation] = useState(false);
+  const [isOvertimeUnlocked, setIsOvertimeUnlocked] = useState<Record<number, boolean>>({});
+  const [isOvertimeValidation, setIsOvertimeValidation] = useState(false);
   const [contingencyLogs, setContingencyLogs] = useState<any[]>([]);
   const [contingencyUsed, setContingencyUsed] = useState<Record<number, boolean>>({});
   const [absentUsers, setAbsentUsers] = useState<Record<number, boolean>>({});
@@ -2723,14 +2725,29 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const handleClockOutRequest = () => {
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
     const hasPendingTasks = useTaskStore.getState().assignments.some(
       (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
     );
+    
+    const currentShiftEndStr = shiftConfigs[currentUser?.id]?.end || '17:00';
+    const currentShiftEndMins = parseTimeToMins(currentShiftEndStr);
+    const isEarly = currentSimTime < currentShiftEndMins;
 
-    if (hasPendingTasks) {
-      setSupervisorPin('');
-      setPendingTasksBlocker(true);
-      return;
+    if (isPro) {
+      if (isEarly || hasPendingTasks) {
+        setIsEarlyDepartureValidation(isEarly);
+        setSupervisorPin('');
+        setSupervisorQrToken('');
+        setPendingTasksBlocker(true);
+        return;
+      }
+    } else {
+      if (hasPendingTasks) {
+        setSupervisorPin('');
+        setPendingTasksBlocker(true);
+        return;
+      }
     }
 
     if (requireEvaluation) {
@@ -2766,6 +2783,34 @@ export function useClockEngine(overrideUser?: any) {
         showCustomAlert("⚠️ PIN de Supervisor inválido o incompleto.");
         return;
       }
+    }
+
+    if (isOvertimeValidation) {
+      try {
+        await axiosInstance.post('/sync/audit_log', {
+          user_id: currentUser.id,
+          type: 'overtime_unlocked',
+          timestamp_str: getSimTimeStr(currentSimTime),
+          reason: `Autorizado por supervisor mediante ${isPro ? 'QR Dinámico' : 'PIN'}`,
+          details: `Horas Extras desbloqueadas por supervisor`
+        });
+      } catch {}
+
+      setIsOvertimeUnlocked(prev => ({ ...prev, [currentUser.id]: true }));
+
+      useAppStore.getState().addMatrixEvent(
+        '⏰ Horas Extras Habilitadas',
+        `Se autorizó a ${currentUser.name} a laborar en su día de descanso mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}.`,
+        'success'
+      );
+
+      setPendingTasksBlocker(false);
+      setSupervisorQrToken('');
+      setSupervisorPin('');
+      setIsOvertimeValidation(false);
+      
+      showCustomAlert('⏰ Horas Extras autorizadas por supervisor. Ya puedes registrar tu entrada.');
+      return;
     }
 
     // 1. Omitir todas las tareas pendientes del usuario actual
@@ -2820,6 +2865,13 @@ export function useClockEngine(overrideUser?: any) {
 
   const handleEarlyDepartureClick = () => {
     setShowEarlyDepartureModal(true);
+  };
+
+  const handleOvertimeClick = () => {
+    setIsOvertimeValidation(true);
+    setSupervisorPin('');
+    setSupervisorQrToken('');
+    setPendingTasksBlocker(true);
   };
 
   const submitEarlyDeparture = async () => {
@@ -2915,7 +2967,7 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const getButtonProps = () => {
-    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
+    const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
     if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', disabled: true };
 
     const isPro = currentTier === 'pro' || currentTier === 'enterprise';
@@ -3696,6 +3748,10 @@ export function useClockEngine(overrideUser?: any) {
     setEarlyDepartureReason,
     handleEarlyDepartureClick,
     submitEarlyDeparture,
+    isEarlyDepartureValidation,
+    isOvertimeUnlocked,
+    isOvertimeValidation,
+    handleOvertimeClick,
     hasMealReservation: (userReservedMealSlots[currentUser?.id] || []).length > 0,
     authorizeClockOutWithPendingTasks
   };

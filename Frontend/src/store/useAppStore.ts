@@ -698,7 +698,7 @@ export const useAppStore = create<AppState>((set, get) => ({
  
   isFeatureUnlocked: (featureId: string) => {
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedFeatures } = get();
-    if (currentTier === 'pro' || currentTier === 'enterprise') return true;
+    if (currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1) return true;
     
     const tenant = currentUser?.tenant;
     let trialActive = false;

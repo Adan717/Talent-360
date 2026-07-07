@@ -2074,7 +2074,7 @@ export function useClockEngine(overrideUser?: any) {
     const checkInTime = checkInTimes[currentUser.id];
     const mySlots = userReservedMealSlots[currentUser.id] || [];
     const hasMealReservation = mySlots.length > 0;
-    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
 
     if (isPro && userClockPrefs.alarmsEnabled && checkInTime !== undefined && !hasMealReservation && currentSimTime === checkInTime + 5 && !mealReminderAlarmPlayed) {
       playAlarm('alerta_tiempo');
@@ -2661,7 +2661,7 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const handleBreakStart = async () => {
-      const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+      const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
       if (isPro) {
         setShowBreakSeatModal(true);
       } else {
@@ -2762,7 +2762,7 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const handleClockOutRequest = () => {
-    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     const hasPendingTasks = useTaskStore.getState().assignments.some(
       (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
     );
@@ -2795,7 +2795,7 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const authorizeClockOutWithPendingTasks = async () => {
-    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     
     if (isPro) {
       if (!supervisorQrToken || !supervisorQrToken.trim()) {
@@ -2913,7 +2913,7 @@ export function useClockEngine(overrideUser?: any) {
 
   const submitEarlyDeparture = async () => {
     setShowEarlyDepartureModal(false);
-    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     
     if (isPro) {
       setIsEarlyDepartureValidation(true);
@@ -3007,7 +3007,7 @@ export function useClockEngine(overrideUser?: any) {
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
     if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', disabled: true };
 
-    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
+    const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
     const features = clockOpConfig.enabledDialerFeatures || {};
 

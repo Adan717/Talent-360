@@ -185,6 +185,36 @@ export default function PanelSimulador() {
     return '';
   };
 
+  const getUserOpeningPriority = (user: any) => {
+    try {
+      const isSandbox = useAppStore.getState().isSandboxMode;
+      const savedAss = localStorage.getItem('store_opening_assignments');
+      const assignments = savedAss ? JSON.parse(savedAss) : (
+        isSandbox ? [
+          { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
+          { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
+          { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
+        ] : [
+          { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
+          { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
+          { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
+        ]
+      );
+      const empId = user.employee_id || user.id;
+      const match = assignments.find((a: any) => Number(a.employee_id) === Number(empId) && a.is_active && a.can_open_store);
+      if (match) {
+        return match.priority_order;
+      }
+    } catch {}
+    return 999;
+  };
+
+  const parseTimeToMins = (timeStr: string) => {
+    if (!timeStr || typeof timeStr !== 'string') return 9999;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  };
+
   useEffect(() => {
      const appState = useAppStore.getState();
      const isDecorArte = appState.currentUser?.tenant_id === 1;
@@ -569,10 +599,17 @@ export default function PanelSimulador() {
             {[...globalUsers]
               .filter(u => u.is_active_employee !== false)
               .sort((a, b) => {
-                if (a.jerarquiaLlaves === b.jerarquiaLlaves) {
-                  return a.name.localeCompare(b.name);
+                const prioA = getUserOpeningPriority(a);
+                const prioB = getUserOpeningPriority(b);
+                if (prioA !== prioB) {
+                  return prioA - prioB;
                 }
-                return a.jerarquiaLlaves - b.jerarquiaLlaves;
+                const startA = parseTimeToMins(a.shiftStart || '09:00');
+                const startB = parseTimeToMins(b.shiftStart || '09:00');
+                if (startA !== startB) {
+                  return startA - startB;
+                }
+                return a.name.localeCompare(b.name);
               })
               .map(user => (
               <div key={`${user.id}-${resetKey}`} className="flex flex-col items-center transition-all duration-300">

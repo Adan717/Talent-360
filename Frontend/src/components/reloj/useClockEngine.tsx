@@ -2512,6 +2512,10 @@ export function useClockEngine(overrideUser?: any) {
       setShowAbsenceModal(true);
       return;
     }
+    if (btnProps.isMealReservationAlert) {
+      setShowMealReservationModal(true);
+      return;
+    }
 
     // GPS Geofencing Check
     if (!isGpsValidationBypassed) {
@@ -3027,7 +3031,7 @@ export function useClockEngine(overrideUser?: any) {
             };
           }
         } else {
-          const employeeDeadlineMins = shiftStartMins - 20;
+          const employeeDeadlineMins = shiftStartMins - 15;
           if (currentSimTime < employeeDeadlineMins && features.allow_employee_incidences !== false) {
             return {
               text: '⚠️ Reportar Ausencia/Retardo',
@@ -3078,6 +3082,28 @@ export function useClockEngine(overrideUser?: any) {
       };
     }
 
+    if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
+      const isResponsibleForOpening = isOpeningPremium && storeStatus === 'closed' && Number(currentUser?.id) === Number(responsibleId);
+
+      if (isResponsibleForOpening) {
+        return {
+          text: 'Reportar Incidencia',
+          bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+          icon: '⚠️',
+          isIncidenceReport: true,
+          isResponsibleOutside: true,
+          subtext: '🗝️ Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.'
+        };
+      }
+
+      return {
+        text: 'Reportar Incidencia',
+        bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+        icon: '⚠️',
+        isIncidenceReport: true
+      };
+    }
+
     // ----------------------------------------------------
     // VENTANA 3: Notificar Tienda Cerrada (8:30 AM - 8:50 AM)
     // ----------------------------------------------------
@@ -3124,28 +3150,6 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
 
-    if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
-      const isResponsibleForOpening = isOpeningPremium && storeStatus === 'closed' && Number(currentUser?.id) === Number(responsibleId);
-
-      if (isResponsibleForOpening) {
-        return {
-          text: 'Reportar Incidencia',
-          bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
-          icon: '⚠️',
-          isIncidenceReport: true,
-          isResponsibleOutside: true,
-          subtext: '🗝️ Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.'
-        };
-      }
-
-      return {
-        text: 'Reportar Incidencia',
-        bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
-        icon: '⚠️',
-        isIncidenceReport: true
-      };
-    }
-
     if (isOpeningPremium && storeStatus === 'closed') {
       if (Number(currentUser.id) === Number(responsibleId)) {
         return { 
@@ -3183,7 +3187,13 @@ export function useClockEngine(overrideUser?: any) {
                 return { text: 'Iniciar Horario de Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
              }
           } else {
-             return { text: 'Reserva tu horario primero', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🔒', disabled: true };
+             return { 
+                text: 'Reserva tu horario primero', 
+                bg: 'bg-amber-600/20 text-amber-500 border border-amber-500/30 hover:bg-amber-600/30 font-bold shadow-md cursor-pointer animate-pulse', 
+                icon: '🍔', 
+                isMealReservationAlert: true,
+                subtext: 'Haz clic para seleccionar tu slot en el comedor.'
+             };
           }
         }
         return { text: 'Iniciar Horario de Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔' };

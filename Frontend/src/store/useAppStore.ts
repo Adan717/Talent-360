@@ -44,14 +44,14 @@ interface AppState {
   dbRolePermissions: any[];
   allowedModules: string[];
   allowedFeatures: string[];
-  simulatedTierOverride: 'freemium' | 'pro' | null;
+  simulatedTierOverride: 'freemium' | 'pro' | 'enterprise' | null;
   
   // Setters
   setIsLoadingDB: (loading: boolean) => void;
   setGlobalUsers: (users: User[]) => void;
   setCurrentUser: (user: User | null) => void;
   setCurrentTier: (tier: 'freemium' | 'pro' | 'enterprise') => void;
-  setSimulatedTierOverride: (tier: 'freemium' | 'pro' | null) => void;
+  setSimulatedTierOverride: (tier: 'freemium' | 'pro' | 'enterprise' | null) => void;
   setSystemSettings: (settings: any) => void;
   setStoreStatus: (status: 'open' | 'closed') => void;
   setGlobalClockState: (userId: number, state: string) => void;
@@ -166,10 +166,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ currentTier: tier });
       if (tier === 'freemium') {
         set({ allowedModules: ['reloj', 'rrhh', 'operativo'], allowedFeatures: [] });
-      } else if (tier === 'pro') {
+      } else if (tier === 'pro' || tier === 'enterprise') {
         set({ 
           allowedModules: ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'], 
-          allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands'] 
+          allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'] 
         });
       }
     } else {
@@ -460,10 +460,10 @@ export const useAppStore = create<AppState>((set, get) => ({
             set({ currentTier: tierOverride });
             if (tierOverride === 'freemium') {
               set({ allowedModules: ['reloj', 'rrhh', 'operativo'], allowedFeatures: [] });
-            } else if (tierOverride === 'pro') {
+            } else if (tierOverride === 'pro' || tierOverride === 'enterprise') {
               set({ 
                 allowedModules: ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'], 
-                allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands'] 
+                allowedFeatures: ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'] 
               });
             }
           } else {

@@ -333,6 +333,16 @@ export default function PanelSimulador() {
                 >
                   <span>⚡</span> Pro (Premium)
                 </button>
+                <button
+                  onClick={() => setSimulatedTierOverride('enterprise')}
+                  className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
+                    currentTier === 'enterprise' 
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-md shadow-purple-500/5' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>👑</span> Enterprise (Dedicado)
+                </button>
                 {simulatedTierOverride && (
                   <button
                     onClick={() => setSimulatedTierOverride(null)}

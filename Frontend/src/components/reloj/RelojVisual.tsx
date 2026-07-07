@@ -335,6 +335,7 @@ export default function RelojVisual({
     setShowEarlyDepartureModal,
     earlyDepartureReason,
     setEarlyDepartureReason,
+    handleEarlyDepartureClick,
     submitEarlyDeparture,
     hasMealReservation,
     authorizeClockOutWithPendingTasks

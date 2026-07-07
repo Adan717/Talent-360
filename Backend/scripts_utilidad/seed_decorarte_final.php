@@ -221,9 +221,15 @@ try {
             'mealMinutes' => $emp['mealMinutes'],
             'restDay' => $emp['restDay'],
             'is_active_employee' => true,
-            'reliefBuddyId' => $emp['reliefBuddyId'],
             'created_at' => now(),
             'updated_at' => now()
+        ]);
+    }
+
+    // Actualizar reliefBuddyId en la tabla users
+    foreach ($employeesData as $emp) {
+        DB::table('users')->where('id', $emp['id'])->update([
+            'reliefBuddyId' => $emp['reliefBuddyId']
         ]);
     }
  

@@ -360,6 +360,53 @@ export default function RelojVisual({
   const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
   const [weeklyPayrollData, setWeeklyPayrollData] = useState<any>(null);
 
+  // Helper to check if store is closed based on schedule
+  const getStoreClosedInfo = () => {
+    const openTimeStr = systemSettings?.storeSchedule?.openTime || '08:00';
+    const closeTimeStr = systemSettings?.storeSchedule?.closeTime || '18:00';
+    const [oh, om] = openTimeStr.split(':').map(Number);
+    const [ch, cm] = closeTimeStr.split(':').map(Number);
+    const openMins = oh * 60 + om;
+    const closeMins = ch * 60 + cm;
+    
+    let isClosed = false;
+    if (openMins < closeMins) {
+      isClosed = currentSimTime < openMins || currentSimTime > closeMins;
+    } else {
+      isClosed = currentSimTime > closeMins && currentSimTime < openMins;
+    }
+
+    let remainingMins = 0;
+    if (isClosed) {
+      if (currentSimTime < openMins) {
+        remainingMins = openMins - currentSimTime;
+      } else {
+        remainingMins = (24 * 60 - currentSimTime) + openMins;
+      }
+    }
+
+    const hours = Math.floor(remainingMins / 60);
+    const mins = remainingMins % 65 || remainingMins % 60; // Just in case, standard modulo
+    const minsFinal = remainingMins % 60;
+    let waitTimeText = '';
+    if (hours > 0) {
+      waitTimeText = `${hours} ${hours === 1 ? 'hora' : 'horas'} y ${minsFinal} ${minsFinal === 1 ? 'minuto' : 'minutos'}`;
+    } else {
+      waitTimeText = `${minsFinal} ${minsFinal === 1 ? 'minuto' : 'minutos'}`;
+    }
+
+    return { isClosed, waitTimeText };
+  };
+
+  const { isClosed: isStoreClosed, waitTimeText } = getStoreClosedInfo();
+
+  // Redirect to academia if store is closed and they are on a blocked tab
+  useEffect(() => {
+    if (isStoreClosed && (phoneTab === 'tareas' || phoneTab === 'nomina' || phoneTab === 'herramientas' || phoneTab === 'evaluacion360' || phoneTab === 'organigrama')) {
+      setPhoneTab('academia');
+    }
+  }, [isStoreClosed, phoneTab, setPhoneTab]);
+
   useEffect(() => {
     if (!isSimulated) {
       axiosInstance.get('/employee/payroll-weekly')
@@ -2202,6 +2249,45 @@ export default function RelojVisual({
     }
   };
 
+  const renderStoreClosedScreen = (isMobile: boolean) => {
+    return (
+      <div className={`flex flex-col items-center justify-center text-center p-8 transition-all animate-fade-in ${
+        isMobile 
+          ? 'flex-1 pt-[100px] pb-[100px] px-6' 
+          : `w-full border rounded-3xl p-16 ${isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-202 shadow-md'}`
+      }`}>
+        <div className={`rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800 bg-gradient-to-tr from-amber-500 to-rose-500 text-white animate-pulse ${
+          isMobile ? 'w-20 h-20 text-3xl mb-6' : 'w-28 h-28 text-5xl mb-8'
+        }`}>
+          🔒
+        </div>
+        <h2 className={`font-black text-slate-850 dark:text-slate-100 ${
+          isMobile ? 'text-xl mb-2' : 'text-3xl mb-3'
+        }`}>
+          Empresa Cerrada
+        </h2>
+        <p className={`text-slate-505 dark:text-slate-400 font-medium leading-relaxed max-w-md mx-auto ${
+          isMobile ? 'text-xs mb-8' : 'text-sm mb-10'
+        }`}>
+          Por el momento la empresa se encuentra cerrada. Para poder visualizar este reloj checador, deberás de esperar.
+        </p>
+        
+        <div className={`w-full max-w-sm rounded-2xl border p-4.5 text-center transition-all ${
+          isDark 
+            ? 'bg-slate-950/60 border-slate-850 shadow-inner' 
+            : 'bg-slate-50 border-slate-200 shadow-inner'
+        }`}>
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-450 block mb-1">
+            Tiempo de espera restante
+          </span>
+          <div className="text-2xl font-black text-indigo-605 dark:text-indigo-400 tracking-tight animate-pulse">
+            ⏳ {waitTimeText}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderUnifiedMobileHeader = () => {
     let title = '';
     let desc = '';
@@ -3063,24 +3149,28 @@ export default function RelojVisual({
                   >
                     ⏱️ Checador
                   </button>
-                  <button 
-                    onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} 
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
-                  >
-                    ✅ Tareas
-                  </button>
+                  {!isStoreClosed && (
+                    <button 
+                      onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} 
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    >
+                      ✅ Tareas
+                    </button>
+                  )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('academia'); }} 
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
                   >
                     🎓 Academia
                   </button>
-                  <button 
-                    onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }} 
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
-                  >
-                    🛠️ Herramientas
-                  </button>
+                  {!isStoreClosed && (
+                    <button 
+                      onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }} 
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    >
+                      🛠️ Herramientas
+                    </button>
+                  )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }} 
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
@@ -3178,24 +3268,28 @@ export default function RelojVisual({
                   >
                     ⏱️ Checador
                   </button>
-                  <button 
-                    onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
-                  >
-                    ✅ Tareas
-                  </button>
+                  {!isStoreClosed && (
+                    <button 
+                      onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} 
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    >
+                      ✅ Tareas
+                    </button>
+                  )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('academia'); }} 
                     className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
                   >
                     🎓 Academia
                   </button>
-                  <button 
-                    onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
-                  >
-                    🛠️ Herramientas
-                  </button>
+                  {!isStoreClosed && (
+                    <button 
+                      onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }} 
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    >
+                      🛠️ Herramientas
+                    </button>
+                  )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }} 
                     className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
@@ -3218,7 +3312,9 @@ export default function RelojVisual({
 
           {/* MOBILE CONTENT AREA (Scrollable/Overflow depending on module) */}
           {phoneTab === 'checador' && (
-            shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
+            isStoreClosed ? (
+              renderStoreClosedScreen(true)
+            ) : shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
               <div className="flex-1 flex flex-col items-center justify-center px-8 text-center animate-fade-in-up pt-[82px] pb-[100px]">
                 <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-955/40 rounded-full flex items-center justify-center text-3xl mb-4.5 shadow-inner border-2 border-white dark:border-slate-800">
                   🌴
@@ -3578,7 +3674,7 @@ export default function RelojVisual({
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}
-          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} />
+          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} />
         </div>
       )}
 
@@ -3593,7 +3689,9 @@ export default function RelojVisual({
         <div className="max-w-7xl w-full mx-auto flex flex-col gap-6">
           
           {phoneTab === 'checador' && (
-            shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
+            isStoreClosed ? (
+              renderStoreClosedScreen(false)
+            ) : shiftConfigs[currentUser?.id]?.restDay === currentDay ? (
               <div className={`w-full border rounded-3xl p-12 flex flex-col items-center justify-center text-center transition-colors ${
                 isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-202 shadow-md'
               }`}>

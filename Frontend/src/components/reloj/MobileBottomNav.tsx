@@ -10,9 +10,10 @@ export interface MobileBottomNavProps {
   isDark: boolean;
   clockState: string;
   showCustomAlert?: (msg: string) => void;
+  isStoreClosed?: boolean;
 }
 
-export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, clockState, showCustomAlert }: MobileBottomNavProps) {
+export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, clockState, showCustomAlert, isStoreClosed = false }: MobileBottomNavProps) {
   const { systemSettings } = useAppStore();
 
   const getModuleColorHex = (modId: string, defaultHex: string) => {
@@ -36,7 +37,7 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
 
   // Matriz de bloqueo según clockState
   const isTareasBlocked = clockState !== 'active';
-  const isAcademiaBlocked = clockState === 'active';
+  const isAcademiaBlocked = !isStoreClosed && clockState === 'active';
   const isNominaBlocked = clockState === 'inactive' || clockState === 'waiting_room';
 
   const handleTabClick = (tab: string, isBlocked: boolean, blockMsg: string) => {
@@ -56,7 +57,7 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
     <nav className={`absolute bottom-3 left-3 right-3 z-[75] flex items-center justify-around py-3 px-2 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200 ${
       isDark 
         ? 'bg-slate-955/80 border-violet-900/40 shadow-[0_-8px_32px_rgba(124,58,237,0.12),0_8px_32px_rgba(124,58,237,0.1)] text-slate-400' 
-        : 'bg-white/80 border-violet-100/50 shadow-[0_-8px_32px_rgba(124,58,237,0.06),0_8px_32px_rgba(124,58,237,0.04)] text-slate-500'
+        : 'bg-white/80 border-violet-100/50 shadow-[0_-8px_32px_rgba(124,58,237,0.06),0_8px_32px_rgba(124,58,237,0.04)] text-slate-505'
     }`}>
       <button 
         onClick={() => handleTabClick('checador', false, '')}
@@ -69,22 +70,24 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
         <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Reloj</span>
       </button>
       
-      <button 
-        onClick={() => handleTabClick(
-          'tareas', 
-          isTareasBlocked, 
-          clockState === 'meal' || clockState === 'short_break'
-            ? '⚠️ Tareas Bloqueadas: Estás en tu horario de comida.'
-            : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
-        )}
-        className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-          phoneTab === 'tareas' ? 'font-extrabold scale-105' : 'hover:text-slate-850 dark:hover:text-slate-200'
-        } ${isTareasBlocked ? 'opacity-40 cursor-not-allowed' : ''}`}
-        style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
-      >
-        <ListTodo size={22} className="" style={phoneTab === 'tareas' ? { color: tareasColor } : {}} />
-        <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Tareas</span>
-      </button>
+      {!isStoreClosed && (
+        <button 
+          onClick={() => handleTabClick(
+            'tareas', 
+            isTareasBlocked, 
+            clockState === 'meal' || clockState === 'short_break'
+              ? '⚠️ Tareas Bloqueadas: Estás en tu horario de comida.'
+              : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
+          )}
+          className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
+            phoneTab === 'tareas' ? 'font-extrabold scale-105' : 'hover:text-slate-850 dark:hover:text-slate-200'
+          } ${isTareasBlocked ? 'opacity-40 cursor-not-allowed' : ''}`}
+          style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
+        >
+          <ListTodo size={22} className="" style={phoneTab === 'tareas' ? { color: tareasColor } : {}} />
+          <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Tareas</span>
+        </button>
+      )}
       
       <button 
         onClick={() => handleTabClick(
@@ -101,16 +104,18 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
         <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Academia</span>
       </button>
       
-      <button 
-        onClick={() => handleTabClick('nomina', isNominaBlocked, '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.')}
-        className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-          phoneTab === 'nomina' ? 'font-extrabold scale-105' : 'hover:text-slate-850 dark:hover:text-slate-200'
-        } ${isNominaBlocked ? 'opacity-40 cursor-not-allowed' : ''}`}
-        style={phoneTab === 'nomina' ? { color: nominaColor } : {}}
-      >
-        <DollarSign size={22} className="" style={phoneTab === 'nomina' ? { color: nominaColor } : {}} />
-        <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Nómina</span>
-      </button>
+      {!isStoreClosed && (
+        <button 
+          onClick={() => handleTabClick('nomina', isNominaBlocked, '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.')}
+          className={`flex flex-col items-center gap-1 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
+            phoneTab === 'nomina' ? 'font-extrabold scale-105' : 'hover:text-slate-850 dark:hover:text-slate-200'
+          } ${isNominaBlocked ? 'opacity-40 cursor-not-allowed' : ''}`}
+          style={phoneTab === 'nomina' ? { color: nominaColor } : {}}
+        >
+          <DollarSign size={22} className="" style={phoneTab === 'nomina' ? { color: nominaColor } : {}} />
+          <span className="text-[9.5px] uppercase tracking-wider font-extrabold mt-0.5">Nómina</span>
+        </button>
+      )}
     </nav>
   );
 }

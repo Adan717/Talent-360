@@ -112,9 +112,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   reservedMeals: {},
   userReservedMealSlots: {},
   hasReservedMeal: {},
-  allowedModules: ['reloj', 'rrhh', 'operativo'],
-  allowedFeatures: [],
-  simulatedTierOverride: null,
+  allowedModules: (typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium') 
+    ? ['reloj', 'rrhh', 'operativo'] 
+    : ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'],
+  allowedFeatures: (typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium') 
+    ? [] 
+    : ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'],
+  simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'pro',
   
   // Initial SaaS State
   saasTenants: [],
@@ -135,7 +139,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   dbPermissions: [],
   dbRolePermissions: [],
   currentUser: { id: 1, name: 'Loading...', role: 'Loading', system_role: 'Loading', email: '', tenant_id: 1, avatar: '', mealMinutes: 60, job_role_id: 1 },
-  currentTier: 'freemium', // Inicializado en freemium real
+  currentTier: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'pro', // Inicializado en freemium real
   systemSettings: {
     leySillaConfig: { enabled: true, consecutiveMinutes: 120, breakMinutes: 15 },
     featureFlags: { 
@@ -161,6 +165,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCurrentUser: (user) => set({ currentUser: user }),
   setCurrentTier: (tier) => set({ currentTier: tier }),
   setSimulatedTierOverride: (tier) => {
+    if (tier) {
+      localStorage.setItem('qa_simulated_tier_override', tier);
+    } else {
+      localStorage.removeItem('qa_simulated_tier_override');
+    }
     set({ simulatedTierOverride: tier });
     if (tier) {
       set({ currentTier: tier });

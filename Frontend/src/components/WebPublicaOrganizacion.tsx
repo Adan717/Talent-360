@@ -1736,7 +1736,7 @@ export function WebPublicaOrganizacion() {
                 {/* -----------------------------------------------------------
                     PAGE A: INDEX / TABLE OF CONTENTS (Left Page)
                     ----------------------------------------------------------- */}
-                <div className={`w-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line-right border-b lg:border-b-0 lg:border-r border-[#d8ccb6] ${
+                <div className={`w-full h-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line-right border-b lg:border-b-0 lg:border-r border-[#d8ccb6] overflow-hidden ${
                   mobileView === 'index' ? 'flex' : 'hidden lg:flex'
                 }`}
                   style={{
@@ -1966,7 +1966,7 @@ export function WebPublicaOrganizacion() {
                 {/* -----------------------------------------------------------
                     PAGE B: CONTENT RENDERER / SUGESTIONES (Right Page)
                     ----------------------------------------------------------- */}
-                <div className={`w-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line ${
+                <div className={`w-full h-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line overflow-hidden ${
                   mobileView === 'content' ? 'flex' : 'hidden lg:flex'
                 }`}
                   style={{
@@ -2055,76 +2055,6 @@ export function WebPublicaOrganizacion() {
                           </div>
                         )}
                       </div>
-                    ) : isSuggesting ? (
-                      /* ========================================================
-                         EMPLOYEE SUGGESTION SUBMISSION FORM (RIGHT PAGE)
-                         ======================================================== */
-                      <form onSubmit={handleSubmitSuggestion} className="flex-1 flex flex-col min-w-0 justify-between text-left">
-                        <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#4a0717] font-sans">Proponer Mejora al Manual</span>
-                          <button 
-                            type="button"
-                            onClick={() => setIsSuggesting(false)}
-                            className="p-1 rounded-full hover:bg-slate-100 text-[#4a0717]"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-
-                        <div className="flex-grow space-y-3 pr-1 overflow-y-auto scrollbar-none max-h-[350px]">
-                          <div>
-                            <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Tu Nombre</label>
-                            <input 
-                              type="text"
-                              required
-                              placeholder="Ej: Chef Juan Pérez"
-                              value={suggestionName}
-                              onChange={(e) => setSuggestionName(e.target.value)}
-                              className="w-full px-3 py-1.5 rounded-lg border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">¿Por qué sugieres esta mejora?</label>
-                            <input 
-                              type="text"
-                              required
-                              placeholder="Ej: Corregir medidas de harina o agregar checklist"
-                              value={suggestionComment}
-                              onChange={(e) => setSuggestionComment(e.target.value)}
-                              className="w-full px-3 py-1.5 rounded-lg border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Texto Corregido (Markdown)</label>
-                            <textarea
-                              required
-                              rows={5}
-                              value={proposedContent}
-                              onChange={(e) => setProposedContent(e.target.value)}
-                              className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-slate-700 font-mono text-[10px] focus:outline-none shadow-inner resize-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2.5 mt-4">
-                          <button
-                            type="button"
-                            onClick={() => setIsSuggesting(false)}
-                            className="flex-1 py-2 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white font-sans font-bold text-[10px] tracking-wider uppercase"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={submittingSuggestion}
-                            className="flex-grow py-2 rounded-xl bg-gradient-to-r from-[#8b102e] to-[#4a0717] hover:from-[#4a0717] hover:to-black text-white font-sans font-black text-[10px] tracking-wider uppercase shadow-md disabled:opacity-50"
-                          >
-                            {submittingSuggestion ? 'Enviando...' : 'Enviar al Oráculo'}
-                          </button>
-                        </div>
-                      </form>
                     ) : (
                       /* ========================================================
                          STANDARD DOCUMENT VIEWER (RIGHT PAGE)
@@ -2396,7 +2326,7 @@ export function WebPublicaOrganizacion() {
                                 if (!prevDoc && !nextDoc) return null;
 
                                 return (
-                                  <div className="sticky bottom-0 z-30 bg-[#f6ecda] border-t border-[#4a0717]/20 pt-3 mt-2 -mx-4 px-4 sm:-mx-7 sm:px-7 pb-2 flex items-center justify-between gap-4 font-serif">
+                                  <div className="sticky bottom-0 z-30 bg-[#f6ecda] border-t border-[#4a0717]/20 pt-3 mt-2 -mx-4 pl-4 pr-20 sm:-mx-7 sm:px-7 pb-2 flex items-center justify-between gap-4 font-serif">
                                     {prevDoc ? (
                                       <button
                                         onClick={() => {
@@ -2686,6 +2616,88 @@ export function WebPublicaOrganizacion() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 📝 SUGGESTION MODAL OVERLAY */}
+      {isSuggesting && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form 
+            onSubmit={handleSubmitSuggestion} 
+            className="bg-[#f6ecda] w-full max-w-2xl rounded-3xl p-6 sm:p-8 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left space-y-4 max-h-[90vh]"
+          >
+            <GoldenCorners />
+            
+            <div className="border-b border-[#4a0717]/20 pb-3 flex items-center justify-between shrink-0">
+              <div>
+                <span className="text-[10px] font-black text-[#8b102e] uppercase tracking-[0.2em] block mb-0.5 font-sans">Sugerir Mejora / Corrección</span>
+                <h3 className="text-sm font-serif font-black text-[#4a0717]">Documento: {activeDoc?.title}</h3>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsSuggesting(false)}
+                className="p-1.5 rounded-full hover:bg-black/5 text-[#4a0717]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4 py-2 font-sans">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Tu Nombre</label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Ej: Chef Juan Pérez"
+                    value={suggestionName}
+                    onChange={(e) => setSuggestionName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-xs font-semibold focus:outline-none focus:border-[#8b102e]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">¿Por qué sugieres esta mejora?</label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Ej: Corregir medidas de harina o agregar checklist"
+                    value={suggestionComment}
+                    onChange={(e) => setSuggestionComment(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-xs font-semibold focus:outline-none focus:border-[#8b102e]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col flex-1 min-h-[300px]">
+                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Texto Corregido (Markdown)</label>
+                <textarea
+                  required
+                  value={proposedContent}
+                  onChange={(e) => setProposedContent(e.target.value)}
+                  className="w-full flex-1 p-4 rounded-2xl border border-[#d2c7ac] bg-[#faf6eb] text-slate-700 font-mono text-xs focus:outline-none shadow-inner leading-relaxed min-h-[250px]"
+                  placeholder="Redacta el texto corregido..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t border-[#d2c7ac]/40 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsSuggesting(false)}
+                className="flex-1 py-2.5 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white font-sans font-black text-xs tracking-wider uppercase transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={submittingSuggestion}
+                className="flex-grow py-2.5 rounded-xl bg-gradient-to-r from-[#8b102e] to-[#4a0717] hover:from-[#4a0717] hover:to-black text-white font-sans font-black text-xs tracking-wider uppercase shadow-md disabled:opacity-50 transition-colors"
+              >
+                {submittingSuggestion ? 'Enviando...' : 'Enviar Propuesta'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

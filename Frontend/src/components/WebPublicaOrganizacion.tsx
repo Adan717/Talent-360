@@ -4,7 +4,8 @@ import {
   Search, FileText, Briefcase, Repeat, CheckSquare, 
   ChevronRight, Eye, BookOpen, AlertCircle, Globe, 
   Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2,
-  Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare
+  Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare,
+  Clock, Trophy, ClipboardList, Settings
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -17,10 +18,7 @@ interface DocIndexItem {
 }
 
 interface DocIndex {
-  puesto?: DocIndexItem[];
-  proceso?: DocIndexItem[];
-  tarea?: DocIndexItem[];
-  nota?: DocIndexItem[];
+  [category: string]: DocIndexItem[] | undefined;
 }
 
 export function WebPublicaOrganizacion() {
@@ -197,25 +195,51 @@ export function WebPublicaOrganizacion() {
       case 'briefcase': return <Briefcase size={16} />;
       case 'repeat': return <Repeat size={16} />;
       case 'check-square': return <CheckSquare size={16} />;
+      case 'clock': return <Clock size={16} />;
+      case 'trophy': return <Trophy size={16} />;
+      case 'clipboard-list': return <ClipboardList size={16} />;
+      case 'settings': return <Settings size={16} />;
+      case 'book-open': return <BookOpen size={16} />;
+      case 'building-2': return <Building2 size={16} />;
       default: return <FileText size={16} />;
     }
   };
 
   const getCategoryTitle = (cat: string) => {
     switch (cat) {
+      case 'organizacion': return 'Organización y Empresa';
       case 'puesto': return 'Puestos y Jerarquías';
-      case 'proceso': return 'Recetas de Operación (SOP)';
-      case 'tarea': return 'Checklists de Calidad';
-      default: return 'Notas y Bitácoras';
+      case 'proceso': return 'Procesos y Procedimientos';
+      case 'tarea': return 'Tareas y Checklists';
+      case 'rutina': return 'Rutinas y Operaciones';
+      case 'indicador': return 'Indicadores de Desempeño (KPIs)';
+      case 'reglas': return 'Reglas y Sanciones';
+      case 'formatos': return 'Formatos y Documentos';
+      case 'glosario': return 'Glosario de Términos';
+      case 'nota': return 'Notas y Bitácoras';
+      default: return cat.charAt(0).toUpperCase() + cat.slice(1);
     }
   };
+
+  const categoryOrder = [
+    'organizacion',
+    'puesto',
+    'proceso',
+    'tarea',
+    'rutina',
+    'indicador',
+    'reglas',
+    'formatos',
+    'glosario',
+    'nota'
+  ];
 
   const filteredIndex = () => {
     const query = searchQuery.toLowerCase();
     const result: DocIndex = {};
-    const categories: ('puesto' | 'proceso' | 'tarea' | 'nota')[] = ['puesto', 'proceso', 'tarea', 'nota'];
+    const allCategories = Object.keys(index);
     
-    categories.forEach(cat => {
+    allCategories.forEach(cat => {
       const items = index[cat];
       if (items) {
         const filtered = items.filter((item: DocIndexItem) => 
@@ -227,6 +251,17 @@ export function WebPublicaOrganizacion() {
       }
     });
     return result;
+  };
+
+  const sortedFilteredIndexEntries = () => {
+    const fIndex = filteredIndex();
+    return Object.entries(fIndex).sort(([catA], [catB]) => {
+      let idxA = categoryOrder.indexOf(catA);
+      let idxB = categoryOrder.indexOf(catB);
+      if (idxA === -1) idxA = 999;
+      if (idxB === -1) idxB = 999;
+      return idxA - idxB;
+    });
   };
 
   // Passcode verification
@@ -1208,10 +1243,10 @@ export function WebPublicaOrganizacion() {
                         /* ==========================================
                            STANDARD DOCUMENT INDEX
                            ========================================== */
-                        Object.keys(filteredIndex()).length === 0 ? (
+                        sortedFilteredIndexEntries().length === 0 ? (
                           <div className="text-center py-8 text-[#4a0717]/40 text-xs italic font-semibold">No se encontraron capítulos.</div>
                         ) : (
-                          Object.entries(filteredIndex()).map(([category, items]) => (
+                          sortedFilteredIndexEntries().map(([category, items]) => (
                             <div key={category} className="space-y-1.5">
                               <h4 className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest px-1 mb-1 font-sans border-b border-[#4a0717]/10 pb-0.5">
                                 {getCategoryTitle(category)}

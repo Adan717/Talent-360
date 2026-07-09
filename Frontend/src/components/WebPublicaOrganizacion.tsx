@@ -973,6 +973,32 @@ export function WebPublicaOrganizacion() {
                             </span>
                           </div>
 
+                          {/* Manual Text Input Fallback */}
+                          <div className="flex gap-2 mb-3 px-1 relative z-10">
+                            <input 
+                              type="text"
+                              placeholder="Escribe tu duda aquí..."
+                              value={questionText}
+                              onChange={(e) => setQuestionText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && questionText.trim()) {
+                                  askCopilot(questionText);
+                                }
+                              }}
+                              className="flex-1 px-3 py-1.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none focus:border-[#8b102e] font-sans"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (questionText.trim()) askCopilot(questionText);
+                              }}
+                              disabled={queryingAi || !questionText.trim()}
+                              className="px-3.5 py-1.5 rounded-xl bg-[#8b102e] hover:bg-[#4a0717] text-white font-bold text-xs transition-colors disabled:opacity-50 font-sans"
+                            >
+                              Preguntar
+                            </button>
+                          </div>
+
                           {/* Transcription / Question */}
                           {questionText && (
                             <div className="mb-3 bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-2.5">

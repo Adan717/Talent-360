@@ -286,19 +286,19 @@ export function WebPublicaOrganizacion() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const getIcon = (iconName: string) => {
+  const getIcon = (iconName: string, size = 16) => {
     switch (iconName) {
-      case 'briefcase': return <Briefcase size={16} />;
-      case 'repeat': return <Repeat size={16} />;
-      case 'check-square': return <CheckSquare size={16} />;
-      case 'clock': return <Clock size={16} />;
-      case 'trophy': return <Trophy size={16} />;
-      case 'clipboard-list': return <ClipboardList size={16} />;
-      case 'settings': return <Settings size={16} />;
-      case 'book-open': return <BookOpen size={16} />;
-      case 'building-2': return <Building2 size={16} />;
-      case 'paperclip': return <Paperclip size={16} />;
-      default: return <FileText size={16} />;
+      case 'briefcase': return <Briefcase size={size} />;
+      case 'repeat': return <Repeat size={size} />;
+      case 'check-square': return <CheckSquare size={size} />;
+      case 'clock': return <Clock size={size} />;
+      case 'trophy': return <Trophy size={size} />;
+      case 'clipboard-list': return <ClipboardList size={size} />;
+      case 'settings': return <Settings size={size} />;
+      case 'book-open': return <BookOpen size={size} />;
+      case 'building-2': return <Building2 size={size} />;
+      case 'paperclip': return <Paperclip size={size} />;
+      default: return <FileText size={size} />;
     }
   };
 
@@ -1871,36 +1871,36 @@ export function WebPublicaOrganizacion() {
                          ======================================================== */
                       <div className="flex-1 flex flex-col min-w-0">
                         {/* Header */}
-                        <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
+                        <div className="sticky top-0 z-30 bg-[#f6ecda] border-b border-[#4a0717]/20 pb-3 mb-4 -mx-4 px-4 sm:-mx-7 sm:px-7 pt-2 flex items-center justify-between shadow-sm lg:shadow-none">
                           {activeDoc ? (
                             <div className="flex items-center gap-3">
-                              <div className="p-1.5 rounded-lg bg-[#8b102e]/5 text-[#8b102e] shrink-0 border border-[#d2c7ac]">
-                                {getIcon(activeDoc.icon)}
+                              <div className="p-2 sm:p-2.5 rounded-xl bg-[#8b102e]/5 text-[#8b102e] shrink-0 border border-[#d2c7ac] shadow-sm">
+                                {getIcon(activeDoc.icon, 20)}
                               </div>
                               <div className="flex flex-col text-left">
-                                <span className="text-[9px] font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1 font-sans">
+                                <span className="text-[10px] font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1.5 font-sans">
                                   {getCategoryTitle(activeDoc.type)}
                                 </span>
-                                <span className="text-xs font-bold text-[#1e3b8b] font-sans truncate max-w-[100px] sm:max-w-[200px]">{activeDoc.title}</span>
+                                <span className="text-sm sm:text-base font-bold text-[#1e3b8b] font-sans truncate max-w-[120px] sm:max-w-[240px]">{activeDoc.title}</span>
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-[#4a0717]/40 font-bold">LECTURA MANUAL</span>
+                            <span className="text-sm text-[#4a0717]/40 font-bold font-sans">LECTURA MANUAL</span>
                           )}
                           
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             {/* Narrator Button */}
                             {activeDoc && (
                               <button
                                 onClick={() => speakText(activeDoc.content)}
-                                className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm ${
+                                className={`p-2 sm:p-2.5 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm ${
                                   isSpeaking 
                                     ? 'bg-rose-100 border-rose-300 text-[#8b102e] animate-pulse' 
                                     : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
                                 }`}
                                 title="Narrar contenido"
                               >
-                                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
                                 <span className="hidden sm:inline">{isSpeaking ? 'Detener' : 'Escuchar'}</span>
                               </button>
                             )}
@@ -1912,19 +1912,19 @@ export function WebPublicaOrganizacion() {
                                   setProposedContent(activeDoc.raw_content);
                                   setIsSuggesting(true);
                                 }}
-                                className="p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm"
+                                className="p-2 sm:p-2.5 px-3 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm"
                                 title="Sugerir una corrección o adición"
                               >
-                                <MessageSquare size={14} />
+                                <MessageSquare size={16} />
                                 <span className="hidden sm:inline">Sugerir</span>
                               </button>
                             )}
                             
                             <button 
                               onClick={() => setMobileView('index')} 
-                              className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm"
+                              className="lg:hidden p-2 sm:p-2.5 px-3 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm"
                             >
-                              <Menu size={14} /> Índice
+                              <Menu size={16} /> Índice
                             </button>
                           </div>
                         </div>

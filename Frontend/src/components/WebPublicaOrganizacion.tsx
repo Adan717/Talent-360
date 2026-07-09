@@ -1245,7 +1245,7 @@ export function WebPublicaOrganizacion() {
               {/* Cover Center section - LARGE LOGO & EMBEDDED TITLE */}
               <div className="flex flex-col items-center text-center my-auto py-4 relative z-10">
                 
-                {/* 200% LARGER LOGO CONTAINER */}
+                {/* 200% LARGER LOGO CONTAINER WITH SELLO DE CALIDAD */}
                 <div className="w-48 h-48 sm:w-60 sm:h-60 rounded-full border-4 border-[#d4af37] p-1 flex items-center justify-center shadow-2xl bg-[#f6ecda] hover:scale-105 transition-transform duration-300 relative mb-5">
                   <img 
                     src="/decorarte_logo.png" 
@@ -1253,6 +1253,45 @@ export function WebPublicaOrganizacion() {
                     className="w-full h-full object-contain rounded-full" 
                   />
                   <div className="absolute inset-0 rounded-full border border-[#d4af37]/40 animate-ping opacity-10 pointer-events-none"></div>
+
+                  {/* Starburst Anniversary Quality Seal (Sello de Calidad de 24 picos) */}
+                  <div className="absolute -right-6 sm:-right-8 -top-3 z-30 select-none hover:rotate-[5deg] transition-transform duration-300 drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)]">
+                    {/* Ribbon tails hanging from the seal */}
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-8 h-10 flex justify-between pointer-events-none">
+                      <div className="w-3.5 h-10 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/25 relative rotate-[-12deg] origin-top">
+                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-[#faf6eb]" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)', backgroundColor: '#240207' }}></div>
+                      </div>
+                      <div className="w-3.5 h-10 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/25 relative rotate-[12deg] origin-top">
+                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-[#faf6eb]" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)', backgroundColor: '#240207' }}></div>
+                      </div>
+                    </div>
+
+                    {/* Starburst body */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] p-0.5 relative"
+                      style={{
+                        clipPath: 'polygon(50% 0%, 55% 5%, 62% 2%, 66% 9%, 74% 7%, 77% 15%, 85% 15%, 86% 23%, 93% 25%, 92% 33%, 98% 37%, 95% 45%, 99% 50%, 95% 55%, 98% 63%, 92% 67%, 93% 75%, 86% 77%, 85% 85%, 77% 85%, 74% 93%, 66% 91%, 62% 98%, 55% 95%, 50% 100%, 45% 95%, 38% 98%, 34% 91%, 26% 93%, 23% 85%, 15% 85%, 14% 77%, 7% 75%, 8% 67%, 2% 63%, 5% 55%, 1% 50%, 5% 45%, 2% 37%, 8% 33%, 7% 25%, 14% 23%, 15% 15%, 23% 15%, 26% 7%, 34% 9%, 38% 2%, 45% 5%)'
+                      }}
+                    >
+                      <div className="w-full h-full rounded-full border border-dashed border-[#4a0717]/40 flex flex-col items-center justify-center text-center p-1 bg-gradient-to-br from-[#fcf6ba] via-[#bf953f] to-[#aa771c]">
+                        <span className="text-[5.5px] sm:text-[6.5px] font-black tracking-tighter text-[#4a0717] uppercase leading-none font-sans">
+                          CONMEMORACIÓN
+                        </span>
+                        
+                        <div className="flex items-start justify-center my-0.5">
+                          <span className="text-xl sm:text-2xl font-black text-[#4a0717] leading-none font-serif select-none">
+                            3
+                          </span>
+                          <span className="text-[8px] sm:text-[9.5px] font-bold text-[#4a0717] leading-none align-super font-serif select-none mt-0.5 ml-0.5">
+                            er
+                          </span>
+                        </div>
+
+                        <span className="text-[6px] sm:text-[7px] font-black tracking-widest text-[#4a0717] uppercase leading-none font-sans">
+                          ANIVERSARIO
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* TEXT ONLY WITH BEVEL/OUTLINE STYLE IN BEAUTIFUL MANUSCRIPT FONT */}
                   <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-full text-center whitespace-nowrap">
@@ -1270,20 +1309,6 @@ export function WebPublicaOrganizacion() {
                 </div>
 
                 <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/45 to-transparent my-2"></div>
-              </div>
-
-              {/* Cover Anniversary Banner - Medieval styled */}
-              <div className="my-2 relative z-10 text-center select-none py-1.5 px-3 rounded-xl border border-[#d4af37]/25 bg-gradient-to-r from-[#d4af37]/5 via-transparent to-[#d4af37]/5 max-w-[280px] mx-auto shadow-md">
-                <p 
-                  className="text-[10.5px] sm:text-[11.5px] text-[#faf6eb]/90 tracking-widest leading-relaxed uppercase"
-                  style={{ 
-                    fontFamily: "'Cinzel', serif", 
-                    fontWeight: 700,
-                    textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                  }}
-                >
-                  ⚜ En conmemoración del tercer aniversario ⚜
-                </p>
               </div>
 
               {/* Antique Compilation Credits */}

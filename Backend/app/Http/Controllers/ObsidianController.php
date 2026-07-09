@@ -54,12 +54,14 @@ class ObsidianController extends Controller
             'name' => 'required|string|max:255',
             'local_path' => 'nullable|string|max:1024',
             'hide_oracle_button' => 'nullable|boolean',
+            'gemini_api_key' => 'nullable|string|max:255',
         ]);
 
         $vault->update([
             'name' => $request->name,
             'local_path' => $request->local_path,
             'hide_oracle_button' => (bool) $request->hide_oracle_button,
+            'gemini_api_key' => $request->gemini_api_key,
         ]);
 
         return response()->json(['message' => 'Configuración guardada con éxito', 'vault' => $vault]);
@@ -883,10 +885,11 @@ No inventes datos de salarios, reglas o puestos si no están en el contexto.
 DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
 " . $contextText;
 
-        $geminiKey = env('GEMINI_API_KEY');
+        $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
+        $geminiKey = $vault?->gemini_api_key ?? env('GEMINI_API_KEY');
         if (!$geminiKey) {
             return response()->json([
-                'answer' => "Modo Demo: Hola, soy el Asistente de La Receta Secreta. Para darte respuestas reales con IA, por favor configura la variable GEMINI_API_KEY en tu archivo .env. Preguntaste por: \"" . $request->question . "\""
+                'answer' => "Modo Demo: Hola, soy el Asistente de La Receta Secreta. Para darte respuestas reales con IA, por favor configura la clave de API de Gemini en la configuración del manual. Preguntaste por: \"" . $request->question . "\""
             ]);
         }
 
@@ -1198,10 +1201,11 @@ Separa cada uno de los documentos solicitados con un separador visual de página
 Rellena todos los campos vacíos con datos hipotéticos lógicos y formales basados en el manual. El lenguaje debe ser estrictamente en español formal, legal y corporativo mexicano.
 Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
 
-        $geminiKey = env('GEMINI_API_KEY');
+        $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
+        $geminiKey = $vault?->gemini_api_key ?? env('GEMINI_API_KEY');
         if (!$geminiKey) {
             return response()->json([
-                'html' => "<h3>Modo Demo</h3><p>Para generar contratos con IA, configura la variable GEMINI_API_KEY en tu archivo .env. Datos del colaborador: {$request->candidate_name} como {$roleDoc->title}.</p>"
+                'html' => "<h3>Modo Demo</h3><p>Para generar contratos con IA, por favor configura la clave de API de Gemini en la configuración del manual. Datos del colaborador: {$request->candidate_name} como {$roleDoc->title}.</p>"
             ]);
         }
 

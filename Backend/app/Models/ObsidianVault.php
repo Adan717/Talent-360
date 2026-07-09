@@ -14,7 +14,9 @@ class ObsidianVault extends Model
         'tenant_id',
         'name',
         'local_path',
-        'last_synced_at'
+        'last_synced_at',
+        'hide_oracle_button',
+        'gemini_api_key'
     ];
 
     protected $casts = [

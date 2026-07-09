@@ -46,7 +46,7 @@ export function OrgVaultManager() {
   
   // Admin tabs & state
   const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users' | 'matrix'>('view');
-  const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '', hide_oracle_button: false });
+  const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '', hide_oracle_button: false, gemini_api_key: '' });
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [syncing, setSyncing] = useState(false);
   
@@ -999,6 +999,19 @@ export function OrgVaultManager() {
                     placeholder="Ej. C:\Users\Nombre\Google Drive\MiBaulObsidian"
                   />
                 </div>
+                <div>
+                  <label className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Clave de API de Gemini</label>
+                  <input
+                    type="password"
+                    value={vaultSettings.gemini_api_key || ''}
+                    onChange={(e) => setVaultSettings({ ...vaultSettings, gemini_api_key: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-200 bg-white rounded-2xl focus:outline-none focus:border-blue-500 text-sm font-medium"
+                    placeholder="AIzaSy..."
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-normal text-slate-500">
+                    Clave privada utilizada para habilitar consultas al Oráculo y generación automática de exámenes. Si no se provee, se usará la del servidor global.
+                  </p>
+                </div>
               </div>
 
               <div className="flex gap-3 justify-end pt-2">
@@ -1006,7 +1019,7 @@ export function OrgVaultManager() {
                   type="submit"
                   className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors"
                 >
-                  Guardar Ruta
+                  Guardar Ajustes
                 </button>
                 <button
                   type="button"

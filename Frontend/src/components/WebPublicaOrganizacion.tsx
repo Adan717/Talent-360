@@ -1346,11 +1346,23 @@ export function WebPublicaOrganizacion() {
                  MARISOL'S GRAND PARCHMENT WELCOME MODAL
                  ======================================================== */
               <div 
-                className="w-full max-w-xl rounded-[40px_10px_40px_10px] p-6 sm:p-10 relative border-y-[10px] border-x-[5px] border-double border-[#5c3e21]/80 bg-gradient-to-r from-[#cbb487] via-[#fbf3e3] to-[#cbb487] shadow-[0_25px_60px_rgba(0,0,0,0.85),_inset_0_0_40px_rgba(92,62,33,0.3)] flex flex-col text-center items-center justify-center transform rotate-[-0.5deg]"
+                className="w-full max-w-xl bg-gradient-to-r from-[#d0b48c] via-[#fbf5e6] to-[#d0b48c] rounded-[10px_10px_35px_35px] p-8 sm:p-12 pb-16 pt-14 relative border-x border-[#8c7355]/30 shadow-[0_30px_70px_rgba(0,0,0,0.9)] flex flex-col text-center items-center justify-center transform rotate-[-0.5deg] z-10"
               >
+                {/* Vintage Corner Curls to match reference image */}
+                {/* Top-Left Curl Flap */}
+                <div className="absolute top-0 left-0 w-16 h-12 bg-gradient-to-br from-[#bda272] to-[#fbf5e6] rounded-br-[40px] shadow-[2px_2px_5px_rgba(0,0,0,0.15)] border-r border-b border-[#5c3e21]/20 z-20" />
+                
+                {/* Top-Right Rolled Down Flap */}
+                <div className="absolute top-0 right-0 w-32 h-14 bg-gradient-to-bl from-[#a68a5c] via-[#faf0d9] to-[#a68a5c] rounded-bl-[60px] shadow-[-3px_3px_6px_rgba(0,0,0,0.2)] border-l border-b border-[#5c3e21]/30 z-20" />
+
+                {/* Bottom Scroll Cylinder (Rolled Forward) */}
+                <div className="absolute -bottom-6 -left-4 -right-4 h-12 bg-gradient-to-b from-[#896f43] via-[#faf0d9] to-[#5a4421] rounded-full border border-[#3d2c16] shadow-[0_12px_24px_rgba(0,0,0,0.5),_inset_0_3px_6px_rgba(255,255,255,0.45)] z-20 flex items-center justify-center">
+                  <div className="w-[96%] h-[3px] bg-[#3d2c16]/30 rounded-full" />
+                </div>
+
                 <GoldenCorners />
-                <div className="space-y-5 w-full">
-                  <div className="absolute -top-4 -right-3 bg-[#8b102e] text-[#faf6eb] text-[9px] font-sans font-black px-2 py-0.5 rounded shadow-md rotate-[12deg] border border-[#d4af37]/60 uppercase tracking-[0.2em] z-20">
+                <div className="space-y-6 w-full relative z-10">
+                  <div className="absolute -top-10 -right-5 bg-[#8b102e] text-[#faf6eb] text-[9px] font-sans font-black px-2 py-0.5 rounded shadow-md rotate-[12deg] border border-[#d4af37]/60 uppercase tracking-[0.2em] z-30">
                     Sello Gurú
                   </div>
                   
@@ -1361,19 +1373,20 @@ export function WebPublicaOrganizacion() {
                   </h3>
                   
                   <p 
-                    className="text-sm sm:text-base text-[#4a0717] leading-relaxed text-center font-bold px-2 py-1" 
+                    className="text-[17px] sm:text-[21px] md:text-[24px] text-[#4a0717] leading-relaxed text-center font-bold px-2 py-2 italic" 
                     style={{ 
                       fontFamily: "'Dancing Script', cursive",
+                      textShadow: '0.5px 0.5px 0.5px rgba(92,62,33,0.15)'
                     }}
                   >
                     "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existencia."
                   </p>
 
-                  <div className="pt-2">
+                  <div className="pt-4 relative z-30">
                     <button
                       type="button"
                       onClick={() => setShowWelcomeModal(false)}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-sm tracking-wider uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] border border-[#5c3e21]/30"
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-sm tracking-wider uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] border border-[#5c3e21]/45"
                     >
                       Entrar al Manual
                     </button>
@@ -1749,7 +1762,7 @@ export function WebPublicaOrganizacion() {
                 {/* -----------------------------------------------------------
                     PAGE A: INDEX / TABLE OF CONTENTS (Left Page)
                     ----------------------------------------------------------- */}
-                <div className={`w-full h-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line-right border-b lg:border-b-0 lg:border-r border-[#d8ccb6] overflow-hidden ${
+                <div className={`w-full h-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line-right border-b lg:border-b-0 lg:border-r border-[#d8ccb6] overflow-y-auto lg:overflow-hidden ${
                   mobileView === 'index' ? 'flex' : 'hidden lg:flex'
                 }`}
                   style={{
@@ -1817,7 +1830,7 @@ export function WebPublicaOrganizacion() {
                     )}
 
                     {/* Index List (Shows manual files OR suggestions inbox) */}
-                    <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-none min-h-0">
+                    <div className="flex-grow lg:flex-1 lg:overflow-y-auto pr-1 space-y-4 scrollbar-none lg:min-h-0">
                       {activeBookTab === 'audit' ? (
                         /* ==========================================
                            AUDITOR INBOX LIST
@@ -1979,7 +1992,7 @@ export function WebPublicaOrganizacion() {
                 {/* -----------------------------------------------------------
                     PAGE B: CONTENT RENDERER / SUGESTIONES (Right Page)
                     ----------------------------------------------------------- */}
-                <div className={`w-full h-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line overflow-hidden ${
+                <div className={`w-full h-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line overflow-y-auto lg:overflow-hidden ${
                   mobileView === 'content' ? 'flex' : 'hidden lg:flex'
                 }`}
                   style={{
@@ -2289,7 +2302,7 @@ export function WebPublicaOrganizacion() {
                               {/* Scrollable Document Content & Related Footnotes */}
                               <div 
                                 ref={contentRef}
-                                className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none min-h-0 pb-4"
+                                className="flex-grow lg:flex-1 text-[#2b251f] pr-1 custom-markdown lg:overflow-y-auto scrollbar-none lg:min-h-0 pb-4"
                               >
                                 <div dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }} />
 

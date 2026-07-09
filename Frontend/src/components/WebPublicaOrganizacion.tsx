@@ -154,20 +154,23 @@ export function WebPublicaOrganizacion() {
 
   // Auto-expansion disabled to keep all categories collapsed initially
 
-  // Load read progress from localStorage
+  // Load read progress from localStorage (namespaced per logged-in user)
   useEffect(() => {
     if (!tenantSlug) return;
     try {
-      const saved = localStorage.getItem(`vault_read_docs_${tenantSlug}`);
+      const userKey = currentUser?.email ? currentUser.email : 'guest';
+      const saved = localStorage.getItem(`vault_read_docs_${tenantSlug}_${userKey}`);
       if (saved) {
         setReadDocSlugs(JSON.parse(saved));
+      } else {
+        setReadDocSlugs([]);
       }
     } catch (e) {
       console.error(e);
     }
-  }, [tenantSlug]);
+  }, [tenantSlug, currentUser]);
 
-  // Track and save read progress when document is opened
+  // Track and save read progress when document is opened (namespaced per logged-in user)
   useEffect(() => {
     if (activeDoc?.id && tenantSlug) {
       let nextSlugs: string[] = [];
@@ -177,7 +180,9 @@ export function WebPublicaOrganizacion() {
           return prev;
         }
         nextSlugs = [...prev, activeDoc.slug];
-        localStorage.setItem(`vault_read_docs_${tenantSlug}`, JSON.stringify(nextSlugs));
+        
+        const userKey = currentUser?.email ? currentUser.email : 'guest';
+        localStorage.setItem(`vault_read_docs_${tenantSlug}_${userKey}`, JSON.stringify(nextSlugs));
         return nextSlugs;
       });
 
@@ -249,9 +254,13 @@ export function WebPublicaOrganizacion() {
       setLinks(res.data.links || []);
       setBacklinks(res.data.backlinks || []);
       setAvailableJobRoles(res.data.job_roles || []);
-      if (res.data.read_doc_slugs && res.data.read_doc_slugs.length > 0) {
-        setReadDocSlugs(res.data.read_doc_slugs);
-      }
+      const apiSlugs = res.data.read_doc_slugs || [];
+      setReadDocSlugs(apiSlugs);
+      
+      const savedUserStr = sessionStorage.getItem(`vault_user_${tenantSlug}`);
+      const resolvedUser = savedUserStr ? JSON.parse(savedUserStr) : currentUser;
+      const userKey = resolvedUser?.email ? resolvedUser.email : 'guest';
+      localStorage.setItem(`vault_read_docs_${tenantSlug}_${userKey}`, JSON.stringify(apiSlugs));
     } catch (err) {
       console.error('Error fetching public vault:', err);
     } finally {

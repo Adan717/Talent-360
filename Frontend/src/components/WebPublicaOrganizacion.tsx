@@ -85,6 +85,25 @@ export function WebPublicaOrganizacion() {
   });
   const [vaultName, setVaultName] = useState('La Receta Secreta');
 
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // Auto-expand category of active document
+  useEffect(() => {
+    if (activeDoc?.type) {
+      setExpandedCategories(prev => ({
+        ...prev,
+        [activeDoc.type]: true
+      }));
+    }
+  }, [activeDoc]);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -601,6 +620,11 @@ export function WebPublicaOrganizacion() {
       {/* Custom Styles Injection */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
 
         /* Parchment vintage look matching the beige-cream logo background */
         .parchment {
@@ -1329,38 +1353,60 @@ export function WebPublicaOrganizacion() {
                         sortedFilteredIndexEntries().length === 0 ? (
                           <div className="text-center py-8 text-[#4a0717]/40 text-xs italic font-semibold">No se encontraron capítulos.</div>
                         ) : (
-                          sortedFilteredIndexEntries().map(([category, items]) => (
-                            <div key={category} className="space-y-1.5">
-                              <h4 className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest px-1 mb-1 font-sans border-b border-[#4a0717]/10 pb-0.5">
-                                {getCategoryTitle(category)}
-                              </h4>
-                              {(items as DocIndexItem[]).map((item: DocIndexItem) => {
-                                const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
-                                return (
-                                  <button
-                                    key={item.id}
-                                    onClick={() => {
-                                      navigate(`/organizacion/${tenantSlug}/${item.slug}`);
-                                      setMobileView('content');
-                                      setActiveBookTab('read');
-                                      setIsSuggesting(false);
-                                    }}
-                                    className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
-                                      isActive 
-                                        ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
-                                        : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
-                                    }`}
-                                  >
-                                    <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
-                                      {getIcon(item.icon)}
+                          sortedFilteredIndexEntries().map(([category, items]) => {
+                            const isExpanded = !!expandedCategories[category];
+                            return (
+                              <div key={category} className="space-y-1">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCategory(category)}
+                                  className="w-full flex items-center justify-between text-left px-1 mb-1.5 border-b border-[#4a0717]/15 pb-1 select-none hover:opacity-80 group transition-all"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <div className={`p-0.5 rounded text-[#8b102e] transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                                      <ChevronRight size={10} />
                                     </div>
-                                    <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
-                                    <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ))
+                                    <h4 className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest font-sans">
+                                      {getCategoryTitle(category)}
+                                    </h4>
+                                  </div>
+                                  <span className="text-[8px] font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
+                                    {items?.length || 0}
+                                  </span>
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="space-y-1.5 pl-2 transition-all duration-300 animate-[fadeIn_0.2s_ease-out]">
+                                    {(items as DocIndexItem[]).map((item: DocIndexItem) => {
+                                      const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
+                                      return (
+                                        <button
+                                          key={item.id}
+                                          onClick={() => {
+                                            navigate(`/organizacion/${tenantSlug}/${item.slug}`);
+                                            setMobileView('content');
+                                            setActiveBookTab('read');
+                                            setIsSuggesting(false);
+                                          }}
+                                          className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
+                                            isActive 
+                                              ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
+                                              : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
+                                          }`}
+                                        >
+                                          <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
+                                            {getIcon(item.icon)}
+                                          </div>
+                                          <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
+                                          <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
                         )
                       )}
                     </div>

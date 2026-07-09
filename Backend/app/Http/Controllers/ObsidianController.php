@@ -657,8 +657,10 @@ class ObsidianController extends Controller
         $token = $request->bearerToken() ?: $request->token;
         if ($token) {
             $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($tokenModel && $tokenModel->tokenable instanceof \App\Models\ObsidianUser) {
-                $user = $tokenModel->tokenable;
+            if ($tokenModel && ($tokenModel->tokenable_type === 'App\Models\ObsidianUser' || is_a($tokenModel->tokenable_type, \App\Models\ObsidianUser::class, true))) {
+                $user = \App\Models\ObsidianUser::withoutGlobalScopes()
+                    ->where('id', $tokenModel->tokenable_id)
+                    ->first();
             }
         }
 
@@ -936,8 +938,10 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
         $token = $request->bearerToken() ?: $request->token ?: $request->passcode;
         if ($token) {
             $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($tokenModel && $tokenModel->tokenable instanceof \App\Models\ObsidianUser) {
-                return $tokenModel->tokenable;
+            if ($tokenModel && ($tokenModel->tokenable_type === 'App\Models\ObsidianUser' || is_a($tokenModel->tokenable_type, \App\Models\ObsidianUser::class, true))) {
+                return \App\Models\ObsidianUser::withoutGlobalScopes()
+                    ->where('id', $tokenModel->tokenable_id)
+                    ->first();
             }
         }
         return null;
@@ -1268,8 +1272,10 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
         $token = $request->bearerToken() ?: $request->token;
         if ($token) {
             $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($tokenModel && $tokenModel->tokenable instanceof \App\Models\ObsidianUser) {
-                $user = $tokenModel->tokenable;
+            if ($tokenModel && ($tokenModel->tokenable_type === 'App\Models\ObsidianUser' || is_a($tokenModel->tokenable_type, \App\Models\ObsidianUser::class, true))) {
+                $user = \App\Models\ObsidianUser::withoutGlobalScopes()
+                    ->where('id', $tokenModel->tokenable_id)
+                    ->first();
             }
         }
 

@@ -957,4 +957,127 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
             'suggestion' => $suggestion
         ]);
     }
+
+    /**
+     * AI Scribe endpoint to generate full employment/onboarding documentation packages.
+     */
+    public function scribe(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'passcode' => 'required|string',
+            'candidate_name' => 'required|string|max:255',
+            'job_role_slug' => 'required|string|max:255',
+            'documents' => 'required|array',
+        ]);
+
+        if (!$this->validatePasscode($request->passcode)) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        // 1. Obtener documento del puesto
+        $roleDoc = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('slug', $request->job_role_slug)
+            ->firstOrFail();
+
+        // 2. Intentar buscar el reglamento interno en el baúl
+        $rulesDoc = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where(function($q) {
+                $q->where('title', 'like', '%reglamento%')
+                  ->orWhere('title', 'like', '%reglas%')
+                  ->orWhere('title', 'like', '%politicas%');
+            })->first();
+
+        // 3. Buscar procesos de apoyo
+        $processes = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('type', 'proceso')
+            ->select('title', 'raw_content')
+            ->limit(5)
+            ->get();
+
+        $processesText = "";
+        foreach ($processes as $p) {
+            $processesText .= "- " . $p->title . ": " . Str::limit($p->raw_content, 300) . "\n";
+        }
+
+        $roleText = "Puesto: " . $roleDoc->title . "\nContenido del manual:\n" . $roleDoc->raw_content;
+        $rulesText = $rulesDoc ? "Reglamento Interno:\n" . $rulesDoc->raw_content : "No hay reglamento interno explícito, usa reglas de conducta generales de la repostería y comercio.";
+
+        $docsList = $request->documents;
+        $instructions = "";
+        
+        if (in_array('contract', $docsList)) {
+            $instructions .= "1. CONTRATO LABORAL: Redacta un contrato individual de trabajo formal bajo la ley mexicana (LFT), vinculando al patrón ({$tenant->name}) y al trabajador ({$request->candidate_name}) para el puesto de {$roleDoc->title}. Detalla salario diario, jornada de trabajo, descansos y cláusula de confidencialidad.\n\n";
+        }
+        if (in_array('tasks', $docsList)) {
+            $instructions .= "2. OBLIGACIONES Y TAREAS (SOP): Un desglose claro y directo de las funciones, listas de tareas diarias y rutinas operativas del puesto ({$roleDoc->title}) basado en la información del manual.\n\n";
+        }
+        if (in_array('rules', $docsList)) {
+            $instructions .= "3. REGLAMENTO INTERNO Y SANCIONES: Las normas de conducta del establecimiento, faltas comunes (llegadas tarde, uniformes) y las medidas disciplinarias según la LFT mexicana.\n\n";
+        }
+        if (in_array('responsive', $docsList)) {
+            $instructions .= "4. CARTA RESPONSIVA DE EQUIPO: Un formato formal donde {$request->candidate_name} acepta la responsabilidad de resguardar el equipo, herramientas o utensilios asignados en su puesto de {$roleDoc->title}.\n\n";
+        }
+
+        $systemInstruction = "Eres el Escribano Mayor de la empresa {$tenant->name}. Tu deber es redactar formalmente los documentos de contratación y onboarding solicitados para el nuevo colaborador: {$request->candidate_name}, en el cargo de {$roleDoc->title}.
+
+INFORMACIÓN DE REFERENCIA DEL PUESTO:
+{$roleText}
+
+REGLAMENTO Y POLÍTICAS DE LA EMPRESA:
+{$rulesText}
+
+PROCESOS DE APOYO:
+{$processesText}
+
+INSTRUCCIONES DE REDACCIÓN:
+Genera un único bloque de texto formateado en Markdown limpio y sumamente profesional.
+Separa cada uno de los documentos solicitados con un separador visual de página en Markdown: '---'.
+Rellena todos los campos vacíos con datos hipotéticos lógicos y formales basados en el manual. El lenguaje debe ser estrictamente en español formal, legal y corporativo mexicano.
+Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
+
+        $geminiKey = env('GEMINI_API_KEY');
+        if (!$geminiKey) {
+            return response()->json([
+                'html' => "<h3>Modo Demo</h3><p>Para generar contratos con IA, configura la variable GEMINI_API_KEY en tu archivo .env. Datos del colaborador: {$request->candidate_name} como {$roleDoc->title}.</p>"
+            ]);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $systemInstruction . "\n\nRedacta ahora los pergaminos de contratación:\n" . $instructions]
+                        ]
+                    ]
+                ]
+            ]);
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Error al conectar con el Escribano AI.'], 500);
+            }
+
+            $markdown = $response->json('candidates.0.content.parts.0.text') ?? 'No se pudo generar la documentación.';
+            
+            // Convertir markdown a HTML
+            $html = Str::markdown($markdown);
+
+            return response()->json([
+                'markdown' => $markdown,
+                'html' => $html
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

@@ -65,6 +65,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/public/org-vault/{tenantSlug}/suggestions/create', [ObsidianController::class, 'createPublicSuggestion']);
     Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/approve', [ObsidianController::class, 'approvePublicSuggestion']);
     Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/reject', [ObsidianController::class, 'rejectPublicSuggestion']);
+    Route::post('/public/org-vault/{tenantSlug}/scribe', [ObsidianController::class, 'scribe']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);

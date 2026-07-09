@@ -70,6 +70,14 @@ export function WebPublicaOrganizacion() {
   const [aiAnswer, setAiAnswer] = useState('');
   const [queryingAi, setQueryingAi] = useState(false);
 
+  // Scribe (AI Contractor Document Scribe) states
+  const [scribeActiveTab, setScribeActiveTab] = useState<'chat' | 'scribe'>('chat');
+  const [candidateName, setCandidateName] = useState('');
+  const [jobRoleSlug, setJobRoleSlug] = useState('');
+  const [requestedDocs, setRequestedDocs] = useState<string[]>(['contract', 'tasks', 'rules', 'responsive']);
+  const [scribeResultHtml, setScribeResultHtml] = useState('');
+  const [generatingScribe, setGeneratingScribe] = useState(false);
+
   const [tenant, setTenant] = useState<any>({
     name: 'DecorArte 360',
     logo_url: '',
@@ -452,6 +460,64 @@ export function WebPublicaOrganizacion() {
     }
   };
 
+  const handleGenerateOnboardingDocs = async () => {
+    setGeneratingScribe(true);
+    setScribeResultHtml('');
+    try {
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/scribe`, {
+        passcode: passcode,
+        candidate_name: candidateName,
+        job_role_slug: jobRoleSlug,
+        documents: requestedDocs
+      });
+      setScribeResultHtml(res.data.html || '<p>Error al generar documentos.</p>');
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.error || 'Error al generar la documentación.');
+    } finally {
+      setGeneratingScribe(false);
+    }
+  };
+
+  const handlePrintScribeDocs = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Kit de Contratación - ${candidateName}</title>
+            <style>
+              body {
+                font-family: Georgia, serif;
+                padding: 40px;
+                color: #1a1a1a;
+                line-height: 1.6;
+              }
+              h1, h2, h3 {
+                color: #4a0717;
+                font-family: 'Playfair Display', serif;
+              }
+              hr {
+                page-break-after: always;
+                border: none;
+                margin: 40px 0;
+              }
+              p, li {
+                font-size: 14px;
+                text-align: justify;
+              }
+            </style>
+          </head>
+          <body>
+            ${scribeResultHtml}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   // Golden Corners SVG Component
   const GoldenCorners = () => (
     <div className="absolute inset-0 pointer-events-none p-3.5">
@@ -789,11 +855,9 @@ export function WebPublicaOrganizacion() {
                 
                 {/* Ribbon bookmark hanging down the center */}
                 <div className="hidden lg:block absolute left-[50%] -translate-x-1/2 top-0 h-44 w-3.5 bg-[#8b102e] border-x border-[#500618] rounded-b-md shadow-lg z-20 pointer-events-none after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2 after:bg-black/20"></div>
-                
-                {/* AI VOICE ASSISTANT MODAL (OVERLAY INSIDE THE BOOK) */}
                 {showAiAssistant && (
-                  <div className="absolute inset-0 bg-black/75 backdrop-blur-sm z-35 flex items-center justify-center p-3">
-                    <div className="bg-[#f6ecda] w-full max-w-md rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left">
+                  <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-3">
+                    <div className={`bg-[#f6ecda] w-full ${scribeActiveTab === 'scribe' && scribeResultHtml ? 'max-w-3xl h-[92%]' : 'max-w-md'} rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left transition-all duration-300`}>
                       <GoldenCorners />
                       
                       {/* Close button */}
@@ -809,55 +873,218 @@ export function WebPublicaOrganizacion() {
                       </button>
                       
                       {/* Title */}
-                      <h3 className="font-serif text-lg font-black text-[#4a0717] border-b border-[#d2c7ac] pb-2 mb-4 flex items-center gap-2">
+                      <h3 className="font-serif text-base sm:text-lg font-black text-[#4a0717] border-b border-[#d2c7ac]/40 pb-2 mb-3 flex items-center gap-2">
                         <Sparkles size={18} className="text-[#b38728]" />
-                        Oráculo DecorArte: Copiloto de Voz
+                        Oráculo & Escribano DecorArte 360
                       </h3>
 
-                      {/* Pulsing Talisman Mic */}
-                      <div className="flex flex-col items-center my-6">
+                      {/* Mode Toggle Tabs */}
+                      <div className="flex gap-2 mb-4 relative z-10 font-sans">
                         <button
-                          onClick={isListening ? stopListening : startListening}
-                          className={`w-24 h-24 rounded-full flex flex-col items-center justify-center shadow-xl border-4 transition-all ${
-                            isListening 
-                              ? 'bg-rose-50 border-rose-400 text-rose-600 animate-pulse'
-                              : 'bg-[#faf6eb] border-[#d2c7ac] text-[#3d1b13] hover:scale-105 hover:border-[#b38728]'
+                          type="button"
+                          onClick={() => {
+                            setScribeActiveTab('chat');
+                            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                            stopListening();
+                          }}
+                          className={`flex-1 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase border text-center transition-all ${
+                            scribeActiveTab === 'chat' 
+                              ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-sm' 
+                              : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
                           }`}
                         >
-                          <Mic size={36} className={isListening ? 'animate-bounce' : ''} />
-                          <span className="text-[8px] font-black uppercase mt-1 tracking-widest font-sans">
-                            {isListening ? 'Escuchando' : 'Hablar'}
-                          </span>
+                          Preguntas al Oráculo
                         </button>
-                        <span className="text-[10px] font-black text-[#8c6739] uppercase tracking-widest mt-3 animate-pulse font-sans">
-                          {assistantStatus}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScribeActiveTab('scribe');
+                            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                            stopListening();
+                          }}
+                          className={`flex-1 py-1 rounded-lg text-[9px] font-black tracking-wider uppercase border text-center transition-all ${
+                            scribeActiveTab === 'scribe' 
+                              ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-sm' 
+                              : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
+                          }`}
+                        >
+                          Escribano de Contratación
+                        </button>
                       </div>
 
-                      {/* Transcription / Question */}
-                      {questionText && (
-                        <div className="mb-4 bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-3">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Pregunta</span>
-                          <p className="text-xs text-[#2b251f] font-serif font-bold italic">"{questionText}"</p>
-                        </div>
-                      )}
+                      {scribeActiveTab === 'chat' ? (
+                        /* ========================================================
+                           TAB 1: ORACLE VOICE CHAT
+                           ======================================================== */
+                        <div className="flex-1 flex flex-col justify-between min-h-0">
+                          {/* Pulsing Talisman Mic */}
+                          <div className="flex flex-col items-center my-4">
+                            <button
+                              type="button"
+                              onClick={isListening ? stopListening : startListening}
+                              className={`w-20 h-20 rounded-full flex flex-col items-center justify-center shadow-xl border-4 transition-all ${
+                                isListening 
+                                  ? 'bg-rose-50 border-rose-400 text-rose-600 animate-pulse'
+                                  : 'bg-[#faf6eb] border-[#d2c7ac] text-[#3d1b13] hover:scale-105 hover:border-[#b38728]'
+                              }`}
+                            >
+                              <Mic size={28} className={isListening ? 'animate-bounce' : ''} />
+                              <span className="text-[7px] font-black uppercase mt-1 tracking-widest font-sans">
+                                {isListening ? 'Escuchando' : 'Hablar'}
+                              </span>
+                            </button>
+                            <span className="text-[9px] font-black text-[#8c6739] uppercase tracking-widest mt-2 animate-pulse font-sans">
+                              {assistantStatus}
+                            </span>
+                          </div>
 
-                      {/* AI Answer */}
-                      {(queryingAi || aiAnswer) && (
-                        <div className="bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-4 flex-1 overflow-y-auto max-h-[160px] scrollbar-none relative">
-                          <span className="text-[9px] font-black text-[#8c6739] uppercase tracking-widest block mb-1 font-sans">Respuesta del Oráculo</span>
-                          {queryingAi ? (
-                            <div className="text-xs text-[#3d1b13]/55 italic animate-pulse font-serif">Consultando pergaminos...</div>
+                          {/* Transcription / Question */}
+                          {questionText && (
+                            <div className="mb-3 bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-2.5">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Pregunta</span>
+                              <p className="text-xs text-[#2b251f] font-serif font-bold italic">"{questionText}"</p>
+                            </div>
+                          )}
+
+                          {/* AI Answer */}
+                          {(queryingAi || aiAnswer) && (
+                            <div className="bg-[#faf6eb] border border-[#d2c7ac] rounded-2xl p-3.5 flex-1 overflow-y-auto max-h-[160px] scrollbar-none relative mb-2">
+                              <span className="text-[8px] font-black text-[#8c6739] uppercase tracking-widest block mb-1 font-sans">Respuesta del Oráculo</span>
+                              {queryingAi ? (
+                                <div className="text-xs text-[#3d1b13]/55 italic animate-pulse font-serif">Consultando pergaminos...</div>
+                              ) : (
+                                <p className="text-xs text-[#2b251f] font-serif leading-relaxed italic">{aiAnswer}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Tip / Footer */}
+                          <div className="text-[8px] text-[#3d1b13]/40 font-sans font-bold border-t border-[#d2c7ac]/45 pt-1.5 mt-2 text-center">
+                            PREGUNTA DE VIVA VOZ SOBRE NÓMINAS, PUESTOS Y SANCIONES.
+                          </div>
+                        </div>
+                      ) : (
+                        /* ========================================================
+                           TAB 2: AI CONTRACT SCRIBE
+                           ======================================================== */
+                        <div className="flex-grow flex flex-col min-h-0 text-left">
+                          {scribeResultHtml ? (
+                            /* Scribe Document Result & Printer Workspace */
+                            <div className="flex-1 flex flex-col justify-between min-h-0">
+                              <div className="flex-1 overflow-y-auto border border-[#d2c7ac] bg-[#faf6eb] p-4 rounded-2xl custom-markdown shadow-inner scrollbar-none">
+                                <div dangerouslySetInnerHTML={{ __html: scribeResultHtml }} />
+                              </div>
+
+                              <div className="flex gap-2.5 mt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => setScribeResultHtml('')}
+                                  className="flex-1 py-2 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white font-sans font-bold text-xs tracking-wider uppercase"
+                                >
+                                  Redactar Otro
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handlePrintScribeDocs}
+                                  className="flex-grow py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-sans font-black text-xs tracking-wider uppercase shadow-md flex items-center justify-center gap-1.5"
+                                >
+                                  <FileText size={14} /> Imprimir / PDF
+                                </button>
+                              </div>
+                            </div>
                           ) : (
-                            <p className="text-xs text-[#2b251f] font-serif leading-relaxed italic">{aiAnswer}</p>
+                            /* Scribe Setup Form */
+                            <div className="space-y-3.5 relative z-10 flex-1 flex flex-col justify-between min-h-0">
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre del Nuevo Colaborador</label>
+                                  <input 
+                                    type="text"
+                                    required
+                                    placeholder="Ej: Laura González"
+                                    value={candidateName}
+                                    onChange={(e) => setCandidateName(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none focus:border-[#8b102e] font-sans"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto (Basado en el Manual)</label>
+                                  <select
+                                    value={jobRoleSlug}
+                                    onChange={(e) => setJobRoleSlug(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none focus:border-[#8b102e] font-serif"
+                                  >
+                                    <option value="">-- Selecciona un puesto del baúl --</option>
+                                    {(index.puesto || []).map((p: any) => (
+                                      <option key={p.id} value={p.slug}>{p.title}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1.5 font-sans">Pergaminos a Redactar</label>
+                                  <div className="grid grid-cols-2 gap-2 text-[10px] font-sans text-slate-700">
+                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={requestedDocs.includes('contract')} 
+                                        onChange={(e) => {
+                                          if (e.target.checked) setRequestedDocs([...requestedDocs, 'contract']);
+                                          else setRequestedDocs(requestedDocs.filter(d => d !== 'contract'));
+                                        }}
+                                      />
+                                      Contrato Laboral
+                                    </label>
+                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={requestedDocs.includes('tasks')} 
+                                        onChange={(e) => {
+                                          if (e.target.checked) setRequestedDocs([...requestedDocs, 'tasks']);
+                                          else setRequestedDocs(requestedDocs.filter(d => d !== 'tasks'));
+                                        }}
+                                      />
+                                      Obligaciones y Tareas
+                                    </label>
+                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={requestedDocs.includes('rules')} 
+                                        onChange={(e) => {
+                                          if (e.target.checked) setRequestedDocs([...requestedDocs, 'rules']);
+                                          else setRequestedDocs(requestedDocs.filter(d => d !== 'rules'));
+                                        }}
+                                      />
+                                      Reglamento Interno
+                                    </label>
+                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={requestedDocs.includes('responsive')} 
+                                        onChange={(e) => {
+                                          if (e.target.checked) setRequestedDocs([...requestedDocs, 'responsive']);
+                                          else setRequestedDocs(requestedDocs.filter(d => d !== 'responsive'));
+                                        }}
+                                      />
+                                      Carta Responsiva
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={handleGenerateOnboardingDocs}
+                                disabled={generatingScribe || !candidateName || !jobRoleSlug || requestedDocs.length === 0}
+                                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors disabled:opacity-50 mt-4 flex items-center justify-center gap-1.5"
+                              >
+                                {generatingScribe ? 'Redactando Pergaminos AI...' : 'Generar Kit de Contratación'}
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
-
-                      {/* Tip / Footer */}
-                      <div className="text-[9px] text-[#3d1b13]/40 font-sans font-bold border-t border-[#d2c7ac] pt-2 mt-4 text-center">
-                        PREGUNTA DE VIVA VOZ SOBRE NÓMINAS, PUESTOS Y SANCIONES.
-                      </div>
                     </div>
                   </div>
                 )}

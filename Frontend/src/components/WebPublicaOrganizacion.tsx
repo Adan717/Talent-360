@@ -2092,7 +2092,13 @@ export function WebPublicaOrganizacion() {
       )}
 
       {/* FLOATING GOLD TALISMAN FOR AI ASSISTANT */}
-      {isOpen && !loading && !hideOracleButton && (
+      {isOpen && !loading && (
+        currentUser?.role === 'admin' || 
+        (currentUser?.job_role_name && (
+          currentUser.job_role_name.toLowerCase().includes('administrador') || 
+          currentUser.job_role_name.toLowerCase().includes('gerente')
+        ))
+      ) && (
         <button 
           onClick={() => setShowAiAssistant(true)}
           className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] text-[#3d1b13] flex flex-col items-center justify-center shadow-2xl border-2 border-[#1c0808] hover:scale-105 transition-transform z-40 cursor-pointer animate-bounce-subtle"

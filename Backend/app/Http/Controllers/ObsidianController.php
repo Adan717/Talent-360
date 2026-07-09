@@ -761,4 +761,200 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Check if a passcode is valid.
+     */
+    private function validatePasscode($passcode, $requireAdmin = false)
+    {
+        $adminPasscodes = ['Guru28'];
+        $employeePasscodes = ['Chivas2017', '251302', '55'];
+        $allPasscodes = array_merge($adminPasscodes, $employeePasscodes);
+
+        if ($requireAdmin) {
+            return in_array($passcode, $adminPasscodes);
+        }
+        return in_array($passcode, $allPasscodes);
+    }
+
+    /**
+     * Validate passcode endpoint for public page.
+     */
+    public function validatePublicPasscode(Request $request)
+    {
+        $request->validate([
+            'passcode' => 'required|string'
+        ]);
+
+        $passcode = $request->passcode;
+        $isValid = $this->validatePasscode($passcode);
+
+        if (!$isValid) {
+            return response()->json(['error' => 'Contraseña incorrecta.'], 403);
+        }
+
+        $role = in_array($passcode, ['Guru28']) ? 'auditor' : 'colaborador';
+
+        return response()->json([
+            'valid' => true,
+            'role' => $role
+        ]);
+    }
+
+    /**
+     * Get suggestions on public page (Auditor only).
+     */
+    public function getPublicSuggestions(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'passcode' => 'required|string'
+        ]);
+
+        if (!$this->validatePasscode($request->passcode, true)) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $suggestions = ObsidianSuggestion::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->with(['document:id,title,slug,icon'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($suggestions);
+    }
+
+    /**
+     * Approve suggestion on public page (Auditor only).
+     */
+    public function approvePublicSuggestion(Request $request, $tenantSlug, $id)
+    {
+        $request->validate([
+            'passcode' => 'required|string',
+            'review_comment' => 'nullable|string'
+        ]);
+
+        if (!$this->validatePasscode($request->passcode, true)) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $suggestion = ObsidianSuggestion::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->findOrFail($id);
+
+        if ($suggestion->status !== 'pending') {
+            return response()->json(['message' => 'Esta propuesta ya ha sido procesada previamente.'], 400);
+        }
+
+        DB::transaction(function () use ($suggestion, $tenant, $request) {
+            $doc = ObsidianDocument::withoutGlobalScopes()
+                ->where('tenant_id', $tenant->id)
+                ->findOrFail($suggestion->document_id);
+
+            // Actualizar documento con la propuesta
+            $doc->update([
+                'raw_content' => $suggestion->proposed_content
+            ]);
+
+            // Re-procesar WikiLinks
+            $this->rebuildVaultLinks($tenant->id);
+
+            // Actualizar sugerencia
+            $suggestion->update([
+                'status' => 'approved',
+                'reviewer_id' => null, // null ya que es público
+                'reviewed_at' => now(),
+                'review_comment' => $request->review_comment ?? 'Aprobado vía Oráculo Público.'
+            ]);
+        });
+
+        return response()->json(['message' => 'Propuesta aprobada con éxito. El documento ha sido actualizado en tiempo real.']);
+    }
+
+    /**
+     * Reject suggestion on public page (Auditor only).
+     */
+    public function rejectPublicSuggestion(Request $request, $tenantSlug, $id)
+    {
+        $request->validate([
+            'passcode' => 'required|string',
+            'review_comment' => 'nullable|string'
+        ]);
+
+        if (!$this->validatePasscode($request->passcode, true)) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $suggestion = ObsidianSuggestion::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->findOrFail($id);
+
+        if ($suggestion->status !== 'pending') {
+            return response()->json(['message' => 'Esta propuesta ya ha sido procesada previamente.'], 400);
+        }
+
+        $suggestion->update([
+            'status' => 'rejected',
+            'reviewer_id' => null,
+            'reviewed_at' => now(),
+            'review_comment' => $request->review_comment ?? 'Rechazado vía Oráculo Público.'
+        ]);
+
+        return response()->json(['message' => 'Propuesta rechazada con éxito. El documento original permanece inalterado.']);
+    }
+
+    /**
+     * Submit suggestion on public page (Any valid passcode).
+     */
+    public function createPublicSuggestion(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'passcode' => 'required|string',
+            'document_id' => 'required|integer',
+            'proposed_content' => 'required|string',
+            'comment' => 'required|string',
+            'user_name' => 'required|string|max:255'
+        ]);
+
+        if (!$this->validatePasscode($request->passcode)) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        // Validar documento
+        $doc = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->findOrFail($request->document_id);
+
+        // Crear sugerencia
+        $suggestion = ObsidianSuggestion::create([
+            'tenant_id' => $tenant->id,
+            'vault_id' => $doc->vault_id,
+            'document_id' => $doc->id,
+            'user_id' => null, // null en público
+            'user_name' => $request->user_name,
+            'proposed_content' => $request->proposed_content,
+            'comment' => $request->comment,
+            'status' => 'pending'
+        ]);
+
+        return response()->json([
+            'message' => 'Propuesta de mejora enviada al Oráculo de la empresa con éxito.',
+            'suggestion' => $suggestion
+        ]);
+    }
 }

@@ -4,7 +4,7 @@ import {
   Search, FileText, Briefcase, Repeat, CheckSquare, 
   ChevronRight, Eye, BookOpen, AlertCircle, Globe, 
   Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2,
-  Volume2, VolumeX, Mic, Sparkles, X
+  Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -27,6 +27,13 @@ export function WebPublicaOrganizacion() {
   const { tenantSlug, docSlug } = useParams();
   const navigate = useNavigate();
   
+  // Passcode states
+  const [passcode, setPasscode] = useState('');
+  const [passcodeRole, setPasscodeRole] = useState<'auditor' | 'colaborador' | null>(null);
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+  const [passcodeError, setPasscodeError] = useState('');
+  const [verifyingPasscode, setVerifyingPasscode] = useState(false);
+
   // Book & Search states
   const [isOpen, setIsOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'index' | 'content'>('index');
@@ -37,6 +44,21 @@ export function WebPublicaOrganizacion() {
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   
+  // Suggestion states (Colaborador)
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [proposedContent, setProposedContent] = useState('');
+  const [suggestionComment, setSuggestionComment] = useState('');
+  const [suggestionName, setSuggestionName] = useState('');
+  const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
+
+  // Audit states (Auditor)
+  const [activeBookTab, setActiveBookTab] = useState<'read' | 'audit'>('read');
+  const [suggestionsList, setSuggestionsList] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState<any>(null);
+  const [reviewComment, setReviewComment] = useState('');
+  const [processingSuggestion, setProcessingSuggestion] = useState(false);
+
   // Narrator state
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -58,13 +80,19 @@ export function WebPublicaOrganizacion() {
   const contentRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Auto-open book if directly accessing a specific document slug
+  // Auto-open book if passcode is saved in sessionStorage
   useEffect(() => {
-    if (docSlug) {
+    const savedPasscode = sessionStorage.getItem(`vault_passcode_${tenantSlug}`);
+    const savedRole = sessionStorage.getItem(`vault_role_${tenantSlug}`);
+    if (savedPasscode && savedRole) {
+      setPasscode(savedPasscode);
+      setPasscodeRole(savedRole as any);
       setIsOpen(true);
-      setMobileView('content');
+      if (docSlug) {
+        setMobileView('content');
+      }
     }
-  }, [docSlug]);
+  }, [docSlug, tenantSlug]);
 
   const fetchPublicVault = async (slugTarget = docSlug) => {
     setLoading(true);
@@ -104,6 +132,7 @@ export function WebPublicaOrganizacion() {
         if (slug) {
           navigate(`/organizacion/${tenantSlug}/${slug}`);
           setMobileView('content');
+          setIsSuggesting(false);
         }
       }
     };
@@ -118,6 +147,27 @@ export function WebPublicaOrganizacion() {
       }
     };
   }, [activeDoc, tenantSlug]);
+
+  // Fetch pending suggestions for auditor
+  const fetchSuggestions = async () => {
+    setLoadingSuggestions(true);
+    try {
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions`, {
+        passcode: passcode
+      });
+      setSuggestionsList(res.data || []);
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeBookTab === 'audit' && passcodeRole === 'auditor') {
+      fetchSuggestions();
+    }
+  }, [activeBookTab]);
 
   // Speech synthesis stop on unmount
   useEffect(() => {
@@ -171,6 +221,116 @@ export function WebPublicaOrganizacion() {
     return result;
   };
 
+  // Passcode verification
+  const handleVerifyPasscode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifyingPasscode(true);
+    setPasscodeError('');
+    try {
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/validate-passcode`, {
+        passcode: passcode
+      });
+      if (res.data.valid) {
+        setPasscodeRole(res.data.role);
+        sessionStorage.setItem(`vault_passcode_${tenantSlug}`, passcode);
+        sessionStorage.setItem(`vault_role_${tenantSlug}`, res.data.role);
+        setShowPasscodeModal(false);
+        setIsOpen(true);
+      }
+    } catch (err: any) {
+      setPasscodeError(err.response?.data?.error || 'Contraseña incorrecta.');
+      setPasscode('');
+    } finally {
+      setVerifyingPasscode(false);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(`vault_passcode_${tenantSlug}`);
+    sessionStorage.removeItem(`vault_role_${tenantSlug}`);
+    setPasscode('');
+    setPasscodeRole(null);
+    setIsOpen(false);
+    setActiveBookTab('read');
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  // Submit suggestion
+  const handleSubmitSuggestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suggestionName.trim() || !proposedContent.trim() || !suggestionComment.trim()) {
+      alert('Por favor rellena todos los campos.');
+      return;
+    }
+    setSubmittingSuggestion(true);
+    try {
+      await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/create`, {
+        passcode: passcode,
+        document_id: activeDoc.id,
+        proposed_content: proposedContent,
+        comment: suggestionComment,
+        user_name: suggestionName
+      });
+      alert('Propuesta de mejora enviada con éxito.');
+      setIsSuggesting(false);
+      setProposedContent('');
+      setSuggestionComment('');
+    } catch (err) {
+      console.error(err);
+      alert('Error al enviar la sugerencia.');
+    } finally {
+      setSubmittingSuggestion(false);
+    }
+  };
+
+  // Approve suggestion
+  const handleApproveSuggestion = async (id: number) => {
+    if (!window.confirm('¿Seguro que deseas APROBAR e incorporar este cambio al manual de inmediato?')) return;
+    setProcessingSuggestion(true);
+    try {
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/${id}/approve`, {
+        passcode: passcode,
+        review_comment: reviewComment
+      });
+      alert(res.data.message || 'Propuesta aprobada.');
+      setReviewComment('');
+      setActiveSuggestion(null);
+      fetchSuggestions();
+      // Re-fetch active document
+      if (activeDoc) {
+        fetchPublicVault(activeDoc.slug);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al aprobar.');
+    } finally {
+      setProcessingSuggestion(false);
+    }
+  };
+
+  // Reject suggestion
+  const handleRejectSuggestion = async (id: number) => {
+    if (!window.confirm('¿Seguro que deseas RECHAZAR esta sugerencia?')) return;
+    setProcessingSuggestion(true);
+    try {
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/${id}/reject`, {
+        passcode: passcode,
+        review_comment: reviewComment
+      });
+      alert(res.data.message || 'Propuesta rechazada.');
+      setReviewComment('');
+      setActiveSuggestion(null);
+      fetchSuggestions();
+    } catch (err) {
+      console.error(err);
+      alert('Error al rechazar.');
+    } finally {
+      setProcessingSuggestion(false);
+    }
+  };
+
   // Text to Speech Narrator
   const speakText = (htmlContent: string) => {
     if ('speechSynthesis' in window) {
@@ -180,7 +340,6 @@ export function WebPublicaOrganizacion() {
         return;
       }
 
-      // Convert HTML content to plain text to speak it
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = htmlContent;
       const plainText = tempDiv.textContent || tempDiv.innerText || "";
@@ -310,7 +469,7 @@ export function WebPublicaOrganizacion() {
       </svg>
       {/* Bottom Right */}
       <svg className="absolute bottom-2 right-2 w-8 h-8 text-[#d4af37] opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M22 14v8h-8M20 18v2-2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M22 14v8h-8M20 18v2" strokeLinecap="round"/>
       </svg>
     </div>
   );
@@ -435,6 +594,62 @@ export function WebPublicaOrganizacion() {
       <div className="absolute top-10 left-10 w-96 h-96 bg-[#8b102e]/5 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#bf953f]/5 rounded-full blur-[100px] pointer-events-none"></div>
 
+      {/* 🛡️ PASSCODE DIALOG MODAL */}
+      {showPasscodeModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <form 
+            onSubmit={handleVerifyPasscode}
+            className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left"
+          >
+            <GoldenCorners />
+            <button 
+              type="button"
+              onClick={() => setShowPasscodeModal(false)}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-[#3d1b13]/5 text-[#3d1b13]"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex flex-col items-center text-center mt-3 mb-5">
+              <div className="w-12 h-12 rounded-full bg-[#8b102e]/10 border border-[#b38728]/45 flex items-center justify-center text-[#8b102e] mb-3">
+                <Lock size={20} />
+              </div>
+              <h3 className="font-serif text-base font-black text-[#4a0717]">Acceso Resguardado</h3>
+              <p className="text-[10px] font-sans text-slate-500 uppercase tracking-widest mt-1">Ingresa el código para abrir el libro</p>
+            </div>
+
+            <div className="space-y-4 relative z-10">
+              <div>
+                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña de la Receta</label>
+                <input 
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] text-center font-sans tracking-widest text-sm shadow-inner"
+                />
+              </div>
+
+              {passcodeError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-bold rounded-lg flex items-center gap-1.5 font-sans">
+                  <AlertCircle size={12} />
+                  <span>{passcodeError}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={verifyingPasscode}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors disabled:opacity-50"
+              >
+                {verifyingPasscode ? 'Validando pergamino...' : 'Abrir Recetario'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {loading && (
         <div className="text-amber-100/80 font-bold tracking-widest text-sm animate-pulse font-sans">
           Abriendo "La Receta Secreta" de DecorArte...
@@ -447,13 +662,17 @@ export function WebPublicaOrganizacion() {
           {/* Header Controls */}
           <div className="w-full flex justify-between items-center mb-5 px-2 text-amber-100/70 text-xs font-bold font-sans">
             <div className="flex items-center gap-4">
-              {isOpen && (
+              {isOpen ? (
                 <button 
-                  onClick={() => setIsOpen(false)}
+                  onClick={handleLogout}
                   className="flex items-center gap-1.5 hover:text-white transition-colors"
                 >
-                  <ArrowLeft size={14} /> Cerrar Libro
+                  <Unlock size={14} className="text-emerald-500" /> Cerrar Libro (Salir)
                 </button>
+              ) : (
+                <span className="flex items-center gap-1.5 text-amber-100/50">
+                  <Lock size={14} /> Libro Cerrado
+                </span>
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -475,7 +694,7 @@ export function WebPublicaOrganizacion() {
                1. CLOSED BOOK COVER VIEW (Pasta Gruesa)
                ========================================================================= */
             <div 
-              onClick={() => setIsOpen(true)}
+              onClick={() => setShowPasscodeModal(true)}
               className="w-full max-w-[340px] sm:max-w-[430px] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none border-2 border-r-4 border-slate-950 py-8 min-h-[580px] sm:min-h-[660px]"
               style={{
                 // Matching Red circle logo background
@@ -679,41 +898,125 @@ export function WebPublicaOrganizacion() {
                       />
                     </div>
 
-                    {/* Index List */}
-                    <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-none max-h-[320px] sm:max-h-[380px]">
-                      {Object.keys(filteredIndex()).length === 0 ? (
-                        <div className="text-center py-8 text-[#4a0717]/40 text-xs italic font-semibold">No se encontraron capítulos.</div>
+                    {/* Navigation tabs for Auditors */}
+                    {passcodeRole === 'auditor' && (
+                      <div className="flex gap-2 mb-4 relative z-10 font-sans">
+                        <button
+                          onClick={() => {
+                            setActiveBookTab('read');
+                            setIsSuggesting(false);
+                          }}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border text-center transition-all ${
+                            activeBookTab === 'read' 
+                              ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-sm' 
+                              : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
+                          }`}
+                        >
+                          Manual
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActiveBookTab('audit');
+                            setActiveSuggestion(null);
+                            setIsSuggesting(false);
+                          }}
+                          className={`flex-grow py-1.5 rounded-lg text-[10px] font-bold tracking-wider uppercase border text-center transition-all flex items-center justify-center gap-1 ${
+                            activeBookTab === 'audit' 
+                              ? 'bg-[#b38728] border-[#b38728] text-[#3d1b13] shadow-sm' 
+                              : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
+                          }`}
+                        >
+                          <Key size={10} /> Auditoría
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Index List (Shows manual files OR suggestions inbox) */}
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-none max-h-[320px] sm:max-h-[360px]">
+                      {activeBookTab === 'audit' ? (
+                        /* ==========================================
+                           AUDITOR INBOX LIST
+                           ========================================== */
+                        <div className="space-y-2">
+                          <h4 className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest px-1 border-b border-[#4a0717]/10 pb-0.5">
+                            Propuestas de Colaboradores
+                          </h4>
+                          {loadingSuggestions ? (
+                            <div className="text-center py-8 text-[#4a0717]/40 text-xs italic font-semibold animate-pulse">Cargando propuestas...</div>
+                          ) : suggestionsList.length === 0 ? (
+                            <div className="text-center py-8 text-[#4a0717]/40 text-xs italic font-semibold">No hay propuestas pendientes de revisión.</div>
+                          ) : (
+                            suggestionsList.map((s) => (
+                              <button
+                                key={s.id}
+                                onClick={() => {
+                                  setActiveSuggestion(s);
+                                  setMobileView('content');
+                                }}
+                                className={`w-full p-2.5 rounded-lg border text-left transition-all flex flex-col gap-1 ${
+                                  activeSuggestion?.id === s.id
+                                    ? 'bg-[#b38728]/10 border-[#b38728] text-[#4a0717]'
+                                    : 'bg-[#faf6eb] border-[#d2c7ac] text-[#2b251f] hover:bg-white'
+                                }`}
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[9px] font-black uppercase text-[#8b102e] tracking-wider truncate max-w-[130px]">
+                                    {s.document?.title || 'Doc. Eliminado'}
+                                  </span>
+                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded leading-none ${
+                                    s.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                                    s.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                                    'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {s.status === 'pending' ? 'Pendiente' : s.status === 'approved' ? 'Aprobado' : 'Rechazado'}
+                                  </span>
+                                </div>
+                                <p className="text-xs font-serif italic truncate">"{s.comment}"</p>
+                                <span className="text-[8px] text-slate-500 tracking-wider text-right block mt-0.5">Por: {s.user_name}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
                       ) : (
-                        Object.entries(filteredIndex()).map(([category, items]) => (
-                          <div key={category} className="space-y-1.5">
-                            <h4 className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest px-1 mb-1 font-sans border-b border-[#4a0717]/10 pb-0.5">
-                              {getCategoryTitle(category)}
-                            </h4>
-                            {(items as DocIndexItem[]).map((item: DocIndexItem) => {
-                              const isActive = activeDoc?.slug === item.slug;
-                              return (
-                                <button
-                                  key={item.id}
-                                  onClick={() => {
-                                    navigate(`/organizacion/${tenantSlug}/${item.slug}`);
-                                    setMobileView('content');
-                                  }}
-                                  className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
-                                    isActive 
-                                      ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
-                                      : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
-                                  }`}
-                                >
-                                  <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
-                                    {getIcon(item.icon)}
-                                  </div>
-                                  <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
-                                  <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ))
+                        /* ==========================================
+                           STANDARD DOCUMENT INDEX
+                           ========================================== */
+                        Object.keys(filteredIndex()).length === 0 ? (
+                          <div className="text-center py-8 text-[#4a0717]/40 text-xs italic font-semibold">No se encontraron capítulos.</div>
+                        ) : (
+                          Object.entries(filteredIndex()).map(([category, items]) => (
+                            <div key={category} className="space-y-1.5">
+                              <h4 className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest px-1 mb-1 font-sans border-b border-[#4a0717]/10 pb-0.5">
+                                {getCategoryTitle(category)}
+                              </h4>
+                              {(items as DocIndexItem[]).map((item: DocIndexItem) => {
+                                const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
+                                return (
+                                  <button
+                                    key={item.id}
+                                    onClick={() => {
+                                      navigate(`/organizacion/${tenantSlug}/${item.slug}`);
+                                      setMobileView('content');
+                                      setActiveBookTab('read');
+                                      setIsSuggesting(false);
+                                    }}
+                                    className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
+                                      isActive 
+                                        ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
+                                        : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
+                                    }`}
+                                  >
+                                    <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
+                                      {getIcon(item.icon)}
+                                    </div>
+                                    <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
+                                    <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))
+                        )
                       )}
                     </div>
                   </div>
@@ -726,7 +1029,7 @@ export function WebPublicaOrganizacion() {
                 </div>
 
                 {/* -----------------------------------------------------------
-                    PAGE B: CONTENT RENDERER (Right Page)
+                    PAGE B: CONTENT RENDERER / SUGESTIONES (Right Page)
                     ----------------------------------------------------------- */}
                 <div className={`w-full lg:w-1/2 p-4 sm:p-7 flex flex-col justify-between relative book-spine-line ${
                   mobileView === 'content' ? 'flex' : 'hidden lg:flex'
@@ -737,106 +1040,278 @@ export function WebPublicaOrganizacion() {
                   }}
                 >
                   <div className="flex-1 flex flex-col min-w-0">
-                    {/* Header */}
-                    <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
-                      {activeDoc ? (
-                        <div className="flex items-center gap-3">
-                          <div className="p-1.5 rounded-lg bg-[#8b102e]/5 text-[#8b102e] shrink-0 border border-[#d2c7ac]">
-                            {getIcon(activeDoc.icon)}
-                          </div>
-                          <div className="flex flex-col text-left">
-                            <span className="text-[9px] font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1 font-sans">
-                              {getCategoryTitle(activeDoc.type)}
-                            </span>
-                            <span className="text-xs font-bold text-[#1e3b8b] font-sans truncate max-w-[100px] sm:max-w-[200px]">{activeDoc.title}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-[#4a0717]/40 font-bold">LECTURA WIKI</span>
-                      )}
-                      
-                      <div className="flex items-center gap-1.5">
-                        {/* Narrator Button */}
-                        {activeDoc && (
-                          <button
-                            onClick={() => speakText(activeDoc.content)}
-                            className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm ${
-                              isSpeaking 
-                                ? 'bg-rose-100 border-rose-300 text-[#8b102e] animate-pulse' 
-                                : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
-                            }`}
-                            title="Narrar contenido"
+                    
+                    {activeBookTab === 'audit' ? (
+                      /* ========================================================
+                         AUDITOR REVIEW WORKSPACE (RIGHT PAGE)
+                         ======================================================== */
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#4a0717] font-sans">Panel de Evaluación de Cambios</span>
+                          <button 
+                            onClick={() => setMobileView('index')} 
+                            className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm animate-pulse"
                           >
-                            {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                            <span className="hidden sm:inline">{isSpeaking ? 'Detener' : 'Escuchar'}</span>
+                            <Menu size={14} /> Solicitudes
                           </button>
-                        )}
-                        
-                        <button 
-                          onClick={() => setMobileView('index')} 
-                          className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm"
-                        >
-                          <Menu size={14} /> Índice
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Document Content */}
-                    <div className="flex-1 flex flex-col min-w-0">
-                      {!activeDoc ? (
-                        <div className="flex-1 flex flex-col items-center justify-center py-16 text-[#4a0717]/40 text-center">
-                          <BookIcon size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
-                          <h4 className="text-sm font-bold font-serif mb-1">El Libro está Abierto</h4>
-                          <p className="text-[10px] max-w-[220px] leading-relaxed">
-                            Selecciona cualquier capítulo del índice a la izquierda para comenzar a leer la receta secreta.
-                          </p>
                         </div>
-                      ) : (
-                        <div className="flex-1 flex flex-col min-w-0">
-                          {/* Rich Text area */}
-                          <div 
-                            ref={contentRef}
-                            className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none max-h-[320px] sm:max-h-[380px]"
-                            dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }}
-                          />
 
-                          {/* Wiki connections inside page footnotes */}
-                          {(links.length > 0 || backlinks.length > 0) && (
-                            <div className="mt-4 pt-3 border-t border-dashed border-[#d2c7ac] text-left space-y-1.5">
-                              <span className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Ramificaciones de este Tema</span>
-                              <div className="flex flex-wrap gap-1.5">
-                                {links.map(l => (
-                                  <button
-                                    key={l.id}
-                                    onClick={() => {
-                                      navigate(`/organizacion/${tenantSlug}/${l.slug}`);
-                                      setMobileView('content');
-                                    }}
-                                    className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#8b102e] text-[#1e3b8b] font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
-                                  >
-                                    {getIcon(l.icon)}
-                                    <span>{l.title}</span>
-                                  </button>
-                                ))}
-                                {backlinks.map(l => (
-                                  <button
-                                    key={l.id}
-                                    onClick={() => {
-                                      navigate(`/organizacion/${tenantSlug}/${l.slug}`);
-                                      setMobileView('content');
-                                    }}
-                                    className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#8b102e] text-slate-700 font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
-                                  >
-                                    <Globe size={10} />
-                                    <span>{l.title}</span>
-                                  </button>
-                                ))}
+                        {!activeSuggestion ? (
+                          <div className="flex-1 flex flex-col items-center justify-center py-16 text-[#4a0717]/40 text-center">
+                            <Key size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
+                            <h4 className="text-sm font-bold font-serif mb-1">Buzón de Auditoría Abierto</h4>
+                            <p className="text-[10px] max-w-[220px] leading-relaxed">
+                              Selecciona una propuesta del listado izquierdo para evaluarla, ver los cambios propuestos y actualizar el manual.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex flex-col min-w-0 justify-between">
+                            <div className="space-y-4">
+                              <div className="bg-[#faf6eb] border border-[#d2c7ac] rounded-xl p-3">
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5 font-sans">Origen del Cambio</span>
+                                <div className="text-xs font-serif font-bold text-[#4a0717]">
+                                  Propuesto por: {activeSuggestion.user_name} • Documento: {activeSuggestion.document?.title || 'Desconocido'}
+                                </div>
+                                <p className="text-[11px] text-slate-600 mt-1 italic">"{activeSuggestion.comment}"</p>
                               </div>
+
+                              <div className="flex flex-col text-left">
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1 font-sans">Texto Propuesto</span>
+                                <textarea
+                                  readOnly
+                                  value={activeSuggestion.proposed_content}
+                                  className="w-full h-32 px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-slate-700 font-mono text-[10px] focus:outline-none scrollbar-none shadow-inner"
+                                />
+                              </div>
+
+                              {activeSuggestion.status === 'pending' && (
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Nota de Revisión (Opcional)</label>
+                                  <input
+                                    type="text"
+                                    placeholder="Ej: Aprobado tras revisión de recetas"
+                                    value={reviewComment}
+                                    onChange={(e) => setReviewComment(e.target.value)}
+                                    className="w-full px-3 py-1.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {activeSuggestion.status === 'pending' && (
+                              <div className="flex gap-3 mt-4">
+                                <button
+                                  onClick={() => handleRejectSuggestion(activeSuggestion.id)}
+                                  disabled={processingSuggestion}
+                                  className="flex-1 py-2 rounded-xl border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 font-sans font-bold text-xs tracking-wider uppercase disabled:opacity-50"
+                                >
+                                  Rechazar
+                                </button>
+                                <button
+                                  onClick={() => handleApproveSuggestion(activeSuggestion.id)}
+                                  disabled={processingSuggestion}
+                                  className="flex-grow py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-sans font-black text-xs tracking-wider uppercase shadow-md disabled:opacity-50"
+                                >
+                                  Aprobar e Incorporar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : isSuggesting ? (
+                      /* ========================================================
+                         EMPLOYEE SUGGESTION SUBMISSION FORM (RIGHT PAGE)
+                         ======================================================== */
+                      <form onSubmit={handleSubmitSuggestion} className="flex-1 flex flex-col min-w-0 justify-between text-left">
+                        <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#4a0717] font-sans">Proponer Mejora al Manual</span>
+                          <button 
+                            type="button"
+                            onClick={() => setIsSuggesting(false)}
+                            className="p-1 rounded-full hover:bg-slate-100 text-[#4a0717]"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        <div className="flex-grow space-y-3 pr-1 overflow-y-auto scrollbar-none max-h-[350px]">
+                          <div>
+                            <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Tu Nombre</label>
+                            <input 
+                              type="text"
+                              required
+                              placeholder="Ej: Chef Juan Pérez"
+                              value={suggestionName}
+                              onChange={(e) => setSuggestionName(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-lg border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">¿Por qué sugieres esta mejora?</label>
+                            <input 
+                              type="text"
+                              required
+                              placeholder="Ej: Corregir medidas de harina o agregar checklist"
+                              value={suggestionComment}
+                              onChange={(e) => setSuggestionComment(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-lg border border-[#d2c7ac] bg-[#faf6eb] text-xs focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[8px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Texto Corregido (Markdown)</label>
+                            <textarea
+                              required
+                              rows={5}
+                              value={proposedContent}
+                              onChange={(e) => setProposedContent(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-slate-700 font-mono text-[10px] focus:outline-none shadow-inner resize-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2.5 mt-4">
+                          <button
+                            type="button"
+                            onClick={() => setIsSuggesting(false)}
+                            className="flex-1 py-2 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white font-sans font-bold text-[10px] tracking-wider uppercase"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={submittingSuggestion}
+                            className="flex-grow py-2 rounded-xl bg-gradient-to-r from-[#8b102e] to-[#4a0717] hover:from-[#4a0717] hover:to-black text-white font-sans font-black text-[10px] tracking-wider uppercase shadow-md disabled:opacity-50"
+                          >
+                            {submittingSuggestion ? 'Enviando...' : 'Enviar al Oráculo'}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      /* ========================================================
+                         STANDARD DOCUMENT VIEWER (RIGHT PAGE)
+                         ======================================================== */
+                      <div className="flex-1 flex flex-col min-w-0">
+                        {/* Header */}
+                        <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
+                          {activeDoc ? (
+                            <div className="flex items-center gap-3">
+                              <div className="p-1.5 rounded-lg bg-[#8b102e]/5 text-[#8b102e] shrink-0 border border-[#d2c7ac]">
+                                {getIcon(activeDoc.icon)}
+                              </div>
+                              <div className="flex flex-col text-left">
+                                <span className="text-[9px] font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1 font-sans">
+                                  {getCategoryTitle(activeDoc.type)}
+                                </span>
+                                <span className="text-xs font-bold text-[#1e3b8b] font-sans truncate max-w-[100px] sm:max-w-[200px]">{activeDoc.title}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-[#4a0717]/40 font-bold">LECTURA MANUAL</span>
+                          )}
+                          
+                          <div className="flex items-center gap-1.5">
+                            {/* Narrator Button */}
+                            {activeDoc && (
+                              <button
+                                onClick={() => speakText(activeDoc.content)}
+                                className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm ${
+                                  isSpeaking 
+                                    ? 'bg-rose-100 border-rose-300 text-[#8b102e] animate-pulse' 
+                                    : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
+                                }`}
+                                title="Narrar contenido"
+                              >
+                                {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                <span className="hidden sm:inline">{isSpeaking ? 'Detener' : 'Escuchar'}</span>
+                              </button>
+                            )}
+
+                            {/* Suggest improvement button */}
+                            {activeDoc && (
+                              <button
+                                onClick={() => {
+                                  setProposedContent(activeDoc.raw_content);
+                                  setIsSuggesting(true);
+                                }}
+                                className="p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm"
+                                title="Sugerir una corrección o adición"
+                              >
+                                <MessageSquare size={14} />
+                                <span className="hidden sm:inline">Sugerir</span>
+                              </button>
+                            )}
+                            
+                            <button 
+                              onClick={() => setMobileView('index')} 
+                              className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm"
+                            >
+                              <Menu size={14} /> Índice
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Document Content */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          {!activeDoc ? (
+                            <div className="flex-1 flex flex-col items-center justify-center py-16 text-[#4a0717]/40 text-center">
+                              <BookIcon size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
+                              <h4 className="text-sm font-bold font-serif mb-1">El Libro está Abierto</h4>
+                              <p className="text-[10px] max-w-[220px] leading-relaxed">
+                                Selecciona cualquier capítulo del índice a la izquierda para comenzar a leer la receta secreta.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex-1 flex flex-col min-w-0">
+                              {/* Rich Text area */}
+                              <div 
+                                ref={contentRef}
+                                className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none max-h-[320px] sm:max-h-[380px]"
+                                dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }}
+                              />
+
+                              {/* Wiki connections inside page footnotes */}
+                              {(links.length > 0 || backlinks.length > 0) && (
+                                <div className="mt-4 pt-3 border-t border-dashed border-[#d2c7ac] text-left space-y-1.5">
+                                  <span className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Ramificaciones de este Tema</span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {links.map(l => (
+                                      <button
+                                        key={l.id}
+                                        onClick={() => {
+                                          navigate(`/organizacion/${tenantSlug}/${l.slug}`);
+                                          setMobileView('content');
+                                        }}
+                                        className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#8b102e] text-[#1e3b8b] font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
+                                      >
+                                        {getIcon(l.icon)}
+                                        <span>{l.title}</span>
+                                      </button>
+                                    ))}
+                                    {backlinks.map(l => (
+                                      <button
+                                        key={l.id}
+                                        onClick={() => {
+                                          navigate(`/organizacion/${tenantSlug}/${l.slug}`);
+                                          setMobileView('content');
+                                        }}
+                                        className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#8b102e] text-slate-700 font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
+                                      >
+                                        <Globe size={10} />
+                                        <span>{l.title}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
                   </div>
 
                   {/* Ribbon bookmark / page footer */}

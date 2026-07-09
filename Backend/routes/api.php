@@ -60,6 +60,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // Pública (Wiki/Organigrama de la Empresa)
     Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
     Route::post('/public/org-vault/{tenantSlug}/copilot', [ObsidianController::class, 'copilot']);
+    Route::post('/public/org-vault/{tenantSlug}/validate-passcode', [ObsidianController::class, 'validatePublicPasscode']);
+    Route::post('/public/org-vault/{tenantSlug}/suggestions', [ObsidianController::class, 'getPublicSuggestions']);
+    Route::post('/public/org-vault/{tenantSlug}/suggestions/create', [ObsidianController::class, 'createPublicSuggestion']);
+    Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/approve', [ObsidianController::class, 'approvePublicSuggestion']);
+    Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/reject', [ObsidianController::class, 'rejectPublicSuggestion']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);

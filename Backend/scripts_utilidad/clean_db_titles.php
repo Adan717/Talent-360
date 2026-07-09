@@ -33,7 +33,7 @@ foreach ($docs as $doc) {
     // 2. Classify Type based on filename
     $type = $frontmatter['type'] ?? 'nota';
     $type = strtolower($type);
-    $filePathLower = strtolower($filename);
+    $filePathLower = mb_strtolower(Str::ascii($filename), 'UTF-8');
     
     // Si el archivo contiene "anexo", siempre es de tipo "anexo" (solicitud del usuario)
     if (str_contains($filePathLower, 'anexo')) {
@@ -41,23 +41,23 @@ foreach ($docs as $doc) {
     }
     
     if ($type === 'nota') {
-        if (str_contains($filePathLower, 'organizacion') || str_contains($filePathLower, 'empresa') || str_contains($filePathLower, 'historia') || str_contains($filePathLower, 'mision') || str_contains($filePathLower, 'vision') || str_contains($filePathLower, 'valores') || str_contains($filePathLower, 'bienvenida') || str_contains($filePathLower, 'inicio') || str_contains($filePathLower, 'readme')) {
+        if (str_contains($filePathLower, 'organizacion') || str_contains($filePathLower, 'empresa') || str_contains($filePathLower, 'historia') || str_contains($filePathLower, 'mision') || str_contains($filePathLower, 'vision') || str_contains($filePathLower, 'valores') || str_contains($filePathLower, 'bienvenida') || str_contains($filePathLower, 'inicio') || str_contains($filePathLower, 'readme') || str_contains($filePathLower, 'filosofia') || str_contains($filePathLower, 'principios') || str_contains($filePathLower, 'fundador') || str_contains($filePathLower, 'soda') || str_contains($filePathLower, 'organigrama') || str_contains($filePathLower, 'asociado') || str_contains($filePathLower, 'colaborador')) {
             $type = 'organizacion';
-        } elseif (str_contains($filePathLower, 'rutina') || str_contains($filePathLower, 'diario') || str_contains($filePathLower, 'daily') || str_contains($filePathLower, 'semanal') || str_contains($filePathLower, 'mensual') || str_contains($filePathLower, 'rut ')) {
+        } elseif (str_contains($filePathLower, 'rutina') || str_contains($filePathLower, 'diario') || str_contains($filePathLower, 'daily') || str_contains($filePathLower, 'semanal') || str_contains($filePathLower, 'mensual') || str_contains($filePathLower, 'rut ') || str_contains($filePathLower, 'rut-')) {
             $type = 'rutina';
-        } elseif (str_contains($filePathLower, 'checklist') || str_contains($filePathLower, 'lista') || str_contains($filePathLower, 'tarea') || str_contains($filePathLower, 'tare ')) {
+        } elseif (str_contains($filePathLower, 'checklist') || str_contains($filePathLower, 'lista') || str_contains($filePathLower, 'tarea') || str_contains($filePathLower, 'tare ') || str_contains($filePathLower, 'tare-')) {
             $type = 'tarea';
-        } elseif (str_contains($filePathLower, 'indicador') || str_contains($filePathLower, 'kpi') || str_contains($filePathLower, 'metrica') || str_contains($filePathLower, 'evaluacion')) {
+        } elseif (str_contains($filePathLower, 'indicador') || str_contains($filePathLower, 'kpi') || str_contains($filePathLower, 'metrica') || str_contains($filePathLower, 'evaluacion') || str_contains($filePathLower, 'examen') || str_contains($filePathLower, 'desempeno')) {
             $type = 'indicador';
-        } elseif (str_contains($filePathLower, 'regla') || str_contains($filePathLower, 'reglamento') || str_contains($filePathLower, 'sancion') || str_contains($filePathLower, 'norma') || str_contains($filePathLower, 'politica') || str_contains($filePathLower, 'conducta')) {
+        } elseif (str_contains($filePathLower, 'regla') || str_contains($filePathLower, 'reglamento') || str_contains($filePathLower, 'sancion') || str_contains($filePathLower, 'norma') || str_contains($filePathLower, 'politica') || str_contains($filePathLower, 'conducta') || str_contains($filePathLower, 'interno')) {
             $type = 'reglas';
-        } elseif (str_contains($filePathLower, 'formato') || str_contains($filePathLower, 'plantilla') || str_contains($filePathLower, 'documento') || str_contains($filePathLower, 'form ')) {
+        } elseif (str_contains($filePathLower, 'formato') || str_contains($filePathLower, 'plantilla') || str_contains($filePathLower, 'documento') || str_contains($filePathLower, 'form ') || str_contains($filePathLower, 'form-')) {
             $type = 'formatos';
         } elseif (str_contains($filePathLower, 'glosario') || str_contains($filePathLower, 'terminos') || str_contains($filePathLower, 'definiciones') || str_contains($filePathLower, 'conceptos')) {
             $type = 'glosario';
-        } elseif (str_contains($filePathLower, 'puesto') || str_contains($filePathLower, 'role') || str_contains($filePathLower, 'pue ') || str_contains($filePathLower, 'administrador') || str_contains($filePathLower, 'gerente') || str_contains($filePathLower, 'supervisor') || str_contains($filePathLower, 'ayudante') || str_contains($filePathLower, 'asesor') || str_contains($filePathLower, 'apoyo eventual')) {
+        } elseif (str_contains($filePathLower, 'puesto') || str_contains($filePathLower, 'role') || str_contains($filePathLower, 'pue ') || str_contains($filePathLower, 'pue-') || str_contains($filePathLower, 'administrador') || str_contains($filePathLower, 'gerente') || str_contains($filePathLower, 'supervisor') || str_contains($filePathLower, 'ayudante') || str_contains($filePathLower, 'asesor') || str_contains($filePathLower, 'apoyo eventual')) {
             $type = 'puesto';
-        } elseif (str_contains($filePathLower, 'proceso') || str_contains($filePathLower, 'sop') || str_contains($filePathLower, 'procedimiento') || str_contains($filePathLower, 'proc ')) {
+        } elseif (str_contains($filePathLower, 'proceso') || str_contains($filePathLower, 'sop') || str_contains($filePathLower, 'procedimiento') || str_contains($filePathLower, 'proc ') || str_contains($filePathLower, 'proc-')) {
             $type = 'proceso';
         }
     }

@@ -258,6 +258,97 @@ export function WebPublicaOrganizacion() {
     'nota'
   ];
 
+  interface Subgroup {
+    title: string;
+    items: DocIndexItem[];
+  }
+
+  const getCategorySubgroups = (category: string, items: DocIndexItem[]): Subgroup[] => {
+    if (category === 'tarea') {
+      const checklists = items.filter(item => 
+        item.title.toLowerCase().includes('checklist') || 
+        item.title.toLowerCase().includes('lista') ||
+        item.slug.toLowerCase().includes('checklist')
+      );
+      const tareas = items.filter(item => !checklists.includes(item));
+      
+      const groups: Subgroup[] = [];
+      if (checklists.length > 0) groups.push({ title: 'Checklists de Control', items: checklists });
+      if (tareas.length > 0) groups.push({ title: 'Tareas Operativas', items: tareas });
+      return groups;
+    }
+
+    if (category === 'puesto') {
+      const directivos = items.filter(item => 
+        item.title.toLowerCase().includes('administrador') || 
+        item.title.toLowerCase().includes('gerente') ||
+        item.title.toLowerCase().includes('supervisor') ||
+        item.title.toLowerCase().includes('coordinador')
+      );
+      const operativos = items.filter(item => !directivos.includes(item));
+
+      const groups: Subgroup[] = [];
+      if (directivos.length > 0) groups.push({ title: 'Directivos y Gerencia', items: directivos });
+      if (operativos.length > 0) groups.push({ title: 'Puestos Operativos', items: operativos });
+      return groups;
+    }
+
+    if (category === 'anexo') {
+      const puesto = items.filter(item => item.title.toLowerCase().includes('puesto'));
+      const otros = items.filter(item => !puesto.includes(item));
+
+      const groups: Subgroup[] = [];
+      if (puesto.length > 0) groups.push({ title: 'Anexos de Puestos', items: puesto });
+      if (otros.length > 0) groups.push({ title: 'Anexos Complementarios', items: otros });
+      return groups;
+    }
+
+    if (category === 'organizacion') {
+      const filosofia = items.filter(item => 
+        item.title.toLowerCase().includes('historia') || 
+        item.title.toLowerCase().includes('filosofia') || 
+        item.title.toLowerCase().includes('carta') || 
+        item.title.toLowerCase().includes('mision') || 
+        item.title.toLowerCase().includes('vision') || 
+        item.title.toLowerCase().includes('valores') || 
+        item.title.toLowerCase().includes('principios')
+      );
+      const sistemas = items.filter(item => !filosofia.includes(item));
+
+      const groups: Subgroup[] = [];
+      if (filosofia.length > 0) groups.push({ title: 'Filosofía e Historia', items: filosofia });
+      if (sistemas.length > 0) groups.push({ title: 'Sistemas e Inducción', items: sistemas });
+      return groups;
+    }
+
+    if (category === 'formatos') {
+      const contratos = items.filter(item => 
+        item.title.toLowerCase().includes('contrato') || 
+        item.title.toLowerCase().includes('convenio') || 
+        item.title.toLowerCase().includes('acuerdo')
+      );
+      const cartas = items.filter(item => 
+        item.title.toLowerCase().includes('carta') || 
+        item.title.toLowerCase().includes('acta') ||
+        item.title.toLowerCase().includes('responsiva')
+      );
+      const checklistDoc = items.filter(item => 
+        item.title.toLowerCase().includes('checklist') ||
+        item.title.toLowerCase().includes('expediente')
+      );
+      const otros = items.filter(item => !contratos.includes(item) && !cartas.includes(item) && !checklistDoc.includes(item));
+
+      const groups: Subgroup[] = [];
+      if (contratos.length > 0) groups.push({ title: 'Contratos y Convenios', items: contratos });
+      if (cartas.length > 0) groups.push({ title: 'Cartas y Actas Responsivas', items: cartas });
+      if (checklistDoc.length > 0) groups.push({ title: 'Checklists de Ingreso', items: checklistDoc });
+      if (otros.length > 0) groups.push({ title: 'Formatos Operativos', items: otros });
+      return groups;
+    }
+
+    return [{ title: getCategoryTitle(category), items }];
+  };
+
   const filteredIndex = () => {
     const query = searchQuery.toLowerCase();
     const result: DocIndex = {};
@@ -1376,32 +1467,44 @@ export function WebPublicaOrganizacion() {
                                 </button>
 
                                 {isExpanded && (
-                                  <div className="space-y-1.5 pl-2 transition-all duration-300 animate-[fadeIn_0.2s_ease-out]">
-                                    {(items as DocIndexItem[]).map((item: DocIndexItem) => {
-                                      const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
-                                      return (
-                                        <button
-                                          key={item.id}
-                                          onClick={() => {
-                                            navigate(`/organizacion/${tenantSlug}/${item.slug}`);
-                                            setMobileView('content');
-                                            setActiveBookTab('read');
-                                            setIsSuggesting(false);
-                                          }}
-                                          className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
-                                            isActive 
-                                              ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
-                                              : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
-                                          }`}
-                                        >
-                                          <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
-                                            {getIcon(item.icon)}
+                                  <div className="space-y-3 pl-2 transition-all duration-300 animate-[fadeIn_0.2s_ease-out]">
+                                    {getCategorySubgroups(category, items as DocIndexItem[]).map((subgroup, subIdx) => (
+                                      <div key={subIdx} className="space-y-1">
+                                        {/* Subgroup title (Only show if there's more than 1 subgroup in this category) */}
+                                        {getCategorySubgroups(category, items as DocIndexItem[]).length > 1 && (
+                                          <div className="text-[7.5px] font-sans font-black text-[#8b102e]/60 uppercase tracking-widest pl-1.5 border-l border-[#8b102e]/20 mt-1 mb-0.5 select-none">
+                                            {subgroup.title}
                                           </div>
-                                          <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
-                                          <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
-                                        </button>
-                                      );
-                                    })}
+                                        )}
+                                        <div className="space-y-1">
+                                          {subgroup.items.map((item: DocIndexItem) => {
+                                            const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
+                                            return (
+                                              <button
+                                                key={item.id}
+                                                onClick={() => {
+                                                  navigate(`/organizacion/${tenantSlug}/${item.slug}`);
+                                                  setMobileView('content');
+                                                  setActiveBookTab('read');
+                                                  setIsSuggesting(false);
+                                                }}
+                                                className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
+                                                  isActive 
+                                                    ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
+                                                    : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
+                                                }`}
+                                              >
+                                                <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
+                                                  {getIcon(item.icon)}
+                                                </div>
+                                                <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
+                                                <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 )}
                               </div>

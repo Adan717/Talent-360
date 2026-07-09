@@ -41,6 +41,7 @@ export function WebPublicaOrganizacion() {
   const [backlinks, setBacklinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [readDocSlugs, setReadDocSlugs] = useState<string[]>([]);
   
   // Suggestion states (Colaborador)
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -103,6 +104,31 @@ export function WebPublicaOrganizacion() {
       }));
     }
   }, [activeDoc]);
+
+  // Load read progress from localStorage
+  useEffect(() => {
+    if (!tenantSlug) return;
+    try {
+      const saved = localStorage.getItem(`vault_read_docs_${tenantSlug}`);
+      if (saved) {
+        setReadDocSlugs(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [tenantSlug]);
+
+  // Track and save read progress when document is opened
+  useEffect(() => {
+    if (activeDoc?.slug && tenantSlug) {
+      setReadDocSlugs(prev => {
+        if (prev.includes(activeDoc.slug)) return prev;
+        const next = [...prev, activeDoc.slug];
+        localStorage.setItem(`vault_read_docs_${tenantSlug}`, JSON.stringify(next));
+        return next;
+      });
+    }
+  }, [activeDoc, tenantSlug]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -1446,6 +1472,10 @@ export function WebPublicaOrganizacion() {
                         ) : (
                           sortedFilteredIndexEntries().map(([category, items]) => {
                             const isExpanded = !!expandedCategories[category];
+                            const totalCount = items?.length || 0;
+                            const readCount = items?.filter(item => readDocSlugs.includes(item.slug)).length || 0;
+                            const percent = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
+
                             return (
                               <div key={category} className="space-y-1">
                                 <button
@@ -1461,9 +1491,16 @@ export function WebPublicaOrganizacion() {
                                       {getCategoryTitle(category)}
                                     </h4>
                                   </div>
-                                  <span className="text-[8px] font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
-                                    {items?.length || 0}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    {percent > 0 && (
+                                      <span className="text-[7.5px] font-sans font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-150 leading-none">
+                                        {percent}%
+                                      </span>
+                                    )}
+                                    <span className="text-[8px] font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
+                                      {items?.length || 0}
+                                    </span>
+                                  </div>
                                 </button>
 
                                 {isExpanded && (
@@ -1479,6 +1516,7 @@ export function WebPublicaOrganizacion() {
                                         <div className="space-y-1">
                                           {subgroup.items.map((item: DocIndexItem) => {
                                             const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
+                                            const isRead = readDocSlugs.includes(item.slug);
                                             return (
                                               <button
                                                 key={item.id}
@@ -1498,6 +1536,11 @@ export function WebPublicaOrganizacion() {
                                                   {getIcon(item.icon)}
                                                 </div>
                                                 <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
+                                                {isRead && (
+                                                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-250 flex items-center justify-center text-emerald-600 shrink-0">
+                                                    <Check size={8} strokeWidth={3.5} />
+                                                  </div>
+                                                )}
                                                 <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
                                               </button>
                                             );

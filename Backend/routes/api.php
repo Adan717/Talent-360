@@ -241,6 +241,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/settings', [ObsidianController::class, 'saveSettings']);
             Route::post('/sync-local', [ObsidianController::class, 'syncLocal']);
             Route::post('/sync-zip', [ObsidianController::class, 'syncZip']);
+            Route::post('/purge', [ObsidianController::class, 'purgeVault']);
+            Route::post('/rebuild-cache', [ObsidianController::class, 'rebuildCache']);
             Route::post('/edit', [ObsidianController::class, 'editDocument']);
             Route::get('/suggestions', [ObsidianController::class, 'getSuggestions']);
             Route::post('/suggestions/{id}/approve', [ObsidianController::class, 'approveSuggestion']);

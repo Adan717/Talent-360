@@ -357,6 +357,39 @@ export function OrgVaultManager() {
     }
   };
 
+  // Purge vault documents
+  const handlePurgeVault = async () => {
+    if (!window.confirm('¿Está seguro de que desea depurar y vaciar todo el baúl? Se eliminarán permanentemente todos los documentos y enlaces cargados.')) {
+      return;
+    }
+    setSyncing(true);
+    try {
+      await axiosInstance.post('/org-vault/purge');
+      alert('El baúl se ha depurado/vaciado con éxito.');
+      setIndex({});
+      setActiveDoc(null);
+      setActiveSlug('');
+    } catch (err: any) {
+      alert('Error al depurar el baúl: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Rebuild links cache
+  const handleRebuildCache = async () => {
+    setSyncing(true);
+    try {
+      await axiosInstance.post('/org-vault/rebuild-cache');
+      alert('Los enlaces se han reconstruido exitosamente.');
+      fetchIndex();
+    } catch (err: any) {
+      alert('Error al reconstruir enlaces: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // Direct edit save
   const handleSaveDirectEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -893,6 +926,36 @@ export function OrgVaultManager() {
                 </button>
               </div>
             </form>
+
+            {/* Acciones de Depuración y Reconstrucción */}
+            <div className="bg-rose-50/50 border border-rose-100 rounded-3xl p-6 space-y-4">
+              <span className="text-xs font-black text-rose-800 uppercase tracking-wider block border-b border-rose-100 pb-2">Herramientas de Mantenimiento</span>
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                Utiliza estas opciones para depurar (vaciar completamente) el baúl actual y volver a subir tu información desde cero, o para reconstruir el índice de enlaces si notas discrepancias.
+              </p>
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handlePurgeVault}
+                  disabled={syncing}
+                  className="px-4 py-2.5 rounded-xl font-black text-xs bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5"
+                >
+                  <Trash2 size={14} />
+                  <span>Depurar / Vaciar Baúl</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleRebuildCache}
+                  disabled={syncing}
+                  className="px-4 py-2.5 rounded-xl font-black text-xs bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 shadow-md shadow-amber-600/20 transition-all flex items-center gap-1.5"
+                >
+                  <Repeat size={14} />
+                  <span>Reconstruir Enlaces</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

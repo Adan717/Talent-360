@@ -143,6 +143,40 @@ class ObsidianController extends Controller
     }
 
     /**
+     * Purge all documents and links in the current vault.
+     */
+    public function purgeVault(Request $request)
+    {
+        $tenantId = $request->user()->tenant_id;
+        $vault = $this->getOrCreateVault();
+
+        \DB::transaction(function () use ($tenantId, $vault) {
+            // Delete all documents in this vault
+            \App\Models\ObsidianDocument::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('vault_id', $vault->id)
+                ->delete();
+
+            // Clear links associated with the tenant
+            \DB::table('obsidian_links')
+                ->where('tenant_id', $tenantId)
+                ->delete();
+        });
+
+        return response()->json(['message' => 'Baúl depurado/vaciado con éxito.']);
+    }
+
+    /**
+     * Rebuild links cache.
+     */
+    public function rebuildCache(Request $request)
+    {
+        $tenantId = $request->user()->tenant_id;
+        $this->rebuildVaultLinks($tenantId);
+        return response()->json(['message' => 'Índice de enlaces reconstruido con éxito.']);
+    }
+
+    /**
      * Process parsed md files.
      */
     private function processMarkdownFiles($files, ObsidianVault $vault)
@@ -772,8 +806,8 @@ class ObsidianController extends Controller
         $readDocSlugs = [];
         if ($user) {
             $readDocSlugs = ObsidianReadProgress::withoutGlobalScopes()
-                ->where('tenant_id', $tenantId)
-                ->where('user_id', $user->id)
+                ->where('obsidian_read_progress.tenant_id', $tenantId)
+                ->where('obsidian_read_progress.user_id', $user->id)
                 ->join('obsidian_documents', 'obsidian_read_progress.document_id', '=', 'obsidian_documents.id')
                 ->pluck('obsidian_documents.slug')
                 ->toArray();

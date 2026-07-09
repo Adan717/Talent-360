@@ -171,14 +171,16 @@ class ObsidianController extends Controller
                             $frontmatter[$key] = $value;
                         }
                     }
-                           // Extracción de metadatos básicos con limpiador inteligente de títulos
+                           // Extracción de metadatos básicos con limpiador inteligente d                // Extracción de metadatos básicos con limpiador inteligente de títulos
                 $title = $frontmatter['title'] ?? null;
                 if (!$title) {
                     $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
-                    // Remove common prefixes
-                    $cleaned = preg_replace('/^(puesto|proceso|tarea|checklist|rutina|indicador|kpi|reglas|reglamento|formato|glosario|organizacion)[-_]/i', '', $filenameWithoutExt);
+                    // Remove common prefixes and abbreviations (pue, proc, tare, rut, form, vac, etc.) followed by numbers or symbols
+                    $cleaned = preg_replace('/^(pue|proc|tare|rut|form|vac|puesto|proceso|tarea|checklist|rutina|indicador|kpi|reglas|reglamento|formato|glosario|organizacion)s?[-\s\d_]*/i', '', $filenameWithoutExt);
                     // Replace dashes and underscores with spaces
                     $cleaned = str_replace(['-', '_'], ' ', $cleaned);
+                    // Trim extra spaces
+                    $cleaned = trim($cleaned);
                     // Title Case capitalization
                     $title = mb_convert_case($cleaned, MB_CASE_TITLE, "UTF-8");
                 }
@@ -196,24 +198,24 @@ class ObsidianController extends Controller
                 }
                 $activeSlugs[] = $slug;
 
-                // Determinar tipo con nuevos bloques jerárquicos
+                // Determinar tipo con nuevos bloques jerárquicos y abreviaciones de archivo
                 $type = $frontmatter['type'] ?? 'nota';
                 $type = strtolower($type);
                 $filePathLower = strtolower($file->getRelativePathname());
                 if ($type === 'nota') {
-                    if (str_contains($filePathLower, 'puesto') || str_contains($filePathLower, 'role')) {
+                    if (str_contains($filePathLower, 'puesto') || str_contains($filePathLower, 'role') || str_contains($filePathLower, 'pue ')) {
                         $type = 'puesto';
-                    } elseif (str_contains($filePathLower, 'proceso') || str_contains($filePathLower, 'sop') || str_contains($filePathLower, 'procedimiento')) {
+                    } elseif (str_contains($filePathLower, 'proceso') || str_contains($filePathLower, 'sop') || str_contains($filePathLower, 'procedimiento') || str_contains($filePathLower, 'proc ')) {
                         $type = 'proceso';
-                    } elseif (str_contains($filePathLower, 'checklist') || str_contains($filePathLower, 'lista') || str_contains($filePathLower, 'tarea')) {
+                    } elseif (str_contains($filePathLower, 'checklist') || str_contains($filePathLower, 'lista') || str_contains($filePathLower, 'tarea') || str_contains($filePathLower, 'tare ')) {
                         $type = 'tarea';
-                    } elseif (str_contains($filePathLower, 'rutina') || str_contains($filePathLower, 'diario') || str_contains($filePathLower, 'daily') || str_contains($filePathLower, 'semanal') || str_contains($filePathLower, 'mensual')) {
+                    } elseif (str_contains($filePathLower, 'rutina') || str_contains($filePathLower, 'diario') || str_contains($filePathLower, 'daily') || str_contains($filePathLower, 'semanal') || str_contains($filePathLower, 'mensual') || str_contains($filePathLower, 'rut ')) {
                         $type = 'rutina';
                     } elseif (str_contains($filePathLower, 'indicador') || str_contains($filePathLower, 'kpi') || str_contains($filePathLower, 'metrica') || str_contains($filePathLower, 'evaluacion')) {
                         $type = 'indicador';
                     } elseif (str_contains($filePathLower, 'regla') || str_contains($filePathLower, 'reglamento') || str_contains($filePathLower, 'sancion') || str_contains($filePathLower, 'norma') || str_contains($filePathLower, 'politica') || str_contains($filePathLower, 'conducta')) {
                         $type = 'reglas';
-                    } elseif (str_contains($filePathLower, 'formato') || str_contains($filePathLower, 'plantilla') || str_contains($filePathLower, 'documento')) {
+                    } elseif (str_contains($filePathLower, 'formato') || str_contains($filePathLower, 'plantilla') || str_contains($filePathLower, 'documento') || str_contains($filePathLower, 'form ')) {
                         $type = 'formatos';
                     } elseif (str_contains($filePathLower, 'glosario') || str_contains($filePathLower, 'terminos') || str_contains($filePathLower, 'definiciones') || str_contains($filePathLower, 'conceptos')) {
                         $type = 'glosario';
@@ -235,7 +237,8 @@ class ObsidianController extends Controller
                     elseif ($type === 'glosario') $icon = 'book-open';
                     elseif ($type === 'organizacion') $icon = 'building-2';
                     else $icon = 'file-text';
-                }           }
+                }
+            }
 
                 // Upsert document to keep IDs intact
                 $document = ObsidianDocument::withTrashed()

@@ -816,7 +816,7 @@ export function WebPublicaOrganizacion() {
     >
       {/* Custom Styles Injection */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cinzel:wght@700&display=swap');
 
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
@@ -1220,36 +1220,40 @@ export function WebPublicaOrganizacion() {
                   />
                   <div className="absolute inset-0 rounded-full border border-[#d4af37]/40 animate-ping opacity-10 pointer-events-none"></div>
 
-                  {/* EMBEDDED / CALLIGRAPHY OVERLAY TAG FOR TITLE */}
-                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-44 sm:w-52 bg-gradient-to-b from-[#faf6eb] to-[#e8dba5] border-2 border-[#b38728] px-2 py-1 rounded-xl shadow-2xl rotate-[-2deg] flex flex-col items-center justify-center">
-                    <span 
-                      className="text-base sm:text-lg font-black text-[#4a0717] leading-none"
+                  {/* TEXT ONLY WITH BEVEL/OUTLINE STYLE IN BEAUTIFUL MANUSCRIPT FONT */}
+                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-full text-center">
+                    <h2 
+                      className="text-2.5xl sm:text-3.5xl font-black text-[#faf6eb] tracking-wide select-none drop-shadow-[0_3px_5px_rgba(0,0,0,0.85)]"
                       style={{ 
-                        fontFamily: "'Playfair Display', serif", 
-                        fontStyle: 'italic' 
+                        fontFamily: "'Dancing Script', cursive",
+                        textShadow: '2px 2px 0px #1a0206, -1px -1px 0px #d4af37, 1px -1px 0px #d4af37, -1px 1px 0px #d4af37, 1px 1px 0px #d4af37',
                       }}
                     >
-                      La Receta
-                    </span>
-                    <span 
-                      className="text-[9px] sm:text-[10px] font-black text-[#8b102e] uppercase tracking-[0.25em] leading-none mt-0.5"
-                      style={{ 
-                        fontFamily: "'Outfit', sans-serif" 
-                      }}
-                    >
-                      Secreta
-                    </span>
+                      La Receta Secreta
+                    </h2>
                   </div>
                 </div>
 
-                <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent my-2"></div>
+                <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/45 to-transparent my-2"></div>
               </div>
 
-
+              {/* Cover Anniversary Banner - Medieval styled */}
+              <div className="my-2 relative z-10 text-center select-none py-1.5 px-3 rounded-xl border border-[#d4af37]/25 bg-gradient-to-r from-[#d4af37]/5 via-transparent to-[#d4af37]/5 max-w-[280px] mx-auto shadow-md">
+                <p 
+                  className="text-[10.5px] sm:text-[11.5px] text-[#faf6eb]/90 tracking-widest leading-relaxed uppercase"
+                  style={{ 
+                    fontFamily: "'Cinzel', serif", 
+                    fontWeight: 700,
+                    textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                  }}
+                >
+                  ⚜ En conmemoración del tercer aniversario ⚜
+                </p>
+              </div>
 
               {/* Cover Bottom section - Footer and Touch cue */}
-              <div className="flex flex-col items-center mb-2 relative z-10">
-                <div className="text-[#d4af37] animate-pulse mb-1.5 text-xs flex items-center gap-1.5 font-sans font-bold">
+              <div className="flex flex-col items-center mb-1 relative z-10">
+                <div className="text-[#d4af37] animate-pulse mb-1 text-xs flex items-center gap-1.5 font-sans font-bold">
                   <BookIcon size={14} />
                   <span>Haz clic para abrir</span>
                 </div>

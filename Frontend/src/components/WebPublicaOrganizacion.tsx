@@ -323,6 +323,8 @@ export function WebPublicaOrganizacion() {
     >
       {/* Custom Styles Injection */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
         /* Parchment vintage look matching the beige-cream logo background */
         .parchment {
           background-color: #f6ecda;
@@ -474,7 +476,7 @@ export function WebPublicaOrganizacion() {
                ========================================================================= */
             <div 
               onClick={() => setIsOpen(true)}
-              className="w-full max-w-[340px] sm:max-w-[420px] aspect-[0.7] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none border-2 border-r-4 border-slate-950"
+              className="w-full max-w-[340px] sm:max-w-[430px] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none border-2 border-r-4 border-slate-950 py-8 min-h-[580px] sm:min-h-[660px]"
               style={{
                 // Matching Red circle logo background
                 background: 'linear-gradient(135deg, #4a0717 0%, #8b102e 50%, #4a0717 100%)',
@@ -493,7 +495,7 @@ export function WebPublicaOrganizacion() {
               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#d4af37]/25 pointer-events-none"></div>
 
               {/* Cover Top section - Brand Header */}
-              <div className="flex flex-col items-center mt-3 relative z-10">
+              <div className="flex flex-col items-center mt-2 relative z-10">
                 <span className="text-[9px] font-black tracking-[0.25em] text-[#d4af37] uppercase font-sans">
                   DecorArte 360
                 </span>
@@ -501,13 +503,13 @@ export function WebPublicaOrganizacion() {
               </div>
 
               {/* Cover Center section - LARGE LOGO & TITLE */}
-              <div className="flex flex-col items-center text-center my-auto py-3 relative z-10">
+              <div className="flex flex-col items-center text-center my-auto py-2 relative z-10">
                 <span className="text-[8px] font-black tracking-[0.25em] text-[#d4af37]/80 uppercase font-sans mb-3 block">
                   MANUAL DE OPERACIONES
                 </span>
 
                 {/* LARGE DECORARTE LOGO */}
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full border-4 border-[#d4af37] p-1 flex items-center justify-center shadow-2xl bg-[#f6ecda] hover:scale-105 transition-transform duration-300 mb-4 relative">
+                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-[#d4af37] p-1 flex items-center justify-center shadow-2xl bg-[#f6ecda] hover:scale-105 transition-transform duration-300 mb-3.5 relative">
                   <img 
                     src="/decorarte_logo.png" 
                     alt="Logo DecorArte" 
@@ -521,15 +523,27 @@ export function WebPublicaOrganizacion() {
                   <span className="block mt-1.5 not-italic font-normal uppercase tracking-widest text-2xl sm:text-3xl">Secreta</span>
                 </h2>
 
-                <div className="w-28 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent my-3"></div>
-                
-                <p className="text-[9px] font-bold text-[#faf6eb]/80 uppercase tracking-[0.18em] leading-relaxed font-sans max-w-xs">
-                  Todo para la repostería
+                <div className="w-28 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent my-2.5"></div>
+              </div>
+
+              {/* Dedicatoria a MRV de El Gran Gurú */}
+              <div className="my-3 relative z-10 rotate-[-1.5deg] hover:rotate-0 transition-transform duration-300 bg-[#faf5e8] p-3 sm:p-4 rounded-lg border-2 border-double border-[#bf953f] shadow-lg max-w-[270px] sm:max-w-[340px] mx-auto">
+                <div className="absolute -top-3 -right-2 bg-[#8b102e] text-[#faf6eb] text-[8px] font-sans font-black px-1.5 py-0.5 rounded shadow rotate-[12deg] border border-[#d4af37]/40 uppercase tracking-widest">
+                  Sello Gurú
+                </div>
+                <p 
+                  className="text-xs sm:text-[13px] text-[#4a0717] leading-relaxed text-center" 
+                  style={{ 
+                    fontFamily: "'Dancing Script', cursive",
+                    fontWeight: 700
+                  }}
+                >
+                  "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existencia."
                 </p>
               </div>
 
               {/* Cover Bottom section - Footer and Touch cue */}
-              <div className="flex flex-col items-center mb-4 relative z-10">
+              <div className="flex flex-col items-center mb-2 relative z-10">
                 <div className="text-[#d4af37] animate-pulse mb-1.5 text-xs flex items-center gap-1.5 font-sans font-bold">
                   <BookIcon size={14} />
                   <span>Haz clic para abrir</span>

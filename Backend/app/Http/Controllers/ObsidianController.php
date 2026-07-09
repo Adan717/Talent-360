@@ -10,6 +10,7 @@ use App\Models\ObsidianSuggestion;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class ObsidianController extends Controller
@@ -694,5 +695,70 @@ class ObsidianController extends Controller
             'links' => $links,
             'backlinks' => $backlinks
         ]);
+    }
+
+    /**
+     * AI Copilot chatbot endpoint for the organizational vault.
+     */
+    public function copilot(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'question' => 'required|string',
+        ]);
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $documents = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->select('title', 'type', 'raw_content')
+            ->get();
+
+        $contextText = "";
+        foreach ($documents as $doc) {
+            $contextText .= "Documento: " . $doc->title . " (Tipo: " . $doc->type . ")\n";
+            $contextText .= "Contenido:\n" . $doc->raw_content . "\n";
+            $contextText .= "--------------------------------------\n";
+        }
+
+        $systemInstruction = "Eres la IA Asistente de 'La Receta Secreta', el manual de operaciones y estructura organizacional de la empresa " . $tenant->name . ".
+Tu objetivo es responder de forma clara, amigable y muy concisa las preguntas de los empleados basándote ÚNICAMENTE en el contenido de los documentos provistos abajo.
+Si la respuesta no se encuentra en la documentación, responde amablemente indicando que ese dato no está registrado en el manual operativo.
+No inventes datos de salarios, reglas o puestos si no están en el contexto.
+
+DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
+" . $contextText;
+
+        $geminiKey = env('GEMINI_API_KEY');
+        if (!$geminiKey) {
+            return response()->json([
+                'answer' => "Modo Demo: Hola, soy el Asistente de La Receta Secreta. Para darte respuestas reales con IA, por favor configura la variable GEMINI_API_KEY en tu archivo .env. Preguntaste por: \"" . $request->question . "\""
+            ]);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $systemInstruction . "\n\nPregunta del colaborador: " . $request->question]
+                        ]
+                    ]
+                ]
+            ]);
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Error al conectar con la IA.'], 500);
+            }
+
+            $answer = $response->json('candidates.0.content.parts.0.text') ?? 'No tengo respuesta en este momento.';
+            return response()->json(['answer' => trim($answer)]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

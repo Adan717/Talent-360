@@ -59,6 +59,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     
     // Pública (Wiki/Organigrama de la Empresa)
     Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
+    Route::post('/public/org-vault/{tenantSlug}/copilot', [ObsidianController::class, 'copilot']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);

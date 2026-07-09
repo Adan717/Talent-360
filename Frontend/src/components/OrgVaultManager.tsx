@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, FileText, Briefcase, Repeat, CheckSquare, Settings, 
   Edit, Check, X, ChevronRight, MessageSquare, Upload, 
-  GitPullRequest, Eye, BookOpen, AlertCircle, Sparkles, CheckCircle2
+  GitPullRequest, Eye, BookOpen, AlertCircle, Sparkles, CheckCircle2,
+  Volume2, VolumeX
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
@@ -35,6 +36,7 @@ export function OrgVaultManager() {
   const [backlinks, setBacklinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDoc, setLoadingDoc] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // Suggestion state
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -134,6 +136,11 @@ export function OrgVaultManager() {
   useEffect(() => {
     fetchIndex(true);
     fetchAdminData();
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -168,6 +175,29 @@ export function OrgVaultManager() {
       }
     };
   }, [activeDoc, adminTab]);
+
+  const speakText = (htmlContent: string) => {
+    if ('speechSynthesis' in window) {
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        return;
+      }
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = htmlContent;
+      const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+      const utterance = new SpeechSynthesisUtterance(plainText);
+      utterance.lang = 'es-MX';
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      
+      setIsSpeaking(true);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("La narración de voz no es soportada en este navegador.");
+    }
+  };
 
   // Submit suggestion
   const handleSubmitSuggestion = async (e: React.FormEvent) => {
@@ -557,14 +587,30 @@ export function OrgVaultManager() {
                       </div>
                     </div>
                     
-                    {!isAdmin && (
+                    <div className="flex items-center gap-2 self-start shrink-0">
+                      {/* Narrator Button */}
                       <button
-                        onClick={() => setIsSuggesting(true)}
-                        className="px-4 py-2.5 rounded-xl font-black text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all shrink-0 flex items-center justify-center gap-1.5 border border-blue-200/50 self-start"
+                        onClick={() => speakText(activeDoc.content)}
+                        className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
+                          isSpeaking 
+                            ? 'bg-rose-50 border-rose-200 text-rose-700 animate-pulse' 
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                        title="Narrar contenido"
                       >
-                        <MessageSquare size={14} /> Sugerir Mejora
+                        {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                        <span>{isSpeaking ? 'Detener' : 'Escuchar'}</span>
                       </button>
-                    )}
+
+                      {!isAdmin && (
+                        <button
+                          onClick={() => setIsSuggesting(true)}
+                          className="px-4 py-2.5 rounded-xl font-black text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all shrink-0 flex items-center justify-center gap-1.5 border border-blue-200/50"
+                        >
+                          <MessageSquare size={14} /> Sugerir Mejora
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Rendered HTML Content */}

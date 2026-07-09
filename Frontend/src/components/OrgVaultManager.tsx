@@ -3,7 +3,7 @@ import {
   Search, FileText, Briefcase, Repeat, CheckSquare, Settings, 
   Edit, Check, X, ChevronRight, MessageSquare, Upload, 
   GitPullRequest, Eye, BookOpen, AlertCircle, Sparkles, CheckCircle2,
-  Volume2, VolumeX
+  Volume2, VolumeX, Users, Plus, Trash2, Key
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
@@ -45,8 +45,8 @@ export function OrgVaultManager() {
   const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
   
   // Admin tabs & state
-  const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit'>('view');
-  const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '' });
+  const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users'>('view');
+  const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '', hide_oracle_button: false });
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [syncing, setSyncing] = useState(false);
   
@@ -62,6 +62,15 @@ export function OrgVaultManager() {
   const [reviewingSuggestion, setReviewingSuggestion] = useState<any>(null);
   const [reviewComment, setReviewComment] = useState('');
   const [processingReview, setProcessingReview] = useState(false);
+
+  // Manual users states
+  const [manualUsers, setManualUsers] = useState<any[]>([]);
+  const [jobRoles, setJobRoles] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userForm, setUserForm] = useState({ name: '', email: '', password: '', job_role_id: '', role: 'colaborador' });
+  const [progressSummary, setProgressSummary] = useState<any[]>([]);
 
   // References
   const contentRef = useRef<HTMLDivElement>(null);
@@ -230,6 +239,85 @@ export function OrgVaultManager() {
     } catch (err: any) {
       alert('Error al guardar: ' + (err.response?.data?.message || err.message));
     }
+  };
+
+  // Fetch isolated manual users and their reading progress
+  const fetchUsersAndProgress = async () => {
+    setLoadingUsers(true);
+    try {
+      const usersRes = await axiosInstance.get('/org-vault/users');
+      setManualUsers(usersRes.data || []);
+      
+      const rolesRes = await axiosInstance.get('/job-roles');
+      setJobRoles(rolesRes.data || []);
+
+      const progressRes = await axiosInstance.get('/org-vault/progress-summary');
+      setProgressSummary(progressRes.data || []);
+    } catch (err) {
+      console.error('Error fetching users and progress:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === 'users' && isAdmin) {
+      fetchUsersAndProgress();
+    }
+  }, [adminTab]);
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingUser) {
+        await axiosInstance.put(`/org-vault/users/${editingUser.id}`, {
+          name: userForm.name,
+          email: userForm.email,
+          password: userForm.password || undefined,
+          job_role_id: userForm.job_role_id ? parseInt(userForm.job_role_id) : null,
+          role: userForm.role
+        });
+        alert('Usuario actualizado con éxito.');
+      } else {
+        await axiosInstance.post('/org-vault/users', {
+          name: userForm.name,
+          email: userForm.email,
+          password: userForm.password,
+          job_role_id: userForm.job_role_id ? parseInt(userForm.job_role_id) : null,
+          role: userForm.role
+        });
+        alert('Usuario creado con éxito.');
+      }
+      setShowUserModal(false);
+      setEditingUser(null);
+      setUserForm({ name: '', email: '', password: '', job_role_id: '', role: 'colaborador' });
+      fetchUsersAndProgress();
+    } catch (err: any) {
+      alert('Error al guardar usuario: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este usuario de acceso del manual?')) return;
+    try {
+      await axiosInstance.delete(`/org-vault/users/${id}`);
+      alert('Usuario de acceso al manual eliminado.');
+      fetchUsersAndProgress();
+    } catch (err: any) {
+      alert('Error al eliminar usuario: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const openEditUserModal = (user: any) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name,
+      email: user.email,
+      password: '',
+      job_role_id: user.job_role_id ? String(user.job_role_id) : '',
+      role: user.role
+    });
+    setShowUserModal(true);
   };
 
   // Trigger Local Sync
@@ -493,6 +581,14 @@ export function OrgVaultManager() {
               }`}
             >
               <Upload size={14} /> Sincronización
+            </button>
+            <button
+              onClick={() => setAdminTab('users')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                adminTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Users size={14} /> Avance y Usuarios
             </button>
           </div>
         )}
@@ -1011,7 +1107,247 @@ export function OrgVaultManager() {
             )}
           </div>
         )}
+        {adminTab === 'users' && isAdmin && (
+          <div className="space-y-6 text-left">
+            <div className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-3xl p-6">
+              <div>
+                <h3 className="text-base font-black text-slate-900">Usuarios y Progreso de Lectura</h3>
+                <p className="text-xs text-slate-500 font-semibold mt-1">
+                  Gestiona las cuentas de acceso aisladas para el manual de operaciones y consulta su nivel de avance.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingUser(null);
+                  setUserForm({ name: '', email: '', password: '', job_role_id: '', role: 'colaborador' });
+                  setShowUserModal(true);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
+              >
+                <Plus size={14} /> Registrar Lector
+              </button>
+            </div>
 
+            {loadingUsers ? (
+              <div className="py-20 text-center text-slate-450 font-semibold animate-pulse text-sm">
+                Cargando lectores y registros...
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* LECTORES LIST & CRUD */}
+                <div className="xl:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-widest block border-b border-slate-100 pb-2">
+                    Cuentas de Acceso del Manual
+                  </span>
+                  
+                  {manualUsers.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400 text-xs font-semibold">
+                      No hay usuarios registrados específicamente para el manual.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-150 rounded-2xl">
+                      <table className="w-full text-xs">
+                        <thead className="bg-slate-50 text-slate-500 font-black uppercase border-b border-slate-150">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Nombre</th>
+                            <th className="px-4 py-3 text-left">Usuario / Correo</th>
+                            <th className="px-4 py-3 text-left">Puesto Asignado</th>
+                            <th className="px-4 py-3 text-left">Rol</th>
+                            <th className="px-4 py-3 text-center">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-150 font-medium text-slate-700">
+                          {manualUsers.map((u) => (
+                            <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-4 py-3 text-left font-bold text-slate-900">{u.name}</td>
+                              <td className="px-4 py-3 text-left">{u.email}</td>
+                              <td className="px-4 py-3 text-left">
+                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                  {u.job_role?.name ?? 'General / Admin'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-left">
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                  u.role === 'admin' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-150 text-slate-800'
+                                }`}>
+                                  {u.role === 'admin' ? 'Admin' : 'Lector'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => openEditUserModal(u)}
+                                  className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg"
+                                  title="Editar"
+                                >
+                                  <Edit size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(u.id)}
+                                  className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* AVANCE GENERAL SUMMARY */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4">
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-widest block border-b border-slate-100 pb-2">
+                    Progreso de Lectura
+                  </span>
+
+                  {progressSummary.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400 text-xs font-semibold">
+                      Ningún colaborador ha iniciado lectura aún.
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[480px] overflow-y-auto pr-1">
+                      {progressSummary.map((p) => (
+                        <div key={p.id} className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="text-xs font-bold text-slate-900 leading-none">{p.name}</h4>
+                              <span className="text-[10px] text-slate-500 font-medium block mt-1">{p.job_role}</span>
+                            </div>
+                            <span className="text-xs font-black text-blue-600">{p.percentage}%</span>
+                          </div>
+                          
+                          {/* Progress bar */}
+                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                              style={{ width: `${p.percentage}%` }}
+                            />
+                          </div>
+
+                          <span className="text-[10px] text-slate-450 font-bold block text-right">
+                            {p.read_count} / {p.total_docs} temas vistos
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* CREATE / EDIT USER MODAL */}
+            {showUserModal && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <form 
+                  onSubmit={handleSaveUser}
+                  className="bg-white w-full max-w-md rounded-3xl p-6 relative border border-slate-100 shadow-2xl flex flex-col space-y-4 text-left"
+                >
+                  <button 
+                    type="button"
+                    onClick={() => setShowUserModal(false)}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                  >
+                    <X size={16} />
+                  </button>
+
+                  <div className="border-b border-slate-100 pb-2">
+                    <h3 className="text-base font-black text-slate-900">
+                      {editingUser ? 'Editar Cuenta de Lector' : 'Registrar Nuevo Lector'}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                      {editingUser ? 'Actualiza los datos del usuario.' : 'Crea una cuenta aislada de acceso al manual.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Nombre Completo</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={userForm.name}
+                        onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        placeholder="Ej. Juan Pérez"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Usuario o Correo</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={userForm.email}
+                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        placeholder="Ej. juan.perez o juan@empresa.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                        Contraseña {editingUser && '(Dejar en blanco para no cambiar)'}
+                      </label>
+                      <input 
+                        type="password" 
+                        required={!editingUser}
+                        value={userForm.password}
+                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                        placeholder="Mínimo 4 caracteres"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Puesto (Para Filtrado de Contenido)</label>
+                      <select 
+                        value={userForm.job_role_id}
+                        onChange={(e) => setUserForm({ ...userForm, job_role_id: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                      >
+                        <option value="">-- Sin puesto específico (Ve todo) --</option>
+                        {jobRoles.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Rol de Acceso</label>
+                      <select 
+                        value={userForm.role}
+                        onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-250 bg-slate-50/50 rounded-xl focus:outline-none focus:border-blue-500 text-xs font-semibold"
+                      >
+                        <option value="colaborador">Lector Normal (Filtrado por puesto)</option>
+                        <option value="admin">Administrador / Auditor (Ve todo + aprueba propuestas)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowUserModal(false)}
+                      className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl font-black text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20 transition-all"
+                    >
+                      Guardar Lector
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

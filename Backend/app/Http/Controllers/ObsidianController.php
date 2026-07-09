@@ -11,7 +11,10 @@ use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\ObsidianUser;
+use App\Models\ObsidianReadProgress;
 
 class ObsidianController extends Controller
 {
@@ -50,11 +53,13 @@ class ObsidianController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'local_path' => 'nullable|string|max:1024',
+            'hide_oracle_button' => 'nullable|boolean',
         ]);
 
         $vault->update([
             'name' => $request->name,
             'local_path' => $request->local_path,
+            'hide_oracle_button' => (bool) $request->hide_oracle_button,
         ]);
 
         return response()->json(['message' => 'Configuración guardada con éxito', 'vault' => $vault]);
@@ -634,7 +639,7 @@ class ObsidianController extends Controller
     /**
      * Public read-only endpoint (Get public documentation).
      */
-    public function getPublicDocument($tenantSlug, $docSlug = null)
+    public function getPublicDocument(Request $request, $tenantSlug, $docSlug = null)
     {
         $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
             $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
@@ -647,40 +652,104 @@ class ObsidianController extends Controller
             return response()->json(['message' => 'No se ha configurado estructura organizacional en esta empresa.'], 404);
         }
 
-        // Cargar índice
-        $index = ObsidianDocument::withoutGlobalScopes()
-            ->where('tenant_id', $tenantId)
-            ->where('vault_id', $vault->id)
-            ->select('id', 'title', 'slug', 'icon', 'type')
-            ->orderBy('title', 'asc')
-            ->get()
-            ->groupBy('type');
-
-        // Si no se pide un documento específico, cargar el "index" o el primero disponible
-        if (!$docSlug) {
-            // Intentar cargar "index", "inicio", "readme", o el primero del índice
-            $doc = ObsidianDocument::withoutGlobalScopes()
-                ->where('tenant_id', $tenantId)
-                ->where('vault_id', $vault->id)
-                ->where(function ($q) {
-                    $q->where('slug', 'index')
-                      ->orWhere('slug', 'inicio')
-                      ->orWhere('slug', 'readme')
-                      ->orWhere('slug', 'bienvenida');
-                })->first();
-
-            if (!$doc) {
-                $doc = ObsidianDocument::withoutGlobalScopes()
-                    ->where('tenant_id', $tenantId)
-                    ->where('vault_id', $vault->id)
-                    ->first();
+        // Resolving the authenticated ObsidianUser token manually
+        $user = null;
+        $token = $request->bearerToken() ?: $request->token;
+        if ($token) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($tokenModel && $tokenModel->tokenable instanceof \App\Models\ObsidianUser) {
+                $user = $tokenModel->tokenable;
             }
+        }
+
+        // Cargar índice base
+        $docsQuery = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('vault_id', $vault->id);
+
+        $filteredDocs = collect();
+
+        if (!$user) {
+            // Si no está logueado, no se muestra ningún documento en el índice público
+            $index = collect();
+        } else if ($user->role === 'colaborador') {
+            // Filtrar documentos para colaboradores normales basados en su puesto
+            $jobRole = $user->jobRole;
+            $keywords = [];
+            if ($jobRole) {
+                $roleName = mb_strtolower(Str::ascii($jobRole->name), 'UTF-8');
+                $words = preg_split('/[\s\-_,]+/', $roleName);
+                $stopWords = ['de', 'la', 'el', 'en', 'y', 'con', 'para', 'un', 'una', 'del', 'al', 'los', 'las', 'a', 'o', 'u', 'e', 'apoyo', 'eventual', 'integral'];
+                $keywords = array_filter($words, function ($w) use ($stopWords) {
+                    return strlen($w) > 2 && !in_array($w, $stopWords);
+                });
+            }
+
+            $allDocs = $docsQuery->get();
+            $filteredDocs = $allDocs->filter(function ($doc) use ($keywords) {
+                $docType = $doc->type;
+                
+                // 1. Tipos siempre públicos (Organización, Glosario, Notas generales)
+                if (in_array($docType, ['organizacion', 'glosario', 'nota'])) {
+                    return true;
+                }
+
+                $titleLower = mb_strtolower(Str::ascii($doc->title), 'UTF-8');
+
+                // 2. Documentos generales de RRHH / Administrativos
+                $generalKeywords = ['contrato', 'convenio', 'responsiva', 'expediente', 'ingreso', 'reglamento', 'taller', 'sucursal', 'soda', 'talent360', 'academia', 'fundador', 'historia'];
+                foreach ($generalKeywords as $gk) {
+                    if (str_contains($titleLower, $gk)) {
+                        return true;
+                    }
+                }
+
+                // 3. Coincidencia por palabra clave del puesto
+                foreach ($keywords as $kw) {
+                    if (str_contains($titleLower, $kw)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+            $index = $filteredDocs->sortBy('title')->groupBy('type');
         } else {
+            // Admin ve todo
+            $filteredDocs = $docsQuery->get();
+            $index = $filteredDocs->sortBy('title')->groupBy('type');
+        }
+
+        // Si se pide un documento específico, validar que exista y tenga permiso
+        $doc = null;
+        if ($docSlug && $user) {
             $doc = ObsidianDocument::withoutGlobalScopes()
                 ->where('tenant_id', $tenantId)
                 ->where('vault_id', $vault->id)
                 ->where('slug', $docSlug)
-                ->firstOrFail();
+                ->first();
+            
+            if ($doc && $user->role === 'colaborador') {
+                $isAuthorized = $filteredDocs->contains('id', $doc->id);
+                if (!$isAuthorized) {
+                    return response()->json(['error' => 'No tienes autorización para visualizar este documento según tu puesto de trabajo.'], 403);
+                }
+            }
+        }
+
+        // Si no se pide un documento o el solicitado no existe, cargar el primero autorizado
+        if (!$doc && $user && $filteredDocs->count() > 0) {
+            $firstCat = ['organizacion', 'puesto', 'tarea', 'rutina', 'indicador', 'reglas', 'formatos', 'anexo', 'glosario', 'nota'];
+            foreach ($firstCat as $cat) {
+                if (isset($index[$cat]) && count($index[$cat]) > 0) {
+                    $doc = $index[$cat]->first();
+                    break;
+                }
+            }
+            if (!$doc) {
+                $doc = $filteredDocs->first();
+            }
         }
 
         if (!$doc) {
@@ -691,6 +760,7 @@ class ObsidianController extends Controller
                     'brand_color' => $tenant->brand_color ?: '#3b82f6'
                 ],
                 'vault_name' => $vault->name,
+                'hide_oracle_button' => (bool) $vault->hide_oracle_button,
                 'index' => $index,
                 'document' => null
             ]);
@@ -726,6 +796,7 @@ class ObsidianController extends Controller
                 'brand_color' => $tenant->brand_color ?: '#3b82f6'
             ],
             'vault_name' => $vault->name,
+            'hide_oracle_button' => (bool) $vault->hide_oracle_button,
             'index' => $index,
             'document' => $doc,
             'links' => $links,
@@ -837,16 +908,25 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
         ]);
     }
 
+    private function resolvePublicUser(Request $request)
+    {
+        $token = $request->bearerToken() ?: $request->token ?: $request->passcode;
+        if ($token) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($tokenModel && $tokenModel->tokenable instanceof \App\Models\ObsidianUser) {
+                return $tokenModel->tokenable;
+            }
+        }
+        return null;
+    }
+
     /**
-     * Get suggestions on public page (Auditor only).
+     * Get suggestions on public page (Admin only).
      */
     public function getPublicSuggestions(Request $request, $tenantSlug)
     {
-        $request->validate([
-            'passcode' => 'required|string'
-        ]);
-
-        if (!$this->validatePasscode($request->passcode, true)) {
+        $user = $this->resolvePublicUser($request);
+        if (!$user || $user->role !== 'admin') {
             return response()->json(['error' => 'No autorizado.'], 403);
         }
 
@@ -864,16 +944,12 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
     }
 
     /**
-     * Approve suggestion on public page (Auditor only).
+     * Approve suggestion on public page (Admin only).
      */
     public function approvePublicSuggestion(Request $request, $tenantSlug, $id)
     {
-        $request->validate([
-            'passcode' => 'required|string',
-            'review_comment' => 'nullable|string'
-        ]);
-
-        if (!$this->validatePasscode($request->passcode, true)) {
+        $user = $this->resolvePublicUser($request);
+        if (!$user || $user->role !== 'admin') {
             return response()->json(['error' => 'No autorizado.'], 403);
         }
 
@@ -915,16 +991,12 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
     }
 
     /**
-     * Reject suggestion on public page (Auditor only).
+     * Reject suggestion on public page (Admin only).
      */
     public function rejectPublicSuggestion(Request $request, $tenantSlug, $id)
     {
-        $request->validate([
-            'passcode' => 'required|string',
-            'review_comment' => 'nullable|string'
-        ]);
-
-        if (!$this->validatePasscode($request->passcode, true)) {
+        $user = $this->resolvePublicUser($request);
+        if (!$user || $user->role !== 'admin') {
             return response()->json(['error' => 'No autorizado.'], 403);
         }
 
@@ -951,19 +1023,19 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
     }
 
     /**
-     * Submit suggestion on public page (Any valid passcode).
+     * Submit suggestion on public page (Any valid logged in manual user).
      */
     public function createPublicSuggestion(Request $request, $tenantSlug)
     {
         $request->validate([
-            'passcode' => 'required|string',
             'document_id' => 'required|integer',
             'proposed_content' => 'required|string',
             'comment' => 'required|string',
             'user_name' => 'required|string|max:255'
         ]);
 
-        if (!$this->validatePasscode($request->passcode)) {
+        $user = $this->resolvePublicUser($request);
+        if (!$user) {
             return response()->json(['error' => 'No autorizado.'], 403);
         }
 
@@ -980,7 +1052,7 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
         $suggestion = ObsidianSuggestion::create([
             'tenant_id' => $tenant->id,
             'document_id' => $doc->id,
-            'user_id' => null, // null en público
+            'user_id' => $user->id,
             'author_name' => $request->user_name,
             'original_content' => $doc->raw_content,
             'proposed_content' => $request->proposed_content,
@@ -1000,13 +1072,13 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
     public function scribe(Request $request, $tenantSlug)
     {
         $request->validate([
-            'passcode' => 'required|string',
             'candidate_name' => 'required|string|max:255',
             'job_role_slug' => 'required|string|max:255',
             'documents' => 'required|array',
         ]);
 
-        if (!$this->validatePasscode($request->passcode)) {
+        $user = $this->resolvePublicUser($request);
+        if (!$user) {
             return response()->json(['error' => 'No autorizado.'], 403);
         }
 
@@ -1115,5 +1187,226 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Public login for manual collaborators (isolated user system).
+     */
+    public function publicLogin(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'email' => 'required|string',
+            'password' => 'required|string'
+        ]);
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $user = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('email', $request->email)
+            ->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['error' => 'Usuario o contraseña incorrectos.'], 401);
+        }
+
+        $token = $user->createToken('vault-user-token')->plainTextToken;
+
+        return response()->json([
+            'valid' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'job_role_id' => $user->job_role_id,
+                'job_role_name' => $user->jobRole?->name ?? 'N/A',
+            ],
+            'token' => $token
+        ]);
+    }
+
+    /**
+     * Record reading progress for an isolated user.
+     */
+    public function recordReadProgress(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'document_id' => 'required|integer'
+        ]);
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $user = null;
+        $token = $request->bearerToken() ?: $request->token;
+        if ($token) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($tokenModel && $tokenModel->tokenable instanceof \App\Models\ObsidianUser) {
+                $user = $tokenModel->tokenable;
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado.'], 401);
+        }
+
+        $progress = ObsidianReadProgress::firstOrCreate([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'document_id' => $request->document_id
+        ]);
+
+        return response()->json([
+            'message' => 'Progreso guardado correctamente.',
+            'progress' => $progress
+        ]);
+    }
+
+    /**
+     * Admin: List isolated manual users.
+     */
+    public function listUsers()
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $users = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with('jobRole')
+            ->get();
+
+        return response()->json($users);
+    }
+
+    /**
+     * Admin: Create an isolated manual user.
+     */
+    public function createUser(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|max:255',
+            'password' => 'required|string|min:4',
+            'job_role_id' => 'nullable|integer',
+            'role' => 'required|string|in:admin,colaborador'
+        ]);
+
+        $exists = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('email', $request->email)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['error' => 'El correo/usuario ya se encuentra registrado.'], 400);
+        }
+
+        $user = ObsidianUser::create([
+            'tenant_id' => $tenantId,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'job_role_id' => $request->job_role_id,
+            'role' => $request->role
+        ]);
+
+        return response()->json(['message' => 'Usuario del manual creado con éxito.', 'user' => $user]);
+    }
+
+    /**
+     * Admin: Update an isolated manual user.
+     */
+    public function updateUser(Request $request, $id)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $user = ObsidianUser::withoutGlobalScopes()->where('tenant_id', $tenantId)->findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|max:255',
+            'password' => 'nullable|string|min:4',
+            'job_role_id' => 'nullable|integer',
+            'role' => 'required|string|in:admin,colaborador'
+        ]);
+
+        $exists = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('email', $request->email)
+            ->where('id', '!=', $id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['error' => 'El correo/usuario ya se encuentra en uso por otra cuenta.'], 400);
+        }
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->job_role_id = $request->job_role_id;
+        $user->role = $request->role;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return response()->json(['message' => 'Usuario del manual actualizado con éxito.', 'user' => $user]);
+    }
+
+    /**
+     * Admin: Delete an isolated manual user.
+     */
+    public function deleteUser($id)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $user = ObsidianUser::withoutGlobalScopes()->where('tenant_id', $tenantId)->findOrFail($id);
+        $user->delete();
+
+        return response()->json(['message' => 'Usuario del manual eliminado con éxito.']);
+    }
+
+    /**
+     * Admin: Query progress summary for manual users.
+     */
+    public function progressSummary()
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+
+        $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenantId)->first();
+        if (!$vault) {
+            return response()->json([]);
+        }
+
+        // Obtener total de documentos en el baúl
+        $totalDocs = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('vault_id', $vault->id)
+            ->count();
+
+        // Obtener todos los usuarios del manual y calcular su progreso
+        $users = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['jobRole', 'readProgress'])
+            ->get();
+
+        $summary = $users->map(function ($u) use ($totalDocs) {
+            $readCount = $u->readProgress->count();
+            $percentage = $totalDocs > 0 ? round(($readCount / $totalDocs) * 100, 1) : 0;
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'role' => $u->role,
+                'job_role' => $u->jobRole?->name ?? 'Administración',
+                'read_count' => $readCount,
+                'total_docs' => $totalDocs,
+                'percentage' => $percentage
+            ];
+        });
+
+        return response()->json($summary);
     }
 }

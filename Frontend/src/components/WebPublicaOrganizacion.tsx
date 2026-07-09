@@ -25,12 +25,18 @@ export function WebPublicaOrganizacion() {
   const { tenantSlug, docSlug } = useParams();
   const navigate = useNavigate();
   
-  // Passcode states
-  const [passcode, setPasscode] = useState('');
-  const [passcodeRole, setPasscodeRole] = useState<'auditor' | 'colaborador' | null>(null);
+  // User login states
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [vaultToken, setVaultToken] = useState('');
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [passcodeError, setPasscodeError] = useState('');
   const [verifyingPasscode, setVerifyingPasscode] = useState(false);
+  const [hideOracleButton, setHideOracleButton] = useState(false);
+
+  const passcode = vaultToken;
+  const passcodeRole = currentUser?.role === 'admin' ? 'auditor' : (currentUser ? 'colaborador' : null) as 'auditor' | 'colaborador' | null;
 
   // Book & Search states
   const [isOpen, setIsOpen] = useState(false);
@@ -95,15 +101,7 @@ export function WebPublicaOrganizacion() {
     }));
   };
 
-  // Auto-expand category of active document
-  useEffect(() => {
-    if (activeDoc?.type) {
-      setExpandedCategories(prev => ({
-        ...prev,
-        [activeDoc.type]: true
-      }));
-    }
-  }, [activeDoc]);
+  // Auto-expansion disabled to keep all categories collapsed initially
 
   // Load read progress from localStorage
   useEffect(() => {
@@ -120,42 +118,59 @@ export function WebPublicaOrganizacion() {
 
   // Track and save read progress when document is opened
   useEffect(() => {
-    if (activeDoc?.slug && tenantSlug) {
+    if (activeDoc?.id && tenantSlug) {
       setReadDocSlugs(prev => {
         if (prev.includes(activeDoc.slug)) return prev;
         const next = [...prev, activeDoc.slug];
         localStorage.setItem(`vault_read_docs_${tenantSlug}`, JSON.stringify(next));
         return next;
       });
+
+      // Post progress to backend if manual user is logged in
+      const token = sessionStorage.getItem(`vault_token_${tenantSlug}`);
+      if (token) {
+        axiosInstance.post(`/public/org-vault/${tenantSlug}/progress`, 
+          { document_id: activeDoc.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(err => console.error('Error recording read progress:', err));
+      }
     }
   }, [activeDoc, tenantSlug]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Auto-open book if passcode is saved in sessionStorage
+  // Auto-open book if user is saved in sessionStorage
   useEffect(() => {
-    const savedPasscode = sessionStorage.getItem(`vault_passcode_${tenantSlug}`);
-    const savedRole = sessionStorage.getItem(`vault_role_${tenantSlug}`);
-    if (savedPasscode && savedRole) {
-      setPasscode(savedPasscode);
-      setPasscodeRole(savedRole as any);
-      setIsOpen(true);
-      if (docSlug) {
-        setMobileView('content');
+    const savedUser = sessionStorage.getItem(`vault_user_${tenantSlug}`);
+    const savedToken = sessionStorage.getItem(`vault_token_${tenantSlug}`);
+    if (savedUser && savedToken) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+        setVaultToken(savedToken);
+        setIsOpen(true);
+        if (docSlug) {
+          setMobileView('content');
+        }
+      } catch (e) {
+        console.error('Error parsing saved vault user:', e);
       }
     }
   }, [docSlug, tenantSlug]);
 
   const fetchPublicVault = async (slugTarget = docSlug) => {
     setLoading(true);
+    const token = sessionStorage.getItem(`vault_token_${tenantSlug}`) || '';
     const url = slugTarget 
       ? `/public/org-vault/${tenantSlug}/${slugTarget}`
       : `/public/org-vault/${tenantSlug}`;
     try {
-      const res = await axiosInstance.get(url);
+      const res = await axiosInstance.get(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       setTenant(res.data.tenant);
       setVaultName(res.data.vault_name || 'La Receta Secreta');
+      setHideOracleButton(res.data.hide_oracle_button || false);
       setIndex(res.data.index || {});
       setActiveDoc(res.data.document);
       setLinks(res.data.links || []);
@@ -405,36 +420,39 @@ export function WebPublicaOrganizacion() {
     });
   };
 
-  // Passcode verification
+  // User verification
   const handleVerifyPasscode = async (e: React.FormEvent) => {
     e.preventDefault();
     setVerifyingPasscode(true);
     setPasscodeError('');
     try {
-      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/validate-passcode`, {
-        passcode: passcode
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/login`, {
+        email: loginEmail,
+        password: loginPassword
       });
       if (res.data.valid) {
-        setPasscodeRole(res.data.role);
-        sessionStorage.setItem(`vault_passcode_${tenantSlug}`, passcode);
-        sessionStorage.setItem(`vault_role_${tenantSlug}`, res.data.role);
+        setCurrentUser(res.data.user);
+        setVaultToken(res.data.token);
+        sessionStorage.setItem(`vault_user_${tenantSlug}`, JSON.stringify(res.data.user));
+        sessionStorage.setItem(`vault_token_${tenantSlug}`, res.data.token);
         setShowPasscodeModal(false);
         setIsOpen(true);
         setShowWelcomeModal(true);
+        // Refresh vault info with token now active
+        setTimeout(() => fetchPublicVault(docSlug), 100);
       }
     } catch (err: any) {
-      setPasscodeError(err.response?.data?.error || 'Contraseña incorrecta.');
-      setPasscode('');
+      setPasscodeError(err.response?.data?.error || 'Usuario o contraseña incorrectos.');
     } finally {
       setVerifyingPasscode(false);
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem(`vault_passcode_${tenantSlug}`);
-    sessionStorage.removeItem(`vault_role_${tenantSlug}`);
-    setPasscode('');
-    setPasscodeRole(null);
+    sessionStorage.removeItem(`vault_user_${tenantSlug}`);
+    sessionStorage.removeItem(`vault_token_${tenantSlug}`);
+    setCurrentUser(null);
+    setVaultToken('');
     setIsOpen(false);
     setActiveBookTab('read');
     if ('speechSynthesis' in window) {
@@ -853,7 +871,7 @@ export function WebPublicaOrganizacion() {
       <div className="absolute top-10 left-10 w-96 h-96 bg-[#8b102e]/5 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#bf953f]/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-      {/* 🛡️ PASSCODE DIALOG MODAL */}
+      {/* 🛡️ USER LOGIN DIALOG MODAL */}
       {showPasscodeModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form 
@@ -874,19 +892,31 @@ export function WebPublicaOrganizacion() {
                 <Lock size={20} />
               </div>
               <h3 className="font-serif text-base font-black text-[#4a0717]">Acceso Resguardado</h3>
-              <p className="text-[10px] font-sans text-slate-500 uppercase tracking-widest mt-1">Ingresa el código para abrir el libro</p>
+              <p className="text-[10px] font-sans text-slate-500 uppercase tracking-widest mt-1">Ingresa tus credenciales de manual</p>
             </div>
 
             <div className="space-y-4 relative z-10">
               <div>
-                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña de la Receta</label>
+                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="ejemplo@decorarte.com"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
                 <input 
                   type="password"
                   required
                   placeholder="••••••••"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] text-center font-sans tracking-widest text-sm shadow-inner"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
                 />
               </div>
 
@@ -1477,81 +1507,81 @@ export function WebPublicaOrganizacion() {
                             const percent = totalCount > 0 ? Math.round((readCount / totalCount) * 100) : 0;
 
                             return (
-                              <div key={category} className="space-y-1">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleCategory(category)}
-                                  className="w-full flex items-center justify-between text-left px-1 mb-1.5 border-b border-[#4a0717]/15 pb-1 select-none hover:opacity-80 group transition-all"
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <div className={`p-0.5 rounded text-[#8b102e] transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-                                      <ChevronRight size={10} />
-                                    </div>
-                                    <h4 className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest font-sans">
-                                      {getCategoryTitle(category)}
-                                    </h4>
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    {percent > 0 && (
-                                      <span className="text-[7.5px] font-sans font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-150 leading-none">
-                                        {percent}%
-                                      </span>
-                                    )}
-                                    <span className="text-[8px] font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
-                                      {items?.length || 0}
-                                    </span>
-                                  </div>
-                                </button>
+                               <div key={category} className="space-y-1">
+                                 <button
+                                   type="button"
+                                   onClick={() => toggleCategory(category)}
+                                   className="w-full flex items-center justify-between text-left px-1 mb-1.5 border-b border-[#4a0717]/15 pb-1 select-none hover:opacity-80 group transition-all"
+                                 >
+                                   <div className="flex items-center gap-1.5">
+                                     <div className={`p-0.5 rounded text-[#8b102e] transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                                       <ChevronRight size={12} />
+                                     </div>
+                                     <h4 className="text-[11.5px] font-black text-[#8b102e] uppercase tracking-widest font-sans">
+                                       {getCategoryTitle(category)}
+                                     </h4>
+                                   </div>
+                                   <div className="flex items-center gap-1.5">
+                                     {percent > 0 && currentUser?.role !== 'colaborador' && (
+                                       <span className="text-[9px] font-sans font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-150 leading-none">
+                                         {percent}%
+                                       </span>
+                                     )}
+                                     <span className="text-[9px] font-sans font-black text-[#8b102e]/60 px-1.5 py-0.5 bg-[#8b102e]/5 rounded-md leading-none">
+                                       {items?.length || 0}
+                                     </span>
+                                   </div>
+                                 </button>
 
-                                {isExpanded && (
-                                  <div className="space-y-3 pl-2 transition-all duration-300 animate-[fadeIn_0.2s_ease-out]">
-                                    {getCategorySubgroups(category, items as DocIndexItem[]).map((subgroup, subIdx) => (
-                                      <div key={subIdx} className="space-y-1">
-                                        {/* Subgroup title (Only show if there's more than 1 subgroup in this category) */}
-                                        {getCategorySubgroups(category, items as DocIndexItem[]).length > 1 && (
-                                          <div className="text-[7.5px] font-sans font-black text-[#8b102e]/60 uppercase tracking-widest pl-1.5 border-l border-[#8b102e]/20 mt-1 mb-0.5 select-none">
-                                            {subgroup.title}
-                                          </div>
-                                        )}
-                                        <div className="space-y-1">
-                                          {subgroup.items.map((item: DocIndexItem) => {
-                                            const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
-                                            const isRead = readDocSlugs.includes(item.slug);
-                                            return (
-                                              <button
-                                                key={item.id}
-                                                onClick={() => {
-                                                  navigate(`/organizacion/${tenantSlug}/${item.slug}`);
-                                                  setMobileView('content');
-                                                  setActiveBookTab('read');
-                                                  setIsSuggesting(false);
-                                                }}
-                                                className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
-                                                  isActive 
-                                                    ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
-                                                    : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
-                                                }`}
-                                              >
-                                                <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
-                                                  {getIcon(item.icon)}
-                                                </div>
-                                                <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
-                                                {isRead && (
-                                                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-250 flex items-center justify-center text-emerald-600 shrink-0">
-                                                    <Check size={8} strokeWidth={3.5} />
-                                                  </div>
-                                                )}
-                                                <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
+                                 {isExpanded && (
+                                   <div className="space-y-3 pl-2 transition-all duration-300 animate-[fadeIn_0.2s_ease-out]">
+                                     {getCategorySubgroups(category, items as DocIndexItem[]).map((subgroup, subIdx) => (
+                                       <div key={subIdx} className="space-y-1">
+                                         {/* Subgroup title */}
+                                         {getCategorySubgroups(category, items as DocIndexItem[]).length > 1 && (
+                                           <div className="text-[9px] font-sans font-black text-[#8b102e]/60 uppercase tracking-widest pl-1.5 border-l border-[#8b102e]/20 mt-1 mb-0.5 select-none">
+                                             {subgroup.title}
+                                           </div>
+                                         )}
+                                         <div className="space-y-1">
+                                           {subgroup.items.map((item: DocIndexItem) => {
+                                             const isActive = activeDoc?.slug === item.slug && activeBookTab === 'read';
+                                             const isRead = readDocSlugs.includes(item.slug);
+                                             return (
+                                               <button
+                                                 key={item.id}
+                                                 onClick={() => {
+                                                   navigate(`/organizacion/${tenantSlug}/${item.slug}`);
+                                                   setMobileView('content');
+                                                   setActiveBookTab('read');
+                                                   setIsSuggesting(false);
+                                                 }}
+                                                 className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-left transition-all ${
+                                                   isActive 
+                                                     ? 'bg-[#8b102e]/5 text-[#8b102e] font-bold border-l-2 border-[#b38728] shadow-sm' 
+                                                     : 'text-[#2b251f]/85 hover:bg-[#8b102e]/5 hover:text-[#8b102e] border-l-2 border-transparent'
+                                                 }`}
+                                               >
+                                                 <div className={`p-1 rounded-md ${isActive ? 'bg-[#8b102e]/10 text-[#8b102e]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
+                                                   {getIcon(item.icon)}
+                                                 </div>
+                                                 <span className="text-[13.5px] font-serif truncate flex-1 leading-none">{item.title}</span>
+                                                 {isRead && currentUser?.role !== 'colaborador' && (
+                                                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-250 flex items-center justify-center text-emerald-600 shrink-0">
+                                                     <Check size={8} strokeWidth={3.5} />
+                                                   </div>
+                                                 )}
+                                                 <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
+                                               </button>
+                                             );
+                                           })}
+                                         </div>
+                                       </div>
+                                     ))}
+                                   </div>
+                                 )}
+                               </div>
+                             );
                           })
                         )
                       )}
@@ -1883,7 +1913,7 @@ export function WebPublicaOrganizacion() {
       )}
 
       {/* FLOATING GOLD TALISMAN FOR AI ASSISTANT */}
-      {isOpen && !loading && (
+      {isOpen && !loading && !hideOracleButton && (
         <button 
           onClick={() => setShowAiAssistant(true)}
           className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] text-[#3d1b13] flex flex-col items-center justify-center shadow-2xl border-2 border-[#1c0808] hover:scale-105 transition-transform z-40 cursor-pointer animate-bounce-subtle"

@@ -58,6 +58,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
     
     // Pública (Wiki/Organigrama de la Empresa)
+    Route::post('/public/org-vault/{tenantSlug}/login', [ObsidianController::class, 'publicLogin']);
     Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
     Route::post('/public/org-vault/{tenantSlug}/copilot', [ObsidianController::class, 'copilot']);
     Route::post('/public/org-vault/{tenantSlug}/validate-passcode', [ObsidianController::class, 'validatePublicPasscode']);
@@ -66,6 +67,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/approve', [ObsidianController::class, 'approvePublicSuggestion']);
     Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/reject', [ObsidianController::class, 'rejectPublicSuggestion']);
     Route::post('/public/org-vault/{tenantSlug}/scribe', [ObsidianController::class, 'scribe']);
+    Route::post('/public/org-vault/{tenantSlug}/progress', [ObsidianController::class, 'recordReadProgress']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);
@@ -242,6 +244,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/suggestions', [ObsidianController::class, 'getSuggestions']);
             Route::post('/suggestions/{id}/approve', [ObsidianController::class, 'approveSuggestion']);
             Route::post('/suggestions/{id}/reject', [ObsidianController::class, 'rejectSuggestion']);
+            Route::get('/users', [ObsidianController::class, 'listUsers']);
+            Route::post('/users', [ObsidianController::class, 'createUser']);
+            Route::put('/users/{id}', [ObsidianController::class, 'updateUser']);
+            Route::delete('/users/{id}', [ObsidianController::class, 'deleteUser']);
+            Route::get('/progress-summary', [ObsidianController::class, 'progressSummary']);
         });
     });
 

@@ -9,6 +9,47 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
+const QuillInkwellIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M14 18h6a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z" />
+    <path d="M16 18v-2h2v2" />
+    <path d="M3 21c1.5-2.5 4-8.5 11-13.5-1 3.5-2.5 8.5-7 11.5C5.5 20 4.5 20.5 3 21z" />
+    <path d="M7.5 15.5L4.5 17" />
+    <path d="M9.5 13.5l-2.5 1.5" />
+    <path d="M11.5 11.5L9 13" />
+    <path d="M13.5 9L11.5 10.5" />
+  </svg>
+);
+
+const HeraldTrumpetIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M3 17l2.5-2.5" />
+    <path d="M4.8 15.2l9.7-9.7" />
+    <path d="M13.8 6.2l3.8-3.8 3.8 3.8-3.8 3.8z" />
+    <path d="M7 11l4.5-4.5v4l-2.2 2.2z" fill="currentColor" fillOpacity="0.2" />
+  </svg>
+);
+
 interface DocIndexItem {
   id: number;
   title: string;
@@ -281,9 +322,37 @@ export function WebPublicaOrganizacion() {
   }, []);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    const shareUrl = window.location.href;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => {
+          setCopiedLink(true);
+          setTimeout(() => setCopiedLink(false), 2000);
+        })
+        .catch(() => fallbackCopy(shareUrl));
+    } else {
+      fallbackCopy(shareUrl);
+    }
+  };
+
+  const fallbackCopy = (text: string) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (err) {
+      console.error("Fallback copy failed", err);
+    }
   };
 
   const getIcon = (iconName: string, size = 16) => {
@@ -817,7 +886,7 @@ export function WebPublicaOrganizacion() {
     >
       {/* Custom Styles Injection */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cinzel:wght@700&family=MedievalSharp&family=Pinyon+Script&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cinzel:wght@700&family=MedievalSharp&family=Pinyon+Script&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=Kurale&display=swap');
 
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
@@ -830,6 +899,18 @@ export function WebPublicaOrganizacion() {
           background-image: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0.03) 100%);
           box-shadow: inset 0 0 30px rgba(80,50,30,0.08);
           border: 1px solid #e2d3bb;
+        }
+
+        .parchment-wrinkles {
+          position: absolute;
+          inset: 0;
+          background-image: 
+            linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 30%, rgba(0,0,0,0.07) 50%, rgba(255,255,255,0.18) 70%, rgba(0,0,0,0.09) 100%),
+            linear-gradient(45deg, rgba(0,0,0,0.04) 0%, rgba(255,255,255,0.12) 35%, rgba(0,0,0,0.04) 50%, rgba(255,255,255,0.12) 65%, rgba(0,0,0,0.04) 100%);
+          mix-blend-mode: multiply;
+          pointer-events: none;
+          opacity: 0.85;
+          z-index: 1;
         }
         
         .gold-metal-text {
@@ -845,9 +926,9 @@ export function WebPublicaOrganizacion() {
 
         /* Customize markdown styling to fit parchment book style */
         .custom-markdown p {
-          font-family: Georgia, serif;
-          font-size: 14px;
-          line-height: 1.7;
+          font-family: 'EB Garamond', Georgia, serif;
+          font-size: 16.5px;
+          line-height: 1.65;
           color: #2b251f;
           margin-bottom: 12px;
           text-align: justify;
@@ -856,9 +937,9 @@ export function WebPublicaOrganizacion() {
         .custom-markdown h1,
         .custom-markdown h2,
         .custom-markdown h3 {
-          font-family: 'Playfair Display', Georgia, serif;
+          font-family: 'Kurale', 'Playfair Display', Georgia, serif;
           color: #4a0717; /* Wine red heading matching logo circle */
-          font-weight: 900;
+          font-weight: 800;
           margin-top: 20px;
           margin-bottom: 8px;
           letter-spacing: -0.01em;
@@ -1486,7 +1567,8 @@ export function WebPublicaOrganizacion() {
                     boxShadow: 'inset -20px 0 30px rgba(0,0,0,0.03), inset 10px 0 20px rgba(255,255,255,0.4)',
                   }}
                 >
-                  <div className="flex-1 flex flex-col">
+                  <div className="parchment-wrinkles" />
+                  <div className="flex-1 flex flex-col relative z-10">
                     {/* Header */}
                     <div className="border-b border-[#4a0717]/20 pb-3 mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1715,7 +1797,8 @@ export function WebPublicaOrganizacion() {
                     boxShadow: 'inset 20px 0 30px rgba(0,0,0,0.03), inset -10px 0 20px rgba(255,255,255,0.4)',
                   }}
                 >
-                  <div className="flex-1 flex flex-col min-w-0">
+                  <div className="parchment-wrinkles" />
+                  <div className="flex-1 flex flex-col min-w-0 relative z-10">
                     
                     {activeBookTab === 'audit' ? (
                       /* ========================================================
@@ -1900,7 +1983,7 @@ export function WebPublicaOrganizacion() {
                                 }`}
                                 title="Narrar contenido"
                               >
-                                {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                                {isSpeaking ? <VolumeX size={16} /> : <HeraldTrumpetIcon size={16} />}
                                 <span className="hidden sm:inline">{isSpeaking ? 'Detener' : 'Escuchar'}</span>
                               </button>
                             )}
@@ -1915,7 +1998,7 @@ export function WebPublicaOrganizacion() {
                                 className="p-2 sm:p-2.5 px-3 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm"
                                 title="Sugerir una corrección o adición"
                               >
-                                <MessageSquare size={16} />
+                                <QuillInkwellIcon size={16} />
                                 <span className="hidden sm:inline">Sugerir</span>
                               </button>
                             )}

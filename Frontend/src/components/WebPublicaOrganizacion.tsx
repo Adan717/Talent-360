@@ -1099,7 +1099,7 @@ export function WebPublicaOrganizacion() {
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#f6ecda] w-full max-w-md rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
             <GoldenCorners />
-            {currentUser?.email === 'marisoldecorarte@gmail.com' && currentUser?.role === 'admin' ? (
+            {currentUser?.email === 'marisoldecorarte@gmail.com' && (currentUser?.role === 'admin' || currentUser?.role === 'supervisor') ? (
               <div className="space-y-4 w-full">
                 <Sparkles size={36} className="text-[#b38728] mb-1 animate-bounce mx-auto" />
                 <h3 className="font-serif text-lg font-black text-[#4a0717]">¡Bienvenida, Diseñadora de Sueños!</h3>

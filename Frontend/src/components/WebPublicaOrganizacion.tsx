@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Search, FileText, Briefcase, Repeat, CheckSquare, 
-  ChevronRight, Eye, BookOpen, AlertCircle, Sparkles, Building2,
-  ArrowLeft, Globe, Share2, Copy, Check
+  ChevronRight, Eye, BookOpen, AlertCircle, Globe, 
+  Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -26,7 +26,9 @@ export function WebPublicaOrganizacion() {
   const { tenantSlug, docSlug } = useParams();
   const navigate = useNavigate();
   
-  const [index, setIndex] = useState<DocIndex>({});
+  // Book state
+  const [isOpen, setIsOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<'index' | 'content'>('index');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDoc, setActiveDoc] = useState<any>(null);
   const [links, setLinks] = useState<any[]>([]);
@@ -35,13 +37,21 @@ export function WebPublicaOrganizacion() {
   const [copiedLink, setCopiedLink] = useState(false);
   
   const [tenant, setTenant] = useState<any>({
-    name: 'Talent360',
+    name: 'DecorArte 360',
     logo_url: '',
-    brand_color: '#3b82f6'
+    brand_color: '#8b1e1e'
   });
-  const [vaultName, setVaultName] = useState('Estructura Organizacional');
+  const [vaultName, setVaultName] = useState('La Receta Secreta');
 
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-open book if directly accessing a specific document slug
+  useEffect(() => {
+    if (docSlug) {
+      setIsOpen(true);
+      setMobileView('content');
+    }
+  }, [docSlug]);
 
   const fetchPublicVault = async (slugTarget = docSlug) => {
     setLoading(true);
@@ -51,7 +61,7 @@ export function WebPublicaOrganizacion() {
     try {
       const res = await axiosInstance.get(url);
       setTenant(res.data.tenant);
-      setVaultName(res.data.vault_name);
+      setVaultName(res.data.vault_name || 'La Receta Secreta');
       setIndex(res.data.index || {});
       setActiveDoc(res.data.document);
       setLinks(res.data.links || []);
@@ -62,6 +72,8 @@ export function WebPublicaOrganizacion() {
       setLoading(false);
     }
   };
+
+  const [index, setIndex] = useState<DocIndex>({});
 
   useEffect(() => {
     if (tenantSlug) {
@@ -78,6 +90,7 @@ export function WebPublicaOrganizacion() {
         const slug = target.getAttribute('data-target-slug');
         if (slug) {
           navigate(`/organizacion/${tenantSlug}/${slug}`);
+          setMobileView('content');
         }
       }
     };
@@ -101,23 +114,22 @@ export function WebPublicaOrganizacion() {
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
-      case 'briefcase': return <Briefcase size={18} />;
-      case 'repeat': return <Repeat size={18} />;
-      case 'check-square': return <CheckSquare size={18} />;
-      default: return <FileText size={18} />;
+      case 'briefcase': return <Briefcase size={16} />;
+      case 'repeat': return <Repeat size={16} />;
+      case 'check-square': return <CheckSquare size={16} />;
+      default: return <FileText size={16} />;
     }
   };
 
   const getCategoryTitle = (cat: string) => {
     switch (cat) {
-      case 'puesto': return 'Puestos y Organigrama';
-      case 'proceso': return 'Procesos de Operación (SOP)';
-      case 'tarea': return 'Listas de Control / Checklists';
-      default: return 'Notas Generales';
+      case 'puesto': return 'Puestos y Estructura';
+      case 'proceso': return 'Recetas de Operación (SOP)';
+      case 'tarea': return 'Checklists de Calidad';
+      default: return 'Notas y Bitácoras';
     }
   };
 
-  // Filter index items by search query
   const filteredIndex = () => {
     const query = searchQuery.toLowerCase();
     const result: DocIndex = {};
@@ -137,208 +149,456 @@ export function WebPublicaOrganizacion() {
     return result;
   };
 
+  // Golden Corners SVG Component
+  const GoldenCorners = () => (
+    <div className="absolute inset-0 pointer-events-none p-3.5">
+      {/* Top Left */}
+      <svg className="absolute top-2 left-2 w-8 h-8 text-[#d4af37] opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M2 10V2h8M4 6V4h2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {/* Top Right */}
+      <svg className="absolute top-2 right-2 w-8 h-8 text-[#d4af37] opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M22 10V2h-8M20 6V4h-2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {/* Bottom Left */}
+      <svg className="absolute bottom-2 left-2 w-8 h-8 text-[#d4af37] opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M2 14v8h8M4 18v2h2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {/* Bottom Right */}
+      <svg className="absolute bottom-2 right-2 w-8 h-8 text-[#d4af37] opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M22 14v8h-8M20 18v2h-2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-text text-left">
-      
-      {/* Premium Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3.5 min-w-0">
-            {tenant.logo_url ? (
-              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 p-0.5 flex items-center justify-center shrink-0 shadow-sm">
-                <img src={tenant.logo_url} alt="Logo" className="w-full h-full object-contain" />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm text-white font-black text-xl" style={{ backgroundColor: tenant.brand_color }}>
-                {tenant.name.charAt(0)}
-              </div>
-            )}
-            <div className="flex flex-col text-left">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none mb-1">{tenant.name}</h1>
-              <div className="flex items-center gap-1.5 text-slate-500">
-                <Globe size={12} className="shrink-0" />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{vaultName}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              className="px-3.5 py-2 rounded-xl text-slate-650 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-2 text-xs font-bold shrink-0 shadow-sm border border-slate-200/50"
-            >
-              {copiedLink ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
-              {copiedLink ? 'Enlace Copiado' : 'Compartir'}
-            </button>
-            <a
-              href="/"
-              className="px-3.5 py-2 rounded-xl text-white bg-slate-900 hover:bg-slate-800 transition-colors flex items-center gap-2 text-xs font-bold shrink-0 shadow-sm"
-            >
-              <ArrowLeft size={14} /> Volver a Talent360
-            </a>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Body */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 flex flex-col lg:flex-row gap-6 min-w-0">
+    <div className="min-h-screen flex flex-col justify-center items-center p-4 sm:p-6 md:p-8 select-text font-serif relative overflow-hidden" 
+      style={{
+        background: 'radial-gradient(circle, #2d1d18 0%, #150b07 100%)',
+      }}
+    >
+      {/* Custom Styles Injection */}
+      <style>{`
+        /* Parchment vintage look */
+        .parchment {
+          background-color: #f7f2e5;
+          background-image: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0.03) 100%);
+          box-shadow: inset 0 0 30px rgba(80,50,30,0.08);
+          border: 1px solid #e6dcc5;
+        }
         
-        {/* Sidebar Index */}
-        <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col shrink-0">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-black text-slate-800 tracking-tight text-base">Índice del Portal</h3>
-            <span className="text-[9px] font-black tracking-widest text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded uppercase">Público</span>
-          </div>
+        .gold-metal-text {
+          background: linear-gradient(to right, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
 
-          {/* Search */}
-          <div className="relative mb-5">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Buscar puesto o proceso..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white text-xs font-semibold transition-all"
-            />
-          </div>
+        .gold-border {
+          border-color: #cda83d;
+        }
 
-          {/* List index */}
-          <div className="flex-1 overflow-y-auto pr-1 space-y-5 custom-scrollbar max-h-[300px] lg:max-h-none">
-            {loading ? (
-              <div className="text-center py-8 text-slate-400 text-xs font-semibold animate-pulse">Cargando índices...</div>
-            ) : Object.keys(filteredIndex()).length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs font-semibold">No hay coincidencia de búsqueda.</div>
-            ) : (
-              Object.entries(filteredIndex()).map(([category, items]) => (
-                <div key={category} className="space-y-1.5">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1.5">
-                    {getCategoryTitle(category)}
-                  </h4>
-                  {(items as DocIndexItem[]).map((item: DocIndexItem) => {
-                    const isActive = activeDoc?.slug === item.slug;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => navigate(`/organizacion/${tenantSlug}/${item.slug}`)}
-                        className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${
-                          isActive 
-                            ? 'bg-blue-50 text-blue-700 font-bold border-l-4 border-blue-600 shadow-sm' 
-                            : 'text-slate-650 hover:bg-slate-50 hover:text-slate-900 border-l-4 border-transparent'
-                        }`}
-                      >
-                        <div className={`p-1.5 rounded-lg ${isActive ? 'bg-white shadow-sm text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
-                          {getIcon(item.icon)}
-                        </div>
-                        <span className="text-xs font-bold truncate flex-1">{item.title}</span>
-                        <ChevronRight size={14} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
-                      </button>
-                    );
-                  })}
-                </div>
-              ))
-            )}
-          </div>
+        /* Customize markdown styling to fit parchment book style */
+        .custom-markdown p {
+          font-family: Georgia, serif;
+          font-size: 14px;
+          line-height: 1.7;
+          color: #2b251f;
+          margin-bottom: 12px;
+          text-align: justify;
+        }
+
+        .custom-markdown h1,
+        .custom-markdown h2,
+        .custom-markdown h3 {
+          font-family: 'Playfair Display', Georgia, serif;
+          color: #3d1b13;
+          font-weight: 900;
+          margin-top: 20px;
+          margin-bottom: 8px;
+          letter-spacing: -0.01em;
+        }
+
+        .custom-markdown h1 { font-size: 22px; border-bottom: 1px solid #dcd1b3; padding-bottom: 4px; }
+        .custom-markdown h2 { font-size: 18px; border-bottom: 1px dashed #dcd1b3; padding-bottom: 4px; }
+        .custom-markdown h3 { font-size: 15px; }
+
+        .custom-markdown li {
+          font-family: Georgia, serif;
+          font-size: 13.5px;
+          color: #2b251f;
+          margin-left: 16px;
+          margin-bottom: 4px;
+        }
+
+        .custom-markdown blockquote {
+          border-left: 3px solid #b38728;
+          padding-left: 12px;
+          margin: 16px 0;
+          color: #4a3e35;
+          font-style: italic;
+          background-color: rgba(179,135,40,0.04);
+        }
+
+        .custom-markdown code {
+          font-family: monospace;
+          background-color: rgba(0,0,0,0.05);
+          color: #922b21;
+          padding: 1px 4px;
+          border-radius: 4px;
+          font-size: 11px;
+        }
+
+        /* Center fold line effect */
+        .book-spine-line::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          width: 25px;
+          background: linear-gradient(to right, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0) 100%);
+          pointer-events: none;
+        }
+
+        .book-spine-line-right::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          right: 0;
+          width: 25px;
+          background: linear-gradient(to left, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0) 100%);
+          pointer-events: none;
+        }
+
+        /* 3D cover tilt effect */
+        .book-cover-3d {
+          transform: perspective(1000px) rotateY(-8deg) rotateX(2deg);
+          box-shadow: 15px 15px 30px rgba(0,0,0,0.7), -2px 0 5px rgba(255,255,255,0.05);
+          transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease;
+        }
+        
+        .book-cover-3d:hover {
+          transform: perspective(1000px) rotateY(-2deg) rotateX(0deg) scale(1.02);
+          box-shadow: 25px 25px 40px rgba(0,0,0,0.8);
+        }
+      `}</style>
+
+      {/* Background ambient particles/decorations */}
+      <div className="absolute top-10 left-10 w-96 h-96 bg-[#8b1e1e]/5 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+      {loading && (
+        <div className="text-amber-100 font-bold tracking-widest text-sm animate-pulse">
+          Invocando "La Receta Secreta"...
         </div>
+      )}
 
-        {/* Reading Pane */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col min-w-0">
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center py-20 text-slate-400 font-semibold animate-pulse text-sm">
-              Cargando documento...
+      {!loading && (
+        <div className="w-full max-w-6xl flex flex-col items-center relative z-10">
+          
+          {/* Header Controls */}
+          <div className="w-full flex justify-between items-center mb-6 px-2 text-amber-100/70 text-xs font-bold font-sans">
+            <div className="flex items-center gap-4">
+              {isOpen && (
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-1.5 hover:text-white transition-colors"
+                >
+                  <ArrowLeft size={14} /> Cerrar Libro
+                </button>
+              )}
             </div>
-          ) : !activeDoc ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-20 text-slate-400 text-sm font-semibold text-center">
-              <AlertCircle size={48} className="text-slate-300 mb-4" />
-              <h3 className="text-lg font-black text-slate-700 mb-1">Documento no encontrado</h3>
-              <p className="text-slate-500 max-w-sm text-xs leading-relaxed">
-                El documento que buscas no existe o no se ha sincronizado correctamente.
-              </p>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleShare}
+                className="flex items-center gap-1.5 hover:text-white transition-colors"
+              >
+                {copiedLink ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
+                {copiedLink ? 'Enlace Copiado' : 'Compartir Receta'}
+              </button>
+              <a href="/" className="hover:text-white transition-colors">Volver a Talent360</a>
             </div>
+          </div>
+
+          {/* MAIN SKEUOMORPHIC BOOK CONTAINER */}
+          {!isOpen ? (
+            
+            /* =========================================================================
+               1. CLOSED BOOK COVER VIEW (Pasta Gruesa)
+               ========================================================================= */
+            <div 
+              onClick={() => setIsOpen(true)}
+              className="w-full max-w-[420px] aspect-[0.7] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden p-6 flex flex-col justify-between select-none border-2 border-r-4 border-slate-950"
+              style={{
+                background: 'linear-gradient(135deg, #2d0a0a 0%, #4a1212 50%, #2f0b0b 100%)',
+                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.5), 10px 15px 30px rgba(0,0,0,0.7)',
+                borderColor: '#180505',
+              }}
+            >
+              {/* Gold borders and design inside the cover */}
+              <div className="absolute inset-2.5 border border-dashed border-[#d4af37]/30 rounded-r-xl pointer-events-none"></div>
+              <div className="absolute inset-3 border-2 border-[#d4af37]/65 rounded-r-xl pointer-events-none"></div>
+              
+              <GoldenCorners />
+
+              {/* Book spine simulated shadow on the left edge */}
+              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/60 to-transparent pointer-events-none"></div>
+              <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#d4af37]/25 pointer-events-none"></div>
+
+              {/* Cover Top section - Brand Header */}
+              <div className="flex flex-col items-center mt-6 relative z-10">
+                <div className="w-14 h-14 rounded-full bg-white/5 border-2 border-[#d4af37]/70 p-1 flex items-center justify-center shadow-lg backdrop-blur-sm mb-3">
+                  {tenant.logo_url ? (
+                    <img src={tenant.logo_url} alt="Logo" className="w-full h-full object-contain filter brightness-110" />
+                  ) : (
+                    <Building2 className="text-[#d4af37] w-6 h-6" />
+                  )}
+                </div>
+                <span className="text-[10px] font-black tracking-[0.25em] text-[#d4af37] uppercase font-sans">
+                  {tenant.name}
+                </span>
+                <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent mt-2"></div>
+              </div>
+
+              {/* Cover Center section - Main Title */}
+              <div className="flex flex-col items-center text-center my-auto py-6 relative z-10">
+                <span className="text-[10px] font-black tracking-[0.3em] text-[#d4af37]/70 uppercase font-sans mb-2 block">CÓDIGO DE TRABAJO</span>
+                
+                <h2 className="text-4xl sm:text-5xl font-black font-serif italic py-3 text-center gold-metal-text leading-tight tracking-wide px-2 select-none">
+                  La Receta
+                  <span className="block mt-1 not-italic font-normal uppercase tracking-widest text-3xl">Secreta</span>
+                </h2>
+
+                <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent my-4"></div>
+                
+                <p className="text-[10px] font-bold text-[#f5ebd2]/75 uppercase tracking-[0.15em] max-w-xs leading-relaxed font-sans">
+                  Puestos, Procesos y Tareas Organizacionales
+                </p>
+              </div>
+
+              {/* Cover Bottom section - Footer and Touch cue */}
+              <div className="flex flex-col items-center mb-6 relative z-10">
+                <div className="text-[#d4af37] animate-pulse mb-2 text-sm flex items-center gap-1.5 font-sans font-bold">
+                  <BookIcon size={16} />
+                  <span>Haz clic para abrir</span>
+                </div>
+                <span className="text-[8px] font-bold text-[#f5ebd2]/40 tracking-wider font-sans uppercase">EDICIÓN DE AUDITORÍA</span>
+              </div>
+            </div>
+
           ) : (
-            <div className="flex-1 flex flex-col lg:flex-row gap-6 min-w-0">
-              {/* Central Text */}
-              <div className="flex-1 min-w-0 flex flex-col">
-                <div className="flex items-center gap-4 border-b border-slate-150 pb-4 mb-5">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner shrink-0 [&>svg]:w-6 [&>svg]:h-6">
-                    {getIcon(activeDoc.icon)}
+            
+            /* =========================================================================
+               2. OPENED BOOK DOUBLE PAGE VIEW (Hojas de Pergamino)
+               ========================================================================= */
+            <div className="w-full bg-[#3d1818] p-3 sm:p-5 rounded-3xl shadow-2xl relative border-4 border-[#1c0808]"
+              style={{
+                boxShadow: '0 30px 60px rgba(0,0,0,0.85)',
+              }}
+            >
+              {/* Outer leather cover overlap representation */}
+              <div className="absolute inset-0 bg-[#2d0a0a] rounded-3xl -z-10 transform scale-[1.008] border border-[#d4af37]/20"></div>
+
+              {/* Open Book Pages Wrapper */}
+              <div className="flex flex-col lg:flex-row rounded-2xl overflow-hidden relative"
+                style={{
+                  minHeight: '620px'
+                }}
+              >
+                
+                {/* Ribbon bookmark hanging down the center */}
+                <div className="hidden lg:block absolute left-[50%] -translate-x-1/2 top-0 h-44 w-3.5 bg-[#8b1e1e] border-x border-[#500c0c] rounded-b-md shadow-lg z-20 pointer-events-none after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2 after:bg-black/20"></div>
+                
+                {/* -----------------------------------------------------------
+                    PAGE A: INDEX / TABLE OF CONTENTS (Left Page)
+                    ----------------------------------------------------------- */}
+                <div className={`w-full lg:w-1/2 p-5 sm:p-7 flex flex-col justify-between relative book-spine-line-right border-b lg:border-b-0 lg:border-r border-[#e0d4bd] ${
+                  mobileView === 'index' ? 'block' : 'hidden lg:flex'
+                }`}
+                  style={{
+                    backgroundColor: '#f7f2e5',
+                    boxShadow: 'inset -20px 0 30px rgba(0,0,0,0.03), inset 10px 0 20px rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <div className="flex-1 flex flex-col">
+                    {/* Header */}
+                    <div className="border-b-2 border-[#3d1b13]/30 pb-3 mb-5 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none block mb-1">ÍNDICE GENERAL</span>
+                        <h3 className="text-xl font-bold font-serif text-[#3d1b13] tracking-wide">Estructura del Negocio</h3>
+                      </div>
+                      <BookIcon size={20} className="text-[#3d1b13]/40" />
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative mb-5">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3d1b13]/55" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar tema de la receta..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-4 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-[#3d1b13]/40 focus:outline-none focus:border-[#b38728] text-xs font-semibold font-sans transition-all"
+                      />
+                    </div>
+
+                    {/* Index List */}
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-5 scrollbar-none max-h-[350px] lg:max-h-[380px]">
+                      {Object.keys(filteredIndex()).length === 0 ? (
+                        <div className="text-center py-8 text-[#3d1b13]/40 text-xs italic font-semibold">No se encontraron temas en el índice.</div>
+                      ) : (
+                        Object.entries(filteredIndex()).map(([category, items]) => (
+                          <div key={category} className="space-y-1.5">
+                            <h4 className="text-[10px] font-black text-[#8c6739] uppercase tracking-widest px-1 mb-1 font-sans">
+                              {getCategoryTitle(category)}
+                            </h4>
+                            {(items as DocIndexItem[]).map((item: DocIndexItem) => {
+                              const isActive = activeDoc?.slug === item.slug;
+                              return (
+                                <button
+                                  key={item.id}
+                                  onClick={() => {
+                                    navigate(`/organizacion/${tenantSlug}/${item.slug}`);
+                                    setMobileView('content');
+                                  }}
+                                  className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all ${
+                                    isActive 
+                                      ? 'bg-[#3d1b13]/5 text-[#3d1b13] font-bold border-l-2 border-[#b38728]' 
+                                      : 'text-[#2b251f]/80 hover:bg-[#3d1b13]/5 hover:text-[#3d1b13] border-l-2 border-transparent'
+                                  }`}
+                                >
+                                  <div className={`p-1 rounded-md ${isActive ? 'bg-[#3d1b13]/10 text-[#3d1b13]' : 'bg-[#faf6eb] text-[#2b251f]/60 border border-[#d2c7ac]'}`}>
+                                    {getIcon(item.icon)}
+                                  </div>
+                                  <span className="text-xs font-serif truncate flex-1 leading-none">{item.title}</span>
+                                  <ChevronRight size={12} className={`opacity-40 transition-transform ${isActive && 'translate-x-0.5'}`} />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest leading-none mb-1.5">
-                      {getCategoryTitle(activeDoc.type)}
-                    </span>
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">{activeDoc.title}</h1>
+
+                  {/* Ribbon bookmark / page footer */}
+                  <div className="border-t border-[#e0d4bd] pt-3 mt-4 text-[9px] text-[#3d1b13]/40 font-sans font-bold flex justify-between">
+                    <span>SECCIÓN DE CONSULTA</span>
+                    <span>PÁG. L</span>
                   </div>
                 </div>
 
-                {/* Rendered HTML */}
-                <div 
-                  ref={contentRef}
-                  className="flex-1 text-slate-850 leading-relaxed pr-1 custom-markdown"
-                  dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }}
-                />
+                {/* -----------------------------------------------------------
+                    PAGE B: CONTENT RENDERER (Right Page)
+                    ----------------------------------------------------------- */}
+                <div className={`w-full lg:w-1/2 p-5 sm:p-7 flex flex-col justify-between relative book-spine-line ${
+                  mobileView === 'content' ? 'block' : 'hidden lg:flex'
+                }`}
+                  style={{
+                    backgroundColor: '#f7f2e5',
+                    boxShadow: 'inset 20px 0 30px rgba(0,0,0,0.03), inset -10px 0 20px rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <div className="flex-1 flex flex-col min-w-0">
+                    {/* Header */}
+                    <div className="border-b-2 border-[#3d1b13]/30 pb-3 mb-5 flex items-center justify-between">
+                      {activeDoc ? (
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-[#3d1b13]/5 text-[#3d1b13] shrink-0 border border-[#dcd1b3]">
+                            {getIcon(activeDoc.icon)}
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span className="text-[9px] font-black uppercase text-[#8c6739] tracking-widest leading-none mb-1">
+                              {getCategoryTitle(activeDoc.type)}
+                            </span>
+                            <span className="text-xs font-bold text-[#3d1b13] font-sans truncate max-w-[200px] sm:max-w-xs">{activeDoc.title}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[#3d1b13]/40 font-bold">LECTURA WIKI</span>
+                      )}
+                      
+                      {/* Mobile menu toggle inside the book */}
+                      <button 
+                        onClick={() => setMobileView('index')} 
+                        className="lg:hidden p-1.5 rounded-lg border border-[#d2c7ac] text-[#3d1b13] bg-[#faf6eb] hover:bg-white flex items-center gap-1 text-[10px] font-sans font-bold shadow-sm"
+                      >
+                        <Menu size={14} /> Índice
+                      </button>
+                    </div>
 
-                <div className="mt-8 pt-4 border-t border-slate-100 text-[10px] text-slate-450 font-bold flex flex-col sm:flex-row justify-between items-center gap-2">
-                  <span>© {tenant.name} - Estructura Organizativa Oficial</span>
-                  <span>Última actualización: {new Date(activeDoc.updated_at).toLocaleDateString()}</span>
+                    {/* Document Content */}
+                    <div className="flex-1 flex flex-col min-w-0">
+                      {!activeDoc ? (
+                        <div className="flex-1 flex flex-col items-center justify-center py-16 text-[#3d1b13]/40 text-center">
+                          <BookIcon size={40} className="text-[#3d1b13]/20 mb-3 animate-bounce" />
+                          <h4 className="text-sm font-bold font-serif mb-1">El Libro está Abierto</h4>
+                          <p className="text-[11px] max-w-[220px] leading-relaxed">
+                            Selecciona cualquier capítulo del índice a la izquierda para comenzar a leer la receta secreta.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col min-w-0">
+                          {/* Rich Text area */}
+                          <div 
+                            ref={contentRef}
+                            className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none max-h-[350px] lg:max-h-[380px]"
+                            dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }}
+                          />
+
+                          {/* Wiki connections inside page footnotes */}
+                          {(links.length > 0 || backlinks.length > 0) && (
+                            <div className="mt-6 pt-4 border-t border-dashed border-[#dcd1b3] text-left space-y-2">
+                              <span className="text-[9px] font-black text-[#8c6739] uppercase tracking-widest block font-sans">Ramificaciones de este Tema</span>
+                              <div className="flex flex-wrap gap-2">
+                                {links.map(l => (
+                                  <button
+                                    key={l.id}
+                                    onClick={() => navigate(`/organizacion/${tenantSlug}/${l.slug}`)}
+                                    className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#b38728] text-[#3d1b13] font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
+                                  >
+                                    {getIcon(l.icon)}
+                                    <span>{l.title}</span>
+                                  </button>
+                                ))}
+                                {backlinks.map(l => (
+                                  <button
+                                    key={l.id}
+                                    onClick={() => navigate(`/organizacion/${tenantSlug}/${l.slug}`)}
+                                    className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#b38728] text-slate-700 font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
+                                  >
+                                    <Globe size={10} />
+                                    <span>{l.title}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ribbon bookmark / page footer */}
+                  <div className="border-t border-[#e0d4bd] pt-3 mt-4 text-[9px] text-[#3d1b13]/40 font-sans font-bold flex justify-between">
+                    <span>DecorArte 360</span>
+                    <span>PÁG. R</span>
+                  </div>
                 </div>
+
               </div>
 
-              {/* Side relations */}
-              <div className="w-full lg:w-56 shrink-0 flex flex-col gap-5 text-left border-t lg:border-t-0 lg:border-l border-slate-150 pt-5 lg:pt-0 lg:pl-5">
-                {/* Related Documents */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Temas Relacionados</span>
-                  {links.length === 0 ? (
-                    <span className="text-xs text-slate-400 font-medium italic block pl-1">Sin enlaces relacionados.</span>
-                  ) : (
-                    <div className="space-y-1">
-                      {links.map(l => (
-                        <button
-                          key={l.id}
-                          onClick={() => navigate(`/organizacion/${tenantSlug}/${l.slug}`)}
-                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left transition-colors"
-                        >
-                          <div className="text-blue-600 shrink-0">{getIcon(l.icon)}</div>
-                          <span className="text-xs font-bold text-blue-650 hover:underline truncate">{l.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Backlinks */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Mencionado en</span>
-                  {backlinks.length === 0 ? (
-                    <span className="text-xs text-slate-400 font-medium italic block pl-1">Sin menciones.</span>
-                  ) : (
-                    <div className="space-y-1">
-                      {backlinks.map(l => (
-                        <button
-                          key={l.id}
-                          onClick={() => navigate(`/organizacion/${tenantSlug}/${l.slug}`)}
-                          className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 text-left transition-colors"
-                        >
-                          <div className="text-slate-500 shrink-0">{getIcon(l.icon)}</div>
-                          <span className="text-xs font-bold text-slate-700 hover:underline truncate">{l.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           )}
-        </div>
 
-      </div>
-
-      {/* Public Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-450 text-xs font-bold">
-          Estructura de Procesos y Puestos provista y auditada por <span className="text-blue-600">Talent 360</span>. Todos los derechos reservados.
+          {/* Public Footer */}
+          <div className="mt-8 text-amber-100/40 text-[10px] font-black uppercase tracking-[0.2em] font-sans">
+            La Receta Secreta • Desarrollado por Talent 360
+          </div>
         </div>
-      </footer>
+      )}
 
     </div>
   );

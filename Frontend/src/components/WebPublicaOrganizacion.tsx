@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Search, FileText, Briefcase, Repeat, CheckSquare, 
-  ChevronRight, Eye, EyeOff, BookOpen, AlertCircle, Globe, 
+  ChevronRight, ChevronLeft, Eye, EyeOff, BookOpen, AlertCircle, Globe, 
   Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2,
   Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare,
   Clock, Trophy, ClipboardList, Settings, Paperclip
@@ -362,6 +362,18 @@ export function WebPublicaOrganizacion() {
     } catch (err) {
       console.error("Fallback copy failed", err);
     }
+  };
+
+  const getFlatDocs = () => {
+    const categories = ['organizacion', 'puesto', 'tarea', 'rutina', 'indicador', 'reglas', 'formatos', 'anexo', 'glosario', 'nota'];
+    const flat: any[] = [];
+    categories.forEach(cat => {
+      const items = index[cat];
+      if (items && Array.isArray(items)) {
+        flat.push(...items);
+      }
+    });
+    return flat;
   };
 
   const getIcon = (iconName: string, size = 16) => {
@@ -2035,47 +2047,98 @@ export function WebPublicaOrganizacion() {
                             </div>
                           ) : (
                             <div className="flex-1 flex flex-col min-w-0">
-                              {/* Rich Text area */}
+                              {/* Scrollable Document Content & Related Footnotes */}
                               <div 
                                 ref={contentRef}
-                                className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none min-h-0"
-                                dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }}
-                              />
+                                className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none min-h-0 pb-4"
+                              >
+                                <div dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }} />
 
-                              {/* Wiki connections inside page footnotes */}
-                              {(links.length > 0 || backlinks.length > 0) && (
-                                <div className="mt-4 pt-3 border-t border-dashed border-[#d2c7ac] text-left space-y-1.5">
-                                  <span className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Ramificaciones de este Tema</span>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {links.map(l => (
-                                      <button
-                                        key={l.id}
-                                        onClick={() => {
-                                          navigate(`/organizacion/${tenantSlug}/${l.slug}`);
-                                          setMobileView('content');
-                                        }}
-                                        className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#8b102e] text-[#1e3b8b] font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
-                                      >
-                                        {getIcon(l.icon)}
-                                        <span>{l.title}</span>
-                                      </button>
-                                    ))}
-                                    {backlinks.map(l => (
-                                      <button
-                                        key={l.id}
-                                        onClick={() => {
-                                          navigate(`/organizacion/${tenantSlug}/${l.slug}`);
-                                          setMobileView('content');
-                                        }}
-                                        className="px-2.5 py-1 bg-[#faf6eb] border border-[#d2c7ac] hover:bg-white hover:border-[#8b102e] text-slate-700 font-serif rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
-                                      >
-                                        <Globe size={10} />
-                                        <span>{l.title}</span>
-                                      </button>
-                                    ))}
+                                {/* Muted Related Chapters Footnote (inside scrollable area) */}
+                                {(links.length > 0 || backlinks.length > 0) && (
+                                  <div className="mt-8 pt-4 border-t border-dashed border-[#4a0717]/20 text-left space-y-2">
+                                    <span className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block font-sans">Temas Relacionados</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-sans font-semibold">
+                                      {links.map(l => (
+                                        <button
+                                          key={l.id}
+                                          onClick={() => {
+                                            navigate(`/organizacion/${tenantSlug}/${l.slug}`);
+                                            setMobileView('content');
+                                          }}
+                                          className="text-left text-[#8b102e] hover:text-[#b38728] flex items-center gap-1.5 py-0.5 truncate transition-colors"
+                                        >
+                                          <span className="shrink-0 text-slate-400 font-normal">→</span>
+                                          <span className="truncate underline decoration-dotted">{l.title}</span>
+                                        </button>
+                                      ))}
+                                      {backlinks.map(l => (
+                                        <button
+                                          key={l.id}
+                                          onClick={() => {
+                                            navigate(`/organizacion/${tenantSlug}/${l.slug}`);
+                                            setMobileView('content');
+                                          }}
+                                          className="text-left text-slate-500 hover:text-[#8b102e] flex items-center gap-1.5 py-0.5 truncate transition-colors"
+                                        >
+                                          <span className="shrink-0 text-slate-400 font-normal">←</span>
+                                          <span className="truncate underline decoration-dotted">{l.title}</span>
+                                        </button>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
+
+                              {/* Static Book Navigation Bar (outside scrollable area) */}
+                              {(() => {
+                                const flatDocs = getFlatDocs();
+                                const currentIndex = flatDocs.findIndex((d: any) => d.slug === activeDoc?.slug);
+                                const prevDoc = currentIndex > 0 ? flatDocs[currentIndex - 1] : null;
+                                const nextDoc = currentIndex !== -1 && currentIndex < flatDocs.length - 1 ? flatDocs[currentIndex + 1] : null;
+                                
+                                if (!prevDoc && !nextDoc) return null;
+
+                                return (
+                                  <div className="sticky bottom-0 z-30 bg-[#f6ecda] border-t border-[#4a0717]/20 pt-3 mt-2 -mx-4 px-4 sm:-mx-7 sm:px-7 pb-2 flex items-center justify-between gap-4 font-serif">
+                                    {prevDoc ? (
+                                      <button
+                                        onClick={() => {
+                                          navigate(`/organizacion/${tenantSlug}/${prevDoc.slug}`);
+                                          setMobileView('content');
+                                        }}
+                                        className="px-3.5 py-2 bg-[#faf6eb] hover:bg-white border border-[#d2c7ac] text-[#4a0717] rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all hover:-translate-x-0.5 active:translate-x-0"
+                                      >
+                                        <ChevronLeft size={14} className="text-[#8b102e]" />
+                                        <div className="flex flex-col text-left">
+                                          <span className="text-[8px] font-sans font-black uppercase text-slate-400 leading-none mb-0.5">Anterior</span>
+                                          <span className="truncate max-w-[90px] sm:max-w-[150px] font-sans text-[11px] font-bold text-slate-700">{prevDoc.title}</span>
+                                        </div>
+                                      </button>
+                                    ) : (
+                                      <div />
+                                    )}
+
+                                    {nextDoc ? (
+                                      <button
+                                        onClick={() => {
+                                          navigate(`/organizacion/${tenantSlug}/${nextDoc.slug}`);
+                                          setMobileView('content');
+                                        }}
+                                        className="px-3.5 py-2 bg-[#faf6eb] hover:bg-white border border-[#d2c7ac] text-[#4a0717] rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all hover:translate-x-0.5 active:translate-x-0 ml-auto"
+                                      >
+                                        <div className="flex flex-col text-right">
+                                          <span className="text-[8px] font-sans font-black uppercase text-slate-400 leading-none mb-0.5">Siguiente</span>
+                                          <span className="truncate max-w-[90px] sm:max-w-[150px] font-sans text-[11px] font-bold text-slate-700">{nextDoc.title}</span>
+                                        </div>
+                                        <ChevronRight size={14} className="text-[#8b102e]" />
+                                      </button>
+                                    ) : (
+                                      <div />
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>

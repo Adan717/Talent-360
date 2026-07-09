@@ -154,6 +154,112 @@ export function WebPublicaOrganizacion() {
 
   // Auto-expansion disabled to keep all categories collapsed initially
 
+  // Exam states
+  const [examStatus, setExamStatus] = useState<any>({ eligible: false, progress_percentage: 0, certified: false, active_exam: null, attempts: [] });
+  const [loadingExamStatus, setLoadingExamStatus] = useState(false);
+  const [isTakingExam, setIsTakingExam] = useState(false);
+  const [generatingExam, setGeneratingExam] = useState(false);
+  const [examQuestions, setExamQuestions] = useState<any[]>([]);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({}); // questionId => optionKey ('A', 'B', etc)
+  const [submittingExam, setSubmittingExam] = useState(false);
+  const [examResultAttempt, setExamResultAttempt] = useState<any>(null); // To show results immediately after grading
+  const [showDiplomaModal, setShowDiplomaModal] = useState(false); // To view/print the diploma
+
+  const fetchExamStatus = async () => {
+    if (!currentUser || !tenantSlug) return;
+    setLoadingExamStatus(true);
+    try {
+      const token = sessionStorage.getItem(`vault_token_${tenantSlug}`) || localStorage.getItem(`vault_token_${tenantSlug}`);
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/exam/status`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      setExamStatus(res.data);
+      if (res.data.active_exam && res.data.active_exam.questions) {
+        setExamQuestions(res.data.active_exam.questions);
+      } else {
+        setExamQuestions([]);
+      }
+    } catch (e) {
+      console.error("Error fetching exam status:", e);
+    } finally {
+      setLoadingExamStatus(false);
+    }
+  };
+
+  const handleGenerateExam = async () => {
+    if (!tenantSlug) return;
+    setGeneratingExam(true);
+    try {
+      const token = sessionStorage.getItem(`vault_token_${tenantSlug}`) || localStorage.getItem(`vault_token_${tenantSlug}`);
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/exam/generate`, {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.data.active_exam) {
+        setExamQuestions(res.data.active_exam.questions || []);
+        setExamStatus((prev: any) => ({ ...prev, active_exam: res.data.active_exam }));
+        setIsTakingExam(true);
+        setSelectedAnswers({});
+        setExamResultAttempt(null);
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.error || "Error al generar el examen.");
+    } finally {
+      setGeneratingExam(false);
+    }
+  };
+
+  const handleSubmitExam = async () => {
+    if (!examStatus.active_exam || !tenantSlug) return;
+    
+    // Check that all questions are answered
+    const unanswered = examQuestions.filter(q => !selectedAnswers[q.id]);
+    if (unanswered.length > 0) {
+      alert("Por favor responde todas las preguntas del examen antes de enviarlo.");
+      return;
+    }
+
+    if (!window.confirm("¿Estás seguro de enviar tu evaluación? Esta acción registrará tu intento.")) {
+      return;
+    }
+
+    setSubmittingExam(true);
+    try {
+      const token = sessionStorage.getItem(`vault_token_${tenantSlug}`) || localStorage.getItem(`vault_token_${tenantSlug}`);
+      const answersPayload = Object.entries(selectedAnswers).map(([qId, val]) => ({
+        question_id: parseInt(qId),
+        chosen: val
+      }));
+
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/exam/submit`, {
+        exam_id: examStatus.active_exam.id,
+        answers: answersPayload
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      setExamResultAttempt(res.data.attempt);
+      alert(res.data.message);
+      setIsTakingExam(false);
+      
+      // Refresh exam status
+      await fetchExamStatus();
+    } catch (e: any) {
+      alert(e.response?.data?.error || "Error al enviar el examen.");
+    } finally {
+      setSubmittingExam(false);
+    }
+  };
+
+  // Fetch status on mount or progress update
+  useEffect(() => {
+    if (currentUser && tenantSlug) {
+      fetchExamStatus();
+    } else {
+      setExamStatus({ eligible: false, progress_percentage: 0, certified: false, active_exam: null, attempts: [] });
+      setExamQuestions([]);
+    }
+  }, [currentUser, tenantSlug, readDocSlugs]);
+
   // Load read progress from localStorage (namespaced per logged-in user)
   useEffect(() => {
     if (!tenantSlug) return;
@@ -251,6 +357,9 @@ export function WebPublicaOrganizacion() {
       setHideOracleButton(res.data.hide_oracle_button || false);
       setIndex(res.data.index || {});
       setActiveDoc(res.data.document);
+      if (res.data.document) {
+        setIsTakingExam(false);
+      }
       setLinks(res.data.links || []);
       setBacklinks(res.data.backlinks || []);
       setAvailableJobRoles(res.data.job_roles || []);
@@ -1035,10 +1144,26 @@ export function WebPublicaOrganizacion() {
           box-shadow: 15px 15px 35px rgba(0,0,0,0.75), -2px 0 5px rgba(255,255,255,0.05);
           transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease;
         }
-        
-        .book-cover-3d:hover {
-          transform: perspective(1000px) rotateY(-1deg) rotateX(0deg) scale(1.025);
-          box-shadow: 25px 25px 45px rgba(0,0,0,0.85);
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-diploma, #printable-diploma * {
+            visibility: visible !important;
+          }
+          #printable-diploma {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 2rem !important;
+            background: #fff !important;
+            z-index: 9999999 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
         }
       `}</style>
 
@@ -2065,13 +2190,186 @@ export function WebPublicaOrganizacion() {
 
                         {/* Document Content */}
                         <div className="flex-1 flex flex-col min-w-0">
-                          {!activeDoc ? (
-                            <div className="flex-1 flex flex-col items-center justify-center py-16 text-[#4a0717]/40 text-center">
-                              <BookIcon size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
-                              <h4 className="text-sm font-bold font-serif mb-1">El Libro está Abierto</h4>
-                              <p className="text-[10px] max-w-[220px] leading-relaxed">
-                                Selecciona cualquier capítulo del índice a la izquierda para comenzar a leer la receta secreta.
-                              </p>
+                          {isTakingExam ? (
+                            <div className="flex-1 flex flex-col overflow-y-auto pr-1 text-left p-6 font-sans space-y-6">
+                              <div className="border-b border-[#d2c7ac]/40 pb-4">
+                                <span className="text-[10px] font-black text-[#bf953f] uppercase tracking-[0.2em] block mb-1">
+                                  Evaluación de Acreditación
+                                </span>
+                                <h3 className="text-xl font-serif font-black text-[#4a0717]">
+                                  Puesto: {currentUser?.job_role_name || "Colaborador"}
+                                </h3>
+                                <p className="text-xs text-[#2b251f]/70 mt-1 font-medium leading-relaxed">
+                                  Responde las siguientes 10 preguntas basadas en el manual operativo. Necesitas al menos <strong>8 aciertos (80%)</strong> para acreditar y recibir tu certificación.
+                                </p>
+                              </div>
+
+                              <div className="space-y-8">
+                                {examQuestions.map((q, idx) => (
+                                  <div key={q.id} className="space-y-3 bg-[#faf6eb]/50 p-5 rounded-2xl border border-[#d2c7ac]/30">
+                                    <div className="flex gap-2">
+                                      <span className="font-bold text-[#4a0717]">{idx + 1}.</span>
+                                      <h4 className="font-serif font-bold text-sm text-[#2b251f] leading-normal">{q.question_text}</h4>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2 pl-4">
+                                      {q.options.map((opt: any) => {
+                                        const isSelected = selectedAnswers[q.id] === opt.key;
+                                        return (
+                                          <button
+                                            key={opt.key}
+                                            type="button"
+                                            onClick={() => setSelectedAnswers({ ...selectedAnswers, [q.id]: opt.key })}
+                                            className={`flex items-start text-left gap-3 px-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                                              isSelected
+                                                ? 'bg-[#8b102e] border-[#8b102e] text-white shadow-md shadow-[#8b102e]/10'
+                                                : 'bg-white/80 border-[#d2c7ac]/40 text-[#2b251f] hover:bg-white hover:border-[#bf953f]'
+                                            }`}
+                                          >
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 ${
+                                              isSelected ? 'bg-white text-[#8b102e] border-white' : 'bg-slate-50 text-slate-500 border-[#d2c7ac]/60'
+                                            }`}>
+                                              {opt.key}
+                                            </span>
+                                            <span className="leading-tight pt-0.5">{opt.text}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="flex gap-3 justify-end pt-4 border-t border-[#d2c7ac]/30">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm("¿Seguro que deseas salir del examen? Tu progreso no se guardará.")) {
+                                      setIsTakingExam(false);
+                                    }
+                                  }}
+                                  className="px-4 py-2 rounded-xl text-xs font-black text-[#4a0717] hover:bg-[#3d1b13]/5 transition-colors"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleSubmitExam}
+                                  disabled={submittingExam}
+                                  className="px-5 py-2 rounded-xl text-xs font-black bg-[#8b102e] text-white hover:bg-[#700c24] disabled:opacity-50 shadow-md shadow-[#8b102e]/20 transition-all flex items-center gap-1.5"
+                                >
+                                  {submittingExam ? 'Calificando...' : 'Enviar Evaluación'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : !activeDoc ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center overflow-y-auto scrollbar-none">
+                              {currentUser ? (
+                                <div className="w-full max-w-md space-y-6 animate-in fade-in duration-300">
+                                  {/* Profile header */}
+                                  <div className="space-y-1">
+                                    <div className="w-12 h-12 rounded-full bg-[#8b102e]/10 border border-[#8b102e]/30 flex items-center justify-center mx-auto text-[#8b102e] shadow-inner">
+                                      <Building2 size={24} />
+                                    </div>
+                                    <h3 className="font-serif font-black text-[#4a0717] text-lg font-bold">¡Hola, {currentUser.name}!</h3>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block font-sans">
+                                      Puesto: {currentUser.job_role_name || "Colaborador"}
+                                    </span>
+                                  </div>
+
+                                  {/* Progress display */}
+                                  <div className="bg-white/80 p-5 rounded-2xl border border-[#d2c7ac]/30 shadow-sm space-y-3 text-left">
+                                    <div className="flex justify-between items-center text-xs font-black text-slate-700 font-sans">
+                                      <span>Avance de Lectura</span>
+                                      <span className="text-[#8b102e]">{examStatus.progress_percentage}%</span>
+                                    </div>
+                                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-[#bf953f] to-[#aa771c] transition-all duration-1000 rounded-full"
+                                        style={{ width: `${examStatus.progress_percentage}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 font-semibold font-sans leading-relaxed text-center pt-1">
+                                      Has leído {examStatus.read_topics} de {examStatus.total_visible_topics} temas de tu puesto.
+                                    </p>
+                                  </div>
+
+                                  {/* Exam Eligibility Prompt */}
+                                  {examStatus.certified ? (
+                                    <div className="bg-[#f0f9eb] border border-[#e1f3d8] p-5 rounded-2xl space-y-3">
+                                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs justify-center font-sans">
+                                        <Trophy size={16} /> ¡Felicidades! Estás Certificado
+                                      </div>
+                                      <p className="text-[10px] text-slate-600 font-semibold leading-relaxed">
+                                        Has acreditado exitosamente la evaluación operativa de tu puesto en el manual corporativo.
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowDiplomaModal(true)}
+                                        className="px-5 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 transition-all font-sans"
+                                      >
+                                        Ver Diploma de Excelencia
+                                      </button>
+                                    </div>
+                                  ) : examStatus.eligible ? (
+                                    <div className="bg-[#fdf6ec] border border-[#faebcc] p-5 rounded-2xl space-y-3">
+                                      <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest block font-sans">
+                                        ¡Lectura Completada!
+                                      </span>
+                                      <h4 className="font-serif font-black text-sm text-[#4a0717] font-bold">Evaluación de Acreditación Disponible</h4>
+                                      <p className="text-[10px] text-slate-600 font-semibold leading-relaxed">
+                                        Has completado el 100% de la lectura operativa obligatoria. Es momento de certificar tus conocimientos del puesto.
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={handleGenerateExam}
+                                        disabled={generatingExam}
+                                        className="px-5 py-2.5 rounded-xl text-xs font-black bg-[#8b102e] hover:bg-[#700c24] text-white shadow-md shadow-[#8b102e]/10 transition-all font-sans"
+                                      >
+                                        {generatingExam ? 'Generando Examen...' : 'Presentar Examen de Acreditación'}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-500 text-[10px] leading-relaxed font-semibold">
+                                      Sigue leyendo los capítulos obligatorios de tu puesto en el índice para desbloquear tu examen final y diploma.
+                                    </div>
+                                  )}
+
+                                  {/* Last Attempts History */}
+                                  {examStatus.attempts?.length > 0 && (
+                                    <div className="space-y-2 text-left">
+                                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block font-sans">Historial de Intentos</span>
+                                      <div className="divide-y divide-[#d2c7ac]/20 max-h-[140px] overflow-y-auto scrollbar-none border border-[#d2c7ac]/20 rounded-xl bg-white/50 p-3">
+                                        {examStatus.attempts.map((att: any) => (
+                                          <div key={att.id} className="py-2 flex justify-between items-center text-[10px] font-sans font-semibold">
+                                            <div>
+                                              <span className="text-slate-700 block">{att.job_role_title_at_time}</span>
+                                              <span className="text-slate-400 text-[9px]">{new Date(att.created_at).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <span className={att.passed ? "text-emerald-600 font-bold" : "text-rose-600"}>
+                                                {att.score}/10
+                                              </span>
+                                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                                                att.passed ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                                              }`}>
+                                                {att.passed ? "Aprobado" : "Reprobado"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
+                                  <BookIcon size={36} className="text-[#4a0717]/20 mb-3 animate-bounce" />
+                                  <h4 className="text-sm font-bold font-serif mb-1">El Libro está Abierto</h4>
+                                  <p className="text-[10px] max-w-[220px] leading-relaxed">
+                                    Selecciona cualquier capítulo del índice a la izquierda para comenzar a leer la receta secreta.
+                                  </p>
+                                </>
+                              )}
                             </div>
                           ) : (
                             <div className="flex-1 flex flex-col min-w-0">
@@ -2251,6 +2549,106 @@ export function WebPublicaOrganizacion() {
             >
               Cerrar y Finalizar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 📜 DIPLOMA DE EXCELENCIA MODAL */}
+      {showDiplomaModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#fcf8f0] w-full max-w-2xl rounded-3xl p-8 relative border-8 border-double border-[#b38728] shadow-2xl flex flex-col items-center justify-center text-center space-y-6 select-none print:hidden animate-in zoom-in-95 duration-300">
+            {/* Modal header/close controls for screen view */}
+            <button
+              onClick={() => setShowDiplomaModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Diploma Certificate Body */}
+            <div id="printable-diploma" className="w-full flex flex-col items-center justify-center space-y-6 py-6 font-serif">
+              {/* Gold Crest/Badge */}
+              <div className="relative flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full border-4 border-double border-[#bf953f] bg-[#8b102e] flex items-center justify-center shadow-lg text-amber-100">
+                  <Trophy size={30} />
+                </div>
+                <div className="absolute inset-0 border border-amber-500/20 rounded-full scale-125 animate-pulse" />
+              </div>
+
+              {/* Title */}
+              <div className="space-y-1">
+                <h2 className="text-[#8b102e] font-black text-2xl tracking-widest uppercase">
+                  Diploma de Excelencia
+                </h2>
+                <span className="text-[10px] font-sans font-bold text-slate-500 tracking-[0.3em] uppercase block font-sans">
+                  Acreditación de Manual Organizativo
+                </span>
+              </div>
+
+              <p className="text-xs text-slate-600 italic font-serif leading-relaxed max-w-md">
+                Otorgado con distinción especial por la administración general de {tenant.name} a:
+              </p>
+
+              {/* Recipient Name */}
+              <div className="border-b-2 border-double border-[#b38728] px-8 pb-1">
+                <h1 className="text-xl sm:text-2xl font-black text-[#4a0717] tracking-wide font-serif">
+                  {currentUser?.name}
+                </h1>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed max-w-md font-serif">
+                Por haber demostrado un conocimiento sobresaliente de la estructura corporativa, valores institucionales, reglamento interno y estándares operativos detallados en <strong>La Receta Secreta</strong> para el puesto de:
+              </p>
+
+              {/* Certified Role */}
+              <div className="bg-[#8b102e]/5 px-6 py-2 rounded-xl border border-[#8b102e]/10">
+                <span className="text-sm font-black text-[#8b102e] uppercase tracking-wider font-sans">
+                  {currentUser?.job_role_name || "Colaborador"}
+                </span>
+              </div>
+
+              <div className="w-full max-w-md grid grid-cols-2 gap-8 pt-8 border-t border-[#d2c7ac]/30 font-sans">
+                {/* Director Signature */}
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <div className="h-8 flex items-end">
+                    <span className="font-serif italic text-xs text-slate-500 font-semibold tracking-wider">DecorArte Dirección</span>
+                  </div>
+                  <div className="w-full border-t border-slate-300 pt-1">
+                    <span className="text-[9px] font-sans font-black text-slate-600 uppercase tracking-wider block">Firma Autorizada</span>
+                  </div>
+                </div>
+
+                {/* Validation Date */}
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <div className="h-8 flex items-end">
+                    <span className="text-xs font-sans font-bold text-slate-700">
+                      {new Date().toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="w-full border-t border-slate-300 pt-1">
+                    <span className="text-[9px] font-sans font-black text-slate-600 uppercase tracking-wider block">Fecha de Emisión</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Print trigger button */}
+            <div className="pt-4 flex gap-3 relative z-10 w-full justify-center">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-6 py-2.5 rounded-xl text-xs font-black bg-[#8b102e] hover:bg-[#700c24] text-white shadow-md shadow-[#8b102e]/10 transition-all font-sans flex items-center gap-1.5"
+              >
+                Imprimir Diploma
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDiplomaModal(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all font-sans"
+              >
+                Cerrar Vista
+              </button>
+            </div>
           </div>
         </div>
       )}

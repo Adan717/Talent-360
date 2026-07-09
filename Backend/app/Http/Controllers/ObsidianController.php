@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\ObsidianUser;
 use App\Models\ObsidianReadProgress;
+use App\Models\ObsidianExam;
+use App\Models\ObsidianExamQuestion;
+use App\Models\ObsidianExamAttempt;
+use App\Models\JobRole;
 
 class ObsidianController extends Controller
 {
@@ -1640,6 +1644,557 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             }
         });
 
+            if (!empty($insertData)) {
+                foreach (array_chunk($insertData, 200) as $chunk) {
+                    DB::table('obsidian_document_job_role')->insert($chunk);
+                }
+            }
+        });
+
         return response()->json(['status' => 'success']);
     }
-}
+
+    /**
+     * Get the current user's exam progress, history and active exam.
+     */
+    public function getExamStatus(Request $request, $tenantSlug)
+    {
+        $user = $this->resolvePublicUser($request);
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $jobRoleId = $user->job_role_id;
+        if (!$jobRoleId) {
+            return response()->json([
+                'eligible' => false,
+                'reason' => 'No tienes un puesto asignado en la plataforma. Solicita a administración que te asigne uno.',
+                'progress_percentage' => 0,
+                'certified' => false,
+                'active_exam' => null,
+                'attempts' => []
+            ]);
+        }
+
+        // Count visible documents for this role
+        $visibleDocIds = DB::table('obsidian_document_job_role')
+            ->where('tenant_id', $tenant->id)
+            ->where('job_role_id', $jobRoleId)
+            ->pluck('document_id')
+            ->toArray();
+
+        $totalVisible = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $visibleDocIds)
+            ->where('type', 'nota')
+            ->count();
+
+        $readCount = ObsidianReadProgress::where('user_id', $user->id)
+            ->whereIn('document_id', $visibleDocIds)
+            ->count();
+
+        $progressPercentage = $totalVisible > 0 ? round(($readCount * 100) / $totalVisible) : 100;
+        $eligible = ($progressPercentage >= 100 && $totalVisible > 0);
+
+        // Fetch active exam if already generated
+        $activeExam = ObsidianExam::where('user_id', $user->id)
+            ->where('job_role_id', $jobRoleId)
+            ->with(['questions' => function ($q) {
+                $q->select('id', 'exam_id', 'question_text', 'options'); // Do not expose correct_option to frontend!
+            }])
+            ->first();
+
+        // Fetch attempts
+        $attempts = ObsidianExamAttempt::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $certified = $attempts->where('passed', true)->count() > 0;
+
+        return response()->json([
+            'eligible' => $eligible,
+            'total_visible_topics' => $totalVisible,
+            'read_topics' => $readCount,
+            'progress_percentage' => $progressPercentage,
+            'certified' => $certified,
+            'active_exam' => $activeExam,
+            'attempts' => $attempts
+        ]);
+    }
+
+    /**
+     * Generate a new certification exam via Gemini API.
+     */
+    public function generateExam(Request $request, $tenantSlug)
+    {
+        $user = $this->resolvePublicUser($request);
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $jobRoleId = $user->job_role_id;
+        if (!$jobRoleId) {
+            return response()->json(['error' => 'No tienes un puesto asignado.'], 400);
+        }
+
+        // 1. Verify eligibility (100% progress)
+        $visibleDocIds = DB::table('obsidian_document_job_role')
+            ->where('tenant_id', $tenant->id)
+            ->where('job_role_id', $jobRoleId)
+            ->pluck('document_id')
+            ->toArray();
+
+        $totalVisible = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $visibleDocIds)
+            ->where('type', 'nota')
+            ->count();
+
+        $readCount = ObsidianReadProgress::where('user_id', $user->id)
+            ->whereIn('document_id', $visibleDocIds)
+            ->count();
+
+        if ($totalVisible == 0 || $readCount < $totalVisible) {
+            return response()->json(['error' => 'Debes completar el 100% de la lectura obligatoria de tu puesto antes de tomar el examen.'], 400);
+        }
+
+        // 2. Check if exam already exists
+        $existing = ObsidianExam::where('user_id', $user->id)
+            ->where('job_role_id', $jobRoleId)
+            ->with(['questions' => function ($q) {
+                $q->select('id', 'exam_id', 'question_text', 'options');
+            }])
+            ->first();
+
+        if ($existing) {
+            return response()->json(['active_exam' => $existing]);
+        }
+
+        // 3. Fetch contents of visible documents to formulate Gemini prompt
+        $docs = ObsidianDocument::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $visibleDocIds)
+            ->where('type', 'nota')
+            ->select('title', 'raw_content')
+            ->get();
+
+        $contextText = "";
+        foreach ($docs as $doc) {
+            $contextText .= "CAPÍTULO: " . $doc->title . "\nCONTENIDO:\n" . $doc->raw_content . "\n\n";
+        }
+
+        $jobRole = JobRole::withoutGlobalScopes()->find($jobRoleId);
+        $roleName = $jobRole?->title ?? 'Colaborador';
+
+        $prompt = "Eres un Evaluador Académico Corporativo Senior. Tu objetivo es generar un examen de comprensión de 10 preguntas de opción múltiple para certificar a un colaborador en el puesto de '{$roleName}' basándote ÚNICAMENTE en la documentación oficial provista a continuación.
+
+REGLAS DE EVALUACIÓN:
+1. Las preguntas deben ser sumamente específicas del manual operativo, evitando obviedades o respuestas predecibles.
+2. Cada pregunta debe tener exactamente 4 opciones de respuesta etiquetadas como A, B, C, y D.
+3. Solo una opción debe ser la correcta. Las otras 3 deben ser distractores verosímiles pero erróneos.
+4. Responde estrictamente con un objeto JSON válido estructurado como se indica abajo. No agregues texto explicativo fuera del JSON.
+
+DOCUMENTACIÓN DEL PUESTO:
+{$contextText}
+
+ESQUEMA JSON REQUERIDO:
+{
+  \"questions\": [
+    {
+      \"question_text\": \"Texto de la pregunta...\",
+      \"options\": [
+        {\"key\": \"A\", \"text\": \"Texto de la opción A...\"},
+        {\"key\": \"B\", \"text\": \"Texto de la opción B...\"},
+        {\"key\": \"C\", \"text\": \"Texto de la opción C...\"},
+        {\"key\": \"D\", \"text\": \"Texto de la opción D...\"}
+      ],
+      \"correct_option\": \"A\"
+    }
+  ]
+}";
+
+        $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
+        $geminiKey = $vault?->gemini_api_key ?? env('GEMINI_API_KEY');
+
+        if (!$geminiKey) {
+            // Mock exam generator for sandbox/demo mode
+            return $this->createMockExam($user->id, $jobRoleId, $tenant->id);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json'
+                ]
+            ]);
+
+            if ($response->failed()) {
+                throw new \Exception("Error de conexión API: " . $response->body());
+            }
+
+            $resJson = $response->json();
+            $text = $resJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            
+            // Clean markdown wrapper if any
+            if (preg_match('/```json\s*(.*?)\s*```/s', $text, $matches)) {
+                $text = $matches[1];
+            }
+            $text = trim($text);
+
+            $data = json_decode($text, true);
+            if (!is_array($data) || !isset($data['questions']) || count($data['questions']) < 5) {
+                throw new \Exception("Gemini retornó un formato JSON inválido o incompleto: " . $text);
+            }
+
+            $exam = DB::transaction(function () use ($tenant, $jobRoleId, $user, $data) {
+                $exam = ObsidianExam::create([
+                    'tenant_id' => $tenant->id,
+                    'job_role_id' => $jobRoleId,
+                    'user_id' => $user->id
+                ]);
+
+                foreach ($data['questions'] as $q) {
+                    ObsidianExamQuestion::create([
+                        'exam_id' => $exam->id,
+                        'question_text' => $q['question_text'],
+                        'options' => $q['options'],
+                        'correct_option' => strtoupper(trim($q['correct_option']))
+                    ]);
+                }
+
+                return $exam;
+            });
+
+            // Reload without correct_options for response safety
+            $loadedExam = ObsidianExam::where('id', $exam->id)
+                ->with(['questions' => function ($q) {
+                    $q->select('id', 'exam_id', 'question_text', 'options');
+                }])
+                ->first();
+
+            return response()->json(['active_exam' => $loadedExam]);
+
+        } catch (\Exception $e) {
+            // Fallback to mock exam to guarantee service availability
+            \Log::error("Gemini Exam Generator Error, falling back to mock: " . $e->getMessage());
+            return $this->createMockExam($user->id, $jobRoleId, $tenant->id);
+        }
+    }
+
+    /**
+     * Submit and grade the user's exam.
+     */
+    public function submitExam(Request $request, $tenantSlug)
+    {
+        $user = $this->resolvePublicUser($request);
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado.'], 403);
+        }
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $request->validate([
+            'exam_id' => 'required|integer',
+            'answers' => 'required|array' // [{question_id: 1, chosen: 'A'}, ...]
+        ]);
+
+        $exam = ObsidianExam::where('id', $request->exam_id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $questions = ObsidianExamQuestion::where('exam_id', $exam->id)->get();
+        $userAnswers = $request->answers;
+
+        $score = 0;
+        $gradedAnswers = [];
+
+        foreach ($questions as $q) {
+            $userAns = collect($userAnswers)->firstWhere('question_id', $q->id);
+            $chosen = $userAns ? strtoupper(trim($userAns['chosen'])) : '';
+            $isCorrect = ($chosen === $q->correct_option);
+            if ($isCorrect) {
+                $score++;
+            }
+
+            $gradedAnswers[] = [
+                'question_id' => $q->id,
+                'question_text' => $q->question_text,
+                'chosen' => $chosen,
+                'correct_option' => $q->correct_option,
+                'is_correct' => $isCorrect
+            ];
+        }
+
+        $totalQuestions = count($questions);
+        $passed = ($score >= 8); // Minimum 80% score to approve (8 out of 10)
+
+        // Snapshotting inmutable fields for high availability
+        $jobRole = JobRole::withoutGlobalScopes()->find($exam->job_role_id);
+        $jobRoleTitle = $jobRole?->title ?? 'Puesto Desconocido';
+        $userName = $user->name;
+
+        $attempt = DB::transaction(function () use ($tenant, $user, $exam, $jobRoleTitle, $userName, $score, $totalQuestions, $passed, $gradedAnswers) {
+            $attempt = ObsidianExamAttempt::create([
+                'tenant_id' => $tenant->id,
+                'user_id' => $user->id,
+                'exam_id' => $exam->id,
+                'job_role_title_at_time' => $jobRoleTitle,
+                'user_name_at_time' => $userName,
+                'score' => $score,
+                'total_questions' => $totalQuestions,
+                'passed' => $passed,
+                'answers' => $gradedAnswers
+            ]);
+
+            // If passed, delete the active exam configuration so they are officially certified
+            if ($passed) {
+                $exam->delete();
+            }
+
+            return $attempt;
+        });
+
+        return response()->json([
+            'attempt' => $attempt,
+            'message' => $passed ? '¡Felicidades! Has aprobado la evaluación.' : 'Evaluación no aprobada. Te sugerimos repasar el manual organizativo.'
+        ]);
+    }
+
+    /**
+     * Admin: List all employees with their reading progress and exam attempts.
+     */
+    public function getAdminAttempts(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+
+        $users = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with('jobRole')
+            ->get();
+
+        $report = [];
+        foreach ($users as $u) {
+            $jobRoleId = $u->job_role_id;
+            $totalVisible = 0;
+            $readCount = 0;
+            $progressPercentage = 0;
+
+            if ($jobRoleId) {
+                $visibleDocIds = DB::table('obsidian_document_job_role')
+                    ->where('tenant_id', $tenantId)
+                    ->where('job_role_id', $jobRoleId)
+                    ->pluck('document_id')
+                    ->toArray();
+
+                $totalVisible = ObsidianDocument::withoutGlobalScopes()
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('id', $visibleDocIds)
+                    ->where('type', 'nota')
+                    ->count();
+
+                $readCount = ObsidianReadProgress::where('user_id', $u->id)
+                    ->whereIn('document_id', $visibleDocIds)
+                    ->count();
+
+                $progressPercentage = $totalVisible > 0 ? round(($readCount * 100) / $totalVisible) : 0;
+            }
+
+            $userAttempts = ObsidianExamAttempt::where('user_id', $u->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $certified = $userAttempts->where('passed', true)->count() > 0;
+            $highestScore = $userAttempts->max('score') ?? 0;
+
+            $report[] = [
+                'user_id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'job_role' => $u->jobRole?->title ?? 'Sin Puesto',
+                'progress_percentage' => $progressPercentage,
+                'total_topics' => $totalVisible,
+                'read_topics' => $readCount,
+                'certified' => $certified,
+                'highest_score' => $highestScore,
+                'total_attempts' => $userAttempts->count(),
+                'attempts' => $userAttempts
+            ];
+        }
+
+        return response()->json(['report' => $report]);
+    }
+
+    /**
+     * Admin: Delete/Reset a failed attempt so the user can retake it.
+     */
+    public function resetAttempt(Request $request, $attemptId)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+
+        $attempt = ObsidianExamAttempt::where('id', $attemptId)
+            ->where('tenant_id', $tenantId)
+            ->firstOrFail();
+
+        DB::transaction(function () use ($attempt) {
+            // Remove active exam to force a fresh regenerate next time they click present
+            ObsidianExam::where('user_id', $attempt->user_id)->delete();
+            $attempt->delete();
+        });
+
+        return response()->json(['message' => 'Intento de evaluación restablecido con éxito.']);
+    }
+
+    /**
+     * Create mock offline/sandbox exam configuration when Gemini API is unavailable or unconfigured.
+     */
+    private function createMockExam($userId, $jobRoleId, $tenantId)
+    {
+        $exam = DB::transaction(function () use ($userId, $jobRoleId, $tenantId) {
+            $exam = ObsidianExam::create([
+                'tenant_id' => $tenantId,
+                'job_role_id' => $jobRoleId,
+                'user_id' => $userId
+            ]);
+
+            $mockQuestions = [
+                [
+                    'question_text' => '¿Cuál es el canal oficial para reportar incidentes operativos mayores dentro de la empresa?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Enviar un ticket de soporte interno en la plataforma.'],
+                        ['key' => 'B', 'text' => 'Comentarlo verbalmente en la comida.'],
+                        ['key' => 'C', 'text' => 'Escribir un mensaje informal en WhatsApp.'],
+                        ['key' => 'D', 'text' => 'Llamar al socio tecnológico externo.']
+                    ],
+                    'correct_option' => 'A'
+                ],
+                [
+                    'question_text' => 'Al abrir la sucursal, ¿qué prioridad tiene el registro de novedades diarias (roll call)?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Opcional, solo si el supervisor lo solicita.'],
+                        ['key' => 'B', 'text' => 'Obligatorio, debe ser completado antes de iniciar ventas.'],
+                        ['key' => 'C', 'text' => 'Debe hacerse a media jornada.'],
+                        ['key' => 'D', 'text' => 'Es solo para personal de limpieza.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Qué principio rige la seguridad física de los manuales de la Receta Secreta?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Cualquier visitante puede copiarlos o compartirlos.'],
+                        ['key' => 'B', 'text' => 'Son propiedad confidencial e inalienable de DecorArte.'],
+                        ['key' => 'C', 'text' => 'Son públicos y descargables de internet.'],
+                        ['key' => 'D', 'text' => 'Solo aplican para la administración de nóminas.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Cuántos minutos antes del horario de apertura oficial se habilita la ventana de apertura general?',
+                    'options' => [
+                        ['key' => 'A', 'text' => '30 minutos'],
+                        ['key' => 'B', 'text' => '15 minutos'],
+                        ['key' => 'C', 'text' => '5 minutos'],
+                        ['key' => 'D', 'text' => '1 hora']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Cuál es la política principal sobre la entrega de llaves físicas a subordinados no autorizados?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Está permitido si hay mucha prisa.'],
+                        ['key' => 'B', 'text' => 'Queda estrictamente prohibido sin autorización del gerente general.'],
+                        ['key' => 'C', 'text' => 'Se permite durante los fines de semana.'],
+                        ['key' => 'D', 'text' => 'Se aconseja duplicarlas para emergencias.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => 'Si el sistema de asistencia falla y no hay red, ¿cómo opera el Reloj Checador?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Bloquea el acceso e impide la entrada.'],
+                        ['key' => 'B', 'text' => 'Guarda de manera local y encriptada (IndexedDB) para sincronizar en línea después.'],
+                        ['key' => 'C', 'text' => 'Obliga a firmar en papel.'],
+                        ['key' => 'D', 'text' => 'El día se considera como falta automática.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Cuál es la tolerancia máxima permitida para registrarse tarde sin justificación de retardo?',
+                    'options' => [
+                        ['key' => 'A', 'text' => '10 minutos'],
+                        ['key' => 'B', 'text' => '5 minutos'],
+                        ['key' => 'C', 'text' => 'Ninguno, se aplica amonestación automática.'],
+                        ['key' => 'D', 'text' => '20 minutos']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Qué debe hacer un colaborador si detecta una anomalía crítica en el inventario al recibir el turno?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Esperar a la junta semanal.'],
+                        ['key' => 'B', 'text' => 'Registrarla de inmediato en la bitácora y notificar al supervisor.'],
+                        ['key' => 'C', 'text' => 'Ignorarla si es menor a 100 pesos.'],
+                        ['key' => 'D', 'text' => 'Anotarlo en una hoja suelta.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Cuál es el objetivo principal del manual operativo La Receta Secreta?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'Publicitar los productos a clientes.'],
+                        ['key' => 'B', 'text' => 'Estandarizar procesos para garantizar consistencia y excelencia operativa.'],
+                        ['key' => 'C', 'text' => 'Llevar el cálculo del pago de nómina.'],
+                        ['key' => 'D', 'text' => 'Servir de catálogo para compras externas.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+                [
+                    'question_text' => '¿Quién es el responsable directo de auditar que el check-list de apertura esté completo?',
+                    'options' => [
+                        ['key' => 'A', 'text' => 'El auxiliar de cajas.'],
+                        ['key' => 'B', 'text' => 'El supervisor o encargado de turno que realiza la apertura.'],
+                        ['key' => 'C', 'text' => 'Cualquier colaborador presente.'],
+                        ['key' => 'D', 'text' => 'El cliente principal.']
+                    ],
+                    'correct_option' => 'B'
+                ],
+            ];
+
+            foreach ($mockQuestions as $mq) {
+                ObsidianExamQuestion::create([
+                    'exam_id' => $exam->id,
+                    'question_text' => $mq['question_text'],
+                    'options' => $mq['options'],
+                    'correct_option' => $mq['correct_option']
+                ]);
+            }
+
+            return $exam;
+        });
+
+        $loadedExam = ObsidianExam::where('id', $exam->id)
+            ->with(['questions' => function ($q) {
+                $q->select('id', 'exam_id', 'question_text', 'options');
+            }])
+            ->first();
+
+        return response()->json(['active_exam' => $loadedExam]);
+    }

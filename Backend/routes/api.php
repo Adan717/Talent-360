@@ -69,6 +69,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/reject', [ObsidianController::class, 'rejectPublicSuggestion']);
     Route::post('/public/org-vault/{tenantSlug}/scribe', [ObsidianController::class, 'scribe']);
     Route::post('/public/org-vault/{tenantSlug}/progress', [ObsidianController::class, 'recordReadProgress']);
+    Route::post('/public/org-vault/{tenantSlug}/exam/status', [ObsidianController::class, 'getExamStatus']);
+    Route::post('/public/org-vault/{tenantSlug}/exam/generate', [ObsidianController::class, 'generateExam']);
+    Route::post('/public/org-vault/{tenantSlug}/exam/submit', [ObsidianController::class, 'submitExam']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);
@@ -255,6 +258,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/reorder', [ObsidianController::class, 'reorderDocuments']);
             Route::get('/matrix', [ObsidianController::class, 'getMatrix']);
             Route::post('/matrix', [ObsidianController::class, 'updateMatrix']);
+            Route::get('/admin/exams', [ObsidianController::class, 'getAdminAttempts']);
+            Route::post('/admin/exams/{attemptId}/reset', [ObsidianController::class, 'resetAttempt']);
         });
     });
 

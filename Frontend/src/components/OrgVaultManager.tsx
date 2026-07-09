@@ -3,7 +3,7 @@ import {
   Search, FileText, Briefcase, Repeat, CheckSquare, Settings, 
   Edit, Check, X, ChevronRight, MessageSquare, Upload, 
   GitPullRequest, Eye, BookOpen, AlertCircle, Sparkles, CheckCircle2,
-  Volume2, VolumeX, Users, Plus, Trash2, Key, LayoutGrid
+  Volume2, VolumeX, Users, Plus, Trash2, Key, LayoutGrid, Trophy
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
@@ -45,11 +45,47 @@ export function OrgVaultManager() {
   const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
   
   // Admin tabs & state
-  const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users' | 'matrix'>('view');
+  const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users' | 'matrix' | 'exams'>('view');
   const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '', hide_oracle_button: false, gemini_api_key: '' });
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [syncing, setSyncing] = useState(false);
   
+  // Admin exams states
+  const [examsReport, setExamsReport] = useState<any[]>([]);
+  const [loadingExamsReport, setLoadingExamsReport] = useState(false);
+  const [selectedAttemptDetails, setSelectedAttemptDetails] = useState<any>(null);
+
+  const fetchExamsReport = async () => {
+    setLoadingExamsReport(true);
+    try {
+      const res = await axiosInstance.get('/org-vault/admin/exams');
+      setExamsReport(res.data.report || []);
+    } catch (e) {
+      console.error("Error fetching exams report:", e);
+    } finally {
+      setLoadingExamsReport(false);
+    }
+  };
+
+  const handleResetAttempt = async (attemptId: number) => {
+    if (!window.confirm("¿Estás seguro de restablecer esta evaluación? Esto eliminará el intento anterior y permitirá al colaborador volver a presentarlo de inmediato.")) {
+      return;
+    }
+    try {
+      const res = await axiosInstance.post(`/org-vault/admin/exams/${attemptId}/reset`);
+      alert(res.data.message);
+      await fetchExamsReport();
+    } catch (e: any) {
+      alert(e.response?.data?.error || "Error al restablecer la evaluación.");
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === 'exams') {
+      fetchExamsReport();
+    }
+  }, [adminTab]);
+
   // Direct edit state
   const [editText, setEditText] = useState('');
   const [editTitle, setEditTitle] = useState('');
@@ -754,6 +790,14 @@ export function OrgVaultManager() {
               }`}
             >
               <LayoutGrid size={14} /> Matriz de Puestos
+            </button>
+            <button
+              onClick={() => setAdminTab('exams')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                adminTab === 'exams' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Trophy size={14} /> Certificaciones
             </button>
           </div>
         )}
@@ -1537,6 +1581,191 @@ export function OrgVaultManager() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {adminTab === 'exams' && isAdmin && (
+              <div className="flex-1 flex flex-col space-y-6 text-left">
+                <div className="border-b border-slate-100 pb-4">
+                  <h4 className="text-sm font-black text-slate-800">Certificaciones y Evaluaciones por Puesto</h4>
+                  <p className="text-[10px] font-medium text-slate-500 mt-1">
+                    Consulta el estatus de avance y calificaciones de los colaboradores lectores. Puedes resetear intentos fallidos para permitirles volver a presentar de inmediato.
+                  </p>
+                </div>
+
+                {loadingExamsReport ? (
+                  <div className="text-center py-20 text-slate-400 font-semibold animate-pulse text-xs">
+                    Cargando reporte de evaluaciones...
+                  </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-2xl shadow-sm bg-white overflow-hidden">
+                    <table className="w-full border-collapse text-xs font-semibold text-slate-600">
+                      <thead className="bg-slate-55 border-b border-slate-200 font-black text-slate-800 text-left">
+                        <tr>
+                          <th className="p-3">Colaborador</th>
+                          <th className="p-3">Puesto</th>
+                          <th className="p-3">Avance Lectura</th>
+                          <th className="p-3 text-center">Calificación</th>
+                          <th className="p-3 text-center">Certificación</th>
+                          <th className="p-3 text-center">Intentos</th>
+                          <th className="p-3 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {examsReport.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="p-8 text-center text-slate-400 font-medium italic">
+                              No hay colaboradores registrados en la plataforma.
+                            </td>
+                          </tr>
+                        ) : (
+                          examsReport.map(row => {
+                            const lastAttempt = row.attempts?.length > 0 ? row.attempts[0] : null;
+                            return (
+                              <tr key={row.user_id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-3">
+                                  <div className="font-bold text-slate-800">{row.name}</div>
+                                  <div className="text-[10px] text-slate-400 font-normal">{row.email}</div>
+                                </td>
+                                <td className="p-3 font-bold text-slate-700">{row.job_role}</td>
+                                <td className="p-3 min-w-[140px]">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-full h-2 bg-slate-100 rounded-full border border-slate-200 overflow-hidden">
+                                      <div 
+                                        className="h-full bg-blue-500 rounded-full" 
+                                        style={{ width: `${row.progress_percentage}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 shrink-0">{row.progress_percentage}%</span>
+                                  </div>
+                                </td>
+                                <td className="p-3 text-center font-bold text-slate-700">
+                                  {row.highest_score > 0 ? `${row.highest_score}/10` : '-'}
+                                </td>
+                                <td className="p-3 text-center">
+                                  {row.certified ? (
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-bold border border-emerald-100">
+                                      Certificado
+                                    </span>
+                                  ) : row.progress_percentage >= 100 ? (
+                                    <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[9px] font-bold border border-amber-100">
+                                      Listo para Examen
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 text-[9px] font-bold border border-slate-100">
+                                      Leyendo
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-center font-bold text-slate-500">{row.total_attempts}</td>
+                                <td className="p-3 text-right space-x-2">
+                                  {row.attempts?.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedAttemptDetails(row)}
+                                      className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition-all"
+                                    >
+                                      Historial
+                                    </button>
+                                  )}
+                                  {lastAttempt && !row.certified && !lastAttempt.passed && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleResetAttempt(lastAttempt.id)}
+                                      className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 font-black transition-all"
+                                      title="Eliminar intento reprobado para permitir que repita el examen"
+                                    >
+                                      Liberar
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* ATTEMPT DETAILS MODAL POPUP */}
+                {selectedAttemptDetails && (
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-2xl rounded-3xl p-6 relative border border-slate-100 shadow-2xl flex flex-col max-h-[85vh] text-left">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+                        <div>
+                          <h3 className="text-sm font-black text-slate-800">Historial de Intentos</h3>
+                          <p className="text-[10px] font-medium text-slate-500 mt-0.5">
+                            Historial para: <span className="font-bold text-blue-600">{selectedAttemptDetails.name}</span> ({selectedAttemptDetails.job_role})
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => setSelectedAttemptDetails(null)} 
+                          className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                        {selectedAttemptDetails.attempts.map((att: any, idx: number) => (
+                          <div key={att.id} className="border border-slate-200 rounded-2xl p-5 space-y-4 bg-slate-50/40">
+                            <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
+                              <div>
+                                <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">Intento #{selectedAttemptDetails.attempts.length - idx}</span>
+                                <span className="text-[10px] text-slate-500 font-semibold">{new Date(att.created_at).toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-sm text-slate-700">{att.score}/10</span>
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                  att.passed ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"
+                                }`}>
+                                  {att.passed ? "Aprobado" : "Reprobado"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Detailed answers breakdown */}
+                            {att.answers && att.answers.length > 0 && (
+                              <div className="space-y-3 pl-2">
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Detalle de Respuestas</span>
+                                <div className="space-y-2.5">
+                                  {att.answers.map((ans: any, aIdx: number) => (
+                                    <div key={aIdx} className="text-xs leading-normal">
+                                      <div className="flex gap-1.5 font-bold text-slate-800">
+                                        <span>{aIdx + 1}.</span>
+                                        <span>{ans.question_text}</span>
+                                      </div>
+                                      <div className="mt-1 flex items-center gap-3 pl-4 font-semibold font-mono text-[10px]">
+                                        <span className="flex items-center gap-1">
+                                          Respuesta: <span className={`px-1.5 py-0.5 rounded font-black ${
+                                            ans.is_correct ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                                          }`}>{ans.chosen || 'Ninguna'}</span>
+                                        </span>
+                                        <span className="text-slate-400">|</span>
+                                        <span className="text-slate-500">Correcta: <span className="font-black text-slate-700">{ans.correct_option}</span></span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="border-t border-slate-100 pt-3 flex justify-end shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAttemptDetails(null)}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-all"
+                        >
+                          Cerrar Historial
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

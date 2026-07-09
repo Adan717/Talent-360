@@ -939,25 +939,28 @@ export function WebPublicaOrganizacion() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form 
             onSubmit={isRegisterMode ? handleRegisterUser : handleVerifyPasscode}
-            className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left space-y-4 max-h-[90vh] overflow-y-auto"
+            className="bg-gradient-to-br from-[#f6ecda] via-[#faf6eb] to-[#eedfb7] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-[0_15px_45px_rgba(0,0,0,0.85)] flex flex-col text-left space-y-4 max-h-[90vh] overflow-y-auto"
           >
+            {/* Double thin border inside the form */}
+            <div className="absolute inset-1.5 border border-dashed border-[#b38728]/35 rounded-[22px] pointer-events-none"></div>
+            
             <GoldenCorners />
             <button 
               type="button"
               onClick={() => setShowPasscodeModal(false)}
-              className="absolute top-4 right-4 p-1 rounded-full hover:bg-[#3d1b13]/5 text-[#3d1b13]"
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-[#3d1b13]/10 text-[#3d1b13] z-20 cursor-pointer"
             >
               <X size={16} />
             </button>
 
-            <div className="flex flex-col items-center text-center mt-3">
-              <div className="w-11 h-11 rounded-full bg-[#8b102e]/10 border border-[#b38728]/45 flex items-center justify-center text-[#8b102e] mb-2">
-                <Lock size={18} />
+            <div className="flex flex-col items-center text-center mt-3 relative z-10">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] border-2 border-[#8b102e]/30 flex items-center justify-center text-[#4a0717] mb-2 shadow-md drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)] animate-bounce-subtle">
+                <Lock size={20} className="text-[#4a0717]" />
               </div>
-              <h3 className="font-serif text-base font-black text-[#4a0717]">
+              <h3 className="font-serif text-lg font-black text-[#4a0717] tracking-wide">
                 {isRegisterMode ? 'Registrar Lector' : 'Acceso Resguardado'}
               </h3>
-              <p className="text-[10px] font-sans text-slate-500 uppercase tracking-widest mt-0.5">
+              <p className="text-[9px] font-sans text-slate-500 font-bold uppercase tracking-[0.2em] mt-0.5">
                 {isRegisterMode ? 'Crea tu cuenta de capacitación' : 'Ingresa tus credenciales de manual'}
               </p>
             </div>
@@ -966,31 +969,31 @@ export function WebPublicaOrganizacion() {
               {isRegisterMode ? (
                 <>
                   <div>
-                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre Completo</label>
+                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre Completo</label>
                     <input 
                       type="text"
                       required
                       placeholder="Ej. Juan Pérez"
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-450 focus:outline-none focus:border-[#8b102e] font-serif text-xs shadow-inner"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Correo o Usuario</label>
+                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Correo o Usuario</label>
                     <input 
                       type="text"
                       required
                       placeholder="juan.perez o juan@empresa.com"
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-455 focus:outline-none focus:border-[#8b102e] font-serif text-xs shadow-inner"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
+                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
                     <div className="relative">
                       <input 
                         type={showPasswordText ? 'text' : 'password'}
@@ -998,25 +1001,25 @@ export function WebPublicaOrganizacion() {
                         placeholder="Mínimo 4 caracteres"
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
-                        className="w-full pl-3 pr-10 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                        className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-455 focus:outline-none focus:border-[#8b102e] font-serif text-xs shadow-inner"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPasswordText(!showPasswordText)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#8b102e]"
                       >
-                        {showPasswordText ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showPasswordText ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto en la Empresa</label>
+                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto en la Empresa</label>
                     <select
                       required
                       value={registerJobRoleId}
                       onChange={(e) => setRegisterJobRoleId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] focus:outline-none focus:border-[#8b102e] font-serif text-xs shadow-inner"
                     >
                       <option value="">-- Selecciona tu Puesto --</option>
                       {availableJobRoles.map((role) => (
@@ -1028,19 +1031,19 @@ export function WebPublicaOrganizacion() {
               ) : (
                 <>
                   <div>
-                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
+                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
                     <input 
                       type="text"
                       required
                       placeholder="ejemplo@decorarte.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-450 focus:outline-none focus:border-[#8b102e] font-serif text-sm shadow-inner"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
+                    <label className="text-[9.5px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
                     <div className="relative">
                       <input 
                         type={showPasswordText ? 'text' : 'password'}
@@ -1048,14 +1051,14 @@ export function WebPublicaOrganizacion() {
                         placeholder="••••••••"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-450 focus:outline-none focus:border-[#8b102e] font-serif text-sm shadow-inner"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPasswordText(!showPasswordText)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#8b102e]"
                       >
-                        {showPasswordText ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showPasswordText ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
                   </div>
@@ -1072,7 +1075,7 @@ export function WebPublicaOrganizacion() {
               <button
                 type="submit"
                 disabled={verifyingPasscode}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-b from-[#8b102e] to-[#60051a] hover:from-[#9c1437] hover:to-[#70071f] text-[#faf6eb] font-black font-sans text-xs tracking-wider uppercase shadow-md hover:shadow-lg transition-all disabled:opacity-50 border border-[#d4af37]/35 cursor-pointer transform active:scale-[0.98]"
               >
                 {verifyingPasscode ? 'Procesando...' : (isRegisterMode ? 'Crear mi Cuenta' : 'Abrir Recetario')}
               </button>
@@ -1084,7 +1087,7 @@ export function WebPublicaOrganizacion() {
                     setIsRegisterMode(!isRegisterMode);
                     setPasscodeError('');
                   }}
-                  className="text-[10px] text-[#8b102e] hover:underline font-bold font-sans"
+                  className="text-[10px] text-[#8b102e] hover:underline font-bold font-sans cursor-pointer"
                 >
                   {isRegisterMode ? '¿Ya tienes una cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate aquí'}
                 </button>

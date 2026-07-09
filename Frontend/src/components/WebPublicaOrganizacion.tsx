@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Search, FileText, Briefcase, Repeat, CheckSquare, 
-  ChevronRight, Eye, BookOpen, AlertCircle, Globe, 
+  ChevronRight, Eye, EyeOff, BookOpen, AlertCircle, Globe, 
   Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2,
   Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare,
   Clock, Trophy, ClipboardList, Settings, Paperclip
@@ -43,6 +43,7 @@ export function WebPublicaOrganizacion() {
   const [hideOracleButton, setHideOracleButton] = useState(false);
   const [showMilestone50, setShowMilestone50] = useState(false);
   const [showMilestone95, setShowMilestone95] = useState(false);
+  const [showPasswordText, setShowPasswordText] = useState(false);
 
   const passcode = vaultToken;
   const passcodeRole = currentUser?.role === 'admin' ? 'auditor' : (currentUser ? 'colaborador' : null) as 'auditor' | 'colaborador' | null;
@@ -990,14 +991,23 @@ export function WebPublicaOrganizacion() {
 
                   <div>
                     <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
-                    <input 
-                      type="password"
-                      required
-                      placeholder="Mínimo 4 caracteres"
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
-                    />
+                    <div className="relative">
+                      <input 
+                        type={showPasswordText ? 'text' : 'password'}
+                        required
+                        placeholder="Mínimo 4 caracteres"
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        className="w-full pl-3 pr-10 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordText(!showPasswordText)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#8b102e]"
+                      >
+                        {showPasswordText ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -1031,14 +1041,23 @@ export function WebPublicaOrganizacion() {
 
                   <div>
                     <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
-                    <input 
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
-                    />
+                    <div className="relative">
+                      <input 
+                        type={showPasswordText ? 'text' : 'password'}
+                        required
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordText(!showPasswordText)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#8b102e]"
+                      >
+                        {showPasswordText ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}

@@ -82,6 +82,7 @@ export function WebPublicaOrganizacion() {
   const [passcodeError, setPasscodeError] = useState('');
   const [verifyingPasscode, setVerifyingPasscode] = useState(false);
   const [hideOracleButton, setHideOracleButton] = useState(false);
+  const [showOracleMenu, setShowOracleMenu] = useState(false);
   const [showMilestone50, setShowMilestone50] = useState(false);
   const [showMilestone95, setShowMilestone95] = useState(false);
   const [showPasswordText, setShowPasswordText] = useState(false);
@@ -1459,7 +1460,7 @@ export function WebPublicaOrganizacion() {
             /* =========================================================================
                2. OPENED BOOK DOUBLE PAGE VIEW (Hojas de Pergamino)
                ========================================================================= */
-            <div className="w-full min-h-screen sm:min-h-0 bg-[#240207] p-0 sm:p-4 rounded-none sm:rounded-3xl shadow-2xl relative border-0 sm:border-4 border-[#120003]"
+            <div className="w-full h-[100dvh] sm:h-auto sm:min-h-0 bg-[#240207] p-0 sm:p-4 rounded-none sm:rounded-3xl shadow-2xl relative border-0 sm:border-4 border-[#120003] overflow-hidden"
               style={{
                 boxShadow: '0 25px 50px rgba(0,0,0,0.85)',
               }}
@@ -1468,7 +1469,7 @@ export function WebPublicaOrganizacion() {
               <div className="absolute inset-0 bg-[#4a0717] rounded-none sm:rounded-3xl -z-10 transform scale-[1.006] border-0 sm:border border-[#d4af37]/25 shadow-2xl"></div>
 
               {/* Open Book Pages Wrapper */}
-              <div className="flex flex-col lg:flex-row rounded-none sm:rounded-2xl overflow-hidden relative min-h-screen sm:min-h-[620px]">
+              <div className="w-full h-full sm:h-[685px] sm:min-h-[620px] flex flex-col lg:flex-row rounded-none sm:rounded-2xl overflow-hidden relative">
                 
                 {/* Ribbon bookmark hanging down the center */}
                 <div className="hidden lg:block absolute left-[50%] -translate-x-1/2 top-0 h-44 w-3.5 bg-[#8b102e] border-x border-[#500618] rounded-b-md shadow-lg z-20 pointer-events-none after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2 after:bg-black/20"></div>
@@ -2148,37 +2149,6 @@ export function WebPublicaOrganizacion() {
                           )}
                           
                           <div className="flex items-center gap-2">
-                            {/* Narrator Button */}
-                            {activeDoc && (
-                              <button
-                                onClick={() => speakText(activeDoc.content)}
-                                className={`p-2 sm:p-2.5 px-3 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm ${
-                                  isSpeaking 
-                                    ? 'bg-rose-100 border-rose-300 text-[#8b102e] animate-pulse' 
-                                    : 'bg-[#faf6eb] border-[#d2c7ac] text-[#4a0717] hover:bg-white'
-                                }`}
-                                title="Narrar contenido"
-                              >
-                                {isSpeaking ? <VolumeX size={16} /> : <HeraldTrumpetIcon size={16} />}
-                                <span className="hidden sm:inline">{isSpeaking ? 'Detener' : 'Escuchar'}</span>
-                              </button>
-                            )}
-
-                            {/* Suggest improvement button */}
-                            {activeDoc && (
-                              <button
-                                onClick={() => {
-                                  setProposedContent(activeDoc.raw_content);
-                                  setIsSuggesting(true);
-                                }}
-                                className="p-2 sm:p-2.5 px-3 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm"
-                                title="Sugerir una corrección o adición"
-                              >
-                                <QuillInkwellIcon size={16} />
-                                <span className="hidden sm:inline">Sugerir</span>
-                              </button>
-                            )}
-                            
                             <button 
                               onClick={() => setMobileView('index')} 
                               className="lg:hidden p-2 sm:p-2.5 px-3 rounded-xl border border-[#d2c7ac] text-[#4a0717] bg-[#faf6eb] hover:bg-white flex items-center gap-1.5 text-xs font-sans font-bold shadow-sm"
@@ -2492,22 +2462,88 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
-      {/* FLOATING GOLD TALISMAN FOR AI ASSISTANT */}
-      {isOpen && !loading && (
-        currentUser?.role === 'admin' || 
-        currentUser?.role === 'supervisor' || 
-        (currentUser?.job_role_name && (
-          currentUser.job_role_name.toLowerCase().includes('administrador') || 
-          currentUser.job_role_name.toLowerCase().includes('gerente')
-        ))
-      ) && (
+      {/* 🔮 ORACLE FLOATING SUB-MENU */}
+      {isOpen && !loading && !hideOracleButton && showOracleMenu && (
+        <div className="fixed bottom-24 right-6 flex flex-col items-end gap-3.5 z-40 select-none animate-in fade-in slide-in-from-bottom-5 duration-200">
+          {/* Option 1: AI Oracle Assistant */}
+          <div className="flex items-center gap-3 group">
+            <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-[10px] font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
+              Preguntar al Oráculo (IA)
+            </span>
+            <button
+              onClick={() => {
+                setShowAiAssistant(true);
+                setShowOracleMenu(false);
+              }}
+              className="w-12 h-12 rounded-full bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] text-[#3d1b13] flex items-center justify-center shadow-lg border border-[#1c0808]/40 hover:scale-105 transition-transform"
+              title="Preguntar a la IA por Voz"
+            >
+              <Mic size={18} />
+            </button>
+          </div>
+
+          {/* Option 2: Scribe / Speech Narrator (Only when viewing a document) */}
+          {activeDoc && (
+            <div className="flex items-center gap-3 group">
+              <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-[10px] font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
+                {isSpeaking ? 'Detener Narración' : 'Escuchar este Tema'}
+              </span>
+              <button
+                onClick={() => {
+                  speakText(activeDoc.content);
+                  setShowOracleMenu(false);
+                }}
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-[#1c0808]/40 hover:scale-105 transition-transform ${
+                  isSpeaking 
+                    ? 'bg-rose-100 text-[#8b102e] animate-pulse border-[#8b102e]/30' 
+                    : 'bg-[#faf6eb] text-[#4a0717] hover:bg-white'
+                }`}
+                title="Narrar contenido"
+              >
+                {isSpeaking ? <VolumeX size={18} /> : <HeraldTrumpetIcon size={18} />}
+              </button>
+            </div>
+          )}
+
+          {/* Option 3: Suggest Correction / Addition (Only when viewing a document) */}
+          {activeDoc && (
+            <div className="flex items-center gap-3 group">
+              <span className="bg-[#faf6eb] border border-[#d2c7ac] text-[#4a0717] px-2.5 py-1 rounded-xl text-[10px] font-black font-sans shadow-md opacity-90 group-hover:opacity-100 transition-opacity">
+                Sugerir Corrección
+              </span>
+              <button
+                onClick={() => {
+                  setProposedContent(activeDoc.raw_content);
+                  setIsSuggesting(true);
+                  setShowOracleMenu(false);
+                }}
+                className="w-12 h-12 rounded-full bg-[#faf6eb] hover:bg-white text-[#4a0717] flex items-center justify-center shadow-lg border border-[#d2c7ac] hover:scale-105 transition-transform"
+                title="Sugerir una corrección o adición"
+              >
+                <QuillInkwellIcon size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 🔮 MAIN FLOATING BUTTON */}
+      {isOpen && !loading && !hideOracleButton && (
         <button 
-          onClick={() => setShowAiAssistant(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] text-[#3d1b13] flex flex-col items-center justify-center shadow-2xl border-2 border-[#1c0808] hover:scale-105 transition-transform z-40 cursor-pointer animate-bounce-subtle"
-          title="Preguntar a la IA por Voz"
+          onClick={() => setShowOracleMenu(!showOracleMenu)}
+          className={`fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] text-[#3d1b13] flex flex-col items-center justify-center shadow-2xl border-2 border-[#1c0808] hover:scale-105 transition-all z-40 cursor-pointer ${
+            showOracleMenu ? 'rotate-45' : 'animate-bounce-subtle'
+          }`}
+          title="Menú del Oráculo"
         >
-          <Mic size={22} className="text-[#3d1b13]" />
-          <span className="text-[8px] font-black tracking-wider uppercase font-sans mt-0.5 leading-none">Oráculo</span>
+          {showOracleMenu ? (
+            <X size={22} className="text-[#3d1b13]" />
+          ) : (
+            <>
+              <Sparkles size={22} className="text-[#3d1b13]" />
+              <span className="text-[8px] font-black tracking-wider uppercase font-sans mt-0.5 leading-none">Oráculo</span>
+            </>
+          )}
         </button>
       )}
 

@@ -1644,13 +1644,6 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             }
         });
 
-            if (!empty($insertData)) {
-                foreach (array_chunk($insertData, 200) as $chunk) {
-                    DB::table('obsidian_document_job_role')->insert($chunk);
-                }
-            }
-        });
-
         return response()->json(['status' => 'success']);
     }
 

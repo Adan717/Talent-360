@@ -2152,6 +2152,7 @@ export function WebPublicaOrganizacion() {
       {/* FLOATING GOLD TALISMAN FOR AI ASSISTANT */}
       {isOpen && !loading && (
         currentUser?.role === 'admin' || 
+        currentUser?.role === 'supervisor' || 
         (currentUser?.job_role_name && (
           currentUser.job_role_name.toLowerCase().includes('administrador') || 
           currentUser.job_role_name.toLowerCase().includes('gerente')

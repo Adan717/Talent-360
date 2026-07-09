@@ -3,21 +3,34 @@ require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-echo "=== TENANTS ===\n";
-$tenants = \App\Models\Tenant::withoutGlobalScopes()->get();
-foreach ($tenants as $t) {
-    echo "ID: {$t->id} | Name: {$t->name} | Subdomain: {$t->subdomain} | Public Slug: {$t->public_slug}\n";
-}
+echo "=== SEEDING ACCOUNT ROLES ===\n";
 
-echo "\n=== VAULTS ===\n";
-$vaults = \App\Models\ObsidianVault::withoutGlobalScopes()->get();
-foreach ($vaults as $v) {
-    $docCount = \App\Models\ObsidianDocument::withoutGlobalScopes()->where('vault_id', $v->id)->count();
-    echo "ID: {$v->id} | Tenant ID: {$v->tenant_id} | Name: {$v->name} | Documents: {$docCount}\n";
-}
+// Seed/Update Francisco (Admin Owner)
+$user1 = \App\Models\ObsidianUser::withoutGlobalScopes()->updateOrCreate(
+    ['email' => 'francisco@decorarte360.com'],
+    [
+        'tenant_id' => 1,
+        'name' => 'Francisco',
+        'password' => \Hash::make('password123'),
+        'job_role_id' => 11,
+        'role' => 'admin'
+    ]
+);
+echo "User francisco@decorarte360.com seeded as Admin.\n";
 
-echo "\n=== OBSIDIAN USERS ===\n";
-$users = \App\Models\ObsidianUser::withoutGlobalScopes()->get();
-foreach ($users as $u) {
-    echo "ID: {$u->id} | Tenant ID: {$u->tenant_id} | Name: {$u->name} | Email: {$u->email} | Role: {$u->role}\n";
-}
+// Seed/Update Marisol (Supervisor)
+$user2 = \App\Models\ObsidianUser::withoutGlobalScopes()->updateOrCreate(
+    ['email' => 'marisoldecorarte@gmail.com'],
+    [
+        'tenant_id' => 1,
+        'name' => 'Marisol',
+        'password' => \Hash::make('marisol360'),
+        'job_role_id' => 11,
+        'role' => 'supervisor'
+    ]
+);
+echo "User marisoldecorarte@gmail.com seeded as Supervisor.\n";
+
+// Remove old francisco@talent360.com if exists to keep database clean
+\App\Models\ObsidianUser::withoutGlobalScopes()->where('email', 'francisco@talent360.com')->delete();
+echo "Removed legacy francisco@talent360.com user.\n";

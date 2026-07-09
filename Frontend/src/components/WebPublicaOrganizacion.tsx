@@ -576,7 +576,7 @@ export function WebPublicaOrganizacion() {
   );
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-center items-center p-3 sm:p-6 md:p-8 select-text font-serif relative overflow-hidden" 
+    <div className={`min-h-screen w-full flex flex-col justify-center items-center ${isOpen ? 'p-0 sm:p-6 md:p-8' : 'p-3 sm:p-6 md:p-8'} select-text font-serif relative overflow-hidden`} 
       style={{
         background: 'radial-gradient(circle, #22080f 0%, #0d0104 100%)', // Deep dark burgundy ambient gradient
       }}
@@ -760,33 +760,25 @@ export function WebPublicaOrganizacion() {
       {!loading && (
         <div className="w-full max-w-6xl flex flex-col items-center relative z-10">
           
-          {/* Header Controls */}
-          <div className="w-full flex justify-between items-center mb-5 px-2 text-amber-100/70 text-xs font-bold font-sans">
-            <div className="flex items-center gap-4">
-              {isOpen ? (
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center gap-1.5 hover:text-white transition-colors"
-                >
-                  <Unlock size={14} className="text-emerald-500" /> Cerrar Libro (Salir)
-                </button>
-              ) : (
+          {/* Header Controls (Only when book is closed) */}
+          {!isOpen && (
+            <div className="w-full flex justify-between items-center mb-5 px-2 text-amber-100/70 text-xs font-bold font-sans">
+              <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 text-amber-100/50">
                   <Lock size={14} /> Libro Cerrado
                 </span>
-              )}
+              </div>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 hover:text-white transition-colors"
+                >
+                  {copiedLink ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
+                  {copiedLink ? 'Enlace Copiado' : 'Compartir Receta'}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={handleShare}
-                className="flex items-center gap-1.5 hover:text-white transition-colors"
-              >
-                {copiedLink ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
-                {copiedLink ? 'Enlace Copiado' : 'Compartir Receta'}
-              </button>
-              <a href="/" className="hover:text-white transition-colors">Volver a Talent360</a>
-            </div>
-          </div>
+          )}
 
           {/* MAIN SKEUOMORPHIC BOOK CONTAINER */}
           {!isOpen ? (
@@ -871,22 +863,21 @@ export function WebPublicaOrganizacion() {
                 <span className="text-[8px] font-bold text-[#faf6eb]/30 tracking-wider font-sans uppercase">DESDE 1986</span>
               </div>
             </div>
-
           ) : (
             
             /* =========================================================================
                2. OPENED BOOK DOUBLE PAGE VIEW (Hojas de Pergamino)
                ========================================================================= */
-            <div className="w-full bg-[#240207] p-2.5 sm:p-4 rounded-3xl shadow-2xl relative border-4 border-[#120003]"
+            <div className="w-full min-h-screen sm:min-h-0 bg-[#240207] p-0 sm:p-4 rounded-none sm:rounded-3xl shadow-2xl relative border-0 sm:border-4 border-[#120003]"
               style={{
                 boxShadow: '0 25px 50px rgba(0,0,0,0.85)',
               }}
             >
               {/* Outer leather cover overlap representation */}
-              <div className="absolute inset-0 bg-[#4a0717] rounded-3xl -z-10 transform scale-[1.006] border border-[#d4af37]/25 shadow-2xl"></div>
+              <div className="absolute inset-0 bg-[#4a0717] rounded-none sm:rounded-3xl -z-10 transform scale-[1.006] border-0 sm:border border-[#d4af37]/25 shadow-2xl"></div>
 
               {/* Open Book Pages Wrapper */}
-              <div className="flex flex-col lg:flex-row rounded-2xl overflow-hidden relative min-h-[500px] sm:min-h-[620px]">
+              <div className="flex flex-col lg:flex-row rounded-none sm:rounded-2xl overflow-hidden relative min-h-screen sm:min-h-[620px]">
                 
                 {/* Ribbon bookmark hanging down the center */}
                 <div className="hidden lg:block absolute left-[50%] -translate-x-1/2 top-0 h-44 w-3.5 bg-[#8b102e] border-x border-[#500618] rounded-b-md shadow-lg z-20 pointer-events-none after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-2 after:bg-black/20"></div>
@@ -1220,7 +1211,7 @@ export function WebPublicaOrganizacion() {
                     )}
 
                     {/* Index List (Shows manual files OR suggestions inbox) */}
-                    <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-none max-h-[320px] sm:max-h-[360px]">
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-none min-h-0">
                       {activeBookTab === 'audit' ? (
                         /* ==========================================
                            AUDITOR INBOX LIST
@@ -1309,10 +1300,22 @@ export function WebPublicaOrganizacion() {
                     </div>
                   </div>
 
-                  {/* Ribbon bookmark / page footer */}
-                  <div className="border-t border-[#d8ccb6] pt-3 mt-4 text-[9px] text-[#4a0717]/40 font-sans font-bold flex justify-between">
-                    <span>SECCIÓN DE CONSULTA</span>
-                    <span>PÁG. L</span>
+                  {/* Bottom Controls inside Index Page */}
+                  <div className="border-t border-[#d8ccb6] pt-3 mt-4 flex justify-between items-center gap-3 relative z-10">
+                    <button 
+                      onClick={handleLogout}
+                      className="flex-1 py-2 px-3 bg-[#8b102e]/10 hover:bg-[#8b102e]/20 text-[#8b102e] font-sans font-black text-[10px] uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Unlock size={12} className="text-rose-700" />
+                      Cerrar Libro
+                    </button>
+                    <button 
+                      onClick={handleShare}
+                      className="flex-1 py-2 px-3 bg-[#b38728]/10 hover:bg-[#b38728]/20 text-[#b38728] font-sans font-black text-[10px] uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      {copiedLink ? <Check size={12} className="text-emerald-600" /> : <Share2 size={12} />}
+                      {copiedLink ? 'Copiado' : 'Compartir'}
+                    </button>
                   </div>
                 </div>
 
@@ -1556,7 +1559,7 @@ export function WebPublicaOrganizacion() {
                               {/* Rich Text area */}
                               <div 
                                 ref={contentRef}
-                                className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none max-h-[320px] sm:max-h-[380px]"
+                                className="flex-1 text-[#2b251f] pr-1 custom-markdown overflow-y-auto scrollbar-none min-h-0"
                                 dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }}
                               />
 

@@ -537,6 +537,7 @@ export function WebPublicaOrganizacion() {
     e.preventDefault();
     setVerifyingPasscode(true);
     setPasscodeError('');
+    setReadDocSlugs([]); // Clear reading progress state immediately on login attempt
     try {
       const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/login`, {
         email: loginEmail,
@@ -564,6 +565,7 @@ export function WebPublicaOrganizacion() {
     e.preventDefault();
     setVerifyingPasscode(true);
     setPasscodeError('');
+    setReadDocSlugs([]); // Clear reading progress state immediately on register attempt
     try {
       const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/register`, {
         name: registerName,

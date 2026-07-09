@@ -1264,7 +1264,52 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             ->where('email', $request->email)
             ->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user) {
+            // Check if they are a platform user in the main users table
+            $mainUser = \App\Models\User::withoutGlobalScopes()
+                ->where('tenant_id', $tenant->id)
+                ->where('email', $request->email)
+                ->first();
+
+            if ($mainUser && Hash::check($request->password, $mainUser->password)) {
+                // Determine appropriate Obsidian role based on platform role
+                $obsidianRole = 'colaborador';
+                if ($mainUser->role === 'admin' || $mainUser->role === 'platform_admin') {
+                    $obsidianRole = 'admin';
+                } elseif ($mainUser->role === 'supervisor') {
+                    $obsidianRole = 'supervisor';
+                }
+
+                // Auto-create ObsidianUser to sync credentials
+                $user = ObsidianUser::create([
+                    'tenant_id' => $tenant->id,
+                    'name' => $mainUser->name,
+                    'email' => $mainUser->email,
+                    'password' => $mainUser->password, // keeps bcrypt hash
+                    'role' => $obsidianRole,
+                    'job_role_id' => $mainUser->job_role_id,
+                ]);
+            }
+        } else {
+            // Check password
+            if (!Hash::check($request->password, $user->password)) {
+                // Fallback: check if the main user has updated their password
+                $mainUser = \App\Models\User::withoutGlobalScopes()
+                    ->where('tenant_id', $tenant->id)
+                    ->where('email', $request->email)
+                    ->first();
+
+                if ($mainUser && Hash::check($request->password, $mainUser->password)) {
+                    // Sync password to ObsidianUser
+                    $user->password = $mainUser->password;
+                    $user->save();
+                } else {
+                    return response()->json(['error' => 'Usuario o contraseña incorrectos.'], 401);
+                }
+            }
+        }
+
+        if (!$user) {
             return response()->json(['error' => 'Usuario o contraseña incorrectos.'], 401);
         }
 
@@ -2191,3 +2236,4 @@ ESQUEMA JSON REQUERIDO:
 
         return response()->json(['active_exam' => $loadedExam]);
     }
+}

@@ -35,6 +35,11 @@ foreach ($docs as $doc) {
     $type = strtolower($type);
     $filePathLower = strtolower($filename);
     
+    // Si el archivo contiene "anexo", siempre es de tipo "anexo" (solicitud del usuario)
+    if (str_contains($filePathLower, 'anexo')) {
+        $type = 'anexo';
+    }
+    
     if ($type === 'nota') {
         if (str_contains($filePathLower, 'organizacion') || str_contains($filePathLower, 'empresa') || str_contains($filePathLower, 'historia') || str_contains($filePathLower, 'mision') || str_contains($filePathLower, 'vision') || str_contains($filePathLower, 'valores') || str_contains($filePathLower, 'bienvenida') || str_contains($filePathLower, 'inicio') || str_contains($filePathLower, 'readme')) {
             $type = 'organizacion';
@@ -67,6 +72,7 @@ foreach ($docs as $doc) {
         elseif ($type === 'indicador') $icon = 'trophy';
         elseif ($type === 'reglas') $icon = 'clipboard-list';
         elseif ($type === 'formatos') $icon = 'settings';
+        elseif ($type === 'anexo') $icon = 'paperclip';
         elseif ($type === 'glosario') $icon = 'book-open';
         elseif ($type === 'organizacion') $icon = 'building-2';
         else $icon = 'file-text';

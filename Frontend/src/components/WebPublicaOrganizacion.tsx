@@ -5,7 +5,7 @@ import {
   ChevronRight, Eye, BookOpen, AlertCircle, Globe, 
   Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2,
   Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare,
-  Clock, Trophy, ClipboardList, Settings
+  Clock, Trophy, ClipboardList, Settings, Paperclip
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -203,6 +203,7 @@ export function WebPublicaOrganizacion() {
       case 'settings': return <Settings size={16} />;
       case 'book-open': return <BookOpen size={16} />;
       case 'building-2': return <Building2 size={16} />;
+      case 'paperclip': return <Paperclip size={16} />;
       default: return <FileText size={16} />;
     }
   };
@@ -217,6 +218,7 @@ export function WebPublicaOrganizacion() {
       case 'indicador': return 'Indicadores de Desempeño (KPIs)';
       case 'reglas': return 'Reglas y Sanciones';
       case 'formatos': return 'Formatos y Documentos';
+      case 'anexo': return 'Anexos';
       case 'glosario': return 'Glosario de Términos';
       case 'nota': return 'Notas y Bitácoras';
       default: return cat.charAt(0).toUpperCase() + cat.slice(1);
@@ -232,6 +234,7 @@ export function WebPublicaOrganizacion() {
     'indicador',
     'reglas',
     'formatos',
+    'anexo',
     'glosario',
     'nota'
   ];
@@ -899,8 +902,10 @@ export function WebPublicaOrganizacion() {
                 <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent my-2"></div>
               </div>
 
-              {/* Dedicatoria a MRV de El Gran Gurú */}
-              <div className="my-3 relative z-10 rotate-[-1.5deg] hover:rotate-0 transition-transform duration-300 bg-[#faf5e8] p-3 sm:p-4 rounded-lg border-2 border-double border-[#bf953f] shadow-lg max-w-[270px] sm:max-w-[340px] mx-auto">
+              {/* Dedicatoria a MRV de El Gran Gurú (Parchamiento Antiguo / Scroll Paper) */}
+              <div 
+                className="my-3 relative z-10 rotate-[-1.5deg] hover:rotate-0 transition-transform duration-300 p-4 sm:p-5 rounded-l-[22px_8px] rounded-r-[8px_22px] border-y-2 border-[#5c3e21]/45 border-x-4 border-double border-[#5c3e21]/70 bg-gradient-to-r from-[#d3c09b] via-[#faf0db] to-[#d3c09b] shadow-[0_10px_20px_rgba(0,0,0,0.45),_inset_0_0_25px_rgba(92,62,33,0.18)] max-w-[275px] sm:max-w-[350px] mx-auto"
+              >
                 <div className="absolute -top-3 -right-2 bg-[#8b102e] text-[#faf6eb] text-[8px] font-sans font-black px-1.5 py-0.5 rounded shadow rotate-[12deg] border border-[#d4af37]/40 uppercase tracking-widest">
                   Sello Gurú
                 </div>

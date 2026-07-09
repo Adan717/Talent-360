@@ -45,6 +45,8 @@ const SaaSAccountSettings = lazy(() => import('./components/SaaSAccountSettings'
 const GestorDocumentos = lazy(() => import('./components/GestorDocumentos').then(module => ({ default: module.GestorDocumentos })));
 const FacturacionManager = lazy(() => import('./components/FacturacionManager').then(m => ({ default: m.FacturacionManager })));
 const LftManager = lazy(() => import('./components/LftManager'));
+const OrgVaultManager = lazy(() => import('./components/OrgVaultManager').then(m => ({ default: m.OrgVaultManager })));
+const WebPublicaOrganizacion = lazy(() => import('./components/WebPublicaOrganizacion').then(m => ({ default: m.WebPublicaOrganizacion })));
 import { HeaderStats } from './components/HeaderStats';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
@@ -178,7 +180,7 @@ function MainLayout() {
 
   const isModuleUnlocked = (moduleId: string) => {
     const targetModuleId = moduleId;
-    if (targetModuleId === 'dashboard' || targetModuleId === 'settings' || targetModuleId === 'matrix') {
+    if (targetModuleId === 'dashboard' || targetModuleId === 'settings' || targetModuleId === 'matrix' || targetModuleId === 'organizacion') {
       return true;
     }
     if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') {
@@ -303,6 +305,15 @@ function MainLayout() {
       desc: 'Reglamento y tolerancias',
       icon: <Scale size={20} />,
       color: 'bg-amber-50 text-amber-650 border-amber-100',
+      minTier: 'pro',
+      version: 'v1.0'
+    },
+    {
+      id: 'organizacion',
+      title: 'Organigrama y SOP',
+      desc: 'Procesos, Puestos y Wiki',
+      icon: <Globe size={20} />,
+      color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
       minTier: 'pro',
       version: 'v1.0'
     },
@@ -713,6 +724,7 @@ function MainLayout() {
             {activeModule === 'operativo' && <PanelTareasRutinas />}
             {activeModule === 'academia' && <GestorAcademia />}
 {activeModule === 'documentos' && <GestorDocumentos />}
+            {activeModule === 'organizacion' && <OrgVaultManager />}
             {activeModule === 'facturacion' && <FacturacionManager />}
             {activeModule === 'reloj' && <RelojChecador />}
             {activeModule === 'reportes' && <ReportesManager />}
@@ -803,6 +815,16 @@ function App() {
       <Route path="/vacantes/:slug" element={
         <Suspense fallback={<LoadingScreen message="Cargando bolsa de trabajo..." />}>
           <WebPublica />
+        </Suspense>
+      } />
+      <Route path="/organizacion/:tenantSlug" element={
+        <Suspense fallback={<LoadingScreen message="Cargando organigrama..." />}>
+          <WebPublicaOrganizacion />
+        </Suspense>
+      } />
+      <Route path="/organizacion/:tenantSlug/:docSlug" element={
+        <Suspense fallback={<LoadingScreen message="Cargando documento..." />}>
+          <WebPublicaOrganizacion />
         </Suspense>
       } />
       <Route path="/superadmin" element={

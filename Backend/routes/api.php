@@ -34,6 +34,7 @@ use App\Http\Controllers\IncidentReportController;
 use App\Http\Controllers\KeyTransferController;
 use App\Http\Controllers\LftSettingController;
 use App\Http\Controllers\EmployeePayrollController;
+use App\Http\Controllers\ObsidianController;
 
 
 Route::prefix('v1')->middleware('device.security')->group(function () {
@@ -55,6 +56,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/public/onboarding/verify', [OnboardingController::class, 'verifyPin']);
     Route::post('/public/onboarding/complete', [OnboardingController::class, 'completeActivation']);
     Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
+    
+    // Pública (Wiki/Organigrama de la Empresa)
+    Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);
@@ -220,6 +224,18 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/invoices', [BillingController::class, 'getInvoices']);
             Route::post('/payroll/timbrar', [BillingController::class, 'timbrarNomina']);
         });
+
+        // Módulo Organizacional Obsidian (Administración y Configuración)
+        Route::prefix('org-vault')->group(function () {
+            Route::get('/settings', [ObsidianController::class, 'getSettings']);
+            Route::post('/settings', [ObsidianController::class, 'saveSettings']);
+            Route::post('/sync-local', [ObsidianController::class, 'syncLocal']);
+            Route::post('/sync-zip', [ObsidianController::class, 'syncZip']);
+            Route::post('/edit', [ObsidianController::class, 'editDocument']);
+            Route::get('/suggestions', [ObsidianController::class, 'getSuggestions']);
+            Route::post('/suggestions/{id}/approve', [ObsidianController::class, 'approveSuggestion']);
+            Route::post('/suggestions/{id}/reject', [ObsidianController::class, 'rejectSuggestion']);
+        });
     });
 
     // =========================================================================
@@ -308,6 +324,13 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/key-transfers', [KeyTransferController::class, 'store']);
         Route::get('/key-transfers/pending', [KeyTransferController::class, 'pending']);
         Route::post('/key-transfers/{id}/respond', [KeyTransferController::class, 'respond']);
+
+        // Módulo Organizacional Obsidian (Lectura y Sugerencias de Empleados)
+        Route::prefix('org-vault')->group(function () {
+            Route::get('/index', [ObsidianController::class, 'getDocuments']);
+            Route::get('/doc/{slug}', [ObsidianController::class, 'getDocument']);
+            Route::post('/suggest', [ObsidianController::class, 'suggestChange']);
+        });
     });
 });
 

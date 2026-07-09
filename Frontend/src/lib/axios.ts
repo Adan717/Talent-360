@@ -28,7 +28,7 @@ import { getDeviceFingerprint } from './deviceFingerprint';
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('talent_auth_token');
-        if (token) {
+        if (token && !config.headers.Authorization) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         config.headers['X-Device-Fingerprint'] = getDeviceFingerprint();
@@ -45,9 +45,13 @@ axiosInstance.interceptors.response.use(
     (error) => {
         if (error.response) {
             if (error.response.status === 401) {
-                // Si la petición original ERA para hacer login, NO redireccionamos, 
-                // dejamos que el componente Login maneje el error.
-                if (error.config && (error.config.url === '/login' || error.config.url === 'login' || error.config.url.endsWith('/login'))) {
+                // Si la petición original ERA para hacer login o es parte del baúl público, NO redireccionamos
+                if (error.config && (
+                    error.config.url.includes('/public/org-vault') || 
+                    error.config.url === '/login' || 
+                    error.config.url === 'login' || 
+                    error.config.url.endsWith('/login')
+                )) {
                     return Promise.reject(error);
                 }
                 

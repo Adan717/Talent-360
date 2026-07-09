@@ -203,14 +203,12 @@ class ObsidianController extends Controller
                 $type = strtolower($type);
                 $filePathLower = strtolower($file->getRelativePathname());
                 if ($type === 'nota') {
-                    if (str_contains($filePathLower, 'puesto') || str_contains($filePathLower, 'role') || str_contains($filePathLower, 'pue ')) {
-                        $type = 'puesto';
-                    } elseif (str_contains($filePathLower, 'proceso') || str_contains($filePathLower, 'sop') || str_contains($filePathLower, 'procedimiento') || str_contains($filePathLower, 'proc ')) {
-                        $type = 'proceso';
-                    } elseif (str_contains($filePathLower, 'checklist') || str_contains($filePathLower, 'lista') || str_contains($filePathLower, 'tarea') || str_contains($filePathLower, 'tare ')) {
-                        $type = 'tarea';
+                    if (str_contains($filePathLower, 'organizacion') || str_contains($filePathLower, 'empresa') || str_contains($filePathLower, 'historia') || str_contains($filePathLower, 'mision') || str_contains($filePathLower, 'vision') || str_contains($filePathLower, 'valores') || str_contains($filePathLower, 'bienvenida') || str_contains($filePathLower, 'inicio') || str_contains($filePathLower, 'readme')) {
+                        $type = 'organizacion';
                     } elseif (str_contains($filePathLower, 'rutina') || str_contains($filePathLower, 'diario') || str_contains($filePathLower, 'daily') || str_contains($filePathLower, 'semanal') || str_contains($filePathLower, 'mensual') || str_contains($filePathLower, 'rut ')) {
                         $type = 'rutina';
+                    } elseif (str_contains($filePathLower, 'checklist') || str_contains($filePathLower, 'lista') || str_contains($filePathLower, 'tarea') || str_contains($filePathLower, 'tare ')) {
+                        $type = 'tarea';
                     } elseif (str_contains($filePathLower, 'indicador') || str_contains($filePathLower, 'kpi') || str_contains($filePathLower, 'metrica') || str_contains($filePathLower, 'evaluacion')) {
                         $type = 'indicador';
                     } elseif (str_contains($filePathLower, 'regla') || str_contains($filePathLower, 'reglamento') || str_contains($filePathLower, 'sancion') || str_contains($filePathLower, 'norma') || str_contains($filePathLower, 'politica') || str_contains($filePathLower, 'conducta')) {
@@ -219,8 +217,10 @@ class ObsidianController extends Controller
                         $type = 'formatos';
                     } elseif (str_contains($filePathLower, 'glosario') || str_contains($filePathLower, 'terminos') || str_contains($filePathLower, 'definiciones') || str_contains($filePathLower, 'conceptos')) {
                         $type = 'glosario';
-                    } elseif (str_contains($filePathLower, 'organizacion') || str_contains($filePathLower, 'empresa') || str_contains($filePathLower, 'historia') || str_contains($filePathLower, 'mision') || str_contains($filePathLower, 'vision') || str_contains($filePathLower, 'valores') || str_contains($filePathLower, 'bienvenida') || str_contains($filePathLower, 'inicio') || str_contains($filePathLower, 'readme')) {
-                        $type = 'organizacion';
+                    } elseif (str_contains($filePathLower, 'puesto') || str_contains($filePathLower, 'role') || str_contains($filePathLower, 'pue ') || str_contains($filePathLower, 'administrador') || str_contains($filePathLower, 'gerente') || str_contains($filePathLower, 'supervisor') || str_contains($filePathLower, 'ayudante') || str_contains($filePathLower, 'asesor') || str_contains($filePathLower, 'apoyo eventual')) {
+                        $type = 'puesto';
+                    } elseif (str_contains($filePathLower, 'proceso') || str_contains($filePathLower, 'sop') || str_contains($filePathLower, 'procedimiento') || str_contains($filePathLower, 'proc ')) {
+                        $type = 'proceso';
                     }
                 }
 

@@ -1201,6 +1201,21 @@ export function WebPublicaOrganizacion() {
               
               <GoldenCorners />
 
+              {/* Vintage Bookmark Ribbon hanging from the top right */}
+              <div className="absolute top-0 right-12 w-8 h-24 pointer-events-none z-20 overflow-hidden shadow-lg">
+                <div className="w-full h-20 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/35 relative">
+                  {/* Gold embroidery line on the bookmark ribbon */}
+                  <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-2 w-0.5 bg-[#d4af37]/65"></div>
+                  {/* V-cut bottom tail */}
+                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-transparent"
+                    style={{
+                      clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)',
+                      backgroundColor: '#240207'
+                    }}
+                  ></div>
+                </div>
+              </div>
+
               {/* Grecas (Antique Corner Ornaments) */}
               {renderCornerOrnament("top-3 left-3")}
               {renderCornerOrnament("top-3 right-3 rotate-90")}
@@ -1240,12 +1255,12 @@ export function WebPublicaOrganizacion() {
                   <div className="absolute inset-0 rounded-full border border-[#d4af37]/40 animate-ping opacity-10 pointer-events-none"></div>
 
                   {/* TEXT ONLY WITH BEVEL/OUTLINE STYLE IN BEAUTIFUL MANUSCRIPT FONT */}
-                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-full text-center">
+                  <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 w-full text-center">
                     <h2 
-                      className="text-2.5xl sm:text-3.5xl font-black text-[#faf6eb] tracking-wide select-none drop-shadow-[0_3px_5px_rgba(0,0,0,0.85)]"
+                      className="text-[28px] sm:text-[38px] font-black text-[#faf6eb] tracking-wider select-none drop-shadow-[0_3px_6px_rgba(0,0,0,0.9)]"
                       style={{ 
                         fontFamily: "'Dancing Script', cursive",
-                        textShadow: '2px 2px 0px #1a0206, -1px -1px 0px #d4af37, 1px -1px 0px #d4af37, -1px 1px 0px #d4af37, 1px 1px 0px #d4af37',
+                        textShadow: '2px 2px 0px #1a0206, -1px -1px 0px #d4af37, 1px -1px 0px #d4af37, -1px 1px 0px #d4af37, 1px 1px 0px #d4af37, 3px 3px 5px rgba(0,0,0,0.6)',
                       }}
                     >
                       La Receta Secreta
@@ -1268,6 +1283,23 @@ export function WebPublicaOrganizacion() {
                 >
                   ⚜ En conmemoración del tercer aniversario ⚜
                 </p>
+              </div>
+
+              {/* Antique Compilation Credits */}
+              <div className="my-3 relative z-10 text-center select-none">
+                <span className="text-[7.5px] sm:text-[8px] font-bold text-[#faf6eb]/55 uppercase tracking-[0.25em] font-sans">
+                  Compilado y Editado por
+                </span>
+                <p 
+                  className="text-[10.5px] sm:text-[11.5px] font-black text-[#d4af37] tracking-widest mt-0.5 uppercase"
+                  style={{ 
+                    fontFamily: "'Cinzel', serif", 
+                    textShadow: '0 1px 2px rgba(0,0,0,0.6)'
+                  }}
+                >
+                  Francisco Vega Castillo
+                </p>
+                <div className="w-10 h-0.5 bg-[#d4af37]/35 mx-auto mt-1"></div>
               </div>
 
               {/* Cover Bottom section - Footer and Touch cue */}

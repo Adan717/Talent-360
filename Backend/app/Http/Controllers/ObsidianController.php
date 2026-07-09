@@ -752,6 +752,25 @@ class ObsidianController extends Controller
             }
         }
 
+        // Cargar puestos de trabajo disponibles para que el usuario pueda seleccionarlo al registrarse
+        $jobRoles = DB::table('job_roles')
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->select('id', 'name')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Cargar los slugs de los documentos que este usuario específico ya leyó
+        $readDocSlugs = [];
+        if ($user) {
+            $readDocSlugs = ObsidianReadProgress::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('user_id', $user->id)
+                ->join('obsidian_documents', 'obsidian_read_progress.document_id', '=', 'obsidian_documents.id')
+                ->pluck('obsidian_documents.slug')
+                ->toArray();
+        }
+
         if (!$doc) {
             return response()->json([
                 'tenant' => [
@@ -762,7 +781,9 @@ class ObsidianController extends Controller
                 'vault_name' => $vault->name,
                 'hide_oracle_button' => (bool) $vault->hide_oracle_button,
                 'index' => $index,
-                'document' => null
+                'document' => null,
+                'job_roles' => $jobRoles,
+                'read_doc_slugs' => $readDocSlugs
             ]);
         }
 
@@ -800,7 +821,9 @@ class ObsidianController extends Controller
             'index' => $index,
             'document' => $doc,
             'links' => $links,
-            'backlinks' => $backlinks
+            'backlinks' => $backlinks,
+            'job_roles' => $jobRoles,
+            'read_doc_slugs' => $readDocSlugs
         ]);
     }
 
@@ -1408,5 +1431,64 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
         });
 
         return response()->json($summary);
+    }
+
+    /**
+     * Public self-registration for manual readers.
+     */
+    public function publicRegister(Request $request, $tenantSlug)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|max:255',
+            'password' => 'required|string|min:4',
+            'job_role_id' => 'nullable|integer',
+        ]);
+
+        $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->firstOrFail();
+
+        $exists = ObsidianUser::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('email', $request->email)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['error' => 'El correo o usuario ya se encuentra registrado.'], 400);
+        }
+
+        $role = 'colaborador';
+        $jobRole = null;
+        if ($request->job_role_id) {
+            $jobRole = DB::table('job_roles')->where('id', $request->job_role_id)->first();
+            if ($jobRole && str_contains(mb_strtolower(Str::ascii($jobRole->name), 'UTF-8'), 'administrador')) {
+                $role = 'admin';
+            }
+        }
+
+        $user = ObsidianUser::create([
+            'tenant_id' => $tenant->id,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'job_role_id' => $request->job_role_id,
+            'role' => $role
+        ]);
+
+        $token = $user->createToken('vault-user-token')->plainTextToken;
+
+        return response()->json([
+            'valid' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'job_role_id' => $user->job_role_id,
+                'job_role_name' => $jobRole?->name ?? 'N/A',
+            ],
+            'token' => $token
+        ]);
     }
 }

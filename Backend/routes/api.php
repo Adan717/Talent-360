@@ -59,6 +59,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     
     // Pública (Wiki/Organigrama de la Empresa)
     Route::post('/public/org-vault/{tenantSlug}/login', [ObsidianController::class, 'publicLogin']);
+    Route::post('/public/org-vault/{tenantSlug}/register', [ObsidianController::class, 'publicRegister']);
     Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
     Route::post('/public/org-vault/{tenantSlug}/copilot', [ObsidianController::class, 'copilot']);
     Route::post('/public/org-vault/{tenantSlug}/validate-passcode', [ObsidianController::class, 'validatePublicPasscode']);

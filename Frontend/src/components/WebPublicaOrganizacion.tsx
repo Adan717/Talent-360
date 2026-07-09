@@ -25,15 +25,24 @@ export function WebPublicaOrganizacion() {
   const { tenantSlug, docSlug } = useParams();
   const navigate = useNavigate();
   
-  // User login states
+  // User login & registration states
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerJobRoleId, setRegisterJobRoleId] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [availableJobRoles, setAvailableJobRoles] = useState<any[]>([]);
+  const [index, setIndex] = useState<DocIndex>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [vaultToken, setVaultToken] = useState('');
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [passcodeError, setPasscodeError] = useState('');
   const [verifyingPasscode, setVerifyingPasscode] = useState(false);
   const [hideOracleButton, setHideOracleButton] = useState(false);
+  const [showMilestone50, setShowMilestone50] = useState(false);
+  const [showMilestone95, setShowMilestone95] = useState(false);
 
   const passcode = vaultToken;
   const passcodeRole = currentUser?.role === 'admin' ? 'auditor' : (currentUser ? 'colaborador' : null) as 'auditor' | 'colaborador' | null;
@@ -119,11 +128,15 @@ export function WebPublicaOrganizacion() {
   // Track and save read progress when document is opened
   useEffect(() => {
     if (activeDoc?.id && tenantSlug) {
+      let nextSlugs: string[] = [];
       setReadDocSlugs(prev => {
-        if (prev.includes(activeDoc.slug)) return prev;
-        const next = [...prev, activeDoc.slug];
-        localStorage.setItem(`vault_read_docs_${tenantSlug}`, JSON.stringify(next));
-        return next;
+        if (prev.includes(activeDoc.slug)) {
+          nextSlugs = prev;
+          return prev;
+        }
+        nextSlugs = [...prev, activeDoc.slug];
+        localStorage.setItem(`vault_read_docs_${tenantSlug}`, JSON.stringify(nextSlugs));
+        return nextSlugs;
       });
 
       // Post progress to backend if manual user is logged in
@@ -134,8 +147,26 @@ export function WebPublicaOrganizacion() {
           { headers: { Authorization: `Bearer ${token}` } }
         ).catch(err => console.error('Error recording read progress:', err));
       }
+
+      // Check milestones
+      setTimeout(() => {
+        const totalDocsCount = Object.values(index).flat().length;
+        if (totalDocsCount > 0 && nextSlugs.length > 0) {
+          const pct = Math.round((nextSlugs.length / totalDocsCount) * 100);
+          const shown50 = sessionStorage.getItem(`milestone_50_${tenantSlug}`);
+          const shown95 = sessionStorage.getItem(`milestone_95_${tenantSlug}`);
+          
+          if (pct >= 50 && pct < 95 && !shown50) {
+            setShowMilestone50(true);
+            sessionStorage.setItem(`milestone_50_${tenantSlug}`, 'true');
+          } else if (pct >= 95 && !shown95) {
+            setShowMilestone95(true);
+            sessionStorage.setItem(`milestone_95_${tenantSlug}`, 'true');
+          }
+        }
+      }, 500);
     }
-  }, [activeDoc, tenantSlug]);
+  }, [activeDoc, tenantSlug, index]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -175,14 +206,16 @@ export function WebPublicaOrganizacion() {
       setActiveDoc(res.data.document);
       setLinks(res.data.links || []);
       setBacklinks(res.data.backlinks || []);
+      setAvailableJobRoles(res.data.job_roles || []);
+      if (res.data.read_doc_slugs && res.data.read_doc_slugs.length > 0) {
+        setReadDocSlugs(res.data.read_doc_slugs);
+      }
     } catch (err) {
       console.error('Error fetching public vault:', err);
     } finally {
       setLoading(false);
     }
   };
-
-  const [index, setIndex] = useState<DocIndex>({});
 
   useEffect(() => {
     if (tenantSlug) {
@@ -443,6 +476,35 @@ export function WebPublicaOrganizacion() {
       }
     } catch (err: any) {
       setPasscodeError(err.response?.data?.error || 'Usuario o contraseña incorrectos.');
+    } finally {
+      setVerifyingPasscode(false);
+    }
+  };
+
+  const handleRegisterUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifyingPasscode(true);
+    setPasscodeError('');
+    try {
+      const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/register`, {
+        name: registerName,
+        email: registerEmail,
+        password: registerPassword,
+        job_role_id: registerJobRoleId ? parseInt(registerJobRoleId) : null
+      });
+      if (res.data.valid) {
+        setCurrentUser(res.data.user);
+        setVaultToken(res.data.token);
+        sessionStorage.setItem(`vault_user_${tenantSlug}`, JSON.stringify(res.data.user));
+        sessionStorage.setItem(`vault_token_${tenantSlug}`, res.data.token);
+        setShowPasscodeModal(false);
+        setIsOpen(true);
+        setShowWelcomeModal(true);
+        // Refresh vault info with token now active
+        setTimeout(() => fetchPublicVault(docSlug), 100);
+      }
+    } catch (err: any) {
+      setPasscodeError(err.response?.data?.error || 'Error al registrarse. Por favor verifica tus datos.');
     } finally {
       setVerifyingPasscode(false);
     }
@@ -871,12 +933,12 @@ export function WebPublicaOrganizacion() {
       <div className="absolute top-10 left-10 w-96 h-96 bg-[#8b102e]/5 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#bf953f]/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-      {/* 🛡️ USER LOGIN DIALOG MODAL */}
+      {/* 🛡️ USER LOGIN / REGISTRATION DIALOG MODAL */}
       {showPasscodeModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form 
-            onSubmit={handleVerifyPasscode}
-            className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left"
+            onSubmit={isRegisterMode ? handleRegisterUser : handleVerifyPasscode}
+            className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-left space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <GoldenCorners />
             <button 
@@ -887,38 +949,99 @@ export function WebPublicaOrganizacion() {
               <X size={16} />
             </button>
 
-            <div className="flex flex-col items-center text-center mt-3 mb-5">
-              <div className="w-12 h-12 rounded-full bg-[#8b102e]/10 border border-[#b38728]/45 flex items-center justify-center text-[#8b102e] mb-3">
-                <Lock size={20} />
+            <div className="flex flex-col items-center text-center mt-3">
+              <div className="w-11 h-11 rounded-full bg-[#8b102e]/10 border border-[#b38728]/45 flex items-center justify-center text-[#8b102e] mb-2">
+                <Lock size={18} />
               </div>
-              <h3 className="font-serif text-base font-black text-[#4a0717]">Acceso Resguardado</h3>
-              <p className="text-[10px] font-sans text-slate-500 uppercase tracking-widest mt-1">Ingresa tus credenciales de manual</p>
+              <h3 className="font-serif text-base font-black text-[#4a0717]">
+                {isRegisterMode ? 'Registrar Lector' : 'Acceso Resguardado'}
+              </h3>
+              <p className="text-[10px] font-sans text-slate-500 uppercase tracking-widest mt-0.5">
+                {isRegisterMode ? 'Crea tu cuenta de capacitación' : 'Ingresa tus credenciales de manual'}
+              </p>
             </div>
 
-            <div className="space-y-4 relative z-10">
-              <div>
-                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="ejemplo@decorarte.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
-                />
-              </div>
+            <div className="space-y-3 relative z-10">
+              {isRegisterMode ? (
+                <>
+                  <div>
+                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Nombre Completo</label>
+                    <input 
+                      type="text"
+                      required
+                      placeholder="Ej. Juan Pérez"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                    />
+                  </div>
 
-              <div>
-                <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
-                <input 
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
-                />
-              </div>
+                  <div>
+                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Correo o Usuario</label>
+                    <input 
+                      type="text"
+                      required
+                      placeholder="juan.perez o juan@empresa.com"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
+                    <input 
+                      type="password"
+                      required
+                      placeholder="Mínimo 4 caracteres"
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Puesto en la Empresa</label>
+                    <select
+                      required
+                      value={registerJobRoleId}
+                      onChange={(e) => setRegisterJobRoleId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] focus:outline-none focus:border-[#8b102e] font-sans text-xs shadow-inner"
+                    >
+                      <option value="">-- Selecciona tu Puesto --</option>
+                      {availableJobRoles.map((role) => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Usuario / Correo</label>
+                    <input 
+                      type="text"
+                      required
+                      placeholder="ejemplo@decorarte.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black text-[#8b102e] uppercase tracking-widest block mb-1 font-sans">Contraseña</label>
+                    <input 
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#d2c7ac] bg-[#faf6eb] text-[#2b251f] placeholder-slate-400 focus:outline-none focus:border-[#8b102e] font-sans text-sm shadow-inner"
+                    />
+                  </div>
+                </>
+              )}
 
               {passcodeError && (
                 <div className="p-2.5 bg-rose-50 border border-rose-150 text-rose-700 text-[10px] font-bold rounded-lg flex items-center gap-1.5 font-sans">
@@ -932,8 +1055,21 @@ export function WebPublicaOrganizacion() {
                 disabled={verifyingPasscode}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors disabled:opacity-50"
               >
-                {verifyingPasscode ? 'Validando pergamino...' : 'Abrir Recetario'}
+                {verifyingPasscode ? 'Procesando...' : (isRegisterMode ? 'Crear mi Cuenta' : 'Abrir Recetario')}
               </button>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegisterMode(!isRegisterMode);
+                    setPasscodeError('');
+                  }}
+                  className="text-[10px] text-[#8b102e] hover:underline font-bold font-sans"
+                >
+                  {isRegisterMode ? '¿Ya tienes una cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate aquí'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -1522,7 +1658,7 @@ export function WebPublicaOrganizacion() {
                                      </h4>
                                    </div>
                                    <div className="flex items-center gap-1.5">
-                                     {percent > 0 && currentUser?.role !== 'colaborador' && (
+                                     {percent > 0 && (
                                        <span className="text-[9px] font-sans font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-150 leading-none">
                                          {percent}%
                                        </span>
@@ -1566,7 +1702,7 @@ export function WebPublicaOrganizacion() {
                                                    {getIcon(item.icon)}
                                                  </div>
                                                  <span className="text-[13.5px] font-serif truncate flex-1 leading-none">{item.title}</span>
-                                                 {isRead && currentUser?.role !== 'colaborador' && (
+                                                 {isRead && (
                                                    <div className="w-3.5 h-3.5 rounded-full bg-emerald-50 border border-emerald-250 flex items-center justify-center text-emerald-600 shrink-0">
                                                      <Check size={8} strokeWidth={3.5} />
                                                    </div>
@@ -1922,6 +2058,48 @@ export function WebPublicaOrganizacion() {
           <Mic size={22} className="text-[#3d1b13]" />
           <span className="text-[8px] font-black tracking-wider uppercase font-sans mt-0.5 leading-none">Oráculo</span>
         </button>
+      )}
+
+      {/* 🌟 MILESTONE 50% MOTIVATIONAL MODAL */}
+      {showMilestone50 && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
+            <GoldenCorners />
+            <Sparkles size={36} className="text-[#b38728] mb-3 animate-bounce" />
+            <h3 className="font-serif text-lg font-black text-[#4a0717]">¡Excelente Progreso!</h3>
+            <p className="text-xs text-slate-600 font-bold font-sans leading-relaxed mt-2">
+              Llevas el <strong>50%</strong> del manual leído. Te motivamos a seguir leyendo y apoyarnos para completar todo lo que es este contenido.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowMilestone50(false)}
+              className="mt-5 px-6 py-2 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md hover:scale-105 transition-transform cursor-pointer"
+            >
+              ¡Entendido, continuaré!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🎉 MILESTONE 95% GRATITUDE MODAL */}
+      {showMilestone95 && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
+            <GoldenCorners />
+            <Sparkles size={36} className="text-emerald-700 mb-3 animate-bounce" />
+            <h3 className="font-serif text-lg font-black text-emerald-800">¡Gran Logro!</h3>
+            <p className="text-xs text-slate-600 font-bold font-sans leading-relaxed mt-2">
+              Llevas el <strong>95%</strong> de la lectura del manual. Agradecemos mucho tu tiempo para poder visualizar el contenido y capacitarte en nuestros procesos.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowMilestone95(false)}
+              className="mt-5 px-6 py-2 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md hover:scale-105 transition-transform cursor-pointer"
+            >
+              Cerrar y Finalizar
+            </button>
+          </div>
+        </div>
       )}
 
     </div>

@@ -647,7 +647,13 @@ class ObsidianController extends Controller
 
         $tenantId = $tenant->id;
 
-        $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenantId)->first();
+        $vault = ObsidianVault::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->get()
+            ->sortByDesc(function ($v) {
+                return ObsidianDocument::withoutGlobalScopes()->where('vault_id', $v->id)->count();
+            })
+            ->first();
         if (!$vault) {
             return response()->json(['message' => 'No se ha configurado estructura organizacional en esta empresa.'], 404);
         }
@@ -1404,7 +1410,13 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
     {
         $tenantId = auth()->user()->tenant_id ?? 1;
 
-        $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenantId)->first();
+        $vault = ObsidianVault::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->get()
+            ->sortByDesc(function ($v) {
+                return ObsidianDocument::withoutGlobalScopes()->where('vault_id', $v->id)->count();
+            })
+            ->first();
         if (!$vault) {
             return response()->json([]);
         }

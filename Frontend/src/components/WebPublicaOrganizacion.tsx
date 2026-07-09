@@ -817,7 +817,7 @@ export function WebPublicaOrganizacion() {
     >
       {/* Custom Styles Injection */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cinzel:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,700&family=Cinzel:wght@700&family=MedievalSharp&family=Pinyon+Script&display=swap');
 
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
@@ -1255,12 +1255,13 @@ export function WebPublicaOrganizacion() {
                   <div className="absolute inset-0 rounded-full border border-[#d4af37]/40 animate-ping opacity-10 pointer-events-none"></div>
 
                   {/* TEXT ONLY WITH BEVEL/OUTLINE STYLE IN BEAUTIFUL MANUSCRIPT FONT */}
-                  <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 w-full text-center">
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-full text-center whitespace-nowrap">
                     <h2 
-                      className="text-[28px] sm:text-[38px] font-black text-[#faf6eb] tracking-wider select-none drop-shadow-[0_3px_6px_rgba(0,0,0,0.9)]"
+                      className="text-[34px] sm:text-[46px] font-black text-[#faf6eb] select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.95)]"
                       style={{ 
-                        fontFamily: "'Dancing Script', cursive",
+                        fontFamily: "'Pinyon Script', cursive",
                         textShadow: '2px 2px 0px #1a0206, -1px -1px 0px #d4af37, 1px -1px 0px #d4af37, -1px 1px 0px #d4af37, 1px 1px 0px #d4af37, 3px 3px 5px rgba(0,0,0,0.6)',
+                        paddingBottom: '4px'
                       }}
                     >
                       La Receta Secreta

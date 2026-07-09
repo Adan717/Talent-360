@@ -751,6 +751,8 @@ export function WebPublicaOrganizacion() {
         proposed_content: proposedContent,
         comment: suggestionComment,
         user_name: suggestionName
+      }, {
+        headers: { Authorization: `Bearer ${vaultToken}` }
       });
       alert('Propuesta de mejora enviada con éxito.');
       setIsSuggesting(false);
@@ -772,6 +774,8 @@ export function WebPublicaOrganizacion() {
       const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/${id}/approve`, {
         passcode: passcode,
         review_comment: reviewComment
+      }, {
+        headers: { Authorization: `Bearer ${vaultToken}` }
       });
       alert(res.data.message || 'Propuesta aprobada.');
       setReviewComment('');
@@ -797,6 +801,8 @@ export function WebPublicaOrganizacion() {
       const res = await axiosInstance.post(`/public/org-vault/${tenantSlug}/suggestions/${id}/reject`, {
         passcode: passcode,
         review_comment: reviewComment
+      }, {
+        headers: { Authorization: `Bearer ${vaultToken}` }
       });
       alert(res.data.message || 'Propuesta rechazada.');
       setReviewComment('');
@@ -2097,7 +2103,7 @@ export function WebPublicaOrganizacion() {
                                 <span className="text-[10px] font-black uppercase text-[#8b102e] tracking-widest leading-none mb-1.5 font-sans">
                                   {getCategoryTitle(activeDoc.type)}
                                 </span>
-                                <span className="text-sm sm:text-base font-bold text-[#1e3b8b] font-sans truncate max-w-[120px] sm:max-w-[240px]">{activeDoc.title}</span>
+                                <span className="text-xs sm:text-base font-bold text-[#1e3b8b] font-sans leading-tight">{activeDoc.title}</span>
                               </div>
                             </div>
                           ) : (

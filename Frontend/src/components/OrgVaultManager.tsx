@@ -3,7 +3,7 @@ import {
   Search, FileText, Briefcase, Repeat, CheckSquare, Settings, 
   Edit, Check, X, ChevronRight, MessageSquare, Upload, 
   GitPullRequest, Eye, BookOpen, AlertCircle, Sparkles, CheckCircle2,
-  Volume2, VolumeX, Users, Plus, Trash2, Key
+  Volume2, VolumeX, Users, Plus, Trash2, Key, LayoutGrid
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
@@ -45,7 +45,7 @@ export function OrgVaultManager() {
   const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
   
   // Admin tabs & state
-  const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users'>('view');
+  const [adminTab, setAdminTab] = useState<'view' | 'sync' | 'suggestions' | 'edit' | 'users' | 'matrix'>('view');
   const [vaultSettings, setVaultSettings] = useState<any>({ name: '', local_path: '', hide_oracle_button: false });
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -71,6 +71,126 @@ export function OrgVaultManager() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '', job_role_id: '', role: 'colaborador' });
   const [progressSummary, setProgressSummary] = useState<any[]>([]);
+
+  // Drag and drop states & methods
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('text/plain', id.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: number, category: string) => {
+    e.preventDefault();
+    const draggedIdStr = e.dataTransfer.getData('text/plain');
+    if (!draggedIdStr) return;
+    const draggedId = parseInt(draggedIdStr);
+    if (draggedId === targetId) return;
+
+    // Find the category items
+    const catItems = [...(index[category as keyof DocIndex] || [])];
+    const draggedIndex = catItems.findIndex(item => item.id === draggedId);
+    const targetIndex = catItems.findIndex(item => item.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const [removed] = catItems.splice(draggedIndex, 1);
+    catItems.splice(targetIndex, 0, removed);
+
+    const nextIndex = {
+      ...index,
+      [category]: catItems
+    };
+    setIndex(nextIndex);
+
+    try {
+      const flatIds = Object.values(nextIndex).flat().map(item => item.id);
+      await axiosInstance.post('/org-vault/reorder', { order: flatIds });
+    } catch (err) {
+      console.error('Error saving new order:', err);
+    }
+  };
+
+  // Matrix states & methods
+  const [matrixRoles, setMatrixRoles] = useState<any[]>([]);
+  const [matrixDocs, setMatrixDocs] = useState<any[]>([]);
+  const [matrixAssignments, setMatrixAssignments] = useState<any[]>([]);
+  const [loadingMatrix, setLoadingMatrix] = useState(false);
+  const [savingMatrix, setSavingMatrix] = useState(false);
+
+  const fetchMatrix = async () => {
+    setLoadingMatrix(true);
+    try {
+      const res = await axiosInstance.get('/org-vault/matrix');
+      setMatrixRoles(res.data.job_roles || []);
+      setMatrixDocs(res.data.documents || []);
+      setMatrixAssignments(res.data.assignments || []);
+    } catch (err) {
+      console.error('Error fetching matrix:', err);
+    } finally {
+      setLoadingMatrix(false);
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === 'matrix') {
+      fetchMatrix();
+    }
+  }, [adminTab]);
+
+  const handleToggleMatrix = (docId: number, roleId: number) => {
+    setMatrixAssignments(prev => {
+      const exists = prev.some(a => a.document_id === docId && a.job_role_id === roleId);
+      if (exists) {
+        return prev.filter(a => !(a.document_id === docId && a.job_role_id === roleId));
+      } else {
+        return [...prev, { document_id: docId, job_role_id: roleId }];
+      }
+    });
+  };
+
+  const handleToggleAllForRole = (roleId: number, assignAll: boolean) => {
+    setMatrixAssignments(prev => {
+      const cleared = prev.filter(a => a.job_role_id !== roleId);
+      if (assignAll) {
+        const added = matrixDocs.map(doc => ({ document_id: doc.id, job_role_id: roleId }));
+        return [...cleared, ...added];
+      }
+      return cleared;
+    });
+  };
+
+  const handleToggleAllForDoc = (docId: number, assignAll: boolean) => {
+    setMatrixAssignments(prev => {
+      const cleared = prev.filter(a => a.document_id !== docId);
+      if (assignAll) {
+        const added = matrixRoles.map(role => ({ document_id: docId, job_role_id: role.id }));
+        return [...cleared, ...added];
+      }
+      return cleared;
+    });
+  };
+
+  const saveMatrix = async () => {
+    setSavingMatrix(true);
+    try {
+      const mappings: Record<number, number[]> = {};
+      matrixDocs.forEach(doc => {
+        mappings[doc.id] = matrixAssignments
+          .filter(a => a.document_id === doc.id)
+          .map(a => a.job_role_id);
+      });
+
+      await axiosInstance.post('/org-vault/matrix', { mappings });
+      alert('Matriz de visibilidad de puestos guardada exitosamente.');
+    } catch (err) {
+      console.error('Error saving matrix:', err);
+      alert('Error al guardar la matriz.');
+    } finally {
+      setSavingMatrix(false);
+    }
+  };
 
   // References
   const contentRef = useRef<HTMLDivElement>(null);
@@ -526,11 +646,15 @@ export function OrgVaultManager() {
                   return (
                     <button
                       key={item.id}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, item.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, item.id, category)}
                       onClick={() => {
                         setActiveSlug(item.slug);
                         setAdminTab('view');
                       }}
-                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all ${
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all cursor-grab active:cursor-grabbing ${
                         isActive 
                           ? 'bg-blue-50 text-blue-700 font-bold border-l-4 border-blue-600 shadow-sm' 
                           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-4 border-transparent'
@@ -622,6 +746,14 @@ export function OrgVaultManager() {
               }`}
             >
               <Users size={14} /> Avance y Usuarios
+            </button>
+            <button
+              onClick={() => setAdminTab('matrix')}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                adminTab === 'matrix' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <LayoutGrid size={14} /> Matriz de Puestos
             </button>
           </div>
         )}
@@ -1300,6 +1432,102 @@ export function OrgVaultManager() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+          {adminTab === 'matrix' && isAdmin && (
+              <div className="flex-1 flex flex-col space-y-6 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800">Matriz de Visibilidad por Puesto</h4>
+                    <p className="text-[10px] font-medium text-slate-500 mt-1">
+                      Selecciona qué temas y capítulos del manual debe de visualizar cada puesto en su cuenta de lector lectora individual.
+                    </p>
+                  </div>
+                  <button
+                    onClick={saveMatrix}
+                    disabled={savingMatrix}
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 self-start disabled:opacity-50"
+                  >
+                    {savingMatrix ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+
+                {loadingMatrix ? (
+                  <div className="text-center py-20 text-slate-400 font-semibold animate-pulse text-xs">
+                    Cargando matriz de puestos...
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-slate-50/50">
+                    <table className="w-full border-collapse text-xs font-semibold text-slate-600">
+                      <thead className="bg-slate-100/80 sticky top-0 backdrop-blur-md border-b border-slate-200 z-10">
+                        <tr>
+                          <th className="p-3 text-left min-w-[240px] bg-slate-100 font-black text-slate-800">Temas del Manual / Capítulos</th>
+                          {matrixRoles.map(role => {
+                            const allAssigned = matrixDocs.length > 0 && matrixDocs.every(doc => 
+                              matrixAssignments.some(a => a.document_id === doc.id && a.job_role_id === role.id)
+                            );
+                            return (
+                              <th key={role.id} className="p-3 text-center min-w-[120px] font-black text-slate-800 border-l border-slate-200/60">
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="truncate max-w-[150px]" title={role.name}>{role.name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleAllForRole(role.id, !allAssigned)}
+                                    className={`text-[9px] font-black underline mt-0.5 ${allAssigned ? 'text-rose-500' : 'text-blue-600'}`}
+                                  >
+                                    {allAssigned ? 'Desmarcar Todos' : 'Marcar Todos'}
+                                  </button>
+                                </div>
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/80 bg-white">
+                        {matrixDocs.map(doc => {
+                          const allRolesAssigned = matrixRoles.length > 0 && matrixRoles.every(role => 
+                            matrixAssignments.some(a => a.document_id === doc.id && a.job_role_id === role.id)
+                          );
+                          return (
+                            <tr key={doc.id} className="hover:bg-slate-50/60 transition-colors">
+                              <td className="p-3 flex items-center justify-between gap-3 font-bold text-slate-700 min-w-[240px]">
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="text-[10px] text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded font-black tracking-wider">
+                                    {doc.type}
+                                  </span>
+                                  <span className="truncate" title={doc.title}>{doc.title}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAllForDoc(doc.id, !allRolesAssigned)}
+                                  className={`text-[9px] font-black underline shrink-0 ${allRolesAssigned ? 'text-rose-500' : 'text-blue-600'}`}
+                                >
+                                  {allRolesAssigned ? 'Nadie' : 'Todos'}
+                                </button>
+                              </td>
+                              {matrixRoles.map(role => {
+                                const isChecked = matrixAssignments.some(a => a.document_id === doc.id && a.job_role_id === role.id);
+                                return (
+                                  <td key={role.id} className="p-3 text-center border-l border-slate-200/40">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => handleToggleMatrix(doc.id, role.id)}
+                                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30 cursor-pointer"
+                                    />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* CREATE / EDIT USER MODAL */}
             {showUserModal && (
@@ -1409,8 +1637,6 @@ export function OrgVaultManager() {
                 </form>
               </div>
             )}
-          </div>
-        )}
       </div>
     </div>
   );

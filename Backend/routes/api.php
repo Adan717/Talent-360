@@ -252,6 +252,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::put('/users/{id}', [ObsidianController::class, 'updateUser']);
             Route::delete('/users/{id}', [ObsidianController::class, 'deleteUser']);
             Route::get('/progress-summary', [ObsidianController::class, 'progressSummary']);
+            Route::post('/reorder', [ObsidianController::class, 'reorderDocuments']);
+            Route::get('/matrix', [ObsidianController::class, 'getMatrix']);
+            Route::post('/matrix', [ObsidianController::class, 'updateMatrix']);
         });
     });
 

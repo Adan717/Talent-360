@@ -714,53 +714,34 @@ class ObsidianController extends Controller
         if (!$user) {
             // Si no está logueado, no se muestra ningún documento en el índice público
             $index = collect();
-        } else if ($user->role === 'colaborador') {
-            // Filtrar documentos para colaboradores normales basados en su puesto
-            $jobRole = $user->jobRole;
-            $keywords = [];
-            if ($jobRole) {
-                $roleName = mb_strtolower(Str::ascii($jobRole->name), 'UTF-8');
-                $words = preg_split('/[\s\-_,]+/', $roleName);
-                $stopWords = ['de', 'la', 'el', 'en', 'y', 'con', 'para', 'un', 'una', 'del', 'al', 'los', 'las', 'a', 'o', 'u', 'e', 'apoyo', 'eventual', 'integral'];
-                $keywords = array_filter($words, function ($w) use ($stopWords) {
-                    return strlen($w) > 2 && !in_array($w, $stopWords);
-                });
+        } else {
+            $isRoleAdmin = ($user->role === 'administrador' || $user->role === 'admin' || $user->role === 'supervisor');
+            $roleNameLower = mb_strtolower($user->jobRole?->name ?? '', 'UTF-8');
+            $isAdminTitle = str_contains($roleNameLower, 'administrador') || str_contains($roleNameLower, 'gerente') || str_contains($roleNameLower, 'director');
+            $isUserAdmin = $isRoleAdmin || $isAdminTitle;
+
+            if ($isUserAdmin) {
+                // Admin sees all documents
+                $filteredDocs = $docsQuery->orderBy('position', 'asc')->orderBy('title', 'asc')->get();
+            } else {
+                // Colaborador: filter documents by job role assignment matrix
+                if ($user->job_role_id) {
+                    $assignedDocIds = DB::table('obsidian_document_job_role')
+                        ->where('tenant_id', $tenantId)
+                        ->where('job_role_id', $user->job_role_id)
+                        ->pluck('document_id')
+                        ->toArray();
+
+                    $filteredDocs = $docsQuery->whereIn('id', $assignedDocIds)
+                        ->orderBy('position', 'asc')
+                        ->orderBy('title', 'asc')
+                        ->get();
+                } else {
+                    $filteredDocs = collect();
+                }
             }
 
-            $allDocs = $docsQuery->get();
-            $filteredDocs = $allDocs->filter(function ($doc) use ($keywords) {
-                $docType = $doc->type;
-                
-                // 1. Tipos siempre públicos (Organización, Glosario, Notas generales)
-                if (in_array($docType, ['organizacion', 'glosario', 'nota'])) {
-                    return true;
-                }
-
-                $titleLower = mb_strtolower(Str::ascii($doc->title), 'UTF-8');
-
-                // 2. Documentos generales de RRHH / Administrativos
-                $generalKeywords = ['contrato', 'convenio', 'responsiva', 'expediente', 'ingreso', 'reglamento', 'taller', 'sucursal', 'soda', 'talent360', 'academia', 'fundador', 'historia'];
-                foreach ($generalKeywords as $gk) {
-                    if (str_contains($titleLower, $gk)) {
-                        return true;
-                    }
-                }
-
-                // 3. Coincidencia por palabra clave del puesto
-                foreach ($keywords as $kw) {
-                    if (str_contains($titleLower, $kw)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            });
-
-            $index = $filteredDocs->sortBy('title')->groupBy('type');
-        } else {
-            // Admin ve todo
-            $filteredDocs = $docsQuery->get();
-            $index = $filteredDocs->sortBy('title')->groupBy('type');
+            $index = $filteredDocs->groupBy('type');
         }
 
         // Si se pide un documento específico, validar que exista y tenga permiso
@@ -1467,17 +1448,38 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             ->with(['jobRole', 'readProgress'])
             ->get();
 
-        $summary = $users->map(function ($u) use ($totalDocs) {
+        $summary = $users->map(function ($u) use ($tenantId, $totalDocs) {
             $readCount = $u->readProgress->count();
-            $percentage = $totalDocs > 0 ? round(($readCount / $totalDocs) * 100, 1) : 0;
+
+            $isRoleAdmin = ($u->role === 'administrador' || $u->role === 'admin' || $u->role === 'supervisor');
+            $roleNameLower = mb_strtolower($u->jobRole?->name ?? '', 'UTF-8');
+            $isAdminTitle = str_contains($roleNameLower, 'administrador') || str_contains($roleNameLower, 'gerente') || str_contains($roleNameLower, 'director');
+            $isUserAdmin = $isRoleAdmin || $isAdminTitle;
+
+            if ($isUserAdmin) {
+                $userTotalDocs = $totalDocs;
+            } else {
+                if ($u->job_role_id) {
+                    $userTotalDocs = DB::table('obsidian_document_job_role')
+                        ->where('tenant_id', $tenantId)
+                        ->where('job_role_id', $u->job_role_id)
+                        ->count();
+                } else {
+                    $userTotalDocs = 0;
+                }
+            }
+
+            $percentage = $userTotalDocs > 0 ? round(($readCount / $userTotalDocs) * 100, 1) : 0;
+            if ($percentage > 100) $percentage = 100;
+
             return [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
                 'role' => $u->role,
-                'job_role' => $u->jobRole?->name ?? 'Administración',
+                'job_role' => $u->jobRole?->name ?? 'Colaborador',
                 'read_count' => $readCount,
-                'total_docs' => $totalDocs,
+                'total_docs' => $userTotalDocs,
                 'percentage' => $percentage
             ];
         });
@@ -1542,5 +1544,98 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             ],
             'token' => $token
         ]);
+    }
+
+    public function reorderDocuments(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $order = $request->order; // Array of ids
+        if (!is_array($order)) {
+            return response()->json(['error' => 'Formato de orden inválido.'], 400);
+        }
+
+        DB::transaction(function () use ($tenantId, $order) {
+            foreach ($order as $index => $id) {
+                DB::table('obsidian_documents')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $id)
+                    ->update(['position' => $index]);
+            }
+        });
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function getMatrix(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+
+        // Get all job roles for this tenant
+        $jobRoles = DB::table('job_roles')
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->select('id', 'name')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Get all documents
+        $documents = DB::table('obsidian_documents')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->select('id', 'title', 'type', 'slug', 'position')
+            ->orderBy('position', 'asc')
+            ->orderBy('title', 'asc')
+            ->get();
+
+        // Get current assignments
+        $assignments = DB::table('obsidian_document_job_role')
+            ->where('tenant_id', $tenantId)
+            ->select('document_id', 'job_role_id')
+            ->get();
+
+        return response()->json([
+            'job_roles' => $jobRoles,
+            'documents' => $documents,
+            'assignments' => $assignments
+        ]);
+    }
+
+    public function updateMatrix(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $mappings = $request->mappings; // Array of [document_id => [job_role_ids]]
+        
+        if (!is_array($mappings)) {
+            return response()->json(['error' => 'Formato de matriz inválido.'], 400);
+        }
+
+        DB::transaction(function () use ($tenantId, $mappings) {
+            // Clear existing assignments for this tenant
+            DB::table('obsidian_document_job_role')
+                ->where('tenant_id', $tenantId)
+                ->delete();
+
+            $insertData = [];
+            foreach ($mappings as $docId => $roleIds) {
+                if (!is_array($roleIds)) continue;
+                foreach ($roleIds as $roleId) {
+                    $insertData[] = [
+                        'tenant_id' => $tenantId,
+                        'document_id' => $docId,
+                        'job_role_id' => $roleId,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }
+            }
+
+            if (!empty($insertData)) {
+                foreach (array_chunk($insertData, 200) as $chunk) {
+                    DB::table('obsidian_document_job_role')->insert($chunk);
+                }
+            }
+        });
+
+        return response()->json(['status' => 'success']);
     }
 }

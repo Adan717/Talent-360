@@ -1183,147 +1183,16 @@ export function WebPublicaOrganizacion() {
           {!isOpen ? (
             <div 
               onClick={() => setShowPasscodeModal(true)}
-              className="w-full max-w-[340px] sm:max-w-[430px] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none border-2 border-r-4 border-slate-950 py-8 min-h-[580px] sm:min-h-[660px]"
+              className="w-full max-w-[340px] sm:max-w-[430px] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden select-none border-2 border-r-4 border-slate-950 min-h-[580px] sm:min-h-[660px] bg-cover bg-center transition-all duration-700 hover:scale-[1.02] shadow-[12px_22px_60px_rgba(0,0,0,0.95)] group"
               style={{
-                background: 'radial-gradient(circle at 50% 30%, #300c14 0%, #150205 60%, #080001 100%)',
-                boxShadow: 'inset 0 0 100px rgba(0,0,0,0.92), 15px 25px 60px rgba(0,0,0,0.9)',
+                backgroundImage: 'url("/book_cover.jpg")',
                 borderColor: '#110103',
               }}
             >
-              {/* Gold borders and design inside the cover */}
-              <div className="absolute inset-2.5 border border-dashed border-[#d4af37]/35 rounded-r-xl pointer-events-none"></div>
-              <div className="absolute inset-3 border-2 border-[#d4af37]/65 rounded-r-xl pointer-events-none"></div>
-              
-              <GoldenCorners />
-
-              {/* Vintage Bookmark Ribbon hanging from the top right */}
-              <div className="absolute top-0 right-12 w-8 h-24 pointer-events-none z-20 overflow-hidden shadow-lg">
-                <div className="w-full h-20 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/35 relative">
-                  {/* Gold embroidery line on the bookmark ribbon */}
-                  <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-2 w-0.5 bg-[#d4af37]/65"></div>
-                  {/* V-cut bottom tail */}
-                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-transparent"
-                    style={{
-                      clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)',
-                      backgroundColor: '#240207'
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Grecas (Antique Corner Ornaments) */}
-              {renderCornerOrnament("top-3 left-3")}
-              {renderCornerOrnament("top-3 right-3 rotate-90")}
-              {renderCornerOrnament("bottom-3 left-3 -rotate-90")}
-              {renderCornerOrnament("bottom-3 right-3 rotate-180")}
-
-              {/* Book spine simulated shadow on the left edge */}
-              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/60 to-transparent pointer-events-none"></div>
-              <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#d4af37]/25 pointer-events-none"></div>
-
-              {/* Title above Logo */}
-              <div className="flex flex-col items-center mt-6 mb-4 relative z-10 text-center w-full">
-                <h1 
-                  className="text-4xl sm:text-[54px] font-black text-[#d4af37] select-none leading-none tracking-normal"
-                  style={{ 
-                    fontFamily: "'Pinyon Script', cursive",
-                    textShadow: '0px 1px 0px rgba(255,255,255,0.12), 0px -1px 0px rgba(0,0,0,0.85)',
-                    paddingBottom: '2px'
-                  }}
-                >
-                  La Receta Secreta
-                </h1>
-                <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent mt-2"></div>
-              </div>
-
-              {/* Cover Center section - LARGE LOGO */}
-              <div className="flex flex-col items-center text-center my-auto py-2 relative z-10">
-                
-                {/* 200% LARGER LOGO CONTAINER */}
-                <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-full border-4 border-[#d4af37]/80 p-1 flex items-center justify-center shadow-[inset_0_4px_10px_rgba(0,0,0,0.3),_0_10px_25px_rgba(0,0,0,0.7)] bg-[#f5ebd5] hover:scale-105 transition-transform duration-300 relative mb-4">
-                  <img 
-                    src="/decorarte_logo.png" 
-                    alt="Logo DecorArte" 
-                    className="w-full h-full object-contain rounded-full opacity-90 contrast-[1.05]" 
-                  />
-                  <div className="absolute inset-0 rounded-full border border-[#d4af37]/30 opacity-20 pointer-events-none"></div>
-
-                  {/* Starburst Anniversary Quality Seal (Sello de Calidad de 24 picos) - Placed at the bottom right */}
-                  <div className="absolute -right-5 -bottom-3 sm:-right-7 sm:-bottom-4 z-30 select-none hover:rotate-[5deg] transition-transform duration-300 drop-shadow-[0_4px_8px_rgba(0,0,0,0.65)]">
-                    {/* Ribbon tails hanging from the seal */}
-                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-8 h-10 flex justify-between pointer-events-none">
-                      <div className="w-3.5 h-10 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/25 relative rotate-[-12deg] origin-top">
-                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-[#faf6eb]" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)', backgroundColor: '#240207' }}></div>
-                      </div>
-                      <div className="w-3.5 h-10 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/25 relative rotate-[12deg] origin-top">
-                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-[#faf6eb]" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)', backgroundColor: '#240207' }}></div>
-                      </div>
-                    </div>
-
-                    {/* Starburst body */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-[#bf953f] via-[#fcf6ba] to-[#aa771c] p-0.5 relative"
-                      style={{
-                        clipPath: 'polygon(50% 0%, 55% 5%, 62% 2%, 66% 9%, 74% 7%, 77% 15%, 85% 15%, 86% 23%, 93% 25%, 92% 33%, 98% 37%, 95% 45%, 99% 50%, 95% 55%, 98% 63%, 92% 67%, 93% 75%, 86% 77%, 85% 85%, 77% 85%, 74% 93%, 66% 91%, 62% 98%, 55% 95%, 50% 100%, 45% 95%, 38% 98%, 34% 91%, 26% 93%, 23% 85%, 15% 85%, 14% 77%, 7% 75%, 8% 67%, 2% 63%, 5% 55%, 1% 50%, 5% 45%, 2% 37%, 8% 33%, 7% 25%, 14% 23%, 15% 15%, 23% 15%, 26% 7%, 34% 9%, 38% 2%, 45% 5%)'
-                      }}
-                    >
-                      <div className="w-full h-full rounded-full border border-dashed border-[#4a0717]/40 flex flex-col items-center justify-center text-center p-1 bg-gradient-to-br from-[#fcf6ba] via-[#bf953f] to-[#aa771c]">
-                        <span className="text-[5.5px] sm:text-[6.5px] font-black tracking-tighter text-[#4a0717] uppercase leading-none font-sans">
-                          CONMEMORACIÓN
-                        </span>
-                        
-                        <div className="flex items-start justify-center my-0.5">
-                          <span className="text-xl sm:text-2xl font-black text-[#4a0717] leading-none font-serif select-none">
-                            3
-                          </span>
-                          <span className="text-[8px] sm:text-[9.5px] font-bold text-[#4a0717] leading-none align-super font-serif select-none mt-0.5 ml-0.5">
-                            er
-                          </span>
-                        </div>
-
-                        <span className="text-[6px] sm:text-[7px] font-black tracking-widest text-[#4a0717] uppercase leading-none font-sans">
-                          ANIVERSARIO
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Manual de Operaciones V1.0 Subheader */}
-              <div className="my-2 relative z-10 text-center select-none">
-                <span className="text-[10.5px] sm:text-[11.5px] text-[#faf6eb]/80 font-bold uppercase tracking-widest font-sans">
-                  Manual de Operaciones • V1.0
-                </span>
-                <p className="text-[8px] sm:text-[9px] font-bold text-[#d4af37]/65 uppercase tracking-[0.2em] font-sans mt-0.5">
-                  DecorArte 360
-                </p>
-                <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#d4af37]/35 to-transparent mx-auto mt-2"></div>
-              </div>
-
-              {/* Antique Compilation Credits */}
-              <div className="my-3 relative z-10 text-center select-none">
-                <span className="text-[7.5px] sm:text-[8px] font-bold text-[#faf6eb]/55 uppercase tracking-[0.25em] font-sans">
-                  Compilado y Editado por
-                </span>
-                <p 
-                  className="text-[10.5px] sm:text-[11.5px] font-black text-[#d4af37] tracking-widest mt-0.5 uppercase"
-                  style={{ 
-                    fontFamily: "'Cinzel', serif", 
-                    textShadow: '0 1px 2px rgba(0,0,0,0.6)'
-                  }}
-                >
-                  Francisco Vega Castillo
-                </p>
-              </div>
-
-              {/* Cover Bottom section - Footer and Touch cue */}
-              <div className="flex flex-col items-center mb-1 relative z-10">
-                <div className="text-[#d4af37] animate-pulse mb-1 text-xs flex items-center gap-1.5 font-sans font-bold">
-                  <BookIcon size={14} />
-                  <span>Haz clic para abrir</span>
-                </div>
-                <span className="text-[8px] font-bold text-[#faf6eb]/30 tracking-wider font-sans uppercase">DESDE 1986</span>
-              </div>
+              {/* Subtle hover overlay to make the book shine on hover */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+              {/* Skeuomorphic book spine simulated shadow on the left edge */}
+              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/45 to-transparent pointer-events-none"></div>
             </div>
           ) : (
             

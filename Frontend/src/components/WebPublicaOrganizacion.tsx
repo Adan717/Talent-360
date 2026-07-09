@@ -1181,18 +1181,13 @@ export function WebPublicaOrganizacion() {
 
           {/* MAIN SKEUOMORPHIC BOOK CONTAINER */}
           {!isOpen ? (
-            
-            /* =========================================================================
-               1. CLOSED BOOK COVER VIEW (Pasta Gruesa)
-               ========================================================================= */
             <div 
               onClick={() => setShowPasscodeModal(true)}
               className="w-full max-w-[340px] sm:max-w-[430px] rounded-r-2xl rounded-l-md book-cover-3d cursor-pointer relative overflow-hidden p-5 sm:p-6 flex flex-col justify-between select-none border-2 border-r-4 border-slate-950 py-8 min-h-[580px] sm:min-h-[660px]"
               style={{
-                // Matching Red circle logo background
-                background: 'linear-gradient(135deg, #4a0717 0%, #8b102e 50%, #4a0717 100%)',
-                boxShadow: 'inset 0 0 45px rgba(0,0,0,0.65), 10px 15px 35px rgba(0,0,0,0.85)',
-                borderColor: '#240207',
+                background: 'radial-gradient(circle at 50% 30%, #300c14 0%, #150205 60%, #080001 100%)',
+                boxShadow: 'inset 0 0 100px rgba(0,0,0,0.92), 15px 25px 60px rgba(0,0,0,0.9)',
+                borderColor: '#110103',
               }}
             >
               {/* Gold borders and design inside the cover */}
@@ -1226,36 +1221,35 @@ export function WebPublicaOrganizacion() {
               <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/60 to-transparent pointer-events-none"></div>
               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#d4af37]/25 pointer-events-none"></div>
 
-              {/* Cover Top section - Brand Header */}
-              <div className="flex flex-col items-center mt-4 relative z-10">
-                <div className="flex items-center gap-1.5 bg-[#d4af37]/10 px-2.5 py-1 rounded-full border border-[#d4af37]/35 shadow-sm">
-                  <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#d4af37] uppercase font-sans">
-                    Manual de Operaciones
-                  </span>
-                  <span className="text-[7px] font-black font-sans bg-[#d4af37] text-[#4a0717] px-1 py-0.5 rounded uppercase leading-none shadow">
-                    V1.0
-                  </span>
-                </div>
-                <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.2em] text-[#faf6eb]/70 uppercase font-sans mt-1">
-                  DecorArte 360
-                </span>
-                <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/50 to-transparent mt-1.5"></div>
+              {/* Title above Logo */}
+              <div className="flex flex-col items-center mt-6 mb-4 relative z-10 text-center w-full">
+                <h1 
+                  className="text-4xl sm:text-[54px] font-black text-[#d4af37] select-none leading-none tracking-normal"
+                  style={{ 
+                    fontFamily: "'Pinyon Script', cursive",
+                    textShadow: '0px 1px 0px rgba(255,255,255,0.12), 0px -1px 0px rgba(0,0,0,0.85)',
+                    paddingBottom: '2px'
+                  }}
+                >
+                  La Receta Secreta
+                </h1>
+                <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent mt-2"></div>
               </div>
 
-              {/* Cover Center section - LARGE LOGO & EMBEDDED TITLE */}
-              <div className="flex flex-col items-center text-center my-auto py-4 relative z-10">
+              {/* Cover Center section - LARGE LOGO */}
+              <div className="flex flex-col items-center text-center my-auto py-2 relative z-10">
                 
-                {/* 200% LARGER LOGO CONTAINER WITH SELLO DE CALIDAD */}
-                <div className="w-48 h-48 sm:w-60 sm:h-60 rounded-full border-4 border-[#d4af37] p-1 flex items-center justify-center shadow-2xl bg-[#f6ecda] hover:scale-105 transition-transform duration-300 relative mb-5">
+                {/* 200% LARGER LOGO CONTAINER */}
+                <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-full border-4 border-[#d4af37]/80 p-1 flex items-center justify-center shadow-[inset_0_4px_10px_rgba(0,0,0,0.3),_0_10px_25px_rgba(0,0,0,0.7)] bg-[#f5ebd5] hover:scale-105 transition-transform duration-300 relative mb-4">
                   <img 
                     src="/decorarte_logo.png" 
                     alt="Logo DecorArte" 
-                    className="w-full h-full object-contain rounded-full" 
+                    className="w-full h-full object-contain rounded-full opacity-90 contrast-[1.05]" 
                   />
-                  <div className="absolute inset-0 rounded-full border border-[#d4af37]/40 animate-ping opacity-10 pointer-events-none"></div>
+                  <div className="absolute inset-0 rounded-full border border-[#d4af37]/30 opacity-20 pointer-events-none"></div>
 
-                  {/* Starburst Anniversary Quality Seal (Sello de Calidad de 24 picos) */}
-                  <div className="absolute -right-6 sm:-right-8 -top-3 z-30 select-none hover:rotate-[5deg] transition-transform duration-300 drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)]">
+                  {/* Starburst Anniversary Quality Seal (Sello de Calidad de 24 picos) - Placed at the bottom right */}
+                  <div className="absolute -right-5 -bottom-3 sm:-right-7 sm:-bottom-4 z-30 select-none hover:rotate-[5deg] transition-transform duration-300 drop-shadow-[0_4px_8px_rgba(0,0,0,0.65)]">
                     {/* Ribbon tails hanging from the seal */}
                     <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-8 h-10 flex justify-between pointer-events-none">
                       <div className="w-3.5 h-10 bg-gradient-to-b from-[#8b102e] to-[#60051a] border-l border-r border-[#d4af37]/25 relative rotate-[-12deg] origin-top">
@@ -1292,23 +1286,18 @@ export function WebPublicaOrganizacion() {
                       </div>
                     </div>
                   </div>
-
-                  {/* TEXT ONLY WITH BEVEL/OUTLINE STYLE IN BEAUTIFUL MANUSCRIPT FONT */}
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-full text-center whitespace-nowrap">
-                    <h2 
-                      className="text-[34px] sm:text-[46px] font-black text-[#faf6eb] select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.95)]"
-                      style={{ 
-                        fontFamily: "'Pinyon Script', cursive",
-                        textShadow: '2px 2px 0px #1a0206, -1px -1px 0px #d4af37, 1px -1px 0px #d4af37, -1px 1px 0px #d4af37, 1px 1px 0px #d4af37, 3px 3px 5px rgba(0,0,0,0.6)',
-                        paddingBottom: '4px'
-                      }}
-                    >
-                      La Receta Secreta
-                    </h2>
-                  </div>
                 </div>
+              </div>
 
-                <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/45 to-transparent my-2"></div>
+              {/* Manual de Operaciones V1.0 Subheader */}
+              <div className="my-2 relative z-10 text-center select-none">
+                <span className="text-[10.5px] sm:text-[11.5px] text-[#faf6eb]/80 font-bold uppercase tracking-widest font-sans">
+                  Manual de Operaciones • V1.0
+                </span>
+                <p className="text-[8px] sm:text-[9px] font-bold text-[#d4af37]/65 uppercase tracking-[0.2em] font-sans mt-0.5">
+                  DecorArte 360
+                </p>
+                <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#d4af37]/35 to-transparent mx-auto mt-2"></div>
               </div>
 
               {/* Antique Compilation Credits */}
@@ -1325,7 +1314,6 @@ export function WebPublicaOrganizacion() {
                 >
                   Francisco Vega Castillo
                 </p>
-                <div className="w-10 h-0.5 bg-[#d4af37]/35 mx-auto mt-1"></div>
               </div>
 
               {/* Cover Bottom section - Footer and Touch cue */}

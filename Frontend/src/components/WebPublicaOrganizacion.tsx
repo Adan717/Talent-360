@@ -1078,19 +1078,55 @@ export function WebPublicaOrganizacion() {
       {/* 🔮 PASSCODE SUCCESS WELCOME MODAL */}
       {showWelcomeModal && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
+          <div className="bg-[#f6ecda] w-full max-w-md rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
             <GoldenCorners />
-            <Sparkles size={36} className="text-[#b38728] mb-3 animate-bounce" />
-            <h3 className="font-serif text-lg font-black text-[#4a0717] mb-2">¡Validación Exitosa!</h3>
-            <p className="text-xs text-[#2b251f] font-serif font-bold italic mb-5 leading-relaxed">
-              "Esta receta dejó de ser secreta."
-            </p>
-            <button
-              onClick={() => setShowWelcomeModal(false)}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors"
-            >
-              Comenzar a Leer
-            </button>
+            {currentUser?.email === 'marisoldecorarte@gmail.com' && currentUser?.role === 'admin' ? (
+              <div className="space-y-4 w-full">
+                <Sparkles size={36} className="text-[#b38728] mb-1 animate-bounce mx-auto" />
+                <h3 className="font-serif text-lg font-black text-[#4a0717]">¡Bienvenida, Diseñadora de Sueños!</h3>
+                
+                {/* Dedicatoria Parchment scroll */}
+                <div 
+                  className="my-3 relative z-10 rotate-[-1.5deg] hover:rotate-0 transition-transform duration-300 p-4 sm:p-5 rounded-l-[22px_8px] rounded-r-[8px_22px] border-y-2 border-[#5c3e21]/45 border-x-4 border-double border-[#5c3e21]/70 bg-gradient-to-r from-[#d3c09b] via-[#faf0db] to-[#d3c09b] shadow-[0_10px_20px_rgba(0,0,0,0.45),_inset_0_0_25px_rgba(92,62,33,0.18)] max-w-sm mx-auto"
+                >
+                  <div className="absolute -top-3 -right-2 bg-[#8b102e] text-[#faf6eb] text-[8px] font-sans font-black px-1.5 py-0.5 rounded shadow rotate-[12deg] border border-[#d4af37]/40 uppercase tracking-widest">
+                    Sello Gurú
+                  </div>
+                  <p 
+                    className="text-xs sm:text-[13px] text-[#4a0717] leading-relaxed text-center" 
+                    style={{ 
+                      fontFamily: "'Dancing Script', cursive",
+                      fontWeight: 700
+                    }}
+                  >
+                    "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existence."
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWelcomeModal(false)}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors"
+                >
+                  Entrar al Manual
+                </button>
+              </div>
+            ) : (
+              <>
+                <Sparkles size={36} className="text-[#b38728] mb-3 animate-bounce" />
+                <h3 className="font-serif text-lg font-black text-[#4a0717] mb-2">¡Validación Exitosa!</h3>
+                <p className="text-xs text-[#2b251f] font-serif font-bold italic mb-5 leading-relaxed">
+                  "Esta receta dejó de ser secreta."
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowWelcomeModal(false)}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors"
+                >
+                  Comenzar a Leer
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1209,23 +1245,7 @@ export function WebPublicaOrganizacion() {
                 <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent my-2"></div>
               </div>
 
-              {/* Dedicatoria a MRV de El Gran Gurú (Parchamiento Antiguo / Scroll Paper) */}
-              <div 
-                className="my-3 relative z-10 rotate-[-1.5deg] hover:rotate-0 transition-transform duration-300 p-4 sm:p-5 rounded-l-[22px_8px] rounded-r-[8px_22px] border-y-2 border-[#5c3e21]/45 border-x-4 border-double border-[#5c3e21]/70 bg-gradient-to-r from-[#d3c09b] via-[#faf0db] to-[#d3c09b] shadow-[0_10px_20px_rgba(0,0,0,0.45),_inset_0_0_25px_rgba(92,62,33,0.18)] max-w-[275px] sm:max-w-[350px] mx-auto"
-              >
-                <div className="absolute -top-3 -right-2 bg-[#8b102e] text-[#faf6eb] text-[8px] font-sans font-black px-1.5 py-0.5 rounded shadow rotate-[12deg] border border-[#d4af37]/40 uppercase tracking-widest">
-                  Sello Gurú
-                </div>
-                <p 
-                  className="text-xs sm:text-[13px] text-[#4a0717] leading-relaxed text-center" 
-                  style={{ 
-                    fontFamily: "'Dancing Script', cursive",
-                    fontWeight: 700
-                  }}
-                >
-                  "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existence."
-                </p>
-              </div>
+
 
               {/* Cover Bottom section - Footer and Touch cue */}
               <div className="flex flex-col items-center mb-2 relative z-10">

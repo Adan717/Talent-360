@@ -5,7 +5,7 @@ import {
   ChevronRight, ChevronLeft, Eye, EyeOff, BookOpen, AlertCircle, Globe, 
   Share2, Check, ArrowLeft, BookOpen as BookIcon, Menu, Building2,
   Volume2, VolumeX, Mic, Sparkles, X, Lock, Unlock, Key, MessageSquare,
-  Clock, Trophy, ClipboardList, Settings, Paperclip
+  Clock, Trophy, ClipboardList, Settings, Paperclip, Hourglass
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 
@@ -935,6 +935,14 @@ export function WebPublicaOrganizacion() {
           opacity: 0.85;
           z-index: 1;
         }
+
+        @keyframes hourglass-flip {
+          0%, 90% { transform: rotate(0deg); }
+          100% { transform: rotate(180deg); }
+        }
+        .animate-hourglass {
+          animation: hourglass-flip 2.2s infinite ease-in-out;
+        }
         
         .gold-metal-text {
           background: linear-gradient(to right, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
@@ -1258,8 +1266,28 @@ export function WebPublicaOrganizacion() {
       )}
 
       {loading && (
-        <div className="text-amber-100/80 font-bold tracking-widest text-sm animate-pulse font-sans">
-          Abriendo "La Receta Secreta" de DecorArte...
+        <div className="flex flex-col items-center justify-center p-6 text-center space-y-6">
+          {/* Animated Hourglass */}
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-md border border-[#bf953f]/30 flex items-center justify-center shadow-lg shadow-black/50">
+              <Hourglass size={32} className="text-[#bf953f] animate-hourglass" />
+            </div>
+            {/* Ambient gold glow */}
+            <div className="absolute inset-0 bg-[#bf953f]/10 rounded-full blur-xl animate-pulse" />
+          </div>
+
+          {/* Centered structured loading text */}
+          <div className="space-y-2 font-serif text-amber-100/90 drop-shadow-md">
+            <span className="text-[10px] font-black uppercase font-sans tracking-[0.3em] text-[#bf953f] block">
+              Cargando
+            </span>
+            <h2 className="text-base sm:text-lg font-black leading-tight italic max-w-sm px-4">
+              {activeDoc ? `« ${activeDoc.title} »` : 'Abriendo "La Receta Secreta"'}
+            </h2>
+            <span className="text-[9px] font-medium font-sans uppercase tracking-widest text-amber-100/50 block">
+              de DecorArte
+            </span>
+          </div>
         </div>
       )}
 

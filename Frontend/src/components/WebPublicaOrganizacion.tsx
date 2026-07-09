@@ -76,6 +76,8 @@ export function WebPublicaOrganizacion() {
   const [scribeResultHtml, setScribeResultHtml] = useState('');
   const [generatingScribe, setGeneratingScribe] = useState(false);
 
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
   const [tenant, setTenant] = useState<any>({
     name: 'DecorArte 360',
     logo_url: '',
@@ -152,7 +154,7 @@ export function WebPublicaOrganizacion() {
         contentDiv.removeEventListener('click', handleWikiClick);
       }
     };
-  }, [activeDoc, tenantSlug]);
+  }, [navigate, tenantSlug]);
 
   // Fetch pending suggestions for auditor
   const fetchSuggestions = async () => {
@@ -279,6 +281,7 @@ export function WebPublicaOrganizacion() {
         sessionStorage.setItem(`vault_role_${tenantSlug}`, res.data.role);
         setShowPasscodeModal(false);
         setIsOpen(true);
+        setShowWelcomeModal(true);
       }
     } catch (err: any) {
       setPasscodeError(err.response?.data?.error || 'Contraseña incorrecta.');
@@ -299,6 +302,17 @@ export function WebPublicaOrganizacion() {
       window.speechSynthesis.cancel();
     }
   };
+
+  const renderCornerOrnament = (rotateClass: string) => (
+    <svg className={`absolute w-10 h-10 text-[#d4af37]/65 pointer-events-none z-20 ${rotateClass}`} viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3">
+      <path d="M 12 12 L 65 12" strokeLinecap="round" />
+      <path d="M 12 12 L 12 65" strokeLinecap="round" />
+      <path d="M 22 22 C 22 35, 35 22, 35 35" strokeLinecap="round" />
+      <path d="M 12 28 C 20 28, 20 20, 28 20" strokeLinecap="round" />
+      <path d="M 28 12 C 28 20, 20 20, 20 28" strokeLinecap="round" />
+      <rect x="10" y="10" width="4" height="4" fill="currentColor" />
+    </svg>
+  );
 
   // Submit suggestion
   const handleSubmitSuggestion = async (e: React.FormEvent) => {
@@ -751,6 +765,26 @@ export function WebPublicaOrganizacion() {
         </div>
       )}
 
+      {/* 🔮 PASSCODE SUCCESS WELCOME MODAL */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#f6ecda] w-full max-w-sm rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
+            <GoldenCorners />
+            <Sparkles size={36} className="text-[#b38728] mb-3 animate-bounce" />
+            <h3 className="font-serif text-lg font-black text-[#4a0717] mb-2">¡Validación Exitosa!</h3>
+            <p className="text-xs text-[#2b251f] font-serif font-bold italic mb-5 leading-relaxed">
+              "Esta receta dejó de ser secreta."
+            </p>
+            <button
+              onClick={() => setShowWelcomeModal(false)}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors"
+            >
+              Comenzar a Leer
+            </button>
+          </div>
+        </div>
+      )}
+
       {loading && (
         <div className="text-amber-100/80 font-bold tracking-widest text-sm animate-pulse font-sans">
           Abriendo "La Receta Secreta" de DecorArte...
@@ -802,40 +836,67 @@ export function WebPublicaOrganizacion() {
               
               <GoldenCorners />
 
+              {/* Grecas (Antique Corner Ornaments) */}
+              {renderCornerOrnament("top-3 left-3")}
+              {renderCornerOrnament("top-3 right-3 rotate-90")}
+              {renderCornerOrnament("bottom-3 left-3 -rotate-90")}
+              {renderCornerOrnament("bottom-3 right-3 rotate-180")}
+
               {/* Book spine simulated shadow on the left edge */}
               <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-black/60 to-transparent pointer-events-none"></div>
               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#d4af37]/25 pointer-events-none"></div>
 
               {/* Cover Top section - Brand Header */}
-              <div className="flex flex-col items-center mt-2 relative z-10">
-                <span className="text-[9px] font-black tracking-[0.25em] text-[#d4af37] uppercase font-sans">
+              <div className="flex flex-col items-center mt-4 relative z-10">
+                <div className="flex items-center gap-1.5 bg-[#d4af37]/10 px-2.5 py-1 rounded-full border border-[#d4af37]/35 shadow-sm">
+                  <span className="text-[11px] sm:text-xs font-black tracking-widest text-[#d4af37] uppercase font-sans">
+                    Manual de Operaciones
+                  </span>
+                  <span className="text-[7px] font-black font-sans bg-[#d4af37] text-[#4a0717] px-1 py-0.5 rounded uppercase leading-none shadow">
+                    V1.0
+                  </span>
+                </div>
+                <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.2em] text-[#faf6eb]/70 uppercase font-sans mt-1">
                   DecorArte 360
                 </span>
-                <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent mt-1.5"></div>
+                <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/50 to-transparent mt-1.5"></div>
               </div>
 
-              {/* Cover Center section - LARGE LOGO & TITLE */}
-              <div className="flex flex-col items-center text-center my-auto py-2 relative z-10">
-                <span className="text-[8px] font-black tracking-[0.25em] text-[#d4af37]/80 uppercase font-sans mb-3 block">
-                  MANUAL DE OPERACIONES
-                </span>
-
-                {/* LARGE DECORARTE LOGO */}
-                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-[#d4af37] p-1 flex items-center justify-center shadow-2xl bg-[#f6ecda] hover:scale-105 transition-transform duration-300 mb-3.5 relative">
+              {/* Cover Center section - LARGE LOGO & EMBEDDED TITLE */}
+              <div className="flex flex-col items-center text-center my-auto py-4 relative z-10">
+                
+                {/* 200% LARGER LOGO CONTAINER */}
+                <div className="w-48 h-48 sm:w-60 sm:h-60 rounded-full border-4 border-[#d4af37] p-1 flex items-center justify-center shadow-2xl bg-[#f6ecda] hover:scale-105 transition-transform duration-300 relative mb-5">
                   <img 
                     src="/decorarte_logo.png" 
                     alt="Logo DecorArte" 
                     className="w-full h-full object-contain rounded-full" 
                   />
                   <div className="absolute inset-0 rounded-full border border-[#d4af37]/40 animate-ping opacity-10 pointer-events-none"></div>
+
+                  {/* EMBEDDED / CALLIGRAPHY OVERLAY TAG FOR TITLE */}
+                  <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-44 sm:w-52 bg-gradient-to-b from-[#faf6eb] to-[#e8dba5] border-2 border-[#b38728] px-2 py-1 rounded-xl shadow-2xl rotate-[-2deg] flex flex-col items-center justify-center">
+                    <span 
+                      className="text-base sm:text-lg font-black text-[#4a0717] leading-none"
+                      style={{ 
+                        fontFamily: "'Playfair Display', serif", 
+                        fontStyle: 'italic' 
+                      }}
+                    >
+                      La Receta
+                    </span>
+                    <span 
+                      className="text-[9px] sm:text-[10px] font-black text-[#8b102e] uppercase tracking-[0.25em] leading-none mt-0.5"
+                      style={{ 
+                        fontFamily: "'Outfit', sans-serif" 
+                      }}
+                    >
+                      Secreta
+                    </span>
+                  </div>
                 </div>
 
-                <h2 className="text-3xl sm:text-4xl font-black font-serif italic py-1 text-center gold-metal-text leading-none tracking-wide px-2 select-none">
-                  La Receta
-                  <span className="block mt-1.5 not-italic font-normal uppercase tracking-widest text-2xl sm:text-3xl">Secreta</span>
-                </h2>
-
-                <div className="w-28 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent my-2.5"></div>
+                <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent my-2"></div>
               </div>
 
               {/* Dedicatoria a MRV de El Gran Gurú */}
@@ -850,7 +911,7 @@ export function WebPublicaOrganizacion() {
                     fontWeight: 700
                   }}
                 >
-                  "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existencia."
+                  "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existence."
                 </p>
               </div>
 

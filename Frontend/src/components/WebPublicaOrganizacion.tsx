@@ -1336,43 +1336,56 @@ export function WebPublicaOrganizacion() {
       )}
 
       {/* 🔮 PASSCODE SUCCESS WELCOME MODAL */}
-      {showWelcomeModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#f6ecda] w-full max-w-md rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
-            <GoldenCorners />
-            {currentUser?.email === 'marisoldecorarte@gmail.com' && (currentUser?.role === 'admin' || currentUser?.role === 'supervisor') ? (
-              <div className="space-y-4 w-full">
-                <Sparkles size={36} className="text-[#b38728] mb-1 animate-bounce mx-auto" />
-                <h3 className="font-serif text-lg font-black text-[#4a0717]">¡Bienvenida, Diseñadora de Sueños!</h3>
-                
-                {/* Dedicatoria Parchment scroll */}
-                <div 
-                  className="my-3 relative z-10 rotate-[-1.5deg] hover:rotate-0 transition-transform duration-300 p-4 sm:p-5 rounded-l-[22px_8px] rounded-r-[8px_22px] border-y-2 border-[#5c3e21]/45 border-x-4 border-double border-[#5c3e21]/70 bg-gradient-to-r from-[#d3c09b] via-[#faf0db] to-[#d3c09b] shadow-[0_10px_20px_rgba(0,0,0,0.45),_inset_0_0_25px_rgba(92,62,33,0.18)] max-w-sm mx-auto"
-                >
-                  <div className="absolute -top-3 -right-2 bg-[#8b102e] text-[#faf6eb] text-[8px] font-sans font-black px-1.5 py-0.5 rounded shadow rotate-[12deg] border border-[#d4af37]/40 uppercase tracking-widest">
+      {showWelcomeModal && (() => {
+        const isMarisol = currentUser?.email === 'marisoldecorarte@gmail.com' && (currentUser?.role === 'admin' || currentUser?.role === 'supervisor');
+        
+        return (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            {isMarisol ? (
+              /* ========================================================
+                 MARISOL'S GRAND PARCHMENT WELCOME MODAL
+                 ======================================================== */
+              <div 
+                className="w-full max-w-xl rounded-[40px_10px_40px_10px] p-6 sm:p-10 relative border-y-[10px] border-x-[5px] border-double border-[#5c3e21]/80 bg-gradient-to-r from-[#cbb487] via-[#fbf3e3] to-[#cbb487] shadow-[0_25px_60px_rgba(0,0,0,0.85),_inset_0_0_40px_rgba(92,62,33,0.3)] flex flex-col text-center items-center justify-center transform rotate-[-0.5deg]"
+              >
+                <GoldenCorners />
+                <div className="space-y-5 w-full">
+                  <div className="absolute -top-4 -right-3 bg-[#8b102e] text-[#faf6eb] text-[9px] font-sans font-black px-2 py-0.5 rounded shadow-md rotate-[12deg] border border-[#d4af37]/60 uppercase tracking-[0.2em] z-20">
                     Sello Gurú
                   </div>
+                  
+                  <Sparkles size={40} className="text-[#b38728] mb-1 animate-bounce mx-auto" />
+                  
+                  <h3 className="font-serif text-xl sm:text-2xl font-black text-[#4a0717] tracking-wide">
+                    ¡Bienvenida, Diseñadora de Sueños!
+                  </h3>
+                  
                   <p 
-                    className="text-xs sm:text-[13px] text-[#4a0717] leading-relaxed text-center" 
+                    className="text-sm sm:text-base text-[#4a0717] leading-relaxed text-center font-bold px-2 py-1" 
                     style={{ 
                       fontFamily: "'Dancing Script', cursive",
-                      fontWeight: 700
                     }}
                   >
-                    "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existence."
+                    "Con noble afecto y alta estima para MRV, de vuestro leal servidor El Gran Gurú. Es y siempre será un supremo honor crear a vuestro lado. Prometida fue esta obra y hoy os es entregada; un pergamino de tantos que mis manos han trazado, con el anhelo de que no sea el último. Continuaremos escribiendo juntos los anales de nuestra existencia."
                   </p>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowWelcomeModal(false)}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-xs tracking-wider uppercase shadow-md transition-colors"
-                >
-                  Entrar al Manual
-                </button>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowWelcomeModal(false)}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#bf953f] to-[#aa771c] hover:from-[#aa771c] hover:to-[#8c6739] text-[#3d1b13] font-black font-sans text-sm tracking-wider uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] border border-[#5c3e21]/30"
+                    >
+                      Entrar al Manual
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
-              <>
+              /* ========================================================
+                 STANDARD PASSCODE WELCOME MODAL
+                 ======================================================== */
+              <div className="bg-[#f6ecda] w-full max-w-md rounded-3xl p-6 relative border-4 border-[#b38728] shadow-2xl flex flex-col text-center items-center justify-center">
+                <GoldenCorners />
                 <Sparkles size={36} className="text-[#b38728] mb-3 animate-bounce" />
                 <h3 className="font-serif text-lg font-black text-[#4a0717] mb-2">¡Validación Exitosa!</h3>
                 <p className="text-xs text-[#2b251f] font-serif font-bold italic mb-5 leading-relaxed">
@@ -1385,11 +1398,11 @@ export function WebPublicaOrganizacion() {
                 >
                   Comenzar a Leer
                 </button>
-              </>
+              </div>
             )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {loading && (
         <div className="flex flex-col items-center justify-center p-6 text-center space-y-6">

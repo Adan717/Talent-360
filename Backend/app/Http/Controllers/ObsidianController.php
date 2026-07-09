@@ -979,10 +979,10 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
         // Crear sugerencia
         $suggestion = ObsidianSuggestion::create([
             'tenant_id' => $tenant->id,
-            'vault_id' => $doc->vault_id,
             'document_id' => $doc->id,
             'user_id' => null, // null en público
-            'user_name' => $request->user_name,
+            'author_name' => $request->user_name,
+            'original_content' => $doc->raw_content,
             'proposed_content' => $request->proposed_content,
             'comment' => $request->comment,
             'status' => 'pending'

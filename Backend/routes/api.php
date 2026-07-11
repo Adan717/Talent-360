@@ -35,6 +35,7 @@ use App\Http\Controllers\KeyTransferController;
 use App\Http\Controllers\LftSettingController;
 use App\Http\Controllers\EmployeePayrollController;
 use App\Http\Controllers\ObsidianController;
+use App\Http\Controllers\MealReservationController;
 
 
 Route::prefix('v1')->middleware('device.security')->group(function () {
@@ -144,6 +145,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index']);
         Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
         Route::delete('/employees/{id}/force', [EmployeeController::class, 'forceDestroy']);
+        // Organigrama Drag & Drop
+        Route::patch('/employees/{id}/report-to', [EmployeeController::class, 'updateReportTo']);
 
         // Módulo Puestos (Job Roles)
         Route::get('/job-roles', [JobRoleController::class, 'index']);
@@ -302,6 +305,16 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);
         Route::get('/task-assignments', [TaskAssignmentController::class, 'index']);
         Route::put('/task-assignments/{id}', [TaskAssignmentController::class, 'update']);
+
+        // =====================================================================
+        // PILAR III: Reservas de Comedor y Control de Aforo
+        // =====================================================================
+        Route::prefix('meal-reservations')->group(function () {
+            Route::get('/slots', [MealReservationController::class, 'getSlots']);    // Bloques disponibles del día
+            Route::post('/', [MealReservationController::class, 'store']);           // Crear reserva
+            Route::delete('/{id}', [MealReservationController::class, 'cancel']);   // Cancelar reserva
+            Route::post('/{id}/swap', [MealReservationController::class, 'swap']); // Intercambio con compañero
+        });
 
         // Sincronización del cliente local y registros offline (Kiosko)
         if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {

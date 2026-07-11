@@ -8,6 +8,13 @@ use Carbon\Carbon;
 
 class ClockService
 {
+    protected MockLocationDetector $mockLocationDetector;
+
+    public function __construct()
+    {
+        $this->mockLocationDetector = new MockLocationDetector();
+    }
+
     public function processPunch(User $user, $type, $simTime = null, $details = [])
     {
         $tenantId = $user->tenant_id ?? 1;
@@ -91,6 +98,55 @@ class ClockService
 
             if (!$isOpened && !$isOpeningManager) {
                 throw new \Exception("Fichaje Denegado: La tienda física se encuentra cerrada. Debes esperar a que el encargado realice la apertura.");
+            }
+        }
+
+        // 3. GPS VALIDATION — MockLocation Detection + Geofence (Plan Pro)
+        if ($isPro && $type === 'check_in' && isset($details['gps'])) {
+            $gpsData = $details['gps'];
+            $clockOpConfig = isset($settings['clockOpConfig'])
+                ? json_decode($settings['clockOpConfig'], true)
+                : [];
+
+            $gpsEnabled = $clockOpConfig['gpsValidationEnabled'] ?? false;
+
+            if ($gpsEnabled && is_array($gpsData)) {
+                // a) Detectar GPS falso
+                $mockResult = $this->mockLocationDetector->analyze($gpsData);
+
+                if ($mockResult['is_mock']) {
+                    throw new \Exception(
+                        "Fichaje Denegado: " . $mockResult['verdict'] .
+                        " Desactiva las aplicaciones de GPS falso para poder fichar."
+                    );
+                }
+
+                // b) Validar Geofence si la sucursal tiene coordenadas configuradas
+                $storeLat = $clockOpConfig['store_latitude']  ?? null;
+                $storeLng = $clockOpConfig['store_longitude'] ?? null;
+                $geoRadius = $clockOpConfig['geo_radius_meters'] ?? 150;
+
+                if ($storeLat && $storeLng && isset($gpsData['latitude'], $gpsData['longitude'])) {
+                    $geoResult = $this->mockLocationDetector->validateGeofence(
+                        (float) $gpsData['latitude'],
+                        (float) $gpsData['longitude'],
+                        (float) $storeLat,
+                        (float) $storeLng,
+                        (float) $geoRadius
+                    );
+
+                    if (!$geoResult['inside_geofence']) {
+                        // Guardar el riesgo en los detalles pero NO bloquear (solo alerta)
+                        // Si se requiere bloqueo estricto, descomentar la línea siguiente:
+                        // throw new \Exception("Fichaje Denegado: " . $geoResult['message']);
+                        $details['gps_warning'] = $geoResult['message'];
+                        $details['distance_meters'] = $geoResult['distance_meters'];
+                    }
+                }
+
+                // Guardar metadata de GPS en los detalles del registro
+                $details['gps_risk_level'] = $mockResult['risk_level'];
+                $details['gps_flags']      = $mockResult['flags'];
             }
         }
 

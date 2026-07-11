@@ -381,4 +381,44 @@ class EmployeeController extends Controller
             return response()->json(['error' => 'Error al eliminar definitivamente al colaborador: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * PATCH /api/v1/employees/{id}/report-to
+     * Actualiza el reporte jerárquico de un empleado (Organigrama Drag & Drop).
+     * Valida que no se creen ciclos en la jerarquía.
+     */
+    public function updateReportTo(Request $request, int $id)
+    {
+        $request->validate([
+            'report_to' => 'nullable|integer|exists:employees,id',
+        ]);
+
+        $employee = Employee::findOrFail($id);
+
+        // Prevenir ciclos: el nuevo manager no puede ser un subordinado del empleado
+        if ($request->report_to) {
+            $reportToId = $request->report_to;
+            $current    = Employee::find($reportToId);
+            $visited    = [];
+
+            while ($current && $current->report_to) {
+                if (in_array($current->id, $visited) || $current->report_to == $id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Reorganización inválida: se detectó un ciclo jerárquico. Un subordinado no puede ser el jefe de su propio jefe.',
+                    ], 422);
+                }
+                $visited[]  = $current->id;
+                $current    = Employee::find($current->report_to);
+            }
+        }
+
+        $employee->update(['report_to' => $request->report_to]);
+
+        return response()->json([
+            'success'  => true,
+            'message'  => 'Jerarquía actualizada correctamente.',
+            'employee' => $employee->fresh(['jobRole']),
+        ]);
+    }
 }

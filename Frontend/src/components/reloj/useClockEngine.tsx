@@ -455,8 +455,12 @@ export function useClockEngine(overrideUser?: any) {
     }
   });
 
-  const [gpsCoordinates, setGpsCoordinates] = useState<any>({ latitude: 19.4344, longitude: -99.1332 });
-  const [gpsStatus, setGpsStatus] = useState<'seeking' | 'success' | 'error'>('seeking');
+  const [gpsCoordinates, setGpsCoordinates] = useState<any>(() => {
+    return overrideUser ? { latitude: 19.4326, longitude: -99.1332 } : { latitude: 19.4344, longitude: -99.1332 };
+  });
+  const [gpsStatus, setGpsStatus] = useState<'seeking' | 'success' | 'error'>(() => {
+    return overrideUser ? 'success' : 'seeking';
+  });
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
 
   const fetchIpLocation = async () => {
@@ -506,8 +510,7 @@ export function useClockEngine(overrideUser?: any) {
 
   useEffect(() => {
     if (isSimulator) {
-      setGpsStatus('success');
-      setGpsCoordinates({ latitude: 19.4326, longitude: -99.1332 });
+      // Ya inicializado correctamente en el estado inicial de React (useState)
       return;
     }
 

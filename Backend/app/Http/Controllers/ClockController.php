@@ -124,11 +124,34 @@ class ClockController extends Controller
         }
         $tenantId = auth()->user()->tenant_id;
 
-        $timeEntries = DB::table('time_entries')->where('tenant_id', $tenantId)->get();
-        $storeLogs = DB::table('store_logs')->where('tenant_id', $tenantId)->orderBy('id', 'desc')->get();
-        $contingencies = DB::table('contingencies')->where('tenant_id', $tenantId)->get();
-        $messages = DB::table('internal_messages')->where('tenant_id', $tenantId)->get();
-        $auditLogs = DB::table('audit_logs')->where('tenant_id', $tenantId)->get();
+        // Optimización de rendimiento: limitar registros históricos masivos a la última semana
+        $oneWeekAgo = now()->subDays(7)->format('Y-m-d');
+
+        $timeEntries = DB::table('time_entries')
+            ->where('tenant_id', $tenantId)
+            ->whereDate('date', '>=', $oneWeekAgo)
+            ->get();
+
+        $storeLogs = DB::table('store_logs')
+            ->where('tenant_id', $tenantId)
+            ->whereDate('date', '>=', $oneWeekAgo)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $contingencies = DB::table('contingencies')
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', '>=', $oneWeekAgo)
+            ->get();
+
+        $messages = DB::table('internal_messages')
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', '>=', $oneWeekAgo)
+            ->get();
+
+        $auditLogs = DB::table('audit_logs')
+            ->where('tenant_id', $tenantId)
+            ->whereDate('date', '>=', $oneWeekAgo)
+            ->get();
 
         // Get permissions per user (Optimized to avoid N+1 queries)
         $employees = DB::table('employees')->where('tenant_id', $tenantId)->get();

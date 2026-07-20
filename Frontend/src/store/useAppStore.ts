@@ -320,7 +320,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         title,
         description,
         type,
-        actorId
+        actorId,
+        isLocal: true // Preservar en el filtrado de fetchState
       }, ...state.matrixTimeline]
     };
   }),
@@ -632,12 +633,13 @@ export const useAppStore = create<AppState>((set, get) => ({
                 title: 'Registro de Auditoría',
                 description: log.reason,
                 type: log.punishment_amount > 0 ? 'warning' : (log.type === 'check_in' || log.type === 'check_out' ? 'success' : 'info'),
-                actorId: log.user_id
+                actorId: log.user_id,
+                isLocal: false
             })).reverse(); // Mostrar más recientes primero
             
-            // Preservar eventos del sistema local (como "Sistema Reiniciado")
-            const localSystemEvents = get().matrixTimeline.filter(e => e.type === 'system');
-            set({ matrixTimeline: [...localSystemEvents, ...mappedLogs] });
+            // Preservar eventos del sistema local y eventos locales interactivos del simulador
+            const localEvents = get().matrixTimeline.filter(e => e.type === 'system' || e.isLocal);
+            set({ matrixTimeline: [...localEvents, ...mappedLogs] });
          }
 
       }

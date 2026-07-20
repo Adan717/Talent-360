@@ -580,7 +580,13 @@ export const useAppStore = create<AppState>((set, get) => ({
                validationMode: t.validation_mode,
                canBeDoneSitting: t.can_be_done_sitting ? true : false,
                scheduledTime: t.scheduled_time,
-               historicalMins: []
+               historicalMins: [],
+               description: t.description,
+               procedureSteps: t.procedure_steps,
+               validationCriteria: t.validation_criteria,
+               frequency: t.frequency,
+               evidenceType: t.evidence_type,
+               is_validated: t.is_validated
            }));
            useTaskStore.getState().setTasks(camelCaseTasks);
         }

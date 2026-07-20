@@ -235,8 +235,14 @@ class StoreOpeningController extends Controller
         $storeId = $request->input('store_id', 1);
         $simTime = $request->input('simTime');
 
+        // Permitir suplantación de usuario para el simulador Matrix QA si tiene permisos
+        $userId = $user->id;
+        if ($request->has('user_id') && (($user->system_role ?? '') === 'platform_admin' || !app()->isProduction() || env('ALLOW_QA_RESET', false))) {
+            $userId = intval($request->input('user_id'));
+        }
+
         try {
-            $result = $this->openingService->openStoreAndClockIn($user->id, $storeId, $simTime);
+            $result = $this->openingService->openStoreAndClockIn($userId, $storeId, $simTime);
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json([
@@ -255,8 +261,14 @@ class StoreOpeningController extends Controller
         $storeId = $request->input('store_id', 1);
         $simTime = $request->input('simTime');
 
+        // Permitir suplantación de usuario para el simulador Matrix QA si tiene permisos
+        $userId = $user->id;
+        if ($request->has('user_id') && (($user->system_role ?? '') === 'platform_admin' || !app()->isProduction() || env('ALLOW_QA_RESET', false))) {
+            $userId = intval($request->input('user_id'));
+        }
+
         try {
-            $result = $this->handoffService->reportOpeningAbsence($user->id, $storeId, $simTime);
+            $result = $this->handoffService->reportOpeningAbsence($userId, $storeId, $simTime);
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json([
@@ -279,9 +291,15 @@ class StoreOpeningController extends Controller
             'estimated_arrival_time' => 'required|string|regex:/^\d{2}:\d{2}$/'
         ]);
 
+        // Permitir suplantación de usuario para el simulador Matrix QA si tiene permisos
+        $userId = $user->id;
+        if ($request->has('user_id') && (($user->system_role ?? '') === 'platform_admin' || !app()->isProduction() || env('ALLOW_QA_RESET', false))) {
+            $userId = intval($request->input('user_id'));
+        }
+
         try {
             $result = $this->handoffService->reportOpeningLate(
-                $user->id,
+                $userId,
                 $storeId,
                 $validated['estimated_arrival_time'],
                 $simTime

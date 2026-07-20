@@ -120,6 +120,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
             Route::post('/sync/reset', [ClockController::class, 'resetDb']);
         }
+        Route::post('/sync/purge_archive', [ClockController::class, 'purgeArchive'])->middleware('auth:sanctum');
     });
 
     Route::post('/support/copilot', [SupportTicketController::class, 'copilot'])->middleware('auth:sanctum');

@@ -167,17 +167,14 @@ export default function PanelSimulador() {
     try {
       const isSandbox = useAppStore.getState().isSandboxMode;
       const savedAss = localStorage.getItem('store_opening_assignments');
-      const assignments = savedAss ? JSON.parse(savedAss) : (
-        isSandbox ? [
-          { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ] : [
-          { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ]
-      );
+      const assignments = savedAss ? JSON.parse(savedAss) : (globalUsers || []).map((u: any, idx: number) => ({
+        id: u.id,
+        employee_id: u.id,
+        priority_order: idx + 1,
+        can_open_store: u.role === 'admin' || u.role === 'encargado' || u.system_role === 'platform_admin',
+        has_keys: true,
+        is_active: true
+      }));
       const match = assignments.find((a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
@@ -190,17 +187,14 @@ export default function PanelSimulador() {
     try {
       const isSandbox = useAppStore.getState().isSandboxMode;
       const savedAss = localStorage.getItem('store_opening_assignments');
-      const assignments = savedAss ? JSON.parse(savedAss) : (
-        isSandbox ? [
-          { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ] : [
-          { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ]
-      );
+      const assignments = savedAss ? JSON.parse(savedAss) : (globalUsers || []).map((u: any, idx: number) => ({
+        id: u.id,
+        employee_id: u.id,
+        priority_order: idx + 1,
+        can_open_store: u.role === 'admin' || u.role === 'encargado' || u.system_role === 'platform_admin',
+        has_keys: true,
+        is_active: true
+      }));
       const empId = user.employee_id || user.id;
       const match = assignments.find((a: any) => Number(a.employee_id) === Number(empId) && a.is_active && a.can_open_store);
       if (match) {
@@ -254,7 +248,8 @@ export default function PanelSimulador() {
           const nextTime = prev + globalSimSpeed;
           
           // Watchdog: Alerta de retraso de apertura basado en storeSchedule.openTime (tolerancia de 15 minutos)
-          const storeOpenTime = useAppStore.getState().systemSettings?.storeSchedule?.openTime || '08:00';
+          const rawOpenTime = useAppStore.getState().systemSettings?.storeSchedule?.openTime;
+          const storeOpenTime = (typeof rawOpenTime === 'string' && rawOpenTime.includes(':')) ? rawOpenTime : '08:00';
           const openTimeParts = storeOpenTime.split(':');
           const openTimeMins = parseInt(openTimeParts[0]) * 60 + parseInt(openTimeParts[1]);
           const alertTimeMins = openTimeMins + 15; // 15 minutos de tolerancia
@@ -323,9 +318,13 @@ export default function PanelSimulador() {
         setResetKey(prev => prev + 1);
         alert('Simulación y base de datos reiniciadas con éxito. Recargando la vista...');
         window.location.reload();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error al reiniciar base de datos de simulación:', err);
-        alert('Error al conectar con el servidor backend para limpiar la base de datos.');
+        if (err.response?.status === 403) {
+          alert('⚠️ El servidor tiene deshabilitada la limpieza en este entorno.\nActiva ALLOW_QA_RESET=true en el archivo .env del backend para habilitar esta función.');
+        } else {
+          alert('Error al conectar con el servidor backend para limpiar la base de datos.');
+        }
       }
     }
   };
@@ -388,11 +387,11 @@ export default function PanelSimulador() {
 
   return (
     <div className="flex flex-col gap-4">
-      {isProduction && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 px-4 flex items-center gap-3 text-xs text-amber-400 font-bold shadow-inner">
-          <span className="text-base select-none">⚠️</span>
+      {(!isSandboxMode || isProduction) && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 px-5 flex items-center gap-3 text-xs text-rose-450 font-bold shadow-inner">
+          <span className="text-xl select-none">⚠️</span>
           <span>
-            <strong>ENTORNO DE SIMULACIÓN EN VIVO:</strong> Las checadas, retardos y descansos que simules en los teléfonos virtuales impactarán directamente en la base de datos de producción real de <strong>DecorArte</strong>.
+            <strong>ADVERTENCIA — MODO PRODUCCIÓN EN VIVO ACTIVO:</strong> El modo Sandbox está apagado para DecorArte. Cualquier fichaje, retardo, comida o apertura de tienda que realices en estos celulares virtuales escribirá directamente en la base de datos de producción real en PostgreSQL.
           </span>
         </div>
       )}

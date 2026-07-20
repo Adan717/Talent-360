@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TimeEntry;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ClockService
 {
@@ -15,8 +16,19 @@ class ClockService
         $this->mockLocationDetector = new MockLocationDetector();
     }
 
+    // Tipos de evento permitidos en el sistema de fichaje
+    public const ALLOWED_TYPES = [
+        'check_in', 'check_out', 'break_start', 'break_end',
+        'meal_start', 'meal_end', 'waiting'
+    ];
+
     public function processPunch(User $user, $type, $simTime = null, $details = [])
     {
+        // Validar tipo de evento antes de cualquier operación
+        if (!in_array($type, self::ALLOWED_TYPES)) {
+            throw new \InvalidArgumentException("Tipo de fichaje inválido: '{$type}'. Valores permitidos: " . implode(', ', self::ALLOWED_TYPES));
+        }
+
         $tenantId = $user->tenant_id ?? 1;
         $settings = \DB::table('system_settings')
             ->where('tenant_id', $tenantId)
@@ -199,31 +211,49 @@ class ClockService
             ];
         }
 
-        // Crear registro en la BD
-        $entry = TimeEntry::create([
-            'user_id' => $user->id,
-            'tenant_id' => $user->tenant_id ?? 1,
-            'date' => $date,
-            'type' => $type,
-            'time' => $time,
-            'is_late' => $isLate,
-            'late_minutes' => $lateMinutes,
-            'details' => json_encode($detailsMerge)
-        ]);
-        
-        // Registrar en audit log si es check_in o check_out u otros eventos importantes
-        \DB::table('audit_logs')->insert([
-            'user_id' => $user->id,
-            'tenant_id' => $user->tenant_id ?? 1,
-            'date' => $date,
-            'type' => $type,
-            'timestamp_str' => "$date $time",
-            'reason' => "Fichaje de tipo: $type",
-            'punishment_amount' => $isLate ? ($lateMinutes * 2) : 0,
-            'details' => json_encode($detailsMerge),
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        // Obtener snapshot del empleado al momento del fichaje (datos inmutables para reportes históricos)
+        $employee = DB::table('employees')->where('user_id', $user->id)->first();
+        $jobRole = $employee ? DB::table('job_roles')->find($employee->job_role_id) : null;
+        $snapshotName = $employee ? ($employee->name ?? $user->name) : $user->name;
+        $snapshotRole = $jobRole?->title ?? null;
+        $snapshotSalary = $employee?->base_salary ?? null;
+
+        // Crear registro en la BD dentro de una transacción atómica.
+        // Si falla la inserción del audit_log, el time_entry también se revierte.
+        $entry = DB::transaction(function () use (
+            $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
+            $snapshotName, $snapshotRole, $snapshotSalary
+        ) {
+            $entry = TimeEntry::create([
+                'user_id'               => $user->id,
+                'tenant_id'             => $user->tenant_id ?? 1,
+                'date'                  => $date,
+                'type'                  => $type,
+                'time'                  => $time,
+                'is_late'               => $isLate,
+                'late_minutes'          => $lateMinutes,
+                'details'               => json_encode($detailsMerge),
+                'employee_name_at_time' => $snapshotName,
+                'job_role_title_at_time'=> $snapshotRole,
+                'base_salary_at_time'   => $snapshotSalary,
+            ]);
+
+            // Registrar en audit log dentro de la misma transacción
+            DB::table('audit_logs')->insert([
+                'user_id'          => $user->id,
+                'tenant_id'        => $user->tenant_id ?? 1,
+                'date'             => $date,
+                'type'             => $type,
+                'timestamp_str'    => "$date $time",
+                'reason'           => "Fichaje de tipo: $type",
+                'punishment_amount'=> $isLate ? ($lateMinutes * 2) : 0,
+                'details'          => json_encode($detailsMerge),
+                'created_at'       => Carbon::now(),
+                'updated_at'       => Carbon::now(),
+            ]);
+
+            return $entry;
+        });
 
         return [
             'success' => true,

@@ -295,7 +295,8 @@ export function useClockEngine(overrideUser?: any) {
     } else {
       try {
         const res = await axiosInstance.post('/store-opening/open-and-clock-in', {
-          simTime: getSimTimeStr(globalSimTime)
+          simTime: getSimTimeStr(globalSimTime),
+          user_id: currentUser?.id
         });
         if (res.data.success) {
           setOpeningStatus(res.data.status);
@@ -343,7 +344,8 @@ export function useClockEngine(overrideUser?: any) {
     } else {
       try {
         const res = await axiosInstance.post('/store-opening/report-absence', {
-          simTime: getSimTimeStr(globalSimTime)
+          simTime: getSimTimeStr(globalSimTime),
+          user_id: currentUser?.id
         });
         if (res.data.success) {
           setOpeningStatus(res.data.handoff);
@@ -404,7 +406,8 @@ export function useClockEngine(overrideUser?: any) {
       try {
         const res = await axiosInstance.post('/store-opening/report-late', {
           estimated_arrival_time: estimatedTimeStr,
-          simTime: getSimTimeStr(globalSimTime)
+          simTime: getSimTimeStr(globalSimTime),
+          user_id: currentUser?.id
         });
         if (res.data.success) {
           if (res.data.handoff) {

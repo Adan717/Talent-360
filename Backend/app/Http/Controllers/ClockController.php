@@ -16,47 +16,105 @@ use App\Models\RoleClockPolicy;
 
 class ClockController extends Controller
 {
-    // ⚠️ DEV-ONLY — No usar en producción
+    // ⚠️ DEV-ONLY — Archiva todos los registros históricos y limpia las tablas operativas
     public function resetDb()
     {
         if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys=OFF;');
-        } else {
-            DB::statement('SET session_replication_role = replica;');
-        }
+        $archivedBy = auth()->check() ? auth()->user()->id : null;
+        $tenantId   = auth()->check() ? auth()->user()->tenant_id : null;
 
-        DB::table('time_entries')->truncate();
-        DB::table('store_logs')->truncate();
-        DB::table('audit_logs')->truncate();
-        DB::table('contingencies')->truncate();
-        DB::table('internal_messages')->truncate();
+        DB::transaction(function () use ($archivedBy, $tenantId) {
+            // Archivar time_entries antes de borrar
+            $entries = DB::table('time_entries')->get();
+            foreach ($entries as $e) {
+                DB::table('archived_time_entries')->insert([
+                    'original_id'            => $e->id,
+                    'user_id'                => $e->user_id,
+                    'tenant_id'              => $e->tenant_id,
+                    'date'                   => $e->date,
+                    'type'                   => $e->type,
+                    'time'                   => $e->time,
+                    'is_late'                => $e->is_late,
+                    'late_minutes'           => $e->late_minutes,
+                    'details'                => $e->details,
+                    'employee_name_at_time'  => $e->employee_name_at_time ?? null,
+                    'job_role_title_at_time' => $e->job_role_title_at_time ?? null,
+                    'base_salary_at_time'    => $e->base_salary_at_time ?? null,
+                    'archived_reason'        => 'reset_db',
+                    'archived_by_user_id'    => $archivedBy,
+                    'original_created_at'    => $e->created_at,
+                    'created_at'             => now(),
+                    'updated_at'             => now(),
+                ]);
+            }
 
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys=ON;');
-        } else {
-            DB::statement('SET session_replication_role = DEFAULT;');
-        }
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys=OFF;');
+            } else {
+                DB::statement('SET session_replication_role = replica;');
+            }
 
-        return response()->json(['message' => 'Database tables truncated.']);
+            DB::table('time_entries')->truncate();
+            DB::table('store_logs')->truncate();
+            DB::table('audit_logs')->truncate();
+            DB::table('contingencies')->truncate();
+            DB::table('internal_messages')->truncate();
+
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys=ON;');
+            } else {
+                DB::statement('SET session_replication_role = DEFAULT;');
+            }
+        });
+
+        return response()->json(['message' => 'Datos archivados y tablas limpiadas correctamente.']);
     }
 
-    // ⚠️ DEV-ONLY — No usar en producción
+    // ⚠️ DEV-ONLY — Archiva los registros del día indicado antes de borrarlos
     public function resetDay(Request $request)
     {
         if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
-        $date = $request->input('date', now()->format('Y-m-d'));
-        DB::table('time_entries')->whereDate('created_at', $date)->delete();
-        DB::table('store_logs')->where('date', $date)->delete();
-        DB::table('contingencies')->whereDate('created_at', $date)->delete();
-        DB::table('audit_logs')->where('date', $date)->delete();
-        return response()->json(['message' => "Datos de la jornada del {$date} eliminados con éxito."]);
+        $date       = $request->input('date', now()->format('Y-m-d'));
+        $archivedBy = auth()->check() ? auth()->user()->id : null;
+
+        DB::transaction(function () use ($date, $archivedBy) {
+            // Archivar time_entries del día antes de borrar
+            $entries = DB::table('time_entries')->whereDate('created_at', $date)->get();
+            foreach ($entries as $e) {
+                DB::table('archived_time_entries')->insert([
+                    'original_id'            => $e->id,
+                    'user_id'                => $e->user_id,
+                    'tenant_id'              => $e->tenant_id,
+                    'date'                   => $e->date,
+                    'type'                   => $e->type,
+                    'time'                   => $e->time,
+                    'is_late'                => $e->is_late,
+                    'late_minutes'           => $e->late_minutes,
+                    'details'                => $e->details,
+                    'employee_name_at_time'  => $e->employee_name_at_time ?? null,
+                    'job_role_title_at_time' => $e->job_role_title_at_time ?? null,
+                    'base_salary_at_time'    => $e->base_salary_at_time ?? null,
+                    'archived_reason'        => 'reset_day',
+                    'archived_by_user_id'    => $archivedBy,
+                    'original_created_at'    => $e->created_at,
+                    'created_at'             => now(),
+                    'updated_at'             => now(),
+                ]);
+            }
+
+            DB::table('time_entries')->whereDate('created_at', $date)->delete();
+            DB::table('store_logs')->where('date', $date)->delete();
+            DB::table('contingencies')->whereDate('created_at', $date)->delete();
+            DB::table('audit_logs')->where('date', $date)->delete();
+        });
+
+        return response()->json(['message' => "Datos del {$date} archivados y eliminados correctamente."]);
     }
 
     public function getState()
@@ -372,39 +430,61 @@ class ClockController extends Controller
             }
         }
 
-        $date = $request->input('date');
-        $type = $request->input('type');
-        $time = $request->input('time');
-        $isLate = $request->input('is_late', false);
-        $lateMinutes = $request->input('late_minutes', 0);
-        $details = $request->input('details');
+        $date       = $request->input('date');
+        $type       = $request->input('type');
+        $time       = $request->input('time');
+        $isLate     = $request->input('is_late', false);
+        $lateMinutes= $request->input('late_minutes', 0);
+        $details    = $request->input('details');
 
-        DB::table('time_entries')->insert([
-            'user_id' => $userId,
-            'tenant_id' => $tenantId,
-            'date' => $date,
-            'type' => $type,
-            'time' => $time,
-            'is_late' => $isLate,
-            'late_minutes' => $lateMinutes,
-            'details' => $details,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        if ($isLate) {
-            DB::table('audit_logs')->insert([
-                'user_id' => $userId,
-                'tenant_id' => $tenantId,
-                'date' => $date,
-                'type' => 'late',
-                'timestamp_str' => "$date $time",
-                'reason' => "Llegada tarde por $lateMinutes min.",
-                'punishment_amount' => 50,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        // Validar tipo de evento
+        $allowedTypes = \App\Services\ClockService::ALLOWED_TYPES;
+        if (!in_array($type, $allowedTypes)) {
+            return response()->json(['error' => "Tipo de fichaje inválido: '{$type}'."], 422);
         }
+
+        // Obtener snapshot del empleado
+        $employee = DB::table('employees')->where('user_id', $userId)->first();
+        $jobRole  = $employee ? DB::table('job_roles')->find($employee->job_role_id) : null;
+        $snapshotName   = $employee?->name ?? $targetUser->name;
+        $snapshotRole   = $jobRole?->title ?? null;
+        $snapshotSalary = $employee?->base_salary ?? null;
+
+        // Envolver en transacción: ambas inserciones o ninguna
+        DB::transaction(function () use (
+            $userId, $tenantId, $date, $type, $time, $isLate, $lateMinutes, $details,
+            $snapshotName, $snapshotRole, $snapshotSalary
+        ) {
+            DB::table('time_entries')->insert([
+                'user_id'                => $userId,
+                'tenant_id'              => $tenantId,
+                'date'                   => $date,
+                'type'                   => $type,
+                'time'                   => $time,
+                'is_late'                => $isLate,
+                'late_minutes'           => $lateMinutes,
+                'details'                => $details,
+                'employee_name_at_time'  => $snapshotName,
+                'job_role_title_at_time' => $snapshotRole,
+                'base_salary_at_time'    => $snapshotSalary,
+                'created_at'             => now(),
+                'updated_at'             => now(),
+            ]);
+
+            if ($isLate) {
+                DB::table('audit_logs')->insert([
+                    'user_id'          => $userId,
+                    'tenant_id'        => $tenantId,
+                    'date'             => $date,
+                    'type'             => 'late',
+                    'timestamp_str'    => "$date $time",
+                    'reason'           => "Llegada tarde por $lateMinutes min.",
+                    'punishment_amount'=> 50,
+                    'created_at'       => now(),
+                    'updated_at'       => now(),
+                ]);
+            }
+        });
 
         event(new \App\Events\MonitorUpdated($tenantId));
 
@@ -413,7 +493,11 @@ class ClockController extends Controller
 
     public function syncStoreLog(Request $request)
     {
-        $userId = $request->input('user_id') ?? (auth()->check() ? auth()->user()->id : null);
+        $request->validate([
+            'type' => ['required', \Illuminate\Validation\Rule::in(['open', 'close', 'forzosa', 'contingency', 'transfer'])],
+        ]);
+
+        $userId   = $request->input('user_id') ?? (auth()->check() ? auth()->user()->id : null);
         $tenantId = auth()->check() ? auth()->user()->tenant_id : null;
         if (!$tenantId && $userId) {
             $tenantId = DB::table('users')->where('id', $userId)->value('tenant_id');
@@ -428,12 +512,12 @@ class ClockController extends Controller
 
         $type = $request->input('type');
         $id = DB::table('store_logs')->insertGetId([
-            'user_id' => $userId,
-            'tenant_id' => $tenantId,
-            'date' => $request->input('date', now()->format('Y-m-d')),
-            'type' => $type,
-            'time' => $request->input('time', now()->format('H:i:s')),
-            'notes' => $request->input('notes'),
+            'user_id'    => $userId,
+            'tenant_id'  => $tenantId,
+            'date'       => $request->input('date', now()->format('Y-m-d')),
+            'type'       => $type,
+            'time'       => $request->input('time', now()->format('H:i:s')),
+            'notes'      => $request->input('notes'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -444,6 +528,36 @@ class ClockController extends Controller
         }
 
         return response()->json(['message' => 'Store log synced.', 'id' => $id]);
+    }
+
+    // Purga permanente del archivo histórico — SOLO platform_admin
+    public function purgeArchive(Request $request)
+    {
+        $user = auth()->user();
+
+        // Solo platform_admin puede destruir datos históricos permanentemente
+        if (($user->system_role ?? '') !== 'platform_admin') {
+            return response()->json(['error' => 'Acceso denegado. Solo un administrador de plataforma puede purgar el historial.'], 403);
+        }
+
+        $tenantId = $request->input('tenant_id');
+        $before   = $request->input('before_date'); // Opcional: purgar solo antes de cierta fecha
+
+        $query = DB::table('archived_time_entries');
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+        if ($before) {
+            $query->where('date', '<', $before);
+        }
+
+        $count = $query->count();
+        $query->delete();
+
+        return response()->json([
+            'message' => "Se purgaron {$count} registros del archivo histórico de forma permanente.",
+            'purged_count' => $count,
+        ]);
     }
 
     public function syncContingency(Request $request)

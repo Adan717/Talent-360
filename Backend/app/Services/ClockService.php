@@ -67,12 +67,24 @@ class ClockService
             throw new \Exception("Fichaje Denegado: Hoy es día festivo oficial obligatorio ({$holidayBlock->name}) y el sistema se encuentra bloqueado.");
         }
 
+        // Validar inmutabilidad de la nómina consolidada (Fase 2 Solidez)
+        $closedPayroll = DB::table('weekly_payrolls')
+            ->where('tenant_id', $tenantId)
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->whereIn('status', ['approved', 'paid'])
+            ->exists();
+
+        if ($closedPayroll) {
+            throw new \Exception("Fichaje Denegado: El período de nómina para la fecha {$date} ya ha sido aprobado o pagado y se encuentra bloqueado para modificaciones.");
+        }
+
         // Obtener el plan del tenant
         $tenant = \App\Models\Tenant::find($user->tenant_id ?? 1);
         $isPro = $tenant && in_array(strtolower($tenant->plan ?? 'freemium'), ['pro', 'enterprise']);
 
-        // 1. IP Lock (Plan Gratuito)
-        if (!$isPro && ($type === 'check_in' || $type === 'check_out')) {
+        // 1. IP Lock (Disponible en Freemium y Pro si está configurado en clockOpConfig)
+        if ($type === 'check_in' || $type === 'check_out') {
             $clockOpConfigRaw = $settings['clockOpConfig'] ?? null;
             $clockOpConfig = $clockOpConfigRaw ? json_decode($clockOpConfigRaw, true) : [];
             $ipLockEnabled = $clockOpConfig['ip_lock_enabled'] ?? false;
@@ -148,9 +160,10 @@ class ClockService
                     );
 
                     if (!$geoResult['inside_geofence']) {
-                        // Guardar el riesgo en los detalles pero NO bloquear (solo alerta)
-                        // Si se requiere bloqueo estricto, descomentar la línea siguiente:
-                        // throw new \Exception("Fichaje Denegado: " . $geoResult['message']);
+                        $strictGps = $clockOpConfig['strictGpsValidation'] ?? false;
+                        if ($strictGps && !isset($details['sandbox_bypass'])) {
+                            throw new \Exception("Fichaje Denegado: Te encuentras fuera del perímetro de la sucursal por " . round($geoResult['distance_meters'] ?? 0) . " metros.");
+                        }
                         $details['gps_warning'] = $geoResult['message'];
                         $details['distance_meters'] = $geoResult['distance_meters'];
                     }

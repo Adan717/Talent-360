@@ -155,7 +155,8 @@ export default function PanelSimulador() {
     currentTier,
     simulatedTierOverride,
     setSimulatedTierOverride,
-    currentUser
+    currentUser,
+    isSandboxMode
   } = useAppStore();
 
   const isProduction = import.meta.env.PROD && window.location.hostname !== 'localhost';

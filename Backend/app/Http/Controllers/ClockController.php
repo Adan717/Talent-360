@@ -443,6 +443,18 @@ class ClockController extends Controller
             return response()->json(['error' => "Tipo de fichaje inválido: '{$type}'."], 422);
         }
 
+        // Validar inmutabilidad de la nómina consolidada (Fase 2 Solidez)
+        $closedPayroll = DB::table('weekly_payrolls')
+            ->where('tenant_id', $tenantId)
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->whereIn('status', ['approved', 'paid'])
+            ->exists();
+
+        if ($closedPayroll) {
+            return response()->json(['error' => "Sincronización denegada: El período de nómina para la fecha {$date} ya ha sido aprobado o pagado y se encuentra bloqueado para modificaciones."], 422);
+        }
+
         // Obtener snapshot del empleado
         $employee = DB::table('employees')->where('user_id', $userId)->first();
         $jobRole  = $employee ? DB::table('job_roles')->find($employee->job_role_id) : null;

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Tenantable;
 
 class JobRole extends Model
 {
-    use Tenantable;
+    use Tenantable, SoftDeletes;
 
     protected $guarded = [];
 

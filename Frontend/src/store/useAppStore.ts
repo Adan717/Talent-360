@@ -582,8 +582,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                scheduledTime: t.scheduled_time,
                historicalMins: [],
                description: t.description,
-               procedureSteps: t.procedure_steps,
-               validationCriteria: t.validation_criteria,
+               procedureSteps: typeof t.procedure_steps === 'string' ? JSON.parse(t.procedure_steps) : (t.procedure_steps || []),
+               validationCriteria: typeof t.validation_criteria === 'string' ? JSON.parse(t.validation_criteria) : (t.validation_criteria || []),
                frequency: t.frequency,
                evidenceType: t.evidence_type,
                is_validated: t.is_validated

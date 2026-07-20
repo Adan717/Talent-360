@@ -4363,7 +4363,7 @@ export default function RelojVisual({
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl text-slate-800">
                 <h3 className="font-bold text-lg text-slate-800">Justificación de Amnistía</h3>
                 <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm my-4 outline-none focus:ring-2 focus:ring-indigo-500" rows={3} placeholder="Motivo..."></textarea>
-                <button onClick={() => handleOpenStore(true)} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">Decretar Amnistía y Continuar</button>
+                <button onClick={isOpeningPremium ? handleOpenStorePremium : () => handleOpenStore(true)} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">Decretar Amnistía y Continuar</button>
               </div>
             </div>
           )}

@@ -329,6 +329,20 @@ export default function PanelSimulador() {
     }
   };
 
+  const handlePurgeArchive = async () => {
+    if (confirm('🔥 ADVERTENCIA: ¿Estás seguro de que deseas purgar de forma permanente el archivo histórico de resets?\n\nEsta acción eliminará permanentemente de la base de datos todos los registros archivados del simulador y no se podrá deshacer.')) {
+      try {
+        const res = await axiosInstance.post('/sync/purge_archive', {
+          tenant_id: currentUser?.tenant_id
+        });
+        alert(res.data.message || 'Histórico purgado exitosamente.');
+      } catch (err: any) {
+        console.error('Error al purgar archivo histórico:', err);
+        alert(err.response?.data?.error || 'Error al conectar con el servidor para purgar el histórico.');
+      }
+    }
+  };
+
   const parseMinsToTime = (mins: number) => {
     const h = Math.floor(mins / 60);
     const m = mins % 60;
@@ -417,6 +431,13 @@ export default function PanelSimulador() {
               <button onClick={handleReset} className="px-6 py-3 rounded-xl font-bold transition-colors bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600">
                 🧹 Limpiar y Reiniciar
               </button>
+
+              {(currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') && (
+                <button onClick={handlePurgeArchive} className="px-6 py-3 rounded-xl font-bold transition-colors bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40">
+                  🔥 Purgar Archivo
+                </button>
+              )}
+
               <button onClick={toggleStore} className={`px-6 py-3 rounded-xl font-bold transition-colors ${storeStatus === 'open' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 hover:bg-rose-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/40'}`}>
                 {storeStatus === 'open' ? '🔒 Cerrar Tienda (Global)' : '🔓 Abrir Tienda (Global)'}
               </button>

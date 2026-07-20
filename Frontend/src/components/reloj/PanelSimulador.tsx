@@ -49,16 +49,18 @@ function MiniaturaCelular({ user, scale }: { user: any; scale: number }) {
   }, [engine.clockState, user?.id]);
 
   useEffect(() => {
-    if (user?.id && engine.checkInTimes?.[user.id] !== undefined) {
-      setGlobalCheckInTime(user.id, engine.checkInTimes[user.id]);
+    const timeVal = engine.checkInTimes?.[user?.id];
+    if (user?.id && timeVal !== undefined) {
+      setGlobalCheckInTime(user.id, timeVal);
     }
-  }, [engine.checkInTimes, user?.id]);
+  }, [engine.checkInTimes?.[user?.id], user?.id]);
 
   useEffect(() => {
-    if (user?.id && engine.arrivalTimes?.[user.id] !== undefined) {
-      setGlobalArrivalTime(user.id, engine.arrivalTimes[user.id]);
+    const arrivalVal = engine.arrivalTimes?.[user?.id];
+    if (user?.id && arrivalVal !== undefined) {
+      setGlobalArrivalTime(user.id, arrivalVal);
     }
-  }, [engine.arrivalTimes, user?.id]);
+  }, [engine.arrivalTimes?.[user?.id], user?.id]);
 
   if (engine.isGlobalLoading) {
     return (

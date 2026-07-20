@@ -187,9 +187,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setSystemSettings: (settings) => set({ systemSettings: settings }),
   setStoreStatus: (status) => set({ storeStatus: status }),
-  setGlobalClockState: (userId, state) => set((s) => ({ globalClockStates: { ...s.globalClockStates, [userId]: state } })),
-  setGlobalCheckInTime: (userId, time) => set((s) => ({ globalCheckInTimes: { ...s.globalCheckInTimes, [userId]: time } })),
-  setGlobalArrivalTime: (userId, time) => set((s) => ({ globalArrivalTimes: { ...s.globalArrivalTimes, [userId]: time } })),
+  setGlobalClockState: (userId, state) => set((s) => {
+    if (s.globalClockStates[userId] === state) return {};
+    return { globalClockStates: { ...s.globalClockStates, [userId]: state } };
+  }),
+  setGlobalCheckInTime: (userId, time) => set((s) => {
+    if (s.globalCheckInTimes[userId] === time) return {};
+    return { globalCheckInTimes: { ...s.globalCheckInTimes, [userId]: time } };
+  }),
+  setGlobalArrivalTime: (userId, time) => set((s) => {
+    if (s.globalArrivalTimes[userId] === time) return {};
+    return { globalArrivalTimes: { ...s.globalArrivalTimes, [userId]: time } };
+  }),
   setGlobalSimTime: (updater: any) => set((state: any) => ({ 
     globalSimTime: typeof updater === 'function' ? updater(state.globalSimTime) : updater 
   })),

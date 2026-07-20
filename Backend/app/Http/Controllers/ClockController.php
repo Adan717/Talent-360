@@ -27,29 +27,24 @@ class ClockController extends Controller
         $tenantId   = auth()->check() ? auth()->user()->tenant_id : null;
 
         DB::transaction(function () use ($archivedBy, $tenantId) {
-            // Archivar time_entries antes de borrar
-            $entries = DB::table('time_entries')->get();
-            foreach ($entries as $e) {
-                DB::table('archived_time_entries')->insert([
-                    'original_id'            => $e->id,
-                    'user_id'                => $e->user_id,
-                    'tenant_id'              => $e->tenant_id,
-                    'date'                   => $e->date,
-                    'type'                   => $e->type,
-                    'time'                   => $e->time,
-                    'is_late'                => $e->is_late,
-                    'late_minutes'           => $e->late_minutes,
-                    'details'                => $e->details,
-                    'employee_name_at_time'  => $e->employee_name_at_time ?? null,
-                    'job_role_title_at_time' => $e->job_role_title_at_time ?? null,
-                    'base_salary_at_time'    => $e->base_salary_at_time ?? null,
-                    'archived_reason'        => 'reset_db',
-                    'archived_by_user_id'    => $archivedBy,
-                    'original_created_at'    => $e->created_at,
-                    'created_at'             => now(),
-                    'updated_at'             => now(),
-                ]);
-            }
+            // Archivar time_entries masivamente mediante INSERT INTO ... SELECT (Optimo)
+            $nowStr = now()->toDateTimeString();
+            DB::insert("
+                INSERT INTO archived_time_entries (
+                    original_id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
+                    employee_name_at_time, job_role_title_at_time, base_salary_at_time,
+                    archived_reason, archived_by_user_id, original_created_at, created_at, updated_at
+                )
+                SELECT 
+                    id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
+                    employee_name_at_time, job_role_title_at_time, base_salary_at_time,
+                    'reset_db', :archived_by, created_at, :created_at, :updated_at
+                FROM time_entries
+            ", [
+                'archived_by' => $archivedBy,
+                'created_at' => $nowStr,
+                'updated_at' => $nowStr
+            ]);
 
             if (DB::getDriverName() === 'sqlite') {
                 DB::statement('PRAGMA foreign_keys=OFF;');
@@ -84,29 +79,26 @@ class ClockController extends Controller
         $archivedBy = auth()->check() ? auth()->user()->id : null;
 
         DB::transaction(function () use ($date, $archivedBy) {
-            // Archivar time_entries del día antes de borrar
-            $entries = DB::table('time_entries')->whereDate('created_at', $date)->get();
-            foreach ($entries as $e) {
-                DB::table('archived_time_entries')->insert([
-                    'original_id'            => $e->id,
-                    'user_id'                => $e->user_id,
-                    'tenant_id'              => $e->tenant_id,
-                    'date'                   => $e->date,
-                    'type'                   => $e->type,
-                    'time'                   => $e->time,
-                    'is_late'                => $e->is_late,
-                    'late_minutes'           => $e->late_minutes,
-                    'details'                => $e->details,
-                    'employee_name_at_time'  => $e->employee_name_at_time ?? null,
-                    'job_role_title_at_time' => $e->job_role_title_at_time ?? null,
-                    'base_salary_at_time'    => $e->base_salary_at_time ?? null,
-                    'archived_reason'        => 'reset_day',
-                    'archived_by_user_id'    => $archivedBy,
-                    'original_created_at'    => $e->created_at,
-                    'created_at'             => now(),
-                    'updated_at'             => now(),
-                ]);
-            }
+            // Archivar time_entries del día antes de borrar masivamente (Optimo)
+            $nowStr = now()->toDateTimeString();
+            DB::insert("
+                INSERT INTO archived_time_entries (
+                    original_id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
+                    employee_name_at_time, job_role_title_at_time, base_salary_at_time,
+                    archived_reason, archived_by_user_id, original_created_at, created_at, updated_at
+                )
+                SELECT 
+                    id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
+                    employee_name_at_time, job_role_title_at_time, base_salary_at_time,
+                    'reset_day', :archived_by, created_at, :created_at, :updated_at
+                FROM time_entries
+                WHERE DATE(created_at) = :date
+            ", [
+                'archived_by' => $archivedBy,
+                'date' => $date,
+                'created_at' => $nowStr,
+                'updated_at' => $nowStr
+            ]);
 
             DB::table('time_entries')->whereDate('created_at', $date)->delete();
             DB::table('store_logs')->where('date', $date)->delete();

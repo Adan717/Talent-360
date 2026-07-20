@@ -187,7 +187,7 @@ class Evaluation360Controller extends Controller
             ->get();
 
         return response()->json($peers->map(function ($peer) {
-            $roleName = $peer->jobRole->name ?? 'Colaborador';
+            $roleName = $peer->jobRole?->name ?? 'Colaborador';
             return [
                 'id' => $peer->user_id ?? $peer->id,
                 'name' => "{$peer->name} ({$roleName})",

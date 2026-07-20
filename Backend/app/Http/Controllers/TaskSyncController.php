@@ -43,6 +43,12 @@ class TaskSyncController extends Controller
                         'validation_mode' => $task['validationMode'] ?? $task['validation_mode'] ?? 'forced',
                         'can_be_done_sitting' => $task['canBeDoneSitting'] ?? $task['can_be_done_sitting'] ?? false,
                         'scheduled_time' => $task['scheduledTime'] ?? $task['scheduled_time'] ?? null,
+                        'description' => $task['description'] ?? $task['objective'] ?? null,
+                        'validation_criteria' => $task['validationCriteria'] ?? $task['validation_criteria'] ?? null,
+                        'frequency' => $task['frequency'] ?? 'Diaria',
+                        'evidence_type' => $task['evidenceType'] ?? $task['evidence_type'] ?? 'Supervisión directa',
+                        'procedure_steps' => $task['procedureSteps'] ?? $task['procedure_steps'] ?? null,
+                        'is_validated' => $task['isValidated'] ?? $task['is_validated'] ?? false,
                         'tenant_id' => $tenantId,
                     ];
                     

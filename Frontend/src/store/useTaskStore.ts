@@ -41,6 +41,12 @@ export interface Task {
     validationMode?: 'forced' | 'auto' | 'dynamic';
     canBeDoneSitting?: boolean;
     scheduledTime?: string | null;
+    
+    // Nuevas propiedades ricas alineadas con Obsidian
+    frequency?: string;
+    evidenceType?: string;
+    validationCriteria?: string[];
+    is_validated?: boolean;
 }
 
 export interface Routine {

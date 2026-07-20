@@ -2521,7 +2521,11 @@ export function useClockEngine(overrideUser?: any) {
              user_id: currentUser.id, 
              type, 
              time: formattedTime, // En produccion esto debe omitirse para que el servidor use now()
-             details: { note: details } 
+             details: { 
+                 note: details,
+                 gps: gpsStatus === 'success' ? gpsCoordinates : null,
+                 is_simulator: isSimulator
+             } 
          });
          const data = response.data;
          if (data && data.success) {

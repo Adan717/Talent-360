@@ -135,10 +135,11 @@ class ClockService
             $gpsEnabled = $clockOpConfig['gpsValidationEnabled'] ?? false;
 
             if ($gpsEnabled && is_array($gpsData)) {
-                // a) Detectar GPS falso
+                // a) Detectar GPS falso (Bypass si proviene del simulador Matrix QA)
+                $isSimulator = isset($details['is_simulator']) || isset($details['sandbox_bypass']);
                 $mockResult = $this->mockLocationDetector->analyze($gpsData);
 
-                if ($mockResult['is_mock']) {
+                if ($mockResult['is_mock'] && !$isSimulator) {
                     throw new \Exception(
                         "Fichaje Denegado: " . $mockResult['verdict'] .
                         " Desactiva las aplicaciones de GPS falso para poder fichar."

@@ -355,7 +355,7 @@ export default function PanelSimulador() {
 
            <form onSubmit={(e) => {
              e.preventDefault();
-             if (passwordInput === "DecorArte360*") {
+             if (passwordInput === "Master") {
                setIsAuthenticated(true);
                setAuthError('');
              } else {

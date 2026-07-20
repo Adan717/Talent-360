@@ -137,6 +137,24 @@ class ClockService
             if ($gpsEnabled && is_array($gpsData)) {
                 // a) Detectar GPS falso (Bypass si proviene del simulador Matrix QA)
                 $isSimulator = isset($details['is_simulator']) || isset($details['sandbox_bypass']);
+                
+                // Mapear coordenadas del simulador de forma relativa a la tienda configurada
+                if ($isSimulator && isset($gpsData['latitude'], $gpsData['longitude'])) {
+                    $storeLat = $clockOpConfig['store_latitude']  ?? null;
+                    $storeLng = $clockOpConfig['store_longitude'] ?? null;
+                    if ($storeLat && $storeLng) {
+                        // Coordenada inyectada en el simulador para "Sucursal" (19.4326)
+                        if (abs($gpsData['latitude'] - 19.4326) < 0.0005) {
+                            $gpsData['latitude'] = (float)$storeLat;
+                            $gpsData['longitude'] = (float)$storeLng;
+                        } else {
+                            // Coordenada lejana ("Casa")
+                            $gpsData['latitude'] = (float)$storeLat + 0.02;
+                            $gpsData['longitude'] = (float)$storeLng + 0.02;
+                        }
+                    }
+                }
+
                 $mockResult = $this->mockLocationDetector->analyze($gpsData);
 
                 if ($mockResult['is_mock'] && !$isSimulator) {

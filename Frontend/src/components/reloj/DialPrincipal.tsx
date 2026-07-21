@@ -114,7 +114,7 @@ export default function DialPrincipal({
   // así un estado nuevo en getButtonProps() solo necesita un iconKey nuevo aquí, en un solo lugar,
   // en vez de tener que actualizar 3 switches de texto por separado (la causa original de que varios
   // estados de la Matriz de 23 Estados cayeran silenciosamente al ícono Fingerprint genérico).
-  const ICON_KEY_STYLES: Record<string, { color: string; glow: string; icon: (s: number) => React.ReactNode }> = {
+  const ICON_KEY_STYLES: Record<string, { color: string; glow: string; icon: (s: number) => React.ReactNode; textColor?: string }> = {
     blocked: { color: 'bg-white border-slate-400 text-slate-500 shadow-none', glow: 'bg-slate-400', icon: (s) => <Fingerprint size={s} className="text-slate-500 shrink-0" /> },
     holiday: { color: 'bg-white border-indigo-400 text-indigo-600 shadow-indigo-500/10', glow: 'bg-indigo-400', icon: (s) => <Sun size={s} className="text-indigo-500 shrink-0" /> },
     restday: { color: 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300', glow: '', icon: (s) => <Sun size={s} className="text-slate-400 shrink-0" /> },
@@ -137,17 +137,17 @@ export default function DialPrincipal({
       )
     },
     emergency_open: { color: 'bg-white border-rose-600 text-rose-650 shadow-rose-500/15 animate-pulse hover:border-rose-700', glow: 'bg-rose-500', icon: (s) => <ShieldAlert size={s} className="text-rose-600 animate-pulse shrink-0" /> },
-    entrada: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600 animate-pulse', glow: 'bg-indigo-400', icon: (s) => <LogIn size={s} className="text-indigo-600 shrink-0" /> },
-    verifying_gps: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <MapPin size={s} className="text-indigo-600 animate-bounce shrink-0" /> },
-    verifying_selfie: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Camera size={s} className="text-indigo-600 shrink-0" /> },
-    success_check: { color: 'bg-white border-emerald-500 text-emerald-650 shadow-emerald-500/10 hover:border-emerald-650 shadow-lg', glow: 'bg-emerald-450 animate-pulse', icon: (s) => <CheckCircle size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
-    meal_prompt: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 animate-pulse shrink-0" /> },
-    meal_start: { color: 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 shrink-0" /> },
+    entrada: { color: 'bg-white border-rose-500 text-rose-650 shadow-rose-500/10 hover:border-rose-600 animate-pulse', glow: 'bg-rose-400', icon: (s) => <LogIn size={s} className="text-rose-600 shrink-0" />, textColor: 'text-rose-600' },
+    verifying_gps: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <MapPin size={s} className="text-indigo-600 animate-bounce shrink-0" />, textColor: 'text-indigo-600' },
+    verifying_selfie: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Camera size={s} className="text-indigo-600 shrink-0" />, textColor: 'text-indigo-600' },
+    success_check: { color: 'bg-white border-emerald-500 text-emerald-650 shadow-emerald-500/10 hover:border-emerald-650 shadow-lg', glow: 'bg-emerald-450 animate-pulse', icon: (s) => <CheckCircle size={s} className="text-emerald-500 animate-pulse shrink-0" />, textColor: 'text-emerald-600' },
+    meal_prompt: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 animate-pulse shrink-0" />, textColor: 'text-amber-500' },
+    meal_start: { color: 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 shrink-0" />, textColor: 'text-amber-500' },
     meal_end: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <Utensils size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
-    break_start: { color: 'bg-white border-purple-500 text-purple-650 shadow-purple-500/10 animate-pulse hover:border-purple-600', glow: 'bg-purple-400', icon: (s) => <Armchair size={s} className="text-purple-505 animate-pulse shrink-0" /> },
+    break_start: { color: 'bg-white border-purple-500 text-purple-650 shadow-purple-500/10 animate-pulse hover:border-purple-600', glow: 'bg-purple-400', icon: (s) => <Armchair size={s} className="text-purple-650 animate-pulse shrink-0" />, textColor: 'text-purple-600' },
     break_end: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 animate-pulse hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Armchair size={s} className="text-indigo-550 animate-pulse shrink-0" /> },
     handover: { color: 'bg-white border-cyan-500 text-cyan-600 shadow-cyan-500/10 animate-pulse hover:border-cyan-600', glow: 'bg-cyan-400', icon: (s) => <Key size={s} className="text-cyan-500 animate-pulse shrink-0" /> },
-    exit: { color: 'bg-white border-rose-500 text-rose-650 shadow-rose-500/10 hover:border-rose-600', glow: 'bg-rose-400', icon: (s) => <LogOut size={s} className="text-rose-505 shrink-0" /> },
+    exit: { color: 'bg-white border-rose-500 text-rose-650 shadow-rose-500/10 hover:border-rose-600 animate-pulse', glow: 'bg-rose-400', icon: (s) => <LogOut size={s} className="text-rose-600 shrink-0" />, textColor: 'text-rose-600' },
     reingreso: { color: 'bg-white border-teal-500 text-teal-655 shadow-teal-500/10 hover:border-teal-600', glow: 'bg-teal-400', icon: (s) => <LogIn size={s} className="text-teal-500 shrink-0" /> },
     absent: { color: 'bg-white border-rose-200 text-rose-400 shadow-none', glow: '', icon: (s) => <Ban size={s} className="text-rose-400 shrink-0" /> },
     finished: { color: 'bg-white border-slate-300 text-slate-400 shadow-none', glow: '', icon: (s) => <CheckCircle size={s} className="text-slate-400 shrink-0" /> },
@@ -191,11 +191,23 @@ export default function DialPrincipal({
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return 'Día libre';
 
-    // BUG FIX: antes, cualquier estado con isIncidenceReport=true (VENTANA 1 "Reportar Ausencia/Retardo",
-    // "Reportar Incidencia" fuera de perímetro, y el nuevo "En Camino a Sucursal") mostraba siempre la
-    // misma etiqueta genérica 'Reportar retraso o falta', ocultando el texto específico de cada estado
-    // que ya viene bien definido en btnProps.text (matriz de docs/funcionamiento_del_dial.md).
-    // Ahora se prioriza btnProps.text y solo se usa el genérico si por algún motivo no viene texto.
+    // Formateo de etiquetas de la secuencia del dial
+    switch (btnProps.iconKey) {
+      case 'entrada': return 'Registrar Entrada';
+      case 'verifying_gps': return 'Buscando GPS';
+      case 'verifying_selfie': return 'Validando Selfie';
+      case 'success_check': return 'Fichaje Registrado';
+      case 'break_start':
+      case 'break_end':
+        return 'Descanso Ley Silla';
+      case 'meal_prompt':
+      case 'meal_start':
+        return 'Iniciar Comida';
+      case 'meal_end':
+        return 'Fin de Comida';
+      case 'exit': return 'Registrar Salida';
+    }
+
     if (btnProps.text) {
       if (btnProps.text.toLowerCase().includes('disponible a las')) {
         return 'Fuera de horario';
@@ -238,25 +250,26 @@ export default function DialPrincipal({
 
   return (
     <div className={`flex flex-col items-center justify-center py-2 mt-0 relative ${isMobile ? 'flex-shrink-0 my-3' : ''}`}>
+      {(() => {
+        const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
+        return (
+          <div className="relative flex-shrink-0 flex items-center justify-center">
+            {/* Landing-Page-aligned Shimmer Glow Ring */}
+            {getDialGlowClasses() ? (
+              <div className={`absolute w-[158px] h-[158px] rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
+            ) : null}
 
-
-      <div className="relative flex-shrink-0 flex items-center justify-center">
-        {/* Landing-Page-aligned Shimmer Glow Ring */}
-        {getDialGlowClasses() ? (
-          <div className={`absolute w-[158px] h-[158px] rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
-        ) : null}
-
-        <button 
-          onClick={handleDialClick} 
-          disabled={!isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'))} 
-          className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-3.5 ${getDialColorClasses()} ${
-            isMobile ? 'w-[185px] h-[185px]' : 'w-[200px] h-[200px]'
-          } ${
-            isEffectivelyDisabled
-              ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
-              : ''
-          }`}
-        >
+            <button 
+              onClick={handleDialClick} 
+              disabled={!isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'))} 
+              className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-3.5 ${getDialColorClasses()} ${
+                isMobile ? 'w-[185px] h-[185px]' : 'w-[200px] h-[200px]'
+              } ${
+                isEffectivelyDisabled
+                  ? 'opacity-40 cursor-not-allowed shadow-none hover:scale-100' 
+                  : ''
+              }`}
+            >
           <div className="flex flex-col items-center justify-center h-full w-full py-1.5 select-none">
             {/* UPPER ZONE: Prominent Icon */}
             <div className={`flex-grow flex items-center justify-center mt-2.5 ${isGpsError ? 'text-rose-500' : ''}`}>
@@ -264,7 +277,9 @@ export default function DialPrincipal({
             </div>
 
             {/* CENTRAL ZONE: Digital Time */}
-            <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-800'} ${isMobile ? 'text-[19px]' : 'text-3xl md:text-4xl leading-none'}`}>
+            <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${
+              isGpsError ? 'text-rose-600' : byKey?.textColor || 'text-slate-800'
+            } ${isMobile ? 'text-[24px]' : 'text-3xl md:text-4xl leading-none'}`}>
               <span>
                 {(() => {
                   const timePart = formattedTime.split(' ')[0];
@@ -273,7 +288,9 @@ export default function DialPrincipal({
                     return (
                       <>
                         {h}
-                        <span className={`animate-[pulse_1s_infinite] select-none mx-0.5 font-bold ${isGpsError ? 'text-rose-400' : 'text-indigo-500'}`}>:</span>
+                        <span className={`animate-[pulse_1s_infinite] select-none mx-0.5 font-bold ${
+                          isGpsError ? 'text-rose-400' : byKey?.textColor || 'text-indigo-500'
+                        }`}>:</span>
                         {m}
                       </>
                     );
@@ -281,17 +298,17 @@ export default function DialPrincipal({
                   return timePart;
                 })()}
               </span>
-              <span className={`font-bold ${isGpsError ? 'text-rose-450' : 'text-slate-500'} ${isMobile ? 'text-[9px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
+              <span className={`font-bold ${isGpsError ? 'text-rose-450' : 'text-slate-500'} ${isMobile ? 'text-[11px] ml-1' : 'text-xs md:text-sm ml-1.5'}`}>
                 {formattedTime.split(' ')[1] ? formattedTime.split(' ')[1].toLowerCase() : ''}
               </span>
             </div>
 
             {/* LOWER ZONE: Bottom Label */}
             <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
-              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[9px] md:text-[9.5px]' : 'text-[10px] md:text-[11px]'} ${isGpsError ? 'text-rose-600 font-extrabold' : ''}`}>
+              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[11.5px] max-w-[145px] leading-[1.1]' : 'text-xs md:text-[13px]'} ${isGpsError ? 'text-rose-600 font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
-              {btnProps.subtext && (
+              {btnProps.subtext && !['entrada', 'verifying_gps', 'verifying_selfie', 'success_check', 'break_start', 'break_end', 'meal_prompt', 'meal_start', 'exit'].includes(btnProps.iconKey || '') && (
                 <span className={`text-[9px] font-extrabold mt-0.5 leading-none block select-none uppercase truncate max-w-full ${isGpsError ? 'text-rose-500' : 'text-slate-550 dark:text-slate-400'}`}>
                   {btnProps.subtext}
                 </span>
@@ -300,6 +317,8 @@ export default function DialPrincipal({
           </div>
         </button>
       </div>
+        );
+      })()}
 
       {clockState === 'active' && hasMealReservation && onMealSwapClick && (
         <button

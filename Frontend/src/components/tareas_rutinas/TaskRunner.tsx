@@ -123,114 +123,68 @@ export function FichaTarea({
     return (
         <div 
             onClick={onSelect}
-            className={`border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-3.5 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:-translate-y-0.5 ${cardClass}`}
+            className={`border rounded-2xl p-3.5 shadow-xs hover:shadow-sm transition-all duration-300 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/50 border-slate-200/80 dark:border-slate-800/80 ${cardClass}`}
         >
-            {/* Indicador lateral de estado (Estilo gradiente de alta fidelidad) */}
+            {/* Indicador lateral de color para diferenciar el tipo de tarea (category) */}
             <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${
-                isOvertime && assignment.status !== 'completed' && assignment.status !== 'omitted' ? 'from-rose-500 to-red-600' :
-                assignment.status === 'awaiting_validation' ? 'from-amber-400 to-yellow-500' :
-                isFromPool ? 'from-sky-400 to-blue-500' :
-                assignment.status === 'in_progress' ? 'from-emerald-400 to-teal-500 animate-pulse' :
-                assignment.status === 'paused' ? 'from-slate-400 to-slate-550' : 'from-indigo-400 to-violet-500'
+                task.category === 'administrativo' ? 'from-emerald-400 to-emerald-600' :
+                task.category === 'operativo' ? 'from-blue-400 to-blue-600' :
+                task.category === 'mantenimiento' ? 'from-amber-400 to-amber-600' :
+                task.category === 'supervision' ? 'from-violet-400 to-violet-600' : 'from-indigo-400 to-violet-500'
             }`}></div>
 
-            <div className="pl-1.5 flex flex-col justify-between flex-grow gap-2.5">
-                {/* Fila 1: Badges y etiquetas */}
-                <div className="flex justify-between items-start gap-2">
-                    <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-lg border tracking-wider shadow-xs ${badgeClass}`}>
-                        {badgeText}
-                    </span>
-                    <div className="flex flex-wrap items-center justify-end gap-1 shrink-0">
-                        {task.priority === 'bloqueante' && (
-                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-xs">
-                                ⚠️ Obligatoria
-                            </span>
-                        )}
-                        {task.scheduledTime && (
-                            <span className="text-[7.5px] font-black px-1.5 py-0.5 rounded-md border bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 flex items-center gap-0.5 shrink-0">
-                                ⏰ {task.scheduledTime}
-                            </span>
-                        )}
-                        {isFromPool ? (
-                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-xs animate-pulse">
-                                ✨ Bolsa
-                            </span>
-                        ) : assignment.assignedFromRoutineId ? (
-                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700">
-                                📅 Rutina
-                            </span>
-                        ) : (
-                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
-                                📌 Directa
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Fila 2: Título y descripción breve si existe */}
-                <div>
-                    <h4 className="font-black text-xs text-slate-800 dark:text-slate-100 leading-tight">
+            <div className="pl-2.5 flex flex-col justify-between flex-grow gap-2">
+                {/* Título y descripción */}
+                <div className="min-w-0 pr-6 relative">
+                    <h4 className="font-black text-xs text-slate-800 dark:text-slate-100 leading-snug truncate">
                         {task.title}
                     </h4>
                     {task.description && (
-                        <p className="text-[8.5px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-semibold leading-none">
+                        <p className="text-[9px] text-slate-450 dark:text-slate-500 mt-0.5 line-clamp-1 font-semibold leading-tight">
                             {task.description}
                         </p>
                     )}
                 </div>
 
-                {/* Fila 3: Colaborador, Barra de Progreso y Tiempo */}
-                <div className="flex items-center justify-between gap-3 mt-1.5 text-[9.5px] text-slate-500 font-bold border-t border-slate-100 dark:border-slate-800/80 pt-2.5">
-                    {/* Colaborador */}
-                    <div className="flex items-center gap-1.5 min-w-0">
-                        <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-[10px] shrink-0 border border-slate-200/55 dark:border-slate-750">
-                            👤
+                {/* Progreso, Tiempo y Botón Play/Pause */}
+                <div className="flex items-center justify-between gap-3 mt-1 text-[9.5px] text-slate-505 font-bold border-t border-slate-100/70 dark:border-slate-800/50 pt-2 shrink-0">
+                    <div className="flex items-center gap-2 flex-grow min-w-0">
+                        {/* Barra de progreso slim */}
+                        <div className="w-16 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden relative border border-slate-200/40 dark:border-slate-700/40 shrink-0">
+                            <div 
+                                className={`h-full absolute left-0 top-0 transition-all duration-300 ${
+                                    assignment.status === 'completed' ? 'bg-teal-500' :
+                                    assignment.status === 'omitted' ? 'bg-slate-400' :
+                                    isOvertime ? 'bg-rose-500/80' : 
+                                    assignment.status === 'in_progress' ? 'bg-gradient-to-r from-emerald-400 to-teal-500 animate-pulse' : 'bg-indigo-500/80'
+                                }`}
+                                style={{ width: `${percent}%` }}
+                            ></div>
                         </div>
-                        <span className="truncate text-slate-700 dark:text-slate-355 font-extrabold text-[8.5px]">
-                            {collaboratorName}
+                        {/* Tiempo de duración */}
+                        <span className="text-[8.5px] font-black text-slate-650 dark:text-slate-300 truncate">
+                            {timeDisplay}
                         </span>
                     </div>
 
-                    {/* Lado derecho: Progreso y Controles */}
-                    <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-1.5">
-                            {/* Barra de progreso slim y pulida */}
-                            <div className="w-16 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden relative border border-slate-200/40 dark:border-slate-700/40">
-                                <div 
-                                    className={`h-full absolute left-0 top-0 transition-all duration-300 ${
-                                        assignment.status === 'completed' ? 'bg-teal-500' :
-                                        assignment.status === 'omitted' ? 'bg-slate-400' :
-                                        isOvertime ? 'bg-rose-500/80' : 
-                                        assignment.status === 'in_progress' ? 'bg-gradient-to-r from-emerald-400 to-teal-500 animate-pulse' : 'bg-indigo-500/80'
-                                    }`}
-                                    style={{ width: `${percent}%` }}
-                                ></div>
-                            </div>
-                            {/* Tiempo */}
-                            <span className="text-[8.5px] font-black text-slate-750 dark:text-slate-255 shrink-0">
-                                {timeDisplay}
-                            </span>
-                        </div>
-
-                        {/* Botón rápido Play / Pausa */}
-                        {showPlayPause && (
-                            <button
-                                onClick={onPlayPause}
-                                className={`w-5.5 h-5.5 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-sm text-white ${
-                                    assignment.status === 'in_progress'
-                                        ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10'
-                                        : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/10'
-                                }`}
-                                title={assignment.status === 'in_progress' ? 'Pausar Tarea' : 'Iniciar Tarea'}
-                            >
-                                {assignment.status === 'in_progress' ? (
-                                    <Pause size={8} className="fill-white text-white" />
-                                ) : (
-                                    <Play size={8} className="fill-white text-white translate-x-0.5" />
-                                )}
-                            </button>
-                        )}
-                    </div>
+                    {/* Botón Play/Pausa rápido si es elegible */}
+                    {showPlayPause && (
+                        <button
+                            onClick={onPlayPause}
+                            className={`w-5.5 h-5.5 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-sm text-white shrink-0 ${
+                                assignment.status === 'in_progress'
+                                    ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10'
+                                    : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/10'
+                            }`}
+                            title={assignment.status === 'in_progress' ? 'Pausar Tarea' : 'Iniciar Tarea'}
+                        >
+                            {assignment.status === 'in_progress' ? (
+                                <Pause size={8} className="fill-white text-white" />
+                            ) : (
+                                <Play size={8} className="fill-white text-white translate-x-0.5" />
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -264,6 +218,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     };
     const activeColor = getModuleColor('operativo');
     const [filterTab, setFilterTab] = useState<'todos' | 'firma_pendiente' | 'mis_tareas' | 'bolsa'>('todos');
+    const [subMenuFilter, setSubMenuFilter] = useState<'todas' | 'obligatorias' | 'operativo' | 'administrativo' | 'mantenimiento' | 'supervision'>('todas');
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
@@ -426,9 +381,11 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     // El listado actual a mostrar
     const displayedAssignments = (() => {
+        let baseList: TaskAssignment[] = [];
         switch (filterTab) {
             case 'firma_pendiente':
-                return awaitingValidationFiltered;
+                baseList = awaitingValidationFiltered;
+                break;
             case 'mis_tareas': {
                 const combined = [
                     ...activeAssignmentsFiltered,
@@ -439,7 +396,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     self.findIndex(a => a.id === val.id) === index
                 );
                 // Ordenar: En curso, Pausadas, Pendientes propias, Bolsa libre
-                return uniqueCombined.sort((a, b) => {
+                baseList = uniqueCombined.sort((a, b) => {
                     if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
                     if (b.status === 'in_progress' && a.status !== 'in_progress') return 1;
 
@@ -453,9 +410,11 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
                     return 0;
                 });
+                break;
             }
             case 'bolsa':
-                return puestoAssignmentsFiltered;
+                baseList = puestoAssignmentsFiltered;
+                break;
             case 'todos':
             default: {
                 const combined = [
@@ -463,11 +422,34 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     ...activeAssignmentsFiltered,
                     ...puestoAssignmentsFiltered
                 ];
-                return combined.filter((val, index, self) =>
+                baseList = combined.filter((val, index, self) =>
                     self.findIndex(a => a.id === val.id) === index
                 );
+                break;
             }
         }
+
+        // Aplicar el subMenuFilter rápido de categorías / obligatorias
+        return baseList.filter(a => {
+            const t = tasks.find(tsk => tsk.id === a.taskId);
+            if (!t) return false;
+            if (subMenuFilter === 'obligatorias') {
+                return t.priority === 'bloqueante';
+            }
+            if (subMenuFilter === 'operativo') {
+                return t.category === 'operativo';
+            }
+            if (subMenuFilter === 'administrativo') {
+                return t.category === 'administrativo';
+            }
+            if (subMenuFilter === 'mantenimiento') {
+                return t.category === 'mantenimiento';
+            }
+            if (subMenuFilter === 'supervision') {
+                return t.category === 'supervision';
+            }
+            return true;
+        });
     })();
 
     // KPIs rápidos del día (datos reales: puntos vienen de task.points, sin inventar campos)
@@ -583,20 +565,20 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-2.5 pb-4 pt-1.5 select-none relative overflow-hidden">
-            {/* Tira de KPIs             {/* Fila fija de 3 botones principales */}
-            <div className="grid grid-cols-3 gap-2 mb-3 shrink-0 select-none">
+            {/* Fila fija de 2 botones principales (Todas y Mis Tareas) */}
+            <div className="grid grid-cols-2 gap-2.5 mb-3.5 shrink-0 select-none">
                 {/* Botón 1: Todas (Muestra todas, con badge de completadas/total) */}
                 <button
                     type="button"
                     onClick={() => setFilterTab('todos')}
-                    className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                    className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border transition-all cursor-pointer relative ${
                         filterTab === 'todos'
-                            ? 'text-white shadow-md scale-[1.02]'
-                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
+                            ? 'text-white shadow-md scale-[1.01]'
+                            : 'bg-white text-slate-550 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
                     }`}
                     style={filterTab === 'todos' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
-                    <ClipboardList size={18} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
+                    <ClipboardList size={17} className={filterTab === 'todos' ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1">Todas</span>
                     <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                         filterTab === 'todos' 
@@ -613,14 +595,14 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 <button
                     type="button"
                     onClick={() => setFilterTab('mis_tareas')}
-                    className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                    className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border transition-all cursor-pointer relative ${
                         filterTab === 'mis_tareas'
-                            ? 'text-white shadow-md scale-[1.02]'
-                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
+                            ? 'text-white shadow-md scale-[1.01]'
+                            : 'bg-white text-slate-550 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
                     }`}
                     style={filterTab === 'mis_tareas' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
-                    <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
+                    <User size={17} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
                     <span className={`absolute -top-1 -right-1 text-[7.5px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                         filterTab === 'mis_tareas'
@@ -632,58 +614,75 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         {filterTab === 'mis_tareas' ? `+${pointsToday} pts` : `+${pointsToday}p`}
                     </span>
                 </button>
-
-                {/* Botón 3: Buscar */}
-                <button
-                    type="button"
-                    onClick={() => setIsSearchOpen(!isSearchOpen)}
-                    className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl border transition-all cursor-pointer relative ${
-                        isSearchOpen
-                            ? 'text-white shadow-md scale-[1.02]'
-                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
-                    }`}
-                    style={isSearchOpen ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
-                >
-                    <Search size={18} className={isSearchOpen ? 'text-white' : 'text-slate-400'} />
-                    <span className="text-[9px] font-black uppercase mt-1">Buscar</span>
-                </button>
             </div>
 
-            {/* Buscador Deslizable Colapsable con Altura y Opacidad Animadas */}
-            <div 
-                className={`transition-all duration-300 ease-in-out overflow-hidden flex items-center gap-2 shrink-0 ${
-                    isSearchOpen 
-                        ? 'h-12 opacity-100 mb-3 scale-y-100 origin-top' 
-                        : 'h-0 opacity-0 mb-0 scale-y-0 origin-top pointer-events-none'
-                }`}
-            >
-                <div className="relative flex-1">
-                    <input 
-                        type="text" 
-                        placeholder="Buscar tareas por título..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-8 py-2.5 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-xs font-semibold shadow-sm transition-all"
-                    />
-                    <div className="absolute left-3 top-3 text-slate-400">
-                        <Search size={14} />
-                    </div>
-                    {searchQuery && (
-                        <button 
-                            onClick={() => setSearchQuery('')} 
-                            className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
-                        >
-                            <X size={14} />
-                        </button>
-                    )}
-                </div>
-                <button 
-                    onClick={() => {
-                        setSearchQuery('');
-                    }}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-[10px] uppercase px-3.5 py-2.5 rounded-xl border border-slate-200/50 cursor-pointer active:scale-95 transition-all select-none shrink-0"
+            {/* Submenú de Filtros Rápidos Horizontal Deslizable (Reemplaza a Lista Unificada y Buscar) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3.5 scrollbar-none shrink-0 select-none -mx-1 px-1">
+                <button
+                    type="button"
+                    onClick={() => setSubMenuFilter('todas')}
+                    className={`px-3 py-1.5 rounded-full text-[8.5px] font-extrabold uppercase border tracking-wider transition-all cursor-pointer ${
+                        subMenuFilter === 'todas'
+                            ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                            : 'bg-white text-slate-550 border-slate-200 hover:bg-slate-50'
+                    }`}
                 >
-                    <span>Limpiar</span>
+                    Todas
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubMenuFilter('obligatorias')}
+                    className={`px-3 py-1.5 rounded-full text-[8.5px] font-extrabold uppercase border tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        subMenuFilter === 'obligatorias'
+                            ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                            : 'bg-rose-50/40 text-rose-605 border-rose-100 hover:bg-rose-50'
+                    }`}
+                >
+                    ⚠️ Obligatorias
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubMenuFilter('operativo')}
+                    className={`px-3 py-1.5 rounded-full text-[8.5px] font-extrabold uppercase border tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        subMenuFilter === 'operativo'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : 'bg-blue-50/40 text-blue-605 border-blue-100 hover:bg-blue-50'
+                    }`}
+                >
+                    ⚙️ Operativas
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubMenuFilter('administrativo')}
+                    className={`px-3 py-1.5 rounded-full text-[8.5px] font-extrabold uppercase border tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        subMenuFilter === 'administrativo'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-emerald-50/40 text-emerald-605 border-emerald-100 hover:bg-emerald-50'
+                    }`}
+                >
+                    📋 Administrativas
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubMenuFilter('mantenimiento')}
+                    className={`px-3 py-1.5 rounded-full text-[8.5px] font-extrabold uppercase border tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        subMenuFilter === 'mantenimiento'
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                            : 'bg-amber-50/40 text-amber-605 border-amber-100 hover:bg-amber-50'
+                    }`}
+                >
+                    🔧 Mantenimiento
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSubMenuFilter('supervision')}
+                    className={`px-3 py-1.5 rounded-full text-[8.5px] font-extrabold uppercase border tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        subMenuFilter === 'supervision'
+                            ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                            : 'bg-violet-50/40 text-violet-605 border-violet-100 hover:bg-violet-50'
+                    }`}
+                >
+                    🔍 Supervisión
                 </button>
             </div>
 
@@ -692,17 +691,6 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 className="flex-1 overflow-y-auto pb-24 scrollbar-none"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
-                        {filterTab === 'todos' ? 'Lista Unificada de Tareas' :
-                         filterTab === 'firma_pendiente' ? 'Tareas esperando validación' :
-                         filterTab === 'mis_tareas' ? 'Mis Tareas y Bolsa' :
-                         'Bolsa de Trabajo'}
-                    </h3>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                        {displayedAssignments.length} {displayedAssignments.length === 1 ? 'tarea' : 'tareas'}
-                    </span>
-                </div>
 
                 {displayedAssignments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm">
@@ -750,8 +738,8 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 </div>
             )}
 
-            {/* Botón Flotante (FAB) */}
-            <div className="fixed bottom-24 right-6 z-40" ref={fabMenuRef}>
+            {/* Botón Flotante (FAB) - Posicionamiento absoluto contenido en el simulador */}
+            <div className="absolute bottom-20 right-4 z-40" ref={fabMenuRef}>
                 {isSupervisor && showFabMenu && (
                     <div className="absolute bottom-16 right-0 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 flex flex-col gap-1 min-w-[200px] animate-in fade-in slide-in-from-bottom-3 duration-200 text-left">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 text-left border-b border-slate-50">

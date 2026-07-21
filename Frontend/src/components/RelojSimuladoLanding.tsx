@@ -1038,8 +1038,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         />
       </div>
 
-      {/* BOTÓN FLOTANTE OPERATIVO (🛠️ Sparkles) */}
-      <div className="absolute bottom-20 right-4 z-40">
+      {/* BOTÓN FLOTANTE OPERATIVO (🛠️ Sparkles) - Posicionado a la izquierda para no empalmarse */}
+      <div className="absolute bottom-20 left-4 z-40">
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(true)}

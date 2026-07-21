@@ -33,9 +33,12 @@ class DashboardMonitorController extends Controller
             $today = Carbon::today()->toDateString();
 
             // Fetch time entries for today to determine shift status
+            // whereNull('simulation_session_id'): nunca mezclar fichajes del Simulador
+            // Matrix en el monitor de actividad en tiempo real.
             $timeEntries = DB::table('time_entries')
                 ->where('tenant_id', $userTenantId)
                 ->where('date', $today)
+                ->whereNull('simulation_session_id')
                 ->get()
                 ->groupBy('user_id');
 
@@ -170,6 +173,7 @@ class DashboardMonitorController extends Controller
             $timeEntriesFeed = DB::table('time_entries')
                 ->join('users', 'users.id', '=', 'time_entries.user_id')
                 ->where('time_entries.tenant_id', $userTenantId)
+                ->whereNull('time_entries.simulation_session_id')
                 ->orderBy('time_entries.created_at', 'desc')
                 ->limit(5)
                 ->select('time_entries.id', 'users.name', 'time_entries.type', 'time_entries.created_at')
@@ -219,6 +223,7 @@ class DashboardMonitorController extends Controller
             $storeLogsFeed = DB::table('store_logs')
                 ->join('users', 'users.id', '=', 'store_logs.user_id')
                 ->where('users.tenant_id', $userTenantId)
+                ->whereNull('store_logs.simulation_session_id')
                 ->orderBy('store_logs.created_at', 'desc')
                 ->limit(5)
                 ->select('store_logs.id', 'users.name', 'store_logs.type', 'store_logs.created_at')
@@ -250,6 +255,7 @@ class DashboardMonitorController extends Controller
             $chatMessages = DB::table('internal_messages')
                 ->leftJoin('users', 'users.id', '=', 'internal_messages.sender_id')
                 ->where('internal_messages.tenant_id', $userTenantId)
+                ->whereNull('internal_messages.simulation_session_id')
                 ->orderBy('internal_messages.created_at', 'asc')
                 ->limit(50)
                 ->select('internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name', 'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at')

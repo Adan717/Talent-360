@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\DB;
 class ClockService
 {
     protected MockLocationDetector $mockLocationDetector;
+    protected SimulatorSessionService $simulatorSessionService;
 
-    public function __construct()
+    public function __construct(SimulatorSessionService $simulatorSessionService)
     {
         $this->mockLocationDetector = new MockLocationDetector();
+        $this->simulatorSessionService = $simulatorSessionService;
     }
 
     // Tipos de evento permitidos en el sistema de fichaje
@@ -49,14 +51,29 @@ class ClockService
             $timezone = 'America/Mexico_City';
         }
         
-        $date = $now->format('Y-m-d');
+        // Simulador Matrix: los fichajes marcados is_simulator se ligan a la sesión activa
+        // del tenant y usan su simulated_date en vez de la fecha real — así corridas
+        // sucesivas del simulador nunca chocan entre sí contra UNIQUE(user_id, date, type),
+        // y sus filas quedan aisladas de los reportes reales (ver ExcludeSimulationScope).
+        $isSimulatorPunch = isset($details['is_simulator']) && $details['is_simulator'] === true;
+        $simulationSessionId = null;
+        $simulatorSession = null;
+
+        if ($isSimulatorPunch) {
+            $simulatorSession = $this->simulatorSessionService->getActiveSession($tenantId, $user->id);
+            $simulationSessionId = $simulatorSession->id;
+        }
+
+        $date = $simulatorSession
+            ? Carbon::parse($simulatorSession->simulated_date)->format('Y-m-d')
+            : $now->format('Y-m-d');
 
         // El simulador manda una hora explícita para pruebas; el sync offline por lotes
         // (punch-batch) también manda la hora real en que ocurrió el fichaje mientras el
         // dispositivo estaba sin conexión — sin esto, el registro quedaría con la hora en
         // que finalmente sincronizó en vez de la hora real del evento.
         $isOfflineSync = isset($details['offline_sync']) && $details['offline_sync'] === true;
-        if (($isSimulated || $isOfflineSync) && $simTime) {
+        if (($isSimulated || $isOfflineSync || $isSimulatorPunch) && $simTime) {
             $time = $simTime;
             $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time", $timezone);
         } else {
@@ -322,7 +339,7 @@ class ClockService
         // Si falla la inserción del audit_log, el time_entry también se revierte.
         $entry = DB::transaction(function () use (
             $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
-            $snapshotName, $snapshotRole, $snapshotSalary
+            $snapshotName, $snapshotRole, $snapshotSalary, $simulationSessionId
         ) {
             try {
                 $entry = TimeEntry::create([
@@ -337,6 +354,7 @@ class ClockService
                     'employee_name_at_time' => $snapshotName,
                     'job_role_title_at_time'=> $snapshotRole,
                     'base_salary_at_time'   => $snapshotSalary,
+                    'simulation_session_id' => $simulationSessionId,
                 ]);
             } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                 // Backstop del índice único (time_entries_user_date_type_unique) para la
@@ -356,6 +374,7 @@ class ClockService
                 'reason'           => "Fichaje de tipo: $type",
                 'punishment_amount'=> $isLate ? ($lateMinutes * 2) : 0,
                 'details'          => json_encode($detailsMerge),
+                'simulation_session_id' => $simulationSessionId,
                 'created_at'       => Carbon::now(),
                 'updated_at'       => Carbon::now(),
             ]);
@@ -511,7 +530,14 @@ class ClockService
     /**
      * Calcula la nómina detallada y el desglose de LFT de un colaborador.
      */
-    public function calculatePayrollForEmployee($employee, $startDate, $endDate)
+    /**
+     * @param int|null $simulationSessionId "Reportes de Prueba" (sección 13): si se
+     * especifica, incluye EXCLUSIVAMENTE los fichajes de esa sesión del Simulador Matrix
+     * (bypass explícito de ExcludeSimulationScope) en vez de los datos reales. Pensado
+     * para que un admin verifique que el módulo de nómina calcula bien con datos de
+     * prueba, sin que eso toque jamás un número real.
+     */
+    public function calculatePayrollForEmployee($employee, $startDate, $endDate, ?int $simulationSessionId = null)
     {
         $tenantId = $employee->tenant_id;
         
@@ -536,10 +562,17 @@ class ClockService
         $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
         $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
         
-        // 2. Obtener registros de asistencia
-        $entries = TimeEntry::where('user_id', $employee->user_id)
-            ->whereBetween('date', [$startDate, $endDate])
-            ->get();
+        // 2. Obtener registros de asistencia (reales por defecto; ver $simulationSessionId
+        // arriba para el modo "Reportes de Prueba" del Simulador Matrix)
+        $entriesQuery = TimeEntry::where('user_id', $employee->user_id)
+            ->whereBetween('date', [$startDate, $endDate]);
+
+        if ($simulationSessionId) {
+            $entriesQuery->withoutGlobalScope(\App\Scopes\ExcludeSimulationScope::class)
+                ->where('simulation_session_id', $simulationSessionId);
+        }
+
+        $entries = $entriesQuery->get();
             
         // 3. Agrupar por día
         $entriesByDate = $entries->groupBy('date');

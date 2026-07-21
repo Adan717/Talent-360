@@ -13,59 +13,71 @@ use App\Models\Contingency;
 use App\Models\InternalMessage;
 use App\Models\AuditLog;
 use App\Models\RoleClockPolicy;
+use App\Services\SimulatorSessionService;
 
 class ClockController extends Controller
 {
-    // ⚠️ DEV-ONLY — Archiva todos los registros históricos y limpia las tablas operativas
-    public function resetDb()
+    protected $simulatorSessionService;
+
+    public function __construct(SimulatorSessionService $simulatorSessionService)
     {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
-            return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
-        }
+        $this->simulatorSessionService = $simulatorSessionService;
+    }
 
-        $archivedBy = auth()->check() ? auth()->user()->id : null;
-        $tenantId   = auth()->check() ? auth()->user()->tenant_id : null;
+    /**
+     * Purga los datos del Simulador Matrix — reemplaza el TRUNCATE sin filtrar que
+     * borraba tablas completas de TODAS las empresas. Ahora solo borra filas con
+     * simulation_session_id no nulo (nunca datos reales), opcionalmente acotado a una
+     * sola sesión. Ya no necesita deshabilitarse en producción: la purga está scopeada
+     * por tenant y por origen del dato, no es un TRUNCATE global.
+     */
+    public function resetDb(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $sessionId = $request->input('session_id');
 
-        DB::transaction(function () use ($archivedBy, $tenantId) {
-            // Archivar time_entries masivamente mediante INSERT INTO ... SELECT (Optimo)
-            $nowStr = now()->toDateTimeString();
-            DB::insert("
-                INSERT INTO archived_time_entries (
-                    original_id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
-                    employee_name_at_time, job_role_title_at_time, base_salary_at_time,
-                    archived_reason, archived_by_user_id, original_created_at, created_at, updated_at
-                )
-                SELECT 
-                    id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
-                    employee_name_at_time, job_role_title_at_time, base_salary_at_time,
-                    'reset_db', :archived_by, created_at, :created_at, :updated_at
-                FROM time_entries
-            ", [
-                'archived_by' => $archivedBy,
-                'created_at' => $nowStr,
-                'updated_at' => $nowStr
-            ]);
+        $result = $this->simulatorSessionService->purge($tenantId, $sessionId ? (int) $sessionId : null);
 
-            if (DB::getDriverName() === 'sqlite') {
-                DB::statement('PRAGMA foreign_keys=OFF;');
-            } else {
-                DB::statement('SET session_replication_role = replica;');
-            }
+        return response()->json([
+            'success' => true,
+            'message' => 'Datos de simulación purgados correctamente.',
+            'purged_sessions' => $result['purged_sessions'],
+            'deleted_rows' => $result['deleted_rows'],
+        ]);
+    }
 
-            DB::table('time_entries')->truncate();
-            DB::table('store_logs')->truncate();
-            DB::table('audit_logs')->truncate();
-            DB::table('contingencies')->truncate();
-            DB::table('internal_messages')->truncate();
+    /**
+     * Obtiene la sesión activa del Simulador Matrix para el tenant, creándola si no
+     * existe. PanelSimulador.tsx la llama al montar.
+     */
+    public function getActiveSimulatorSession(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $session = $this->simulatorSessionService->getActiveSession($tenantId, auth()->user()->id);
 
-            if (DB::getDriverName() === 'sqlite') {
-                DB::statement('PRAGMA foreign_keys=ON;');
-            } else {
-                DB::statement('SET session_replication_role = DEFAULT;');
-            }
-        });
+        return response()->json([
+            'success' => true,
+            'session_id' => $session->id,
+            'simulated_date' => $session->simulated_date->format('Y-m-d'),
+            'status' => $session->status,
+        ]);
+    }
 
-        return response()->json(['message' => 'Datos archivados y tablas limpiadas correctamente.']);
+    /**
+     * Cierra la sesión activa (si existe) y crea una nueva con simulated_date + 1 día.
+     * Reemplaza al botón "Limpiar" actual — nunca borra datos, solo avanza de día.
+     */
+    public function startNewSimulatorSession(Request $request)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $session = $this->simulatorSessionService->startNewSession($tenantId, auth()->user()->id);
+
+        return response()->json([
+            'success' => true,
+            'session_id' => $session->id,
+            'simulated_date' => $session->simulated_date->format('Y-m-d'),
+            'status' => $session->status,
+        ]);
     }
 
     // ⚠️ DEV-ONLY — Archiva los registros del día indicado antes de borrarlos
@@ -119,30 +131,38 @@ class ClockController extends Controller
         // Optimización de rendimiento: limitar registros históricos masivos a la última semana
         $oneWeekAgo = now()->subDays(7)->format('Y-m-d');
 
+        // whereNull('simulation_session_id'): esta es la respuesta que alimenta el
+        // dialer/monitor en vivo de colaboradores reales — nunca debe mezclar fichajes
+        // del Simulador Matrix (ver sección 13 de docs/BACKEND_INTERFACES.md).
         $timeEntries = DB::table('time_entries')
             ->where('tenant_id', $tenantId)
             ->whereDate('date', '>=', $oneWeekAgo)
+            ->whereNull('simulation_session_id')
             ->get();
 
         $storeLogs = DB::table('store_logs')
             ->where('tenant_id', $tenantId)
             ->whereDate('date', '>=', $oneWeekAgo)
+            ->whereNull('simulation_session_id')
             ->orderBy('id', 'desc')
             ->get();
 
         $contingencies = DB::table('contingencies')
             ->where('tenant_id', $tenantId)
             ->whereDate('created_at', '>=', $oneWeekAgo)
+            ->whereNull('simulation_session_id')
             ->get();
 
         $messages = DB::table('internal_messages')
             ->where('tenant_id', $tenantId)
             ->whereDate('created_at', '>=', $oneWeekAgo)
+            ->whereNull('simulation_session_id')
             ->get();
 
         $auditLogs = DB::table('audit_logs')
             ->where('tenant_id', $tenantId)
             ->whereDate('date', '>=', $oneWeekAgo)
+            ->whereNull('simulation_session_id')
             ->get();
 
         // Get permissions per user (Optimized to avoid N+1 queries)
@@ -197,6 +217,7 @@ class ClockController extends Controller
             ->where('tenant_id', $tenantId)
             ->where('type', 'check_out')
             ->whereNotNull('details')
+            ->whereNull('simulation_session_id')
             ->orderBy('id', 'desc')
             ->first();
         

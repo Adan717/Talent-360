@@ -479,3 +479,114 @@ Test nuevo: `SyncSettingsPermissionTest` (empleado normal → 403, admin → 200
 **Ajuste fino (2026-07-21):** Francisco confirmó que el selector de curso de puntualidad debe ser exclusivo de `admin`, sin incluir a `supervisor` (que sí conserva acceso al resto de `/sync/settings`, ej. `clockOpConfig`, `timezone`, adopción de módulos). En vez de crear un endpoint paralelo, `ClockController::syncSettings` ahora tiene una lista `ADMIN_ONLY_SETTING_KEYS = ['punctuality_course_id']`: si la llave está en esa lista y quien llama no es `admin`/`platform_admin`, responde `403` sin importar que el rol tenga acceso general a la ruta. También valida que el `course_id` enviado exista y pertenezca al tenant (`422` si no). Cowork no necesita cambiar nada del lado de la llamada — sigue siendo el mismo `POST /sync/settings { key: 'punctuality_course_id', value }`, solo que ahora el backend es más estricto sobre quién puede tocar esa llave específica.
 
 Tests actualizados en `SyncSettingsPermissionTest`: supervisor puede escribir otras llaves pero no `punctuality_course_id` (403), admin no puede apuntar a un curso inexistente (422). Suite completa: 76/76 verde.
+
+---
+
+## 13. Simulador Matrix — Aislamiento de Datos de Prueba (Sesiones de Simulación)
+
+**Contexto (2026-07-21, pedido de Francisco):** el Simulador Matrix (`PanelSimulador.tsx`) genera fichajes de prueba para varios "celulares" simulados. Hoy esos fichajes se guardan exactamente igual que un fichaje real — mismas tablas, mismo `tenant_id`, sin ninguna marca que los distinga — y por eso existe el botón "Limpiar" (`ClockController::resetDb`), que hoy borra `TRUNCATE` de 5 tablas **sin filtrar ni por tenant ni por origen del dato**.
+
+Esto es un problema en dos niveles: (1) borra datos de todas las empresas de la plataforma, no solo la que se está probando (ya señalado en `routes/api.php` línea 118); (2) incluso acotado por tenant, si el mismo tenant tiene empleados reales fichando Y alguien corre el simulador ahí (como hace Francisco hoy con su propia empresa), un `DELETE WHERE tenant_id = X` seguiría borrando fichajes reales junto con los de prueba. Necesitamos distinguir **origen del dato**, no solo empresa.
+
+Requisitos confirmados por Francisco:
+- Los datos del simulador deben **prevalecer** (no autoborrarse) para poder usarse en reportes de prueba — hasta que él decida purgarlos manualmente o deshabilitar el módulo.
+- Cada vez que se abre una nueva sesión de la Matrix, debe poder seguir generando fichajes sin chocar con la restricción `UNIQUE(user_id, date, type)` (hoy choca porque todo se guarda con la fecha real del servidor, sin importar cuántas veces se corra el simulador el mismo día).
+- Los datos simulados **nunca** deben mezclarse con los reportes reales de nómina/asistencia — pero sí deben poder verse en algún tipo de "reporte de prueba" para que Francisco pueda validar que el módulo de reportes funciona bien con datos simulados.
+- El mecanismo debe funcionar igual para Francisco probando su propia empresa que para un tenant futuro que rente la plataforma y quiera un simulador para probarla — o sea, aislado por tenant desde el diseño, no un hack de un solo uso.
+
+### Propuesta: tabla `simulator_sessions` + `simulation_session_id`
+
+```php
+Schema::create('simulator_sessions', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
+    $table->foreignId('started_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+    $table->date('simulated_date'); // la fecha "de mentiras" que usa esta sesión, no la fecha real
+    $table->enum('status', ['active', 'closed'])->default('active');
+    $table->timestamps();
+});
+```
+
+Agregar `simulation_session_id` (nullable, FK a `simulator_sessions`) a `time_entries`, `store_logs`, `contingencies`, `internal_messages` y `audit_logs`. `NULL` significa "dato real"; cualquier valor no nulo significa "dato de una sesión de simulación específica". Se prefiere esto sobre un simple booleano `is_simulator` porque agrupa todos los registros de una misma corrida (permite purgar una sesión completa, o consultar "solo la última corrida") y porque ahí mismo vive el avance de fecha que pide Francisco.
+
+### Lógica de sesión
+
+Al abrir la Matrix (`PanelSimulador.tsx` al montar, o al presionar "Iniciar Nueva Sesión" — reemplaza al botón "Limpiar" actual):
+1. Buscar la sesión `active` del tenant. Si existe, reutilizarla (mismo `simulated_date` para toda la sesión en curso).
+2. Si no existe, crear una nueva: `simulated_date = (última sesión del tenant, si existe)->simulated_date + 1 día`, o la fecha real de hoy si es la primera sesión de ese tenant en toda su historia.
+3. Todo fichaje/registro que el simulador dispare durante esa sesión (vía `/clock/punch`, `/clock/punch-batch`, `/store-opening/*`, etc., cuando `details.is_simulator === true`) se guarda con `simulation_session_id` = el de la sesión activa, y usando `simulated_date` como el valor de la columna `date` — no la fecha real del servidor. Esto es lo que evita el choque con `UNIQUE(user_id, date, type)` entre sesiones sucesivas, sin borrar nada.
+4. `ClockService::processPunch()` ya tiene la bandera `$isSimulator` (línea ~186) — solo hace falta que además de saltar la validación de GPS, también fije `date` a `simulated_date` de la sesión activa y guarde `simulation_session_id` en el `INSERT`.
+
+### Reportes reales vs. reportes de prueba
+
+- **Reportes reales de nómina/asistencia** (los que ya existen): agregar `whereNull('simulation_session_id')` como filtro estructural — idealmente como *global scope* en los modelos `TimeEntry`, `StoreLog`, `Contingency`, no como un `WHERE` que cada reporte nuevo tenga que acordarse de poner. Así es imposible que un reporte futuro filtre por accidente y mezcle datos de prueba con nómina real.
+- **"Reportes de Prueba" (nuevo, solo visible dentro del propio Matrix/panel de QA):** la misma lógica de reporte existente, pero parametrizada para incluir explícitamente una `simulation_session_id` (`withoutGlobalScope` + filtro `where('simulation_session_id', $id)`). Con esto Francisco puede verificar que el cálculo de retardos/faltas/bonos funciona bien usando datos simulados, sin que eso jamás toque un número real. Sugiero reutilizar el mismo endpoint de reportes que ya exista, agregando un parámetro opcional `simulation_session_id` que solo acepten roles `platform_admin`/`admin` en contexto de simulador.
+
+### Purga
+
+- **Purgar una sesión:** `DELETE ... WHERE simulation_session_id = X` en las 5 tablas — seguro por construcción, nunca toca filas con `simulation_session_id IS NULL`.
+- **Purgar todo el histórico de simulador de un tenant:** mismo criterio con `WHERE simulation_session_id IN (SELECT id FROM simulator_sessions WHERE tenant_id = X)`.
+- El botón "Limpiar" actual (`ClockController::resetDb`) puede reescribirse para hacer exactamente esto en vez de `TRUNCATE`, y renombrarse en el frontend a algo como "Purgar Datos de Prueba" (acción explícita y poco frecuente) separado de "Iniciar Nueva Sesión" (la acción normal de cada vez que se usa la Matrix, que ya no necesita borrar nada).
+
+### Fuera de alcance de esta sección (anotado, no se pide ahora)
+
+Francisco también mencionó que cambios de configuración que un usuario esté probando no deberían reflejarse en el PWA de empleados reales "hasta que se guarden/apliquen". Eso es un tema distinto (staging/borrador de `system_settings` vs. configuración publicada), no relacionado con el aislamiento de fichajes del simulador — lo dejamos anotado como posible trabajo futuro, no se diseña en esta sección.
+
+---
+
+## ✅ Implementado (2026-07-21) — Contrato final para PanelSimulador.tsx
+
+Todo lo diseñado arriba ya está construido tal cual se propuso: tabla `simulator_sessions`, columna `simulation_session_id` en las 5 tablas, `ExcludeSimulationScope` (global scope vía trait `ExcludesSimulationData`, aplicado a `TimeEntry`, `StoreLog`, `Contingency`, `InternalMessage`, `AuditLog`), avance de `simulated_date` por sesión, y purga acotada reemplazando el `TRUNCATE` de `resetDb`.
+
+### 1. Marcar `is_simulator=true` — sin cambios de payload
+
+`ClockService::processPunch()` ya leía `details.is_simulator` (para el bypass de GPS). Ahora, además, cuando ese flag viene en `true`:
+- Resuelve (o crea) la sesión activa del tenant.
+- Usa `simulated_date` de esa sesión como el valor de `date` del registro — **no** la fecha real del servidor.
+- Guarda `simulation_session_id` en el `INSERT` de `time_entries` y `audit_logs`.
+
+**No cambia nada del payload que ya manda el frontend** — `POST /clock/punch` y `/clock/punch-batch` siguen recibiendo exactamente `{ user_id, type, time, details: { is_simulator: true, ... } }` como ya lo hacen hoy. Todo el enlace a la sesión ocurre server-side.
+
+### 2. Endpoints de sesión (nuevos)
+
+```
+GET /api/v1/matrix/session/active
+```
+Devuelve la sesión activa del tenant, **creándola si no existe**. Es lo que `PanelSimulador.tsx` debe llamar al montar.
+```json
+{ "success": true, "session_id": 7, "simulated_date": "2026-07-22", "status": "active" }
+```
+
+```
+POST /api/v1/matrix/session/new
+```
+Cierra la sesión activa (si existe) y crea una nueva con `simulated_date + 1 día`. **Reemplaza al botón "Limpiar" actual** — nunca borra nada, solo avanza de día para que la Matrix pueda seguir generando fichajes sin chocar con `UNIQUE(user_id, date, type)`. Mismo shape de respuesta que el anterior.
+
+Ambos requieren rol `admin`, `supervisor` o `platform_admin` (`tenant.active`).
+
+### 3. Purga — `POST /api/v1/sync/reset` (reescrito)
+
+Ya no es un `TRUNCATE`. Body opcional:
+```json
+{ "session_id": 7 }
+```
+Sin `session_id`, purga **todas** las sesiones de simulador del tenant. Con `session_id`, purga solo esa. Por construcción nunca toca filas con `simulation_session_id NULL` (datos reales) — es el botón que en frontend debería renombrarse a **"Purgar Datos de Prueba"**, separado de "Iniciar Nueva Sesión".
+```json
+{ "success": true, "message": "Datos de simulación purgados correctamente.", "purged_sessions": 1, "deleted_rows": 12 }
+```
+
+**Cambio de permisos:** antes vivía en el grupo `platform_admin`-only junto a `/sync/init` (con razón: hacía `TRUNCATE` de 5 tablas sin filtrar por tenant, afectando a toda la plataforma). Ahora que está scopeado por `simulation_session_id` + tenant, es seguro para `admin`/`supervisor` de la propia empresa — que es justo el caso de uso de Francisco probando su propia empresa. También dejó de deshabilitarse en `APP_ENV=production`, porque ya no hay nada peligroso que deshabilitar. **`/sync/init` no se tocó** — sigue siendo `platform_admin`-only y deshabilitado en producción, porque hace `TRUNCATE` de `employees`/`job_roles`/`permissions` sin relación con el simulador; es un problema aparte que esta sección no resuelve.
+
+### 4. Aislamiento de reportes reales — qué quedó cubierto y qué no
+
+- **Cubierto automáticamente** (Eloquent con `ExcludeSimulationScope`): cualquier código que use `TimeEntry::`, `StoreLog::`, `Contingency::`, `InternalMessage::`, `AuditLog::` — incluye `ClockService::calculatePayrollForEmployee` (nómina real).
+- **Parchado manualmente** (consultas `DB::table()` crudas, que el scope de Eloquent no cubre): `ClockController::getState` (el "todo en uno" que alimenta el dialer y monitor en vivo — 6 queries), `DashboardController::getStats`, `DashboardMonitorController::getMonitorData` (feed de actividad, chat). Todas ahora llevan `whereNull('simulation_session_id')`.
+- **Fuera de alcance, no parchado (aviso explícito, no silencioso):** `PlatformAdminController` (estadísticas agregadas de toda la plataforma, solo para `platform_admin`, no son "reportes de la empresa") y `MigrateLegacySqlite.php` (comando de consola de migración única, no un reporte). Si en algún momento importa que estas también excluyan datos simulados, avisen y lo agrego.
+
+### 5. "Reportes de Prueba"
+
+Reutiliza el endpoint de nómina que ya existe en vez de crear uno nuevo: `GET /admin/payroll?simulation_session_id=7` (mismo endpoint de siempre, parámetro nuevo opcional). Sin el parámetro, se comporta exactamente igual que hoy (datos reales). Con él, **exclusivo para `admin`/`platform_admin`** (403 para cualquier otro rol, incluido `supervisor`), calcula la nómina usando *solo* los fichajes de esa sesión de simulador.
+
+### Tests
+
+`SimulatorSessionIsolationTest` (7 casos: sesión se crea y reutiliza, nueva sesión cierra la anterior y avanza fecha, fichaje simulado queda ligado a la sesión activa, sesiones sucesivas nunca chocan contra el índice único, el scope excluye datos simulados por default, la purga borra solo lo simulado, nómina real vs. nómina de prueba). Más ajustes en `RoleMiddlewareTest` reflejando el nuevo comportamiento de `/sync/reset`. Suite completa: 85/85 verde.

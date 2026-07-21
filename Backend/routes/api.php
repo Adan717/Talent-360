@@ -114,13 +114,12 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/platform/billing/invoice/manual', [PlatformAdminController::class, 'createManualSaaSInvoice']);
     });
 
-    // DB Initialization / Reset (QA Simulator helper)
-    // ⚠️ Solo platform_admin: estos endpoints hacen TRUNCATE sin filtrar por tenant_id
-    // (borran datos de TODAS las empresas de la plataforma, no solo la del que llama).
+    // DB Initialization (QA Simulator helper)
+    // ⚠️ Solo platform_admin: initDb hace TRUNCATE de employees/job_roles/permissions
+    // sin filtrar por tenant_id (borra estructura organizacional de TODAS las empresas).
     Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
         if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
-            Route::post('/sync/reset', [ClockController::class, 'resetDb']);
         }
         Route::post('/sync/purge_archive', [ClockController::class, 'purgeArchive'])->middleware('auth:sanctum');
     });
@@ -272,6 +271,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/admin/exams', [ObsidianController::class, 'getAdminAttempts']);
             Route::post('/admin/exams/{attemptId}/reset', [ObsidianController::class, 'resetAttempt']);
         });
+    });
+
+    // Simulador Matrix — Sesiones y Purga (aislado de datos reales por simulation_session_id,
+    // ya no es un TRUNCATE global, seguro para admin/supervisor de la propia empresa).
+    Route::middleware(['auth:sanctum', 'role:admin,supervisor,platform_admin', 'tenant.active'])->group(function () {
+        Route::get('/matrix/session/active', [ClockController::class, 'getActiveSimulatorSession']);
+        Route::post('/matrix/session/new', [ClockController::class, 'startNewSimulatorSession']);
+        Route::post('/sync/reset', [ClockController::class, 'resetDb']);
     });
 
     // =========================================================================

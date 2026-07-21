@@ -46,10 +46,23 @@ class PayrollController extends Controller
 
         [$startDate, $endDate] = $this->getPeriodDates($request);
 
+        // "Reportes de Prueba" (sección 13 del contrato): un admin/platform_admin puede
+        // pedir explícitamente el cálculo de nómina usando datos de una sesión del
+        // Simulador Matrix en vez de los reales, para validar que el módulo funciona bien
+        // con datos simulados sin que eso jamás toque un número real.
+        $simulationSessionId = null;
+        if ($request->query('simulation_session_id')) {
+            $role = auth()->user()->role ?? null;
+            if (!in_array($role, ['admin', 'platform_admin'])) {
+                abort(403, 'Solo un administrador puede ver reportes de prueba del simulador.');
+            }
+            $simulationSessionId = (int) $request->query('simulation_session_id');
+        }
+
         $payrollList = [];
 
         foreach ($employees as $employee) {
-            $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
+            $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate, $simulationSessionId);
             $payrollRow = [
                 'id' => $employee->id,
                 'name' => $employee->name,

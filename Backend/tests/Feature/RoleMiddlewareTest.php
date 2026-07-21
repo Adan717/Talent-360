@@ -159,30 +159,38 @@ class RoleMiddlewareTest extends TestCase
         $this->actingAs($admin)->getJson('/api/v1/job-roles')->assertStatus(200);
     }
 
-    public function test_sync_init_and_reset_endpoints_are_correctly_protected(): void
+    public function test_sync_init_is_platform_admin_only(): void
     {
         // 1. Unauthenticated gets 401
         $this->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(401);
-        $this->postJson('/api/v1/sync/reset')->assertStatus(401);
 
-        // 2. Unauthorized role (e.g. admin or supervisor) gets 403
-        $supervisor = User::factory()->create([
-            'role' => 'supervisor',
-        ]);
-        $admin = User::factory()->create([
-            'role' => 'admin',
-        ]);
+        // 2. Unauthorized role (e.g. admin or supervisor) gets 403 — initDb hace TRUNCATE
+        // de employees/job_roles/permissions sin filtrar por tenant_id.
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($supervisor)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(403);
-        $this->actingAs($supervisor)->postJson('/api/v1/sync/reset')->assertStatus(403);
         $this->actingAs($admin)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(403);
-        $this->actingAs($admin)->postJson('/api/v1/sync/reset')->assertStatus(403);
 
         // 3. Authorized role (platform_admin) gets 200
-        $platformAdmin = User::factory()->create([
-            'role' => 'platform_admin',
-        ]);
+        $platformAdmin = User::factory()->create(['role' => 'platform_admin']);
         $this->actingAs($platformAdmin)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(200);
-        $this->actingAs($platformAdmin)->postJson('/api/v1/sync/reset')->assertStatus(200);
+    }
+
+    public function test_sync_reset_is_open_to_admin_and_supervisor(): void
+    {
+        // /sync/reset ahora purga solo datos del Simulador Matrix (simulation_session_id
+        // no nulo), no un TRUNCATE global — por eso admin/supervisor de la propia empresa
+        // sí pueden usarlo, a diferencia de /sync/init.
+        $this->postJson('/api/v1/sync/reset')->assertStatus(401);
+
+        $empleado = User::factory()->create(['role' => 'empleado']);
+        $this->actingAs($empleado)->postJson('/api/v1/sync/reset')->assertStatus(403);
+
+        $supervisor = User::factory()->create(['role' => 'supervisor']);
+        $this->actingAs($supervisor)->postJson('/api/v1/sync/reset')->assertStatus(200);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin)->postJson('/api/v1/sync/reset')->assertStatus(200);
     }
 
     public function test_empleado_routes_are_correctly_protected(): void
@@ -246,7 +254,7 @@ class RoleMiddlewareTest extends TestCase
         ]);
     }
 
-    public function test_sync_reset_fails_in_production_environment(): void
+    public function test_sync_init_and_reset_day_fail_in_production_environment(): void
     {
         // 1. Set environment to production
         $this->app['env'] = 'production';
@@ -256,28 +264,34 @@ class RoleMiddlewareTest extends TestCase
             'role' => 'platform_admin',
         ]);
 
-        // 3. Request reset endpoint
-        $response = $this->actingAs($platformAdmin)->postJson('/api/v1/sync/reset');
-
-        // 4. Assert response is 403 with the expected error message
-        $response->assertStatus(403);
-        $response->assertJson([
-            'error' => 'Este endpoint está deshabilitado en producción.'
-        ]);
-
-        // 5. Request init endpoint
+        // 3. Request init endpoint — sigue deshabilitado en producción (TRUNCATE global
+        // de employees/job_roles/permissions sin filtrar por tenant).
         $responseInit = $this->actingAs($platformAdmin)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []]);
         $responseInit->assertStatus(403);
         $responseInit->assertJson([
             'error' => 'Este endpoint está deshabilitado en producción.'
         ]);
 
-        // 6. Request reset_day endpoint
+        // 4. Request reset_day endpoint — igual, sigue deshabilitado.
         $responseResetDay = $this->actingAs($platformAdmin)->postJson('/api/v1/sync/reset_day');
         $responseResetDay->assertStatus(403);
         $responseResetDay->assertJson([
             'error' => 'Este endpoint está deshabilitado en producción.'
         ]);
+    }
+
+    public function test_sync_reset_works_in_production_now_that_it_only_purges_simulator_data(): void
+    {
+        // /sync/reset ya no es un TRUNCATE global — ahora solo purga filas con
+        // simulation_session_id no nulo, así que no hay razón para deshabilitarlo en
+        // producción (Francisco lo necesita corriendo en su propio tenant real).
+        $this->app['env'] = 'production';
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->postJson('/api/v1/sync/reset');
+
+        $response->assertStatus(200);
     }
 
     public function test_public_vacancy_alerts_can_be_created_directly(): void

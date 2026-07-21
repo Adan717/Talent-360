@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Tenantable;
+use App\Traits\ExcludesSimulationData;
 
 class TimeEntry extends Model
 {
-    use Tenantable;
+    use Tenantable, ExcludesSimulationData;
 
     protected $fillable = [
         'user_id',
@@ -21,6 +22,7 @@ class TimeEntry extends Model
         'details',
         'employee_name_at_time',
         'job_role_title_at_time',
-        'base_salary_at_time'
+        'base_salary_at_time',
+        'simulation_session_id'
     ];
 }

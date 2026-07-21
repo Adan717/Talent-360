@@ -40,11 +40,14 @@ class DashboardController extends Controller
             $today = \Carbon\Carbon::today()->toDateString();
 
             // Retardos del Día (Check-ins de hoy donde is_late es verdadero)
+            // whereNull('simulation_session_id'): nunca mezclar datos del Simulador Matrix
+            // en las estadísticas reales del dashboard (ver sección 13 del contrato).
             $retardosHoy = DB::table('time_entries')
                 ->where('tenant_id', $tenantId)
                 ->where('date', $today)
                 ->where('type', 'check_in')
                 ->where('is_late', true)
+                ->whereNull('simulation_session_id')
                 ->count();
 
             // Cumplimiento de Asistencia (colaboradores que hicieron Check-in hoy)
@@ -52,6 +55,7 @@ class DashboardController extends Controller
                 ->where('tenant_id', $tenantId)
                 ->where('date', $today)
                 ->where('type', 'check_in')
+                ->whereNull('simulation_session_id')
                 ->distinct('user_id')
                 ->count('user_id');
 
@@ -87,6 +91,7 @@ class DashboardController extends Controller
                     ->where('tenant_id', $tenantId)
                     ->where('date', $today)
                     ->whereIn('user_id', $activeEmployeeIds)
+                    ->whereNull('simulation_session_id')
                     ->orderBy('id', 'asc')
                     ->get()
                     ->groupBy('user_id');

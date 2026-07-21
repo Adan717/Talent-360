@@ -78,6 +78,7 @@ class StoreOpeningController extends Controller
             'allow_store_closed_report' => 'boolean',
             'enable_amnesty_if_store_closed' => 'boolean',
             'require_opening_checklist' => 'boolean',
+            'require_closing_checklist' => 'boolean',
             'require_opening_roll_call' => 'boolean',
             'notify_admin_on_handoff' => 'boolean',
             'notify_supervisor_on_handoff' => 'boolean',
@@ -303,6 +304,83 @@ class StoreOpeningController extends Controller
                 $storeId,
                 $validated['estimated_arrival_time'],
                 $simTime
+            );
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Checklist de Cierre Seguro (luces, caja fuerte, alarma) antes de registrar salida.
+     */
+    public function closingChecklist(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'checks' => 'required|array',
+            'checks.lights_off' => 'required|boolean',
+            'checks.safe_secured' => 'required|boolean',
+            'checks.alarm_activated' => 'required|boolean',
+            'store_id' => 'nullable|integer',
+        ]);
+
+        $targetUser = \App\Models\User::find($validated['user_id']);
+        if (!$targetUser || $targetUser->tenant_id !== auth()->user()->tenant_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acceso denegado: el usuario no pertenece a tu empresa.'
+            ], 403);
+        }
+
+        try {
+            $result = $this->openingService->submitClosingChecklist(
+                $validated['user_id'],
+                $validated['checks'],
+                $validated['store_id'] ?? 1
+            );
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Apertura de Emergencia con co-validación de 2 testigos presenciales (PIN).
+     */
+    public function emergencyOpen(Request $request)
+    {
+        $validated = $request->validate([
+            'requester_id' => 'required|integer|exists:users,id',
+            'witness_1_id' => 'required|integer|exists:users,id',
+            'witness_1_pin' => 'required|string',
+            'witness_2_id' => 'required|integer|exists:users,id',
+            'witness_2_pin' => 'required|string',
+            'store_id' => 'nullable|integer',
+        ]);
+
+        $requester = \App\Models\User::find($validated['requester_id']);
+        if (!$requester || $requester->tenant_id !== auth()->user()->tenant_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acceso denegado: el solicitante no pertenece a tu empresa.'
+            ], 403);
+        }
+
+        try {
+            $result = $this->openingService->emergencyOpenWithWitnesses(
+                $validated['requester_id'],
+                $validated['witness_1_id'],
+                $validated['witness_1_pin'],
+                $validated['witness_2_id'],
+                $validated['witness_2_pin'],
+                $validated['store_id'] ?? 1
             );
             return response()->json($result);
         } catch (\Exception $e) {

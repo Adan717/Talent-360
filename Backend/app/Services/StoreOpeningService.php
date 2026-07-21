@@ -9,19 +9,23 @@ use App\Models\StoreLog;
 use App\Models\User;
 use App\Models\TimeEntry;
 use App\Services\ClockService;
+use App\Services\NotificationService;
 use App\Services\StoreOpeningSettingsService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class StoreOpeningService
 {
     protected $settingsService;
     protected $clockService;
+    protected $notificationService;
 
-    public function __construct(StoreOpeningSettingsService $settingsService, ClockService $clockService)
+    public function __construct(StoreOpeningSettingsService $settingsService, ClockService $clockService, NotificationService $notificationService)
     {
         $this->settingsService = $settingsService;
         $this->clockService = $clockService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -202,6 +206,160 @@ class StoreOpeningService
                 'punch' => $punchResult
             ];
         });
+    }
+
+    /**
+     * Apertura de Emergencia (estado #9 de la matriz del dialer): un suplente con llaves
+     * autoriza la apertura fuera de la ventana normal mediante la co-validación presencial
+     * de 2 testigos (PIN). No requiere que el responsable original haya fallado por completo,
+     * solo que la apertura oficial esté vencida y haya alguien con llaves dispuesto a entrar.
+     */
+    public function emergencyOpenWithWitnesses(int $requesterId, int $witness1Id, string $witness1Pin, int $witness2Id, string $witness2Pin, int $storeId = 1): array
+    {
+        $requester = User::withoutGlobalScopes()->findOrFail($requesterId);
+        $tenantId = $requester->tenant_id ?? 1;
+
+        if ($witness1Id === $witness2Id || $witness1Id === $requesterId || $witness2Id === $requesterId) {
+            throw new \Exception('Los testigos deben ser dos empleados distintos presentes en sucursal.');
+        }
+
+        $witness1 = User::withoutGlobalScopes()->where('tenant_id', $tenantId)->find($witness1Id);
+        $witness2 = User::withoutGlobalScopes()->where('tenant_id', $tenantId)->find($witness2Id);
+
+        if (!$witness1 || !$witness2) {
+            throw new \Exception('Los testigos deben ser dos empleados distintos presentes en sucursal.');
+        }
+
+        // El PIN de seguridad vive en employees.security_pin (distinto del pin_code de
+        // invitación, que se consume/anula tras el onboarding y no sirve como secreto
+        // recurrente). Cada empleado lo configura vía PUT /me/security-pin.
+        $witness1Employee = $witness1->employee;
+        $witness2Employee = $witness2->employee;
+
+        if (!$witness1Employee || !$witness1Employee->security_pin || !Hash::check($witness1Pin, $witness1Employee->security_pin)) {
+            throw new \Exception('PIN de testigo incorrecto.');
+        }
+        if (!$witness2Employee || !$witness2Employee->security_pin || !Hash::check($witness2Pin, $witness2Employee->security_pin)) {
+            throw new \Exception('PIN de testigo incorrecto.');
+        }
+
+        $isSuplenteConLlaves = StoreOpeningAssignment::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('employee_id', $requesterId)
+            ->where('is_active', true)
+            ->where('has_keys', true)
+            ->exists();
+
+        if (!$isSuplenteConLlaves) {
+            throw new \Exception('El solicitante no cuenta con llaves de sucursal activas para autorizar la apertura.');
+        }
+
+        return DB::transaction(function () use ($requester, $requesterId, $witness1Id, $witness2Id, $storeId, $tenantId) {
+            $status = $this->getTodayOpeningStatus($tenantId, $storeId);
+
+            if ($status->status === 'opened') {
+                throw new \Exception('La tienda ya se encuentra abierta.');
+            }
+
+            $nowTimeStr = $this->getCurrentTimeStr();
+            $punchResult = $this->clockService->processPunch($requester, 'check_in', $nowTimeStr);
+
+            $status->status = 'opened';
+            $status->opened_by_employee_id = $requesterId;
+            $status->opened_at = Carbon::now();
+            $status->save();
+
+            StoreOpeningEvent::create([
+                'tenant_id' => $tenantId,
+                'company_id' => 1,
+                'store_id' => $storeId,
+                'employee_id' => $requesterId,
+                'event_type' => 'emergency_open',
+                'event_status' => 'success',
+                'scheduled_opening_time' => $status->scheduled_opening_time,
+                'event_time' => Carbon::now(),
+                'notes' => 'Apertura de emergencia autorizada mediante co-validación presencial de 2 testigos.',
+                'metadata_json' => ['witness_1_id' => $witness1Id, 'witness_2_id' => $witness2Id],
+            ]);
+
+            // Alerta prioritaria a RRHH (mismo patrón que las alertas críticas de handoff fallido)
+            $this->notificationService->sendToRole(
+                'admin',
+                '🚨 Apertura de Emergencia',
+                "{$requester->name} autorizó la apertura de emergencia de la sucursal mediante co-validación de 2 testigos."
+            );
+            $this->notificationService->sendToRole(
+                'supervisor',
+                '🚨 Apertura de Emergencia',
+                "{$requester->name} autorizó la apertura de emergencia de la sucursal mediante co-validación de 2 testigos."
+            );
+
+            $userIds = User::withoutGlobalScopes()->where('tenant_id', $tenantId)->pluck('id')->toArray();
+            event(new \App\Events\StoreOpened($tenantId, $userIds));
+            event(new \App\Events\MonitorUpdated($tenantId));
+
+            return [
+                'success' => true,
+                'message' => 'Apertura de emergencia autorizada.',
+                'status' => $status,
+            ];
+        });
+    }
+
+    /**
+     * Checklist de Cierre Seguro (estado #22 de la matriz): 3 ticks (luces, caja fuerte,
+     * alarma) antes de poder registrar salida. Espejo del checklist de apertura, reutiliza
+     * store_opening_events con event_type='closing_checklist' en vez de crear tabla nueva.
+     */
+    public function submitClosingChecklist(int $userId, array $checks, int $storeId = 1): array
+    {
+        $user = User::withoutGlobalScopes()->findOrFail($userId);
+        $tenantId = $user->tenant_id ?? 1;
+        $date = Carbon::now()->format('Y-m-d');
+
+        $allChecked = ($checks['lights_off'] ?? false)
+            && ($checks['safe_secured'] ?? false)
+            && ($checks['alarm_activated'] ?? false);
+
+        $eventStatus = $allChecked ? 'success' : 'incomplete';
+        $notes = $allChecked
+            ? 'Checklist de cierre completado (luces, caja fuerte, alarma activada).'
+            : 'Checklist de cierre guardado, aún incompleto.';
+
+        $event = StoreOpeningEvent::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('employee_id', $userId)
+            ->where('event_type', 'closing_checklist')
+            ->whereDate('event_time', $date)
+            ->first();
+
+        if ($event) {
+            $event->event_status = $eventStatus;
+            $event->metadata_json = $checks;
+            $event->event_time = Carbon::now();
+            $event->notes = $notes;
+            $event->save();
+        } else {
+            $event = StoreOpeningEvent::create([
+                'tenant_id' => $tenantId,
+                'company_id' => 1,
+                'store_id' => $storeId,
+                'employee_id' => $userId,
+                'event_type' => 'closing_checklist',
+                'event_status' => $eventStatus,
+                'event_time' => Carbon::now(),
+                'notes' => $notes,
+                'metadata_json' => $checks,
+            ]);
+        }
+
+        return [
+            'success' => true,
+            'message' => $notes,
+            'completed' => $allChecked,
+        ];
     }
 
     /**

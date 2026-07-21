@@ -352,7 +352,9 @@ class RoleMiddlewareTest extends TestCase
             'message' => 'Empresa eliminada con éxito'
         ]);
 
-        $this->assertDatabaseMissing('tenants', [
+        // Tenant usa SoftDeletes: la fila permanece (con deleted_at) para poder
+        // recuperarla, no se destruye físicamente.
+        $this->assertSoftDeleted('tenants', [
             'id' => $tenantToDelete->id
         ]);
     }

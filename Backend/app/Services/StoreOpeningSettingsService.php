@@ -28,6 +28,7 @@ class StoreOpeningSettingsService
                 'allow_store_closed_report' => true,
                 'enable_amnesty_if_store_closed' => true,
                 'require_opening_checklist' => true,
+                'require_closing_checklist' => true,
                 'require_opening_roll_call' => true,
                 'notify_admin_on_handoff' => true,
                 'notify_supervisor_on_handoff' => true,

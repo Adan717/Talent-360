@@ -2,7 +2,16 @@ export interface OfflinePunch {
     id?: number;
     userId: number;
     type: string;
+    // Hora del fichaje en formato H:i:s (24h, con segundos) — NO usar strings de display tipo
+    // "8:32 am". El backend usa este valor tal cual como la hora real del fichaje al sincronizar
+    // vía /clock/punch-batch (details.offline_sync = true), ver ClockService::processPunch().
     time: string;
+    // Timestamp ISO 8601 real del dispositivo al momento de guardar el punch localmente. Se usa
+    // para el orden cronológico de sincronización y forma parte del mensaje firmado en offlineStamp.
+    clientTimestamp: string;
+    // HMAC-SHA256 (hex) calculado con computeOfflineStamp() de './offlineSecret'. Ver ese archivo
+    // para el detalle exacto del mensaje firmado y por qué debe coincidir byte a byte con el backend.
+    offlineStamp: string;
     gps: any;
     details: string;
     timestamp: number;

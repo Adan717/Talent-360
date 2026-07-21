@@ -34,12 +34,15 @@ class Employee extends Model
         'mealMinutes',
         'restDay',
         'pin_code',
+        'security_pin',
         'invite_token',
         'portadorLlaves',
         'avatar',
         'lunch_time',
         'clock_preferences'
     ];
+
+    protected $hidden = ['security_pin'];
 
     protected $appends = ['role'];
 

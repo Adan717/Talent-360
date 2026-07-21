@@ -6,6 +6,7 @@ import { useTaskStore } from '../../store/useTaskStore';
 import { MOCK_STORE } from '../../mockData';
 import { echoInstance } from '../../lib/echo';
 import { offlineDb } from '../../lib/offlineDb';
+import { computeOfflineStamp, warmOfflineSecret } from '../../lib/offlineSecret';
 
 export function useClockEngine(overrideUser?: any) {
   const assignments = useTaskStore(s => s.assignments);
@@ -52,7 +53,17 @@ export function useClockEngine(overrideUser?: any) {
   const currentUser = overrideUser || globalUser;
   const setCurrentUser = overrideUser ? () => {} : setGlobalUser;
   const isSimulator = !!overrideUser;
-  
+
+  // NUEVO: precarga el secreto de firma offline mientras hay conexión, para que ya esté cacheado
+  // en memoria si el dispositivo pierde internet más tarde y necesita firmar un fichaje offline
+  // (ver Frontend/src/lib/offlineSecret.ts). No aplica al simulador Matrix (isSandboxMode).
+  useEffect(() => {
+    if (!isSimulator && !isSandboxMode && currentUser?.id) {
+      warmOfflineSecret();
+    }
+  }, [isSimulator, isSandboxMode, currentUser?.id]);
+
+
   let leySillaConfig = systemSettings.leySillaConfig || {};
   const setLeySillaConfig = (v) => updateSetting('leySillaConfig', typeof v === 'function' ? v(leySillaConfig) : v);
   
@@ -141,6 +152,14 @@ export function useClockEngine(overrideUser?: any) {
   const [openingRollCallCompleted, setOpeningRollCallCompleted] = useState(() => {
     return localStorage.getItem('opening_roll_call_completed') === 'true';
   });
+
+  // NUEVO (estado #22 de la matriz — "Checklist de Cierre Seguro"): espejo del checklist de apertura
+  // de arriba, misma key sin scope de fecha para mantener paridad de comportamiento con su par.
+  const [closingChecklistCompleted, setClosingChecklistCompleted] = useState(() => {
+    return localStorage.getItem('closing_checklist_completed') === 'true';
+  });
+  const [showClosingChecklistModal, setShowClosingChecklistModal] = useState(false);
+  const [closingChecklistSubmitting, setClosingChecklistSubmitting] = useState(false);
 
   const getSimTimeStr = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -307,6 +326,269 @@ export function useClockEngine(overrideUser?: any) {
       } catch (e: any) {
         showCustomAlert(e.response?.data?.message || "Error al abrir la tienda.");
       }
+    }
+  };
+
+  // NUEVO (estado #5 de la matriz — "Llamar a Suplente de Llaves"): botón secundario que permite
+  // al encargado responsable de apertura de HOY avisar proactivamente al siguiente suplente en la
+  // lista de prioridad, ANTES de que se dispare el traspaso automático por deadline vencido
+  // (que ya maneja handleReportAbsencePremium/handleReportLatePremium). Reutiliza la misma lectura
+  // de 'store_opening_assignments' que esas dos funciones para encontrar al siguiente en orden.
+  // Nota de diseño: el estado de la matriz no tiene hoy un sub-estado formal "reportó y va a llamar"
+  // en el backend, así que esto se implementa como acción de aviso (llamada + log en Matrix) que NO
+  // cede la responsabilidad por sí sola — la cesión formal sigue ocurriendo solo por el flujo de
+  // ausencia/retardo o por vencimiento de deadline, evitando inventar un estado que el backend no rastrea.
+  const getNextSuplenteUser = () => {
+    let ass: any[] = [];
+    try {
+      const savedAss = localStorage.getItem('store_opening_assignments');
+      ass = savedAss ? JSON.parse(savedAss) : [];
+    } catch {}
+
+    const currentAss = ass.find((a: any) => Number(a.employee_id) === Number(currentUser?.id));
+    const currentOrder = currentAss ? currentAss.priority_order : 1;
+
+    const nextAss = ass
+      .filter((a: any) => a.is_active && a.priority_order > currentOrder)
+      .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
+
+    if (!nextAss) return null;
+    return globalUsers.find((u: any) => Number(u.id) === Number(nextAss.employee_id)) || null;
+  };
+
+  const handleCallSuplente = () => {
+    const suplente = getNextSuplenteUser();
+    if (!suplente) {
+      showCustomAlert('⚠️ No hay un suplente configurado en la lista de prioridad.');
+      return;
+    }
+
+    useAppStore.getState().addMatrixEvent(
+      '📞 Aviso a Suplente de Llaves',
+      `${currentUser?.name || 'Encargado'} contactó a ${suplente.name} para pasar la estafeta de apertura.`,
+      'info',
+      currentUser?.id
+    );
+
+    if (suplente.phone) {
+      window.location.href = `tel:${suplente.phone}`;
+    }
+    showCustomAlert(`📞 Contactando a ${suplente.name} (Suplente de Llaves).`);
+  };
+
+  // NUEVO (estado #9 — Apertura de Emergencia): consume POST /clock/emergency-open
+  // (docs/BACKEND_INTERFACES.md §3). El backend YA hace el check_in del solicitante como parte
+  // de esta llamada (confirmado en las notas de implementación del 2026-07-21 del propio documento),
+  // así que aquí NO se debe llamar syncToDB('check_in') por separado — se duplicaría el fichaje.
+  //
+  // ADVERTENCIA CONOCIDA: al día de este cambio no existe todavía un endpoint PUT /me/pin para que
+  // los empleados configuren su PIN. La validación de testigos en el backend siempre fallará con
+  // "PIN de testigo incorrecto." hasta que ese endpoint exista (o se semillen PINs manualmente).
+  // La UI queda funcionalmente completa y lista para cuando ese endpoint se agregue.
+  const handleEmergencyStoreOpen = async (witness1Id: number, witness1Pin: string, witness2Id: number, witness2Pin: string) => {
+    if (!witness1Id || !witness2Id || !witness1Pin || !witness2Pin) {
+      showCustomAlert('⚠️ Completa los datos de ambos testigos para continuar.');
+      return;
+    }
+    if (Number(witness1Id) === Number(witness2Id)) {
+      showCustomAlert('⚠️ Los testigos deben ser dos empleados distintos.');
+      return;
+    }
+
+    setEmergencyOpenSubmitting(true);
+    try {
+      if (isSandboxMode) {
+        // Simulación local: no valida PIN real, solo demuestra el flujo completo.
+        const updated = {
+          ...openingStatus,
+          status: 'opened',
+          opened_by_employee_id: currentUser.id,
+          opened_at: new Date().toISOString()
+        };
+        setOpeningStatus(updated);
+        localStorage.setItem('store_daily_opening_status', JSON.stringify(updated));
+        setStoreStatus('open');
+        await syncToDB('check_in');
+
+        useAppStore.getState().addMatrixEvent(
+          '⚠️ Apertura de Emergencia (Sandbox)',
+          `${currentUser.name} abrió la tienda en modo emergencia con testigos ${witness1Id} y ${witness2Id}.`,
+          'warning',
+          currentUser.id
+        );
+        showCustomAlert('⚠️ Apertura de emergencia autorizada (Sandbox).');
+        setShowEmergencyOpenModal(false);
+        return;
+      }
+
+      const res = await axiosInstance.post('/clock/emergency-open', {
+        requester_id: currentUser.id,
+        witness_1_id: witness1Id,
+        witness_1_pin: witness1Pin,
+        witness_2_id: witness2Id,
+        witness_2_pin: witness2Pin,
+        store_id: 1
+      });
+      if (res.data?.success) {
+        if (res.data.status) setOpeningStatus(res.data.status);
+        setStoreStatus('open');
+        await fetchState();
+        showCustomAlert(res.data.message || '⚠️ Apertura de emergencia autorizada.');
+        setShowEmergencyOpenModal(false);
+      } else {
+        showCustomAlert(res.data?.message || 'No se pudo autorizar la apertura de emergencia.');
+      }
+    } catch (e: any) {
+      showCustomAlert(e.response?.data?.message || 'Error al procesar la apertura de emergencia.');
+    } finally {
+      setEmergencyOpenSubmitting(false);
+    }
+  };
+
+  // NUEVO (estado #10/#15 — Declarar Eventualidad / Modo Contingencia Activo): consume
+  // POST /clock/declare-contingency (docs/BACKEND_INTERFACES.md §4).
+  // Nota de diseño: este handler es para el camino EN LÍNEA (dispositivo con datos/señal aunque
+  // sin luz eléctrica en la sucursal). El caso verdaderamente sin internet debe pasar por la cola
+  // offline de IndexedDB igual que los demás punches — ver syncToDB(), que ya detecta
+  // navigator.onLine y encola localmente. No se implementa aquí offline_stamp (HMAC) todavía:
+  // eso es una pieza aparte (ver tarea de firma HMAC offline) que aún no se ha construido en el
+  // cliente; declarar sin firma funciona porque esta llamada va autenticada por Sanctum en vivo.
+  // NUEVO: configuración de PIN de seguridad (docs/BACKEND_INTERFACES.md §10, decisión final del
+  // 2026-07-21). Consume PUT /me/security-pin. Distinto de currentUser.pin_code (que es el código de
+  // invitación de un solo uso del onboarding, y también reutilizado como PIN de bloqueo de sesión local
+  // en RelojVisual.tsx — NO tocar ese, es un concepto de seguridad separado). El security_pin es lo que
+  // valida el backend en la co-validación de 2 testigos de /clock/emergency-open.
+  const [securityPinSubmitting, setSecurityPinSubmitting] = useState(false);
+  const handleUpdateSecurityPin = async (currentPassword: string, newPin: string, confirmPin: string) => {
+    if (!/^\d{4,6}$/.test(newPin)) {
+      showCustomAlert('⚠️ El PIN debe ser numérico, de 4 a 6 dígitos.');
+      return false;
+    }
+    if (newPin !== confirmPin) {
+      showCustomAlert('⚠️ Los PIN no coinciden.');
+      return false;
+    }
+    if (!currentPassword) {
+      showCustomAlert('⚠️ Ingresa tu contraseña actual para confirmar el cambio.');
+      return false;
+    }
+
+    setSecurityPinSubmitting(true);
+    try {
+      if (isSandboxMode) {
+        showCustomAlert('🔐 PIN de seguridad actualizado (Sandbox).');
+        return true;
+      }
+      const res = await axiosInstance.put('/me/security-pin', {
+        current_password: currentPassword,
+        pin: newPin
+      });
+      showCustomAlert(res.data?.message || '🔐 PIN de seguridad actualizado.');
+      return true;
+    } catch (e: any) {
+      showCustomAlert(e.response?.data?.message || 'Error al actualizar el PIN de seguridad.');
+      return false;
+    } finally {
+      setSecurityPinSubmitting(false);
+    }
+  };
+
+  // NUEVO: cola offline dedicada para declaraciones de contingencia, separada de la cola de punches
+  // de offlineDb (ver comentario en handleContingencyDeclaration sobre por qué no se pueden mezclar).
+  const OFFLINE_CONTINGENCY_KEY = 'offline_contingency_queue';
+
+  const getOfflineContingencyQueue = (): Array<{ userId: number; reason: string; declaredAt: string }> => {
+    try {
+      const raw = localStorage.getItem(OFFLINE_CONTINGENCY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveOfflineContingency = (item: { userId: number; reason: string; declaredAt: string }) => {
+    const queue = getOfflineContingencyQueue();
+    queue.push(item);
+    localStorage.setItem(OFFLINE_CONTINGENCY_KEY, JSON.stringify(queue));
+  };
+
+  const syncOfflineContingencies = async () => {
+    const queue = getOfflineContingencyQueue();
+    if (queue.length === 0) return;
+    const isOnline = navigator.onLine && !isSimulatedOffline;
+    if (!isOnline || isSandboxMode) return;
+
+    const remaining: typeof queue = [];
+    for (const item of queue) {
+      try {
+        await axiosInstance.post('/clock/declare-contingency', {
+          user_id: item.userId,
+          reason: item.reason,
+          declared_at: item.declaredAt
+        });
+      } catch (e) {
+        console.error('Error sincronizando contingencia offline, se reintentará después:', e);
+        remaining.push(item);
+      }
+    }
+    localStorage.setItem(OFFLINE_CONTINGENCY_KEY, JSON.stringify(remaining));
+    if (remaining.length < queue.length) {
+      showCustomAlert(`🔄 ${queue.length - remaining.length} contingencia(s) offline sincronizada(s) con éxito.`);
+    }
+  };
+
+  const handleContingencyDeclaration = async (reason: 'no_power' | 'no_internet' | 'no_power_and_internet') => {
+    setContingencySubmitting(true);
+    try {
+      const isOnline = navigator.onLine && !isSimulatedOffline;
+
+      if (isSandboxMode) {
+        const record = { reason, contingency_id: Date.now() };
+        setActiveContingency(record);
+        localStorage.setItem('active_contingency_' + new Date().toDateString(), JSON.stringify(record));
+        useAppStore.getState().addMatrixEvent(
+          '⚡ Contingencia Declarada (Sandbox)',
+          `${currentUser.name} declaró eventualidad: ${reason}.`,
+          'warning',
+          currentUser.id
+        );
+        showCustomAlert('⚡ Contingencia declarada. Jornada protegida al 100% (Sandbox).');
+        setShowContingencyModal(false);
+        return;
+      }
+
+      if (!isOnline) {
+        // BUG FIX: antes esto se guardaba en la MISMA cola de punches de offlineDb con
+        // type: 'contingency_declare' — un tipo que /clock/punch-batch no reconoce
+        // (Rule::in(ClockService::ALLOWED_TYPES) lo rechaza). Como Laravel valida el batch
+        // COMPLETO de una sola vez, un solo ítem así habría tumbado la sincronización de
+        // TODOS los fichajes legítimos en la misma cola. Ahora usa su propia cola dedicada
+        // (localStorage, bajo volumen esperado: como mucho una declaración por usuario por día),
+        // sincronizada por separado contra /clock/declare-contingency, no contra punch-batch.
+        saveOfflineContingency({ userId: currentUser.id, reason, declaredAt: new Date().toISOString() });
+        showCustomAlert('📡 Contingencia guardada localmente. Se sincronizará al recuperar conexión.');
+        setShowContingencyModal(false);
+        return;
+      }
+
+      const res = await axiosInstance.post('/clock/declare-contingency', {
+        user_id: currentUser.id,
+        reason,
+        declared_at: new Date().toISOString()
+      });
+      if (res.data?.success) {
+        const record = { reason, contingency_id: res.data.contingency_id };
+        setActiveContingency(record);
+        localStorage.setItem('active_contingency_' + new Date().toDateString(), JSON.stringify(record));
+        showCustomAlert(res.data.message || '⚡ Contingencia declarada. Jornada protegida al 100% conforme LFT.');
+        setShowContingencyModal(false);
+      } else {
+        showCustomAlert(res.data?.message || 'No se pudo declarar la contingencia.');
+      }
+    } catch (e: any) {
+      showCustomAlert(e.response?.data?.message || 'Error al declarar la contingencia.');
+    } finally {
+      setContingencySubmitting(false);
     }
   };
 
@@ -634,9 +916,16 @@ export function useClockEngine(overrideUser?: any) {
     setLocalCheckOutTimes(prev => typeof updater === 'function' ? updater(prev) : updater);
   };
 
-  const STORE_LAT = 19.4326;
-  const STORE_LNG = -99.1332;
-  const ALLOWED_RADIUS_METERS = 50;
+  // BUG FIX (coordenadas hardcodeadas): antes STORE_LAT/STORE_LNG apuntaban fijo al Zócalo de CDMX,
+  // rompiendo el geofence para cualquier tenant/sucursal fuera de esas coordenadas exactas.
+  // Ahora se leen de systemSettings.clockOpConfig (misma fuente que ya usa el backend en
+  // ClockService.php: clockOpConfig.store_latitude / store_longitude / geo_radius_meters).
+  // Se conserva un fallback a los valores antiguos solo para no romper tenants sin configurar aún
+  // (ver docs/BACKEND_INTERFACES.md §7 — pendiente que el backend garantice default sensato).
+  const clockOpConfig = systemSettings.clockOpConfig || {};
+  const STORE_LAT = Number(clockOpConfig.store_latitude) || 19.4326;
+  const STORE_LNG = Number(clockOpConfig.store_longitude) || -99.1332;
+  const ALLOWED_RADIUS_METERS = Number(clockOpConfig.geo_radius_meters) || 50;
 
   const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3; // Earth radius in meters
@@ -653,10 +942,18 @@ export function useClockEngine(overrideUser?: any) {
     return R * c; // in meters
   };
 
-  const clockOpConfig = systemSettings.clockOpConfig || {};
   const isGpsValidationBypassed = clockOpConfig.gpsValidationEnabled === false || !!clockOpConfig.allowManualCheckIn || isSandboxMode;
   const gpsDistance = getDistanceInMeters(gpsCoordinates.latitude, gpsCoordinates.longitude, STORE_LAT, STORE_LNG);
   const isWithinPerimeter = isGpsValidationBypassed ? true : (gpsDistance <= ALLOWED_RADIUS_METERS && gpsStatus === 'success');
+
+  // Espejo de Backend/app/Services/ClockService::ALLOWED_TYPES (más temp_exit_start/temp_exit_end,
+  // ya agregados por backend). Se usa para filtrar defensivamente antes de mandar el batch: si un
+  // solo ítem del array tiene un `type` no reconocido, Laravel rechaza la petición COMPLETA con 422
+  // (Rule::in aplica a punches.*.type), lo que bloquearía también los ítems legítimos del mismo lote.
+  const PUNCH_BATCH_ALLOWED_TYPES = [
+    'check_in', 'check_out', 'break_start', 'break_end',
+    'meal_start', 'meal_end', 'waiting', 'temp_exit_start', 'temp_exit_end'
+  ];
 
   const syncOfflineQueue = async () => {
     let currentQueue: any[] = [];
@@ -666,58 +963,93 @@ export function useClockEngine(overrideUser?: any) {
       console.error("Error reading punches from IndexedDB:", e);
       currentQueue = [];
     }
-    
+
     if (currentQueue.length === 0) return;
-    
+
     const isOnline = navigator.onLine && !isSimulatedOffline;
     if (!isOnline) return;
-    
-    console.log("Sincronizando cola offline de fichajes de IndexedDB...");
-    let successCount = 0;
-    
-    for (const item of currentQueue) {
-      try {
-        if (useAppStore.getState().isSandboxMode) {
-          useAppStore.getState().addMatrixEvent(
-            `[OFFLINE-SYNC] Fichaje Sincronizado: ${item.type}`,
-            `El empleado ${currentUser?.name || 'Desconocido'} sincronizó offline a las ${item.time}`,
-            'success',
-            item.userId
-          );
-        } else {
-          await axiosInstance.post('/clock/punch', { 
-            user_id: item.userId, 
-            type: item.type, 
-            time: item.time,
-            details: { note: item.details, offline: true, gps: item.gps } 
-          });
-        }
-        if (item.id !== undefined) {
-          await offlineDb.deletePunch(item.id);
-        }
-        successCount++;
-      } catch (e) {
-        console.error("Error sincronizando ítem de cola offline de IndexedDB:", e);
-        break;
+
+    console.log("Sincronizando cola offline de fichajes de IndexedDB vía /clock/punch-batch...");
+
+    if (useAppStore.getState().isSandboxMode) {
+      // Sandbox: sin llamada real al backend, solo simula el log y limpia la cola local.
+      for (const item of currentQueue) {
+        useAppStore.getState().addMatrixEvent(
+          `[OFFLINE-SYNC] Fichaje Sincronizado: ${item.type}`,
+          `El empleado ${currentUser?.name || 'Desconocido'} sincronizó offline a las ${item.time}`,
+          'success',
+          item.userId
+        );
       }
+      await offlineDb.clearPunches();
+      setSyncQueue([]);
+      showCustomAlert(`🔄 Cola offline: ${currentQueue.length} registros sincronizados con éxito (Sandbox).`);
+      window.dispatchEvent(new Event('db_sync_updated'));
+      return;
     }
-    
-    if (successCount > 0) {
+
+    // Filtra ítems con type desconocido ANTES de construir el batch (ver comentario arriba).
+    // Se quedan en la cola sin enviarse — no se pierden, pero tampoco bloquean al resto.
+    const validItems = currentQueue.filter(item => PUNCH_BATCH_ALLOWED_TYPES.includes(item.type));
+    const skippedCount = currentQueue.length - validItems.length;
+    if (skippedCount > 0) {
+      console.warn(`${skippedCount} ítem(s) de la cola offline tienen un type no reconocido por punch-batch y se omitieron de este intento de sincronización.`);
+    }
+    if (validItems.length === 0) return;
+
+    try {
+      const res = await axiosInstance.post('/clock/punch-batch', {
+        punches: validItems.map(item => ({
+          user_id: item.userId,
+          type: item.type,
+          time: item.time,
+          details: { note: item.details, gps: item.gps },
+          gps: item.gps,
+          client_timestamp: item.clientTimestamp || new Date(item.timestamp || Date.now()).toISOString(),
+          offline_stamp: item.offlineStamp || ''
+        }))
+      });
+
+      const results: any[] = res.data?.results || [];
+      const successIndices = new Set(results.filter(r => r.success).map(r => r.index));
+      const rejectedResults = results.filter(r => !r.success);
+
+      let deletedCount = 0;
+      for (let i = 0; i < validItems.length; i++) {
+        if (successIndices.has(i) && validItems[i].id !== undefined) {
+          await offlineDb.deletePunch(validItems[i].id);
+          deletedCount++;
+        }
+      }
+
       const remaining = await offlineDb.getPunches();
       setSyncQueue(remaining);
-      showCustomAlert(`🔄 Cola offline IndexedDB: ${successCount} registros sincronizados con éxito.`);
-      window.dispatchEvent(new Event('db_sync_updated'));
+
+      if (deletedCount > 0) {
+        showCustomAlert(`🔄 Cola offline: ${deletedCount} registro(s) sincronizados con éxito.`);
+        window.dispatchEvent(new Event('db_sync_updated'));
+      }
+      if (rejectedResults.length > 0) {
+        console.warn('Ítems rechazados al sincronizar el batch offline (quedan en cola para revisión):', rejectedResults);
+        showCustomAlert(`⚠️ ${rejectedResults.length} fichaje(s) offline no pudieron validarse (firma inválida) y requieren revisión manual.`);
+      }
+    } catch (e) {
+      // Fallo de red/servidor a nivel de TODO el batch (no de un ítem individual) — se reintentará
+      // en el próximo evento 'online' o próximo ciclo, la cola queda intacta.
+      console.error("Error sincronizando el batch offline completo:", e);
     }
   };
 
   useEffect(() => {
     const handleOnline = () => {
       syncOfflineQueue();
+      syncOfflineContingencies();
     };
     window.addEventListener('online', handleOnline);
     const isOnline = navigator.onLine && !isSimulatedOffline;
     if (isOnline) {
       syncOfflineQueue();
+      syncOfflineContingencies();
     }
     return () => window.removeEventListener('online', handleOnline);
   }, [isSimulatedOffline]);
@@ -890,6 +1222,33 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
 
+  // NUEVO: hora real en formato H:i:s (24h, con segundos) — para fichajes offline en modo real.
+  // BUG FIX relacionado: el resto del código usa `formattedTime` (ej. "8:32 am", 12h sin segundos)
+  // como valor de `time` al guardar en la cola offline, formato que el backend NO puede parsear como
+  // hora real del fichaje (ClockService espera H:i:s). Se corrige aquí para la ruta offline nueva;
+  // la ruta online tiene el mismo problema latente pero queda fuera de este cambio (ver nota en
+  // syncToDB) porque el backend actualmente ignora `time` en el camino online no-simulado.
+  const getRealHms = () => {
+    try {
+      const tz = systemSettings?.timezone || 'America/Mexico_City';
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(new Date());
+      const h = parts.find(p => p.type === 'hour')?.value || '00';
+      const m = parts.find(p => p.type === 'minute')?.value || '00';
+      const s = parts.find(p => p.type === 'second')?.value || '00';
+      return `${h}:${m}:${s}`;
+    } catch (e) {
+      const now = new Date();
+      return now.toTimeString().slice(0, 8);
+    }
+  };
+
   const isSimulatedMode = !!overrideUser;
   const [realTimeMins, setRealTimeMins] = useState(getRealTimeMins());
 
@@ -903,6 +1262,44 @@ export function useClockEngine(overrideUser?: any) {
       return () => clearInterval(interval);
     }
   }, [isSimulatedMode, systemSettings?.timezone]);
+
+  // NUEVO: "Configura tu alarma" (docs/funcionamiento_del_dial.md §3 / BACKEND_INTERFACES.md §5).
+  // Notificación push LOCAL del navegador (no depende del backend para dispararse, solo para
+  // persistir la preferencia vía PUT /me/pre-shift-alarm). Solo aplica en modo real (no en el
+  // simulador Matrix, donde el tiempo corre acelerado y no tendría sentido pedir permiso de push).
+  useEffect(() => {
+    if (isSimulatedMode) return;
+    const alarmMinutes = currentUser?.pre_shift_alarm_minutes;
+    if (!alarmMinutes || typeof Notification === 'undefined') return;
+
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+    if (Notification.permission !== 'granted') return;
+
+    const shiftStartStr = currentUser?.shiftStart || '09:00';
+    const shiftStartMins = parseTimeToMins(shiftStartStr);
+    const alarmTriggerMins = shiftStartMins - Number(alarmMinutes);
+    const todayKey = `pre_shift_alarm_fired_${currentUser?.id}_${new Date().toDateString()}`;
+
+    // realTimeMins tiene resolución de minuto; disparamos en la ventana [trigger, trigger+1)
+    // para no depender de un segundo exacto, y solo una vez por día vía localStorage.
+    if (
+      realTimeMins >= alarmTriggerMins &&
+      realTimeMins < alarmTriggerMins + 1 &&
+      localStorage.getItem(todayKey) !== 'true'
+    ) {
+      localStorage.setItem(todayKey, 'true');
+      try {
+        new Notification('⏰ Talent360 — Hora de salir', {
+          body: `Es hora de salir hacia tu sucursal para asegurar tu Bono de Apertura (turno ${shiftStartStr}).`,
+          icon: '/pwa-192x192.png'
+        });
+      } catch (e) {
+        console.error('No se pudo mostrar la notificación de alarma de pre-turno:', e);
+      }
+    }
+  }, [realTimeMins, isSimulatedMode, currentUser?.pre_shift_alarm_minutes, currentUser?.shiftStart, currentUser?.id]);
 
   const currentSimTime = isSimulatedMode ? globalSimTime : realTimeMins;
   // Aliases to avoid breaking RelojVisual (Moved to top to prevent TDZ)
@@ -1050,8 +1447,45 @@ export function useClockEngine(overrideUser?: any) {
   const [showMealSwapModal, setShowMealSwapModal] = useState(false);
   const [isHandoverCompleted, setIsHandoverCompleted] = useState(false);
 
+  // NUEVO: modales de Apertura de Emergencia (estado #9) y Declarar Contingencia (estado #10/#15)
+  const [showEmergencyOpenModal, setShowEmergencyOpenModal] = useState(false);
+  const [emergencyOpenSubmitting, setEmergencyOpenSubmitting] = useState(false);
+  const [showContingencyModal, setShowContingencyModal] = useState(false);
+  const [contingencySubmitting, setContingencySubmitting] = useState(false);
+  const [activeContingency, setActiveContingency] = useState<{ reason: string; contingency_id?: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('active_contingency_' + new Date().toDateString());
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Alerta de GPS al salir del perímetro sin pase de salida
   const lastAlertSentRef = useRef<number | null>(null);
+
+  // NUEVO (estado #6 de la matriz — "En Camino a Sucursal"): historial corto de distancia GPS
+  // para detectar movimiento real de aproximación, en lugar de solo mostrar un "fuera de rango"
+  // estático. Se guardan hasta 5 muestras de los últimos 2 minutos; si la distancia bajó al menos
+  // 15m entre la primera y la última muestra, se considera que el empleado va en camino.
+  const gpsDistanceHistoryRef = useRef<{ dist: number; ts: number }[]>([]);
+  useEffect(() => {
+    if (gpsStatus !== 'success') return;
+    const now = Date.now();
+    const history = gpsDistanceHistoryRef.current
+      .filter(sample => now - sample.ts < 120000)
+      .concat([{ dist: gpsDistance, ts: now }])
+      .slice(-5);
+    gpsDistanceHistoryRef.current = history;
+  }, [gpsDistance, gpsStatus]);
+
+  const isApproachingStore = () => {
+    const history = gpsDistanceHistoryRef.current;
+    if (history.length < 2) return false;
+    const first = history[0].dist;
+    const last = history[history.length - 1].dist;
+    return last < first - 15;
+  };
 
   useEffect(() => {
     if (clockState === 'active' && gpsStatus === 'success' && currentUser?.id) {
@@ -2480,10 +2914,33 @@ export function useClockEngine(overrideUser?: any) {
       const isOnline = navigator.onLine && !isSimulatedOffline;
       if (!isOnline) {
           const currentGps = gpsStatus === 'success' ? gpsCoordinates : null;
+
+          // BUG FIX: antes se guardaba `time: formattedTime` (ej. "8:32 am", 12h sin segundos),
+          // formato que el backend no puede interpretar como hora real del fichaje. Ahora se usa
+          // H:i:s real (getSimTimeStr en modo simulado, getRealHms en modo real), consistente con
+          // lo que ClockService::processPunch() espera al sincronizar vía /clock/punch-batch.
+          const punchTime = isSimulatedMode ? getSimTimeStr(currentSimTime) : getRealHms();
+          const clientTimestamp = new Date().toISOString();
+
+          // Firma HMAC del fichaje offline (docs/BACKEND_INTERFACES.md §2). Si el secreto no está
+          // cacheado (warmOfflineSecret no alcanzó a correr antes de perder conexión), el fichaje se
+          // guarda igual SIN firma — se prefiere no perder el registro del empleado a bloquear el
+          // fichaje por un problema de red al pedir el secreto. Ese ítem quedará marcado rejected por
+          // el backend al sincronizar (invalid_signature) y visible para revisión manual, en vez de
+          // perderse silenciosamente.
+          let offlineStamp = '';
+          try {
+            offlineStamp = await computeOfflineStamp(currentUser?.id, type, punchTime, clientTimestamp);
+          } catch (e) {
+            console.error('No se pudo firmar el fichaje offline (se guardará sin firma):', e);
+          }
+
           await offlineDb.savePunch({
               userId: currentUser?.id,
               type,
-              time: formattedTime,
+              time: punchTime,
+              clientTimestamp,
+              offlineStamp,
               gps: currentGps,
               details
           });
@@ -2564,8 +3021,13 @@ export function useClockEngine(overrideUser?: any) {
              window.dispatchEvent(new Event('db_sync_updated'));
          }
          return data;
-      } catch (e) {
+      } catch (e: any) {
+         // BUG FIX: antes este catch tragaba el error en silencio (solo console.error). Si el backend
+         // rechaza el punch — por ejemplo con 400 "Completa el checklist de cierre antes de registrar
+         // salida." (docs/BACKEND_INTERFACES.md §6) — el usuario no veía absolutamente nada al presionar
+         // el dial. Ahora se muestra el mensaje real del backend cuando existe.
          console.error(e);
+         showCustomAlert(e.response?.data?.message || '⚠️ No se pudo sincronizar el fichaje con el servidor.');
       }
   };
   const handleAction = async () => {
@@ -2583,6 +3045,10 @@ export function useClockEngine(overrideUser?: any) {
     }
     if (btnProps.isMealReservationAlert) {
       setShowMealReservationModal(true);
+      return;
+    }
+    if (btnProps.isEmergencyOpen) {
+      setShowEmergencyOpenModal(true);
       return;
     }
 
@@ -2651,6 +3117,14 @@ export function useClockEngine(overrideUser?: any) {
         } else {
             showCustomAlert(`🟢 Fichaje registrado a tiempo.`);
         }
+      } else if (actionText === '📍 Ya llegué') {
+        // BUG FIX: este botón (estado #7 de la matriz, VENTANA 2 de proximidad) nunca tenía una rama
+        // en handleAction() — btnProps.isProximityCheck se seteaba pero nada lo consumía, así que
+        // presionarlo no hacía nada. La acción correcta es registrar 'waiting', que es el mismo tipo
+        // de entry que ClockService::processPunch() (Backend/app/Services/ClockService.php líneas 210-219)
+        // busca para conceder hasAmnesty automáticamente en el check_in posterior.
+        await syncToDB('waiting');
+        showCustomAlert('📍 Llegada registrada. Amnistía de puntualidad asegurada.');
       } else if (actionText === 'Abrir Tienda') {
         handleOpenStore(false);
       } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida') {
@@ -2804,6 +3278,20 @@ export function useClockEngine(overrideUser?: any) {
 
   const handleClockOutRequest = () => {
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
+
+    // NUEVO (estado #22 — Checklist de Cierre Seguro): gate previo al check_out, espejo del gate
+    // que ya existe para el checklist de apertura. IMPORTANTE: se lee openingSettings.require_closing_checklist
+    // (docs/BACKEND_INTERFACES.md §6) con comparación estricta === true, NO con "!== false" como otros
+    // flags de este archivo — porque esta columna todavía no existe en el backend (⏳ pendiente al momento
+    // de este cambio). Si se usara "!== false", un valor undefined activaría el bloqueo para TODOS los
+    // usuarios en cuanto se despliegue este frontend, antes de que el backend tenga la columna lista.
+    // Con === true, el gate queda inactivo (no bloquea a nadie) hasta que el backend confirme el campo.
+    const requiresClosingChecklist = isOpeningPremium && openingSettings?.require_closing_checklist === true;
+    if (requiresClosingChecklist && !closingChecklistCompleted) {
+      setShowClosingChecklistModal(true);
+      return;
+    }
+
     const hasPendingTasks = useTaskStore.getState().assignments.some(
       (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
     );
@@ -2833,6 +3321,41 @@ export function useClockEngine(overrideUser?: any) {
       return;
     }
     processFinalClockOut();
+  };
+
+  // NUEVO (estado #22): consume POST /store-opening/closing-checklist (docs/BACKEND_INTERFACES.md §6).
+  // Tras confirmar los 3 checks, marca closingChecklistCompleted y re-invoca handleClockOutRequest()
+  // para continuar exactamente el mismo flujo que hubiera corrido si el gate no hubiera interceptado.
+  const submitClosingChecklist = async (checks: { lights_off: boolean; safe_secured: boolean; alarm_activated: boolean }) => {
+    if (!checks.lights_off || !checks.safe_secured || !checks.alarm_activated) {
+      showCustomAlert('⚠️ Debes confirmar los 3 puntos del checklist antes de continuar.');
+      return;
+    }
+    setClosingChecklistSubmitting(true);
+    try {
+      if (isSandboxMode) {
+        setClosingChecklistCompleted(true);
+        localStorage.setItem('closing_checklist_completed', 'true');
+        setShowClosingChecklistModal(false);
+        showCustomAlert('📋 Checklist de cierre completado (Sandbox).');
+        handleClockOutRequest();
+        return;
+      }
+
+      await axiosInstance.post('/store-opening/closing-checklist', {
+        user_id: currentUser.id,
+        checks
+      });
+      setClosingChecklistCompleted(true);
+      localStorage.setItem('closing_checklist_completed', 'true');
+      setShowClosingChecklistModal(false);
+      showCustomAlert('📋 Checklist de cierre completado.');
+      handleClockOutRequest();
+    } catch (e: any) {
+      showCustomAlert(e.response?.data?.message || 'Error al guardar el checklist de cierre.');
+    } finally {
+      setClosingChecklistSubmitting(false);
+    }
   };
 
   const authorizeClockOutWithPendingTasks = async () => {
@@ -3194,11 +3717,26 @@ export function useClockEngine(overrideUser?: any) {
         const isNear = isWithinPerimeter || isGpsValidationBypassed;
         if (isNear) {
           return {
-            text: '📍 Ya llegué (Cerca de área)',
+            // BUG FIX: unificado con el texto exacto de la matriz maestra (docs/funcionamiento_del_dial.md, estado #7)
+            // para que coincida con la comparación de actionText en handleAction().
+            text: '📍 Ya llegué',
             bg: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse',
             icon: '📍',
             isProximityCheck: true,
             subtext: 'Registrar llegada anticipada para asegurar amnistía.'
+          };
+        } else if (isApproachingStore()) {
+          // NUEVO: estado #6 de la matriz — "En Camino a Sucursal". Antes cualquier ubicación fuera
+          // del geofence caía en el mismo placeholder deshabilitado "Cerca de Sucursal", sin distinguir
+          // si el empleado se está acercando o simplemente está lejos y quieto. Igual que la fila 6
+          // de docs/funcionamiento_del_dial.md, mantiene accesible "Reportar Incidencia" (isIncidenceReport)
+          // por si ocurre un percance en el trayecto.
+          return {
+            text: 'En Camino a Sucursal',
+            bg: 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]',
+            icon: '📍',
+            isIncidenceReport: true,
+            subtext: `Reportar incidencia si ocurre un percance (${Math.round(gpsDistance)}m restantes)`
           };
         } else {
           return {
@@ -3269,13 +3807,47 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
 
+    // NUEVO (estado #9 de la matriz — "Apertura de Emergencia"): cuando la cadena de encargados/suplentes
+    // se agotó (openingStatus.status === 'failed', ver syncApertura más arriba), cualquier titular o
+    // suplente de llaves presente en el perímetro puede iniciar la apertura de emergencia con
+    // co-validación de 2 testigos, en vez de quedarse bloqueado esperando indefinidamente.
+    // Consume POST /clock/emergency-open (docs/BACKEND_INTERFACES.md §3, ya implementado por backend).
+    if (isOpeningPremium && storeStatus === 'closed' && openingStatus?.status === 'failed') {
+      // BUG FIX: la condición original solo miraba currentUser.portadorLlaves, pero el backend
+      // (StoreOpeningService::emergencyOpenWithWitnesses) exige que el solicitante esté en
+      // store_opening_assignments con has_keys=true e is_active=true — una fuente de datos distinta.
+      // Con la condición vieja, alguien con portadorLlaves configurado pero sin asignación activa
+      // vería el botón y luego el backend lo rechazaría con "no cuenta con llaves de sucursal activas",
+      // o al revés: alguien con asignación activa pero sin portadorLlaves nunca vería el botón.
+      // Ahora se valida contra la misma lista que usa getNextSuplenteUser().
+      let hasActiveKeyAssignment = false;
+      try {
+        const savedAss = localStorage.getItem('store_opening_assignments');
+        const ass = savedAss ? JSON.parse(savedAss) : [];
+        hasActiveKeyAssignment = ass.some(
+          (a: any) => Number(a.employee_id) === Number(currentUser?.id) && a.is_active && a.has_keys
+        );
+      } catch {}
+
+      const isKeyholderPresent = hasActiveKeyAssignment && (isWithinPerimeter || isGpsValidationBypassed);
+      if (isKeyholderPresent) {
+        return {
+          text: 'Apertura de Emergencia',
+          bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_25px_rgba(225,29,72,0.35)] animate-pulse',
+          icon: '⚠️',
+          isEmergencyOpen: true,
+          subtext: 'Requiere co-validación de 2 testigos presenciales'
+        };
+      }
+    }
+
     if (isOpeningPremium && storeStatus === 'closed') {
       if (Number(currentUser.id) === Number(responsibleId)) {
-        return { 
-          text: 'Abrir Tienda', 
-          bg: 'bg-violet-650 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse', 
+        return {
+          text: 'Abrir Tienda',
+          bg: 'bg-violet-650 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
           icon: '🗝️',
-          isOpeningActive: true 
+          isOpeningActive: true
         };
       }
     }
@@ -3318,9 +3890,13 @@ export function useClockEngine(overrideUser?: any) {
     if (clockState === 'active') {
       const hasTakenMeal = mealStartTimes[currentUser.id] !== undefined;
       if (!hasTakenMeal) {
+        // BUG FIX (mySlots ReferenceError): declarado aquí, fuera del bloque isPro/featureFlags,
+        // porque se usa más abajo (línea ~3349) independientemente de si esas condiciones se cumplen.
+        // Antes esto reventaba con ReferenceError para cualquier usuario no-PRO o sin featureFlags.comidas,
+        // causando pantalla blanca al llegar al estado 'Iniciar Comida'.
+        const mySlots = userReservedMealSlots[currentUser.id] || [];
         const mealReservationUnlocked = useAppStore.getState().isFeatureUnlocked('meal_reservation');
         if (isPro && featureFlags.comidas && mealReservationUnlocked && features.enable_meal_slots !== false) {
-          const mySlots = userReservedMealSlots[currentUser.id] || [];
           if (mySlots.length > 0) {
              const [sh, sm] = mySlots[0].split(' ')[0].split(':');
              const isPm = mySlots[0].includes('PM');
@@ -3627,6 +4203,24 @@ export function useClockEngine(overrideUser?: any) {
     handleReportAbsencePremium,
     handleReportLatePremium,
     handleReportStoreStillClosedPremium,
+    handleCallSuplente,
+    getNextSuplenteUser,
+    showEmergencyOpenModal,
+    setShowEmergencyOpenModal,
+    emergencyOpenSubmitting,
+    handleEmergencyStoreOpen,
+    showContingencyModal,
+    setShowContingencyModal,
+    contingencySubmitting,
+    handleContingencyDeclaration,
+    activeContingency,
+    closingChecklistCompleted,
+    showClosingChecklistModal,
+    setShowClosingChecklistModal,
+    closingChecklistSubmitting,
+    submitClosingChecklist,
+    securityPinSubmitting,
+    handleUpdateSecurityPin,
     isOpeningPremium,
 
     isGlobalLoading: false,

@@ -18,6 +18,9 @@ class TimeEntry extends Model
         'time',
         'is_late',
         'late_minutes',
-        'details'
+        'details',
+        'employee_name_at_time',
+        'job_role_title_at_time',
+        'base_salary_at_time'
     ];
 }

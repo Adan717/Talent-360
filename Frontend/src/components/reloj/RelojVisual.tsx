@@ -283,6 +283,22 @@ export default function RelojVisual({
     handleReportAbsencePremium,
     handleReportLatePremium,
     handleReportStoreStillClosedPremium,
+    handleCallSuplente,
+    showEmergencyOpenModal,
+    setShowEmergencyOpenModal,
+    emergencyOpenSubmitting,
+    handleEmergencyStoreOpen,
+    showContingencyModal,
+    setShowContingencyModal,
+    contingencySubmitting,
+    handleContingencyDeclaration,
+    activeContingency,
+    showClosingChecklistModal,
+    setShowClosingChecklistModal,
+    closingChecklistSubmitting,
+    submitClosingChecklist,
+    securityPinSubmitting,
+    handleUpdateSecurityPin,
     isOpeningPremium,
     mealSettings,
     leySillaConfig,
@@ -1482,11 +1498,32 @@ export default function RelojVisual({
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showEtaSelector, setShowEtaSelector] = useState(false);
   const [etaTime, setEtaTime] = useState('08:45');
+
+  // NUEVO: campos de formulario del modal de Apertura de Emergencia (estado #9)
+  const [emergencyWitness1Id, setEmergencyWitness1Id] = useState('');
+  const [emergencyWitness1Pin, setEmergencyWitness1Pin] = useState('');
+  const [emergencyWitness2Id, setEmergencyWitness2Id] = useState('');
+  const [emergencyWitness2Pin, setEmergencyWitness2Pin] = useState('');
+
+  // NUEVO: checks del modal de Checklist de Cierre Seguro (estado #22)
+  const [closingLightsOff, setClosingLightsOff] = useState(false);
+  const [closingSafeSecured, setClosingSafeSecured] = useState(false);
+  const [closingAlarmActivated, setClosingAlarmActivated] = useState(false);
+
+  // NUEVO: sección de PIN de Seguridad (docs/BACKEND_INTERFACES.md §10) — distinto del PIN de bloqueo
+  // de sesión local (currentUser.pin_code) que ya existe más abajo en este archivo, no confundir.
+  const [showSecurityPinSection, setShowSecurityPinSection] = useState(false);
+  const [newSecurityPin, setNewSecurityPin] = useState('');
+  const [confirmSecurityPin, setConfirmSecurityPin] = useState('');
+  const [securityPinCurrentPassword, setSecurityPinCurrentPassword] = useState('');
   const [showOpeningChecklistModal, setShowOpeningChecklistModal] = useState(false);
   const [showDesktopOrgModal, setShowDesktopOrgModal] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRestDay, setEditRestDay] = useState('');
+  // NUEVO: "Configura tu alarma" en perfil (docs/BACKEND_INTERFACES.md §5). null = desactivada.
+  const [editPreShiftAlarm, setEditPreShiftAlarm] = useState<number | null>(null);
+  const [savingPreShiftAlarm, setSavingPreShiftAlarm] = useState(false);
   const [isSessionLocked, setIsSessionLocked] = useState(false);
   const [unlockPin, setUnlockPin] = useState('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -2455,6 +2492,7 @@ export default function RelojVisual({
               setEditUsername(currentUser?.name || 'Francisco');
               setEditPassword(currentUser?.pin_code || '1234');
               setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
+              setEditPreShiftAlarm(currentUser?.pre_shift_alarm_minutes ?? null);
               setShowProfileMenu(true);
             }}
           >
@@ -3239,12 +3277,13 @@ export default function RelojVisual({
                         </div>
                         <div className="p-1.5 space-y-0.5 text-left">
                           <button 
-                            onClick={() => { 
+                            onClick={() => {
                               setEditUsername(currentUser?.name || 'Francisco');
                               setEditPassword(currentUser?.pin_code || '1234');
                               setEditRestDay(shiftConfigs[currentUser?.id]?.restDay || 'Domingo');
+                              setEditPreShiftAlarm(currentUser?.pre_shift_alarm_minutes ?? null);
                               setShowSettingsModal(true);
-                              setIsProfileMenuOpen(false); 
+                              setIsProfileMenuOpen(false);
                             }}
                             className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2 focus:outline-none"
                           >
@@ -3399,6 +3438,16 @@ export default function RelojVisual({
                     </div>
                   )}
                   
+                  {/* NUEVO (estado #15 de la matriz): banner informativo "Modo Contingencia Activo" —
+                      no reemplaza el dial de fichaje (comida, salida, etc. siguen funcionando normal),
+                      solo informa que las penalizaciones de puntualidad están congeladas hoy. */}
+                  {activeContingency && (
+                    <div className="bg-amber-500 text-white px-4 py-3 rounded-2xl flex items-center gap-2 shadow-md mb-1 flex-row text-left shrink-0">
+                      <span className="text-sm">🛡️</span>
+                      <span className="text-xs font-bold">Modo Contingencia Activo — Penalizaciones congeladas (100% salario LFT).</span>
+                    </div>
+                  )}
+
                   {/* Reminders of Premium opening - Mobile */}
                   {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
                     <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
@@ -3499,6 +3548,9 @@ export default function RelojVisual({
                           const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
                           showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                         }}
+                        onCallSuplenteClick={handleCallSuplente}
+                        onDeclareContingencyClick={() => setShowContingencyModal(true)}
+                        hasActiveContingency={!!activeContingency}
                       />
                     </div>
 
@@ -3799,6 +3851,14 @@ export default function RelojVisual({
                 </div>
               )}
 
+            {/* NUEVO (estado #15): banner informativo "Modo Contingencia Activo" — versión desktop */}
+            {activeContingency && (
+              <div className="bg-amber-500 text-white px-5 py-3.5 rounded-2xl flex items-center gap-2.5 shadow-md mb-2 shrink-0 text-left">
+                <span className="text-base">🛡️</span>
+                <span className="text-xs font-black">Modo Contingencia Activo — Penalizaciones congeladas (100% salario LFT).</span>
+              </div>
+            )}
+
             {/* Reminders of Premium opening - Desktop */}
             {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
               <div className="bg-emerald-600 text-white px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-md mb-2 shrink-0 animate-pulse text-left">
@@ -3894,6 +3954,9 @@ export default function RelojVisual({
                         const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
                         showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
+                      onCallSuplenteClick={handleCallSuplente}
+                      onDeclareContingencyClick={() => setShowContingencyModal(true)}
+                      hasActiveContingency={!!activeContingency}
                     />
 
                     {/* Módulo de Notificaciones de Turno para Desktop */}
@@ -4474,6 +4537,163 @@ export default function RelojVisual({
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* NUEVO: Modal de Apertura de Emergencia (estado #9) — Co-Validación de 2 Testigos.
+              Consume handleEmergencyStoreOpen(), que llama a POST /clock/emergency-open
+              (docs/BACKEND_INTERFACES.md §3). Ver advertencia en useClockEngine.tsx: sin un endpoint
+              PUT /me/pin todavía, la validación del backend rechazará cualquier PIN por ahora. */}
+          {showEmergencyOpenModal && (
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                  <h3 className="font-black text-lg text-rose-600">⚠️ Apertura de Emergencia</h3>
+                  <button onClick={() => setShowEmergencyOpenModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+                </div>
+
+                <p className="text-xs text-slate-500 mb-4 bg-rose-50/50 p-3 rounded-xl border border-rose-100/50">
+                  ⚠️ La cadena de encargados/suplentes se agotó. Requiere la co-validación presencial de <strong>2 testigos</strong> con PIN para abrir la sucursal bajo tu responsabilidad.
+                </p>
+
+                <div className="grid grid-cols-1 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Testigo 1</label>
+                    <select
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm mb-2 outline-none focus:ring-2 focus:ring-rose-500 font-bold text-slate-800"
+                      value={emergencyWitness1Id}
+                      onChange={(e) => setEmergencyWitness1Id(e.target.value)}
+                    >
+                      <option value="">Selecciona al testigo 1...</option>
+                      {globalUsers.filter((u: any) => u.id !== currentUser?.id).map((u: any) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      placeholder="PIN del testigo 1"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-500 font-bold text-slate-800"
+                      value={emergencyWitness1Pin}
+                      onChange={(e) => setEmergencyWitness1Pin(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Testigo 2</label>
+                    <select
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm mb-2 outline-none focus:ring-2 focus:ring-rose-500 font-bold text-slate-800"
+                      value={emergencyWitness2Id}
+                      onChange={(e) => setEmergencyWitness2Id(e.target.value)}
+                    >
+                      <option value="">Selecciona al testigo 2...</option>
+                      {globalUsers.filter((u: any) => u.id !== currentUser?.id).map((u: any) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      placeholder="PIN del testigo 2"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-500 font-bold text-slate-800"
+                      value={emergencyWitness2Pin}
+                      onChange={(e) => setEmergencyWitness2Pin(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  disabled={emergencyOpenSubmitting}
+                  onClick={() => handleEmergencyStoreOpen(Number(emergencyWitness1Id), emergencyWitness1Pin, Number(emergencyWitness2Id), emergencyWitness2Pin)}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-black py-4 rounded-2xl shadow-md border-none cursor-pointer active:scale-95 transition-all"
+                >
+                  {emergencyOpenSubmitting ? 'Validando...' : 'Autorizar Apertura de Emergencia'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* NUEVO: Modal de Declarar Eventualidad (estado #10) y aviso de Modo Contingencia Activo
+              (estado #15). Consume handleContingencyDeclaration(), que llama a
+              POST /clock/declare-contingency (docs/BACKEND_INTERFACES.md §4) o encola offline
+              si no hay conexión. */}
+          {showContingencyModal && (
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                  <h3 className="font-black text-lg text-amber-600">⚡ Declarar Eventualidad</h3>
+                  <button onClick={() => setShowContingencyModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+                </div>
+
+                <p className="text-xs text-slate-500 mb-4 bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
+                  ⚡ Declarar una eventualidad protege tu jornada al <strong>100% del salario</strong> (Art. 56, 132 y 133 LFT), congelando retardos y faltas por causa de fuerza mayor.
+                </p>
+
+                <div className="grid grid-cols-1 gap-2.5 mb-2">
+                  <button
+                    disabled={contingencySubmitting}
+                    onClick={() => handleContingencyDeclaration('no_power')}
+                    className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 transition-transform"
+                  >
+                    ⚡ Sin Energía Eléctrica en Sucursal
+                  </button>
+                  <button
+                    disabled={contingencySubmitting}
+                    onClick={() => handleContingencyDeclaration('no_internet')}
+                    className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 transition-transform"
+                  >
+                    📡 Sin Internet en Sucursal
+                  </button>
+                  <button
+                    disabled={contingencySubmitting}
+                    onClick={() => handleContingencyDeclaration('no_power_and_internet')}
+                    className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 transition-transform"
+                  >
+                    🚨 Sin Luz y Sin Internet
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* NUEVO: Modal de Checklist de Cierre Seguro (estado #22) — espejo del checklist de apertura.
+              Consume submitClosingChecklist(), que llama a POST /store-opening/closing-checklist
+              (docs/BACKEND_INTERFACES.md §6). */}
+          {showClosingChecklistModal && (
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                  <h3 className="font-black text-lg text-rose-600">🚪 Checklist de Cierre Seguro</h3>
+                  <button onClick={() => setShowClosingChecklistModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
+                </div>
+
+                <p className="text-xs text-slate-500 mb-4">
+                  Confirma los 3 puntos de seguridad antes de registrar tu salida:
+                </p>
+
+                <div className="flex flex-col gap-2.5 mb-5">
+                  <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer">
+                    <input type="checkbox" checked={closingLightsOff} onChange={(e) => setClosingLightsOff(e.target.checked)} className="w-5 h-5 accent-rose-600" />
+                    <span className="text-sm font-bold text-slate-700">💡 Luces y aires acondicionados apagados</span>
+                  </label>
+                  <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer">
+                    <input type="checkbox" checked={closingSafeSecured} onChange={(e) => setClosingSafeSecured(e.target.checked)} className="w-5 h-5 accent-rose-600" />
+                    <span className="text-sm font-bold text-slate-700">🔒 Caja fuerte y valores resguardados</span>
+                  </label>
+                  <label className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3.5 cursor-pointer">
+                    <input type="checkbox" checked={closingAlarmActivated} onChange={(e) => setClosingAlarmActivated(e.target.checked)} className="w-5 h-5 accent-rose-600" />
+                    <span className="text-sm font-bold text-slate-700">🚨 Alarma y cortina de seguridad activadas</span>
+                  </label>
+                </div>
+
+                <button
+                  disabled={closingChecklistSubmitting || !closingLightsOff || !closingSafeSecured || !closingAlarmActivated}
+                  onClick={() => submitClosingChecklist({ lights_off: closingLightsOff, safe_secured: closingSafeSecured, alarm_activated: closingAlarmActivated })}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl shadow-md border-none cursor-pointer active:scale-95 transition-all"
+                >
+                  {closingChecklistSubmitting ? 'Guardando...' : 'Confirmar y Registrar Salida'}
+                </button>
               </div>
             </div>
           )}
@@ -6185,6 +6405,86 @@ export default function RelojVisual({
                     </select>
                   </div>
 
+                  {/* NUEVO: "Configura tu alarma" (docs/funcionamiento_del_dial.md §3 / BACKEND_INTERFACES.md §5).
+                      Notificación push local previa al trayecto hacia la sucursal. */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">🔔 Configura tu Alarma</label>
+                    <select
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                      value={editPreShiftAlarm === null ? '' : editPreShiftAlarm}
+                      onChange={e => setEditPreShiftAlarm(e.target.value === '' ? null : Number(e.target.value))}
+                    >
+                      <option value="">Desactivada</option>
+                      <option value={15}>15 minutos antes</option>
+                      <option value={30}>30 minutos antes</option>
+                      <option value={45}>45 minutos antes</option>
+                      <option value={60}>60 minutos antes</option>
+                    </select>
+                    <p className="text-[9px] text-slate-400 mt-1 leading-snug">Programa tu alerta previa de trayecto hacia la sucursal.</p>
+                  </div>
+
+                  {/* NUEVO: PIN de Seguridad para Co-Validación de Testigos (docs/BACKEND_INTERFACES.md §10).
+                      Sección separada del PIN de bloqueo de sesión — este PIN autoriza acciones con peso
+                      legal/de nómina (Apertura de Emergencia, estado #9), por eso pide la contraseña
+                      actual de la cuenta y no se guarda junto con el resto del perfil. */}
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setShowSecurityPinSection(!showSecurityPinSection)}
+                      className="w-full flex items-center justify-between text-left bg-transparent border-none cursor-pointer p-0"
+                    >
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">🔐 PIN de Seguridad (Testigos de Emergencia)</span>
+                      <span className="text-slate-400 text-xs">{showSecurityPinSection ? '▲' : '▼'}</span>
+                    </button>
+
+                    {showSecurityPinSection && (
+                      <div className="mt-2.5 space-y-2.5 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <p className="text-[9px] text-slate-400 leading-snug">
+                          Este PIN se usa cuando otro compañero te pide ser testigo en una Apertura de Emergencia. Requiere tu contraseña actual para cambiarlo.
+                        </p>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          placeholder="Nuevo PIN (4-6 dígitos)"
+                          className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+                          value={newSecurityPin}
+                          onChange={e => setNewSecurityPin(e.target.value)}
+                        />
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          placeholder="Confirmar nuevo PIN"
+                          className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+                          value={confirmSecurityPin}
+                          onChange={e => setConfirmSecurityPin(e.target.value)}
+                        />
+                        <input
+                          type="password"
+                          placeholder="Tu contraseña actual"
+                          className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+                          value={securityPinCurrentPassword}
+                          onChange={e => setSecurityPinCurrentPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          disabled={securityPinSubmitting}
+                          onClick={async () => {
+                            const ok = await handleUpdateSecurityPin(securityPinCurrentPassword, newSecurityPin, confirmSecurityPin);
+                            if (ok) {
+                              setNewSecurityPin('');
+                              setConfirmSecurityPin('');
+                              setSecurityPinCurrentPassword('');
+                              setShowSecurityPinSection(false);
+                            }
+                          }}
+                          className="w-full bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white font-extrabold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 border-none cursor-pointer"
+                        >
+                          {securityPinSubmitting ? 'Guardando...' : 'Guardar PIN de Seguridad'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* App Settings Toggles */}
                   <div className="pt-3 border-t border-slate-850/10 dark:border-slate-800/30 space-y-3">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Ajustes de la Aplicación</p>
@@ -6242,7 +6542,8 @@ export default function RelojVisual({
                       const updatedUser = {
                         ...currentUser,
                         name: editUsername,
-                        pin_code: editPassword
+                        pin_code: editPassword,
+                        pre_shift_alarm_minutes: editPreShiftAlarm
                       };
 
                       if (!isSandboxMode) {
@@ -6253,6 +6554,19 @@ export default function RelojVisual({
                           });
                         } catch (err: any) {
                           console.error("Error al persistir cambios de perfil:", err);
+                        }
+
+                        // NUEVO (docs/BACKEND_INTERFACES.md §5): PUT /me/pre-shift-alarm todavía está
+                        // ⏳ Pendiente del lado del backend al momento de este cambio. Se envuelve en su
+                        // propio try/catch para que un 404 (endpoint aún no desplegado) NO impida guardar
+                        // el resto del perfil (nombre, PIN, día de descanso).
+                        setSavingPreShiftAlarm(true);
+                        try {
+                          await axiosInstance.put('/me/pre-shift-alarm', { minutes: editPreShiftAlarm });
+                        } catch (err: any) {
+                          console.error("Error al guardar la alarma de pre-turno (endpoint puede no existir aún):", err);
+                        } finally {
+                          setSavingPreShiftAlarm(false);
                         }
                       }
 

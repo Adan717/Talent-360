@@ -31,6 +31,7 @@ interface DialPrincipalProps {
   btnProps: {
     disabled: boolean;
     isIncidenceReport?: boolean;
+    isOpeningManager?: boolean;
     text?: string;
     subtext?: string;
   };
@@ -49,7 +50,10 @@ interface DialPrincipalProps {
   onEarlyDepartureClick?: () => void;
   onOvertimeClick?: () => void;
   onCallManagerClick?: () => void;
+  onCallSuplenteClick?: () => void;
   onPanicClick?: () => void;
+  onDeclareContingencyClick?: () => void;
+  hasActiveContingency?: boolean;
   isKeyholder?: boolean;
 }
 
@@ -78,7 +82,10 @@ export default function DialPrincipal({
   onEarlyDepartureClick,
   onOvertimeClick,
   onCallManagerClick,
+  onCallSuplenteClick,
   onPanicClick,
+  onDeclareContingencyClick,
+  hasActiveContingency = false,
   isKeyholder
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
@@ -163,16 +170,22 @@ export default function DialPrincipal({
 
   const getDialBottomLabel = () => {
     if (isGpsError) return 'GPS Requerido';
-    if (btnProps.isIncidenceReport) return 'Reportar retraso o falta';
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return 'Día libre';
 
+    // BUG FIX: antes, cualquier estado con isIncidenceReport=true (VENTANA 1 "Reportar Ausencia/Retardo",
+    // "Reportar Incidencia" fuera de perímetro, y el nuevo "En Camino a Sucursal") mostraba siempre la
+    // misma etiqueta genérica 'Reportar retraso o falta', ocultando el texto específico de cada estado
+    // que ya viene bien definido en btnProps.text (matriz de docs/funcionamiento_del_dial.md).
+    // Ahora se prioriza btnProps.text y solo se usa el genérico si por algún motivo no viene texto.
     if (btnProps.text) {
       if (btnProps.text.toLowerCase().includes('disponible a las')) {
         return 'Fuera de horario';
       }
       return btnProps.text;
     }
+
+    if (btnProps.isIncidenceReport) return 'Reportar retraso o falta';
 
     return 'Registrar entrada';
   };
@@ -316,6 +329,21 @@ export default function DialPrincipal({
         </button>
       )}
 
+      {/* NUEVO (estado #5 de la matriz): "Marcar a Suplente" — visible solo para el encargado
+          responsable de apertura de hoy (btnProps.isOpeningManager, seteado en VENTANA 1 de
+          getButtonProps), para avisar proactivamente al siguiente suplente en la fila de prioridad
+          antes de que se dispare el traspaso automático por deadline vencido. */}
+      {btnProps.isOpeningManager && onCallSuplenteClick && (
+        <button
+          type="button"
+          onClick={onCallSuplenteClick}
+          className="mt-2.5 py-1.5 px-4 bg-violet-50 dark:bg-violet-955/20 border border-violet-250 text-violet-700 dark:text-violet-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-violet-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+        >
+          <Phone size={12} className="text-violet-500" />
+          Marcar a Suplente
+        </button>
+      )}
+
       {/* BUG FIX: Acceso directo a Botón de Pánico de Emergencia */}
       {onPanicClick && (
         <button
@@ -325,6 +353,26 @@ export default function DialPrincipal({
         >
           <AlertTriangle size={10} className="text-rose-500" />
           Emergencia / Pánico
+        </button>
+      )}
+
+      {/* NUEVO (estado #10/#15 de la matriz): "Declarar Eventualidad" — botón persistente, igual que
+          el de pánico, porque una falla de luz/internet puede ocurrir en cualquier momento del turno,
+          no solo antes de fichar entrada. Si ya hay una contingencia activa hoy, cambia de texto/color
+          para reflejarlo en vez de permitir declarar dos veces. */}
+      {onDeclareContingencyClick && (
+        <button
+          type="button"
+          onClick={onDeclareContingencyClick}
+          disabled={hasActiveContingency}
+          className={`mt-2 py-1 px-3 border text-[9px] font-bold uppercase tracking-wider rounded-full transition-all flex items-center gap-1 z-20 ${
+            hasActiveContingency
+              ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-default opacity-90'
+              : 'bg-slate-100 hover:bg-amber-50 text-slate-500 hover:text-amber-600 border-slate-200 hover:border-amber-200 opacity-70 hover:opacity-100 cursor-pointer'
+          }`}
+        >
+          <AlertTriangle size={10} className={hasActiveContingency ? 'text-amber-500' : 'text-amber-500'} />
+          {hasActiveContingency ? 'Contingencia Activa' : 'Declarar Eventualidad'}
         </button>
       )}
 

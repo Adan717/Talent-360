@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ContingencyDeclaration;
 use App\Models\TimeEntry;
 use App\Models\User;
 use Carbon\Carbon;
@@ -19,7 +20,8 @@ class ClockService
     // Tipos de evento permitidos en el sistema de fichaje
     public const ALLOWED_TYPES = [
         'check_in', 'check_out', 'break_start', 'break_end',
-        'meal_start', 'meal_end', 'waiting'
+        'meal_start', 'meal_end', 'waiting',
+        'temp_exit_start', 'temp_exit_end'
     ];
 
     public function processPunch(User $user, $type, $simTime = null, $details = [])
@@ -48,8 +50,12 @@ class ClockService
         
         $date = $now->format('Y-m-d');
 
-        if ($isSimulated && $simTime) {
-            // El simulador envía algo como "09:30:00", usamos eso
+        // El simulador manda una hora explícita para pruebas; el sync offline por lotes
+        // (punch-batch) también manda la hora real en que ocurrió el fichaje mientras el
+        // dispositivo estaba sin conexión — sin esto, el registro quedaría con la hora en
+        // que finalmente sincronizó en vez de la hora real del evento.
+        $isOfflineSync = isset($details['offline_sync']) && $details['offline_sync'] === true;
+        if (($isSimulated || $isOfflineSync) && $simTime) {
             $time = $simTime;
             $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time", $timezone);
         } else {
@@ -77,6 +83,18 @@ class ClockService
 
         if ($closedPayroll) {
             throw new \Exception("Fichaje Denegado: El período de nómina para la fecha {$date} ya ha sido aprobado o pagado y se encuentra bloqueado para modificaciones.");
+        }
+
+        // Anti-duplicados: cada tipo de fichaje solo puede registrarse una vez por día
+        // (Registrar Entrada, Registrar Salida, Iniciar/Terminar Comida, Descansos, etc.).
+        // Sin esto, un doble clic o un reintento de red crea dos filas para el mismo evento.
+        $alreadyPunchedToday = TimeEntry::where('user_id', $user->id)
+            ->where('date', $date)
+            ->where('type', $type)
+            ->exists();
+
+        if ($alreadyPunchedToday) {
+            throw new \Exception("Fichaje Denegado: ya existe un registro de tipo '{$type}' para hoy. No se puede duplicar.");
         }
 
         // Obtener el plan del tenant
@@ -122,6 +140,34 @@ class ClockService
 
             if (!$isOpened && !$isOpeningManager) {
                 throw new \Exception("Fichaje Denegado: La tienda física se encuentra cerrada. Debes esperar a que el encargado realice la apertura.");
+            }
+        }
+
+        // 2.b Bloqueo de salida si falta el checklist de cierre seguro (espejo del
+        // checklist de apertura). Solo aplica a tenants con el módulo store_opening activo
+        // — de lo contrario bloquearía el check_out de cualquier tenant que nunca configuró
+        // esta función, algo que el contrato no pide.
+        if ($type === 'check_out' && \App\Services\FeatureAccessService::tenantHasFeature($tenantId, 'store_opening')) {
+            $closingSettings = \DB::table('store_opening_settings')
+                ->where('tenant_id', $tenantId)
+                ->where('store_id', 1)
+                ->first();
+
+            $requiresClosingChecklist = $closingSettings ? (bool)$closingSettings->require_closing_checklist : true;
+
+            if ($requiresClosingChecklist) {
+                $hasCompletedChecklist = \DB::table('store_opening_events')
+                    ->where('tenant_id', $tenantId)
+                    ->where('store_id', 1)
+                    ->where('employee_id', $user->id)
+                    ->where('event_type', 'closing_checklist')
+                    ->where('event_status', 'success')
+                    ->whereDate('event_time', $date)
+                    ->exists();
+
+                if (!$hasCompletedChecklist) {
+                    throw new \Exception("Completa el checklist de cierre antes de registrar salida.");
+                }
             }
         }
 
@@ -195,7 +241,9 @@ class ClockService
         }
 
         // Obtener la política de horario del empleado
-        $expectedTimeStr = $user->shiftStart ?? '09:00:00';
+        // shiftStart vive en `employees` desde la migración migrate_existing_users_to_employees_table;
+        // `users` ya no tiene esa columna, así que hay que leerla vía la relación.
+        $expectedTimeStr = $user->employee?->shiftStart ?? '09:00:00';
         $expectedTime = Carbon::createFromFormat('H:i:s', $expectedTimeStr);
         
         // Obtener las políticas LFT del Tenant
@@ -206,6 +254,19 @@ class ClockService
         $isLate = false;
         $lateMinutes = 0;
         $hasAmnesty = isset($details['has_amnesty']) && $details['has_amnesty'] === true;
+
+        // Declaración de Eventualidad (sin luz / sin internet): mientras esté activa para
+        // el tenant y la fecha, la jornada completa queda protegida al 100% de salario
+        // conforme LFT — se salta el cálculo de retardo igual que la amnistía por espera.
+        $hasContingency = \App\Models\ContingencyDeclaration::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('date', $date)
+            ->whereNull('resolved_at')
+            ->exists();
+
+        if ($hasContingency) {
+            $hasAmnesty = true;
+        }
 
         if ($type === 'check_in' && !$hasAmnesty) {
             $proximityRecord = \DB::table('time_entries')
@@ -227,11 +288,16 @@ class ClockService
 
         // Estructurar detalles del retardo o compensación
         $detailsMerge = $details;
-        if ($hasAmnesty) {
+        if ($hasContingency) {
+            $detailsMerge['lft_incident'] = [
+                'type' => 'contingency',
+                'notes' => 'Jornada protegida al 100% por declaración de contingencia (sin luz / sin internet en sucursal).'
+            ];
+        } elseif ($hasAmnesty) {
             $detailsMerge['amnesty_applied'] = true;
             $detailsMerge['amnesty_note'] = 'Amnistía aplicada por apertura tardía de la sucursal.';
         }
-        
+
         if ($isLate) {
             $detailsMerge['lft_incident'] = [
                 'type' => 'late',
@@ -247,7 +313,8 @@ class ClockService
         $employee = DB::table('employees')->where('user_id', $user->id)->first();
         $jobRole = $employee ? DB::table('job_roles')->find($employee->job_role_id) : null;
         $snapshotName = $employee ? ($employee->name ?? $user->name) : $user->name;
-        $snapshotRole = $jobRole?->title ?? null;
+        // job_roles no tiene columna `title`, el nombre del puesto vive en `name`.
+        $snapshotRole = $jobRole?->name ?? null;
         $snapshotSalary = $employee?->base_salary ?? null;
 
         // Crear registro en la BD dentro de una transacción atómica.
@@ -293,6 +360,47 @@ class ClockService
                 ? "Registro guardado con retardo de {$lateMinutes} minutos." 
                 : "Registro exitoso.",
             'entry' => $entry
+        ];
+    }
+
+    /**
+     * Declara una contingencia (sin luz / sin internet / ambas) para el tenant+sucursal+fecha
+     * del usuario. Si ya existe una abierta (sin resolver) ese día, la reutiliza en vez de
+     * duplicarla. Mientras esté activa, processPunch() salta el cálculo de retardo para
+     * todos los usuarios del tenant ese día (ver bloque $hasContingency arriba).
+     */
+    public function declareContingency(int $userId, string $reason, ?string $declaredAt = null, int $storeId = 1): array
+    {
+        $allowedReasons = ['no_power', 'no_internet', 'no_power_and_internet'];
+        if (!in_array($reason, $allowedReasons)) {
+            throw new \InvalidArgumentException("Motivo de contingencia inválido: '{$reason}'. Valores permitidos: " . implode(', ', $allowedReasons));
+        }
+
+        $user = User::withoutGlobalScopes()->findOrFail($userId);
+        $tenantId = $user->tenant_id ?? 1;
+        $declaredAtCarbon = $declaredAt ? Carbon::parse($declaredAt) : Carbon::now();
+        $date = $declaredAtCarbon->format('Y-m-d');
+
+        $existing = ContingencyDeclaration::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->whereDate('date', $date)
+            ->whereNull('resolved_at')
+            ->first();
+
+        $declaration = $existing ?: ContingencyDeclaration::create([
+            'tenant_id' => $tenantId,
+            'store_id' => $storeId,
+            'declared_by_user_id' => $userId,
+            'date' => $date,
+            'reason' => $reason,
+            'declared_at' => $declaredAtCarbon,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Contingencia declarada. Jornada protegida al 100% conforme LFT.',
+            'contingency_id' => $declaration->id,
         ];
     }
 
@@ -359,8 +467,18 @@ class ClockService
         $mealExcessMinutes = 0;
         $restExcessMinutes = 0;
         
+        // Días con declaración de contingencia activa (sin luz / sin internet): excluidos
+        // de retardos y faltas, la jornada se paga al 100% conforme LFT.
+        $contingencyDates = \App\Models\ContingencyDeclaration::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereNull('resolved_at')
+            ->pluck('date')
+            ->map(fn($d) => \Illuminate\Support\Carbon::parse($d)->toDateString())
+            ->all();
+
         foreach ($entries as $entry) {
-            if ($entry->is_late) {
+            if ($entry->is_late && !in_array($entry->date, $contingencyDates)) {
                 $latesCount++;
                 $lateMinutes += $entry->late_minutes;
             }
@@ -374,7 +492,7 @@ class ClockService
                 }
             }
         }
-        
+
         // Obtener días festivos registrados para el periodo
         $holidays = \DB::table('lft_holidays')
             ->where('tenant_id', $tenantId)
@@ -410,9 +528,13 @@ class ClockService
             $analysedDates[] = $dateStr;
             
             $isHolidayDate = $holidays->has($dateStr);
+            $isContingencyDate = in_array($dateStr, $contingencyDates);
 
             if ($current->dayOfWeek !== $restDayOfWeek) {
-                if ($isHolidayDate) {
+                if ($isContingencyDate) {
+                    // Día protegido por contingencia: no cuenta como falta aunque no haya
+                    // fichaje (ej. corte total de energía impidió cualquier registro).
+                } elseif ($isHolidayDate) {
                     // Es día festivo
                     if (isset($entriesByDate[$dateStr])) {
                         $holidayWorkedDaysCount++;

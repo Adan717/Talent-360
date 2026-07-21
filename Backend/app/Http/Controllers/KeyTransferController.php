@@ -25,7 +25,9 @@ class KeyTransferController extends Controller
             return response()->json(['error' => 'No puedes transferirte las llaves a ti mismo.'], 422);
         }
 
-        if (strtolower($user->portadorLlaves) === 'ninguno' || !$user->portadorLlaves) {
+        // portadorLlaves vive en `employees`, no en `users` (migrate_existing_users_to_employees_table).
+        $senderPortadorLlaves = $user->employee?->portadorLlaves;
+        if (!$senderPortadorLlaves || strtolower($senderPortadorLlaves) === 'ninguno') {
             return response()->json(['error' => 'No posees permisos de portador de llaves en este momento.'], 403);
         }
 
@@ -53,7 +55,7 @@ class KeyTransferController extends Controller
     {
         $user = Auth::user();
 
-        $transfers = KeyTransfer::with('sender:id,name,role,portadorLlaves')
+        $transfers = KeyTransfer::with(['sender:id,name,role', 'sender.employee:user_id,portadorLlaves'])
             ->where('receiver_id', $user->id)
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
@@ -77,18 +79,27 @@ class KeyTransferController extends Controller
         $status = $request->input('status');
 
         if ($status === 'accepted') {
-            DB::transaction(function () use ($transfer, $user) {
+            try {
+                DB::transaction(function () use ($transfer, $user) {
                 // Obtener el emisor
                 $sender = User::findOrFail($transfer->sender_id);
-                
-                // Traspaso de roles de llaves
-                $llavesType = $sender->portadorLlaves ?? 'Principal';
-                
-                $user->portadorLlaves = $llavesType;
-                $user->save();
 
-                $sender->portadorLlaves = 'Ninguno';
-                $sender->save();
+                // portadorLlaves vive en `employees`, no en `users`.
+                $senderEmployee = $sender->employee;
+                $receiverEmployee = $user->employee;
+
+                if (!$senderEmployee || !$receiverEmployee) {
+                    throw new \Exception('No se encontró el perfil de empleado del emisor o del receptor.');
+                }
+
+                // Traspaso de roles de llaves
+                $llavesType = $senderEmployee->portadorLlaves ?? 'Principal';
+
+                $receiverEmployee->portadorLlaves = $llavesType;
+                $receiverEmployee->save();
+
+                $senderEmployee->portadorLlaves = 'Ninguno';
+                $senderEmployee->save();
 
                 $transfer->status = 'accepted';
                 $transfer->save();
@@ -103,7 +114,10 @@ class KeyTransferController extends Controller
                     })
                     ->where('status', 'pending')
                     ->update(['status' => 'rejected']);
-            });
+                });
+            } catch (\Exception $e) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
 
             return response()->json([
                 'message' => 'Transferencia aceptada. Ahora eres portador de llaves.',

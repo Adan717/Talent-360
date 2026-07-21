@@ -115,7 +115,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     });
 
     // DB Initialization / Reset (QA Simulator helper)
-    Route::middleware(['auth:sanctum', 'role:platform_admin,admin'])->group(function () {
+    // ⚠️ Solo platform_admin: estos endpoints hacen TRUNCATE sin filtrar por tenant_id
+    // (borran datos de TODAS las empresas de la plataforma, no solo la del que llama).
+    Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
         if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
             Route::post('/sync/init', [ClockController::class, 'initDb']);
             Route::post('/sync/reset', [ClockController::class, 'resetDb']);
@@ -287,12 +289,18 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/me/rest-day-requests', [AuthController::class, 'getRestDayRequests']);
         Route::post('/me/fcm-token', [AuthController::class, 'updateFcmToken']);
         Route::post('/me/update-security', [AuthController::class, 'updateSecurity']);
+        Route::put('/me/pre-shift-alarm', [AuthController::class, 'updatePreShiftAlarm']);
+        Route::put('/me/security-pin', [AuthController::class, 'updateSecurityPin']);
         Route::get('/user', function (Request $request) {
             return $request->user();
         });
 
         // Reloj Checador (Registro de asistencia)
         Route::post('/clock/punch', [TimeEntryController::class, 'punch']);
+        Route::post('/clock/punch-batch', [TimeEntryController::class, 'punchBatch']);
+        Route::get('/clock/offline-secret', [TimeEntryController::class, 'offlineSecret']);
+        Route::post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
+        Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
 
         // Apertura de tienda (Operativa del Reloj Checador)
         Route::get('/features/company', [StoreOpeningController::class, 'getCompanyFeatures']);
@@ -301,6 +309,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/store-opening/report-absence', [StoreOpeningController::class, 'reportAbsence']);
         Route::post('/store-opening/report-late', [StoreOpeningController::class, 'reportLate']);
         Route::post('/store-opening/report-store-still-closed', [StoreOpeningController::class, 'reportStoreStillClosed']);
+        Route::post('/store-opening/closing-checklist', [StoreOpeningController::class, 'closingChecklist']);
 
         // Sincronización de tareas y checklists
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);

@@ -373,6 +373,74 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Configura el PIN de seguridad del empleado (distinto del pin_code de invitación
+     * de onboarding). Se usa para autorizar acciones sensibles como la co-validación
+     * de testigos en "Apertura de Emergencia". Requiere la contraseña actual, igual
+     * que changePassword, por tratarse de un secreto que habilita acciones con peso
+     * legal/de nómina.
+     */
+    public function updateSecurityPin(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'pin' => ['required', 'string', 'regex:/^\d{4,6}$/'],
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La contraseña actual es incorrecta.'
+            ], 422);
+        }
+
+        $employee = $user->employee;
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tu cuenta no tiene un perfil de empleado asociado.'
+            ], 422);
+        }
+
+        $employee->security_pin = Hash::make($request->pin);
+        $employee->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'PIN de seguridad actualizado.'
+        ]);
+    }
+
+    /**
+     * Configura la alarma de traslado pre-turno del perfil del usuario
+     * ("Configura tu alarma" — sección 3/5 del dialer). El backend solo persiste
+     * la preferencia; la notificación en sí la dispara el frontend con la Notification API.
+     */
+    public function updatePreShiftAlarm(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'minutes' => ['nullable', 'integer', \Illuminate\Validation\Rule::in([15, 30, 45, 60])],
+        ]);
+
+        $minutes = $validated['minutes'] ?? null;
+
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('id', $user->id)
+            ->update([
+                'pre_shift_alarm_minutes' => $minutes,
+                'updated_at' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'pre_shift_alarm_minutes' => $minutes,
+        ]);
+    }
+
     public function requestRestDay(Request $request)
     {
         $user = $request->user();

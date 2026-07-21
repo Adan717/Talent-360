@@ -1,48 +1,183 @@
-# Funcionamiento del Dial (Reloj Checador) - Talent360
+# Especificación Funcional y Operativa del Dial (Reloj Checador) — Talent360
 
-Este documento detalla el funcionamiento lógico y operativo del gran botón circular (Dialer) en el checador de Talent360, estructurando los 20 estados en orden cronológico de jornada y catalogando los botones secundarios.
-
----
-
-## 1. Matriz Cronológica de los 20 Estados por Momento de Uso
-
-Esta matriz organiza secuencialmente todos los estados que experimenta el checador a lo largo del ciclo diario, indicando su diseño y un caso de uso práctico:
-
-| Etapa de la Jornada | # | Estado del Checador | Visual en Frontend (Etiqueta, Icono y Color) | Ejemplo de Uso Práctico / Reglas de Validación |
-| :--- | :-: | :--- | :--- | :--- |
-| **A. Pre-Jornada** <br>*(Día Inactivo / Planificación)* | **1** | **Día de Descanso** (🌴) | `'DÍA DE DESCANSO'` <br>Icono: 🌴 <br>Color: Gris / Slate | Pedro abre su app en domingo (su día libre). El dial está gris con un sol y no puede fichar entrada, evitando registros accidentales de asistencia. |
-| | **2** | **Día Feriado Obligatorio LFT** (📅) | `'DÍA FERIADO (LFT)'` <br>Icono: 📅 <br>Color: Índigo pálido / Slate | El 1 de mayo (Día del Trabajo), Ana abre su app. El dial se bloquea por ley con un icono de calendario y el texto "DÍA FERIADO (LFT)", previniendo marcajes ordinarios. |
-| | **3** | **Ausencia Registrada** (🚷) | `'Ausencia Registrada'` <br>Icono: 🚷 <br>Color: Rojo pálido deshabilitado | Francisco reporta a las 7:15 AM que tiene fiebre. Al confirmar, su dial se bloquea en rojo pálido con `🚷` por el resto del día para impedir que intente fichar por error. |
-| **B. Pre-Jornada en Trayecto** <br>*(Antes del Turno)* | **4** | **Reportar Incidencia** (⚠️) | `'⚠️ Reportar Ausencia/Retardo'` <br>Icono: ⚠️ <br>Color: Naranja/Ámbar pulse | Ana va en camino a las 8:05 AM y ve que su autobús se descompuso. Oprime el botón de alerta, selecciona "Llegaré tarde" e indica su hora estimada (09:00 AM) para notificar al supervisor. |
-| | **5** | **Apertura Activa en Camino** (⚠️/🗝️) | `'Reportar Incidencia'` <br>Icono: ⚠️ <br>Color: Naranja/Ámbar brillante | Tras la falta de Francisco, María es asignada como encargada suplente. Como está a 2 km (fuera de GPS), su dial se muestra naranja pidiendo que se dirija al local para abrir. |
-| | **6** | **Cercanía / Ya estoy aquí** (📍) | `'📍 Ya llegué (Cerca de área)'` <br>Icono: 📍 <br>Color: Verde Esmeralda pulse | Pedro llega a las 8:20 AM. Oprime el dial verde "Ya llegué" para registrar su cercanía física, asegurándole amnistía si el encargado con llaves llega tarde a abrir físicamente. |
-| **C. Hora de Entrada** <br>*(Apertura de Tienda)* | **7** | **Esperando Apertura** (⏳) | `'⏳ Esperando Apertura'` <br>Icono: ⏳ <br>Color: Gris deshabilitado | Ana llega a las 8:25 AM. Como la tienda está cerrada, su dial se muestra gris bloqueado con la leyenda "Esperando Apertura por Francisco" para informarle que debe esperar en la puerta. |
-| | **8** | **Espera con Suplente** (⏳) | `'⏳ Esperando Apertura'` <br>Icono: ⏳ <br>Color: Gris deshabilitado | Al registrarse la falta de Francisco, el sistema asigna a María. La app de Ana se actualiza reactivamente a "Esperando Apertura por María" dándole visibilidad sobre quién abrirá. |
-| | **9** | **Llamada a Encargado Suplente** (📞) | Button secundario: `'📞 Llamar a Encargado'` <br>Icono: Phone <br>Color: Slate/Indigo | Son las 8:35 AM y la tienda sigue cerrada. Ana presiona el botón secundario "Llamar a Encargado" abajo del dial, abriéndose el marcador nativo para llamar a María y coordinarse. |
-| | **10** | **Reportar Tienda Cerrada** (🚨) | `'🚨 Notificar Tienda Cerrada'` <br>Icono: 🚨 <br>Color: Naranja/Rojo pulse | A las 8:31 AM, la tienda sigue cerrada. Pedro oprime "Notificar Tienda Cerrada", enviando una alerta al administrador y solicitando amnistía para el equipo. |
-| | **11** | **Abrir Tienda** (🗝️) | `'Abrir Tienda'` <br>Icono: 🗝️ <br>Color: Morado/Violeta pulse | María llega al perímetro a las 8:26 AM. Su dial cambia a morado. Al oprimirlo, completa un checklist rápido de cortinas y cámaras, registrando la apertura. |
-| | **12** | **Registrar Entrada** (🟢) | `'Registrar Entrada'` <br>Icono: 🟢 <br>Color: Verde/Slate | Pedro ve que María ya abrió. Su dial cambia a verde con una huella. Lo oprime y el sistema registra su entrada a tiempo a las 8:28 AM. |
-| | **13** | **Tolerancia Vencida / Acceso Bloqueado** (🔒) | `'🔒 Acceso Bloqueado'` <br>Icono: 🔒 <br>Color: Slate oscuro / Rojo pulse | Si el empleado llega después del límite de tolerancia, el dial se bloquea. Al hacer clic, exige el **PIN** (Free) o **QR Dinámico** (Pro) de supervisor para liberar el checador y permitir la marcación tardía. Si acumula 3 retardos sin justificar, se le bloquea hasta terminar el curso de Puntualidad en la Academia. |
-| **D. Durante el Turno** <br>*(Jornada Activa)* | **14** | **Iniciar Comida** (🍔) | `'Iniciar Comida'` <br>Icono: 🍔 <br>Color: Amarillo/Ámbar | A las 2:00 PM, Ana oprime "Iniciar Comida". El checador guarda `meal_start` y el botón cambia a descanso de comida. |
-| | **15** | **Regresar de Comida** (🏃) | `'Terminar Comida'` <br>Icono: 🏃 <br>Color: Verde Esmeralda pulse | A las 3:00 PM, Ana oprime el dial verde que ahora dice "Regresar de Comida" para indicar que volvió de comer. |
-| | **16** | **Descanso Ley Silla** (🧘) | `'Descanso'` <br>Icono: 🧘 <br>Color: Púrpura/Violeta pulse | Inicia el descanso de 15 minutos en piso (Plan Pro). **El checador sugiere tareas operativas que pueden realizarse sentado** (cursos breves de Academia, lecturas de políticas o cuestionarios diarios) para asegurar el descanso de piernas. |
-| | **17** | **Regresar de Descanso** (🏃) | `'Terminar Descanso'` <br>Icono: 🏃 <br>Color: Índigo/Slate | Expirados los 15 minutos, Pedro oprime "Regresar de Descanso" y vuelve a laborar de pie. |
-| **E. Cierre de Turno** | **18** | **Entrega de Turno** (🗝️) | `'Entrega de Turno'` <br>Icono: 🗝️ <br>Color: Cyan/Turquesa pulse | A las 8:50 PM, antes de salir, María oprime "Entrega de Turno", selecciona al encargado de mañana y transfiere las llaves virtuales de la tienda. |
-| | **19** | **Registrar Salida** (🚪) | `'Registrar Salida'` <br>Icono: 🚪 <br>Color: Rojo/Rose brillante | A las 9:00 PM, Ana oprime "Registrar Salida", realiza la evaluación de clima laboral y cierra su turno. |
-| | **20** | **Jornada Finalizada** (🏁) | `'Jornada Finalizada'` <br>Icono: 🏁 <br>Color: Gris deshabilitado | Al salir de la tienda, Ana ve su dial en gris mostrando "Jornada Finalizada". Ya no puede realizar marcajes accidentales de entrada/salida. |
+Este documento constituye la **documentación oficial completa** del funcionamiento lógico, operativo y visual del Dialer principal y los botones secundarios del **Reloj Checador PWA** en el ecosistema Talent360.
 
 ---
 
-## 2. Matriz de Botones Secundarios / Adicionales del Checador
+## 1. Arquitectura & Protocolo de Alta Disponibilidad (Offline-First)
 
-Estos son los botones que aparecen alrededor o debajo del dial principal del checador según el contexto del empleado:
+### 1.1 Persistencia Offline (Sin Energía Eléctrica / Sin Internet)
+- **Fichaje Offline Criptográfico (`IndexedDB`)**: En ausencia de red o energía eléctrica en la sucursal, la PWA funciona autónomamente. Al pulsar el dialer, la marca se registra localmente con:
+  - Timestamp UTC del dispositivo.
+  - Coordenadas GPS cacheadas de la puerta.
+  - Firma digital criptográfica de integridad (`offline_stamp`).
+- **Cola de Sincronización Asíncrona (`syncQueue`)**: Al restablecerse la conexión, los eventos en cola se transmiten al backend Laravel vía `/clock/punch-batch` dentro de una sola transacción `DB::transaction()`.
+- **Efecto Laboral (Art. 56, 132 y 133 LFT)**: Fichajes offline con *Declaración de Eventualidad (Sin Luz)* devengan el **100% del salario de la jornada**, eximiendo a los trabajadores de faltas, retardos o pérdidas de bonos.
+
+---
+
+## 2. Matriz Cronológica Maestra de los 23 Estados del Dialer
+
+| # | Estado Interno (`clockState`) | Condición / Horario | Ícono Lucide | Texto Principal (En Dial) | Subtexto Informativo | Botones Secundarios Visibles | Acción al Presionar | Efecto Laboral / LFT | Siguiente Estado |
+| :---: | :--- | :--- | :---: | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | `inactive` | Retardos acumulados >= 3 | `🔒` `Fingerprint` | **🔒 Fichaje Bloqueado** | *Acumulaste 3 retardos. Completa curso.* | `🎓 Ir a la Academia` | Bloqueado | Exige curso obligatorio | `inactive` |
+| **2** | `inactive` | Día Feriado Oficial LFT | `📅` `Sun` | **DÍA FERIADO (LFT)** | *Natalicio Benito Juárez. Descanso de Ley.* | `⚡ Laborar Horas Extras` | Bloqueado (Salvo Overtime) | Pago Triple si labora | `inactive` |
+| **3** | `inactive` | `restDay === currentDay` | `🌴` `Sun` | **DÍA DE DESCANSO** | *Día libre programado* | `⚡ Laborar Horas Extras` | Bloqueado (Salvo Overtime) | Descanso pagado | `inactive` |
+| **4** | `inactive` | 07:00 AM – Límite de aviso | `🏪` `Store` | **TIENDA CERRADA** | *Reportar Falta / Retardo disponible* | `⚠️ Reportar Incidencia` | Abre modal de reporte | Permite aviso en trayecto | `absent` / `inactive` |
+| **5** | `inactive` | Encargado reportó falta/retardo | `📞` `Phone` | **Llamar a Suplente de Llaves** | *Pasar estafeta de apertura a suplente* | `📞 Marcar a Suplente` | Llama al suplente + Log Matrix | Registra evidencia de sustitución | `handover_pending` |
+| **6** | `inactive` | En trayecto hacia sucursal (> 15m) | `📍` `MapPin` | **En Camino a Sucursal** | *Reportar incidencia si ocurre percance* | `⚠️ Reportar Incidencia` | Abre modal de reporte | Cobertura en traslado | `inactive` |
+| **7** | `inactive` | Empleado sin llaves en puerta (<= 15m)| `📍` `LogIn` | **📍 Ya llegué** | *Registra llegada para amnistía* | `📞 Llamar Encargado Llaves` (*Sólo llaves*) | Registra llegada presencial | **Amnistía Automática por Encargado** | `waiting_room` |
+| **8** | `inactive` | Encargado de llaves en puerta (<= 15m) | `🗝️` `Key`+`Store` | **Abrir Tienda** | *Horario oficial de apertura. Suma bono.* | `📞 Contactar Suplente` | Abre sucursal + Auto check-in | **Suma Bono de Cumplimiento** | `active` (`storeStatus='open'`) |
+| **9** | `inactive` | Suplente en puerta + Apertura vencida| `⚠️` `Key` | **Apertura de Emergencia** | *Requiere 2 testigos presenciales* | `👥 Co-Validación Testigos` | Solicita PIN/Firma de 2 compañeros | Autoriza apertura contingente | `active` (`storeStatus='open'`) |
+| **10**| `contingency_offline`| Sin energía / Sin internet en tienda | `⚡` `AlertTriangle` | **Declarar Eventualidad** | *Falla eléctrica / Sin red en sucursal* | `⚡ Declarar Contingencia` | Registra ficha de contingencia | **100% Salario Pagado LFT + Bonos** | `active` / `finished` |
+| **11**| `inactive` | Tienda Cerrada (Empleado común) | `⏳` `Hourglass` | **⏳ Esperando Apertura** | *Apertura por: Carlos (Encargado)* | `📞 Llamar Encargado Llaves` (*Sólo llaves*) | Deshabilitado | Espera apertura en puerta | `inactive` |
+| **12**| `inactive` / `waiting_room`| Tienda Abierta (Horario normal) | `🟢` `LogIn` | **Registrar Entrada** | *Fichaje ordinario de entrada* | `🚨 Emergencia / Pánico` | Ejecuta `check_in` | Jornada laboral iniciada | `active` |
+| **13**| `inactive` | Tolerancia vencida post-apertura | `🔒` `MapPin` | **🔒 Acceso Bloqueado** | *Tolerancia vencida. Requiere QR supervisor.*| `🔑 Solicitud de Desbloqueo` | Exige QR/PIN de supervisor | Entrada con penalización | `active` (con retardo) |
+| **14**| `active` | Salida autorizada por trámite/banco | `🚶` `LogIn` | **Registrar Reingreso** | *Pase de salida temporal (Regreso est. 30m)* | `🚶 Salida Temporal` | Registra reingreso de comisión | Tiempo laboral continuo | `active` |
+| **15**| `active` | Contingencia ambiental/eléctrica | `🛡️` `AlertTriangle` | **Modo Contingencia Activo** | *Penalizaciones congeladas por administración*| `ℹ️ Detalles Contingencia` | Informativo (Pausa retardos) | **100% Salario Pagado LFT** | `active` |
+| **16**| `active` | En turno (< 90 min desde entrada) | `🍔` `Coffee` | **Iniciar Comida** | *Disponible a las 10:30 AM* | `🔄 Intercambiar Comida` | Deshabilitado hasta cumplir ventana | Jornada laboral activa | `active` |
+| **17**| `active` | En turno (> 90 min / slot reservado) | `🍔` `Coffee` | **Iniciar Comida** | *Haz clic para iniciar tu comida* | `🔄 Intercambiar Comida` | Ejecuta `meal_start` | Inicio descanso alimentos | `meal` |
+| **18**| `meal` | En horario de comida | `🏃` `Utensils` | **Terminar Comida** | *Haz clic al regresar a la sucursal* | `🍔 Extensión de Comida` | Ejecuta `meal_end` | Fin descanso alimentos | `active` |
+| **19**| `active` | Post-comida (Plan PRO) | `🧘` `Armchair` | **Descanso** | *Descanso Ley Silla (15 min)* | `🧘 Asignación Tarea Sentado` | Ejecuta `break_start` | Descanso ergonomía Ley Silla | `short_break` |
+| **20**| `short_break` | En descanso Ley Silla | `🏃` `Armchair` | **Terminar Descanso** | *Haz clic al reincorporarte* | Informativo | Ejecuta `break_end` | Reincorporación laboral | `active` |
+| **21**| `active` | Cierre de turno (shiftEnd - 15m) (PRO) | `🗝️` `Key` | **Entrega de Turno** | *Realizar arqueo y entrega de llaves* | `🗝️ Delegar Llaves` | Abre modal de arqueo y delegación | Transfiere responsabilidad caja | `active` (`isHandoverCompleted`) |
+| **22**| `active` | Hora de salida (con checklist cierre) | `🚪` `LogOut` | **Registrar Salida** | *Checklist cierre seguro (luces/caja)* | `🚪 Salida Anticipada` | Checklist 3 ticks + `check_out` | Jornada laboral concluida | `finished` |
+| **23**| `finished` | Post `check_out` del mismo día | `🏁` `CheckCircle` | **Jornada Finalizada** | *Turno concluido hoy.* | `⭐ Evaluación de Clima` | Deshabilitado (Previene dobles marcas)| Cierre diario verificado | `finished` |
+
+---
+
+## 3. Catálogo de Textos e Íconos Editables del Sistema
+
+| Componente Visual | Ícono Lucide | Texto Principal | Subtexto Informativo | Ubicación en Código |
+| :--- | :---: | :--- | :--- | :--- |
+| **Perfil Usuario** | `Bell` | **Configura tu alarma** | *Programa tu alerta previa de trayecto (15, 30, 45, 60m)* | `RelojVisual.tsx` (Ajustes Perfil) |
+| **Dialer Pre-Turno** | `Store` | **TIENDA CERRADA** | *Reportar Falta / Retardo disponible* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Suplente** | `Phone` | **Llamar a Suplente de Llaves** | *Pasar estafeta de apertura a suplente* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Trayecto** | `MapPin` | **En Camino a Sucursal** | *Reportar incidencia si ocurre algún percance* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Amnistía** | `LogIn` | **📍 Ya llegué** | *Registrar llegada para asegurar amnistía* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Apertura** | `Key`+`Store` | **Abrir Tienda** | *Horario oficial de apertura. Suma bono.* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Emergencia**| `Key`+`AlertTriangle`| **Apertura de Emergencia** | *Requiere co-validación de 2 testigos presenciales* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Sin Luz** | `AlertTriangle` | **Declarar Eventualidad** | *Falla eléctrica / Sin internet en tienda* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Entrada** | `LogIn` | **Registrar Entrada** | *Fichaje ordinario de entrada* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Reingreso** | `LogIn` | **Registrar Reingreso** | *Pase de salida temporal (Regreso est. 30m)* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Comida** | `Coffee` | **Iniciar Comida** | *Haz clic para iniciar tu descanso de comida* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Fin Comida**| `Utensils` | **Terminar Comida** | *Haz clic al regresar a la sucursal* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Ley Silla** | `Armchair` | **Descanso** | *Descanso Ley Silla (15 min)* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Handover** | `Key` | **Entrega de Turno** | *Realizar arqueo y entrega de llaves* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Salida** | `LogOut` | **Registrar Salida** | *Checklist cierre seguro (luces/caja)* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Dialer Concluido** | `CheckCircle` | **Jornada Finalizada** | *Turno concluido hoy.* | `useClockEngine.tsx` (`getButtonProps`) |
+| **Botón Secundario** | `Phone` | **Llamar a Encargado de Llaves**| *Exclusivo para titulares y suplentes de llaves* | `DialPrincipal.tsx` (Botón Secundario) |
+| **Botón Secundario** | `AlertTriangle` | **Emergencia / Pánico** | *Activar protocolo de bloqueo por pánico* | `DialPrincipal.tsx` (Botón Secundario) |
+
+---
+
+## 4. 🎬 Ejemplo Práctico Hipotético Completo (Punto a Fin)
+
+### **Personajes del Escenario:**
+- **Carlos Ramírez:** Encargado Titular de Llaves (Horario Oficial Apertura: 08:30 AM).
+- **Mateo Fernández:** Suplente de Llaves.
+- **Sofía López:** Colaboradora / Ayudante (Horario: 08:30 AM).
+- **Miguel Ángel:** Colaborador / Ayudante (Horario: 08:30 AM).
+
+---
+
+### ⏱️ **Paso 1: 07:45 AM — Alarma de Traslado en Perfil ("Configura tu alarma")**
+- En la PWA de su celular, Carlos entra a su perfil a la sección **"Configura tu alarma"** (ajustada a 45 min antes de su `shiftStart`).
+- A las 07:45 AM, su teléfono emite la notificación push local: *`⏰ Es hora de salir hacia Sucursal Centro para asegurar tu Bono de Apertura.`*
+- Su dialer muestra el ícono `Store` con **"TIENDA CERRADA"** y la opción **"Reportar Falta / Retardo"**.
+
+---
+
+### ⏱️ **Paso 2: 08:10 AM — Aproximación GPS en Trayecto**
+- Carlos aborda el transporte público. El GPS detecta movimiento en camino (> 15m).
+- Su dialer muestra: Ícono `MapPin` (amarillo) + **"En Camino a Sucursal"**, manteniendo accesible el botón de reporte por si ocurre un percance.
+
+---
+
+### ⏱️ **Paso 3: 08:18 AM — Llegada Previa de Sofía & Amnistía por Retardo de Encargado**
+- Sofía llega a la puerta de la sucursal a las 08:18 AM. La tienda sigue cerrada porque Carlos viene atascado en el tráfico.
+- Sofía ve en su dialer: Ícono `LogIn` (verde con pulso) + **"📍 Ya llegué"**. Como es colaboradora común (sin llaves), NO ve el botón de llamadas a menos que fuera suplente.
+- Sofía presiona **"📍 Ya llegué"** a las 08:18 AM. El sistema guarda su presencia física en puerta. Esto le otorga **Amnistía Automática de Puntualidad**, garantizando su salario y bono al 100% sin importar la hora a la que abra el encargado.
+
+---
+
+### ⏱️ **Paso 4: 08:32 AM — Caso Contingencia Sin Luz al Abrir**
+- Carlos llega a la puerta a las 08:32 AM, pero se encuentra con que **no hay energía eléctrica ni señal de internet en la plaza comercial**.
+- Carlos y Sofía abren la PWA. Al no detectar red, la aplicación opera en modo **Offline-First**.
+- Carlos presiona **"Declarar Eventualidad"** (`⚡ AlertTriangle`) y selecciona: *`⚡ Sin Energía Eléctrica en Sucursal`*.
+  1. Su marca de llegada y apertura se guarda en `IndexedDB` local con firma criptográfica.
+  2. Sofía y Miguel también presionan **"Declarar Eventualidad"** en sus celulares.
+  3. El sistema de nómina pre-clasifica la jornada como **"Jornada Causal por Fuerza Mayor (100% Pagada LFT)"**, congelando retardos y protegiendo bonos.
+
+---
+
+### 🚨 **Paso 5 (Escenario Alternativo): 08:45 AM — Apertura de Emergencia por Suplente con 2 Testigos Presenciales**
+- Si Carlos hubiera tenido un accidente y no se presenta:
+  1. Transcurridos 15 minutos de la hora oficial (08:45 AM), Mateo (Suplente de Llaves) presente en puerta presiona **"Apertura de Emergencia"** (`Key` + `AlertTriangle`).
+  2. El dialer despliega el modal de Co-Validación exigiendo la confirmación presencial de **2 testigos presentes en puerta**.
+  3. Sofía y Miguel ingresan su PIN en la pantalla de Mateo.
+  4. Con los 2 PINs validados, la tienda se abre, Mateo asume la responsabilidad del turno y se genera una alerta prioritaria en la Matrix a Recursos Humanos.
+
+---
+
+### ⏱️ **Paso 6: 01:30 PM — Comida & Ley Silla**
+- A las 01:30 PM (más de 90 min de trabajo), Sofía presiona **"Iniciar Comida"** (`Coffee`). Regresa a las 02:15 PM y presiona **"Terminar Comida"** (`Utensils`).
+- A las 03:30 PM, Sofía presiona **"Descanso"** (`Armchair`), disfrutando sus 15 minutos de ergonomía Ley Silla (Plan PRO).
+
+---
+
+### ⏱️ **Paso 7: 04:50 PM — Entrega de Turno**
+- A las 04:50 PM (10 min antes de la salida), Carlos (o Mateo) ve habilitado en su dialer **"Entrega de Turno"** (`Key` cyan animado).
+- Ejecuta el arqueo de caja y delega las llaves al encargado del turno vespertino.
+
+---
+
+### ⏱️ **Paso 8: 05:00 PM — Checklist de Cierre Seguro & Salida Final**
+- A las 05:00 PM, Sofía presiona **"Registrar Salida"** (`LogOut`).
+- El dialer despliega el **Checklist Exprès de Cierre Seguro** (5 segundos):
+  - [x] *Luces y aires acondicionados apagados.*
+  - [x] *Caja fuerte y valores resguardados.*
+  - [x] *Alarma y cortina de seguridad activadas.*
+- Al marcar los 3 ticks, se ejecuta `check_out` y el dialer conmuta permanentemente a **"Jornada Finalizada"** (`CheckCircle` 🏁).
+
+---
+
+## 5. Botones Secundarios / Adicionales del Checador
 
 | Icono/Acción | Nombre del Botón | Condición de Aparición | Comportamiento / Función Operativa | Opciones de Emergencia y Ejemplo de Funcionamiento |
 | :---: | :--- | :--- | :--- | :--- |
-| 🚨 | **Botón de Pánico** | Visible todo el tiempo abajo del dial principal. | Abre modal para notificar emergencias críticas, bloqueando la pantalla del checador y alertando a RRHH / Directivos. | Desglosa 4 opciones específicas:<br>1. **Robo / Asalto**: Alertas de atraco con geolocalización activa.<br>2. **Incendio**: Llama interna y bloqueo para salvaguarda.<br>3. **Emergencia Médica**: Solicitud de ambulancia rápida.<br>4. **Fallo General de Energía**: Reporte de corte de luz.<br>*Ejemplo:* Si ocurre un asalto a las 4:00 PM, el cajero oprime el botón rojo de pánico y selecciona "Robo / Asalto", bloqueando el checador e inyectando un evento crítico en la bitácora del supervisor. |
-| 🍔/🔄 | **Intercambiar Comida** | Estado de jornada activa (`clockState === 'active'`) si cuenta con reserva de comedor. | Abre el modal de Swaps permitiendo transferir su turno de comida exclusivamente a compañeros del mismo nivel (`job_role_id`). | *Ejemplo:* Ana tiene su comida de 2:00 a 3:00 PM pero prefiere salir de 3:00 a 4:00 PM. Oprime el botón de intercambio y le envía una solicitud a Pedro (asesor de ventas como ella) para cambiar turnos de comedor. |
+| 🚨 | **Botón de Pánico** | Visible todo el tiempo en el checador. | Abre modal para notificar emergencias críticas, bloqueando la pantalla del checador y alertando a RRHH / Directivos. | Desglosa 4 opciones específicas:<br>1. **Robo / Asalto**: Alertas de atraco con geolocalización activa.<br>2. **Incendio**: Llama interna y bloqueo para salvaguarda.<br>3. **Emergencia Médica**: Solicitud de ambulancia rápida.<br>4. **Fallo General de Energía**: Reporte de corte de luz.<br>*Ejemplo:* Si ocurre un asalto a las 4:00 PM, el cajero oprime el botón rojo de pánico y selecciona "Robo / Asalto", bloqueando el checador e inyectando un evento crítico en la bitácora del supervisor. |
+| 📞 | **Llamar a Encargado de Llaves** | Exclusivo para titulares o suplentes de llaves cuando la tienda está cerrada. | Abre el marcador de teléfono nativo del celular para llamar directamente al encargado titular/suplente responsable de abrir. | *Ejemplo:* El suplente oprime el botón cuando la tienda sigue cerrada pasadas las 8:30 AM para marcarle al encargado asignado (obteniendo el teléfono mediante `responsibleUser.phone`) y coordinar la apertura. |
+| 🍔/🔄 | **Intercambiar Comida** | Estado de jornada activa (`clockState === 'active'`) si cuenta con reserva de comedor. | Abre el modal de Swaps permitiendo transferir su turno de comida exclusivamente a compañeros del mismo nivel (`job_role_id`). | *Ejemplo:* Ana tiene su comida de 2:00 a 3:00 PM pero prefiere salir de 3:00 a 4:00 PM. Oprime el botón de intercambio y le envía una solicitud a Pedro para cambiar turnos de comedor. |
 | 🚪 | **Salida Anticipada** | Estado de jornada activa antes del fin oficial de turno. | Permite registrar check-out temprano. Requiere escanear código QR de supervisor en planes Pro, o llenar causa en planes Free. | *Ejemplo:* Pedro debe retirarse a las 3:05 PM por una emergencia. Presiona "Salida Anticipada" y le pide a María (supervisora) que escanee su código QR para autorizar la salida temprana sin penalizaciones de nómina. |
 | ➕/⏰ | **Laborar Horas Extras** | Estado `"DÍA DE DESCANSO"` o `"DÍA FERIADO (LFT)"`. | Permite desbloquear el dial checador para colaboradores en su día libre que asisten a cubrir un turno extra. | *Ejemplo:* La tienda necesita apoyo en el día feriado del 1 de mayo. Ana asiste a la tienda, oprime "Laborar Horas Extras" en su dial bloqueado de feriado, liberando el checador para registrar su jornada y devengar el sueldo triple por ley. |
-| 📞 | **Llamar a Encargado** | Estado `"Esperando Apertura"` (tanto normal como suplente). | Abre el marcador de teléfono nativo del celular para llamar directamente al encargado responsable de abrir. | *Ejemplo:* El empleado oprime el botón cuando la tienda sigue cerrada pasadas las 8:30 AM para marcarle al supervisor asignado (obteniendo el teléfono mediante `responsibleUser.phone`) y coordinar la apertura. |
 | 🔓 | **Apertura Forzosa** | Encargados fuera de geocerca en hora de apertura. | Permite saltarse la regla de perímetro con amnistía temporal si el supervisor tiene permisos administrativos habilitados. | *Ejemplo:* La señal GPS falla en la sucursal. Francisco (gerente) oprime "Apertura Forzosa", lo cual le permite abrir la tienda y fichar entrada justificando su posición mediante bitácora administrativa. |
 | 📝 | **Justificantes / Códigos** | Fichajes con retardo o bloqueos. | Permite validar códigos de autorización del supervisor o adjuntar justificantes al instante para mitigar deducciones de nómina. | *Ejemplo:* María llegó tarde por tráfico pesado. Al fichar con retardo mediante PIN del supervisor, oprime "Justificantes" y adjunta una foto del tráfico de Google Maps para que el administrador le anule el descuento de salario de forma digital. |
+
+---
+
+## 6. Especificaciones de Código e Ingeniería Fullstack
+
+### [Frontend / React + Zustand]
+
+#### [MODIFY] [RelojVisual.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj/RelojVisual.tsx)
+- Integrar la sección **"Configura tu alarma"** en los ajustes del perfil de usuario.
+- Integrar los widgets superiores **"Mis Bonos & Métricas en Vivo"** y **"¿Quién está en tienda?"**.
+- Construir los modales:
+  1. **Co-Validación de 2 Testigos Presenciales** para apertura de emergencia.
+  2. **Checklist Exprès de Cierre Seguro** (Luces, caja fuerte, alarma) al pulsar salida.
+
+#### [MODIFY] [DialPrincipal.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj/DialPrincipal.tsx)
+- Renderizar los 23 estados del dialer conforme a la Matriz Maestra.
+- Filtrar el botón secundario `Phone` (Llamar a Encargado de Llaves) únicamente cuando `isUserKeyholder` sea verdadero.
+
+#### [MODIFY] [useClockEngine.tsx](file:///c:/Users/Servidor/Desktop/Talent360/Frontend/src/components/reloj/useClockEngine.tsx)
+- Implementar la lógica de geofencing progresivo (`En Camino` vs `En Puerta`).
+- Agregar `handleEmergencyStoreOpen(witness1Pin, witness2Pin)`.
+- Manejar la persistencia offline en `IndexedDB` con hash criptográfico local y sincronización por `syncQueue`.
+- Implementar `handleContingencyDeclaration(reason)` para fichajes sin luz/sin red.
+
+#### [Backend / Laravel]
+- Crear la migración `add_pre_shift_alarm_to_users_table`.
+- Controlador `ClockController@punchBatch`: Procesar transacciones offline dentro de `DB::transaction()` asegurando inmutabilidad histórica.
+- Regla de Nómina: Clasificar automáticamente las fichas de contingencia como **100% Pagadas LFT**.

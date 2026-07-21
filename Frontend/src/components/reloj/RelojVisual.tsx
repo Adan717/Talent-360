@@ -3492,9 +3492,10 @@ export default function RelojVisual({
                         onEarlyDepartureClick={handleEarlyDepartureClick}
                         onOvertimeClick={handleOvertimeClick}
                         onPanicClick={() => setShowPanicModal(true)}
+                        isKeyholder={keyholders.includes(currentUser?.id) || Boolean(currentUser?.portadorLlaves && currentUser?.portadorLlaves !== 'ninguno')}
                         onCallManagerClick={() => {
                           const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
-                          showCustomAlert(`📞 Contactando al Encargado: ${respUser?.name || 'Titular'}`);
+                          showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                         }}
                       />
                     </div>
@@ -3886,9 +3887,10 @@ export default function RelojVisual({
                       onEarlyDepartureClick={handleEarlyDepartureClick}
                       onOvertimeClick={handleOvertimeClick}
                       onPanicClick={() => setShowPanicModal(true)}
+                      isKeyholder={keyholders.includes(currentUser?.id) || Boolean(currentUser?.portadorLlaves && currentUser?.portadorLlaves !== 'ninguno')}
                       onCallManagerClick={() => {
                         const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
-                        showCustomAlert(`📞 Contactando al Encargado: ${respUser?.name || 'Titular'}`);
+                        showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
                     />
 

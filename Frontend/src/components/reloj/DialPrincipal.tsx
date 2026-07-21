@@ -50,6 +50,7 @@ interface DialPrincipalProps {
   onOvertimeClick?: () => void;
   onCallManagerClick?: () => void;
   onPanicClick?: () => void;
+  isKeyholder?: boolean;
 }
 
 export default function DialPrincipal({
@@ -77,10 +78,17 @@ export default function DialPrincipal({
   onEarlyDepartureClick,
   onOvertimeClick,
   onCallManagerClick,
-  onPanicClick
+  onPanicClick,
+  isKeyholder
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
+
+  const isUserKeyholder = Boolean(
+    isKeyholder || 
+    (currentUser?.portadorLlaves && currentUser.portadorLlaves.toLowerCase() !== 'ninguno') ||
+    ['titular', 'suplente'].includes(currentUser?.portadorLlaves?.toLowerCase())
+  );
 
   const isGpsError = gpsStatus === 'error' && !isGpsValidationBypassed;
   const isGpsSeeking = gpsStatus === 'seeking';
@@ -296,15 +304,15 @@ export default function DialPrincipal({
         </button>
       )}
 
-      {/* BUG FIX: Botón de Llamar a Encargado cuando la tienda está cerrada o en sala de espera */}
-      {(storeStatus === 'closed' || clockState === 'waiting_room' || btnProps.text === '⏳ Esperando Apertura') && onCallManagerClick && (
+      {/* REGLA: Botón de Llamar a Encargado de Llaves SOLO se muestra a titulares y suplentes de llaves cuando la tienda está cerrada o en sala de espera */}
+      {(storeStatus === 'closed' || clockState === 'waiting_room' || btnProps.text === '⏳ Esperando Apertura') && isUserKeyholder && onCallManagerClick && (
         <button
           type="button"
           onClick={onCallManagerClick}
           className="mt-2.5 py-1.5 px-4 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-250 text-indigo-700 dark:text-indigo-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Phone size={12} className="text-indigo-500" />
-          Llamar a Encargado
+          Llamar a Encargado de Llaves
         </button>
       )}
 

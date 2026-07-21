@@ -38,13 +38,17 @@ El dial de marcación principal cambia de aspecto y función adaptándose a la h
   - **Encargado Suplente**: Dos iconos de llaves (`🔑🔑`).
 
 ### F. Reportes de Ausencia / Retardo Adaptativos
-Cuando se oprime el botón central de alerta (`⚠️`) al estar fuera del perímetro GPS, la secuencia lógica se bifurca según el puesto:
-- **Supervisor (Francisco/María)**:
-  - *Llegaré Tarde*: Si la ETA excede la hora de apertura oficial (08:30 AM), el sistema realiza un **traspaso automático de llaves y estafeta** al suplente inmediato en la jerarquía.
-  - *No asistiré*: Cede de forma inmediata e irrevocable las llaves al suplente y publica alerta urgente en bitácora Matrix.
-- **Colaborador Regular (Asesor/Ayudante)**:
-  - *Llegaré Tarde*: Registra su ETA y motivo para informar al supervisor en su panel (no cancela sus comidas).
-  - *No asistiré*: Bloquea su checador y realiza una **liberación reactiva del comedor**, cancelando sus reservas para liberar el aforo para sus compañeros en activo.
+Cuando se oprime el botón central de alerta (`⚠️`), la secuencia y disponibilidad varía según el puesto y el horario:
+- **Ventana de Incidencia Anticipada (07:00 AM a Hora Límite)**:
+  - **Supervisor/Responsable de Apertura**: El botón aparece a partir de las 07:00 AM y se mantiene hasta 1 hora antes de la apertura oficial (ej. si la apertura es a las 08:30 AM, el límite es a las 07:30 AM). Esto garantiza un margen mínimo de 60 minutos para alertar y delegar responsabilidades al suplente.
+  - **Colaborador Regular**: El botón de incidencia anticipada aparece hasta 30 minutos antes de su hora de entrada oficial.
+- **Tratamiento según el Puesto**:
+  - **Supervisor (Francisco/María)**:
+    - *Llegaré Tarde*: Si la ETA excede la hora de apertura oficial (08:30 AM), el sistema realiza un **traspaso automático de llaves y estafeta** al suplente inmediato en la jerarquía.
+    - *No asistiré*: Cede de forma inmediata e irrevocable las llaves al suplente y publica alerta urgente en bitácora Matrix.
+  - **Colaborador Regular (Asesor/Ayudante)**:
+    - *Llegaré Tarde*: Registra su ETA y motivo para informar al supervisor en su panel (no cancela sus comidas).
+    - *No asistiré*: Bloquea su checador y realiza una **liberación reactiva del comedor**, cancelando sus reservas para liberar el aforo para sus compañeros en activo.
 
 ### G. Reporte de Tienda Cerrada (Amnistía)
 - Permite a los colaboradores reportar que la tienda sigue cerrada si el encargado se demoró.

@@ -2545,6 +2545,7 @@ export function useClockEngine(overrideUser?: any) {
              else if (type === 'contingency') newState = 'contingency';
 
              updateClockState(currentUser.id, newState);
+             window.dispatchEvent(new Event('db_sync_updated'));
          }
          return data;
       } catch (e) {
@@ -3136,7 +3137,7 @@ export function useClockEngine(overrideUser?: any) {
         const isResponsibleForOpening = Number(currentUser?.id) === Number(responsibleId);
         
         if (isResponsibleForOpening) {
-          const travelTime = clockOpConfig.suplente_travel_time_mins || 45;
+          const travelTime = clockOpConfig.suplente_travel_time_mins || 60;
           const managerDeadlineMins = shiftStartMins - travelTime;
           
           if (currentSimTime < managerDeadlineMins && features.allow_manager_incidences !== false) {

@@ -1563,7 +1563,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                         <p className="text-[10px] text-slate-505 mt-0.5">Margen de anticipación límite en minutos para alertar/delegar al suplente.</p>
                       </div>
                       <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
-                        {formData.clockOpConfig?.suplente_travel_time_mins || 45} minutos
+                        {formData.clockOpConfig?.suplente_travel_time_mins || 60} minutos
                       </span>
                     </div>
                     <input 
@@ -1572,7 +1572,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       max="120" 
                       step="5"
                       className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      value={formData.clockOpConfig?.suplente_travel_time_mins || 45} 
+                      value={formData.clockOpConfig?.suplente_travel_time_mins || 60} 
                       onChange={(e) => handleNestedChange('clockOpConfig', 'suplente_travel_time_mins', parseInt(e.target.value))} 
                     />
                   </div>

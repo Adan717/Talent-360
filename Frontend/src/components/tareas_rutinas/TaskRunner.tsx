@@ -582,7 +582,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-4 pb-4 pt-1.5 select-none relative overflow-hidden">
+        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-2.5 pb-4 pt-1.5 select-none relative overflow-hidden">
             {/* Tira de KPIs             {/* Fila fija de 3 botones principales */}
             <div className="grid grid-cols-3 gap-2 mb-3 shrink-0 select-none">
                 {/* Botón 1: Todas (Muestra todas, con badge de completadas/total) */}
@@ -688,7 +688,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
             </div>
 
             {/* Listado principal */}
-            <div className="flex-1 overflow-y-auto pb-28 custom-scrollbar pr-1 -mr-1">
+            <div 
+                className="flex-1 overflow-y-auto pb-24 scrollbar-none"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
                 <div className="flex justify-between items-center mb-3">
                     <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
                         {filterTab === 'todos' ? 'Lista Unificada de Tareas' :

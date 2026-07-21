@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import DialPrincipal from './reloj/DialPrincipal';
 import { MobileBottomNav } from './reloj/MobileBottomNav';
+import { TaskRunner } from './tareas_rutinas/TaskRunner';
+import { useTaskStore } from '../store/useTaskStore';
+import { useAppStore } from '../store/useAppStore';
 
 interface RelojSimuladoLandingProps {
   tier: 'free' | 'pro';
@@ -84,16 +87,110 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   const currentDay = 'Lunes';
 
-  // Simular avance del tiempo
+  // Simular avance del tiempo y sincronizar con useAppStore
   useEffect(() => {
     let timer: any;
     if (clockState === 'active') {
       timer = setInterval(() => {
-        setCurrentSimTime(prev => prev + 1);
+        setCurrentSimTime(prev => {
+          const newVal = prev + 1;
+          useAppStore.getState().setGlobalSimTime(newVal);
+          return newVal;
+        });
       }, 4000);
     }
     return () => clearInterval(timer);
   }, [clockState]);
+
+  // Inyectar datos mock para Tareas, Usuarios y Roles en la versión PRO del simulador
+  useEffect(() => {
+    if (tier === 'pro') {
+      const taskStore = useTaskStore.getState();
+      const appStore = useAppStore.getState();
+
+      // Inyectar usuario Francisco Vega
+      appStore.setGlobalUsers([
+        {
+          id: 99,
+          name: empName,
+          email: 'francisco@talent360.com',
+          role: 'colaborador',
+          job_role_id: 1,
+          has_completed_induction: false
+        } as any
+      ]);
+
+      // Inyectar roles globales
+      appStore.setGlobalRoles([
+        {
+          id: 1,
+          name: 'Ayudante Integral'
+        }
+      ]);
+
+      // Inyectar tareas demo alineadas
+      taskStore.setTasks([
+        {
+          id: 101,
+          title: 'Limpieza General Sucursal',
+          description: 'Sanitizar mostradores y barrer entrada',
+          estimatedMins: 15,
+          priority: 'normal',
+          category: 'operativo',
+          targetType: 'role',
+          targetId: 1,
+          points: 10,
+          subTasks: [
+            { id: 1, text: 'Limpiar Mostradores', completed: false },
+            { id: 2, text: 'Barrer Entrada', completed: false }
+          ],
+          assistantType: 'ninguno',
+          isAutoCapture: false,
+          historicalMins: []
+        },
+        {
+          id: 102,
+          title: 'Arqueo de Caja y Cierre',
+          description: 'Conciliar ventas del día en terminal',
+          estimatedMins: 30,
+          priority: 'bloqueante',
+          category: 'operativo',
+          targetType: 'role',
+          targetId: 1,
+          points: 20,
+          subTasks: [
+            { id: 3, text: 'Corte de Terminal bancaria', completed: false },
+            { id: 4, text: 'Contar Efectivo', completed: false }
+          ],
+          assistantType: 'evidencia_foto',
+          isAutoCapture: false,
+          historicalMins: []
+        }
+      ]);
+
+      // Inyectar asignaciones demo
+      taskStore.setAssignments([
+        {
+          id: 'asg-101',
+          taskId: 101,
+          userId: 99,
+          status: 'pending',
+          startedAtMins: null,
+          completedAtMins: null,
+          accumulatedMins: 0
+        },
+        {
+          id: 'asg-102',
+          taskId: 102,
+          userId: 99,
+          status: 'pending',
+          startedAtMins: null,
+          completedAtMins: null,
+          accumulatedMins: 0
+        }
+      ]);
+    }
+  }, [tier, empName]);
 
   // Ejecuta la validación de fichaje (GPS + Selfie en Plan PRO)
   const runProVerification = (onComplete: () => void) => {
@@ -670,19 +767,18 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 </div>
               </div>
             </div>
-
           </div>
         )}
 
         {phoneTab === 'tareas' && (
-          <div className="flex-1 flex flex-col justify-between py-2 text-left">
+          <div className="flex-1 flex flex-col justify-between py-2 text-left overflow-y-auto scrollbar-none">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
-                  <Lock size={22} className="text-rose-500" />
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                  <Lock size={22} className="text-rose-505" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-[9px] font-black text-rose-850 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
                   <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Tareas requiere la Versión Pro del Reloj Checador.
@@ -699,53 +795,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="p-1 text-left animate-in fade-in duration-200 flex-grow flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Tareas del Colaborador</h5>
-                    <span className="text-[8px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
-                      {((simTask1Done ? 1 : 0) + (simTask2Done ? 1 : 0))} / 2
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {/* Tarea 1 */}
-                    <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
-                      simTask1Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
-                    }`}>
-                      <input 
-                        type="checkbox" 
-                        checked={simTask1Done}
-                        onChange={() => setSimTask1Done(!simTask1Done)}
-                        className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <div className="leading-tight text-left">
-                        <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
-                        <p className="text-[7.5px] text-slate-455">Sanitizar mostradores y barrer entrada</p>
-                      </div>
-                    </label>
-
-                    {/* Tarea 2 */}
-                    <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
-                      simTask2Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
-                    }`}>
-                      <input 
-                        type="checkbox" 
-                        checked={simTask2Done}
-                        onChange={() => setSimTask2Done(!simTask2Done)}
-                        className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
-                      />
-                      <div className="leading-tight text-left">
-                        <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
-                        <p className="text-[7.5px] text-slate-455">Conciliar ventas del día en terminal</p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/30 rounded-xl p-2 text-[7.5px] text-blue-800 dark:text-blue-300 font-medium leading-normal mt-3">
-                  💡 Pulsa sobre cada casilla de verificación para marcar o desmarcar las tareas y simular la productividad del checador.
-                </div>
+              <div className="flex-grow flex flex-col min-h-0">
+                <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
               </div>
             )}
           </div>

@@ -137,9 +137,9 @@ export default function DialPrincipal({
       )
     },
     emergency_open: { color: 'bg-white border-rose-600 text-rose-650 shadow-rose-500/15 animate-pulse hover:border-rose-700', glow: 'bg-rose-500', icon: (s) => <ShieldAlert size={s} className="text-rose-600 animate-pulse shrink-0" /> },
-    entrada: { color: 'bg-white border-violet-500 text-violet-650 shadow-violet-500/10 hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <LogIn size={s} className="text-violet-550 shrink-0" /> },
-    verifying_gps: { color: 'bg-white border-violet-500 text-violet-650 shadow-violet-500/10 hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <MapPin size={s} className="text-violet-550 animate-bounce shrink-0" /> },
-    verifying_selfie: { color: 'bg-white border-violet-500 text-violet-650 shadow-violet-500/10 hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <Camera size={s} className="text-violet-550 shrink-0" /> },
+    entrada: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600 animate-pulse', glow: 'bg-indigo-400', icon: (s) => <LogIn size={s} className="text-indigo-600 shrink-0" /> },
+    verifying_gps: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <MapPin size={s} className="text-indigo-600 animate-bounce shrink-0" /> },
+    verifying_selfie: { color: 'bg-white border-indigo-500 text-indigo-650 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Camera size={s} className="text-indigo-600 shrink-0" /> },
     success_check: { color: 'bg-white border-emerald-500 text-emerald-650 shadow-emerald-500/10 hover:border-emerald-650 shadow-lg', glow: 'bg-emerald-450 animate-pulse', icon: (s) => <CheckCircle size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
     meal_prompt: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 animate-pulse shrink-0" /> },
     meal_start: { color: 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 shrink-0" /> },

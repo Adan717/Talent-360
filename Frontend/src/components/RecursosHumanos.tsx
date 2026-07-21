@@ -5,6 +5,7 @@ import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
 import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
+import OrganigramaPuestos from './OrganigramaPuestos';
 
 interface RecursosHumanosProps {
   readOnly?: boolean;
@@ -254,6 +255,37 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     } catch (err: any) {
       console.error("Error updating role hierarchy:", err);
       alert(err.response?.data?.message || "Error al actualizar la jerarquía del puesto.");
+    }
+  };
+
+  // NUEVO (organigrama interactivo, 2026-07-21): callback que le paso a <OrganigramaPuestos />
+  // para que persista cualquier conexión que el usuario dibuje o borre en el chart (jerarquía
+  // visual u operativa). Reutiliza exactamente el mismo patrón que ya usaba handleRoleDrop:
+  // mergea el patch sobre el registro completo del puesto y hace PUT /job-roles/{id}. La
+  // validación de ciclos ya se hizo del lado de OrganigramaPuestos antes de llamar esto.
+  const handleUpdateRoleFromChart = async (roleId: number, patch: Record<string, any>) => {
+    try {
+      const appState = useAppStore.getState();
+      const role = jobRoles.find((r: any) => r.id === roleId);
+      if (!role) return;
+
+      const updatedRole = { ...role, ...patch };
+
+      if (appState.isSandboxMode) {
+        setJobRoles(jobRoles.map((r: any) => (r.id === roleId ? updatedRole : r)));
+        return;
+      }
+
+      const res = await axiosInstance.put(`/job-roles/${roleId}`, updatedRole);
+      if (res.status === 200) {
+        await fetchData();
+        window.dispatchEvent(new Event('db_sync_updated'));
+      } else {
+        throw new Error('Failed to update role hierarchy from chart');
+      }
+    } catch (err: any) {
+      console.error('Error updating role hierarchy from chart:', err);
+      alert(err.response?.data?.message || 'Error al actualizar la relación en el organigrama.');
     }
   };
 
@@ -2043,73 +2075,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
             </div>
 
             {orgViewMode === 'tree' ? (
-              <div>
-                {/* Zona Drop Raíz */}
-                <div 
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('border-indigo-500', 'bg-indigo-50/50');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('border-indigo-500', 'bg-indigo-50/50');
-                  }}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('border-indigo-500', 'bg-indigo-50/50');
-                    const draggedId = Number(e.dataTransfer.getData('text/plain'));
-                    handleRoleDrop(draggedId, null);
-                  }}
-                  className="mb-6 p-5 border-2 border-dashed border-slate-300 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400 text-slate-500 rounded-2xl text-center text-xs font-bold uppercase tracking-wider transition-all cursor-default shadow-sm flex items-center justify-center gap-2"
-                >
-                  📥 Arrastra un puesto aquí para convertirlo en Puesto Principal (Raíz)
-                </div>
-
-                {/* Tree Container with horizontal scroll */}
-                <div className="w-full overflow-auto bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-8 shadow-inner min-h-[500px] relative">
-                  {/* Floating Zoom Controls */}
-                  <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm border border-slate-200/80 rounded-2xl p-1.5 shadow-lg flex gap-1 z-20">
-                    <button 
-                      type="button" 
-                      onClick={() => setZoomLevel(z => Math.max(z - 0.15, 0.4))} 
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-all text-sm font-bold border border-transparent active:scale-95 cursor-pointer" 
-                      title="Alejar Zoom (-)"
-                    >
-                      <ZoomOut size={16} />
-                    </button>
-                    <span className="px-2 flex items-center justify-center text-[10px] font-black text-slate-500 min-w-[45px] select-none border-x border-slate-100 uppercase tracking-wider">
-                      {Math.round(zoomLevel * 100)}%
-                    </span>
-                    <button 
-                      type="button" 
-                      onClick={() => setZoomLevel(z => Math.min(z + 0.15, 2.0))} 
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-all text-sm font-bold border border-transparent active:scale-95 cursor-pointer" 
-                      title="Acercar Zoom (+)"
-                    >
-                      <ZoomIn size={16} />
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setZoomLevel(1.0)} 
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-slate-100 transition-all text-xs font-bold border border-transparent active:scale-95 cursor-pointer" 
-                      title="Restablecer (100%)"
-                    >
-                      <RotateCcw size={14} />
-                    </button>
-                  </div>
-
-                  <div 
-                    className="org-tree inline-block min-w-full origin-top"
-                    style={{
-                      transform: `scale(${zoomLevel})`,
-                      transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}
-                  >
-                    <ul className="flex justify-center relative">
-                      {buildOrgTree(jobRoles, users).map((rootNode, idx) => renderTreeNode(rootNode, `root-${idx}-${rootNode.role.id}`))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
+              <OrganigramaPuestos
+                jobRoles={jobRoles}
+                employees={users}
+                readOnly={readOnly}
+                onUpdateRole={handleUpdateRoleFromChart}
+                onNodeClick={handleNodeClick}
+              />
             ) : (
               <div className="space-y-6">
                 {[1, 2, 3, 4, 5, 6].map(level => {
@@ -2616,46 +2588,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                             <Plus size={14} /> + Crear nueva área...
                          </button>
                       </div>
-                      <div className="col-span-1 sm:col-span-2">
-                         <label className="block text-sm font-bold text-slate-600 mb-2">Reporta A (Múltiples Jerarquías)</label>
-                         <p className="text-[11px] text-slate-500 mb-3">Selecciona uno o más puestos superiores a los que reporta este puesto:</p>
-                         
-                         <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2 custom-scrollbar">
-                            {jobRoles
-                               .filter((r: any) => r.id !== editingJobRole.id && (r.is_active !== false || (editingJobRole.reports_to_role_ids || []).includes(r.id)))
-                               .map((r: any) => {
-                                  const reportsToIds = editingJobRole.reports_to_role_ids || [];
-                                  const isChecked = reportsToIds.includes(r.id);
-                                  return (
-                                     <label key={r.id} className="flex items-center gap-2.5 px-2 py-1.5 hover:bg-white rounded-lg cursor-pointer transition-colors text-sm font-semibold text-slate-700">
-                                        <input
-                                          type="checkbox"
-                                          checked={isChecked}
-                                          onChange={(e) => {
-                                             let updatedIds;
-                                             if (e.target.checked) {
-                                                updatedIds = [...reportsToIds, r.id];
-                                             } else {
-                                                updatedIds = reportsToIds.filter((id: number) => id !== r.id);
-                                             }
-                                             setEditingJobRole({
-                                                ...editingJobRole,
-                                                reports_to_role_ids: updatedIds,
-                                                reports_to_role_id: updatedIds.length > 0 ? updatedIds[0] : null
-                                             });
-                                          }}
-                                          className="w-4 h-4 text-indigo-600 rounded border-slate-350 focus:ring-indigo-500"
-                                        />
-                                        <span>{r.name}</span>
-                                     </label>
-                                  );
-                                })
-                            }
-                            {jobRoles.filter((r: any) => r.id !== editingJobRole.id && (r.is_active !== false || (editingJobRole.reports_to_role_ids || []).includes(r.id))).length === 0 && (
-                               <p className="text-xs text-slate-400 italic text-center py-2">No hay otros puestos disponibles para reportar.</p>
-                            )}
-                         </div>
-                         <p className="text-[10px] text-slate-400 mt-1.5">Si no se selecciona ninguno, se considerará como un puesto raíz (CEO / Gerencia General).</p>
+                      {/* NOTA (2026-07-21): "Reporta A" y "Puesto Superior en Organigrama (Visual)" se editan
+                          ahora directamente desde el organigrama interactivo (pestaña 🌳 Árbol Conectado),
+                          arrastrando una línea entre dos puestos — ya no se configuran aquí, para que esta
+                          ficha se mantenga simple. Nivel de Mando sí se queda en el modal porque es un
+                          atributo del puesto (su rango), no una conexión entre dos puestos. */}
+                      <div className="col-span-1 sm:col-span-2 flex items-start gap-2 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-xs text-indigo-700 font-semibold">
+                         <Network size={16} className="shrink-0 mt-0.5" />
+                         <span>Las relaciones de jerarquía ("Reporta A" y la posición en el árbol visual) ahora se configuran arrastrando una línea entre dos puestos directamente en el organigrama interactivo, en la pestaña 🌳 Árbol Conectado.</span>
                       </div>
                        <div className="col-span-1 sm:col-span-2">
                            <label className="block text-sm font-bold text-slate-700 mb-2">Nivel de Mando / Rango de Autoridad</label>
@@ -2678,29 +2618,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                              <option value={6}>Nivel 6 - Roles Inactivos / Ex-colaboradores</option>
                            </select>
                         </div>
-                       <div className="col-span-1 sm:col-span-2">
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Puesto Superior en Organigrama (Visual)</label>
-                          <p className="text-[11px] text-slate-500 mb-3">Define la posición de este puesto en el árbol gráfico del organigrama (independiente de a quién reporta operativamente):</p>
-                          <select
-                            value={editingJobRole.org_parent_role_id || ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setEditingJobRole({
-                                 ...editingJobRole,
-                                 org_parent_role_id: val ? Number(val) : null
-                              });
-                            }}
-                            className="w-full px-4 py-2.5 border rounded-xl bg-white text-slate-700 font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          >
-                            <option value="">(Puesto Raíz - Nivel Superior)</option>
-                            {jobRoles
-                               .filter((r: any) => r.id !== editingJobRole.id && r.is_active !== false)
-                               .map((r: any) => (
-                                  <option key={r.id} value={r.id}>{r.name}</option>
-                               ))
-                            }
-                          </select>
-                       </div>
                       <div className="col-span-1 sm:col-span-2">
                         <label className="block text-sm font-bold text-slate-600 mb-2">Descripción General</label>
                         <textarea value={editingJobRole.description || ''} onChange={e => setEditingJobRole({...editingJobRole, description: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-24" />

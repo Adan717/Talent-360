@@ -28,6 +28,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §15 | Validación de secuencia de eventos en `ClockService::processPunch()` (tabla de prerequisitos) | ✅ Implementado (2026-07-21) |
 | §16 | Rate limiting en `/clock/punch`, `/clock/punch-batch` y validación de PIN de testigos en `/clock/emergency-open` | ✅ Implementado (2026-07-21) |
 | §20 | Nuevo evento `TimeEntryRecorded` (broadcast) emitido desde `ClockService::processPunch()` | ✅ Implementado (2026-07-21) |
+| §21 | Validación de ciclos para `reports_to_role_ids` en `JobRoleController::update()` (hoy solo existe para `org_parent_role_id`) | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -752,3 +753,49 @@ class TimeEntryRecorded implements ShouldBroadcast
 `App\Events\TimeEntryRecorded` creado exactamente como lo especificaron (propiedades promovidas, mismo canal `tenant.{id}.clock` que `StoreOpened`, sin `broadcastAs()` para que el nombre por defecto siga siendo `App\Events\TimeEntryRecorded` — coincide con el listener `.App\\Events\\TimeEntryRecorded` que ya tienen en `useClockEngine.tsx`). Se dispara en un único punto: justo después de que `DB::transaction()` confirma el `INSERT` en `ClockService::processPunch()`, nunca dentro de la transacción (para no notificar algo que todavía podría revertirse) ni en ningún `throw` de validación anterior. Confirmé que cubre los 4 caminos que mencionan sin tocarlos: `TimeEntryController::punch()`, `punchBatch()` (una vez por ítem válido — lo verifiqué con un test de batch), `StoreOpeningService::openStoreAndClockIn()` y `emergencyOpenWithWitnesses()` — los 4 pasan por `processPunch()`.
 
 Tests: `TimeEntryRecordedEventTest` (3 casos — payload correcto en éxito, no se dispara en un rechazo por secuencia inválida, se dispara exactamente 1 vez por ítem válido en un batch). Suite completa: 98/98 verde.
+
+---
+
+## 21. Validación de ciclos para `reports_to_role_ids` en `JobRoleController`
+
+**Contexto (2026-07-21, organigrama interactivo de puestos):** construimos un organigrama interactivo (`Frontend/src/components/OrganigramaPuestos.tsx`, usando `@xyflow/react`) donde el usuario dibuja o borra conexiones de jerarquía directamente arrastrando entre dos tarjetas de puesto, en vez de usar los checkboxes que había antes en el modal "Ficha del Puesto". Esto aplica a dos campos de `JobRole`:
+
+- `org_parent_role_id` (un solo padre, el árbol visual) — **ya tiene validación de ciclos en el backend** (`wouldCreateOrgCycle()` en `JobRoleController::update()`), la reutilizamos tal cual del lado del cliente.
+- `reports_to_role_ids` (array, puede haber varios padres — la jerarquía operativa real, "Reporta A") — **no tiene ninguna validación de ciclos hoy**, ni en frontend (antes) ni en backend. Ya agregamos la validación del lado del cliente en `OrganigramaPuestos.tsx` (`wouldCreateReportaCycle`, un BFS que seguía el grafo de `reports_to_role_ids`), pero como es un campo que ahora se edita de forma mucho más rápida e interactiva que antes (arrastrar una línea vs. marcar un checkbox con calma), el riesgo de que alguien cree un ciclo por error subió — y hoy nada en el servidor lo detendría si el cliente fallara o alguien pegara el request directo.
+
+**Pedimos:** el mismo tipo de chequeo que ya existe para `org_parent_role_id`, pero adaptado a que `reports_to_role_ids` es un array (puede tener más de un "padre", así que no es una cadena simple sino un grafo dirigido — hace falta un BFS/DFS, no un `while` de un solo camino). Algo equivalente a esto en `JobRoleController::update()`:
+
+```php
+private function wouldCreateReportsToCycle(int $tenantId, int $sourceId, int $targetId): bool
+{
+    if ($sourceId === $targetId) {
+        return true;
+    }
+
+    $queue = [$targetId];
+    $visited = [];
+
+    while (!empty($queue)) {
+        $currentId = array_shift($queue);
+        if (in_array($currentId, $visited, true)) {
+            continue;
+        }
+        $visited[] = $currentId;
+
+        if ($currentId === $sourceId) {
+            return true;
+        }
+
+        $current = JobRole::where('tenant_id', $tenantId)->find($currentId);
+        foreach (($current->reports_to_role_ids ?? []) as $nextId) {
+            $queue[] = (int) $nextId;
+        }
+    }
+
+    return false;
+}
+```
+
+Se llamaría por cada id nuevo que se agregue a `reports_to_role_ids` en la validación del `update()` (comparando el id del puesto que se está editando como `$sourceId` contra cada `$targetId` del array entrante), devolviendo un 422 con mensaje claro si algún id crearía un ciclo — mismo formato de error que ya usan para `org_parent_role_id`.
+
+Sin preferencia fuerte de nuestro lado sobre el nombre exacto del método o si se hace como método privado del controller o se mueve a un service — lo importante es que quede la validación, ya que hoy el único guardarraíl es del lado del cliente.

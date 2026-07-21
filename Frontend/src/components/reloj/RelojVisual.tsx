@@ -114,7 +114,7 @@ export default function RelojVisual({
           if (propStr.startsWith('set') || propStr.startsWith('handle') || propStr.startsWith('submit') || propStr.startsWith('request') || propStr.startsWith('approve') || propStr.startsWith('reject')) {
             return () => {};
           }
-          if (propStr.includes('List') || propStr.includes('Messages') || propStr.includes('Alarms') || ['chatMessages', 'pendingKeyTransfers', 'lateUsers', 'absentUsers', 'contingencyLogs', 'pendingBreakRequests', 'syncQueue', 'dailyHistory'].includes(propStr)) {
+          if (propStr.includes('List') || propStr.includes('Messages') || propStr.includes('Alarms') || ['chatMessages', 'pendingKeyTransfers', 'lateUsers', 'absentUsers', 'contingencyLogs', 'pendingBreakRequests', 'syncQueue', 'dailyHistory', 'keyholders'].includes(propStr)) {
             return [];
           }
           if (propStr.includes('Show') || propStr.includes('show')) {
@@ -345,7 +345,9 @@ export default function RelojVisual({
     setIsSimulatedHoliday,
     handleOvertimeClick,
     hasMealReservation,
-    authorizeClockOutWithPendingTasks
+    authorizeClockOutWithPendingTasks,
+    keyholders,
+    setKeyholders
   } = context;
 
   // Estados locales para nuevas herramientas operativas

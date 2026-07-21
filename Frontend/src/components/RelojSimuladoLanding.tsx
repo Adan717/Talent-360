@@ -764,7 +764,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   btnProps={{
                     disabled: clockState === 'finished',
                     text: btnProps.text,
-                    subtext: btnProps.subtext
+                    subtext: btnProps.subtext,
+                    iconKey: btnProps.iconKey
                   }}
                   lateUsers={{}}
                   currentDay={currentDay}

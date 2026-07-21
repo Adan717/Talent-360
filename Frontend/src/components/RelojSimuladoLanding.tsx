@@ -736,15 +736,15 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {/* RENDER UNIFIED MOBILE HEADER */}
       {renderUnifiedMobileHeader()}
 
-      {/* ZONA DE CONTENIDO MÓVIL (Con padding para evitar colisionar con Header y Footer) */}
-      <div className="flex-1 overflow-y-auto px-4 pt-[74px] pb-[92px] flex flex-col justify-between gap-2 scrollbar-none relative z-10">
+      {/* ZONA DE CONTENIDO MÓVIL (Con padding incrementado para dar holgura y no encimarse con el header) */}
+      <div className="flex-1 overflow-y-auto px-4 pt-[84px] pb-[92px] flex flex-col justify-between gap-2 scrollbar-none relative z-10">
         
         {phoneTab === 'checador' && (
           <div className="flex-grow flex flex-col h-full justify-between gap-1 py-0.5">
-            {/* 1. SECCIÓN SUPERIOR: Barra Cronológica */}
-            <div className="h-[55px] flex items-center justify-center shrink-0 w-full relative z-20">
+            {/* 1. SECCIÓN SUPERIOR: Barra Cronológica con mayor altura y margin-top para airear */}
+            <div className="h-[68px] mt-1.5 flex items-center justify-center shrink-0 w-full relative z-20">
               {hasCheckedIn && (
-                <div style={{ transform: 'scale(0.9)', transformOrigin: 'center' }} className="w-full shrink-0 animate-in fade-in slide-in-from-top-4 duration-600 ease-out">
+                <div style={{ transform: 'scale(0.88)', transformOrigin: 'center' }} className="w-full shrink-0 animate-in fade-in slide-in-from-top-4 duration-600 ease-out">
                   {renderBarraCronologica()}
                 </div>
               )}

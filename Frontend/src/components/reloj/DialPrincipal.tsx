@@ -17,7 +17,8 @@ import {
   Phone,
   ShieldAlert,
   Ban,
-  X
+  X,
+  Camera
 } from 'lucide-react';
 
 interface DialPrincipalProps {
@@ -128,7 +129,6 @@ export default function DialPrincipal({
     open_store: {
       color: 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600',
       glow: 'bg-violet-400',
-      // Combo Key+Store de la matriz (estado #8): Store como badge sobre el Key principal.
       icon: (s) => (
         <span className="relative inline-flex shrink-0">
           <Key size={s} className="text-violet-500 animate-pulse shrink-0" />
@@ -137,15 +137,18 @@ export default function DialPrincipal({
       )
     },
     emergency_open: { color: 'bg-white border-rose-600 text-rose-650 shadow-rose-500/15 animate-pulse hover:border-rose-700', glow: 'bg-rose-500', icon: (s) => <ShieldAlert size={s} className="text-rose-600 animate-pulse shrink-0" /> },
-    entrada: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <LogIn size={s} className="text-emerald-500 shrink-0" /> },
+    entrada: { color: 'bg-white border-violet-500 text-violet-650 shadow-violet-500/10 hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <LogIn size={s} className="text-violet-550 shrink-0" /> },
+    verifying_gps: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <MapPin size={s} className="text-amber-550 animate-bounce shrink-0" /> },
+    verifying_selfie: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Camera size={s} className="text-indigo-550 shrink-0" /> },
+    success_check: { color: 'bg-white border-emerald-500 text-emerald-650 shadow-emerald-500/10 hover:border-emerald-650 shadow-lg', glow: 'bg-emerald-450 animate-pulse', icon: (s) => <CheckCircle size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
     meal_prompt: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 animate-pulse shrink-0" /> },
     meal_start: { color: 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 shrink-0" /> },
     meal_end: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <Utensils size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
-    break_start: { color: 'bg-white border-purple-500 text-purple-600 shadow-purple-500/10 animate-pulse hover:border-purple-600', glow: 'bg-purple-400', icon: (s) => <Armchair size={s} className="text-purple-505 animate-pulse shrink-0" /> },
-    break_end: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 animate-pulse hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Armchair size={s} className="text-indigo-500 animate-pulse shrink-0" /> },
+    break_start: { color: 'bg-white border-purple-500 text-purple-650 shadow-purple-500/10 animate-pulse hover:border-purple-600', glow: 'bg-purple-400', icon: (s) => <Armchair size={s} className="text-purple-505 animate-pulse shrink-0" /> },
+    break_end: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 animate-pulse hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Armchair size={s} className="text-indigo-550 animate-pulse shrink-0" /> },
     handover: { color: 'bg-white border-cyan-500 text-cyan-600 shadow-cyan-500/10 animate-pulse hover:border-cyan-600', glow: 'bg-cyan-400', icon: (s) => <Key size={s} className="text-cyan-500 animate-pulse shrink-0" /> },
-    exit: { color: 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 hover:border-rose-600', glow: 'bg-rose-400', icon: (s) => <LogOut size={s} className="text-rose-505 shrink-0" /> },
-    reingreso: { color: 'bg-white border-teal-500 text-teal-600 shadow-teal-500/10 hover:border-teal-600', glow: 'bg-teal-400', icon: (s) => <LogIn size={s} className="text-teal-500 shrink-0" /> },
+    exit: { color: 'bg-white border-rose-500 text-rose-650 shadow-rose-500/10 hover:border-rose-600', glow: 'bg-rose-400', icon: (s) => <LogOut size={s} className="text-rose-505 shrink-0" /> },
+    reingreso: { color: 'bg-white border-teal-500 text-teal-655 shadow-teal-500/10 hover:border-teal-600', glow: 'bg-teal-400', icon: (s) => <LogIn size={s} className="text-teal-500 shrink-0" /> },
     absent: { color: 'bg-white border-rose-200 text-rose-400 shadow-none', glow: '', icon: (s) => <Ban size={s} className="text-rose-400 shrink-0" /> },
     finished: { color: 'bg-white border-slate-300 text-slate-400 shadow-none', glow: '', icon: (s) => <CheckCircle size={s} className="text-slate-400 shrink-0" /> },
   };

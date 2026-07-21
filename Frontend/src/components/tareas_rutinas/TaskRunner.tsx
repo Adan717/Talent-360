@@ -583,32 +583,16 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-4 pb-4 pt-1.5 select-none relative overflow-hidden">
-            {/* Tira de KPIs del día: da contexto inmediato antes de la lista de tareas */}
-            <div className="grid grid-cols-3 gap-1.5 mb-3 shrink-0 select-none">
-                <div className="bg-white border border-slate-200/85 rounded-2xl py-2 px-1 text-center">
-                    <p className="text-base font-black text-slate-800 leading-none">{completedTodayCount}</p>
-                    <p className="text-[8.5px] font-black uppercase text-slate-400 mt-1">Completadas hoy</p>
-                </div>
-                <div className="bg-white border border-slate-200/85 rounded-2xl py-2 px-1 text-center">
-                    <p className="text-base font-black text-slate-800 leading-none">{pointsToday}</p>
-                    <p className="text-[8.5px] font-black uppercase text-slate-400 mt-1">Puntos hoy</p>
-                </div>
-                <div className="bg-white border border-slate-200/85 rounded-2xl py-2 px-1 text-center">
-                    <p className={`text-base font-black leading-none ${awaitingValidationFiltered.length > 0 ? 'text-amber-500' : 'text-slate-800'}`}>{awaitingValidationFiltered.length}</p>
-                    <p className="text-[8.5px] font-black uppercase text-slate-400 mt-1">Por validar</p>
-                </div>
-            </div>
-
-            {/* Fila fija de botones (Grid de navegación intacto) */}
-            <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-3 shrink-0 select-none`}>
-                {/* Botón 1: Todas */}
+            {/* Tira de KPIs             {/* Fila fija de 3 botones principales */}
+            <div className="grid grid-cols-3 gap-2 mb-3 shrink-0 select-none">
+                {/* Botón 1: Todas (Muestra todas, con badge de completadas/total) */}
                 <button
                     type="button"
                     onClick={() => setFilterTab('todos')}
-                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                    className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl border transition-all cursor-pointer relative ${
                         filterTab === 'todos'
                             ? 'text-white shadow-md scale-[1.02]'
-                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
                     }`}
                     style={filterTab === 'todos' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
@@ -617,71 +601,46 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                         filterTab === 'todos' 
                             ? 'bg-white border-white' 
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-350'
                     }`}
                         style={filterTab === 'todos' ? { color: activeColor.hex } : {}}
                     >
-                        {awaitingValidationFiltered.length + activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                        {completedTodayCount}/{activeAssignmentsFiltered.length + historyAssignmentsFiltered.length}
                     </span>
                 </button>
 
-                {/* Botón 2: Por Validar */}
-                {(isSupervisor || awaitingValidationFiltered.length > 0) && (
-                    <button
-                        type="button"
-                        onClick={() => setFilterTab('firma_pendiente')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
-                            filterTab === 'firma_pendiente'
-                                ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
-                                : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
-                        }`}
-                    >
-                        <FileCheck size={18} className={filterTab === 'firma_pendiente' ? 'text-white' : 'text-slate-400'} />
-                        <span className="text-[8.5px] font-black uppercase mt-1 leading-none text-center">Por Validar</span>
-                        {awaitingValidationFiltered.length > 0 && (
-                            <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border animate-pulse ${
-                                filterTab === 'firma_pendiente'
-                                    ? 'bg-white text-amber-700 border-white'
-                                    : 'bg-rose-500 text-white border-rose-450'
-                            }`}>
-                                {awaitingValidationFiltered.length}
-                            </span>
-                        )}
-                    </button>
-                )}
-
-                {/* Botón 3: Mis Tareas */}
+                {/* Botón 2: Mis Tareas (Muestra las del colaborador, con badge de puntos) */}
                 <button
                     type="button"
                     onClick={() => setFilterTab('mis_tareas')}
-                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                    className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl border transition-all cursor-pointer relative ${
                         filterTab === 'mis_tareas'
                             ? 'text-white shadow-md scale-[1.02]'
-                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
                     }`}
                     style={filterTab === 'mis_tareas' ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
                     <User size={18} className={filterTab === 'mis_tareas' ? 'text-white' : 'text-slate-400'} />
                     <span className="text-[9px] font-black uppercase mt-1 leading-none text-center">Mis Tareas</span>
-                    <span className={`absolute -top-1 -right-1 text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
+                    <span className={`absolute -top-1 -right-1 text-[7.5px] font-black px-1.5 py-0.2 rounded-full shadow-xs border ${
                         filterTab === 'mis_tareas'
-                            ? 'bg-white border-white'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                            ? 'bg-white border-white animate-pulse'
+                            : 'bg-emerald-500 text-white border-emerald-450'
                     }`}
                         style={filterTab === 'mis_tareas' ? { color: activeColor.hex } : {}}
                     >
-                        {activeAssignmentsFiltered.length + puestoAssignmentsFiltered.length}
+                        {filterTab === 'mis_tareas' ? `+${pointsToday} pts` : `+${pointsToday}p`}
                     </span>
                 </button>
 
-                {/* Botón 4: Buscar */}
+                {/* Botón 3: Buscar */}
                 <button
                     type="button"
                     onClick={() => setIsSearchOpen(!isSearchOpen)}
-                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all cursor-pointer relative ${
+                    className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl border transition-all cursor-pointer relative ${
                         isSearchOpen
                             ? 'text-white shadow-md scale-[1.02]'
-                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50'
+                            : 'bg-white text-slate-500 border-slate-200/85 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800'
                     }`}
                     style={isSearchOpen ? { backgroundColor: activeColor.hex, borderColor: activeColor.hex } : {}}
                 >
@@ -751,7 +710,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    <div className="flex flex-col gap-2.5">
                         {displayedAssignments.map(a => {
                             const t = tasks.find(tsk => tsk.id === a.taskId);
                             if (!t) return null;

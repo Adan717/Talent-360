@@ -4,6 +4,26 @@ import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, Routine, ProcedureStep } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
 
+// Detección automática de categoría por palabras clave del título. Se usa tanto
+// para guardar la tarea como para mostrar en vivo la categoría sugerida en el
+// formulario (antes se calculaba de forma invisible solo al guardar).
+function detectCategory(title: string): Task['category'] {
+    const titleLower = title.toLowerCase();
+    if (["mantenimiento", "limpieza", "maquinaria", "selladora", "sanitarios", "taller", "instalaciones"].some(k => titleLower.includes(k))) {
+        return 'mantenimiento';
+    }
+    if (["sat", "compras", "gastos", "corte", "efectivo", "caja", "documental", "pedidos", "servicios", "consumos", "telefonía"].some(k => titleLower.includes(k))) {
+        return 'administrativo';
+    }
+    return 'operativo';
+}
+
+const CATEGORY_LABELS: Record<Task['category'], string> = {
+    operativo: 'Operativo',
+    administrativo: 'Administrativo',
+    mantenimiento: 'Mantenimiento',
+    supervision: 'Supervisión',
+};
 
 export function PanelTareasRutinas() {
     const { tasks, routines, addTask, addRoutine, updateTask, updateRoutine } = useTaskStore();
@@ -92,6 +112,8 @@ export function PanelTareasRutinas() {
     const [newTaskPrompt, setNewTaskPrompt] = useState('');
     const [newTaskValidationMode, setNewTaskValidationMode] = useState<'forced'|'auto'|'dynamic'>('forced');
     const [newTaskCanBeDoneSitting, setNewTaskCanBeDoneSitting] = useState(false);
+    // null = usar la detección automática por título; un valor = el usuario la corrigió a mano
+    const [newTaskCategoryOverride, setNewTaskCategoryOverride] = useState<Task['category'] | null>(null);
 
     // Nuevos campos ricos alineados con Obsidian
     const [newTaskObjective, setNewTaskObjective] = useState('');
@@ -109,6 +131,10 @@ export function PanelTareasRutinas() {
     const [newRoutineAssignMode, setNewRoutineAssignMode] = useState<'checklist'|'equitativo'|'bolsa_trabajo'>('checklist');
     const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
 
+    // Categoría que realmente se guardará: la elegida a mano tiene prioridad sobre la detectada
+    const detectedCategory = detectCategory(newTaskTitle);
+    const effectiveCategory = newTaskCategoryOverride ?? detectedCategory;
+
     const handleOpenCreator = () => {
         setEditingTask(null);
         setEditingRoutine(null);
@@ -120,7 +146,8 @@ export function PanelTareasRutinas() {
         setNewTaskPrompt('');
         setNewTaskValidationMode('forced');
         setNewTaskCanBeDoneSitting(false);
-        
+        setNewTaskCategoryOverride(null);
+
         // Reset campos enriquecidos de Obsidian
         setNewTaskObjective('');
         setNewTaskProcedureSteps([]);
@@ -148,7 +175,8 @@ export function PanelTareasRutinas() {
         setNewTaskPrompt(t.assistantPrompt || '');
         setNewTaskValidationMode(t.validationMode || 'forced');
         setNewTaskCanBeDoneSitting(t.canBeDoneSitting || false);
-        
+        setNewTaskCategoryOverride(t.category);
+
         // Mapear campos enriquecidos de Obsidian
         setNewTaskObjective(t.description || '');
         setNewTaskProcedureSteps(t.procedureSteps || []);
@@ -179,15 +207,7 @@ export function PanelTareasRutinas() {
         const executorRole = newTaskExecutorRoleId;
         const targetType = executorRole === 0 ? 'pool' : 'role';
         const targetId = executorRole === 0 ? 0 : executorRole;
-        
-        // Determinar categoría por palabras clave en el título
-        const titleLower = newTaskTitle.toLowerCase();
-        let category: 'operativo' | 'administrativo' | 'mantenimiento' | 'supervision' = 'operativo';
-        if (["mantenimiento", "limpieza", "maquinaria", "selladora", "sanitarios", "taller", "instalaciones"].some(k => titleLower.includes(k))) {
-            category = 'mantenimiento';
-        } else if (["sat", "compras", "gastos", "corte", "efectivo", "caja", "documental", "pedidos", "servicios", "consumos", "telefonía"].some(k => titleLower.includes(k))) {
-            category = 'administrativo';
-        }
+        const category = effectiveCategory;
 
         if (editingTask) {
             updateTask({
@@ -242,6 +262,7 @@ export function PanelTareasRutinas() {
         setNewTaskFrequency('Diaria');
         setNewTaskEvidenceType('Supervisión directa');
         setNewTaskExecutorRoleId(0);
+        setNewTaskCategoryOverride(null);
         setEditingTask(null);
     };
 
@@ -583,6 +604,43 @@ export function PanelTareasRutinas() {
                                         <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-medium" placeholder="Ej. Limpiar cristales frontales" />
                                     </div>
 
+                                    {/* Categoría: se detecta sola por el título, pero queda visible y es editable con un clic */}
+                                    <div className="flex items-center gap-2 flex-wrap -mt-2">
+                                        <span className="text-xs font-bold text-slate-500 shrink-0">Categoría:</span>
+                                        {(Object.keys(CATEGORY_LABELS) as Task['category'][]).map(cat => (
+                                            <button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => setNewTaskCategoryOverride(cat)}
+                                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
+                                                    effectiveCategory === cat
+                                                        ? 'bg-blue-600 text-white border-blue-600'
+                                                        : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'
+                                                }`}
+                                            >
+                                                {CATEGORY_LABELS[cat]}
+                                            </button>
+                                        ))}
+                                        {newTaskCategoryOverride === null && (
+                                            <span className="text-[10px] text-slate-400 italic">(detectada automáticamente por el título)</span>
+                                        )}
+                                    </div>
+
+                                    {/* Vista previa en vivo: así la verá el colaborador en su lista de tareas */}
+                                    <div className="p-3.5 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Vista previa para el colaborador</p>
+                                            <p className="text-sm font-extrabold text-slate-800 truncate">{newTaskTitle || 'Título de la tarea…'}</p>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-500">{newTaskMins} min</span>
+                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-700">{CATEGORY_LABELS[effectiveCategory]}</span>
+                                            {newTaskPriority === 'bloqueante' && (
+                                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-600">Bloqueante</span>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     {/* Objetivo de la Tarea */}
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-2">Objetivo / Propósito (Obsidian Callout)</label>
@@ -668,11 +726,31 @@ export function PanelTareasRutinas() {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-2">Modo de Supervisión</label>
-                                            <select value={newTaskValidationMode} onChange={e => setNewTaskValidationMode(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
-                                                <option value="forced">Forzosa (Siempre requiere validar)</option>
-                                                <option value="auto">Automática (Auto-aprobación inmediata)</option>
-                                                <option value="dynamic">Dinámica (Muestreo por antigüedad)</option>
-                                            </select>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {([
+                                                    { value: 'forced' as const, label: 'Forzosa', hint: 'Siempre valida', Icon: Lock },
+                                                    { value: 'auto' as const, label: 'Automática', hint: 'Auto-aprueba', Icon: Rocket },
+                                                    { value: 'dynamic' as const, label: 'Dinámica', hint: 'Por antigüedad', Icon: Brain },
+                                                ]).map(opt => {
+                                                    const active = newTaskValidationMode === opt.value;
+                                                    return (
+                                                        <button
+                                                            key={opt.value}
+                                                            type="button"
+                                                            onClick={() => setNewTaskValidationMode(opt.value)}
+                                                            className={`flex flex-col items-center justify-center gap-1 p-2.5 sm:p-3 rounded-xl border text-center transition-colors ${
+                                                                active
+                                                                    ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                                                    : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200'
+                                                            }`}
+                                                        >
+                                                            <opt.Icon size={18} className={active ? 'text-blue-600' : 'text-slate-400'} />
+                                                            <span className="text-[11px] font-bold">{opt.label}</span>
+                                                            <span className="text-[8.5px] text-slate-400 leading-tight">{opt.hint}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
 

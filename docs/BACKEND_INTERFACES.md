@@ -590,3 +590,38 @@ Reutiliza el endpoint de nómina que ya existe en vez de crear uno nuevo: `GET /
 ### Tests
 
 `SimulatorSessionIsolationTest` (7 casos: sesión se crea y reutiliza, nueva sesión cierra la anterior y avanza fecha, fichaje simulado queda ligado a la sesión activa, sesiones sucesivas nunca chocan contra el índice único, el scope excluye datos simulados por default, la purga borra solo lo simulado, nómina real vs. nómina de prueba). Más ajustes en `RoleMiddlewareTest` reflejando el nuevo comportamiento de `/sync/reset`. Suite completa: 85/85 verde.
+
+---
+
+## 14. Módulo de Tareas — Correcciones de Fase 1 (Auditoría Jul 2026)
+
+**Contexto:** Francisco pidió una auditoría completa del módulo de Tareas antes de rediseñar el frontend (formulario de creación, pestaña de tareas del colaborador, centro de mando). Se encontraron 3 bugs concretos del lado del servidor que bloquean o distorsionan ese rediseño. El frontend (yo) ya está listo para consumir las correcciones — no hace falta coordinar nada más con Frontend, solo aplicar esto.
+
+### 14.1 Poblar `date` y `points_awarded` en `TaskAssignment` (columnas ya existen, nunca se llenan)
+
+La migración `2026_06_30_190000_add_date_and_points_to_task_assignments_table.php` ya agregó `date` (date, nullable) y `points_awarded` (integer, default 0) a `task_assignments`. Ningún código las está poblando hoy:
+
+- `TaskSyncController::sync()`, el array `$mappedData` (líneas ~137-149): falta `'date' => ...` (usar la fecha de la sesión/hoy, `Carbon::today()->toDateString()`, salvo que ya traigan una fecha explícita del payload) y `'points_awarded' => ...` cuando `status` pase a `'completed'` (tomar `Task::points` en ese momento, salvo que haya alguna bonificación de bolsa de trabajo que deba sumarse aparte).
+- `DashboardMonitorController::createTask()`, el `TaskAssignment::create([...])` en línea ~387-393: falta `'date' => Carbon::today()->toDateString()`.
+- Revisar también `DashboardMonitorController::assignTask()` por el mismo patrón.
+
+Motivo: sin `date`, el historial de "tareas completadas hoy" del colaborador no se puede acotar a hoy (hoy muestra todo el histórico sin límite) y las rutinas recurrentes no pueden distinguir bien entre ejecuciones de distintos días. El frontend (`TaskAssignment` en `useTaskStore.ts`) ya tiene los campos `date?` y `pointsAwarded?` como opcionales — tolera perfectamente que vengan `undefined` en filas viejas, así que esto se puede desplegar sin migración de datos históricos.
+
+### 14.2 Filtro `tenant_id` + `date` faltante en `DashboardMonitorController::getMonitorData()`
+
+Línea ~46-49:
+```php
+$activeAssignments = TaskAssignment::with('task')
+    ->whereIn('status', ['in_progress', 'paused'])
+    ->get()
+    ->groupBy('user_id');
+```
+No filtra por tenant ni por fecha — en un entorno multi-tenant esto puede traer al monitor en tiempo real de una empresa tareas activas de OTRA empresa, y además nunca se acota a "hoy". Justo arriba, la consulta `$completedStats` (línea ~52-64) sí hace bien este patrón (join contra `tasks` + `where('tasks.tenant_id', $userTenantId)` + `whereDate(...)`). Pedimos replicar exactamente ese patrón en `$activeAssignments`: join con `tasks`, filtrar `tasks.tenant_id = $userTenantId`, y si aplica, `task_assignments.date = $today` (con tolerancia a `NULL` mientras haya filas viejas sin poblar, igual que 14.1).
+
+### 14.3 Consolidar `target_type` en `DashboardMonitorController::createTask()`
+
+Línea 356: la validación solo acepta `'target_type' => 'nullable|string|in:role,user'`, pero el modelo `Task`, `TaskSyncController` y el frontend (`Task.targetType` en `useTaskStore.ts`) ya soportan 4 valores: `role | user | pool | department`. Esta tercera vía de creación de tareas (la que usa el asistente de voz del centro de mando) hoy no puede crear una tarea de bolsa de trabajo ni de departamento. Pedimos alinear la validación y la lógica de asignación (línea ~384-393, hoy solo contempla `user`) para los 4 valores, igual que ya hace `TaskSyncController`.
+
+### Fuera de alcance de esta sección
+
+Unificar las 3 rutas de creación de tareas en una sola (`TaskSyncController` bulk-upsert, `TaskAssignmentController` update puntual, `DashboardMonitorController::createTask` tercera vía) — eso es limpieza de fase 4, después de que 14.1-14.3 estén estables y el frontend termine su rediseño. Se documentará aparte cuando llegue ese momento.

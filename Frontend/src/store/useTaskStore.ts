@@ -73,6 +73,13 @@ export interface TaskAssignment {
     accumulatedMins?: number;
     reservedAtMins?: number | null;
     warned80Percent?: boolean;
+    // Fecha (YYYY-MM-DD) a la que pertenece la asignación. Opcional mientras el backend
+    // termina de poblarla (ver docs/BACKEND_INTERFACES.md §14) — el frontend debe tolerar
+    // que venga undefined en registros antiguos y no debe romper si falta.
+    date?: string;
+    // Puntos realmente otorgados al completar (columna points_awarded, ya existe en BD
+    // pero aún no se puebla desde el backend). Cuando no venga, se usa task.points como fallback.
+    pointsAwarded?: number;
 }
 
 interface TaskStoreState {

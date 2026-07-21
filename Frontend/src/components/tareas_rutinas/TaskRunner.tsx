@@ -368,10 +368,16 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const myRole = globalRoles?.find((r: any) => r.id === currentUser.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
 
-    // Determinar si tiene rol de supervisor
-    const isSupervisor = currentUser?.role?.toLowerCase().includes('superv') || 
-                         currentUser?.role?.toLowerCase().includes('geren') || 
-                         currentUser?.role?.toLowerCase().includes('admin');
+    // Determinar si tiene rol de supervisor: se usa el rol de sistema explícito
+    // (admin/supervisor) o la jerarquía real de puestos (reports_to_role_id/reports_to_role_ids),
+    // en vez de adivinar por substring del nombre del puesto (frágil, ver auditoría de tareas).
+    const mySubordinateRoles = (globalRoles || []).filter((r: any) =>
+        Number(r.reports_to_role_id) === Number(currentUser?.job_role_id) ||
+        (Array.isArray(r.reports_to_role_ids) && r.reports_to_role_ids.map(Number).includes(Number(currentUser?.job_role_id)))
+    );
+    const isSupervisor = currentUser?.role === 'admin' ||
+                         currentUser?.role === 'supervisor' ||
+                         mySubordinateRoles.length > 0;
 
     // Filtrados según búsqueda
     const filterBySearch = (list: TaskAssignment[]) => {
@@ -410,10 +416,15 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         ['pending', 'in_progress', 'paused'].includes(a.status)
     ));
 
-    // 4. Historial (Tareas completadas u omitidas por el colaborador hoy)
-    const historyAssignmentsFiltered = filterBySearch(assignments.filter(a => 
-        a.userId === currentUser.id && 
-        ['completed', 'awaiting_validation', 'omitted'].includes(a.status)
+    // 4. Historial (Tareas completadas u omitidas por el colaborador HOY)
+    // El label de la UI siempre dijo "Historial de Hoy" pero no había campo de fecha
+    // para acotarlo (ver auditoría de tareas) — se agrega el filtro aquí y se tolera
+    // a.date === undefined en registros viejos que el backend aún no migra.
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const historyAssignmentsFiltered = filterBySearch(assignments.filter(a =>
+        a.userId === currentUser.id &&
+        ['completed', 'awaiting_validation', 'omitted'].includes(a.status) &&
+        (a.date === undefined || a.date === todayStr)
     ));
 
     // El listado actual a mostrar
@@ -461,6 +472,15 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
             }
         }
     })();
+
+    // KPIs rápidos del día (datos reales: puntos vienen de task.points, sin inventar campos)
+    const completedTodayCount = historyAssignmentsFiltered.filter(a => a.status === 'completed').length;
+    const pointsToday = historyAssignmentsFiltered
+        .filter(a => a.status === 'completed')
+        .reduce((sum, a) => {
+            const t = tasks.find(tsk => tsk.id === a.taskId);
+            return sum + (a.pointsAwarded ?? t?.points ?? 0);
+        }, 0);
 
     const handleCreateTaskSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -566,6 +586,22 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-4 pb-4 pt-1.5 select-none relative overflow-hidden">
+            {/* Tira de KPIs del día: da contexto inmediato antes de la lista de tareas */}
+            <div className="grid grid-cols-3 gap-1.5 mb-3 shrink-0 select-none">
+                <div className="bg-white border border-slate-200/85 rounded-2xl py-2 px-1 text-center">
+                    <p className="text-base font-black text-slate-800 leading-none">{completedTodayCount}</p>
+                    <p className="text-[8.5px] font-black uppercase text-slate-400 mt-1">Completadas hoy</p>
+                </div>
+                <div className="bg-white border border-slate-200/85 rounded-2xl py-2 px-1 text-center">
+                    <p className="text-base font-black text-slate-800 leading-none">{pointsToday}</p>
+                    <p className="text-[8.5px] font-black uppercase text-slate-400 mt-1">Puntos hoy</p>
+                </div>
+                <div className="bg-white border border-slate-200/85 rounded-2xl py-2 px-1 text-center">
+                    <p className={`text-base font-black leading-none ${awaitingValidationFiltered.length > 0 ? 'text-amber-500' : 'text-slate-800'}`}>{awaitingValidationFiltered.length}</p>
+                    <p className="text-[8.5px] font-black uppercase text-slate-400 mt-1">Por validar</p>
+                </div>
+            </div>
+
             {/* Fila fija de botones (Grid de navegación intacto) */}
             <div className={`grid ${(isSupervisor || awaitingValidationFiltered.length > 0) ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 mb-3 shrink-0 select-none`}>
                 {/* Botón 1: Todas */}

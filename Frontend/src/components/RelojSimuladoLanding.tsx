@@ -608,38 +608,38 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         {phoneTab === 'checador' && (
           <div className="flex-grow flex flex-col justify-start gap-0.5 py-0.5">
             
+            {/* Timeline and Dial Stack Grouped to Tightly Control Spacing */}
+            <div className="flex flex-col items-center w-full gap-1 mt-1 shrink-0">
+              {/* Barra Cronológica Proporcional Real */}
+              <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-17px]">
+                {renderBarraCronologica()}
+              </div>
 
-
-            {/* Barra Cronológica Proporcional Real */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-17px]">
-              {renderBarraCronologica()}
-            </div>
-
-            {/* Dial Central Principal (Importado de producción) */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'center' }} className="flex flex-col items-center justify-center shrink-0 my-0.5">
-              <DialPrincipal
-                isMobile={true}
-                isOpeningPremium={true}
-                storeStatus="open"
-                openingStatus={null}
-                currentUser={currentUser}
-                isWithinPerimeter={true}
-                globalUsers={[]}
-                clockState={clockState}
-                formattedTime={getFormattedTimeText(currentSimTime)}
-                btnProps={{
-                  disabled: clockState === 'finished',
-                  text: btnProps.text,
-                  subtext: btnProps.subtext
-                }}
-                lateUsers={{}}
-                currentDay={currentDay}
-                currentSimTime={currentSimTime}
-                shiftConfigs={shiftConfigs}
-                parseTimeToMins={parseTimeToMins}
-                handleAction={handleAction}
-              />
-
+              {/* Dial Central Principal (Importado de producción) */}
+              <div style={{ transform: 'scale(0.9)', transformOrigin: 'center' }} className="flex flex-col items-center justify-center shrink-0 my-0.5">
+                <DialPrincipal
+                  isMobile={true}
+                  isOpeningPremium={true}
+                  storeStatus="open"
+                  openingStatus={null}
+                  currentUser={currentUser}
+                  isWithinPerimeter={true}
+                  globalUsers={[]}
+                  clockState={clockState}
+                  formattedTime={getFormattedTimeText(currentSimTime)}
+                  btnProps={{
+                    disabled: clockState === 'finished',
+                    text: btnProps.text,
+                    subtext: btnProps.subtext
+                  }}
+                  lateUsers={{}}
+                  currentDay={currentDay}
+                  currentSimTime={currentSimTime}
+                  shiftConfigs={shiftConfigs}
+                  parseTimeToMins={parseTimeToMins}
+                  handleAction={handleAction}
+                />
+              </div>
             </div>
 
             {/* Alertas dinámicas bajo el dial */}

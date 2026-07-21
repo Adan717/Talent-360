@@ -123,94 +123,91 @@ export function FichaTarea({
     return (
         <div 
             onClick={onSelect}
-            className={`border rounded-2xl p-3.5 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-2 relative overflow-hidden ${cardClass}`}
+            className={`border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.99] text-left flex flex-col gap-3.5 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/50 border-slate-200/80 dark:border-slate-800/80 hover:-translate-y-0.5 ${cardClass}`}
         >
-            {/* Indicador lateral de estado */}
-            <div className={`absolute top-0 left-0 w-1.5 h-full ${
-                isOvertime && assignment.status !== 'completed' && assignment.status !== 'omitted' ? 'bg-rose-500' :
-                assignment.status === 'awaiting_validation' ? 'bg-amber-400' :
-                isFromPool ? 'bg-sky-400' :
-                assignment.status === 'in_progress' ? 'bg-emerald-500' :
-                assignment.status === 'paused' ? 'bg-slate-400' : 'bg-indigo-500'
+            {/* Indicador lateral de estado (Estilo gradiente de alta fidelidad) */}
+            <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${
+                isOvertime && assignment.status !== 'completed' && assignment.status !== 'omitted' ? 'from-rose-500 to-red-600' :
+                assignment.status === 'awaiting_validation' ? 'from-amber-400 to-yellow-500' :
+                isFromPool ? 'from-sky-400 to-blue-500' :
+                assignment.status === 'in_progress' ? 'from-emerald-400 to-teal-500 animate-pulse' :
+                assignment.status === 'paused' ? 'from-slate-400 to-slate-550' : 'from-indigo-400 to-violet-500'
             }`}></div>
 
-            <div className="pl-1.5">
-                {/* Fila 1: Badge de Estado y Prioridad / Origen */}
-                <div className="flex justify-between items-center gap-2">
-                    <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-md border ${badgeClass}`}>
+            <div className="pl-1.5 flex flex-col justify-between flex-grow gap-2.5">
+                {/* Fila 1: Badges y etiquetas */}
+                <div className="flex justify-between items-start gap-2">
+                    <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded-lg border tracking-wider shadow-xs ${badgeClass}`}>
                         {badgeText}
                     </span>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex flex-wrap items-center justify-end gap-1 shrink-0">
                         {task.priority === 'bloqueante' && (
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-100/60">
+                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-xs">
                                 ⚠️ Obligatoria
                             </span>
                         )}
                         {task.scheduledTime && (
-                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md border bg-sky-50 text-sky-700 border-sky-200/60 flex items-center gap-0.5 shrink-0">
+                            <span className="text-[7.5px] font-black px-1.5 py-0.5 rounded-md border bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 flex items-center gap-0.5 shrink-0">
                                 ⏰ {task.scheduledTime}
                             </span>
                         )}
-                        {/* Badge de Origen de la Tarea */}
                         {isFromPool ? (
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200/60 shadow-xs animate-pulse">
-                                ✨ Bolsa (+Bono)
+                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-xs animate-pulse">
+                                ✨ Bolsa
                             </span>
-                        ) : assignment.reservedAtMins !== null && assignment.reservedAtMins !== undefined && assignment.status === 'pending' ? (
-                            (() => {
-                                const limit = task.priority === 'bloqueante' ? 5 : 15;
-                                const remaining = Math.max(0, (assignment.reservedAtMins + limit) - globalSimTime);
-                                return (
-                                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-amber-50 text-amber-700 border-amber-300 shadow-xs animate-pulse">
-                                        ⏳ Libera en {remaining} min
-                                    </span>
-                                );
-                            })()
                         ) : assignment.assignedFromRoutineId ? (
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-slate-50 text-slate-650 border-slate-200">
+                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700">
                                 📅 Rutina
                             </span>
                         ) : (
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-indigo-50/50 text-indigo-755 border-indigo-200/50">
+                            <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded-md border bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
                                 📌 Directa
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* Fila 2: Título de la tarea */}
-                <h4 className="font-extrabold text-xs text-slate-800 mt-2 line-clamp-2 leading-tight">
-                    {task.title}
-                </h4>
+                {/* Fila 2: Título y descripción breve si existe */}
+                <div>
+                    <h4 className="font-black text-xs text-slate-800 dark:text-slate-100 leading-tight">
+                        {task.title}
+                    </h4>
+                    {task.description && (
+                        <p className="text-[8.5px] text-slate-400 dark:text-slate-500 mt-1 line-clamp-1 font-semibold leading-none">
+                            {task.description}
+                        </p>
+                    )}
+                </div>
 
-                {/* Fila 3: Colaborador, Barra de Progreso y Tiempo en la misma línea */}
-                <div className="flex items-center justify-between gap-3 mt-3 text-[10px] text-slate-500 font-bold">
+                {/* Fila 3: Colaborador, Barra de Progreso y Tiempo */}
+                <div className="flex items-center justify-between gap-3 mt-1.5 text-[9.5px] text-slate-500 font-bold border-t border-slate-100 dark:border-slate-800/80 pt-2.5">
                     {/* Colaborador */}
                     <div className="flex items-center gap-1.5 min-w-0">
-                        <User size={12} className="text-slate-450 shrink-0" />
-                        <span className="truncate text-slate-700 font-black">
+                        <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-[10px] shrink-0 border border-slate-200/55 dark:border-slate-750">
+                            👤
+                        </div>
+                        <span className="truncate text-slate-700 dark:text-slate-355 font-extrabold text-[8.5px]">
                             {collaboratorName}
                         </span>
                     </div>
 
-                    {/* Lado derecho: Progreso, Tiempo y Controles */}
+                    {/* Lado derecho: Progreso y Controles */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* Progreso y Tiempo (siempre visible) */}
                         <div className="flex items-center gap-1.5">
-                            {/* Barra de progreso slim */}
-                            <div className="w-20 bg-slate-100 h-2.5 rounded-lg overflow-hidden relative border border-slate-200/50">
+                            {/* Barra de progreso slim y pulida */}
+                            <div className="w-16 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden relative border border-slate-200/40 dark:border-slate-700/40">
                                 <div 
                                     className={`h-full absolute left-0 top-0 transition-all duration-300 ${
                                         assignment.status === 'completed' ? 'bg-teal-500' :
-                                        assignment.status === 'omitted' ? 'bg-slate-350' :
-                                        isOvertime ? 'bg-rose-500/85' : 
-                                        assignment.status === 'in_progress' ? 'bg-emerald-500/80' : 'bg-[#8a2be2]/40'
+                                        assignment.status === 'omitted' ? 'bg-slate-400' :
+                                        isOvertime ? 'bg-rose-500/80' : 
+                                        assignment.status === 'in_progress' ? 'bg-gradient-to-r from-emerald-400 to-teal-500 animate-pulse' : 'bg-indigo-500/80'
                                     }`}
                                     style={{ width: `${percent}%` }}
                                 ></div>
                             </div>
                             {/* Tiempo */}
-                            <span className="text-[9px] font-black text-slate-700 shrink-0">
+                            <span className="text-[8.5px] font-black text-slate-750 dark:text-slate-255 shrink-0">
                                 {timeDisplay}
                             </span>
                         </div>
@@ -219,17 +216,17 @@ export function FichaTarea({
                         {showPlayPause && (
                             <button
                                 onClick={onPlayPause}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-sm text-white ${
+                                className={`w-5.5 h-5.5 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-sm text-white ${
                                     assignment.status === 'in_progress'
-                                        ? 'bg-amber-500 hover:bg-amber-600'
-                                        : 'bg-[#8a2be2] hover:bg-[#7b1fa2]'
+                                        ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10'
+                                        : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/10'
                                 }`}
                                 title={assignment.status === 'in_progress' ? 'Pausar Tarea' : 'Iniciar Tarea'}
                             >
                                 {assignment.status === 'in_progress' ? (
-                                    <Pause size={10} className="fill-white text-white" />
+                                    <Pause size={8} className="fill-white text-white" />
                                 ) : (
-                                    <Play size={10} className="fill-white text-white translate-x-0.5" />
+                                    <Play size={8} className="fill-white text-white translate-x-0.5" />
                                 )}
                             </button>
                         )}

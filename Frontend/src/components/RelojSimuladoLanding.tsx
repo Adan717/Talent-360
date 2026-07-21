@@ -34,9 +34,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const [simTask1Done, setSimTask1Done] = useState(false);
   const [simTask2Done, setSimTask2Done] = useState(false);
 
-  // Estados de validación PRO temporales
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verifyingStep, setVerifyingStep] = useState<'gps' | 'selfie'>('gps');
+  const [verifyingStep, setVerifyingStep] = useState<'gps' | 'selfie' | 'success'>('gps');
 
   // Control de Hojas inferiores y Modales
   const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
@@ -198,18 +197,29 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       setIsVerifying(true);
       setVerifyingStep('gps');
       
-      // Pasar a Selfie tras 1.2 segundos
+      // Pasar a Selfie tras 1.0 segundos
       setTimeout(() => {
         setVerifyingStep('selfie');
         
-        // Terminar validación tras otro 1.2 segundos
+        // Pasar a éxito tras 1.0 segundos
         setTimeout(() => {
-          setIsVerifying(false);
-          onComplete();
-        }, 1200);
-      }, 1200);
+          setVerifyingStep('success');
+          
+          // Terminar validación y proceder tras 1.2 segundos
+          setTimeout(() => {
+            setIsVerifying(false);
+            onComplete();
+          }, 1200);
+        }, 1000);
+      }, 1000);
     } else {
-      onComplete();
+      // Feedback visual rápido de éxito en versión básica (Free)
+      setIsVerifying(true);
+      setVerifyingStep('success');
+      setTimeout(() => {
+        setIsVerifying(false);
+        onComplete();
+      }, 1200);
     }
   };
 
@@ -317,6 +327,18 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   // Propiedades dinámicas del dial
   const getDialProps = () => {
+    if (isVerifying) {
+      if (verifyingStep === 'gps') {
+        return { disabled: true, text: '📍 Buscando GPS...', subtext: 'Verificando perímetro...', iconKey: 'in_transit' };
+      }
+      if (verifyingStep === 'selfie') {
+        return { disabled: true, text: '📸 Validando Selfie...', subtext: 'Identificación biométrica...', iconKey: 'blocked' };
+      }
+      if (verifyingStep === 'success') {
+        return { disabled: true, text: '✓ Fichaje Registrado', subtext: '¡Operación exitosa!', iconKey: 'reingreso' };
+      }
+    }
+
     if (clockState === 'inactive') {
       return { disabled: false, text: 'Registrar Entrada', subtext: empName };
     }
@@ -741,6 +763,74 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             {/* Alertas dinámicas bajo el dial */}
             <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-1.5 mt-[-2.5px] shrink-0">
+              {/* Alerta de Entrada Registrada */}
+              {hasCheckedIn && (
+                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                  isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/60 border-emerald-100 text-emerald-900'
+                }`}>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-650 dark:text-emerald-400 shrink-0 text-sm animate-pulse">
+                    ✅
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-450 leading-none">Fichaje Registrado</p>
+                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                      Entrada: {formatMinsToTimeClean(checkInTimes[99] || 545)} (Retardo de 5 min)
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerta de Descanso Registrado */}
+              {breaksTaken[99] !== undefined && (
+                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                  isDark ? 'bg-purple-955/20 border-purple-900/40 text-purple-300' : 'bg-purple-50/60 border-purple-100 text-purple-900'
+                }`}>
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-650 dark:text-purple-400 shrink-0 text-sm animate-pulse">
+                    ☕
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-450 leading-none">Descanso Tomado</p>
+                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                      Salida: {formatMinsToTimeClean(breakStartTimes[99] || 720)} | Regreso: {formatMinsToTimeClean(breakEndTimes[99] || 735)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerta de Comida Registrada */}
+              {mealEndTimes[99] !== undefined && (
+                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                  isDark ? 'bg-amber-955/20 border-amber-900/40 text-amber-300' : 'bg-amber-50/60 border-amber-100 text-amber-900'
+                }`}>
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-650 dark:text-amber-400 shrink-0 text-sm animate-pulse">
+                    🍱
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-450 leading-none">Comida Completada</p>
+                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                      Salida: {formatMinsToTimeClean(mealStartTimes[99] || 840)} | Regreso: {formatMinsToTimeClean(mealEndTimes[99] || 885)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerta de Salida Registrada */}
+              {hasCheckedOut && (
+                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                  isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-350' : 'bg-rose-50/60 border-rose-100 text-rose-900'
+                }`}>
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-650 dark:text-rose-455 shrink-0 text-sm animate-pulse">
+                    🚪
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-455 leading-none">Jornada Finalizada</p>
+                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-250">
+                      Salida registrada a las {formatMinsToTimeClean(checkOutTimes[99] || 1080)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
                 isDark ? 'bg-indigo-955/20 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50/60 border-indigo-100 text-indigo-900'
               }`}>
@@ -1064,29 +1154,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         </div>
       )}
 
-      {/* PANTALLAS DE VALIDACIÓN PRO SIMULADAS (Selfie + GPS) */}
-      {isVerifying && (
-        <div className="absolute inset-0 bg-slate-955/90 z-80 flex flex-col items-center justify-center p-6 text-white text-center font-sans">
-          {verifyingStep === 'gps' ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="w-16 h-16 rounded-full bg-indigo-500/20 border-2 border-indigo-500 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-                <MapPin size={32} className="text-indigo-400 animate-bounce" />
-              </div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-indigo-400">Verificando Geolocalización</h4>
-              <p className="text-[10px] text-slate-400">Confirmando que te encuentras dentro del perímetro permitido de la sucursal...</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="relative w-24 h-24 rounded-full border-2 border-emerald-500 flex items-center justify-center mx-auto overflow-hidden">
-                <div className="absolute inset-x-0 h-1 bg-emerald-500 animate-[bounce_2s_infinite]"></div>
-                <Camera size={40} className="text-emerald-400" />
-              </div>
-              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">Fichaje Seguro con Selfie</h4>
-              <p className="text-[10px] text-slate-400">Capturando y validando fotografía de rostro del colaborador...</p>
-            </div>
-          )}
-        </div>
-      )}
+
 
       {/* MODALES DE DETALLE DE FICHAJE DE LA BARRA CRONOLÓGICA */}
       {activeModal && (

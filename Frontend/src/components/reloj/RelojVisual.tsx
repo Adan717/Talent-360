@@ -3491,6 +3491,11 @@ export default function RelojVisual({
                         onMealSwapClick={() => setShowMealSwapModal(true)}
                         onEarlyDepartureClick={handleEarlyDepartureClick}
                         onOvertimeClick={handleOvertimeClick}
+                        onPanicClick={() => setShowPanicModal(true)}
+                        onCallManagerClick={() => {
+                          const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
+                          showCustomAlert(`📞 Contactando al Encargado: ${respUser?.name || 'Titular'}`);
+                        }}
                       />
                     </div>
 
@@ -3880,6 +3885,11 @@ export default function RelojVisual({
                       onMealSwapClick={() => setShowMealSwapModal(true)}
                       onEarlyDepartureClick={handleEarlyDepartureClick}
                       onOvertimeClick={handleOvertimeClick}
+                      onPanicClick={() => setShowPanicModal(true)}
+                      onCallManagerClick={() => {
+                        const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
+                        showCustomAlert(`📞 Contactando al Encargado: ${respUser?.name || 'Titular'}`);
+                      }}
                     />
 
                     {/* Módulo de Notificaciones de Turno para Desktop */}

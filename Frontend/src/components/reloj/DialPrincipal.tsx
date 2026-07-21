@@ -14,6 +14,7 @@ import {
   Armchair,
   Key,
   MapPin,
+  Phone,
   X
 } from 'lucide-react';
 
@@ -47,6 +48,8 @@ interface DialPrincipalProps {
   onMealSwapClick?: () => void;
   onEarlyDepartureClick?: () => void;
   onOvertimeClick?: () => void;
+  onCallManagerClick?: () => void;
+  onPanicClick?: () => void;
 }
 
 export default function DialPrincipal({
@@ -72,7 +75,9 @@ export default function DialPrincipal({
   hasMealReservation = false,
   onMealSwapClick,
   onEarlyDepartureClick,
-  onOvertimeClick
+  onOvertimeClick,
+  onCallManagerClick,
+  onPanicClick
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
@@ -279,7 +284,8 @@ export default function DialPrincipal({
         </button>
       )}
 
-      {btnProps.text === 'DÍA DE DESCANSO' && onOvertimeClick && (
+      {/* BUG FIX: Laborar Horas Extras debe aparecer tanto en Día de Descanso como en Día Feriado LFT */}
+      {(btnProps.text === 'DÍA DE DESCANSO' || btnProps.text === 'DÍA FERIADO (LFT)') && onOvertimeClick && (
         <button
           type="button"
           onClick={onOvertimeClick}
@@ -287,6 +293,30 @@ export default function DialPrincipal({
         >
           <Fingerprint size={12} className="text-amber-550 animate-pulse" />
           Laborar Horas Extras
+        </button>
+      )}
+
+      {/* BUG FIX: Botón de Llamar a Encargado cuando la tienda está cerrada o en sala de espera */}
+      {(storeStatus === 'closed' || clockState === 'waiting_room' || btnProps.text === '⏳ Esperando Apertura') && onCallManagerClick && (
+        <button
+          type="button"
+          onClick={onCallManagerClick}
+          className="mt-2.5 py-1.5 px-4 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-250 text-indigo-700 dark:text-indigo-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+        >
+          <Phone size={12} className="text-indigo-500" />
+          Llamar a Encargado
+        </button>
+      )}
+
+      {/* BUG FIX: Acceso directo a Botón de Pánico de Emergencia */}
+      {onPanicClick && (
+        <button
+          type="button"
+          onClick={onPanicClick}
+          className="mt-2 py-1 px-3 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-[9px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer flex items-center gap-1 opacity-70 hover:opacity-100 z-20"
+        >
+          <AlertTriangle size={10} className="text-rose-500" />
+          Emergencia / Pánico
         </button>
       )}
 

@@ -960,11 +960,12 @@ export function useClockEngine(overrideUser?: any) {
                     desc = `Fichaje con retardo. El empleado llegó tarde por ${delayMins} minutos.`;
                 }
             }
-            else if (state === 'inactive') { 
+            else if (state === 'inactive' || state === 'finished') { 
+                // BUG FIX: 'finished' es el nuevo estado post-checkout. Manejamos ambos por compatibilidad.
                 actionName = 'Fichaje de Salida'; 
                 type = 'warning'; 
                 setCheckOutTimes(prev => ({ ...prev, [userId]: currentSimTime }));
-                // Trigger Spill-over
+                // Trigger Spill-over de tareas no completadas
                 const u = globalUsers.find(user => user.id === userId);
                 if (u) {
                     useTaskStore.getState().handleSpillOver(userId, u.job_role_id);
@@ -1005,7 +1006,7 @@ export function useClockEngine(overrideUser?: any) {
             const timeStr = `${Math.floor(currentSimTime/60).toString().padStart(2, '0')}:${(currentSimTime%60).toString().padStart(2, '0')}`;
             let type = 'check_in';
             if (state === 'meal') type = 'meal_start';
-            else if (state === 'inactive') type = 'check_out';
+            else if (state === 'inactive' || state === 'finished') type = 'check_out'; // BUG FIX: ambos mapean a check_out
             else if (prevState === 'meal' && state === 'active') type = 'meal_end';
             
             const startMins = shiftConfigs[userId]?.start ? parseInt(shiftConfigs[userId].start.split(':')[0])*60 + parseInt(shiftConfigs[userId].start.split(':')[1]) : 480;
@@ -2402,6 +2403,18 @@ export function useClockEngine(overrideUser?: any) {
 
       // Auto-check in the manager
       await syncToDB('check_in', false, 0, 'Apertura de tienda');
+
+      // BUG FIX: Sincronizar estado diario de apertura en localStorage para congruencia con modo premium
+      const savedStatusStr = localStorage.getItem('store_daily_opening_status');
+      if (savedStatusStr) {
+        try {
+          const savedStatus = JSON.parse(savedStatusStr);
+          savedStatus.status = 'opened';
+          savedStatus.opened_at = formattedTime.split(' ')[0];
+          localStorage.setItem('store_daily_opening_status', JSON.stringify(savedStatus));
+        } catch (e) {}
+      }
+
       window.dispatchEvent(new Event('db_sync_updated'));
 
       let msg = `🟢 [${formattedTime}] Tienda Abierta. Notificando a la matriz.`;
@@ -2487,8 +2500,9 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'break_end') newState = 'active';
           else if (type === 'temp_exit_start') newState = 'temp_exit';
           else if (type === 'temp_exit_end') newState = 'active';
-          else if (type === 'check_out') newState = 'inactive';
+          else if (type === 'check_out') newState = 'finished'; // BUG FIX: 'inactive' causaba que el dial mostrara 'Registrar Entrada' post checkout
           else if (type === 'contingency') newState = 'contingency';
+          else if (type === 'absent') newState = 'absent';
           
           if (currentUser?.id) {
              updateClockState(currentUser.id, newState);
@@ -2513,8 +2527,9 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'break_end') newState = 'active';
           else if (type === 'temp_exit_start') newState = 'temp_exit';
           else if (type === 'temp_exit_end') newState = 'active';
-          else if (type === 'check_out') newState = 'inactive';
+          else if (type === 'check_out') newState = 'finished'; // BUG FIX: sandbox mode también debe usar 'finished'
           else if (type === 'contingency') newState = 'contingency';
+          else if (type === 'absent') newState = 'absent';
 
           updateClockState(currentUser.id, newState);
           return {};
@@ -2541,8 +2556,9 @@ export function useClockEngine(overrideUser?: any) {
              else if (type === 'break_end') newState = 'active';
              else if (type === 'temp_exit_start') newState = 'temp_exit';
              else if (type === 'temp_exit_end') newState = 'active';
-             else if (type === 'check_out') newState = 'inactive';
+             else if (type === 'check_out') newState = 'finished'; // BUG FIX: producción también debe usar 'finished'
              else if (type === 'contingency') newState = 'contingency';
+             else if (type === 'absent') newState = 'absent';
 
              updateClockState(currentUser.id, newState);
              window.dispatchEvent(new Event('db_sync_updated'));
@@ -2637,16 +2653,21 @@ export function useClockEngine(overrideUser?: any) {
         }
       } else if (actionText === 'Abrir Tienda') {
         handleOpenStore(false);
-      } else if (actionText === 'Iniciar Horario de Comida') {
+      } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida') {
+        // BUG FIX: getButtonProps retorna 'Iniciar Comida', unificamos ambos strings
         await syncToDB('meal_start');
-      } else if (actionText === 'Regresar de Comida') {
+        showCustomAlert('🍔 Horario de comida iniciado.');
+      } else if (actionText === 'Terminar Comida' || actionText === 'Regresar de Comida') {
+        // BUG FIX: getButtonProps retorna 'Terminar Comida' (clockState === meal)
         const res = await syncToDB('meal_end');
         if (!res?.offline) {
           showCustomAlert('🏃 Has regresado de comer.');
         }
-      } else if (actionText === 'Descanso Ley Silla') {
+      } else if (actionText === 'Descanso' || actionText === 'Descanso Ley Silla') {
+        // BUG FIX: getButtonProps retorna 'Descanso', no 'Descanso Ley Silla'
         await handleBreakStart();
-      } else if (actionText === 'Regresar de Descanso') {
+      } else if (actionText === 'Terminar Descanso' || actionText === 'Regresar de Descanso') {
+        // BUG FIX: getButtonProps retorna 'Terminar Descanso' (clockState === short_break)
         await handleBreakEnd();
       } else if (actionText === 'Entrega de Turno') {
         handleHandoverStart();
@@ -3202,6 +3223,67 @@ export function useClockEngine(overrideUser?: any) {
       };
     }
 
+    // BUG FIX: Evaluar storeStatus === 'closed' ANTES de la verificación general de !isWithinPerimeter
+    // De lo contrario, un empleado fuera del perímetro ve 'Reportar Incidencia' cuando la tienda está cerrada,
+    // en lugar de 'Esperando Apertura' o 'Notificar Tienda Cerrada'.
+    if (storeStatus === 'closed') {
+      const isOpeningManager = Number(currentUser?.id) === Number(responsibleId);
+      
+      if (!isOpeningManager) {
+        if (!isPro) {
+          return {
+            text: '⏳ Esperando Apertura',
+            bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
+            icon: '⏳',
+            disabled: true,
+            subtext: `Apertura por: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
+          };
+        } else {
+          if (currentSimTime >= shiftStartMins && currentSimTime <= shiftStartMins + 20 && features.allow_store_closed_report !== false) {
+            const hasReported = localStorage.getItem(`reported_closed_${currentDay}_${currentUser?.id}`) === 'true';
+            if (hasReported) {
+              return {
+                text: '⏳ Esperando Apertura',
+                bg: 'bg-slate-300 text-slate-500 cursor-not-allowed',
+                icon: '⏳',
+                disabled: true,
+                subtext: 'Alerta de tienda cerrada ya enviada al administrador.'
+              };
+            }
+            return {
+              text: '🚨 Notificar Tienda Cerrada',
+              bg: 'bg-orange-500 hover:bg-orange-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
+              icon: '🚨',
+              isReportStoreClosed: true,
+              subtext: `Encargado: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
+            };
+          }
+          return {
+            text: '⏳ Esperando Apertura',
+            bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
+            icon: '⏳',
+            disabled: true,
+            subtext: `Apertura por: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
+          };
+        }
+      }
+    }
+
+    if (isOpeningPremium && storeStatus === 'closed') {
+      if (Number(currentUser.id) === Number(responsibleId)) {
+        return { 
+          text: 'Abrir Tienda', 
+          bg: 'bg-violet-650 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse', 
+          icon: '🗝️',
+          isOpeningActive: true 
+        };
+      }
+    }
+
+    if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed') {
+      return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️' };
+    }
+
     if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
       const isResponsibleForOpening = isOpeningPremium && storeStatus === 'closed' && Number(currentUser?.id) === Number(responsibleId);
 
@@ -3224,67 +3306,11 @@ export function useClockEngine(overrideUser?: any) {
       };
     }
 
-    // ----------------------------------------------------
-    // VENTANA 3: Notificar Tienda Cerrada (8:30 AM - 8:50 AM)
-    // ----------------------------------------------------
-    if (storeStatus === 'closed') {
-      const isOpeningManager = Number(currentUser?.id) === Number(responsibleId);
-      
-      if (!isOpeningManager) {
-        if (!isPro) {
-          return {
-            text: '⏳ Esperando Apertura',
-            bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
-            icon: '⏳',
-            disabled: true,
-            subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}`
-          };
-        } else {
-          if (currentSimTime >= shiftStartMins && currentSimTime <= shiftStartMins + 20 && features.allow_store_closed_report !== false) {
-            const hasReported = localStorage.getItem(`reported_closed_${currentDay}_${currentUser?.id}`) === 'true';
-            if (hasReported) {
-              return {
-                text: '⏳ Esperando Apertura',
-                bg: 'bg-slate-300 text-slate-500 cursor-not-allowed',
-                icon: '⏳',
-                disabled: true,
-                subtext: 'Alerta de tienda cerrada ya enviada al administrador.'
-              };
-            }
-            return {
-              text: '🚨 Notificar Tienda Cerrada',
-              bg: 'bg-orange-500 hover:bg-orange-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
-              icon: '🚨',
-              isReportStoreClosed: true,
-              subtext: `Encargado: ${responsibleUser.name.split(' ')[0]}`
-            };
-          }
-          return {
-            text: '⏳ Esperando Apertura',
-            bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
-            icon: '⏳',
-            disabled: true,
-            subtext: `Apertura por: ${responsibleUser.name.split(' ')[0]}`
-          };
-        }
-      }
+    // BUG FIX: Si ya hubo check_out hoy (checkOutTimes tiene registro), mostrar 'Jornada Finalizada'
+    // en lugar de 'Registrar Entrada'. Esto previene dobles fichajes accidentales.
+    if (clockState === 'inactive' && checkOutTimes[currentUser?.id] !== undefined) {
+      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', disabled: true, subtext: 'Turno concluido hoy.' };
     }
-
-    if (isOpeningPremium && storeStatus === 'closed') {
-      if (Number(currentUser.id) === Number(responsibleId)) {
-        return { 
-          text: 'Abrir Tienda', 
-          bg: 'bg-violet-650 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse', 
-          icon: '🗝️',
-          isOpeningActive: true 
-        };
-      }
-    }
-
-    if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed') {
-      return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️' };
-    }
-
     if (clockState === 'inactive' || clockState === 'waiting_room') {
       return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢' };
     }
@@ -3316,6 +3342,20 @@ export function useClockEngine(overrideUser?: any) {
              };
           }
         }
+        // BUG FIX: Evitar que Iniciar Comida esté disponible inmediatamente a los 5 minutos de entrar.
+        // Debe haber pasado al menos 90 minutos desde el check-in o estar dentro del rango de comida.
+        const userCheckInTimeMins = checkInTimes[currentUser?.id];
+        const minMealTimeMins = userCheckInTimeMins ? userCheckInTimeMins + 90 : shiftStartMins + 120;
+        if (currentSimTime < minMealTimeMins && (!mySlots || mySlots.length === 0)) {
+          return {
+            text: 'Iniciar Comida',
+            bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60',
+            icon: '🍔',
+            disabled: true,
+            subtext: `Disponible a partir de las ${formatTimeMins(minMealTimeMins)}`
+          };
+        }
+
         return { text: 'Iniciar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔' };
       }
 
@@ -3330,7 +3370,12 @@ export function useClockEngine(overrideUser?: any) {
       }
 
       const isManager = ['Encargado Titular', 'Segundo Encargado', 'Supervisor', 'Gerente'].includes(currentUser.role);
-      if (isPro && isManager && !isHandoverCompleted) {
+      // BUG FIX: Entrega de turno solo debe aparecer en ventana de cierre (15 min antes de salida)
+      // para no bloquear indefinidamente a encargados PRO durante todo el turno.
+      const currentShiftEndStrHO = shiftConfigs[currentUser?.id]?.end || '17:00';
+      const currentShiftEndMinsHO = parseTimeToMins(currentShiftEndStrHO);
+      const isHandoverWindow = currentSimTime >= currentShiftEndMinsHO - 15;
+      if (isPro && isManager && !isHandoverCompleted && isHandoverWindow) {
         return { 
           text: 'Entrega de Turno', 
           bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse', 

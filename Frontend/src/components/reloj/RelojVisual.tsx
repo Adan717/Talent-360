@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -3815,9 +3815,14 @@ export default function RelojVisual({
               </div>
             ) : (
               <div className="grid grid-cols-12 gap-8 items-start">
-              
-              {/* Left Column (span 7): Clock, Timeline, Actions */}
-              <div className={`col-span-7 flex flex-col gap-6 p-6 rounded-3xl border transition-colors ${
+
+              {/* Left Column (span 8): Clock, Timeline, Actions.
+                  BUG FIX: antes era col-span-7 sin ninguna columna hermana en la misma fila del grid de
+                  12 — en pantallas anchas de escritorio eso dejaba 5/12 (~42% del ancho del contenedor
+                  max-w-7xl) como espacio vacío en blanco a la derecha del dial, antes de la barra
+                  inferior de tareas. Ahora ocupa 8/12 y su columna hermana (col-span-4, abajo) llena
+                  el resto con contenido real. */}
+              <div className={`col-span-12 lg:col-span-8 flex flex-col gap-6 p-6 rounded-3xl border transition-colors ${
                 isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
               }`}>
               
@@ -3965,20 +3970,96 @@ export default function RelojVisual({
                       onDeclareContingencyClick={() => setShowContingencyModal(true)}
                       hasActiveContingency={!!activeContingency}
                     />
-
-                    {/* Módulo de Notificaciones de Turno para Desktop */}
-                    {hasCheckedIn && (
-                      <div className="w-full max-w-[340px] mt-6 mx-auto animate-fade-in">
-                        {renderModuloNotificaciones(false)}
-                      </div>
-                    )}
-                  
-                  {/* Desktop Wait Queue & Absence Helpers - Side by Side */}
-                  <div className="flex items-center justify-center gap-3 mt-5.5 w-full max-w-[340px] mx-auto">
-
-                  </div>
                 </div>
               </div>
+
+              {/* Right Column (span 4, visible desde lg): antes esta franja del grid de 12 columnas
+                  quedaba vacía (ver nota arriba). Ahora concentra el estado operativo de la sucursal,
+                  las notificaciones de turno (reubicadas desde debajo del dial, donde vivían apretadas
+                  en un contenedor de 340px dentro de una columna que ya sobraba de ancho) y accesos
+                  directos a las mismas acciones que ya existen como botones secundarios del Dialer,
+                  para que no dependan solo de los pequeños pills debajo del círculo. */}
+              <div className="col-span-12 lg:col-span-4 flex flex-col gap-5">
+
+                {/* Estado de la Sucursal */}
+                <div className={`p-5 rounded-3xl border flex flex-col gap-3 transition-colors ${
+                  isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Estado de la Sucursal</h4>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-455 border-rose-500/20'}`}>
+                      <span className={`w-1 h-1 rounded-full ${storeStatus === 'open' ? 'bg-emerald-505 animate-pulse' : 'bg-rose-500'}`}></span>
+                      {storeStatus === 'open' ? 'Abierto' : 'Cerrado'}
+                    </span>
+                  </div>
+                  {isOpeningPremium && (() => {
+                    const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
+                    const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
+                    return (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                        {storeStatus === 'open'
+                          ? `Apertura de hoy a cargo de ${responsibleUser.name}.`
+                          : Number(currentUser.id) === Number(responsibleId)
+                            ? 'Tú eres el responsable de abrir hoy.'
+                            : `Esperando apertura por: ${responsibleUser.name}.`}
+                      </p>
+                    );
+                  })()}
+                  {activeContingency && (
+                    <div className="bg-amber-500 text-white px-3 py-2 rounded-xl flex items-center gap-2 text-[10px] font-black">
+                      🛡️ Modo Contingencia Activo — 100% salario LFT
+                    </div>
+                  )}
+                </div>
+
+                {/* Accesos Directos: mismas acciones que ya existen como botones secundarios del
+                    Dialer (docs/funcionamiento_del_dial.md §5), con más espacio para leerse en desktop. */}
+                <div className={`p-5 rounded-3xl border flex flex-col gap-2.5 transition-colors ${
+                  isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
+                }`}>
+                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide mb-1">Accesos Directos</h4>
+                  {isUserActiveKeyholder(currentUser?.id) && (storeStatus === 'closed' || clockState === 'waiting_room') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
+                        if (respUser?.phone) window.location.href = `tel:${respUser.phone}`;
+                        showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
+                      }}
+                      className="w-full text-left py-2.5 px-3.5 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-250 text-indigo-700 dark:text-indigo-400 font-bold text-xs rounded-xl hover:bg-indigo-100 transition-all flex items-center gap-2 active:scale-[0.98]"
+                    >
+                      <Phone size={13} /> Llamar a Encargado de Llaves
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowContingencyModal(true)}
+                    disabled={!!activeContingency}
+                    className={`w-full text-left py-2.5 px-3.5 border font-bold text-xs rounded-xl transition-all flex items-center gap-2 ${
+                      activeContingency
+                        ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-default opacity-90'
+                        : 'bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-700 border-slate-200 hover:border-amber-200 active:scale-[0.98]'
+                    }`}
+                  >
+                    ⚡ {activeContingency ? 'Contingencia Activa' : 'Declarar Eventualidad'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPanicModal(true)}
+                    className="w-full text-left py-2.5 px-3.5 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 font-bold text-xs rounded-xl transition-all flex items-center gap-2 active:scale-[0.98]"
+                  >
+                    🚨 Emergencia / Pánico
+                  </button>
+                </div>
+
+                {/* Módulo de Notificaciones de Turno */}
+                {hasCheckedIn && (
+                  <div className="w-full animate-fade-in">
+                    {renderModuloNotificaciones(false)}
+                  </div>
+                )}
+              </div>
+
                 {/* Bottom Row (span 12): Tasks & Alerts Hub */}
               <div className={`col-span-12 border rounded-3xl p-5 flex flex-col gap-3 h-[200px] mt-4 transition-colors ${
                 isDark ? 'bg-slate-900/20 border-slate-905' : 'bg-white border-slate-202 shadow-md'

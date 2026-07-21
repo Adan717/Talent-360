@@ -39,6 +39,15 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
   const isSandbox = useAppStore(state => state.isSandboxMode);
   const globalUsers = useAppStore(state => state.globalUsers);
 
+  // NUEVO: cursos de Academia disponibles para el selector de "Curso de Puntualidad" (pestaña Reloj).
+  const [academyCourses, setAcademyCourses] = useState<any[]>([]);
+  useEffect(() => {
+    if (activeTab !== 'reloj' || isSandbox) return;
+    axiosInstance.get('/academy/courses')
+      .then(res => setAcademyCourses(res.data?.courses || []))
+      .catch(err => console.error('Error cargando cursos de Academia:', err));
+  }, [activeTab, isSandbox]);
+
   useEffect(() => {
     if (activeTab === 'apertura') {
       const loadAperturaData = async () => {
@@ -224,6 +233,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           ...(systemSettings.mealSettings || {})
         },
         timeBankConfigs: systemSettings.timeBankConfigs || { maxLateMinsAllowed: 15 },
+        // NUEVO: curso de Academia requerido para destrabar el "Fichaje Bloqueado" (estado #1 del
+        // Reloj Checador, docs/funcionamiento_del_dial.md) tras 3 retardos. Llave plana en
+        // system_settings (no anidada), tal como documentó Claude Code en BACKEND_INTERFACES.md —
+        // se guarda con el mismo updateSetting('punctuality_course_id', ...) genérico.
+        punctuality_course_id: systemSettings.punctuality_course_id ?? null,
         onboarding: systemSettings.onboarding || {
           welcomeTitle: '¡Bienvenido al Equipo!',
           welcomeMessage: 'Estamos muy emocionados de que te unas a nosotros.',
@@ -282,6 +296,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         await updateSetting('leySillaConfig', formData.leySillaConfig);
         await updateSetting('timeBankConfigs', formData.timeBankConfigs);
         await updateSetting('storeSchedule', formData.storeSchedule); // Guardar también el horario de la sucursal
+        await updateSetting('punctuality_course_id', formData.punctuality_course_id);
       } else if (activeTab === 'comidas' || section === 'mealSettings') {
         await updateSetting('mealSettings', formData.mealSettings);
       } else if (activeTab === 'onboarding' || section === 'onboarding') {
@@ -563,6 +578,34 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   />
                   <span className="text-slate-600">Minutos de gracia antes de marcar retardo.</span>
                 </div>
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 className="font-bold text-slate-800 mb-1 flex items-center gap-2">
+                  <GraduationCap size={18} className="text-indigo-600" />
+                  Curso de Puntualidad Obligatorio
+                </h4>
+                <p className="text-xs text-slate-500 mb-4">
+                  Al acumular 3 retardos, el fichaje del colaborador se bloquea hasta que complete este curso en la Academia (estado "🔒 Fichaje Bloqueado" del Reloj Checador).
+                </p>
+                <select
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700 bg-white focus:outline-none focus:border-indigo-650"
+                  value={formData.punctuality_course_id ?? ''}
+                  onChange={(e) => setFormData((prev: any) => ({
+                    ...prev,
+                    punctuality_course_id: e.target.value ? parseInt(e.target.value) : null
+                  }))}
+                >
+                  <option value="">Sin configurar (el bloqueo nunca se libera)</option>
+                  {academyCourses.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+                {academyCourses.length === 0 && (
+                  <p className="text-[10px] text-amber-600 mt-2">
+                    No hay cursos creados todavía en la Academia. Crea uno primero en la pestaña "Academia".
+                  </p>
+                )}
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">

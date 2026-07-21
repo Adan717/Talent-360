@@ -280,15 +280,30 @@ class ClockController extends Controller
         ]);
     }
 
+    // Llaves de configuración que, aunque /sync/settings en general está abierto a
+    // admin+supervisor, solo un admin puede modificar (ej. qué curso destraba el
+    // bloqueo por retardos — es una decisión de política de la empresa).
+    private const ADMIN_ONLY_SETTING_KEYS = ['punctuality_course_id'];
+
     public function syncSettings(Request $request)
     {
         $tenantId = auth()->user()->tenant_id ?? 1;
+        $isAdmin = auth()->user()->role === 'admin' || auth()->user()->role === 'platform_admin';
         $settings = $request->all();
-        
+
         // Handle single setting format: { key: 'settingName', value: 'settingValue' }
         if (count($settings) === 2 && array_key_exists('key', $settings) && array_key_exists('value', $settings)) {
             $key = $settings['key'];
             $value = $settings['value'];
+
+            if (in_array($key, self::ADMIN_ONLY_SETTING_KEYS) && !$isAdmin) {
+                return response()->json(['error' => 'Solo un administrador puede modificar esta configuración.'], 403);
+            }
+
+            if ($key === 'punctuality_course_id' && $value !== null && !\App\Models\AcademyCourse::find($value)) {
+                return response()->json(['error' => 'El curso seleccionado no existe o no pertenece a tu empresa.'], 422);
+            }
+
             DB::table('system_settings')->updateOrInsert(
                 ['key' => $key, 'tenant_id' => $tenantId],
                 ['value' => is_string($value) ? $value : json_encode($value), 'updated_at' => now()]
@@ -296,6 +311,9 @@ class ClockController extends Controller
         } else {
             // Handle bulk settings format: { settingName1: 'value1', settingName2: 'value2' }
             foreach ($settings as $key => $value) {
+                if (in_array($key, self::ADMIN_ONLY_SETTING_KEYS) && !$isAdmin) {
+                    return response()->json(['error' => 'Solo un administrador puede modificar esta configuración.'], 403);
+                }
                 DB::table('system_settings')->updateOrInsert(
                     ['key' => $key, 'tenant_id' => $tenantId],
                     ['value' => is_string($value) ? $value : json_encode($value), 'updated_at' => now()]

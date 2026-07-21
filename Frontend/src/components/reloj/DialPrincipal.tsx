@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  LogIn, 
-  LogOut, 
-  Coffee, 
-  Utensils, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  LogIn,
+  LogOut,
+  Coffee,
+  Utensils,
+  CheckCircle,
+  AlertCircle,
   AlertTriangle,
   Sun,
   Store,
@@ -15,6 +15,8 @@ import {
   Key,
   MapPin,
   Phone,
+  ShieldAlert,
+  Ban,
   X
 } from 'lucide-react';
 
@@ -34,6 +36,10 @@ interface DialPrincipalProps {
     isOpeningManager?: boolean;
     text?: string;
     subtext?: string;
+    // Clave semántica explícita por estado (docs/funcionamiento_del_dial.md, Matriz de 23 Estados).
+    // Reemplaza la comparación frágil por texto literal que antes decidía ícono/color — un cambio de
+    // copy en getButtonProps() ya no puede romper silenciosamente el ícono mostrado.
+    iconKey?: string;
   };
   lateUsers: Record<number, boolean>;
   currentDay: string;
@@ -103,67 +109,76 @@ export default function DialPrincipal({
   // Effectively disable the button visually and behaviorally (without block events)
   const isEffectivelyDisabled = !isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'));
 
-  const getDialColorClasses = () => {
-    const isRestDay = btnProps.text === 'DÍA DE DESCANSO';
-    if (isRestDay) return 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300';
-    if (isGpsError) return 'bg-white border-rose-350 text-rose-500 shadow-none animate-pulse hover:border-rose-450';
-    if (btnProps.isIncidenceReport) return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600';
+  // Mapa único iconKey -> clases de color/glow/ícono. Fuente de verdad para las 3 funciones de abajo,
+  // así un estado nuevo en getButtonProps() solo necesita un iconKey nuevo aquí, en un solo lugar,
+  // en vez de tener que actualizar 3 switches de texto por separado (la causa original de que varios
+  // estados de la Matriz de 23 Estados cayeran silenciosamente al ícono Fingerprint genérico).
+  const ICON_KEY_STYLES: Record<string, { color: string; glow: string; icon: (s: number) => React.ReactNode }> = {
+    blocked: { color: 'bg-white border-slate-400 text-slate-500 shadow-none', glow: 'bg-slate-400', icon: (s) => <Fingerprint size={s} className="text-slate-500 shrink-0" /> },
+    holiday: { color: 'bg-white border-indigo-400 text-indigo-600 shadow-indigo-500/10', glow: 'bg-indigo-400', icon: (s) => <Sun size={s} className="text-indigo-500 shrink-0" /> },
+    restday: { color: 'bg-white border-slate-200 text-slate-400 shadow-none hover:border-slate-300', glow: '', icon: (s) => <Sun size={s} className="text-slate-400 shrink-0" /> },
+    incidence_report: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 animate-pulse hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <AlertTriangle size={s} className="text-amber-500 animate-pulse shrink-0" /> },
+    in_transit: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <MapPin size={s} className="text-amber-500 shrink-0" /> },
+    arrived: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <LogIn size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
+    gps_locked: { color: 'bg-white border-slate-200 text-slate-400 shadow-none', glow: '', icon: (s) => <MapPin size={s} className="text-slate-400 shrink-0" /> },
+    access_blocked: { color: 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 animate-pulse hover:border-rose-600', glow: 'bg-rose-400', icon: (s) => <MapPin size={s} className="text-rose-505 shrink-0" /> },
+    waiting_opening: { color: 'bg-white border-slate-200 text-slate-400 shadow-none', glow: '', icon: (s) => <Hourglass size={s} className="text-slate-400 shrink-0" /> },
+    report_store_closed: { color: 'bg-white border-orange-500 text-orange-600 shadow-orange-500/10 animate-pulse hover:border-orange-600', glow: 'bg-orange-400', icon: (s) => <AlertCircle size={s} className="text-orange-500 animate-pulse shrink-0" /> },
+    call_suplente: { color: 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600', glow: 'bg-violet-400', icon: (s) => <Phone size={s} className="text-violet-500 animate-pulse shrink-0" /> },
+    open_store: {
+      color: 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600',
+      glow: 'bg-violet-400',
+      // Combo Key+Store de la matriz (estado #8): Store como badge sobre el Key principal.
+      icon: (s) => (
+        <span className="relative inline-flex shrink-0">
+          <Key size={s} className="text-violet-500 animate-pulse shrink-0" />
+          <Store size={Math.round(s * 0.42)} className="absolute -bottom-1 -right-1 text-violet-700 bg-white rounded-full p-0.5" />
+        </span>
+      )
+    },
+    emergency_open: { color: 'bg-white border-rose-600 text-rose-650 shadow-rose-500/15 animate-pulse hover:border-rose-700', glow: 'bg-rose-500', icon: (s) => <ShieldAlert size={s} className="text-rose-600 animate-pulse shrink-0" /> },
+    entrada: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <LogIn size={s} className="text-emerald-500 shrink-0" /> },
+    meal_prompt: { color: 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 animate-pulse shrink-0" /> },
+    meal_start: { color: 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600', glow: 'bg-amber-400', icon: (s) => <Coffee size={s} className="text-amber-500 shrink-0" /> },
+    meal_end: { color: 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600', glow: 'bg-emerald-400', icon: (s) => <Utensils size={s} className="text-emerald-500 animate-pulse shrink-0" /> },
+    break_start: { color: 'bg-white border-purple-500 text-purple-600 shadow-purple-500/10 animate-pulse hover:border-purple-600', glow: 'bg-purple-400', icon: (s) => <Armchair size={s} className="text-purple-505 animate-pulse shrink-0" /> },
+    break_end: { color: 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 animate-pulse hover:border-indigo-600', glow: 'bg-indigo-400', icon: (s) => <Armchair size={s} className="text-indigo-500 animate-pulse shrink-0" /> },
+    handover: { color: 'bg-white border-cyan-500 text-cyan-600 shadow-cyan-500/10 animate-pulse hover:border-cyan-600', glow: 'bg-cyan-400', icon: (s) => <Key size={s} className="text-cyan-500 animate-pulse shrink-0" /> },
+    exit: { color: 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 hover:border-rose-600', glow: 'bg-rose-400', icon: (s) => <LogOut size={s} className="text-rose-505 shrink-0" /> },
+    reingreso: { color: 'bg-white border-teal-500 text-teal-600 shadow-teal-500/10 hover:border-teal-600', glow: 'bg-teal-400', icon: (s) => <LogIn size={s} className="text-teal-500 shrink-0" /> },
+    absent: { color: 'bg-white border-rose-200 text-rose-400 shadow-none', glow: '', icon: (s) => <Ban size={s} className="text-rose-400 shrink-0" /> },
+    finished: { color: 'bg-white border-slate-300 text-slate-400 shadow-none', glow: '', icon: (s) => <CheckCircle size={s} className="text-slate-400 shrink-0" /> },
+  };
 
+  const getDialColorClasses = () => {
+    if (isGpsError) return 'bg-white border-rose-350 text-rose-500 shadow-none animate-pulse hover:border-rose-450';
+    const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
+    if (byKey) return byKey.color;
+    // Fallback por texto para cualquier estado que aún no tenga iconKey asignado (no debería pasar
+    // para los 23 de la matriz tras esta corrección, pero evita romper estados nuevos/experimentales).
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600';
     if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
-    if (text === 'Reserva tu Comida') return 'bg-white border-amber-500 text-amber-600 shadow-amber-500/10 hover:border-amber-600 animate-pulse';
-    if (text === 'Iniciar Comida') return 'bg-white border-amber-500 text-amber-655 shadow-amber-500/10 hover:border-amber-600';
-    if (text === 'Terminar Comida') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 animate-pulse hover:border-emerald-600';
-    if (text === 'Descanso') return 'bg-white border-purple-500 text-purple-600 shadow-purple-500/10 animate-pulse hover:border-purple-600';
-    if (text === 'Terminar Descanso') return 'bg-white border-indigo-500 text-indigo-600 shadow-indigo-500/10 animate-pulse hover:border-indigo-600';
-    if (text === 'Entrega de Turno') return 'bg-white border-cyan-500 text-cyan-600 shadow-cyan-500/10 animate-pulse hover:border-cyan-600';
-    if (text === 'Registrar Salida') return 'bg-white border-rose-500 text-rose-600 shadow-rose-500/10 hover:border-rose-600';
-    if (text === 'Registrar Reingreso') return 'bg-white border-teal-500 text-teal-600 shadow-teal-500/10 hover:border-teal-600';
-    if (text === 'Jornada Finalizada') return 'bg-white border-slate-300 text-slate-400 shadow-none';
-
     return 'bg-white border-violet-400 text-violet-655 shadow-violet-500/10 hover:border-violet-500';
   };
 
   const getDialGlowClasses = () => {
-    const isRestDay = btnProps.text === 'DÍA DE DESCANSO';
-    if (isRestDay) return null;
     if (isGpsError) return 'bg-rose-500';
-    if (btnProps.isIncidenceReport) return 'bg-amber-400';
-
-    const text = btnProps.text || '';
-    if (text === 'Abrir Tienda') return 'bg-violet-400';
-    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return 'bg-emerald-400';
-    if (text === 'Reserva tu Comida') return 'bg-amber-400';
-    if (text === 'Iniciar Comida') return 'bg-amber-400';
-    if (text === 'Terminar Comida') return 'bg-emerald-400';
-    if (text === 'Descanso') return 'bg-purple-400';
-    if (text === 'Terminar Descanso') return 'bg-indigo-400';
-    if (text === 'Entrega de Turno') return 'bg-cyan-400';
-    if (text === 'Registrar Salida') return 'bg-rose-400';
-    if (text === 'Registrar Reingreso') return 'bg-teal-400';
-
+    const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
+    if (byKey) return byKey.glow || null;
     return 'bg-violet-400';
   };
 
   const getDialIcon = (sizeValue: number) => {
     if (isGpsError) return <MapPin size={sizeValue} className="text-rose-505 shrink-0 animate-bounce" />;
-    if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
-    const isRestDay = btnProps.text === 'DÍA DE DESCANSO';
-    if (isRestDay) return <Sun size={sizeValue} className="text-slate-400 shrink-0" />;
+    const byKey = btnProps.iconKey ? ICON_KEY_STYLES[btnProps.iconKey] : undefined;
+    if (byKey) return byKey.icon(sizeValue);
 
+    // Fallback legacy por texto (estados sin iconKey todavía).
+    if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return <Key size={sizeValue} className="text-violet-500 animate-pulse shrink-0" />;
     if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return <LogIn size={sizeValue} className="text-emerald-500 shrink-0" />;
-    if (text === 'Reserva tu Comida') return <Coffee size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
-    if (text === 'Iniciar Comida') return <Coffee size={sizeValue} className="text-amber-500 shrink-0" />;
-    if (text === 'Terminar Comida') return <Utensils size={sizeValue} className="text-emerald-500 animate-pulse shrink-0" />;
-    if (text === 'Descanso') return <Armchair size={sizeValue} className="text-purple-505 animate-pulse shrink-0" />;
-    if (text === 'Terminar Descanso') return <Armchair size={sizeValue} className="text-indigo-500 animate-pulse shrink-0" />;
-    if (text === 'Entrega de Turno') return <Key size={sizeValue} className="text-cyan-500 animate-pulse shrink-0" />;
-    if (text === 'Registrar Salida') return <LogOut size={sizeValue} className="text-rose-505 shrink-0" />;
-    if (text === 'Registrar Reingreso') return <LogIn size={sizeValue} className="text-teal-500 shrink-0" />;
-    if (text === 'Jornada Finalizada') return <CheckCircle size={sizeValue} className="text-slate-400 shrink-0" />;
 
     return <Fingerprint size={sizeValue} className="text-slate-300 shrink-0" />;
   };

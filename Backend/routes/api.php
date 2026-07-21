@@ -180,6 +180,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/sync/rbac', [ClockController::class, 'syncRbac']);
         Route::put('/sync/role-policies/{id}', [ClockController::class, 'updateRolePolicy']);
 
+        // Configuración general del tenant (incluye punctuality_course_id, clockOpConfig,
+        // active_modules, etc.) — antes vivía en el grupo de "cualquier colaborador",
+        // cualquier empleado podía reescribir configuración de toda la empresa.
+        Route::post('/sync/settings', [ClockController::class, 'syncSettings']);
+
         // Academia (Administración de Cursos LMS)
         Route::middleware('tenant.module:academia')->group(function () {
             Route::post('/academy/courses', [AcademyController::class, 'store']);
@@ -291,6 +296,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/me/update-security', [AuthController::class, 'updateSecurity']);
         Route::put('/me/pre-shift-alarm', [AuthController::class, 'updatePreShiftAlarm']);
         Route::put('/me/security-pin', [AuthController::class, 'updateSecurityPin']);
+        Route::get('/me/punctuality-status', [AuthController::class, 'punctualityStatus']);
         Route::get('/user', function (Request $request) {
             return $request->user();
         });
@@ -337,7 +343,6 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/sync/contingency', [ClockController::class, 'syncContingency']);
         Route::post('/sync/message', [ClockController::class, 'syncMessage']);
         Route::post('/sync/audit_log', [ClockController::class, 'syncAuditLog']);
-        Route::post('/sync/settings', [ClockController::class, 'syncSettings']);
         Route::post('/sync/supervisor/generate-qr', [ClockController::class, 'generateSupervisorQR']);
         Route::post('/sync/supervisor/validate-qr', [ClockController::class, 'validateSupervisorQR']);
 

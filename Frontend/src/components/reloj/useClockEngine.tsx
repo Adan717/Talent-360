@@ -329,6 +329,33 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
 
+  // NUEVO: unifica las dos definiciones de "portador de llaves" que convivían en el frontend —
+  // currentUser.portadorLlaves (campo del empleado) y store_opening_assignments.has_keys (lo que
+  // el backend realmente exige en StoreOpeningService::emergencyOpenWithWitnesses). Antes, distintas
+  // partes de la UI (botón "Llamar a Encargado", botón de pánico, gate de Apertura de Emergencia)
+  // consultaban fuentes distintas y podían no coincidir sobre si una misma persona "tiene llaves".
+  // Devuelve true si CUALQUIERA de las dos fuentes lo confirma, para no quitarle acceso a nadie que
+  // ya estuviera habilitado por una sola de ellas mientras ambos sistemas conviven sin unificarse.
+  const isUserActiveKeyholder = (userId: number | undefined | null) => {
+    if (!userId) return false;
+
+    const user = globalUsers.find((u: any) => Number(u.id) === Number(userId));
+    const hasPortadorLlaves = Boolean(
+      user?.portadorLlaves && String(user.portadorLlaves).toLowerCase() !== 'ninguno'
+    );
+
+    let hasActiveAssignment = false;
+    try {
+      const savedAss = localStorage.getItem('store_opening_assignments');
+      const ass = savedAss ? JSON.parse(savedAss) : [];
+      hasActiveAssignment = ass.some(
+        (a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.has_keys
+      );
+    } catch {}
+
+    return hasPortadorLlaves || hasActiveAssignment;
+  };
+
   // NUEVO (estado #5 de la matriz — "Llamar a Suplente de Llaves"): botón secundario que permite
   // al encargado responsable de apertura de HOY avisar proactivamente al siguiente suplente en la
   // lista de prioridad, ANTES de que se dispare el traspaso automático por deadline vencido
@@ -2992,15 +3019,21 @@ export function useClockEngine(overrideUser?: any) {
           return {};
       }
       try {
-         const response = await axiosInstance.post('/clock/punch', { 
-             user_id: currentUser.id, 
-             type, 
-             time: formattedTime, // En produccion esto debe omitirse para que el servidor use now()
-             details: { 
+         // BUG FIX: antes se mandaba `formattedTime` (12h, ej. "8:32 am", sin segundos). El backend
+         // (ClockService::processPunch) solo usa este campo cuando el tenant está en time_mode
+         // 'simulated'; en ese caso hace Carbon::createFromFormat('Y-m-d H:i:s', ...) esperando
+         // H:i:s de 24h — "8:32 am" rompía ese parseo. En modo real el backend ignora este campo
+         // y usa now(), así que enviar H:i:s aquí es inofensivo y correcto en ambos casos.
+         const punchTimeHms = isSimulatedMode ? getSimTimeStr(currentSimTime) : getRealHms();
+         const response = await axiosInstance.post('/clock/punch', {
+             user_id: currentUser.id,
+             type,
+             time: punchTimeHms,
+             details: {
                  note: details,
                  gps: gpsStatus === 'success' ? gpsCoordinates : null,
                  is_simulator: isSimulator
-             } 
+             }
          });
          const data = response.data;
          if (data && data.success) {
@@ -3049,6 +3082,12 @@ export function useClockEngine(overrideUser?: any) {
     }
     if (btnProps.isEmergencyOpen) {
       setShowEmergencyOpenModal(true);
+      return;
+    }
+    if (btnProps.isCallSuplenteMain) {
+      // Estado #5 real de la matriz mostrado como texto principal del dial (ver getButtonProps):
+      // reutiliza la misma acción que el botón secundario "Marcar a Suplente".
+      handleCallSuplente();
       return;
     }
 
@@ -3621,6 +3660,7 @@ export function useClockEngine(overrideUser?: any) {
         text: '🔒 Fichaje Bloqueado',
         bg: 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed text-xs font-black shadow-none',
         icon: '🔒',
+        iconKey: 'blocked',
         disabled: true,
         subtext: 'Acumulaste 3 retardos. Completa el curso de Puntualidad en la Academia.'
       };
@@ -3631,13 +3671,14 @@ export function useClockEngine(overrideUser?: any) {
         text: 'DÍA FERIADO (LFT)',
         bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700 cursor-not-allowed font-extrabold shadow-sm',
         icon: '📅',
+        iconKey: 'holiday',
         disabled: true,
         subtext: 'Natalicio de Benito Juárez. Descanso de Ley.'
       };
     }
 
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
-    if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', disabled: true };
+    if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
 
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
@@ -3689,6 +3730,7 @@ export function useClockEngine(overrideUser?: any) {
               text: '⚠️ Reportar Ausencia/Retardo',
               bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)] animate-pulse',
               icon: '⚠️',
+              iconKey: 'incidence_report',
               isIncidenceReport: true,
               isOpeningManager: true,
               subtext: `🗝️ Límite de encargado: ${formatTimeMins(managerDeadlineMins)}`
@@ -3701,6 +3743,7 @@ export function useClockEngine(overrideUser?: any) {
               text: '⚠️ Reportar Ausencia/Retardo',
               bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
               icon: '⚠️',
+              iconKey: 'incidence_report',
               isIncidenceReport: true,
               subtext: `Límite para avisar: ${formatTimeMins(employeeDeadlineMins)}`
             };
@@ -3722,6 +3765,7 @@ export function useClockEngine(overrideUser?: any) {
             text: '📍 Ya llegué',
             bg: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse',
             icon: '📍',
+            iconKey: 'arrived',
             isProximityCheck: true,
             subtext: 'Registrar llegada anticipada para asegurar amnistía.'
           };
@@ -3731,10 +3775,14 @@ export function useClockEngine(overrideUser?: any) {
           // si el empleado se está acercando o simplemente está lejos y quieto. Igual que la fila 6
           // de docs/funcionamiento_del_dial.md, mantiene accesible "Reportar Incidencia" (isIncidenceReport)
           // por si ocurre un percance en el trayecto.
+          // iconKey 'in_transit' (en vez de dejar que isIncidenceReport decida el ícono): este estado
+          // sí debe verse como MapPin (trayecto), no como el AlertTriangle genérico de "reportar incidencia",
+          // aunque ambos comparten el flag isIncidenceReport para mantener accesible esa acción secundaria.
           return {
             text: 'En Camino a Sucursal',
             bg: 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]',
             icon: '📍',
+            iconKey: 'in_transit',
             isIncidenceReport: true,
             subtext: `Reportar incidencia si ocurre un percance (${Math.round(gpsDistance)}m restantes)`
           };
@@ -3743,6 +3791,7 @@ export function useClockEngine(overrideUser?: any) {
             text: '📍 Cerca de Sucursal',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
             icon: '🔒',
+            iconKey: 'gps_locked',
             disabled: true,
             subtext: `Fuera de geocerca (${Math.round(gpsDistance)}m)`
           };
@@ -3756,6 +3805,7 @@ export function useClockEngine(overrideUser?: any) {
         text: '🔒 Acceso Bloqueado',
         bg: 'bg-slate-700 text-slate-350 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',
         icon: '🔒',
+        iconKey: 'access_blocked',
         isQrUnlockRequired: true,
         subtext: 'Tolerancia vencida. Requiere desbloqueo QR de supervisor.'
       };
@@ -3766,13 +3816,33 @@ export function useClockEngine(overrideUser?: any) {
     // en lugar de 'Esperando Apertura' o 'Notificar Tienda Cerrada'.
     if (storeStatus === 'closed') {
       const isOpeningManager = Number(currentUser?.id) === Number(responsibleId);
-      
+
+      // NUEVO (estado #5 real de la matriz — "Llamar a Suplente de Llaves" como texto PRINCIPAL del
+      // dial, no solo el botón secundario "Marcar a Suplente"): cuando el encargado responsable ya
+      // reportó falta/retardo, handleReportAbsencePremium/handleReportLatePremium mueven
+      // openingStatus.status a 'transferred' (el equivalente real de clockState `handover_pending` que
+      // describe el documento — ese valor nunca llegó a existir como clockState propio). Mientras dura
+      // ese traspaso, cualquier otro titular/suplente de llaves disponible ve esto en vez del genérico
+      // "Esperando Apertura", con la misma acción que el botón secundario (handleCallSuplente).
+      const isHandoverInProgress = isOpeningPremium && openingStatus?.status === 'transferred';
+      if (!isOpeningManager && isHandoverInProgress && isUserActiveKeyholder(currentUser?.id)) {
+        return {
+          text: 'Llamar a Suplente de Llaves',
+          bg: 'bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-[0_0_20px_rgba(124,58,237,0.3)] animate-pulse',
+          icon: '📞',
+          iconKey: 'call_suplente',
+          isCallSuplenteMain: true,
+          subtext: 'Pasar estafeta de apertura a suplente'
+        };
+      }
+
       if (!isOpeningManager) {
         if (!isPro) {
           return {
             text: '⏳ Esperando Apertura',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
             icon: '⏳',
+            iconKey: 'waiting_opening',
             disabled: true,
             subtext: `Apertura por: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
           };
@@ -3784,6 +3854,7 @@ export function useClockEngine(overrideUser?: any) {
                 text: '⏳ Esperando Apertura',
                 bg: 'bg-slate-300 text-slate-500 cursor-not-allowed',
                 icon: '⏳',
+                iconKey: 'waiting_opening',
                 disabled: true,
                 subtext: 'Alerta de tienda cerrada ya enviada al administrador.'
               };
@@ -3792,6 +3863,7 @@ export function useClockEngine(overrideUser?: any) {
               text: '🚨 Notificar Tienda Cerrada',
               bg: 'bg-orange-500 hover:bg-orange-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
               icon: '🚨',
+              iconKey: 'report_store_closed',
               isReportStoreClosed: true,
               subtext: `Encargado: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
             };
@@ -3800,6 +3872,7 @@ export function useClockEngine(overrideUser?: any) {
             text: '⏳ Esperando Apertura',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed',
             icon: '⏳',
+            iconKey: 'waiting_opening',
             disabled: true,
             subtext: `Apertura por: ${responsibleUser?.name ? responsibleUser.name.split(' ')[0] : 'Encargado'}`
           };
@@ -3835,6 +3908,7 @@ export function useClockEngine(overrideUser?: any) {
           text: 'Apertura de Emergencia',
           bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_25px_rgba(225,29,72,0.35)] animate-pulse',
           icon: '⚠️',
+          iconKey: 'emergency_open',
           isEmergencyOpen: true,
           subtext: 'Requiere co-validación de 2 testigos presenciales'
         };
@@ -3847,13 +3921,15 @@ export function useClockEngine(overrideUser?: any) {
           text: 'Abrir Tienda',
           bg: 'bg-violet-650 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
           icon: '🗝️',
-          isOpeningActive: true
+          iconKey: 'open_store',
+          isOpeningActive: true,
+          subtext: 'Horario oficial de apertura. Suma bono.'
         };
       }
     }
 
     if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed') {
-      return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️' };
+      return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️', iconKey: 'open_store' };
     }
 
     if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
@@ -3864,6 +3940,7 @@ export function useClockEngine(overrideUser?: any) {
           text: 'Reportar Incidencia',
           bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
           icon: '⚠️',
+          iconKey: 'incidence_report',
           isIncidenceReport: true,
           isResponsibleOutside: true,
           subtext: '🗝️ Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.'
@@ -3874,6 +3951,7 @@ export function useClockEngine(overrideUser?: any) {
         text: 'Reportar Incidencia',
         bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
         icon: '⚠️',
+        iconKey: 'incidence_report',
         isIncidenceReport: true
       };
     }
@@ -3881,10 +3959,10 @@ export function useClockEngine(overrideUser?: any) {
     // BUG FIX: Si ya hubo check_out hoy (checkOutTimes tiene registro), mostrar 'Jornada Finalizada'
     // en lugar de 'Registrar Entrada'. Esto previene dobles fichajes accidentales.
     if (clockState === 'inactive' && checkOutTimes[currentUser?.id] !== undefined) {
-      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', disabled: true, subtext: 'Turno concluido hoy.' };
+      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
     }
     if (clockState === 'inactive' || clockState === 'waiting_room') {
-      return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢' };
+      return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢', iconKey: 'entrada', subtext: 'Fichaje ordinario de entrada' };
     }
 
     if (clockState === 'active') {
@@ -3909,10 +3987,11 @@ export function useClockEngine(overrideUser?: any) {
                 return { text: 'Iniciar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
              }
           } else {
-             return { 
-                text: 'Reserva tu horario primero', 
-                bg: 'bg-amber-600/20 text-amber-500 border border-amber-500/30 hover:bg-amber-600/30 font-bold shadow-md cursor-pointer animate-pulse', 
-                icon: '🍔', 
+             return {
+                text: 'Reserva tu horario primero',
+                bg: 'bg-amber-600/20 text-amber-500 border border-amber-500/30 hover:bg-amber-600/30 font-bold shadow-md cursor-pointer animate-pulse',
+                icon: '🍔',
+                iconKey: 'meal_prompt',
                 isMealReservationAlert: true,
                 subtext: 'Haz clic para seleccionar tu slot en el comedor.'
              };
@@ -3927,21 +4006,24 @@ export function useClockEngine(overrideUser?: any) {
             text: 'Iniciar Comida',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60',
             icon: '🍔',
+            iconKey: 'meal_start',
             disabled: true,
             subtext: `Disponible a partir de las ${formatTimeMins(minMealTimeMins)}`
           };
         }
 
-        return { text: 'Iniciar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔' };
+        return { text: 'Iniciar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
       }
 
       const hasReturnedFromMeal = mealEndTimes[currentUser.id] !== undefined;
       const hasTakenBreak = breakStartTimes[currentUser.id] !== undefined;
       if (isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
-        return { 
-          text: 'Descanso', 
-          bg: 'bg-purple-600 hover:bg-purple-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse', 
-          icon: '🧘' 
+        return {
+          text: 'Descanso',
+          bg: 'bg-purple-600 hover:bg-purple-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
+          icon: '🧘',
+          iconKey: 'break_start',
+          subtext: 'Descanso Ley Silla (15 min)'
         };
       }
 
@@ -3952,10 +4034,12 @@ export function useClockEngine(overrideUser?: any) {
       const currentShiftEndMinsHO = parseTimeToMins(currentShiftEndStrHO);
       const isHandoverWindow = currentSimTime >= currentShiftEndMinsHO - 15;
       if (isPro && isManager && !isHandoverCompleted && isHandoverWindow) {
-        return { 
-          text: 'Entrega de Turno', 
-          bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse', 
-          icon: '🗝️' 
+        return {
+          text: 'Entrega de Turno',
+          bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse',
+          icon: '🗝️',
+          iconKey: 'handover',
+          subtext: 'Realizar arqueo y entrega de llaves'
         };
       }
 
@@ -3971,33 +4055,36 @@ export function useClockEngine(overrideUser?: any) {
             text: 'Jornada en Curso',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60',
             icon: '⏳',
+            iconKey: 'waiting_opening',
             disabled: true,
             subtext: `Salida disponible a las ${formatTimeMins(currentShiftEndMins - 10)}`
           };
         }
       }
 
-      return { 
-        text: 'Registrar Salida', 
-        bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]', 
-        icon: '🚪' 
+      return {
+        text: 'Registrar Salida',
+        bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]',
+        icon: '🚪',
+        iconKey: 'exit',
+        subtext: 'Checklist cierre seguro (luces/caja)'
       };
     }
 
     if (clockState === 'meal') {
-      return { text: 'Terminar Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃' };
+      return { text: 'Terminar Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃', iconKey: 'meal_end', subtext: 'Haz clic al regresar a la sucursal' };
     }
     if (clockState === 'short_break') {
-      return { text: 'Terminar Descanso', bg: 'bg-indigo-650 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃' };
+      return { text: 'Terminar Descanso', bg: 'bg-indigo-650 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
     }
     if (clockState === 'temp_exit') {
-      return { text: 'Registrar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶' };
+      return { text: 'Registrar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
     }
     if (clockState === 'absent') {
-      return { text: 'Ausencia Registrada', bg: 'bg-rose-100 text-rose-500 cursor-not-allowed', icon: '🚷', disabled: true };
+      return { text: 'Ausencia Registrada', bg: 'bg-rose-100 text-rose-500 cursor-not-allowed', icon: '🚷', iconKey: 'absent', disabled: true };
     }
     if (clockState === 'finished') {
-      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', disabled: true };
+      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
     }
     return { text: 'Procesando...', bg: 'bg-slate-200', icon: '...' };
   };
@@ -4205,6 +4292,7 @@ export function useClockEngine(overrideUser?: any) {
     handleReportStoreStillClosedPremium,
     handleCallSuplente,
     getNextSuplenteUser,
+    isUserActiveKeyholder,
     showEmergencyOpenModal,
     setShowEmergencyOpenModal,
     emergencyOpenSubmitting,

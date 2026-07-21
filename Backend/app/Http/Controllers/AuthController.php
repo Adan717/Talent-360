@@ -10,6 +10,13 @@ use App\Helpers\SecurityLogger;
 
 class AuthController extends Controller
 {
+    protected $clockService;
+
+    public function __construct(\App\Services\ClockService $clockService)
+    {
+        $this->clockService = $clockService;
+    }
+
     public function login(Request $request)
     {
         $request->validate([
@@ -371,6 +378,17 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Contraseña actualizada exitosamente'
         ]);
+    }
+
+    /**
+     * Estado #1 del dialer (Fichaje Bloqueado por 3 retardos). Ver ClockService::getPunctualityStatus
+     * para la regla de negocio completa (no se reinicia por periodo de nómina).
+     */
+    public function punctualityStatus(Request $request)
+    {
+        $status = $this->clockService->getPunctualityStatus($request->user());
+
+        return response()->json($status);
     }
 
     /**

@@ -288,6 +288,7 @@ El backend YA tiene la fuente correcta: `clockOpConfig.store_latitude` / `store_
 | `POST` | `/clock/declare-contingency` | 🟠 Alta — estado #10/#15 | ✅ Implementado (2026-07-21) |
 | `PUT` | `/me/pre-shift-alarm` | 🟡 Media — estado #1 perfil | ✅ Implementado (2026-07-21) |
 | `POST` | `/store-opening/closing-checklist` | 🟡 Media — estado #22 | ✅ Implementado (2026-07-21) |
+| `GET` | `/me/punctuality-status` | 🟢 Baja — estado #1 (ver §12, requiere decisión de negocio antes de codear) | ⏳ Propuesta, no implementada |
 
 ### Notas de implementación — Backend (2026-07-20)
 
@@ -382,7 +383,8 @@ Dos sistemas de PIN separados sobre el mismo concepto es una fuente segura de bu
 
 No forman parte del contrato de las secciones 1-8, no afectan ningún request/response que Cowork consuma — documentadas aquí solo para llevar registro.
 
-- **Anti-duplicados real:** `ClockService::processPunch()` ahora rechaza (`400`, `"Fichaje Denegado: ya existe un registro de tipo '{type}' para hoy. No se puede duplicar."`) cualquier segundo fichaje del mismo `type` el mismo día para el mismo usuario. Antes no había ninguna validación — un doble clic o un reintento de red podía crear filas duplicadas. **Pendiente de una siguiente ronda (no se hizo ahora):** esto no cierra la ventana de carrera al 100% (dos requests casi simultáneos podrían ambos pasar el `exists()` antes de que el primero confirme el insert). Cerrarlo del todo requeriría un índice único en `time_entries (user_id, date, type)`, pero eso exige primero deduplicar filas históricas que ya puedan existir — es una migración con `DELETE`, no la corrí sin confirmación explícita por tratarse de datos de nómina.
+- **Anti-duplicados real:** `ClockService::processPunch()` ahora rechaza (`400`, `"Fichaje Denegado: ya existe un registro de tipo '{type}' para hoy. No se puede duplicar."`) cualquier segundo fichaje del mismo `type` el mismo día para el mismo usuario. Antes no había ninguna validación — un doble clic o un reintento de red podía crear filas duplicadas.
+- **✅ Cerrado también a nivel de base de datos (2026-07-21, con autorización explícita para el `DELETE`):** migración `2026_07_21_000005_deduplicate_and_add_unique_constraint_to_time_entries` deduplica filas históricas (conserva la de `id` más antiguo por cada `user_id+date+type`, que es la que refleja el fichaje real) y agrega `UNIQUE(user_id, date, type)`. `processPunch()` captura `UniqueConstraintViolationException` y devuelve el mismo mensaje amigable en vez de un error de SQL crudo, para el caso residual de dos peticiones casi simultáneas. **Importante:** esta migración solo se corrió contra la BD de pruebas (SQLite en memoria); no se ha ejecutado contra ningún ambiente con datos reales — correr `php artisan migrate` ahí aplicará el `DELETE` de duplicados antes de crear el índice, revisen el log de Laravel (`Log::warning`) para ver cuántos grupos duplicados se limpiaron.
 - **Snapshot de nómina reparado:** `TimeEntry::$fillable` ya incluye `employee_name_at_time`, `job_role_title_at_time`, `base_salary_at_time` (antes Eloquent los descartaba en silencio, siempre quedaban `NULL`). De paso until otro bug relacionado: `ClockService` leía `$jobRole?->title`, pero la tabla `job_roles` no tiene columna `title` — el nombre del puesto vive en `name`. Se corrigió también, si no el snapshot del puesto habría seguido guardándose vacío aunque el `$fillable` ya estuviera bien.
 
 ---
@@ -391,7 +393,7 @@ No forman parte del contrato de las secciones 1-8, no afectan ningún request/re
 
 | # Estado | Nombre | Cubierto por sección |
 |---|---|---|
-| 1 | Fichaje Bloqueado | (pendiente — hoy vive solo en localStorage, fuera de alcance de este documento) |
+| 1 | Fichaje Bloqueado | §12 — ✅ Implementado (`GET /me/punctuality-status`) |
 | 5 | Llamar a Suplente | Frontend-only, no requiere backend nuevo |
 | 6 | En Camino a Sucursal | Frontend-only (geofencing progresivo con las mismas coords de §7) |
 | 9 | Apertura de Emergencia | §3 |
@@ -402,3 +404,78 @@ No forman parte del contrato de las secciones 1-8, no afectan ningún request/re
 | Perfil | Configura tu alarma | §5 |
 
 **Nota aparte para Claude Code:** ~~`ClockService::ALLOWED_TYPES` (línea 20-23) no incluye `temp_exit_start` ni `temp_exit_end`~~ — ✅ corregido el 2026-07-20 junto con `/clock/punch-batch`. Ambos tipos ya están en la constante.
+
+---
+
+## 12. Estado #1 — Fichaje Bloqueado por 3 Retardos (propuesta, aún no implementada)
+
+**Diagnóstico:** hoy `useClockEngine.tsx` (líneas ~3469 y ~3649) lleva el contador de retardos y el flag de bloqueo enteramente en `localStorage` (`user_retardos_<id>`). Cualquiera lo evade borrando el storage del navegador o entrando desde otro dispositivo, no se sincroniza entre equipos, y no tiene relación real con si el curso de la Academia fue completado (el botón "🎓 Ir a la Academia" no verifica nada del lado servidor).
+
+Lo importante: **el dato real de retardos ya existe en el backend.** `ClockService::calculatePayrollForEmployee()` y el cálculo de nómina semanal ya leen `TimeEntry::where('is_late', true)` por periodo, descontando fechas con `ContingencyDeclaration` activa (mismo criterio que ya usa el resto del sistema). No hay que inventar una fuente de verdad nueva, solo exponerla.
+
+También existe `AcademyCourse` + `UserCourseProgress` (`AcademyController.php`), pero el enum `course_type` actual es `induction|training|promotion|recertification` — no hay un tipo `punctuality` ni ningún mecanismo que ligue "3 retardos" a "debe completar este curso específico".
+
+### Propuesta de contrato
+
+```
+GET /api/me/punctuality-status
+```
+
+```json
+{
+  "success": true,
+  "blocked": true,
+  "lates_count": 3,
+  "period_start": "2026-07-01",
+  "period_end": "2026-07-07",
+  "required_course_id": 4,
+  "course_completed": false
+}
+```
+
+- `lates_count`: mismo query que ya usa `calculatePayrollForEmployee` (TimeEntry.is_late=true en el periodo vigente, excluyendo fechas con contingencia activa).
+- `blocked`: `lates_count >= 3 && !course_completed`.
+- `required_course_id`: id del curso que el tenant marcó como "curso de puntualidad" — requiere una nueva columna en `system_settings` (ej. `punctuality_course_id`) o un nuevo `course_type = 'punctuality'` en el enum de `academy_courses`. Cualquiera de las dos funciona; lo decide quien lo implemente.
+- `course_completed`: `UserCourseProgress` del usuario para ese curso con `status = 'completed'`.
+
+**Decisión de negocio pendiente (no la puedo tomar yo desde frontend):** ¿el contador de retardos se reinicia cuando empieza un nuevo periodo de nómina (consistente con cómo ya se calculan las faltas-por-retardos para nómina), o el bloqueo persiste indefinidamente hasta completar el curso sin importar que ya haya pasado a un periodo nuevo? Recomiendo lo segundo (el bloqueo es un tema de conducta/capacitación, no de nómina), pero es una regla de negocio que debería confirmar Francisco o decidirla Claude Code con una justificación.
+
+Frontend, una vez exista el endpoint, reemplaza el `localStorage` actual por una llamada a `GET /me/punctuality-status` al montar el Dialer, cachea la respuesta en memoria (no en localStorage) y usa `blocked` para el gate del estado #1. El botón "Ir a la Academia" navega al curso `required_course_id` existente en el módulo de Academia (ya implementado, solo falta la navegación).
+
+---
+
+## ✅ Implementado (2026-07-21) — Decisiones tomadas
+
+`GET /me/punctuality-status` ya existe (`AuthController::punctualityStatus` → `ClockService::getPunctualityStatus`), mismo shape de respuesta que la propuesta. Las dos decisiones pendientes:
+
+### 1. `system_settings.punctuality_course_id`, no `course_type = 'punctuality'`
+
+`academy_courses.course_type` es un `enum` estricto en la BD (`induction|training|promotion|recertification`) — agregar un valor nuevo exige alterar el tipo enum en Postgres, una migración más invasiva de lo necesario. Además conceptualmente son cosas distintas: `course_type` clasifica el *contenido* del curso; lo que necesitábamos era una *referencia* de configuración ("qué curso usa este tenant para destrabar el bloqueo"), que es exactamente el patrón que `system_settings` ya usa en todo el proyecto (`clockOpConfig`, `time_mode`, etc.).
+
+**No hace falta ningún endpoint nuevo para configurarlo** — `POST /sync/settings` (ya existe, `ClockController::syncSettings`) acepta `{ "key": "punctuality_course_id", "value": 4 }` y lo guarda tal cual. Un tenant incluso puede reutilizar un curso `induction`/`training` que ya tenga (el curso semilla "LFT: Derechos y Límites" ya cubre "regulaciones sobre retardos" — candidato natural).
+
+*Aviso aparte, no se tocó:* `POST /sync/settings` hoy vive en el grupo de middleware `role:empleado,employee,admin,supervisor,platform_admin` — cualquier colaborador autenticado podría reescribir configuración de todo el tenant (incluyendo `punctuality_course_id`), no solo administradores. Es un problema de permisos preexistente, no introducido por esta ronda; lo señalo por si quieren priorizarlo en algún momento, no lo corregí ahora porque no era el pedido.
+
+### 2. El contador NO se reinicia por periodo de nómina
+
+Se implementó la recomendación del documento: el bloqueo es un tema de conducta/capacitación, no de nómina, así que reiniciar cada semana lo volvería trivial de evadir (esperar al lunes). El contador solo se reinicia cuando el empleado completa (o **vuelve a completar**, si retoma el mismo curso) el curso de puntualidad configurado — `period_start` en la respuesta es la fecha de esa última finalización (`null` si nunca lo ha completado, es decir cuenta desde siempre). `course_completed` refleja el hecho histórico de si ya lo completó alguna vez; `blocked`/`lates_count` se recalculan solo sobre retardos posteriores a esa fecha, así que un empleado puede completar el curso, volver a acumular 3 retardos después, y quedar bloqueado de nuevo (tiene que retomar el curso otra vez — `user_course_progress` tiene `unique(user_id, course_id)`, así que "retomar" es actualizar el mismo registro con un `completed_at` nuevo, no crear uno segundo).
+
+Se excluyen del conteo las fechas con `ContingencyDeclaration` activa, mismo criterio que ya usa `calculatePayrollForEmployee`.
+
+Tests: `PunctualityStatusTest` (5 casos — bloqueo a los 3 retardos, no bloqueo con menos, desbloqueo al completar el curso, re-bloqueo tras nuevos retardos post-finalización, exclusión por contingencia). Suite completa: 72/72 verde.
+
+### Pedido de Francisco (2026-07-21): elegir el curso desde Configuración del Reloj Checador
+
+El curso de puntualidad vive en el módulo de Academia, así que debe poder elegirse desde las configuraciones del Reloj Checador dentro del ecosistema — no como una llamada de API suelta. **Buenas noticias: no hace falta ningún endpoint nuevo, ya existen los 3 que se necesitan.** Receta completa para el selector en el panel de configuración:
+
+1. **Listar cursos disponibles** (para el `<select>`/dropdown): `GET /academy/courses` (ya existe, `AcademyController::getCourses`) → `response.courses` trae `{id, title, course_type, ...}` de todos los cursos del tenant. No filtres por `course_type` — cualquier curso existente (incluso uno de inducción) es válido como curso de puntualidad, ver la nota de la sección anterior.
+2. **Leer el valor actual** (para preseleccionar la opción): ya viene incluido en `system_settings` dentro de la respuesta de `GET /sync/state` que el dialer ya consume — es la llave `punctuality_course_id`. Si no está presente, no hay curso configurado todavía (mostrar el selector vacío/"Sin configurar").
+3. **Guardar la selección**: `POST /sync/settings` con body `{ "key": "punctuality_course_id", "value": <course_id> }`.
+
+**Cambio de permisos que acompaña este pedido:** `/sync/settings` vivía en el grupo de middleware de "cualquier colaborador autenticado" (`role:empleado,employee,admin,supervisor,platform_admin`) — cualquier empleado podía reescribir la configuración de todo el tenant, no solo quien administra. Ya que este pedido lo convierte en una función de configuración administrativa real, lo moví al grupo `role:admin,supervisor` (mismo grupo donde ya viven `/sync/rbac` y `/sync/role-policies/{id}`). Revisé los 2 usos actuales de este endpoint en el frontend (`useAppStore.ts` función genérica de settings, y los toggles de adopción de módulos ATS/Academia/Reportes en `DashboardTalent360.tsx`) — ambos ya se llaman solo desde paneles de administración, así que este cambio no debería romper ningún flujo existente. Si el selector de curso de puntualidad se va a colocar en una pantalla que un rol `supervisor` no debería tocar (solo `admin`), avisen y lo hago aún más estricto.
+
+Test nuevo: `SyncSettingsPermissionTest` (empleado normal → 403, admin → 200). Suite completa: 74/74 verde.
+
+**Ajuste fino (2026-07-21):** Francisco confirmó que el selector de curso de puntualidad debe ser exclusivo de `admin`, sin incluir a `supervisor` (que sí conserva acceso al resto de `/sync/settings`, ej. `clockOpConfig`, `timezone`, adopción de módulos). En vez de crear un endpoint paralelo, `ClockController::syncSettings` ahora tiene una lista `ADMIN_ONLY_SETTING_KEYS = ['punctuality_course_id']`: si la llave está en esa lista y quien llama no es `admin`/`platform_admin`, responde `403` sin importar que el rol tenga acceso general a la ruta. También valida que el `course_id` enviado exista y pertenezca al tenant (`422` si no). Cowork no necesita cambiar nada del lado de la llamada — sigue siendo el mismo `POST /sync/settings { key: 'punctuality_course_id', value }`, solo que ahora el backend es más estricto sobre quién puede tocar esa llave específica.
+
+Tests actualizados en `SyncSettingsPermissionTest`: supervisor puede escribir otras llaves pero no `punctuality_course_id` (403), admin no puede apuntar a un curso inexistente (422). Suite completa: 76/76 verde.

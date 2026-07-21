@@ -284,6 +284,7 @@ export default function RelojVisual({
     handleReportLatePremium,
     handleReportStoreStillClosedPremium,
     handleCallSuplente,
+    isUserActiveKeyholder,
     showEmergencyOpenModal,
     setShowEmergencyOpenModal,
     emergencyOpenSubmitting,
@@ -3543,9 +3544,12 @@ export default function RelojVisual({
                         onEarlyDepartureClick={handleEarlyDepartureClick}
                         onOvertimeClick={handleOvertimeClick}
                         onPanicClick={() => setShowPanicModal(true)}
-                        isKeyholder={keyholders.includes(currentUser?.id) || Boolean(currentUser?.portadorLlaves && currentUser?.portadorLlaves !== 'ninguno')}
+                        isKeyholder={isUserActiveKeyholder(currentUser?.id)}
                         onCallManagerClick={() => {
                           const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
+                          if (respUser?.phone) {
+                            window.location.href = `tel:${respUser.phone}`;
+                          }
                           showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                         }}
                         onCallSuplenteClick={handleCallSuplente}
@@ -3949,9 +3953,12 @@ export default function RelojVisual({
                       onEarlyDepartureClick={handleEarlyDepartureClick}
                       onOvertimeClick={handleOvertimeClick}
                       onPanicClick={() => setShowPanicModal(true)}
-                      isKeyholder={keyholders.includes(currentUser?.id) || Boolean(currentUser?.portadorLlaves && currentUser?.portadorLlaves !== 'ninguno')}
+                      isKeyholder={isUserActiveKeyholder(currentUser?.id)}
                       onCallManagerClick={() => {
                         const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
+                        if (respUser?.phone) {
+                          window.location.href = `tel:${respUser.phone}`;
+                        }
                         showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
                       onCallSuplenteClick={handleCallSuplente}

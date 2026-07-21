@@ -128,4 +128,38 @@ class ClockDuplicateAndSnapshotTest extends TestCase
         $this->assertEquals('Cajero Senior', $entry->job_role_title_at_time);
         $this->assertEquals(5500.50, (float) $entry->base_salary_at_time);
     }
+
+    public function test_database_rejects_duplicate_insert_at_constraint_level(): void
+    {
+        // Prueba el índice único directamente (sin pasar por processPunch), para
+        // confirmar que la ventana de carrera también está cerrada a nivel de BD,
+        // no solo por el exists() de la capa de aplicación.
+        $user = $this->makeEmployee();
+
+        DB::table('time_entries')->insert([
+            'user_id' => $user->id,
+            'tenant_id' => 1,
+            'date' => '2026-07-21',
+            'type' => 'check_in',
+            'time' => '09:00:00',
+            'is_late' => false,
+            'late_minutes' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+
+        DB::table('time_entries')->insert([
+            'user_id' => $user->id,
+            'tenant_id' => 1,
+            'date' => '2026-07-21',
+            'type' => 'check_in',
+            'time' => '09:05:00',
+            'is_late' => false,
+            'late_minutes' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
 }

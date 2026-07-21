@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ContingencyDeclaration;
 use App\Models\TimeEntry;
 use App\Models\User;
+use App\Models\UserCourseProgress;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -323,19 +324,27 @@ class ClockService
             $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
             $snapshotName, $snapshotRole, $snapshotSalary
         ) {
-            $entry = TimeEntry::create([
-                'user_id'               => $user->id,
-                'tenant_id'             => $user->tenant_id ?? 1,
-                'date'                  => $date,
-                'type'                  => $type,
-                'time'                  => $time,
-                'is_late'               => $isLate,
-                'late_minutes'          => $lateMinutes,
-                'details'               => json_encode($detailsMerge),
-                'employee_name_at_time' => $snapshotName,
-                'job_role_title_at_time'=> $snapshotRole,
-                'base_salary_at_time'   => $snapshotSalary,
-            ]);
+            try {
+                $entry = TimeEntry::create([
+                    'user_id'               => $user->id,
+                    'tenant_id'             => $user->tenant_id ?? 1,
+                    'date'                  => $date,
+                    'type'                  => $type,
+                    'time'                  => $time,
+                    'is_late'               => $isLate,
+                    'late_minutes'          => $lateMinutes,
+                    'details'               => json_encode($detailsMerge),
+                    'employee_name_at_time' => $snapshotName,
+                    'job_role_title_at_time'=> $snapshotRole,
+                    'base_salary_at_time'   => $snapshotSalary,
+                ]);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                // Backstop del índice único (time_entries_user_date_type_unique) para la
+                // ventana de carrera que el exists() de más arriba no puede cerrar solo:
+                // dos peticiones casi simultáneas pasando el chequeo antes de que la
+                // primera confirme su insert.
+                throw new \Exception("Fichaje Denegado: ya existe un registro de tipo '{$type}' para hoy. No se puede duplicar.");
+            }
 
             // Registrar en audit log dentro de la misma transacción
             DB::table('audit_logs')->insert([
@@ -401,6 +410,79 @@ class ClockService
             'success' => true,
             'message' => 'Contingencia declarada. Jornada protegida al 100% conforme LFT.',
             'contingency_id' => $declaration->id,
+        ];
+    }
+
+    /**
+     * Estado #1 de la matriz (Fichaje Bloqueado por 3 retardos). El contador NO se
+     * reinicia por periodo de nómina — es un tema de conducta/capacitación, no de
+     * nómina, así que el bloqueo persistiría trivialmente si bastara con esperar a la
+     * siguiente semana. Solo se reinicia cuando el empleado completa (o vuelve a
+     * completar) el curso de puntualidad que el tenant haya configurado.
+     */
+    public function getPunctualityStatus(User $user): array
+    {
+        $tenantId = $user->tenant_id ?? 1;
+
+        $settings = DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->pluck('value', 'key')
+            ->toArray();
+
+        // El curso de puntualidad es una referencia de configuración del tenant
+        // (system_settings), no una clasificación intrínseca del curso (course_type):
+        // un tenant puede perfectamente reutilizar un curso de inducción/training ya
+        // existente como su remediación de puntualidad, sin necesidad de alterar el
+        // enum de academy_courses.course_type.
+        $requiredCourseId = isset($settings['punctuality_course_id'])
+            ? (json_decode($settings['punctuality_course_id'], true) ?: null)
+            : null;
+
+        $courseCompleted = false;
+        $lastCompletionDate = null;
+
+        if ($requiredCourseId) {
+            $progress = UserCourseProgress::where('user_id', $user->id)
+                ->where('course_id', $requiredCourseId)
+                ->where('status', 'completed')
+                ->first();
+
+            if ($progress) {
+                $courseCompleted = true;
+                $lastCompletionDate = $progress->completed_at;
+            }
+        }
+
+        $periodStart = $lastCompletionDate ? $lastCompletionDate->format('Y-m-d') : null;
+
+        $latesQuery = TimeEntry::where('user_id', $user->id)->where('is_late', true);
+        if ($periodStart) {
+            $latesQuery->where('date', '>', $periodStart);
+        }
+        $lateEntries = $latesQuery->get();
+
+        // Mismo criterio que calculatePayrollForEmployee: los retardos en fechas con
+        // contingencia activa (sin luz/sin internet) no cuentan para el bloqueo.
+        $contingencyDatesQuery = ContingencyDeclaration::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereNull('resolved_at');
+        if ($periodStart) {
+            $contingencyDatesQuery->where('date', '>', $periodStart);
+        }
+        $contingencyDates = $contingencyDatesQuery->pluck('date')
+            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->all();
+
+        $latesCount = $lateEntries->filter(fn($e) => !in_array($e->date, $contingencyDates))->count();
+
+        return [
+            'success' => true,
+            'blocked' => $latesCount >= 3,
+            'lates_count' => $latesCount,
+            'period_start' => $periodStart,
+            'period_end' => Carbon::now()->format('Y-m-d'),
+            'required_course_id' => $requiredCourseId,
+            'course_completed' => $courseCompleted,
         ];
     }
 

@@ -744,10 +744,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             
             {/* Timeline and Dial Stack Grouped to Tightly Control Spacing */}
             <div className="flex flex-col items-center w-full gap-1 mt-1 shrink-0">
-              {/* Barra Cronológica Proporcional Real */}
-              <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-17px]">
-                {renderBarraCronologica()}
-              </div>
+              {/* Barra Cronológica Proporcional Real - Animada al registrar entrada */}
+              {hasCheckedIn && (
+                <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="w-full shrink-0 mb-[-17px] animate-in fade-in slide-in-from-top-4 duration-600 ease-out">
+                  {renderBarraCronologica()}
+                </div>
+              )}
 
               {/* Dial Central Principal (Importado de producción) */}
               <div style={{ transform: 'scale(0.9)', transformOrigin: 'center' }} className="flex flex-col items-center justify-center shrink-0 my-0.5">
@@ -777,102 +779,104 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               </div>
             </div>
 
-            {/* Alertas dinámicas bajo el dial */}
-            <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-1.5 mt-[-2.5px] shrink-0">
-              {/* Alerta de Entrada Registrada */}
-              {hasCheckedIn && (
-                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                  isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/60 border-emerald-100 text-emerald-900'
-                }`}>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-650 dark:text-emerald-400 shrink-0 text-sm animate-pulse">
-                    ✅
+            {/* Alertas dinámicas bajo el dial - Animadas al registrar entrada */}
+            {hasCheckedIn && (
+              <div style={{ transform: 'scale(0.9)', transformOrigin: 'top center' }} className="space-y-1.5 mt-[-2.5px] shrink-0 animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">
+                {/* Alerta de Entrada Registrada */}
+                {hasCheckedIn && (
+                  <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                    isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/60 border-emerald-100 text-emerald-900'
+                  }`}>
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-650 dark:text-emerald-400 shrink-0 text-sm animate-pulse">
+                      ✅
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-450 leading-none">Fichaje Registrado</p>
+                      <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                        Entrada: {formatMinsToTimeClean(checkInTimes[99] || 545)} (Retardo de 5 min)
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-450 leading-none">Fichaje Registrado</p>
-                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
-                      Entrada: {formatMinsToTimeClean(checkInTimes[99] || 545)} (Retardo de 5 min)
+                )}
+
+                {/* Alerta de Descanso Registrado */}
+                {breaksTaken[99] !== undefined && (
+                  <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                    isDark ? 'bg-purple-955/20 border-purple-900/40 text-purple-300' : 'bg-purple-50/60 border-purple-100 text-purple-900'
+                  }`}>
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-650 dark:text-purple-400 shrink-0 text-sm animate-pulse">
+                      ☕
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[8px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-450 leading-none">Descanso Tomado</p>
+                      <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                        Salida: {formatMinsToTimeClean(breakStartTimes[99] || 720)} | Regreso: {formatMinsToTimeClean(breakEndTimes[99] || 735)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Alerta de Comida Registrada */}
+                {mealEndTimes[99] !== undefined && (
+                  <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                    isDark ? 'bg-amber-955/20 border-amber-900/40 text-amber-300' : 'bg-amber-50/60 border-amber-100 text-amber-900'
+                  }`}>
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-650 dark:text-amber-400 shrink-0 text-sm animate-pulse">
+                      🍱
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-450 leading-none">Comida Completada</p>
+                      <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                        Salida: {formatMinsToTimeClean(mealStartTimes[99] || 840)} | Regreso: {formatMinsToTimeClean(mealEndTimes[99] || 885)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Alerta de Salida Registrada */}
+                {hasCheckedOut && (
+                  <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
+                    isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-350' : 'bg-rose-50/60 border-rose-100 text-rose-900'
+                  }`}>
+                    <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-650 dark:text-rose-455 shrink-0 text-sm animate-pulse">
+                      🚪
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-455 leading-none">Jornada Finalizada</p>
+                      <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-250">
+                        Salida registrada a las {formatMinsToTimeClean(checkOutTimes[99] || 1080)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
+                  isDark ? 'bg-indigo-955/20 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50/60 border-indigo-100 text-indigo-900'
+                }`}>
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-650 dark:text-indigo-400 shrink-0 text-sm">
+                    📋
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 leading-none">Tablero Operativo</p>
+                    <p className="text-[10px] font-bold mt-0.5 dark:text-slate-300 truncate">¡1 tarea pendiente por completar hoy!</p>
+                  </div>
+                </div>
+
+                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
+                  isDark ? 'bg-violet-955/20 border-violet-900/40 text-violet-300' : 'bg-violet-50/60 border-violet-100 text-violet-900'
+                }`}>
+                  <div className="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-650 dark:text-violet-400 shrink-0 text-sm animate-pulse">
+                    🎓
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 leading-none">Capacitación Activa</p>
+                    <p className="text-[10.5px] font-black mt-0.5 dark:text-slate-200 leading-tight">
+                      ¡Capacítate en la academia para subir de puesto y ganar más!
                     </p>
                   </div>
-                </div>
-              )}
-
-              {/* Alerta de Descanso Registrado */}
-              {breaksTaken[99] !== undefined && (
-                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                  isDark ? 'bg-purple-955/20 border-purple-900/40 text-purple-300' : 'bg-purple-50/60 border-purple-100 text-purple-900'
-                }`}>
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-650 dark:text-purple-400 shrink-0 text-sm animate-pulse">
-                    ☕
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-450 leading-none">Descanso Tomado</p>
-                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
-                      Salida: {formatMinsToTimeClean(breakStartTimes[99] || 720)} | Regreso: {formatMinsToTimeClean(breakEndTimes[99] || 735)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Alerta de Comida Registrada */}
-              {mealEndTimes[99] !== undefined && (
-                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                  isDark ? 'bg-amber-955/20 border-amber-900/40 text-amber-300' : 'bg-amber-50/60 border-amber-100 text-amber-900'
-                }`}>
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-650 dark:text-amber-400 shrink-0 text-sm animate-pulse">
-                    🍱
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-450 leading-none">Comida Completada</p>
-                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
-                      Salida: {formatMinsToTimeClean(mealStartTimes[99] || 840)} | Regreso: {formatMinsToTimeClean(mealEndTimes[99] || 885)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Alerta de Salida Registrada */}
-              {hasCheckedOut && (
-                <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                  isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-350' : 'bg-rose-50/60 border-rose-100 text-rose-900'
-                }`}>
-                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-650 dark:text-rose-455 shrink-0 text-sm animate-pulse">
-                    🚪
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-455 leading-none">Jornada Finalizada</p>
-                    <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-250">
-                      Salida registrada a las {formatMinsToTimeClean(checkOutTimes[99] || 1080)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
-                isDark ? 'bg-indigo-955/20 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50/60 border-indigo-100 text-indigo-900'
-              }`}>
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 text-sm">
-                  📋
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[8px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 leading-none">Tablero Operativo</p>
-                  <p className="text-[10px] font-bold mt-0.5 dark:text-slate-300 truncate">¡1 tarea pendiente por completar hoy!</p>
                 </div>
               </div>
-
-              <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
-                isDark ? 'bg-violet-955/20 border-violet-900/40 text-violet-300' : 'bg-violet-50/60 border-violet-100 text-violet-900'
-              }`}>
-                <div className="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 text-sm animate-pulse">
-                  🎓
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[8px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400 leading-none">Capacitación Activa</p>
-                  <p className="text-[10.5px] font-black mt-0.5 dark:text-slate-200 leading-tight">
-                    ¡Capacítate en la academia para subir de puesto y ganar más!
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 

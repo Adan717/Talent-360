@@ -213,6 +213,12 @@ class TaskSyncController extends Controller
                         $mappedData['status'] = 'awaiting_validation';
                     }
 
+                    // §14.1: date/points_awarded existen en la tabla pero nunca se poblaban.
+                    $mappedData['date'] = $assignment['date'] ?? ($existing->date ?? \Carbon\Carbon::today()->toDateString());
+                    if ($mappedData['status'] === 'completed') {
+                        $mappedData['points_awarded'] = $task->points ?? 0;
+                    }
+
                     if ($existing) {
                         $existing->update($mappedData);
                     } else {

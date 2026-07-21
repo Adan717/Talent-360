@@ -57,7 +57,7 @@ interface AppState {
   setGlobalClockState: (userId: number, state: string) => void;
   setGlobalCheckInTime: (userId: number, time: number) => void;
   setGlobalArrivalTime: (userId: number, time: number) => void;
-  setGlobalSimTime: (time: number) => void;
+  setGlobalSimTime: (time: number | ((prev: number) => number)) => void;
   setGlobalSimRunning: (running: boolean) => void;
   setGlobalSimSpeed: (speed: number) => void;
   addMatrixEvent: (title: string, description: string, type: 'success'|'warning'|'error'|'info'|'system', actorId?: number) => void;
@@ -550,8 +550,23 @@ export const useAppStore = create<AppState>((set, get) => ({
               } else if (entry.type === 'break_end') {
                 clockStates[userId] = 'active';
                 breakEndTimes[userId] = timeMins;
+              } else if (entry.type === 'temp_exit_start') {
+                // Antes no se manejaba este tipo aquí: al refrescar la página o en el poll de
+                // 5s, un usuario en "Salida Temporal" perdía ese estado (auditoría dialer Jul 2026).
+                clockStates[userId] = 'temp_exit';
+              } else if (entry.type === 'temp_exit_end') {
+                clockStates[userId] = 'active';
+              } else if (entry.type === 'absent') {
+                // Igual que temp_exit: faltaba por completo, se perdía al refrescar.
+                clockStates[userId] = 'absent';
               } else if (entry.type === 'check_out') {
-                clockStates[userId] = 'inactive';
+                // BUG FIX (auditoría dialer Jul 2026): esto decía 'inactive', el mismo bug que ya
+                // se había corregido en useClockEngine.tsx::syncToDB() (3 lugares, ver comentarios
+                // "BUG FIX" ahí) pero que sobrevivía aquí. Como fetchState() se ejecuta cada 5s Y
+                // justo después de cada fichaje (evento 'db_sync_updated'), el estado correcto
+                // 'finished' que syncToDB() acababa de fijar se pisaba solo segundos después,
+                // reabriendo el dial a "Registrar Entrada" tras cada salida real.
+                clockStates[userId] = 'finished';
                 checkOutTimes[userId] = timeMins;
                 delete pendingBreakRequests[userId];
               } else if (entry.type === 'contingency') {

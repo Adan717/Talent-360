@@ -43,8 +43,17 @@ class DashboardMonitorController extends Controller
                 ->groupBy('user_id');
 
             // Fetch current in-progress and paused task assignments
+            // §14.2: sin filtro de tenant/fecha esto podía traer al monitor tareas activas
+            // de OTRA empresa (mismo patrón de $completedStats de abajo); tolera date NULL
+            // mientras existan filas viejas sin poblar (§14.1).
             $activeAssignments = TaskAssignment::with('task')
+                ->whereHas('task', function ($query) use ($userTenantId) {
+                    $query->where('tenant_id', $userTenantId);
+                })
                 ->whereIn('status', ['in_progress', 'paused'])
+                ->where(function ($query) use ($today) {
+                    $query->whereNull('date')->orWhere('date', $today);
+                })
                 ->get()
                 ->groupBy('user_id');
 
@@ -327,6 +336,7 @@ class DashboardMonitorController extends Controller
                 'status' => 'in_progress',
                 'started_at_mins' => Carbon::now()->hour * 60 + Carbon::now()->minute,
                 'expected_end_time_mins' => Carbon::now()->hour * 60 + Carbon::now()->minute + $task->estimated_mins,
+                'date' => Carbon::today()->toDateString(),
             ]);
 
             event(new MonitorUpdated($userTenantId));
@@ -353,7 +363,7 @@ class DashboardMonitorController extends Controller
             'points' => 'required|integer|min:1',
             'priority' => 'required|string|in:low,medium,high,bloqueante,normal',
             'category' => 'nullable|string',
-            'target_type' => 'nullable|string|in:role,user',
+            'target_type' => 'nullable|string|in:role,user,pool,department',
             'target_id' => 'nullable|integer',
             'assistant_type' => 'nullable|string|in:ninguno,evidencia_foto,captura_numero,texto',
             'assistant_prompt' => 'nullable|string',
@@ -381,7 +391,10 @@ class DashboardMonitorController extends Controller
                 'is_auto_capture' => $request->is_auto_capture ?? false,
             ]);
 
-            // Si es asignación directa a colaborador (target_type = user), asignamos su user_id directamente
+            // Si es asignación directa a colaborador (target_type = user), asignamos su user_id
+            // directamente. Para role/pool/department la tarea queda sin user_id (disponible
+            // para que la reclame o se le asigne quien corresponda según ese target), igual
+            // que ya funcionaba para 'role'.
             $assignedUserId = ($targetType === 'user') ? $targetId : null;
 
             TaskAssignment::create([
@@ -390,6 +403,7 @@ class DashboardMonitorController extends Controller
                 'user_id' => $assignedUserId,
                 'status' => 'pending',
                 'tenant_id' => $tenantId,
+                'date' => Carbon::today()->toDateString(),
             ]);
 
             event(new MonitorUpdated($tenantId));

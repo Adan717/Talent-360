@@ -259,9 +259,10 @@ export default function DialPrincipal({
               <div className={`absolute w-[158px] h-[158px] rounded-full blur-[10px] animate-shimmer-glow opacity-25 pointer-events-none z-0 ${getDialGlowClasses()}`}></div>
             ) : null}
 
-            <button 
-              onClick={handleDialClick} 
-              disabled={!isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'))} 
+            <button
+              onClick={handleDialClick}
+              disabled={!isGpsError && (btnProps.disabled || (clockState === 'waiting_room' && storeStatus === 'closed'))}
+              aria-label={btnProps.subtext ? `${btnProps.text}. ${btnProps.subtext}` : btnProps.text}
               className={`group relative z-10 flex flex-col items-center justify-between rounded-full transition-all transform hover:scale-[1.03] active:scale-95 select-none aspect-square flex-shrink-0 border-4 border-double shadow-2xl p-3.5 ${getDialColorClasses()} ${
                 isMobile ? 'w-[185px] h-[185px]' : 'w-[200px] h-[200px]'
               } ${
@@ -305,7 +306,7 @@ export default function DialPrincipal({
 
             {/* LOWER ZONE: Bottom Label */}
             <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
-              <span className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[11.5px] max-w-[145px] leading-[1.1]' : 'text-xs md:text-[13px]'} ${isGpsError ? 'text-rose-600 font-extrabold' : ''}`}>
+              <span aria-live="polite" className={`font-black uppercase tracking-wider leading-tight block ${isMobile ? 'text-[11.5px] max-w-[145px] leading-[1.1]' : 'text-xs md:text-[13px]'} ${isGpsError ? 'text-rose-600 font-extrabold' : ''}`}>
                 {getDialBottomLabel()}
               </span>
               {btnProps.subtext && !['entrada', 'verifying_gps', 'verifying_selfie', 'success_check', 'break_start', 'break_end', 'meal_prompt', 'meal_start', 'exit'].includes(btnProps.iconKey || '') && (
@@ -324,6 +325,7 @@ export default function DialPrincipal({
         <button
           type="button"
           onClick={onMealSwapClick}
+          aria-label="Intercambiar turno de comida con un compañero"
           className="mt-3.5 py-1.5 px-4 bg-amber-50 dark:bg-amber-955/20 border border-amber-250 hover:border-amber-450 text-amber-700 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Coffee size={12} className="text-amber-550" />
@@ -335,6 +337,7 @@ export default function DialPrincipal({
         <button
           type="button"
           onClick={onEarlyDepartureClick}
+          aria-label="Registrar salida anticipada, antes del fin de tu turno"
           className="mt-2.5 py-1.5 px-4 bg-rose-50 dark:bg-rose-955/20 border border-rose-250 hover:border-rose-450 text-rose-700 dark:text-rose-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-rose-105 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
           <LogOut size={12} className="text-rose-500" />
@@ -347,6 +350,7 @@ export default function DialPrincipal({
         <button
           type="button"
           onClick={onOvertimeClick}
+          aria-label="Habilitar el fichaje para laborar horas extras en tu día de descanso o feriado"
           className="mt-3.5 py-1.5 px-4 bg-amber-50 dark:bg-amber-955/20 border border-amber-250 hover:border-amber-450 text-amber-700 dark:text-amber-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
         >
           <Fingerprint size={12} className="text-amber-550 animate-pulse" />
@@ -359,6 +363,7 @@ export default function DialPrincipal({
         <button
           type="button"
           onClick={onCallManagerClick}
+          aria-label="Llamar por teléfono al encargado de llaves"
           className="mt-2.5 py-1.5 px-4 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-250 text-indigo-700 dark:text-indigo-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Phone size={12} className="text-indigo-500" />
@@ -374,6 +379,7 @@ export default function DialPrincipal({
         <button
           type="button"
           onClick={onCallSuplenteClick}
+          aria-label="Marcar por teléfono al suplente de llaves"
           className="mt-2.5 py-1.5 px-4 bg-violet-50 dark:bg-violet-955/20 border border-violet-250 text-violet-700 dark:text-violet-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-violet-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
         >
           <Phone size={12} className="text-violet-500" />
@@ -386,6 +392,7 @@ export default function DialPrincipal({
         <button
           type="button"
           onClick={onPanicClick}
+          aria-label="Activar protocolo de emergencia o pánico"
           className="mt-2 py-1 px-3 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-[9px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer flex items-center gap-1 opacity-70 hover:opacity-100 z-20"
         >
           <AlertTriangle size={10} className="text-rose-500" />
@@ -402,6 +409,7 @@ export default function DialPrincipal({
           type="button"
           onClick={onDeclareContingencyClick}
           disabled={hasActiveContingency}
+          aria-label={hasActiveContingency ? 'Contingencia ya declarada hoy' : 'Declarar eventualidad por falla eléctrica o de internet en la sucursal'}
           className={`mt-2 py-1 px-3 border text-[9px] font-bold uppercase tracking-wider rounded-full transition-all flex items-center gap-1 z-20 ${
             hasActiveContingency
               ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-default opacity-90'
@@ -419,8 +427,9 @@ export default function DialPrincipal({
           <div className="bg-white border border-slate-200 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left">
             
             {/* Close Button */}
-            <button 
+            <button
               onClick={() => setShowGpsModal(false)}
+              aria-label="Cerrar"
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-655 p-1.5 rounded-full hover:bg-slate-100 transition-all border-none cursor-pointer"
             >
               <X size={18} />
@@ -443,9 +452,10 @@ export default function DialPrincipal({
             
             {/* Modal Actions */}
             <div className="flex flex-col gap-2">
-              <button 
+              <button
                 type="button"
                 onClick={handleRetryGps}
+                aria-label="Reintentar obtención de ubicación GPS"
                 className="w-full py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 transform active:scale-95 border-none cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <MapPin size={12} />

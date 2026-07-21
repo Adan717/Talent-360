@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import axiosInstance from '../../lib/axios';
 import { useAppStore } from '../../store/useAppStore';
@@ -7,6 +6,11 @@ import { MOCK_STORE } from '../../mockData';
 import { echoInstance } from '../../lib/echo';
 import { offlineDb } from '../../lib/offlineDb';
 import { computeOfflineStamp, warmOfflineSecret } from '../../lib/offlineSecret';
+import { useGeoAndOfflineSync } from './hooks/useGeoAndOfflineSync';
+import { useBreakAndMealTimers } from './hooks/useBreakAndMealTimers';
+import { useStoreOpening } from './hooks/useStoreOpening';
+import { useKeyholderDelegation } from './hooks/useKeyholderDelegation';
+import { useClockUIState } from './hooks/useClockUIState';
 
 export function useClockEngine(overrideUser?: any) {
   const assignments = useTaskStore(s => s.assignments);
@@ -41,18 +45,45 @@ export function useClockEngine(overrideUser?: any) {
     activeEncargadoId, setActiveEncargadoId,
     globalSimDay, setGlobalSimDay,
     isSandboxMode,
-    globalBreakStartTimes,
-    globalBreakEndTimes,
-    globalMealStartTimes,
-    globalMealEndTimes,
-    globalCheckOutTimes,
-    globalPendingBreakRequests,
     currentTier
   } = useAppStore();
   
   const currentUser = overrideUser || globalUser;
   const setCurrentUser = overrideUser ? () => {} : setGlobalUser;
   const isSimulator = !!overrideUser;
+
+  // NOTA (refactor Jul 2026 — división de useClockEngine.tsx en módulos más chicos): globalToast /
+  // showCustomAlert y clockOpConfig se adelantan aquí (antes vivían más abajo en el archivo) porque
+  // useGeoAndOfflineSync() los necesita como parámetros. El resto del comportamiento es idéntico.
+  const [globalToast, setGlobalToast] = useState<string | null>(null);
+  const showCustomAlert = (msg: string) => {
+    setGlobalToast(msg);
+    setTimeout(() => setGlobalToast(null), 4000);
+  };
+
+  // clockOpConfig también se adelanta aquí por la misma razón (lo consume useGeoAndOfflineSync).
+  const clockOpConfig = systemSettings.clockOpConfig || {};
+
+  const {
+    syncQueue, setSyncQueue,
+    gpsCoordinates, setGpsCoordinates,
+    gpsStatus, setGpsStatus,
+    requestGPS,
+    isSimulatedOffline, setIsSimulatedOffline,
+    STORE_LAT, STORE_LNG, ALLOWED_RADIUS_METERS,
+    isGpsValidationBypassed,
+    gpsDistance,
+    isWithinPerimeter,
+    saveOfflineContingency,
+    syncOfflineContingencies,
+    syncOfflineQueue,
+  } = useGeoAndOfflineSync({
+    isSimulator,
+    overrideUser,
+    currentUserName: currentUser?.name,
+    clockOpConfig,
+    showCustomAlert,
+  });
 
   // NUEVO: precarga el secreto de firma offline mientras hay conexión, para que ya esté cacheado
   // en memoria si el dispositivo pierde internet más tarde y necesita firmar un fichaje offline
@@ -63,21 +94,122 @@ export function useClockEngine(overrideUser?: any) {
     }
   }, [isSimulator, isSandboxMode, currentUser?.id]);
 
+  // NOTA (refactor Jul 2026): useStoreOpening() y useKeyholderDelegation() necesitan poder llamar a
+  // syncToDB/processFinalClockOut, pero esas dos funciones son lógica central del motor y se definen
+  // más abajo en este mismo archivo. No hace falta moverlas (sería mucho más riesgoso, tocan la máquina
+  // de estados del dial): basta con pasar un wrapper que las referencie por nombre. Como el wrapper no
+  // se EJECUTA hasta que el usuario interactúa (mucho después de que termine este render), para ese
+  // entonces syncToDB/processFinalClockOut ya están asignadas — el mismo motivo por el que el código
+  // original ya podía llamar a syncToDB desde una función definida antes que ella en el archivo.
+  const syncToDBProxy = (type: string, isLate?: boolean, lateMinutes?: number, details?: string) =>
+    syncToDB(type, isLate, lateMinutes, details);
+
+  const processFinalClockOutProxy = (delegatedTo?: number | null, note?: string) =>
+    processFinalClockOut(delegatedTo, note);
+
+  const {
+    openingSettings, setOpeningSettings,
+    openingStatus, setOpeningStatus,
+    openingChecklistCompleted, setOpeningChecklistCompleted,
+    openingRollCallCompleted, setOpeningRollCallCompleted,
+    closingChecklistCompleted, setClosingChecklistCompleted,
+    showClosingChecklistModal, setShowClosingChecklistModal,
+    closingChecklistSubmitting, setClosingChecklistSubmitting,
+    getSimTimeStr,
+    handleOpenStorePremium,
+    showEmergencyOpenModal, setShowEmergencyOpenModal,
+    emergencyOpenSubmitting,
+    handleEmergencyStoreOpen,
+    securityPinSubmitting,
+    handleUpdateSecurityPin,
+    showContingencyModal, setShowContingencyModal,
+    contingencySubmitting,
+    activeContingency, setActiveContingency,
+    handleContingencyDeclaration,
+    handleReportAbsencePremium,
+    handleReportLatePremium,
+    handleReportStoreStillClosedPremium,
+  } = useStoreOpening({
+    currentUser,
+    showCustomAlert,
+    isSimulatedOffline,
+    saveOfflineContingency,
+    syncToDB: syncToDBProxy,
+  });
+
+  const {
+    keyholders, setKeyholders,
+    showKeyDelegationModal, setShowKeyDelegationModal,
+    nextDayEncargadoId, setNextDayEncargadoId,
+    handleKeyDelegation,
+    isUserActiveKeyholder,
+    getNextSuplenteUser,
+    handleCallSuplente,
+    pendingKeyTransfers, setPendingKeyTransfers,
+    initiateKeyTransfer,
+    checkPendingKeyTransfers,
+    respondToKeyTransfer,
+    reportAbandonment,
+  } = useKeyholderDelegation({
+    globalUsers,
+    currentUser,
+    showCustomAlert,
+    setDesignatedCloserId: (id: number) => setDesignatedCloserId(id),
+    processFinalClockOut: processFinalClockOutProxy,
+  });
+
+  // NOTA (refactor Jul 2026): banderas booleanas puras de UI (modales, validaciones en curso) que
+  // no tenían lógica propia — ver hooks/useClockUIState.ts.
+  const {
+    paseListaDone, setPaseListaDone,
+    applyPunishments, setApplyPunishments,
+    showMasterCloseModal, setShowMasterCloseModal,
+    showTransferModal, setShowTransferModal,
+    showCCTVModal, setShowCCTVModal,
+    isDropdownOpen, setIsDropdownOpen,
+    showAbsenceModal, setShowAbsenceModal,
+    showAmnestyModal, setShowAmnestyModal,
+    showGhostTheater, setShowGhostTheater,
+    showJustificanteModal, setShowJustificanteModal,
+    showReportModal, setShowReportModal,
+    showEvalModal, setShowEvalModal,
+    showForzosaModal, setShowForzosaModal,
+    showPaseListaModal, setShowPaseListaModal,
+    showBreakSeatModal, setShowBreakSeatModal,
+    showTempExitModal, setShowTempExitModal,
+    showPanicModal, setShowPanicModal,
+    isPanicActive, setIsPanicActive,
+    showMealSwapModal, setShowMealSwapModal,
+    isHandoverCompleted, setIsHandoverCompleted,
+    showEarlyDepartureModal, setShowEarlyDepartureModal,
+    isEarlyDepartureValidation, setIsEarlyDepartureValidation,
+    isOvertimeValidation, setIsOvertimeValidation,
+    isLateEntryValidation, setIsLateEntryValidation,
+    isSidebarOpen, setIsSidebarOpen,
+    isModulesOpen, setIsModulesOpen,
+    showMealReservationModal, setShowMealReservationModal,
+    showAlarmSettingsModal, setShowAlarmSettingsModal,
+    pendingTasksBlocker, setPendingTasksBlocker,
+    preShiftAlarmPlayed, setPreShiftAlarmPlayed,
+    mealReminderAlarmPlayed, setMealReminderAlarmPlayed,
+    leySillaAlarmPlayed, setLeySillaAlarmPlayed,
+  } = useClockUIState();
+
 
   let leySillaConfig = systemSettings.leySillaConfig || {};
-  const setLeySillaConfig = (v) => updateSetting('leySillaConfig', typeof v === 'function' ? v(leySillaConfig) : v);
+  const setLeySillaConfig = (v: any) => updateSetting('leySillaConfig', typeof v === 'function' ? v(leySillaConfig) : v);
   
   let featureFlags = systemSettings.featureFlags || {};
-  const setFeatureFlags = (v) => updateSetting('featureFlags', typeof v === 'function' ? v(featureFlags) : v);
+  const setFeatureFlags = (v: any) => updateSetting('featureFlags', typeof v === 'function' ? v(featureFlags) : v);
   
   let mealSettings = systemSettings.mealSettings || {};
-  const setMealSettings = (v) => updateSetting('mealSettings', typeof v === 'function' ? v(mealSettings) : v);
+  const setMealSettings = (v: any) => updateSetting('mealSettings', typeof v === 'function' ? v(mealSettings) : v);
   
   let timeBankConfigs = systemSettings.timeBankConfigs || {};
-  const setTimeBankConfigs = (v) => updateSetting('timeBankConfigs', typeof v === 'function' ? v(timeBankConfigs) : v);
+  const setTimeBankConfigs = (v: any) => updateSetting('timeBankConfigs', typeof v === 'function' ? v(timeBankConfigs) : v);
   
   const adminConfigs = systemSettings.adminConfigs || {};
-  const setAdminConfigs = (v) => updateSetting('adminConfigs', typeof v === 'function' ? v(adminConfigs) : v);
+  const setAdminConfigs = (v: any) => updateSetting('adminConfigs', typeof v === 'function' ? v(adminConfigs) : v);
 
   const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
 
@@ -102,989 +234,60 @@ export function useClockEngine(overrideUser?: any) {
   }
   
   const globalStoreShiftStart = systemSettings.globalStoreShiftStart;
-  const setGlobalStoreShiftStart = (v) => updateSetting('globalStoreShiftStart', typeof v === 'function' ? v(globalStoreShiftStart) : v);
+  const setGlobalStoreShiftStart = (v: any) => updateSetting('globalStoreShiftStart', typeof v === 'function' ? v(globalStoreShiftStart) : v);
   
   const globalStoreShiftEnd = systemSettings.globalStoreShiftEnd;
-  const setGlobalStoreShiftEnd = (v) => updateSetting('globalStoreShiftEnd', typeof v === 'function' ? v(globalStoreShiftEnd) : v);
+  const setGlobalStoreShiftEnd = (v: any) => updateSetting('globalStoreShiftEnd', typeof v === 'function' ? v(globalStoreShiftEnd) : v);
 
   
 
+  // NOTA (refactor Jul 2026 — migración de polling a WebSockets, tarea #41): antes este intervalo
+  // corría cada 5s para todos los usuarios conectados, incluso sin ningún cambio real que sincronizar.
+  // Ahora la actualización en tiempo real la maneja el listener de '.App\\Events\\TimeEntryRecorded'
+  // (ver más abajo, mismo canal que ya usa StoreOpened) — cada fichaje de CUALQUIER empleado del
+  // tenant dispara ese evento y refresca el estado al instante, sin esperar el poll. Este intervalo
+  // se deja en 60s únicamente como red de seguridad por si el WebSocket se desconecta (reconexión de
+  // red, Reverb caído, etc.) — no debería ser la vía principal de actualización en producción.
+  // PENDIENTE DE BACKEND: el evento TimeEntryRecorded todavía no existe (ver docs/BACKEND_INTERFACES.md
+  // §20) — hasta que Claude Code lo implemente, este poll de 60s es la única vía real de sincronización
+  // entre dispositivos, con más retraso que antes. No revertir a 5s: una vez que exista el evento, el
+  // WebSocket cubre la actualización inmediata y no hace falta un poll agresivo.
   useEffect(() => {
     fetchState();
-    const interval = setInterval(fetchState, 5000);
+    const interval = setInterval(fetchState, 60000);
     return () => {
       clearInterval(interval);
     };
   }, [currentUser.id]);
 
-  const [globalToast, setGlobalToast] = useState<string | null>(null);
   const [storeOpenSimTime, setStoreOpenSimTime] = useState<number | null>(null);
-  const [paseListaDone, setPaseListaDone] = useState(false);
   const [activePushNotification, setActivePushNotification] = useState<{type: string, text: string, action: () => void} | null>(null);
 
-  // --- Estados y Lógica de Apertura de Tienda Premium ---
-  const [openingSettings, setOpeningSettings] = useState<any>(() => {
-    try {
-      const saved = localStorage.getItem('store_opening_settings');
-      return saved ? JSON.parse(saved) : {
-        is_enabled: true,
-        pre_opening_window_minutes: 15,
-        absence_late_report_window_minutes: 5,
-        early_clock_in_allowed_minutes: 10,
-        allow_automatic_handoff: true,
-        allow_late_if_before_opening: true,
-        allow_store_closed_report: true,
-        enable_amnesty_if_store_closed: true,
-        require_opening_checklist: true,
-        require_opening_roll_call: true,
-        notify_admin_on_handoff: true,
-        notify_supervisor_on_handoff: true,
-      };
-    } catch {
-      return {};
-    }
-  });
-
-  const [openingStatus, setOpeningStatus] = useState<any>(null);
-  const [openingChecklistCompleted, setOpeningChecklistCompleted] = useState(() => {
-    return localStorage.getItem('opening_checklist_completed') === 'true';
-  });
-  const [openingRollCallCompleted, setOpeningRollCallCompleted] = useState(() => {
-    return localStorage.getItem('opening_roll_call_completed') === 'true';
-  });
-
-  // NUEVO (estado #22 de la matriz — "Checklist de Cierre Seguro"): espejo del checklist de apertura
-  // de arriba, misma key sin scope de fecha para mantener paridad de comportamiento con su par.
-  const [closingChecklistCompleted, setClosingChecklistCompleted] = useState(() => {
-    return localStorage.getItem('closing_checklist_completed') === 'true';
-  });
-  const [showClosingChecklistModal, setShowClosingChecklistModal] = useState(false);
-  const [closingChecklistSubmitting, setClosingChecklistSubmitting] = useState(false);
-
-  const getSimTimeStr = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:00`;
-  };
-
-  useEffect(() => {
-    const syncApertura = async () => {
-      const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
-      if (!isOpeningPremium) return;
-
-      if (isSandboxMode) {
-        try {
-          const savedSettings = localStorage.getItem('store_opening_settings');
-          if (savedSettings) {
-            setOpeningSettings(JSON.parse(savedSettings));
-          }
-        } catch {}
-
-        let statusObj = null;
-        try {
-          const savedStatus = localStorage.getItem('store_daily_opening_status');
-          if (savedStatus) {
-            statusObj = JSON.parse(savedStatus);
-          }
-        } catch {}
-
-        const openTimeStr = systemSettings.storeSchedule?.openTime || '08:30';
-        const [oh, om] = openTimeStr.split(':').map(Number);
-        const openTimeMins = oh * 60 + om;
-        const preWindowMins = openingSettings.pre_opening_window_minutes || 15;
-        const windowStartMins = openTimeMins - preWindowMins;
-        const reportDeadlineMins = windowStartMins + (openingSettings.absence_late_report_window_minutes || 5);
-
-        const todayStr = new Date().toDateString();
-        if (!statusObj || statusObj.date_str !== todayStr) {
-          let ass = [];
-          try {
-            const isSandbox = useAppStore.getState().isSandboxMode;
-            const savedAss = localStorage.getItem('store_opening_assignments');
-            ass = savedAss ? JSON.parse(savedAss) : (
-              isSandbox ? [
-                { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-                { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-                { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-              ] : [
-                { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-                { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-                { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-              ]
-            );
-          } catch {}
-
-          const firstActive = ass
-            .filter((a: any) => a.is_active)
-            .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-
-          statusObj = {
-            date_str: todayStr,
-            scheduled_opening_time: openTimeStr,
-            pre_opening_window_start_mins: windowStartMins,
-            report_deadline_mins: reportDeadlineMins,
-            current_responsible_employee_id: firstActive ? firstActive.employee_id : 1,
-            status: 'pending',
-          };
-          localStorage.setItem('store_daily_opening_status', JSON.stringify(statusObj));
-        }
-
-        if (statusObj.status !== 'opened' && statusObj.status !== 'failed' && statusObj.status !== 'closed_reported_by_employees') {
-          if (globalSimTime < windowStartMins) {
-            statusObj.status = 'pending';
-          } else if (globalSimTime >= windowStartMins && globalSimTime < statusObj.report_deadline_mins) {
-            statusObj.status = 'active_window';
-          } else if (globalSimTime >= statusObj.report_deadline_mins) {
-            if (openingSettings.allow_automatic_handoff) {
-              let assList = [];
-              try {
-                const isSandbox = useAppStore.getState().isSandboxMode;
-                const savedAss = localStorage.getItem('store_opening_assignments');
-                assList = savedAss ? JSON.parse(savedAss) : (
-                  isSandbox ? [
-                    { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-                    { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-                    { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-                  ] : [
-                    { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-                    { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-                    { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-                  ]
-                );
-              } catch {}
-
-              const currentAss = assList.find((a: any) => a.employee_id === statusObj.current_responsible_employee_id);
-              const currentOrder = currentAss ? currentAss.priority_order : 1;
-
-              const nextAss = assList
-                .filter((a: any) => a.is_active && a.priority_order > currentOrder)
-                .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-
-              if (nextAss) {
-                statusObj.current_responsible_employee_id = nextAss.employee_id;
-                statusObj.status = 'transferred';
-                statusObj.report_deadline_mins = globalSimTime + (openingSettings.absence_late_report_window_minutes || 5);
-                const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
-                showCustomAlert(`⏳ Límite excedido. Responsabilidad de apertura cedida a ${nextName}.`);
-              } else {
-                statusObj.status = 'failed';
-                showCustomAlert(`🚨 Alerta Crítica: Todos los responsables de apertura fallaron.`);
-              }
-            } else {
-              statusObj.status = 'failed';
-            }
-          }
-          localStorage.setItem('store_daily_opening_status', JSON.stringify(statusObj));
-        }
-
-        setOpeningStatus(statusObj);
-      } else {
-        try {
-          const res = await axiosInstance.get('/store-opening/today', {
-            params: { simTime: getSimTimeStr(globalSimTime) }
-          });
-          setOpeningStatus(res.data.status);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    };
-
-    syncApertura();
-    const interval = setInterval(syncApertura, 5000);
-    return () => clearInterval(interval);
-  }, [globalSimTime, isSandboxMode]);
-
-  const handleOpenStorePremium = async () => {
-    if (isSandboxMode) {
-      const updated = {
-        ...openingStatus,
-        status: 'opened',
-        opened_by_employee_id: currentUser.id,
-        opened_at: new Date().toISOString()
-      };
-      setOpeningStatus(updated);
-      localStorage.setItem('store_daily_opening_status', JSON.stringify(updated));
-      setStoreStatus('open');
-
-      const nowStr = getSimTimeStr(globalSimTime);
-      await syncToDB('check_in', nowStr);
-
-      showCustomAlert("🗝️ Apertura de tienda registrada con éxito y registro de entrada completado.");
-    } else {
-      try {
-        const res = await axiosInstance.post('/store-opening/open-and-clock-in', {
-          simTime: getSimTimeStr(globalSimTime),
-          user_id: currentUser?.id
-        });
-        if (res.data.success) {
-          setOpeningStatus(res.data.status);
-          setStoreStatus('open');
-          await fetchState();
-          showCustomAlert(res.data.message);
-        }
-      } catch (e: any) {
-        showCustomAlert(e.response?.data?.message || "Error al abrir la tienda.");
-      }
-    }
-  };
-
-  // NUEVO: unifica las dos definiciones de "portador de llaves" que convivían en el frontend —
-  // currentUser.portadorLlaves (campo del empleado) y store_opening_assignments.has_keys (lo que
-  // el backend realmente exige en StoreOpeningService::emergencyOpenWithWitnesses). Antes, distintas
-  // partes de la UI (botón "Llamar a Encargado", botón de pánico, gate de Apertura de Emergencia)
-  // consultaban fuentes distintas y podían no coincidir sobre si una misma persona "tiene llaves".
-  // Devuelve true si CUALQUIERA de las dos fuentes lo confirma, para no quitarle acceso a nadie que
-  // ya estuviera habilitado por una sola de ellas mientras ambos sistemas conviven sin unificarse.
-  const isUserActiveKeyholder = (userId: number | undefined | null) => {
-    if (!userId) return false;
-
-    const user = globalUsers.find((u: any) => Number(u.id) === Number(userId));
-    const hasPortadorLlaves = Boolean(
-      user?.portadorLlaves && String(user.portadorLlaves).toLowerCase() !== 'ninguno'
-    );
-
-    let hasActiveAssignment = false;
-    try {
-      const savedAss = localStorage.getItem('store_opening_assignments');
-      const ass = savedAss ? JSON.parse(savedAss) : [];
-      hasActiveAssignment = ass.some(
-        (a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.has_keys
-      );
-    } catch {}
-
-    return hasPortadorLlaves || hasActiveAssignment;
-  };
-
-  // NUEVO (estado #5 de la matriz — "Llamar a Suplente de Llaves"): botón secundario que permite
-  // al encargado responsable de apertura de HOY avisar proactivamente al siguiente suplente en la
-  // lista de prioridad, ANTES de que se dispare el traspaso automático por deadline vencido
-  // (que ya maneja handleReportAbsencePremium/handleReportLatePremium). Reutiliza la misma lectura
-  // de 'store_opening_assignments' que esas dos funciones para encontrar al siguiente en orden.
-  // Nota de diseño: el estado de la matriz no tiene hoy un sub-estado formal "reportó y va a llamar"
-  // en el backend, así que esto se implementa como acción de aviso (llamada + log en Matrix) que NO
-  // cede la responsabilidad por sí sola — la cesión formal sigue ocurriendo solo por el flujo de
-  // ausencia/retardo o por vencimiento de deadline, evitando inventar un estado que el backend no rastrea.
-  const getNextSuplenteUser = () => {
-    let ass: any[] = [];
-    try {
-      const savedAss = localStorage.getItem('store_opening_assignments');
-      ass = savedAss ? JSON.parse(savedAss) : [];
-    } catch {}
-
-    const currentAss = ass.find((a: any) => Number(a.employee_id) === Number(currentUser?.id));
-    const currentOrder = currentAss ? currentAss.priority_order : 1;
-
-    const nextAss = ass
-      .filter((a: any) => a.is_active && a.priority_order > currentOrder)
-      .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-
-    if (!nextAss) return null;
-    return globalUsers.find((u: any) => Number(u.id) === Number(nextAss.employee_id)) || null;
-  };
-
-  const handleCallSuplente = () => {
-    const suplente = getNextSuplenteUser();
-    if (!suplente) {
-      showCustomAlert('⚠️ No hay un suplente configurado en la lista de prioridad.');
-      return;
-    }
-
-    useAppStore.getState().addMatrixEvent(
-      '📞 Aviso a Suplente de Llaves',
-      `${currentUser?.name || 'Encargado'} contactó a ${suplente.name} para pasar la estafeta de apertura.`,
-      'info',
-      currentUser?.id
-    );
-
-    if (suplente.phone) {
-      window.location.href = `tel:${suplente.phone}`;
-    }
-    showCustomAlert(`📞 Contactando a ${suplente.name} (Suplente de Llaves).`);
-  };
-
-  // NUEVO (estado #9 — Apertura de Emergencia): consume POST /clock/emergency-open
-  // (docs/BACKEND_INTERFACES.md §3). El backend YA hace el check_in del solicitante como parte
-  // de esta llamada (confirmado en las notas de implementación del 2026-07-21 del propio documento),
-  // así que aquí NO se debe llamar syncToDB('check_in') por separado — se duplicaría el fichaje.
-  //
-  // ADVERTENCIA CONOCIDA: al día de este cambio no existe todavía un endpoint PUT /me/pin para que
-  // los empleados configuren su PIN. La validación de testigos en el backend siempre fallará con
-  // "PIN de testigo incorrecto." hasta que ese endpoint exista (o se semillen PINs manualmente).
-  // La UI queda funcionalmente completa y lista para cuando ese endpoint se agregue.
-  const handleEmergencyStoreOpen = async (witness1Id: number, witness1Pin: string, witness2Id: number, witness2Pin: string) => {
-    if (!witness1Id || !witness2Id || !witness1Pin || !witness2Pin) {
-      showCustomAlert('⚠️ Completa los datos de ambos testigos para continuar.');
-      return;
-    }
-    if (Number(witness1Id) === Number(witness2Id)) {
-      showCustomAlert('⚠️ Los testigos deben ser dos empleados distintos.');
-      return;
-    }
-
-    setEmergencyOpenSubmitting(true);
-    try {
-      if (isSandboxMode) {
-        // Simulación local: no valida PIN real, solo demuestra el flujo completo.
-        const updated = {
-          ...openingStatus,
-          status: 'opened',
-          opened_by_employee_id: currentUser.id,
-          opened_at: new Date().toISOString()
-        };
-        setOpeningStatus(updated);
-        localStorage.setItem('store_daily_opening_status', JSON.stringify(updated));
-        setStoreStatus('open');
-        await syncToDB('check_in');
-
-        useAppStore.getState().addMatrixEvent(
-          '⚠️ Apertura de Emergencia (Sandbox)',
-          `${currentUser.name} abrió la tienda en modo emergencia con testigos ${witness1Id} y ${witness2Id}.`,
-          'warning',
-          currentUser.id
-        );
-        showCustomAlert('⚠️ Apertura de emergencia autorizada (Sandbox).');
-        setShowEmergencyOpenModal(false);
-        return;
-      }
-
-      const res = await axiosInstance.post('/clock/emergency-open', {
-        requester_id: currentUser.id,
-        witness_1_id: witness1Id,
-        witness_1_pin: witness1Pin,
-        witness_2_id: witness2Id,
-        witness_2_pin: witness2Pin,
-        store_id: 1
-      });
-      if (res.data?.success) {
-        if (res.data.status) setOpeningStatus(res.data.status);
-        setStoreStatus('open');
-        await fetchState();
-        showCustomAlert(res.data.message || '⚠️ Apertura de emergencia autorizada.');
-        setShowEmergencyOpenModal(false);
-      } else {
-        showCustomAlert(res.data?.message || 'No se pudo autorizar la apertura de emergencia.');
-      }
-    } catch (e: any) {
-      showCustomAlert(e.response?.data?.message || 'Error al procesar la apertura de emergencia.');
-    } finally {
-      setEmergencyOpenSubmitting(false);
-    }
-  };
-
-  // NUEVO (estado #10/#15 — Declarar Eventualidad / Modo Contingencia Activo): consume
-  // POST /clock/declare-contingency (docs/BACKEND_INTERFACES.md §4).
-  // Nota de diseño: este handler es para el camino EN LÍNEA (dispositivo con datos/señal aunque
-  // sin luz eléctrica en la sucursal). El caso verdaderamente sin internet debe pasar por la cola
-  // offline de IndexedDB igual que los demás punches — ver syncToDB(), que ya detecta
-  // navigator.onLine y encola localmente. No se implementa aquí offline_stamp (HMAC) todavía:
-  // eso es una pieza aparte (ver tarea de firma HMAC offline) que aún no se ha construido en el
-  // cliente; declarar sin firma funciona porque esta llamada va autenticada por Sanctum en vivo.
-  // NUEVO: configuración de PIN de seguridad (docs/BACKEND_INTERFACES.md §10, decisión final del
-  // 2026-07-21). Consume PUT /me/security-pin. Distinto de currentUser.pin_code (que es el código de
-  // invitación de un solo uso del onboarding, y también reutilizado como PIN de bloqueo de sesión local
-  // en RelojVisual.tsx — NO tocar ese, es un concepto de seguridad separado). El security_pin es lo que
-  // valida el backend en la co-validación de 2 testigos de /clock/emergency-open.
-  const [securityPinSubmitting, setSecurityPinSubmitting] = useState(false);
-  const handleUpdateSecurityPin = async (currentPassword: string, newPin: string, confirmPin: string) => {
-    if (!/^\d{4,6}$/.test(newPin)) {
-      showCustomAlert('⚠️ El PIN debe ser numérico, de 4 a 6 dígitos.');
-      return false;
-    }
-    if (newPin !== confirmPin) {
-      showCustomAlert('⚠️ Los PIN no coinciden.');
-      return false;
-    }
-    if (!currentPassword) {
-      showCustomAlert('⚠️ Ingresa tu contraseña actual para confirmar el cambio.');
-      return false;
-    }
-
-    setSecurityPinSubmitting(true);
-    try {
-      if (isSandboxMode) {
-        showCustomAlert('🔐 PIN de seguridad actualizado (Sandbox).');
-        return true;
-      }
-      const res = await axiosInstance.put('/me/security-pin', {
-        current_password: currentPassword,
-        pin: newPin
-      });
-      showCustomAlert(res.data?.message || '🔐 PIN de seguridad actualizado.');
-      return true;
-    } catch (e: any) {
-      showCustomAlert(e.response?.data?.message || 'Error al actualizar el PIN de seguridad.');
-      return false;
-    } finally {
-      setSecurityPinSubmitting(false);
-    }
-  };
-
-  // NUEVO: cola offline dedicada para declaraciones de contingencia, separada de la cola de punches
-  // de offlineDb (ver comentario en handleContingencyDeclaration sobre por qué no se pueden mezclar).
-  const OFFLINE_CONTINGENCY_KEY = 'offline_contingency_queue';
-
-  const getOfflineContingencyQueue = (): Array<{ userId: number; reason: string; declaredAt: string }> => {
-    try {
-      const raw = localStorage.getItem(OFFLINE_CONTINGENCY_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveOfflineContingency = (item: { userId: number; reason: string; declaredAt: string }) => {
-    const queue = getOfflineContingencyQueue();
-    queue.push(item);
-    localStorage.setItem(OFFLINE_CONTINGENCY_KEY, JSON.stringify(queue));
-  };
-
-  const syncOfflineContingencies = async () => {
-    const queue = getOfflineContingencyQueue();
-    if (queue.length === 0) return;
-    const isOnline = navigator.onLine && !isSimulatedOffline;
-    if (!isOnline || isSandboxMode) return;
-
-    const remaining: typeof queue = [];
-    for (const item of queue) {
-      try {
-        await axiosInstance.post('/clock/declare-contingency', {
-          user_id: item.userId,
-          reason: item.reason,
-          declared_at: item.declaredAt
-        });
-      } catch (e) {
-        console.error('Error sincronizando contingencia offline, se reintentará después:', e);
-        remaining.push(item);
-      }
-    }
-    localStorage.setItem(OFFLINE_CONTINGENCY_KEY, JSON.stringify(remaining));
-    if (remaining.length < queue.length) {
-      showCustomAlert(`🔄 ${queue.length - remaining.length} contingencia(s) offline sincronizada(s) con éxito.`);
-    }
-  };
-
-  const handleContingencyDeclaration = async (reason: 'no_power' | 'no_internet' | 'no_power_and_internet') => {
-    setContingencySubmitting(true);
-    try {
-      const isOnline = navigator.onLine && !isSimulatedOffline;
-
-      if (isSandboxMode) {
-        const record = { reason, contingency_id: Date.now() };
-        setActiveContingency(record);
-        localStorage.setItem('active_contingency_' + new Date().toDateString(), JSON.stringify(record));
-        useAppStore.getState().addMatrixEvent(
-          '⚡ Contingencia Declarada (Sandbox)',
-          `${currentUser.name} declaró eventualidad: ${reason}.`,
-          'warning',
-          currentUser.id
-        );
-        showCustomAlert('⚡ Contingencia declarada. Jornada protegida al 100% (Sandbox).');
-        setShowContingencyModal(false);
-        return;
-      }
-
-      if (!isOnline) {
-        // BUG FIX: antes esto se guardaba en la MISMA cola de punches de offlineDb con
-        // type: 'contingency_declare' — un tipo que /clock/punch-batch no reconoce
-        // (Rule::in(ClockService::ALLOWED_TYPES) lo rechaza). Como Laravel valida el batch
-        // COMPLETO de una sola vez, un solo ítem así habría tumbado la sincronización de
-        // TODOS los fichajes legítimos en la misma cola. Ahora usa su propia cola dedicada
-        // (localStorage, bajo volumen esperado: como mucho una declaración por usuario por día),
-        // sincronizada por separado contra /clock/declare-contingency, no contra punch-batch.
-        saveOfflineContingency({ userId: currentUser.id, reason, declaredAt: new Date().toISOString() });
-        showCustomAlert('📡 Contingencia guardada localmente. Se sincronizará al recuperar conexión.');
-        setShowContingencyModal(false);
-        return;
-      }
-
-      const res = await axiosInstance.post('/clock/declare-contingency', {
-        user_id: currentUser.id,
-        reason,
-        declared_at: new Date().toISOString()
-      });
-      if (res.data?.success) {
-        const record = { reason, contingency_id: res.data.contingency_id };
-        setActiveContingency(record);
-        localStorage.setItem('active_contingency_' + new Date().toDateString(), JSON.stringify(record));
-        showCustomAlert(res.data.message || '⚡ Contingencia declarada. Jornada protegida al 100% conforme LFT.');
-        setShowContingencyModal(false);
-      } else {
-        showCustomAlert(res.data?.message || 'No se pudo declarar la contingencia.');
-      }
-    } catch (e: any) {
-      showCustomAlert(e.response?.data?.message || 'Error al declarar la contingencia.');
-    } finally {
-      setContingencySubmitting(false);
-    }
-  };
-
-  const handleReportAbsencePremium = async () => {
-    if (isSandboxMode) {
-      let ass = [];
-      try {
-        const savedAss = localStorage.getItem('store_opening_assignments');
-        ass = savedAss ? JSON.parse(savedAss) : [
-          { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-        ];
-      } catch {}
-
-      const currentAss = ass.find((a: any) => a.employee_id === currentUser.id);
-      const currentOrder = currentAss ? currentAss.priority_order : 1;
-
-      const nextAss = ass
-        .filter((a: any) => a.is_active && a.priority_order > currentOrder)
-        .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-
-      const updated = { ...openingStatus };
-      if (nextAss) {
-        updated.current_responsible_employee_id = nextAss.employee_id;
-        updated.status = 'transferred';
-        updated.report_deadline_mins = globalSimTime + (openingSettings.absence_late_report_window_minutes || 5);
-        const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
-        showCustomAlert(`Ausencia reportada. Apertura cedida a ${nextName}.`);
-      } else {
-        updated.status = 'failed';
-        showCustomAlert("Ausencia reportada. Alerta crítica enviada: no quedan más encargados.");
-      }
-      setOpeningStatus(updated);
-      localStorage.setItem('store_daily_opening_status', JSON.stringify(updated));
-    } else {
-      try {
-        const res = await axiosInstance.post('/store-opening/report-absence', {
-          simTime: getSimTimeStr(globalSimTime),
-          user_id: currentUser?.id
-        });
-        if (res.data.success) {
-          setOpeningStatus(res.data.handoff);
-          showCustomAlert(res.data.message);
-        }
-      } catch (e: any) {
-        showCustomAlert(e.response?.data?.message || "Error al reportar ausencia.");
-      }
-    }
-  };
-
-  const handleReportLatePremium = async (estimatedTimeStr: string) => {
-    if (isSandboxMode) {
-      const [eh, em] = estimatedTimeStr.split(':').map(Number);
-      const etaMins = eh * 60 + em;
-
-      const openTimeStr = systemSettings.storeSchedule?.openTime || '08:30';
-      const [oh, om] = openTimeStr.split(':').map(Number);
-      const openTimeMins = oh * 60 + om;
-
-      const willBeLate = etaMins > openTimeMins;
-      const mustHandoff = willBeLate && !openingSettings.allow_late_if_before_opening;
-
-      if (mustHandoff || willBeLate) {
-        let ass = [];
-        try {
-          const savedAss = localStorage.getItem('store_opening_assignments');
-          ass = savedAss ? JSON.parse(savedAss) : [
-            { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-            { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          ];
-        } catch {}
-
-        const currentAss = ass.find((a: any) => a.employee_id === currentUser.id);
-        const currentOrder = currentAss ? currentAss.priority_order : 1;
-
-        const nextAss = ass
-          .filter((a: any) => a.is_active && a.priority_order > currentOrder)
-          .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
-
-        const updated = { ...openingStatus };
-        if (nextAss) {
-          updated.current_responsible_employee_id = nextAss.employee_id;
-          updated.status = 'transferred';
-          updated.report_deadline_mins = globalSimTime + (openingSettings.absence_late_report_window_minutes || 5);
-          const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
-          showCustomAlert(`Retardo reportado. Apertura cedida a ${nextName}.`);
-        } else {
-          updated.status = 'failed';
-          showCustomAlert("Retardo reportado. Alerta crítica enviada: no quedan suplentes.");
-        }
-        setOpeningStatus(updated);
-        localStorage.setItem('store_daily_opening_status', JSON.stringify(updated));
-      } else {
-        showCustomAlert("Retardo reportado. Conservas la responsabilidad por estar dentro del margen.");
-      }
-    } else {
-      try {
-        const res = await axiosInstance.post('/store-opening/report-late', {
-          estimated_arrival_time: estimatedTimeStr,
-          simTime: getSimTimeStr(globalSimTime),
-          user_id: currentUser?.id
-        });
-        if (res.data.success) {
-          if (res.data.handoff) {
-            setOpeningStatus(res.data.handoff);
-          }
-          showCustomAlert(res.data.message);
-        }
-      } catch (e: any) {
-        showCustomAlert(e.response?.data?.message || "Error al reportar retardo.");
-      }
-    }
-  };
-
-  const handleReportStoreStillClosedPremium = async () => {
-    if (isSandboxMode) {
-      const updated = {
-        ...openingStatus,
-        status: 'closed_reported_by_employees'
-      };
-      setOpeningStatus(updated);
-      localStorage.setItem('store_daily_opening_status', JSON.stringify(updated));
-      showCustomAlert("🚨 Reporte de tienda cerrada enviado. Se registrará incidencia para aplicar amnistía de retardo.");
-    } else {
-      try {
-        const res = await axiosInstance.post('/store-opening/report-store-still-closed', {
-          simTime: getSimTimeStr(globalSimTime)
-        });
-        if (res.data.success) {
-          setOpeningStatus(res.data.status);
-          showCustomAlert(res.data.message);
-        }
-      } catch (e: any) {
-        showCustomAlert(e.response?.data?.message || "Error al enviar reporte.");
-      }
-    }
-  };
+  // NOTA (refactor Jul 2026): toda la lógica de apertura de tienda premium (settings, status,
+  // checklist de apertura/cierre, apertura de emergencia, PIN de seguridad, declaración de
+  // contingencia y los reportes de ausencia/retardo/tienda-cerrada) ahora vive en
+  // hooks/useStoreOpening.ts — ver la llamada a useStoreOpening() más arriba, que devuelve
+  // exactamente estos mismos nombres para no romper nada río abajo en este archivo.
 
   // --- PWA Advanced & Geofencing States ---
-  const [syncQueue, setSyncQueue] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem('clock_sync_queue');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // NOTA (refactor Jul 2026): todo lo de GPS/geofencing y sincronización offline (syncQueue,
+  // gpsCoordinates, gpsStatus, requestGPS, isSimulatedOffline, STORE_LAT/LNG, isWithinPerimeter,
+  // syncOfflineQueue, syncOfflineContingencies, saveOfflineContingency) ahora vive en
+  // hooks/useGeoAndOfflineSync.ts — ver la llamada a useGeoAndOfflineSync() más arriba, que
+  // devuelve exactamente estos mismos nombres para no romper nada río abajo en este archivo.
 
-  const [gpsCoordinates, setGpsCoordinates] = useState<any>(() => {
-    return overrideUser ? { latitude: 19.4326, longitude: -99.1332 } : { latitude: 19.4344, longitude: -99.1332 };
-  });
-  const [gpsStatus, setGpsStatus] = useState<'seeking' | 'success' | 'error'>(() => {
-    return overrideUser ? 'success' : 'seeking';
-  });
-  const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
-
-  const fetchIpLocation = async () => {
-    try {
-      console.log("Intentando obtener ubicación por IP...");
-      const res = await fetch('https://ipapi.co/json/');
-      if (!res.ok) throw new Error("Fallo en API de IP");
-      const data = await res.json();
-      if (data && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
-        console.log("Ubicación IP obtenida con éxito:", data.latitude, data.longitude);
-        setGpsCoordinates({
-          latitude: data.latitude,
-          longitude: data.longitude
-        });
-        setGpsStatus('success');
-      } else {
-        throw new Error("Coordenadas de IP inválidas");
-      }
-    } catch (err) {
-      console.error("Fallo definitivo en geolocalización por IP:", err);
-      setGpsStatus('error');
-    }
-  };
-
-  const requestGPS = () => {
-    setGpsStatus('seeking');
-    if (!navigator.geolocation) {
-      console.warn("API de Geolocalización no soportada por el navegador, recurriendo a IP...");
-      fetchIpLocation();
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setGpsCoordinates({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-        setGpsStatus('success');
-      },
-      (error) => {
-        console.warn("Error en Geolocation nativa del navegador, intentando fallback por IP...", error);
-        fetchIpLocation();
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
-  };
-
-  useEffect(() => {
-    if (isSimulator) {
-      // Ya inicializado correctamente en el estado inicial de React (useState)
-      return;
-    }
-
-    const clockOpConfig = systemSettings.clockOpConfig || {};
-    if (clockOpConfig.gpsValidationEnabled === false) {
-      setGpsStatus('success');
-    } else {
-      requestGPS();
-    }
-  }, [systemSettings.clockOpConfig?.gpsValidationEnabled, isSimulator]);
-
-  const [localBreakStartTimes, setLocalBreakStartTimes] = useState<Record<number, number>>(() => {
-     try {
-       const saved = localStorage.getItem('clock_break_start_times');
-       return saved ? JSON.parse(saved) : {};
-     } catch {
-       return {};
-     }
-  });
-
-  const [localMealStartTimes, setLocalMealStartTimes] = useState<Record<number, number>>(() => {
-     try {
-       const saved = localStorage.getItem('clock_meal_start_times');
-       return saved ? JSON.parse(saved) : {};
-     } catch {
-       return {};
-     }
-  });
-
-  const [localMealEndTimes, setLocalMealEndTimes] = useState<Record<number, number>>(() => {
-     try {
-       const saved = localStorage.getItem('clock_meal_end_times');
-       return saved ? JSON.parse(saved) : {};
-     } catch {
-       return {};
-     }
-  });
-
-  const [localCheckOutTimes, setLocalCheckOutTimes] = useState<Record<number, number>>(() => {
-     try {
-       const saved = localStorage.getItem('clock_checkout_times');
-       return saved ? JSON.parse(saved) : {};
-     } catch {
-       return {};
-     }
-  });
-
-  const [localBreakEndTimes, setLocalBreakEndTimes] = useState<Record<number, number>>(() => {
-     try {
-       const saved = localStorage.getItem('clock_break_end_times');
-       return saved ? JSON.parse(saved) : {};
-     } catch {
-       return {};
-     }
-  });
-
-  useEffect(() => {
-     localStorage.setItem('clock_break_start_times', JSON.stringify(localBreakStartTimes));
-  }, [localBreakStartTimes]);
-
-  useEffect(() => {
-     localStorage.setItem('clock_meal_start_times', JSON.stringify(localMealStartTimes));
-  }, [localMealStartTimes]);
-
-  useEffect(() => {
-     localStorage.setItem('clock_meal_end_times', JSON.stringify(localMealEndTimes));
-  }, [localMealEndTimes]);
-
-  useEffect(() => {
-     localStorage.setItem('clock_checkout_times', JSON.stringify(localCheckOutTimes));
-  }, [localCheckOutTimes]);
-
-  useEffect(() => {
-     localStorage.setItem('clock_break_end_times', JSON.stringify(localBreakEndTimes));
-  }, [localBreakEndTimes]);
-
-  const [localPendingBreakRequests, setLocalPendingBreakRequests] = useState<Record<number, any>>(() => {
-     try {
-       const saved = localStorage.getItem('clock_pending_break_requests');
-       return saved ? JSON.parse(saved) : {};
-     } catch {
-       return {};
-     }
-  });
-
-  useEffect(() => {
-     localStorage.setItem('clock_pending_break_requests', JSON.stringify(localPendingBreakRequests));
-  }, [localPendingBreakRequests]);
-
-  const pendingBreakRequests = isSandboxMode ? localPendingBreakRequests : (globalPendingBreakRequests || {});
-
-  const setPendingBreakRequests = (updater: any) => {
-    if (isSandboxMode) {
-      setLocalPendingBreakRequests(prev => typeof updater === 'function' ? updater(prev) : updater);
-    } else {
-      useAppStore.setState((state: any) => ({
-        globalPendingBreakRequests: typeof updater === 'function' ? updater(state.globalPendingBreakRequests || {}) : updater
-      }));
-    }
-  };
-
-  const breakStartTimes = isSandboxMode ? localBreakStartTimes : (globalBreakStartTimes || {});
-  const breakEndTimes = isSandboxMode ? localBreakEndTimes : (globalBreakEndTimes || {});
-  const mealStartTimes = isSandboxMode ? localMealStartTimes : (globalMealStartTimes || {});
-  const mealEndTimes = isSandboxMode ? localMealEndTimes : (globalMealEndTimes || {});
-  const checkOutTimes = isSandboxMode ? localCheckOutTimes : (globalCheckOutTimes || {});
-
-  const setBreakStartTimes = (updater: any) => {
-    setLocalBreakStartTimes(prev => typeof updater === 'function' ? updater(prev) : updater);
-  };
-  const setBreakEndTimes = (updater: any) => {
-    setLocalBreakEndTimes(prev => typeof updater === 'function' ? updater(prev) : updater);
-  };
-  const setMealStartTimes = (updater: any) => {
-    setLocalMealStartTimes(prev => typeof updater === 'function' ? updater(prev) : updater);
-  };
-  const setMealEndTimes = (updater: any) => {
-    setLocalMealEndTimes(prev => typeof updater === 'function' ? updater(prev) : updater);
-  };
-  const setCheckOutTimes = (updater: any) => {
-    setLocalCheckOutTimes(prev => typeof updater === 'function' ? updater(prev) : updater);
-  };
-
-  // BUG FIX (coordenadas hardcodeadas): antes STORE_LAT/STORE_LNG apuntaban fijo al Zócalo de CDMX,
-  // rompiendo el geofence para cualquier tenant/sucursal fuera de esas coordenadas exactas.
-  // Ahora se leen de systemSettings.clockOpConfig (misma fuente que ya usa el backend en
-  // ClockService.php: clockOpConfig.store_latitude / store_longitude / geo_radius_meters).
-  // Se conserva un fallback a los valores antiguos solo para no romper tenants sin configurar aún
-  // (ver docs/BACKEND_INTERFACES.md §7 — pendiente que el backend garantice default sensato).
-  const clockOpConfig = systemSettings.clockOpConfig || {};
-  const STORE_LAT = Number(clockOpConfig.store_latitude) || 19.4326;
-  const STORE_LNG = Number(clockOpConfig.store_longitude) || -99.1332;
-  const ALLOWED_RADIUS_METERS = Number(clockOpConfig.geo_radius_meters) || 50;
-
-  const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // Earth radius in meters
-    const phi1 = (lat1 * Math.PI) / 180;
-    const phi2 = (lat2 * Math.PI) / 180;
-    const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
-    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // in meters
-  };
-
-  const isGpsValidationBypassed = clockOpConfig.gpsValidationEnabled === false || !!clockOpConfig.allowManualCheckIn || isSandboxMode;
-  const gpsDistance = getDistanceInMeters(gpsCoordinates.latitude, gpsCoordinates.longitude, STORE_LAT, STORE_LNG);
-  const isWithinPerimeter = isGpsValidationBypassed ? true : (gpsDistance <= ALLOWED_RADIUS_METERS && gpsStatus === 'success');
-
-  // Espejo de Backend/app/Services/ClockService::ALLOWED_TYPES (más temp_exit_start/temp_exit_end,
-  // ya agregados por backend). Se usa para filtrar defensivamente antes de mandar el batch: si un
-  // solo ítem del array tiene un `type` no reconocido, Laravel rechaza la petición COMPLETA con 422
-  // (Rule::in aplica a punches.*.type), lo que bloquearía también los ítems legítimos del mismo lote.
-  const PUNCH_BATCH_ALLOWED_TYPES = [
-    'check_in', 'check_out', 'break_start', 'break_end',
-    'meal_start', 'meal_end', 'waiting', 'temp_exit_start', 'temp_exit_end'
-  ];
-
-  const syncOfflineQueue = async () => {
-    let currentQueue: any[] = [];
-    try {
-      currentQueue = await offlineDb.getPunches();
-    } catch (e) {
-      console.error("Error reading punches from IndexedDB:", e);
-      currentQueue = [];
-    }
-
-    if (currentQueue.length === 0) return;
-
-    const isOnline = navigator.onLine && !isSimulatedOffline;
-    if (!isOnline) return;
-
-    console.log("Sincronizando cola offline de fichajes de IndexedDB vía /clock/punch-batch...");
-
-    if (useAppStore.getState().isSandboxMode) {
-      // Sandbox: sin llamada real al backend, solo simula el log y limpia la cola local.
-      for (const item of currentQueue) {
-        useAppStore.getState().addMatrixEvent(
-          `[OFFLINE-SYNC] Fichaje Sincronizado: ${item.type}`,
-          `El empleado ${currentUser?.name || 'Desconocido'} sincronizó offline a las ${item.time}`,
-          'success',
-          item.userId
-        );
-      }
-      await offlineDb.clearPunches();
-      setSyncQueue([]);
-      showCustomAlert(`🔄 Cola offline: ${currentQueue.length} registros sincronizados con éxito (Sandbox).`);
-      window.dispatchEvent(new Event('db_sync_updated'));
-      return;
-    }
-
-    // Filtra ítems con type desconocido ANTES de construir el batch (ver comentario arriba).
-    // Se quedan en la cola sin enviarse — no se pierden, pero tampoco bloquean al resto.
-    const validItems = currentQueue.filter(item => PUNCH_BATCH_ALLOWED_TYPES.includes(item.type));
-    const skippedCount = currentQueue.length - validItems.length;
-    if (skippedCount > 0) {
-      console.warn(`${skippedCount} ítem(s) de la cola offline tienen un type no reconocido por punch-batch y se omitieron de este intento de sincronización.`);
-    }
-    if (validItems.length === 0) return;
-
-    try {
-      const res = await axiosInstance.post('/clock/punch-batch', {
-        punches: validItems.map(item => ({
-          user_id: item.userId,
-          type: item.type,
-          time: item.time,
-          details: { note: item.details, gps: item.gps },
-          gps: item.gps,
-          client_timestamp: item.clientTimestamp || new Date(item.timestamp || Date.now()).toISOString(),
-          offline_stamp: item.offlineStamp || ''
-        }))
-      });
-
-      const results: any[] = res.data?.results || [];
-      const successIndices = new Set(results.filter(r => r.success).map(r => r.index));
-      const rejectedResults = results.filter(r => !r.success);
-
-      let deletedCount = 0;
-      for (let i = 0; i < validItems.length; i++) {
-        if (successIndices.has(i) && validItems[i].id !== undefined) {
-          await offlineDb.deletePunch(validItems[i].id);
-          deletedCount++;
-        }
-      }
-
-      const remaining = await offlineDb.getPunches();
-      setSyncQueue(remaining);
-
-      if (deletedCount > 0) {
-        showCustomAlert(`🔄 Cola offline: ${deletedCount} registro(s) sincronizados con éxito.`);
-        window.dispatchEvent(new Event('db_sync_updated'));
-      }
-      if (rejectedResults.length > 0) {
-        console.warn('Ítems rechazados al sincronizar el batch offline (quedan en cola para revisión):', rejectedResults);
-        showCustomAlert(`⚠️ ${rejectedResults.length} fichaje(s) offline no pudieron validarse (firma inválida) y requieren revisión manual.`);
-      }
-    } catch (e) {
-      // Fallo de red/servidor a nivel de TODO el batch (no de un ítem individual) — se reintentará
-      // en el próximo evento 'online' o próximo ciclo, la cola queda intacta.
-      console.error("Error sincronizando el batch offline completo:", e);
-    }
-  };
-
-  useEffect(() => {
-    const handleOnline = () => {
-      syncOfflineQueue();
-      syncOfflineContingencies();
-    };
-    window.addEventListener('online', handleOnline);
-    const isOnline = navigator.onLine && !isSimulatedOffline;
-    if (isOnline) {
-      syncOfflineQueue();
-      syncOfflineContingencies();
-    }
-    return () => window.removeEventListener('online', handleOnline);
-  }, [isSimulatedOffline]);
-
-  const showCustomAlert = (msg: string) => {
-    setGlobalToast(msg);
-    setTimeout(() => setGlobalToast(null), 4000);
-  };
+  // NOTA (refactor Jul 2026): los horarios de descanso/comida/salida y la petición pendiente de
+  // descanso ahora viven en hooks/useBreakAndMealTimers.ts — devuelve exactamente estos mismos
+  // nombres (pendingBreakRequests, breakStartTimes, breakEndTimes, mealStartTimes, mealEndTimes,
+  // checkOutTimes y sus setters) para no romper nada río abajo en este archivo.
+  const {
+    pendingBreakRequests, setPendingBreakRequests,
+    breakStartTimes, setBreakStartTimes,
+    breakEndTimes, setBreakEndTimes,
+    mealStartTimes, setMealStartTimes,
+    mealEndTimes, setMealEndTimes,
+    checkOutTimes, setCheckOutTimes,
+  } = useBreakAndMealTimers();
 
   useEffect(() => {
     if (!currentUser || !currentUser.tenant_id) return;
@@ -1097,8 +300,21 @@ export function useClockEngine(overrideUser?: any) {
       showCustomAlert('¡La tienda ha sido abierta oficialmente!');
     });
 
+    // NUEVO (tarea #41 — migración de polling a WebSockets): reemplaza el sondeo de 5s por push real.
+    // Reutiliza el mismo canal público 'tenant.{id}.clock' que ya usa StoreOpened, en vez de abrir una
+    // conexión aparte. PENDIENTE DE BACKEND (docs/BACKEND_INTERFACES.md §20): este evento todavía no
+    // existe del lado de Laravel — Claude Code debe emitirlo desde ClockService::processPunch() al
+    // final de cada fichaje exitoso (online, batch offline, apertura normal/emergencia — todos pasan
+    // por processPunch()). Mientras no exista, este listener simplemente nunca dispara y el fallback
+    // de 60s (ver el useEffect de arriba) sigue siendo la única vía de sincronización entre dispositivos.
+    channel.listen('.App\\Events\\TimeEntryRecorded', (e: any) => {
+      console.log('TimeEntryRecorded event received via WebSockets:', e);
+      fetchState();
+    });
+
     return () => {
       channel.stopListening('.App\\Events\\StoreOpened');
+      channel.stopListening('.App\\Events\\TimeEntryRecorded');
     };
   }, [currentUser?.tenant_id]);
   
@@ -1114,12 +330,9 @@ export function useClockEngine(overrideUser?: any) {
 
   // using global storeStatus
   const [summaryView, setSummaryView] = useState('daily');
-  const [applyPunishments, setApplyPunishments] = useState(false);
-  const [showMasterCloseModal, setShowMasterCloseModal] = useState(false);
   const [designatedCloserId, setDesignatedCloserId] = useState(1);
   const [masterClosePhase, setMasterClosePhase] = useState('checklist');
   const [tasksChecked, setTasksChecked] = useState({ t1: false, t2: false, t3: false });
-  const [showTransferModal, setShowTransferModal] = useState(false);
 
 
   
@@ -1127,7 +340,6 @@ export function useClockEngine(overrideUser?: any) {
   const [amnestyActive, setAmnestyActive] = useState(MOCK_STORE.hasAmnesty);
   const [requireEvaluation, setRequireEvaluation] = useState(MOCK_STORE.requireEvaluation);
   
-  const [showCCTVModal, setShowCCTVModal] = useState(false);
   
   // ESTADO GLOBAL SIMULADO
   const initialState = globalUsers.reduce((acc, user) => ({ ...acc, [user.id]: 'inactive' }), {});
@@ -1152,10 +364,9 @@ export function useClockEngine(overrideUser?: any) {
   // const [checkInTimes, setCheckInTimes] = useState({});
 
 
-  const [expandedCards, setExpandedCards] = useState({});
+  const [expandedCards, setExpandedCards] = useState<Record<string, any>>({});
   const [phoneTab, setPhoneTab] = useState('checador');
-  const [innerTool, setInnerTool] = useState(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [innerTool, setInnerTool] = useState<any>(null);
   const [realSeconds, setRealSeconds] = useState(0);
 
   useEffect(() => {
@@ -1165,7 +376,7 @@ export function useClockEngine(overrideUser?: any) {
     return () => clearInterval(interval);
   }, []);
 
-    const parseTimeToMins = (timeStr) => {
+    const parseTimeToMins = (timeStr: any) => {
     if (!timeStr || typeof timeStr !== 'string') return 0;
     const [h, m] = timeStr.split(':').map(Number);
     return h * 60 + m;
@@ -1192,7 +403,7 @@ export function useClockEngine(overrideUser?: any) {
       }
     };
   }, {});
-  const [shiftConfigs, setShiftConfigs] = useState(initialShifts);
+  const [shiftConfigs, setShiftConfigs] = useState<Record<string, any>>(initialShifts);
 
   const timeMode = systemSettings?.time_mode || 'simulated';
   const isRealTimeMode = timeMode === 'realtime';
@@ -1217,7 +428,7 @@ export function useClockEngine(overrideUser?: any) {
   const baseTimeMinutes = 7 * 60 + 30; // 450 (7:30 AM)
 
   useEffect(() => {
-    let interval;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isRealTimeMode) {
       const syncTime = () => {
         const now = new Date();
@@ -1334,7 +545,7 @@ export function useClockEngine(overrideUser?: any) {
   const arrivalTimes = globalArrivalTimes;
   const clockState = globalClockStates[currentUser?.id] || 'inactive';
   const simTimeMinutes = currentSimTime;
-  const setSimTimeMinutes = () => {}; // no-op
+  const setSimTimeMinutes = (_v?: number) => {}; // no-op (se deja como estaba, solo se tipa el argumento que ya se le pasaba)
   const setArrivalTimes = (obj: any) => {
       Object.entries(obj).forEach(([id, mins]) => setGlobalArrivalTime(Number(id), Number(mins)));
   };
@@ -1356,8 +567,8 @@ export function useClockEngine(overrideUser?: any) {
   
   // const clockState = globalClockStates[currentUser.id];
   
-  const updateClockState = (userId, state) => {
-    setGlobalClockStates(prev => {
+  const updateClockState = (userId: any, state: any) => {
+    setGlobalClockStates((prev: any) => {
         const prevState = prev[userId] || 'inactive';
         
         if (prevState !== state) {
@@ -1370,7 +581,7 @@ export function useClockEngine(overrideUser?: any) {
                 // Trigger Tasks
                 const u = globalUsers.find(user => user.id === userId);
                 if (u) {
-                    useTaskStore.getState().triggerCheckInRoutines(userId, u.job_role_id, currentSimTime);
+                    useTaskStore.getState().triggerCheckInRoutines(userId, u.job_role_id ?? 0, currentSimTime);
                 }
 
                 const startMins = shiftConfigs[userId]?.start ? parseInt(shiftConfigs[userId].start.split(':')[0])*60 + parseInt(shiftConfigs[userId].start.split(':')[1]) : 480;
@@ -1388,32 +599,32 @@ export function useClockEngine(overrideUser?: any) {
                 // BUG FIX: 'finished' es el nuevo estado post-checkout. Manejamos ambos por compatibilidad.
                 actionName = 'Fichaje de Salida'; 
                 type = 'warning'; 
-                setCheckOutTimes(prev => ({ ...prev, [userId]: currentSimTime }));
+                setCheckOutTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
                 // Trigger Spill-over de tareas no completadas
                 const u = globalUsers.find(user => user.id === userId);
                 if (u) {
-                    useTaskStore.getState().handleSpillOver(userId, u.job_role_id);
+                    useTaskStore.getState().handleSpillOver(userId, u.job_role_id ?? 0);
                 }
             }
             else if (state === 'meal') { 
                 actionName = 'Salida a Comer'; 
                 type = 'info'; 
-                setMealStartTimes(prev => ({ ...prev, [userId]: currentSimTime }));
+                setMealStartTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
             else if (prevState === 'meal' && state === 'active') { 
                 actionName = 'Regreso de Comida'; 
                 type = 'success'; 
-                setMealEndTimes(prev => ({ ...prev, [userId]: currentSimTime }));
+                setMealEndTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
             else if (state === 'short_break') { 
                 actionName = 'Descanso Corto (Ley Silla)'; 
                 type = 'info'; 
-                setBreakStartTimes(prev => ({ ...prev, [userId]: currentSimTime }));
+                setBreakStartTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
             else if (prevState === 'short_break' && state === 'active') { 
                 actionName = 'Fin de Descanso'; 
                 type = 'success'; 
-                setBreakEndTimes(prev => ({ ...prev, [userId]: currentSimTime }));
+                setBreakEndTimes((prev: any) => ({ ...prev, [userId]: currentSimTime }));
             }
             else if (state === 'contingency') { actionName = 'Contingencia / Retardo'; type = 'error'; }
             else if (state === 'waiting_room') { actionName = 'En Sala de Espera'; type = 'system'; }
@@ -1449,9 +660,6 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   // Modales
-  const [showAbsenceModal, setShowAbsenceModal] = useState(false);
-  const [showAmnestyModal, setShowAmnestyModal] = useState(false);
-  const [showGhostTheater, setShowGhostTheater] = useState(false);
 
   const [globalBroadcastMessage, setGlobalBroadcastMessage] = useState<string | null>(null);
   const [broadcastInput, setBroadcastInput] = useState("");
@@ -1460,33 +668,11 @@ export function useClockEngine(overrideUser?: any) {
   const [privateInput, setPrivateInput] = useState("");
   const [privateTarget, setPrivateTarget] = useState<number>(1);
   
-  const [showJustificanteModal, setShowJustificanteModal] = useState(false);
   const [justificanteText, setJustificanteText] = useState("");
   
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [showEvalModal, setShowEvalModal] = useState(false);
-  const [showForzosaModal, setShowForzosaModal] = useState(false);
-  const [showPaseListaModal, setShowPaseListaModal] = useState(false);
-  const [showBreakSeatModal, setShowBreakSeatModal] = useState(false);
-  const [showTempExitModal, setShowTempExitModal] = useState(false);
-  const [showPanicModal, setShowPanicModal] = useState(false);
-  const [isPanicActive, setIsPanicActive] = useState(false);
-  const [showMealSwapModal, setShowMealSwapModal] = useState(false);
-  const [isHandoverCompleted, setIsHandoverCompleted] = useState(false);
 
-  // NUEVO: modales de Apertura de Emergencia (estado #9) y Declarar Contingencia (estado #10/#15)
-  const [showEmergencyOpenModal, setShowEmergencyOpenModal] = useState(false);
-  const [emergencyOpenSubmitting, setEmergencyOpenSubmitting] = useState(false);
-  const [showContingencyModal, setShowContingencyModal] = useState(false);
-  const [contingencySubmitting, setContingencySubmitting] = useState(false);
-  const [activeContingency, setActiveContingency] = useState<{ reason: string; contingency_id?: number } | null>(() => {
-    try {
-      const saved = localStorage.getItem('active_contingency_' + new Date().toDateString());
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  // NOTA (refactor Jul 2026): showEmergencyOpenModal, emergencyOpenSubmitting, showContingencyModal,
+  // contingencySubmitting y activeContingency ahora viven en hooks/useStoreOpening.ts.
 
   // Alerta de GPS al salir del perímetro sin pase de salida
   const lastAlertSentRef = useRef<number | null>(null);
@@ -1533,34 +719,30 @@ export function useClockEngine(overrideUser?: any) {
     }
   }, [gpsDistance, clockState, gpsStatus, currentUser?.name, currentUser?.id, clockOpConfig.gpsAlertRangeMeters]);
 
-  const [paseListaEmployees, setPaseListaEmployees] = useState([]);
+  const [paseListaEmployees, setPaseListaEmployees] = useState<any[]>([]);
   const [cashCount, setCashCount] = useState("");
   const [kioscoInput, setKioscoInput] = useState('');
   const [evalStars, setEvalStars] = useState(0);
   const [storeOpenLog, setStoreOpenLog] = useState<{time: string, type: 'normal'|'forzosa'} | null>(null);
   const [absenceReason, setAbsenceReason] = useState("");
-  const [showEarlyDepartureModal, setShowEarlyDepartureModal] = useState(false);
   const [earlyDepartureReason, setEarlyDepartureReason] = useState("Enfermedad");
-  const [isEarlyDepartureValidation, setIsEarlyDepartureValidation] = useState(false);
   const [isOvertimeUnlocked, setIsOvertimeUnlocked] = useState<Record<number, boolean>>({});
-  const [isOvertimeValidation, setIsOvertimeValidation] = useState(false);
   const [isSimulatedHoliday, setIsSimulatedHoliday] = useState(() => localStorage.getItem('is_simulated_holiday') === 'true');
-  const [isLateEntryValidation, setIsLateEntryValidation] = useState(false);
   const [contingencyLogs, setContingencyLogs] = useState<any[]>([]);
   const [contingencyUsed, setContingencyUsed] = useState<Record<number, boolean>>({});
   const [absentUsers, setAbsentUsers] = useState<Record<number, boolean>>({});
   const [lateUsers, setLateUsers] = useState<Record<number, boolean>>({});
 
-  const [auditoryLogs, setAuditoryLogs] = useState([]);
+  const [auditoryLogs, setAuditoryLogs] = useState<any[]>([]);
   const [reportForm, setReportForm] = useState({ targetId: '', type: '', details: '' });
 
   const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const [currentDay, setCurrentDay] = [globalSimDay, setGlobalSimDay];
   const [selectedSummaryDay, setSelectedSummaryDay] = useState('Domingo');
-  const [dailyHistory, setDailyHistory] = useState({});
+  const [dailyHistory, setDailyHistory] = useState<Record<string, any>>({});
 
 // MOTOR MATEMATICO
-  const calculateDailyStats = (user, targetDay) => {
+  const calculateDailyStats = (user: any, targetDay: any) => {
     const dayData = dailyHistory[targetDay] || {};
     const userData = dayData[user.id] || {};
     
@@ -1608,8 +790,6 @@ export function useClockEngine(overrideUser?: any) {
 
   // Matrix Tabs
   const [matrixTab, setMatrixTab] = useState('simulador');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isModulesOpen, setIsModulesOpen] = useState(true);
   
   const [weeklyHistory, setWeeklyHistory] = useState<any>({});
 
@@ -1634,7 +814,6 @@ export function useClockEngine(overrideUser?: any) {
     userReservedMealSlots, setUserReservedMealSlots
   } = useAppStore();
   
-  const [showMealReservationModal, setShowMealReservationModal] = useState(false);
   
   const confirmMealReservation = async (startSlotIndex: number) => {
     const safeStartHour = mealSettings?.startHour ?? 13;
@@ -1828,11 +1007,11 @@ export function useClockEngine(overrideUser?: any) {
       const timeStr = formattedTime;
       
       if (isSandboxMode) {
-        setLocalPendingBreakRequests(prev => ({
+        setPendingBreakRequests((prev: any) => ({
           ...prev,
           [userId]: { time: currentSimTime }
         }));
-        
+
         useAppStore.getState().addMatrixEvent(
           '🧘 Solicitud de Descanso',
           `${currentUser.name} ha solicitado iniciar un descanso de Ley Silla (15 min).`,
@@ -1868,12 +1047,12 @@ export function useClockEngine(overrideUser?: any) {
       const targetUser = globalUsers.find((u: any) => u.id === targetUserId) || currentUser;
 
       if (isSandboxMode) {
-        setLocalPendingBreakRequests(prev => {
+        setPendingBreakRequests((prev: any) => {
           const next = { ...prev };
           delete next[targetUserId];
           return next;
         });
-        
+
         setBreakStartTimes((prev: any) => ({
           ...prev,
           [targetUserId]: currentSimTime
@@ -1926,7 +1105,7 @@ export function useClockEngine(overrideUser?: any) {
       const targetUser = globalUsers.find((u: any) => u.id === targetUserId) || currentUser;
 
       if (isSandboxMode) {
-        setLocalPendingBreakRequests(prev => {
+        setPendingBreakRequests((prev: any) => {
           const next = { ...prev };
           delete next[targetUserId];
           return next;
@@ -1962,20 +1141,9 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
   
-  // Fase 1: Portadores de Llaves
-  const [keyholders, setKeyholders] = useState<number[]>([]);
-
-  useEffect(() => {
-    if (globalUsers && globalUsers.length > 0) {
-      const activeKeyholders = globalUsers
-        .filter(u => u.portadorLlaves && u.portadorLlaves.toLowerCase() !== 'ninguno')
-        .map(u => u.id);
-      setKeyholders(activeKeyholders);
-    }
-  }, [globalUsers]);
-
-  const [showKeyDelegationModal, setShowKeyDelegationModal] = useState(false);
-  const [nextDayEncargadoId, setNextDayEncargadoId] = useState<number | null>(null);
+  // NOTA (refactor Jul 2026): keyholders, showKeyDelegationModal, nextDayEncargadoId y toda la
+  // lógica de "quién tiene llaves" ahora viven en hooks/useKeyholderDelegation.ts — ver la llamada
+  // a useKeyholderDelegation() más arriba.
 
 
   const [userSettings, setUserSettings] = useState({ theme: 'light', fontSize: 'normal' });
@@ -2002,14 +1170,9 @@ export function useClockEngine(overrideUser?: any) {
     }
   }, [userClockPrefs, currentUser?.id]);
 
-  const [showAlarmSettingsModal, setShowAlarmSettingsModal] = useState(false);
-  const [pendingTasksBlocker, setPendingTasksBlocker] = useState(false);
   const [supervisorPin, setSupervisorPin] = useState('');
   const [supervisorQrToken, setSupervisorQrToken] = useState('');
 
-  const [preShiftAlarmPlayed, setPreShiftAlarmPlayed] = useState(false);
-  const [mealReminderAlarmPlayed, setMealReminderAlarmPlayed] = useState(false);
-  const [leySillaAlarmPlayed, setLeySillaAlarmPlayed] = useState(false);
   const [expiringTasksAlerted, setExpiringTasksAlerted] = useState<Record<string, boolean>>({});
 
   // Reset alarms when user or day changes
@@ -2186,7 +1349,7 @@ export function useClockEngine(overrideUser?: any) {
         const isRestDay = shiftConfigs[activeEncargado.id]?.restDay === currentDay;
         if (isRestDay) {
           let nextEncargadoId = null;
-          const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => a.jerarquiaLlaves - b.jerarquiaLlaves).map(u => u.id);
+          const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => (a.jerarquiaLlaves ?? 0) - (b.jerarquiaLlaves ?? 0)).map(u => u.id);
           for (let id of hierarchy) {
             if (Number(id) !== Number(activeEncargado.id) && !absentUsers[id] && (shiftConfigs[id]?.restDay || '') !== currentDay) {
                nextEncargadoId = id;
@@ -2382,7 +1545,7 @@ export function useClockEngine(overrideUser?: any) {
         const isDelayed = myAssignment.expectedEndTimeMins && currentSimTime >= myAssignment.expectedEndTimeMins;
         
         if (!isDelayed) {
-          const elapsed = currentSimTime - myAssignment.startedAtMins + (myAssignment.accumulatedMins || 0);
+          const elapsed = currentSimTime - (myAssignment.startedAtMins ?? currentSimTime) + (myAssignment.accumulatedMins || 0);
           const remaining = myTask.estimatedMins - elapsed;
           const threshold = Math.ceil(myTask.estimatedMins * 0.20);
           
@@ -2449,7 +1612,7 @@ export function useClockEngine(overrideUser?: any) {
            setContingencyLogs(prev => [log, ...prev]);
            
            let nextEncargadoId = null;
-           const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => a.jerarquiaLlaves - b.jerarquiaLlaves).map(u => u.id);
+           const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => (a.jerarquiaLlaves ?? 0) - (b.jerarquiaLlaves ?? 0)).map(u => u.id);
            for(let id of hierarchy) {
              if (id !== activeEncargado.id && !absentUsers[id] && (shiftConfigs[id]?.restDay || '') !== currentDay) {
                 nextEncargadoId = id;
@@ -2608,7 +1771,7 @@ export function useClockEngine(overrideUser?: any) {
 
   const handleDayChange = (newDay: string) => {
     // Guardar log del día actual
-    setWeeklyHistory(prev => ({
+    setWeeklyHistory((prev: any) => ({
       ...prev,
       [currentDay]: { arrivalTimes, storeOpenLog, storeStatus }
     }));
@@ -2739,7 +1902,7 @@ export function useClockEngine(overrideUser?: any) {
     // 3. Key cascading delegation
     if (Number(currentUser.id) === Number(activeEncargadoId)) {
        let nextEncargadoId = null;
-       const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => a.jerarquiaLlaves - b.jerarquiaLlaves).map(u => u.id);
+       const hierarchy = globalUsers.filter(u => u.esAperturador).sort((a,b) => (a.jerarquiaLlaves ?? 0) - (b.jerarquiaLlaves ?? 0)).map(u => u.id);
        for(let id of hierarchy) {
          const isSelf = Number(id) === Number(currentUser.id);
          const isCandidateAbsent = absentUsers[id] || (isSelf && type === 'absent');
@@ -2759,7 +1922,7 @@ export function useClockEngine(overrideUser?: any) {
                time: formattedTime,
                details: `{"evalStars":0,"delegatedKeysTo":${nextEncargadoId}}`
            });
-         } catch (e) {
+         } catch (e: any) {
            console.log("Backend offline/simulated - key delegation saved locally:", e.message);
          }
          setActiveEncargadoId(nextEncargadoId);
@@ -2807,7 +1970,7 @@ export function useClockEngine(overrideUser?: any) {
       showCustomAlert("⚠️ El Pase de Lista es una función PRO. Por favor, actualiza tu plan.");
       return;
     }
-    if (conAmnistia) setAmnistiaActive(true);
+    if (conAmnistia) setAmnestyActive(true);
     
     const empleadosEnPuerta = globalUsers.filter(u => u.id !== currentUser.id && (globalClockStates[u.id] === 'waiting_room' || globalClockStates[u.id] === 'waiting')).map((u) => {
       const arrTime = globalArrivalTimes[u.id] || 0;
@@ -3579,7 +2742,7 @@ export function useClockEngine(overrideUser?: any) {
     processFinalClockOut();
   };
 
-  const processFinalClockOut = async (delegatedTo = null, note = '') => {
+  const processFinalClockOut = async (delegatedTo: number | null = null, note = '') => {
     // FASE 1: Delegación del Día Previo
     const nextDay = DIAS_SEMANA[(DIAS_SEMANA.indexOf(currentDay) + 1) % 7];
     const userRestDay = shiftConfigs[currentUser?.id]?.restDay;
@@ -3602,14 +2765,8 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
 
-  const handleKeyDelegation = async () => {
-    if (!nextDayEncargadoId) {
-      showCustomAlert("Debes seleccionar a un encargado suplente.");
-      return;
-    }
-    setShowKeyDelegationModal(false);
-    await processFinalClockOut(nextDayEncargadoId);
-  };
+  // NOTA (refactor Jul 2026): handleKeyDelegation ahora vive en hooks/useKeyholderDelegation.ts
+  // (llama a processFinalClockOut vía el proxy definido más arriba).
 
   const submitReport = async () => {
     if (!reportForm.targetId || !reportForm.type || !reportForm.details) {
@@ -4108,7 +3265,6 @@ export function useClockEngine(overrideUser?: any) {
   // --- NUEVAS HERRAMIENTAS INTEGRADAS CON EL SERVIDOR ---
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
-  const [pendingKeyTransfers, setPendingKeyTransfers] = useState<any[]>([]);
 
   // 1. Chat de equipo
   const fetchChatMessages = async () => {
@@ -4195,67 +3351,9 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
 
-  // 4. Transferencia de Llaves / Cierre
-  const initiateKeyTransfer = async (receiverId: number, notes: string) => {
-    if (isSandboxMode) {
-      setDesignatedCloserId(receiverId);
-      showCustomAlert("✅ Cierre transferido con éxito (Modo Sandbox).");
-      return true;
-    }
-    try {
-      await axiosInstance.post('/key-transfers', {
-        receiver_id: receiverId,
-        notes: notes
-      });
-      showCustomAlert("✅ Solicitud de transferencia enviada. Tu compañero debe aceptarla.");
-      return true;
-    } catch (e) {
-      console.error("Error al transferir cierre:", e);
-      showCustomAlert(e.response?.data?.error || "Error al procesar la transferencia.");
-      return false;
-    }
-  };
-
-  const checkPendingKeyTransfers = async () => {
-    if (isSandboxMode) return;
-    try {
-      const res = await axiosInstance.get('/key-transfers/pending');
-      if (res.data) {
-        setPendingKeyTransfers(res.data);
-      }
-    } catch (e) {
-      console.error("Error al cargar transferencias pendientes:", e);
-    }
-  };
-
-  const respondToKeyTransfer = async (transferId: number, status: 'accepted' | 'rejected') => {
-    if (isSandboxMode) return;
-    try {
-      const res = await axiosInstance.post(`/key-transfers/${transferId}/respond`, { status });
-      if (res.data) {
-        showCustomAlert(res.data.message || "Respuesta procesada.");
-        fetchState();
-        checkPendingKeyTransfers();
-      }
-    } catch (e) {
-      console.error("Error al responder transferencia:", e);
-      showCustomAlert("Error al responder.");
-    }
-  };
-
-  // 5. Alerta de Abandono (Huida de tienda)
-  const reportAbandonment = async () => {
-    if (isSandboxMode) {
-      showCustomAlert("⚠️ Alerta Crítica (Sandbox): Abandonaste la tienda sin transferir. Se notificó a Gerencia.");
-      return;
-    }
-    try {
-      await axiosInstance.post('/security/abandonment');
-      showCustomAlert("⚠️ Alerta de abandono enviada a Gerencia y RRHH por pérdida de red.");
-    } catch (e) {
-      console.error("Error al reportar abandono:", e);
-    }
-  };
+  // NOTA (refactor Jul 2026): pendingKeyTransfers, initiateKeyTransfer, checkPendingKeyTransfers,
+  // respondToKeyTransfer y reportAbandonment ahora viven en hooks/useKeyholderDelegation.ts — ver
+  // la llamada a useKeyholderDelegation() más arriba, que devuelve exactamente estos mismos nombres.
 
   // Polling para Chat y Llaves
   useEffect(() => {
@@ -4452,7 +3550,6 @@ export function useClockEngine(overrideUser?: any) {
     setIsSidebarOpen,
     setJustificanteText,
     setKeyholders,
-    setKioscoInput,
     setLateUsers,
     setLeySillaConfig,
     setMasterClosePhase,
@@ -4497,7 +3594,6 @@ export function useClockEngine(overrideUser?: any) {
     setUserSettings,
     setWeeklyHistory,
     shiftConfigs,
-    setShiftConfigs,
     showAbsenceModal,
     showAmnestyModal,
     showCCTVModal,
@@ -4514,7 +3610,6 @@ export function useClockEngine(overrideUser?: any) {
     showTransferModal,
     simHours,
     simMins,
-    currentSimTime,
     storeOpenLog,
     storeOpenSimTime,
     storeStatus,

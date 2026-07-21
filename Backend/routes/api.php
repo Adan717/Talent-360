@@ -309,10 +309,13 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         });
 
         // Reloj Checador (Registro de asistencia)
-        Route::post('/clock/punch', [TimeEntryController::class, 'punch']);
-        Route::post('/clock/punch-batch', [TimeEntryController::class, 'punchBatch']);
+        // §16: throttle por usuario autenticado — antes ningún endpoint de fichaje tenía
+        // límite de tasa (el único ejemplo en todo el archivo era /login).
+        Route::middleware('throttle:20,1')->post('/clock/punch', [TimeEntryController::class, 'punch']);
+        Route::middleware('throttle:20,1')->post('/clock/punch-batch', [TimeEntryController::class, 'punchBatch']);
         Route::get('/clock/offline-secret', [TimeEntryController::class, 'offlineSecret']);
-        Route::post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
+        // Protege contra fuerza bruta del PIN de testigos — mismo límite que /login.
+        Route::middleware('throttle:5,1')->post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
 
         // Apertura de tienda (Operativa del Reloj Checador)

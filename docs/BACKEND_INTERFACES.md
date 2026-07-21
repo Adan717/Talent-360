@@ -16,6 +16,23 @@ Convenciones generales: todas las rutas van bajo el grupo autenticado existente 
 
 ---
 
+## 📋 Pendientes para Claude Code (checklist rápido)
+
+Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve directo a esta tabla — no hace falta releer todo el documento. Marca cada fila ✅ cuando termines de implementarla y agrega, justo debajo de la sección correspondiente, un bloque `## ✅ Implementado (fecha) — ...` con el resumen de lo que hiciste (igual que ya se ha hecho en §12, §13 y §19), para que quede el historial de decisiones.
+
+| Sección | Qué falta | Estado |
+|---|---|---|
+| §14.1 | Poblar `date` y `points_awarded` en `TaskAssignment` (3 puntos del código citados) | ✅ Implementado (2026-07-21) |
+| §14.2 | Filtro `tenant_id` + `date` en `DashboardMonitorController::getMonitorData()` | ✅ Implementado (2026-07-21) |
+| §14.3 | Aceptar `pool`/`department` en `target_type` de `DashboardMonitorController::createTask()` | ✅ Implementado (2026-07-21) |
+| §15 | Validación de secuencia de eventos en `ClockService::processPunch()` (tabla de prerequisitos) | ✅ Implementado (2026-07-21) |
+| §16 | Rate limiting en `/clock/punch`, `/clock/punch-batch` y validación de PIN de testigos en `/clock/emergency-open` | ✅ Implementado (2026-07-21) |
+| §20 | Nuevo evento `TimeEntryRecorded` (broadcast) emitido desde `ClockService::processPunch()` | ✅ Implementado (2026-07-21) |
+
+Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
+
+---
+
 ## 1. `/clock/punch-batch` — Sincronización Offline en Transacción Única
 
 Reemplaza el loop actual de `syncOfflineQueue()` en `useClockEngine.tsx` que llama a `/clock/punch` una vez por ítem. En su lugar, todo el lote se procesa en una sola petición.
@@ -625,3 +642,113 @@ Línea 356: la validación solo acepta `'target_type' => 'nullable|string|in:rol
 ### Fuera de alcance de esta sección
 
 Unificar las 3 rutas de creación de tareas en una sola (`TaskSyncController` bulk-upsert, `TaskAssignmentController` update puntual, `DashboardMonitorController::createTask` tercera vía) — eso es limpieza de fase 4, después de que 14.1-14.3 estén estables y el frontend termine su rediseño. Se documentará aparte cuando llegue ese momento.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+- **14.1:** `TaskSyncController::sync()` ahora manda `date` (la del payload si viene, si no `Carbon::today()`, o preserva la del registro existente en updates) y `points_awarded = Task::points` en el momento en que el `status` final queda en `completed` (después de aplicar la lógica de validación de supervisor, no antes — un assignment que baja a `awaiting_validation` no recibe puntos todavía). Mismo criterio aplicado en `DashboardMonitorController::assignTask()` y `createTask()`. No hubo que tocar el modelo `TaskAssignment` — `date`/`points_awarded` ya estaban en `$fillable`, solo nadie los mandaba.
+- **14.2:** `getMonitorData()`'s `$activeAssignments` ahora usa `whereHas('task', fn($q) => $q->where('tenant_id', $userTenantId))` (equivalente Eloquent del join+filtro que ya usaba `$completedStats`) más tolerancia a `date NULL` para filas viejas.
+- **14.3:** `target_type` en `createTask()` ahora acepta `pool`/`department` además de `role`/`user`. No hizo falta tocar la lógica de asignación (`$assignedUserId = ($targetType === 'user') ? $targetId : null`) — ya trataba correctamente cualquier valor distinto de `'user'` como sin asignar, igual que `role`; el único bloqueo real era la validación.
+- Tests: `TaskAndSequencePendingItemsTest` (8 casos). Suite completa: 93/93 verde.
+
+---
+
+## 15. Dialer del Reloj Checador — Falta validar secuencia de eventos en `ClockService::processPunch()`
+
+**Contexto (2026-07-21, pedido de Francisco):** auditoría completa del botón Dialer (guardado de eventos, persistencia y secuencia). Se encontraron 2 bugs de hidratación de estado ya corregidos del lado del frontend (`useAppStore.ts::fetchState()` traducía `check_out` a `'inactive'` en vez de `'finished'`, y no manejaba `temp_exit_start`/`temp_exit_end`/`absent`). El tercer hallazgo es de backend y queda documentado aquí para que lo apliquen ustedes.
+
+**El problema:** `ClockService::processPunch()` solo garantiza dos cosas hoy: (a) que cada `type` se registre una sola vez por usuario por día (con el backstop de índice único ya existente, `time_entries_user_date_type_unique` — eso está bien y no se toca), y (b) dos precondiciones de negocio puntuales (`check_out` exige el checklist de cierre; `check_in` en plan Free exige tienda abierta). No valida en ningún punto que el **predecesor lógico** de un evento ya haya ocurrido. Hoy nada impide, a nivel de base de datos, que llegue un `meal_end` sin `meal_start` previo, un `break_end` sin `break_start`, un `temp_exit_end` sin `temp_exit_start`, o un `check_out` sin `check_in` ese mismo día — siempre que cada tipo sea la primera vez que se manda ese día.
+
+La única razón por la que esto no ocurre en la práctica es que el dial del frontend solo ofrece el botón "siguiente correcto" — pero eso es una garantía de UI, no de datos. Los dos bugs de hidratación ya corregidos (arriba) son prueba de que ese estado local sí se puede desincronizar de lo que realmente pasó; sin una validación en el servidor, un dial desincronizado (o un tab viejo, o una segunda sesión en otro dispositivo, o una réplica futura de la cola offline) podría escribir una fila con un orden imposible sin que nada lo detecte, contaminando silenciosamente cálculos de horas trabajadas / nómina más adelante.
+
+**Pedimos:** agregar una validación de prerequisito por tipo dentro de `processPunch()`, antes del bloque de `DB::transaction()` (cerca de la validación anti-duplicados existente, línea ~106-116), con esta tabla:
+
+| `type` recibido | Requiere que YA exista hoy | Bloquear si YA existe hoy |
+|---|---|---|
+| `check_in` | — | `check_out` (no reabrir un día ya cerrado) |
+| `meal_start` | `check_in` | `check_out` |
+| `meal_end` | `meal_start` | — |
+| `break_start` | `check_in` | `check_out` |
+| `break_end` | `break_start` | — |
+| `temp_exit_start` | `check_in` | `check_out` |
+| `temp_exit_end` | `temp_exit_start` | — |
+| `check_out` | `check_in` | — |
+| `waiting` | — | — |
+
+Si no se cumple el requisito, lanzar `throw new \Exception(...)` igual que las demás validaciones de esta función (el frontend ya muestra `e.response?.data?.message` en el `catch` de `syncToDB()`, así que cualquier mensaje descriptivo llega al usuario sin cambios adicionales de nuestro lado). Aplica igual para el batch offline (`punchBatch()`) ya que ambos reusan `processPunch()` — como ese endpoint ya reordena por `client_timestamp` antes de procesar (línea ~131-133), la validación de prerequisito debería funcionar de forma natural ahí también sin cambios adicionales.
+
+**Nota:** `contingency` y `absent` no están en la tabla porque no pasan por `processPunch()`/`ALLOWED_TYPES` (contingency usa `declareContingency()`; absent se maneja aparte). Si en algún momento eso cambia, avisen y se agrega su regla aquí.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+Tabla de prerequisitos agregada tal cual, justo después del guard anti-duplicados existente (que no se tocó). Dos observaciones encontradas al implementar, ninguna cambia el comportamiento pedido:
+
+- Para `check_in`, la regla "bloquear si ya existe `check_out`" es en la práctica inalcanzable por un camino distinto al que ustedes ya arreglaron: el guard anti-duplicados (mismo `type` dos veces) siempre dispara primero en un segundo `check_in`, con un mensaje distinto ("ya existe un registro..."). La igualé de todos modos porque no hace daño y dejó la tabla completa por si en el futuro se relaja el anti-duplicados. `meal_start`/`break_start`/`temp_exit_start` sí son los casos donde esta regla importa de verdad (esos types no chocan con el guard anti-duplicados al ser su primer uso del día).
+- Aplica igual a `punchBatch()` sin cambios adicionales, como ustedes ya anticipaban — reutiliza `processPunch()` y el batch ya ordena por `client_timestamp` antes de procesar.
+
+Tests: 4 casos nuevos en `TaskAndSequencePendingItemsTest` (meal_end sin meal_start, check_out sin check_in, meal_start después de check_out, secuencia completa válida). Suite completa: 93/93 verde.
+
+---
+
+## 16. Rate Limiting en Endpoints de Fichaje y PIN de Testigos
+
+**Contexto (2026-07-21, pedido de Francisco):** auditoría exhaustiva del módulo completo del Reloj Checador (seguridad, backend, frontend, UX, LFT, testing, rendimiento). En seguridad se detectó que `/clock/punch`, `/clock/punch-batch` y la validación de PIN de testigos en `/clock/emergency-open` no tienen ningún límite de tasa (`throttle`) — hoy el único ejemplo de throttling en todo `routes/api.php` es `throttle:5,1` en `/login`. Las reglas de negocio actuales (anti-duplicados, hash de PIN, firma HMAC) ya evitan que esto derive en datos corruptos, pero no hay nada que frene intentos repetidos de adivinar un PIN de testigo por fuerza bruta, ni un abuso de red golpeando estos endpoints.
+
+**Pedimos:**
+- `/clock/punch` y `/clock/punch-batch`: throttle razonable por usuario autenticado — algo como `throttle:20,1` (20 peticiones por minuto) es generoso para uso normal (un empleado no ficha más de un puñado de veces por turno) pero corta un abuso automatizado.
+- `/clock/emergency-open` (validación de PIN de testigos en `StoreOpeningService::emergencyOpen` / donde corresponda): algo más estricto dado que protege un PIN, por ejemplo `throttle:5,1` por usuario o por IP — iguales al que ya usan en `/login`, mismo criterio.
+
+Sin preferencia fuerte de nuestro lado sobre el mecanismo exacto (middleware `throttle:` de Laravel debería bastar, igual que `/login`) — lo importante es que quede alguna capa aquí, ya que hoy no hay ninguna.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+Exactamente el mecanismo sugerido, mismo patrón que `/login`: `Route::middleware('throttle:20,1')->post('/clock/punch', ...)` (y `punch-batch`), `Route::middleware('throttle:5,1')->post('/clock/emergency-open', ...)`. El limitador de Laravel usa el `id` del usuario autenticado como clave cuando la petición ya pasó `auth:sanctum` (ambas rutas lo requieren), así que es por-usuario, no por IP compartida. No toqué `/clock/offline-secret` ni `/clock/declare-contingency` — no los pidieron y no tienen el mismo perfil de riesgo (ni fuerza bruta de PIN, ni escritura masiva repetible).
+
+Tests: `ClockThrottleTest` (2 casos — 20 peticiones pasan y la 21 devuelve 429 en `/clock/punch`; mismo patrón con 5/6 en `/clock/emergency-open`). Suite completa: 95/95 verde.
+
+---
+
+## 20. Nuevo evento `TimeEntryRecorded` — migración de polling a WebSockets
+
+**Contexto (2026-07-21, tarea de Cowork):** el frontend sincronizaba el estado del dial de TODOS los empleados vía `setInterval(fetchState, 5000)` — un poll cada 5 segundos, para todos los usuarios conectados, incluso sin ningún cambio real. Ya reestructuramos ese lado (bajamos el intervalo a 60s como red de seguridad) y agregamos un listener de WebSocket en el mismo canal público que ya usa `StoreOpened` (`tenant.{id}.clock`, ver `useClockEngine.tsx`), pero necesitamos que Backend emita el evento — hoy no existe ningún broadcast al registrar un fichaje.
+
+**Pedimos:** un nuevo evento `App\Events\TimeEntryRecorded` (mismo patrón que `App\Events\StoreOpened`, que ya revisamos como referencia):
+
+```php
+class TimeEntryRecorded implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function __construct(
+        public int $tenantId,
+        public int $userId,
+        public string $type,   // 'check_in', 'check_out', 'break_start', etc.
+        public string $time,
+    ) {}
+
+    public function broadcastOn(): array
+    {
+        return [new Channel('tenant.' . $this->tenantId . '.clock')];
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'user_id' => $this->userId,
+            'type' => $this->type,
+            'time' => $this->time,
+        ];
+    }
+}
+```
+
+**Dónde emitirlo:** al final de `ClockService::processPunch()`, justo después de que el fichaje se guarda exitosamente (no en rechazos/errores de validación). Confirmamos que `processPunch()` es el único chokepoint real — lo usan `TimeEntryController::punch()`, `TimeEntryController::punchBatch()` (una vez por cada ítem válido del batch) y `StoreOpeningService` (apertura normal y de emergencia) — así que un solo punto de emisión ahí cubre los 4 caminos sin duplicar el `event(new ...)` en cada controlador.
+
+**Frontend ya está listo para consumirlo:** `useClockEngine.tsx` ya tiene `channel.listen('.App\\Events\\TimeEntryRecorded', ...)` agregado (mismo canal, misma suscripción que `StoreOpened`) — simplemente no dispara hasta que este evento exista del lado de Laravel. No se necesita ningún cambio adicional de frontend una vez que Backend lo implemente.
+
+**Nota de payload:** no incluimos más que `user_id`/`type`/`time` a propósito — el listener del frontend solo dispara `fetchState()` al recibir el evento (vuelve a pedir `/sync/state` completo), no reconstruye el estado a partir del payload del evento. Si más adelante se quiere optimizar para no repetir la consulta completa por cada fichaje, se puede enriquecer el payload — pero eso es una optimización futura, no un requisito de esta tarea.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+`App\Events\TimeEntryRecorded` creado exactamente como lo especificaron (propiedades promovidas, mismo canal `tenant.{id}.clock` que `StoreOpened`, sin `broadcastAs()` para que el nombre por defecto siga siendo `App\Events\TimeEntryRecorded` — coincide con el listener `.App\\Events\\TimeEntryRecorded` que ya tienen en `useClockEngine.tsx`). Se dispara en un único punto: justo después de que `DB::transaction()` confirma el `INSERT` en `ClockService::processPunch()`, nunca dentro de la transacción (para no notificar algo que todavía podría revertirse) ni en ningún `throw` de validación anterior. Confirmé que cubre los 4 caminos que mencionan sin tocarlos: `TimeEntryController::punch()`, `punchBatch()` (una vez por ítem válido — lo verifiqué con un test de batch), `StoreOpeningService::openStoreAndClockIn()` y `emergencyOpenWithWitnesses()` — los 4 pasan por `processPunch()`.
+
+Tests: `TimeEntryRecordedEventTest` (3 casos — payload correcto en éxito, no se dispara en un rechazo por secuencia inválida, se dispara exactamente 1 vez por ítem válido en un batch). Suite completa: 98/98 verde.

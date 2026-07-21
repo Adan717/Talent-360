@@ -115,6 +115,48 @@ class ClockService
             throw new \Exception("Fichaje Denegado: ya existe un registro de tipo '{$type}' para hoy. No se puede duplicar.");
         }
 
+        // Validación de secuencia (sección 15 del contrato): el índice único de arriba
+        // solo evita duplicar el MISMO type — no impide que llegue, por ejemplo, un
+        // meal_end sin meal_start previo (dial desincronizado, tab viejo, otra sesión,
+        // cola offline). Cada type exige que su predecesor lógico ya exista hoy, y
+        // algunos no pueden registrarse si el día ya se cerró con check_out.
+        $sequenceRules = [
+            'check_in'        => ['requires' => null,              'blocked_by' => 'check_out'],
+            'meal_start'      => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
+            'meal_end'        => ['requires' => 'meal_start',      'blocked_by' => null],
+            'break_start'     => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
+            'break_end'       => ['requires' => 'break_start',     'blocked_by' => null],
+            'temp_exit_start' => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
+            'temp_exit_end'   => ['requires' => 'temp_exit_start', 'blocked_by' => null],
+            'check_out'       => ['requires' => 'check_in',        'blocked_by' => null],
+            'waiting'         => ['requires' => null,              'blocked_by' => null],
+        ];
+
+        $rule = $sequenceRules[$type] ?? null;
+        if ($rule) {
+            if ($rule['requires']) {
+                $hasPrerequisite = TimeEntry::where('user_id', $user->id)
+                    ->where('date', $date)
+                    ->where('type', $rule['requires'])
+                    ->exists();
+
+                if (!$hasPrerequisite) {
+                    throw new \Exception("Fichaje Denegado: no se puede registrar '{$type}' sin un '{$rule['requires']}' previo el mismo día.");
+                }
+            }
+
+            if ($rule['blocked_by']) {
+                $dayAlreadyClosed = TimeEntry::where('user_id', $user->id)
+                    ->where('date', $date)
+                    ->where('type', $rule['blocked_by'])
+                    ->exists();
+
+                if ($dayAlreadyClosed) {
+                    throw new \Exception("Fichaje Denegado: ya se registró '{$rule['blocked_by']}' hoy, no se puede registrar '{$type}' después de cerrar el día.");
+                }
+            }
+        }
+
         // Obtener el plan del tenant
         $tenant = \App\Models\Tenant::find($user->tenant_id ?? 1);
         $isPro = $tenant && in_array(strtolower($tenant->plan ?? 'freemium'), ['pro', 'enterprise']);
@@ -382,10 +424,15 @@ class ClockService
             return $entry;
         });
 
+        // §20: notifica por WebSocket (mismo canal que StoreOpened) una vez que el
+        // fichaje ya quedó confirmado en BD — nunca en rechazos/errores de validación,
+        // que ya cortaron con throw antes de llegar aquí.
+        event(new \App\Events\TimeEntryRecorded($entry->tenant_id, $entry->user_id, $entry->type, $entry->time));
+
         return [
             'success' => true,
-            'message' => $isLate 
-                ? "Registro guardado con retardo de {$lateMinutes} minutos." 
+            'message' => $isLate
+                ? "Registro guardado con retardo de {$lateMinutes} minutos."
                 : "Registro exitoso.",
             'entry' => $entry
         ];

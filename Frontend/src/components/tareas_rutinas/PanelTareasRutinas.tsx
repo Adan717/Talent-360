@@ -7,7 +7,7 @@ import { useAppStore } from '../../store/useAppStore';
 // Detección automática de categoría por palabras clave del título. Se usa tanto
 // para guardar la tarea como para mostrar en vivo la categoría sugerida en el
 // formulario (antes se calculaba de forma invisible solo al guardar).
-function detectCategory(title: string): Task['category'] {
+export function detectCategory(title: string): Task['category'] {
     const titleLower = title.toLowerCase();
     if (["mantenimiento", "limpieza", "maquinaria", "selladora", "sanitarios", "taller", "instalaciones"].some(k => titleLower.includes(k))) {
         return 'mantenimiento';

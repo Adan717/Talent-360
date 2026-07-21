@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { ClockContext } from '../store/ClockContext';
@@ -136,6 +135,13 @@ export default function PanelSimulador() {
   const [phoneScale, setPhoneScale] = useState(0.5); // Default a 50% para ver más celulares simultáneamente
   const [resetKey, setResetKey] = useState(0);
   const [assignmentsVersion, setAssignmentsVersion] = useState(0);
+  // Sesión activa del Simulador Matrix (docs/BACKEND_INTERFACES.md §13): reemplaza la fecha real
+  // por el "día simulado" que lleva la sesión, y da el session_id para purgar solo esos datos.
+  const [simSession, setSimSession] = useState<{ session_id: number | string | null; simulated_date: string | null; status: string | null }>({
+    session_id: null,
+    simulated_date: null,
+    status: null,
+  });
   const { 
     globalUsers, 
     storeStatus, 
@@ -213,16 +219,28 @@ export default function PanelSimulador() {
     return h * 60 + m;
   };
 
+  const fetchActiveSession = async () => {
+    try {
+      const res = await axiosInstance.get('/matrix/session/active');
+      setSimSession({
+        session_id: res.data?.session_id ?? null,
+        simulated_date: res.data?.simulated_date ?? null,
+        status: res.data?.status ?? null,
+      });
+    } catch (err) {
+      console.error('Error al obtener la sesión activa del simulador:', err);
+    }
+  };
+
   useEffect(() => {
      const appState = useAppStore.getState();
-     const isDecorArte = appState.currentUser?.tenant_id === 1;
-     // Si es DecorArte (Tenant 1), no forzar modo Sandbox para permitir persistencia real en PostgreSQL
-     if (!isDecorArte) {
-         appState.setIsSandboxMode(true);
-     } else {
-         appState.setIsSandboxMode(false);
-     }
-     
+     // El backend ya aísla los datos de prueba por simulation_session_id para cualquier tenant
+     // (docs/BACKEND_INTERFACES.md §13), así que ya no hace falta restringir la persistencia real
+     // en PostgreSQL solo al tenant 1 (DecorArte) — cualquier empresa puede correr el simulador
+     // con BD real y quedar igual de aislada de sus propios reportes.
+     appState.setIsSandboxMode(false);
+     fetchActiveSession();
+
      // Polling de 5 segundos para mantener la QA Matrix sincronizada con los fichajes reales del backend
      const interval = setInterval(() => {
          fetchState();
@@ -298,36 +316,59 @@ export default function PanelSimulador() {
     }
   };
 
-  const handleReset = async () => {
-    if (confirm('¿Estás seguro de que deseas limpiar la bitácora y reiniciar el estado de todos los empleados a las 7:30 AM?')) {
-      try {
-        localStorage.removeItem('clock_sync_queue');
-        localStorage.removeItem('clock_break_start_times');
-        localStorage.removeItem('clock_break_end_times');
-        localStorage.removeItem('clock_meal_start_times');
-        localStorage.removeItem('clock_meal_end_times');
-        localStorage.removeItem('clock_checkout_times');
-        localStorage.removeItem('store_daily_opening_status');
-        localStorage.removeItem('store_opening_assignments');
-        localStorage.removeItem('opening_checklist_completed');
-        localStorage.removeItem('opening_roll_call_completed');
-        localStorage.removeItem('clock_pending_break_requests');
-        for (let i = 0; i < 5; i++) {
-          localStorage.removeItem(`open_task_${i}`);
-        }
+  // Reemplaza al antiguo botón único "Limpiar". Nunca borra datos: cierra la sesión de
+  // simulación activa y abre una nueva con simulated_date + 1 día (docs/BACKEND_INTERFACES.md §13).
+  const handleNewSession = async () => {
+    if (!confirm('¿Iniciar una nueva sesión de simulación?\n\nEsto avanza el día simulado y reinicia el estado visual de los celulares. Los datos de la sesión anterior NO se borran — quedan guardados para reportes de prueba.')) {
+      return;
+    }
+    try {
+      localStorage.removeItem('clock_sync_queue');
+      localStorage.removeItem('clock_break_start_times');
+      localStorage.removeItem('clock_break_end_times');
+      localStorage.removeItem('clock_meal_start_times');
+      localStorage.removeItem('clock_meal_end_times');
+      localStorage.removeItem('clock_checkout_times');
+      localStorage.removeItem('store_daily_opening_status');
+      localStorage.removeItem('store_opening_assignments');
+      localStorage.removeItem('opening_checklist_completed');
+      localStorage.removeItem('opening_roll_call_completed');
+      localStorage.removeItem('clock_pending_break_requests');
+      for (let i = 0; i < 5; i++) {
+        localStorage.removeItem(`open_task_${i}`);
+      }
 
-        await axiosInstance.post('/sync/reset');
-        await resetGlobalSimulation();
-        setResetKey(prev => prev + 1);
-        alert('Simulación y base de datos reiniciadas con éxito. Recargando la vista...');
-        window.location.reload();
-      } catch (err: any) {
-        console.error('Error al reiniciar base de datos de simulación:', err);
-        if (err.response?.status === 403) {
-          alert('⚠️ El servidor tiene deshabilitada la limpieza en este entorno.\nActiva ALLOW_QA_RESET=true en el archivo .env del backend para habilitar esta función.');
-        } else {
-          alert('Error al conectar con el servidor backend para limpiar la base de datos.');
-        }
+      const res = await axiosInstance.post('/matrix/session/new');
+      await resetGlobalSimulation();
+      setResetKey(prev => prev + 1);
+      alert(`Nueva sesión de simulación iniciada. Día simulado: ${res.data?.simulated_date || '(sin especificar)'}.`);
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error al iniciar nueva sesión del simulador:', err);
+      alert('Error al conectar con el servidor para iniciar la nueva sesión de simulación.');
+    }
+  };
+
+  // Acción separada y poco frecuente: purga permanentemente los datos de prueba (solo filas con
+  // simulation_session_id marcado — nunca fichajes reales). Por defecto purga solo la sesión activa;
+  // omitir session_id purgaría TODAS las sesiones del tenant, así que no se expone ese botón todavía.
+  const handlePurgeTestData = async () => {
+    if (!confirm('🔥 Vas a purgar de forma permanente los datos de prueba de la sesión actual del simulador.\n\nEsta acción no se puede deshacer. No afecta fichajes reales.\n\n¿Continuar?')) {
+      return;
+    }
+    try {
+      const body = simSession.session_id ? { session_id: simSession.session_id } : {};
+      await axiosInstance.post('/sync/reset', body);
+      await resetGlobalSimulation();
+      setResetKey(prev => prev + 1);
+      alert('Datos de prueba purgados con éxito. Recargando la vista...');
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error al purgar datos de prueba del simulador:', err);
+      if (err.response?.status === 403) {
+        alert('⚠️ El servidor tiene deshabilitada la purga en este entorno.');
+      } else {
+        alert('Error al conectar con el servidor para purgar los datos de prueba.');
       }
     }
   };
@@ -429,10 +470,19 @@ export default function PanelSimulador() {
             <div className="flex gap-4">
               <div className="px-6 py-3 rounded-xl font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-2">
                 <span>🟢 BD REAL: POSTGRES</span>
+                {simSession.simulated_date && (
+                  <span className="text-[10px] font-black uppercase text-emerald-300/80 border-l border-emerald-500/30 pl-2 ml-1">
+                    Día simulado: {simSession.simulated_date}
+                  </span>
+                )}
               </div>
-              
-              <button onClick={handleReset} className="px-6 py-3 rounded-xl font-bold transition-colors bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600">
-                🧹 Limpiar y Reiniciar
+
+              <button onClick={handleNewSession} className="px-6 py-3 rounded-xl font-bold transition-colors bg-slate-700 text-slate-300 border border-slate-600 hover:bg-slate-600">
+                🔄 Iniciar Nueva Sesión
+              </button>
+
+              <button onClick={handlePurgeTestData} className="px-6 py-3 rounded-xl font-bold transition-colors bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40">
+                🗑️ Purgar Datos de Prueba
               </button>
 
               {(currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') && (

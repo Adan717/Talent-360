@@ -23,6 +23,10 @@ export interface User {
   rfc?: string;
   curp?: string;
   postal_code?: string;
+  // Poblados por useAppStore.ts al hidratar desde /sync/state (jerarquía de apertura de tienda)
+  esAperturador?: boolean;
+  jerarquiaLlaves?: number;
+  is_active_employee?: boolean;
 }
 
 export interface Tenant {

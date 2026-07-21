@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
@@ -257,6 +256,7 @@ export default function RelojVisual({
     simMins,
     globalToast,
     showCustomAlert,
+    isOvertimeUnlocked,
     lateUsers,
     syncQueue,
     gpsStatus,
@@ -505,7 +505,7 @@ export default function RelojVisual({
             <div className="text-center py-8 text-xs text-slate-400 italic my-auto">No hay mensajes recientes. ¡Sé el primero en escribir!</div>
           ) : (
             <div className="space-y-3 flex-grow overflow-y-auto pr-1">
-              {chatMessages.map((msg) => {
+              {chatMessages.map((msg: any) => {
                 const isMe = msg.user_id === currentUser.id;
                 return (
                   <div key={msg.id} className={`flex gap-2 max-w-[85%] ${isMe ? 'ml-auto flex-row-reverse text-right' : 'mr-auto text-left'}`}>
@@ -572,7 +572,7 @@ export default function RelojVisual({
   };
 
   const renderToolSoplon = () => {
-    const activePeers = (globalUsers || []).filter(u => u.id !== currentUser.id);
+    const activePeers = (globalUsers || []).filter((u: any) => u.id !== currentUser.id);
     return (
       <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white'} shadow-sm`}>
         <div className="border-b pb-2 mb-2 dark:border-slate-800">
@@ -593,7 +593,7 @@ export default function RelojVisual({
               onChange={e => setSelectedAccusedId(e.target.value)}
             >
               <option value="">Selecciona un colaborador...</option>
-              {activePeers.map(u => (
+              {activePeers.map((u: any) => (
                 <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
               ))}
             </select>
@@ -718,7 +718,7 @@ export default function RelojVisual({
   };
 
   const renderToolTransfer = () => {
-    const activePeers = (globalUsers || []).filter(u => u.id !== currentUser.id);
+    const activePeers = (globalUsers || []).filter((u: any) => u.id !== currentUser.id);
     return (
       <div className={`rounded-2xl border p-5 space-y-4 text-left ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white'} shadow-sm`}>
         <div className="border-b pb-2 mb-2 dark:border-slate-800">
@@ -739,7 +739,7 @@ export default function RelojVisual({
               onChange={e => setSelectedTransferReceiverId(e.target.value)}
             >
               <option value="">Selecciona un compañero...</option>
-              {activePeers.map(u => (
+              {activePeers.map((u: any) => (
                 <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
               ))}
             </select>
@@ -852,7 +852,7 @@ export default function RelojVisual({
     const breakInfoObj = getBreakInfo();
     const isBreakExceeded = breakInfoObj && breakInfoObj.extra > 0;
     const mealInfoObj = getMealInfo();
-    const isMealExceeded = mealInfoObj && !mealInfoObj.isReserved && mealInfoObj.extra > 0;
+    const isMealExceeded = mealInfoObj && !mealInfoObj.isReserved && (mealInfoObj.extra ?? 0) > 0;
     
     const hasAnyDeviation = isLateIn || isBreakExceeded || isMealExceeded;
 
@@ -1148,7 +1148,7 @@ export default function RelojVisual({
   const renderModuloNotificaciones = (isMobile: boolean) => {
     const isDark = false; // Forced light mode by system policy
     const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
-    const sameMealRes = Object.values(reservedMeals).flat().some(r => r.userId === currentUser.id);
+    const sameMealRes = Object.values(reservedMeals).flat().some((r: any) => r.userId === currentUser.id);
     const needsMealRes = clockState === 'active' && !sameMealRes && hasMealReservation;
     const keyTransfer = pendingKeyTransfers && pendingKeyTransfers.length > 0 ? pendingKeyTransfers[0] : null;
     const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
@@ -1192,7 +1192,7 @@ export default function RelojVisual({
 
     if (isSupervisor && pendingBreakReqs.length > 0) {
       pendingBreakReqs.forEach(([empId, req]: any) => {
-        const emp = globalUsers.find(u => String(u.id) === String(empId));
+        const emp = globalUsers.find((u: any) => String(u.id) === String(empId));
         if (emp) {
           const empCheckInMins = checkInTimes[emp.id];
           const elapsedMins = empCheckInMins !== undefined ? Math.max(0, currentSimTime - empCheckInMins) : 0;
@@ -1548,7 +1548,7 @@ export default function RelojVisual({
         const avatarUrl = res.data.avatar_url;
         const updatedUser = { ...currentUser, avatar: avatarUrl };
         setCurrentUser(updatedUser);
-        setGlobalUsers(globalUsers.map(u => u.id === currentUser.id ? updatedUser : u));
+        setGlobalUsers(globalUsers.map((u: any) => u.id === currentUser.id ? updatedUser : u));
         showCustomAlert("📸 Foto de perfil subida exitosamente.");
       }
     } catch (err: any) {
@@ -1619,7 +1619,7 @@ export default function RelojVisual({
         </div>
         <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
           {Object.entries(pendingRequests).map(([empId, req]: any) => {
-            const emp = globalUsers.find(u => String(u.id) === String(empId));
+            const emp = globalUsers.find((u: any) => String(u.id) === String(empId));
             if (!emp) return null;
             
             const empCheckInMins = checkInTimes[emp.id];
@@ -2843,8 +2843,7 @@ export default function RelojVisual({
             );
             setNewTaskTitle('');
             setIsTaskCreatorOpen(false);
-            setGlobalToast('¡Tarea rápida creada con éxito y enviada a la Bolsa de Trabajo! ⚡');
-            setTimeout(() => setGlobalToast(null), 4000);
+            showCustomAlert('¡Tarea rápida creada con éxito y enviada a la Bolsa de Trabajo! ⚡');
           }} className="space-y-4">
             <div>
               <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Título de la Tarea</label>
@@ -4071,7 +4070,7 @@ export default function RelojVisual({
                     return null;
                   }
                   const alerts = buddyAlerts[currentUser.id] || [];
-                  const sameMealRes = Object.values(reservedMeals).flat().some(r => r.userId === currentUser.id);
+                  const sameMealRes = Object.values(reservedMeals).flat().some((r: any) => r.userId === currentUser.id);
                   const needsMealRes = clockState === 'active' && !sameMealRes;
                   
                   let alertMsg = null;
@@ -4436,7 +4435,7 @@ export default function RelojVisual({
                       Nadie ha presionado "Ya llegué" en su celular aún.
                     </div>
                   )}
-                  {paseListaEmployees.map((emp, index) => (
+                  {paseListaEmployees.map((emp: any, index: any) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
                         <div 
@@ -4902,7 +4901,7 @@ export default function RelojVisual({
                      onClick={() => {
                         if(justificanteText.trim().length > 10){
                            updateClockState(currentUser.id, 'active');
-                           setContingencyLogs(prev => [{ id: Date.now(), userId: currentUser.id, userName: currentUser.name, type: 'late', reason: `JUSTIFICANTE: ${justificanteText}`, time: formattedTime }, ...prev]);
+                           setContingencyLogs((prev: any) => [{ id: Date.now(), userId: currentUser.id, userName: currentUser.name, type: 'late', reason: `JUSTIFICANTE: ${justificanteText}`, time: formattedTime }, ...prev]);
                            showCustomAlert(`✅ Fichaje manual registrado a las ${formattedTime} con justificante.`);
                            setShowJustificanteModal(false);
                            setJustificanteText("");
@@ -4946,7 +4945,7 @@ export default function RelojVisual({
                 <div className="mb-5">
                   <label className="block text-xs font-bold text-slate-505 uppercase tracking-wider mb-2">Entregar llaves a:</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id).map(u => (
+                    {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id).map((u: any) => (
                       <button
                         key={u.id}
                         onClick={() => setNextDayEncargadoId(u.id)}
@@ -4993,7 +4992,7 @@ export default function RelojVisual({
                 <p className="text-sm text-slate-665 mb-4 bg-indigo-50 p-3 rounded-xl border border-indigo-100">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
                 
                 <div className="space-y-2 mb-6">
-                  {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id).map(u => (
+                  {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id).map((u: any) => (
                     <button
                       key={u.id}
                       onClick={() => setNextDayEncargadoId(u.id)}
@@ -5011,7 +5010,7 @@ export default function RelojVisual({
                       </div>
                     </button>
                   ))}
-                  {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id).length === 0 && (
+                  {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id).length === 0 && (
                     <p className="text-rose-500 text-sm text-center py-4 bg-rose-50 rounded-xl">No hay empleados autorizados para recibir llaves. Configura los permisos en la Matrix.</p>
                   )}
                 </div>
@@ -5145,7 +5144,7 @@ export default function RelojVisual({
                 </p>
                 
                 <div className="space-y-2 mb-6 max-h-60 overflow-y-auto pr-1">
-                  {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).map(u => (
+                  {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).map((u: any) => (
                     <button
                       key={u.id}
                       onClick={async () => {
@@ -5164,7 +5163,7 @@ export default function RelojVisual({
                       <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md">Intercambiar</span>
                     </button>
                   ))}
-                  {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).length === 0 && (
+                  {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).length === 0 && (
                     <p className="text-slate-500 text-sm text-center py-4 bg-slate-55 rounded-2xl">No hay compañeros con reservas activas hoy para realizar intercambio.</p>
                   )}
                 </div>
@@ -5199,7 +5198,7 @@ export default function RelojVisual({
                     <input 
                       type="checkbox" 
                       checked={userClockPrefs.alarmsEnabled} 
-                      onChange={e => setUserClockPrefs(prev => ({ ...prev, alarmsEnabled: e.target.checked }))}
+                      onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, alarmsEnabled: e.target.checked }))}
                       className="w-4 h-4 accent-violet-650 cursor-pointer"
                     />
                   </div>
@@ -5213,7 +5212,7 @@ export default function RelojVisual({
                             key={tone}
                             type="button"
                             onClick={() => {
-                              setUserClockPrefs(prev => ({ ...prev, selectedTone: tone }));
+                              setUserClockPrefs((prev: any) => ({ ...prev, selectedTone: tone }));
                               setTimeout(() => {
                                 playAlarm('ya_llegue');
                               }, 100);
@@ -5236,7 +5235,7 @@ export default function RelojVisual({
                       <span className="font-bold text-slate-600 dark:text-slate-400">Recordatorio entrada:</span>
                       <select 
                         value={userClockPrefs.preShiftReminderMins} 
-                        onChange={e => setUserClockPrefs(prev => ({ ...prev, preShiftReminderMins: Number(e.target.value) }))}
+                        onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, preShiftReminderMins: Number(e.target.value) }))}
                         className="p-1 text-xs border rounded-md dark:bg-slate-900 text-slate-800 dark:text-slate-200"
                       >
                         <option value="15">15 min antes</option>
@@ -5251,7 +5250,7 @@ export default function RelojVisual({
                       <input 
                         type="checkbox" 
                         checked={userClockPrefs.leySillaAlert} 
-                        onChange={e => setUserClockPrefs(prev => ({ ...prev, leySillaAlert: e.target.checked }))}
+                        onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, leySillaAlert: e.target.checked }))}
                         className="w-4 h-4 accent-violet-650 cursor-pointer"
                       />
                     </div>
@@ -5261,7 +5260,7 @@ export default function RelojVisual({
                       <input 
                         type="checkbox" 
                         checked={userClockPrefs.newTaskAlert} 
-                        onChange={e => setUserClockPrefs(prev => ({ ...prev, newTaskAlert: e.target.checked }))}
+                        onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, newTaskAlert: e.target.checked }))}
                         className="w-4 h-4 accent-violet-650 cursor-pointer"
                       />
                     </div>
@@ -5480,7 +5479,7 @@ export default function RelojVisual({
                   
                   const info = getMealInfo();
                   const limit = shiftConfigs[currentUser.id]?.mealMinutes || timeBankConfigs.mealMinutes || 45;
-                  const hasExceeded = info && !info.isReserved && info.extra > 0;
+                  const hasExceeded = info && !info.isReserved && (info.extra ?? 0) > 0;
 
                   const candidateColleagues = globalUsers.filter((u: any) => 
                     u.id !== currentUser?.id && 
@@ -5809,7 +5808,7 @@ export default function RelojVisual({
               const breakInfo = getBreakInfo();
               const mealInfo = getMealInfo();
               const hasBreakExceeded = breakInfo && breakInfo.extra > 0;
-              const hasMealExceeded = mealInfo && !mealInfo.isReserved && mealInfo.extra > 0;
+              const hasMealExceeded = mealInfo && !mealInfo.isReserved && (mealInfo.extra ?? 0) > 0;
               
               const hasAnyDeviation = isLate || hasBreakExceeded || hasMealExceeded;
 
@@ -5925,7 +5924,7 @@ export default function RelojVisual({
                     }
 
                     // Candidatos compatibles para el intercambio rápido
-                    const swapCandidates = globalUsers.filter(u => 
+                    const swapCandidates = globalUsers.filter((u: any) => 
                       u.is_active_employee !== false && 
                       u.id !== currentUser.id && 
                       hasReservedMeal[u.id] && 
@@ -5979,7 +5978,7 @@ export default function RelojVisual({
                                        blockReason = 'Aforo Lleno';
                                        break;
                                     }
-                                    if (mealSettings?.preventRoleOverlap && res.some(r => r.role === currentUser.role)) {
+                                    if (mealSettings?.preventRoleOverlap && res.some((r: any) => r.role === currentUser.role)) {
                                        canReserve = false;
                                        blockReason = `Choque: ${currentUser.role}`;
                                        break;
@@ -6017,7 +6016,7 @@ export default function RelojVisual({
                           </h4>
                           {swapCandidates.length > 0 ? (
                             <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar">
-                              {swapCandidates.map(u => {
+                              {swapCandidates.map((u: any) => {
                                 const pSlots = userReservedMealSlots[u.id] || [];
                                 const pSlotsDesc = pSlots.length > 0 ? pSlots.join(' - ') : 'Reservado';
                                 return (
@@ -6113,15 +6112,15 @@ export default function RelojVisual({
                       />
                       <circle 
                         className={
-                          weeklyPerformanceScore >= 85 
+                          (weeklyPerformanceScore ?? 0) >= 85 
                             ? 'text-emerald-500' 
-                            : weeklyPerformanceScore >= 60 
+                            : (weeklyPerformanceScore ?? 0) >= 60 
                               ? 'text-amber-500' 
                               : 'text-rose-500'
                         }
                         strokeWidth="8" 
                         strokeDasharray={2 * Math.PI * 38}
-                        strokeDashoffset={2 * Math.PI * 38 * (1 - weeklyPerformanceScore / 100)}
+                        strokeDashoffset={2 * Math.PI * 38 * (1 - (weeklyPerformanceScore ?? 0) / 100)}
                         strokeLinecap="round" 
                         stroke="currentColor" 
                         fill="transparent" 
@@ -6131,20 +6130,20 @@ export default function RelojVisual({
                       />
                     </svg>
                     <div className="absolute text-center">
-                      <span className="text-xl font-black text-slate-800">{weeklyPerformanceScore}%</span>
+                      <span className="text-xl font-black text-slate-800">{(weeklyPerformanceScore ?? 0)}%</span>
                       <span className="text-[8px] font-bold text-slate-400 block uppercase leading-none">Score</span>
                     </div>
                   </div>
                   <span className={`text-xs font-black mt-2.5 px-3 py-1 rounded-full ${
-                    weeklyPerformanceScore >= 85 
+                    (weeklyPerformanceScore ?? 0) >= 85 
                       ? 'bg-emerald-50 text-emerald-700' 
-                      : weeklyPerformanceScore >= 60 
+                      : (weeklyPerformanceScore ?? 0) >= 60 
                         ? 'bg-amber-50 text-amber-700' 
                         : 'bg-rose-50 text-rose-700'
                   }`}>
-                    {weeklyPerformanceScore >= 85 
+                    {(weeklyPerformanceScore ?? 0) >= 85 
                       ? 'Desempeño Excelente ✓' 
-                      : weeklyPerformanceScore >= 60 
+                      : (weeklyPerformanceScore ?? 0) >= 60 
                         ? 'Rendimiento Regular' 
                         : 'Atención Requerida ⚠️'}
                   </span>
@@ -6247,7 +6246,7 @@ export default function RelojVisual({
                   <button 
                     onClick={() => {
                       setShowPanicModal(false);
-                      showToast('🚨 Alerta de pánico enviada con éxito. Soporte en camino.', 'error');
+                      showCustomAlert('🚨 Alerta de pánico enviada con éxito. Soporte en camino.');
                     }}
                     className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-rose-600/10 border-none cursor-pointer"
                   >
@@ -6277,7 +6276,7 @@ export default function RelojVisual({
                       onChange={e => setReportForm({...reportForm, targetId: e.target.value})}
                     >
                       <option value="">Selecciona un compañero...</option>
-                      {globalUsers.filter(u => u.is_active_employee !== false && u.id !== currentUser.id).map(u => (
+                      {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id).map((u: any) => (
                         <option key={u.id} value={u.id}>{u.name}</option>
                       ))}
                     </select>
@@ -6360,18 +6359,13 @@ export default function RelojVisual({
                   </button>
 
                   <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
-                  
-                  {/* Tema del Dispositivo */}
-                  <button 
-                    onClick={() => setIsDark(!isDark)}
-                    className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-between focus:outline-none bg-transparent border-none cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Sun size={14} className="text-slate-400" />
-                      <span>Tema Oscuro</span>
-                    </div>
-                    <span className="text-[10px] font-extrabold text-slate-500 capitalize">{isDark ? 'Sí' : 'No'}</span>
-                  </button>
+
+                  {/* El toggle de "Tema Oscuro" que vivía aquí llamaba a un setIsDark()
+                      inexistente (bug real encontrado al reactivar el chequeo de tipos):
+                      isDark está fijo en `false` a propósito ("Forzado a modo claro por
+                      políticas globales de la plataforma"), así que el botón nunca hizo
+                      nada salvo tronar. Se retira en vez de revivir un dark mode que la
+                      plataforma decidió desactivar. */}
 
                   {/* Sandbox toggle for admin/supervisor */}
                   {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
@@ -6659,7 +6653,7 @@ export default function RelojVisual({
                       }
 
                       setCurrentUser(updatedUser);
-                      setGlobalUsers(globalUsers.map(u => u.id === currentUser.id ? updatedUser : u));
+                      setGlobalUsers(globalUsers.map((u: any) => u.id === currentUser.id ? updatedUser : u));
                       setShiftConfigs({
                         ...shiftConfigs,
                         [currentUser.id]: {

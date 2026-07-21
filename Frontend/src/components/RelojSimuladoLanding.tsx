@@ -36,6 +36,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyingStep, setVerifyingStep] = useState<'gps' | 'selfie' | 'success'>('gps');
+  const [dialTransition, setDialTransition] = useState<'idle' | 'taking_break' | 'taking_meal'>('idle');
 
   // Control de Hojas inferiores y Modales
   const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
@@ -227,43 +228,47 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   const handleAction = () => {
     const stateStr = clockState as string;
     if (stateStr === 'inactive') {
-      if (tier === 'free') {
-        // En básico, no hay verificación de GPS ni de Selfie
+      // Inicia verificación visual de Entrada (GPS + Selfie en Pro, Éxito visual en Free)
+      runProVerification(() => {
         setClockState('active');
         setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
         setCurrentSimTime(545);
-      } else {
-        runProVerification(() => {
-          setClockState('active');
-          setCheckInTimes({ 99: 545 }); // Entrada 09:05 AM
-          setCurrentSimTime(545);
-        });
-      }
+      });
     } else if (stateStr === 'active') {
       if (tier === 'free') {
-        // En básico, salida inmediata al dar click
-        setClockState('finished');
-        setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
-        setCurrentSimTime(1080);
-        setTimeout(() => {
-          setShowPromoGancho(true);
-        }, 800);
+        // Simular éxito visual de salida
+        runProVerification(() => {
+          setClockState('finished');
+          setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
+          setCurrentSimTime(1080);
+          setTimeout(() => {
+            setShowPromoGancho(true);
+          }, 800);
+        });
       } else {
         const hasTakenBreak = breaksTaken[99] !== undefined;
         const hasTakenMeal = mealEndTimes[99] !== undefined;
 
         if (!hasTakenBreak) {
-          // Simular descanso
-          setClockState('short_break');
-          setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
-          setCurrentSimTime(720);
+          // Iniciar animación temporal de "tomando descanso"
+          setDialTransition('taking_break');
+          setTimeout(() => {
+            setClockState('short_break');
+            setBreakStartTimes({ 99: 720 }); // Descanso 12:00 PM
+            setCurrentSimTime(720);
+            setDialTransition('idle');
+          }, 1500);
         } else if (!hasTakenMeal) {
-          // Simular comida
-          setClockState('meal');
-          setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
-          setCurrentSimTime(840);
+          // Iniciar animación temporal de "salida a comida"
+          setDialTransition('taking_meal');
+          setTimeout(() => {
+            setClockState('meal');
+            setMealStartTimes({ 99: 840 }); // Comida 02:00 PM
+            setCurrentSimTime(840);
+            setDialTransition('idle');
+          }, 1500);
         } else {
-          // Simular salida
+          // Simular salida Pro (GPS + Selfie + Success)
           runProVerification(() => {
             setClockState('finished');
             setCheckOutTimes({ 99: 1080 }); // Salida 06:00 PM
@@ -275,13 +280,13 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         }
       }
     } else if (stateStr === 'short_break') {
-      // Regresar descanso
+      // Regresar de descanso
       setClockState('active');
       setBreakEndTimes({ 99: 735 }); // Regreso 12:15 PM
       setBreaksTaken({ 99: 1 });
       setCurrentSimTime(735);
     } else if (stateStr === 'meal') {
-      // Regresar comida
+      // Regresar de comida
       setClockState('active');
       setMealEndTimes({ 99: 885 }); // Regreso 02:45 PM
       setHasReservedMeal({ 99: true });
@@ -327,43 +332,53 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
   // Propiedades dinámicas del dial
   const getDialProps = () => {
+    // 1. Secuencia de validación activa (GPS, Selfie y Éxito)
     if (isVerifying) {
       if (verifyingStep === 'gps') {
-        return { disabled: true, text: '📍 Buscando GPS...', subtext: 'Verificando perímetro...', iconKey: 'in_transit' };
+        return { disabled: true, text: '📍 Buscando GPS...', subtext: 'Verificando perímetro...', iconKey: 'verifying_gps' };
       }
       if (verifyingStep === 'selfie') {
-        return { disabled: true, text: '📸 Validando Selfie...', subtext: 'Identificación biométrica...', iconKey: 'blocked' };
+        return { disabled: true, text: '📸 Validando Selfie...', subtext: 'Identificación biométrica...', iconKey: 'verifying_selfie' };
       }
       if (verifyingStep === 'success') {
-        return { disabled: true, text: '✓ Fichaje Registrado', subtext: '¡Operación exitosa!', iconKey: 'reingreso' };
+        return { disabled: true, text: '✓ Fichaje Registrado', subtext: '¡Operación exitosa!', iconKey: 'success_check' };
       }
     }
 
+    // 2. Transiciones de estados temporales (Tomando descanso/comida)
+    if (dialTransition === 'taking_break') {
+      return { disabled: true, text: '☕ Tomando Descanso...', subtext: 'Registrando salida...', iconKey: 'break_start' };
+    }
+    if (dialTransition === 'taking_meal') {
+      return { disabled: true, text: '🍱 Iniciando Comida...', subtext: 'Salida a comedor...', iconKey: 'meal_prompt' };
+    }
+
+    // 3. Estados operativos normales
     if (clockState === 'inactive') {
-      return { disabled: false, text: 'Registrar Entrada', subtext: empName };
+      return { disabled: false, text: 'Registrar Entrada', subtext: empName, iconKey: 'entrada' };
     }
     if (clockState === 'active') {
       if (tier === 'free') {
         // En básico, solo entrada y salida
-        return { disabled: false, text: 'Registrar Salida', subtext: 'Fichaje de Salida' };
+        return { disabled: false, text: 'Registrar Salida', subtext: 'Fichaje de Salida', iconKey: 'exit' };
       }
       const hasBreak = breaksTaken[99] !== undefined;
       const hasMeal = mealEndTimes[99] !== undefined;
       if (!hasBreak) {
-        return { disabled: false, text: 'Descanso Ley Silla', subtext: 'Tomar 15 Minutos' };
+        return { disabled: false, text: 'Descanso Ley Silla', subtext: 'Tomar 15 Minutos', iconKey: 'break_start' };
       }
       if (!hasMeal) {
-        return { disabled: false, text: 'Iniciar Horario de Comida', subtext: 'Tomar 45 Minutos' };
+        return { disabled: false, text: 'Iniciar Horario de Comida', subtext: 'Tomar 45 Minutos', iconKey: 'meal_start' };
       }
-      return { disabled: false, text: 'Registrar Salida', subtext: 'Fichaje de Salida' };
+      return { disabled: false, text: 'Registrar Salida', subtext: 'Fichaje de Salida', iconKey: 'exit' };
     }
     if (clockState === 'short_break') {
-      return { disabled: false, text: 'Regresar de Descanso', subtext: 'Retomar Turno' };
+      return { disabled: false, text: 'Regresar de Descanso', subtext: 'Retomar Turno', iconKey: 'break_end' };
     }
     if (clockState === 'meal') {
-      return { disabled: false, text: 'Regresar de Comida', subtext: 'Retomar Turno' };
+      return { disabled: false, text: 'Regresar de Comida', subtext: 'Retomar Turno', iconKey: 'meal_end' };
     }
-    return { disabled: true, text: 'Jornada Finalizada', subtext: 'Turno Completado' };
+    return { disabled: true, text: 'Jornada Finalizada', subtext: 'Turno Completado', iconKey: 'finished' };
   };
 
   const btnProps = getDialProps();

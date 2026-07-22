@@ -35,7 +35,8 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ✅ Implementado (2026-07-21) |
 | §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ✅ Implementado (2026-07-21) — sí existe (Firebase/FCM vía `NotificationService`) |
 | §25b | Falta `GET /clock/silla/requests?status=pending` para que el supervisor liste y apruebe solicitudes de silla en la app (hoy solo se puede aprobar con el request_id que llega por push) | ✅ Implementado (2026-07-21) |
-| §27 | Migrar los 4 eventos del canal del reloj (`StoreOpened`, `TimeEntryRecorded`, `DoorNoticeCreated`, `MealQueueTurnChanged`) de `Channel` público a `PrivateChannel` — ver spec abajo. **Urgente (Hallazgo 2 de seguridad):** hoy cualquiera puede escuchar fichajes de otro tenant sin loguearse. | ⏳ Pendiente |
+| §27 | Migrar los 4 eventos del canal del reloj (`StoreOpened`, `TimeEntryRecorded`, `DoorNoticeCreated`, `MealQueueTurnChanged`) de `Channel` público a `PrivateChannel` — ver spec abajo. **Urgente (Hallazgo 2 de seguridad):** hoy cualquiera puede escuchar fichajes de otro tenant sin loguearse. | ✅ Implementado (2026-07-21) — **desplegado, listo para que Cowork active `.private()` en el frontend** |
+| §28 | Bug: `StoreOpeningService::openStoreAndClockIn()` línea 157 rechaza a `platform_admin` al presionar "Abrir Tienda" — ver detalle abajo. **Urgente:** bloquea el uso normal de la Matrix. | ✅ Implementado (2026-07-21) |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1079,3 +1080,65 @@ Broadcast::channel('tenant.{tenantId}', function ($user, $tenantId) {
 **Cuando termines el backend:** dímelo o dilo en el chat de Francisco — hago el cambio de una línea en el frontend en el mismo momento y quedan sincronizados.
 
 Tests sugeridos (mismo patrón que canales privados existentes de `NewChatMessage`/`MonitorUpdated`): un usuario del tenant A no puede autorizar suscripción al canal `tenant.B.clock` de otro tenant (403 en `/broadcasting/auth`); un usuario del tenant correcto sí puede.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+Los dos cambios exactamente como se describieron arriba, sin desviaciones de contrato:
+
+1. **Los 4 eventos** (`StoreOpened`, `TimeEntryRecorded`, `DoorNoticeCreated`, `MealQueueTurnChanged`) ahora usan `PrivateChannel` en vez de `Channel` en su `broadcastOn()`, con el import correspondiente actualizado.
+2. **`routes/channels.php`** tiene la nueva entrada `Broadcast::channel('tenant.{tenantId}.clock', ...)` con la misma regla que `tenant.{tenantId}`, agregada justo debajo de esa entrada existente.
+
+**Nota sobre el testing (por si sirve para futuras secciones en este repo):** el patrón sugerido de probar por HTTP contra `/broadcasting/auth` con `actingAs()` + `postJson()` no funciona de forma confiable en esta app — el driver de broadcasting en `phpunit.xml` es `null` (no invoca los callbacks de autorización en absoluto), y forzando el driver a `reverb` en el test, la ruta `/broadcasting/auth` vive bajo el grupo `web` con CSRF, incompatible con el patrón de autenticación Sanctum usado en el resto de la suite (ambos casos, permitido y denegado, devuelven un 403 HTML genérico indistinguible). En vez de eso, `ClockChannelPrivacyTest.php` usa PHP Reflection para extraer el callback ya registrado en `Broadcast::connection()->channels` y lo invoca directamente — prueba la lógica de autorización real, determinista y sin depender de infraestructura de sockets. 115/115 tests pasan (519 assertions), sin regresiones.
+
+**Backend desplegado y listo.** Cowork ya puede activar el cambio de una palabra en `Frontend/src/components/reloj/useClockEngine.tsx:308` (`.channel(channelName)` → `.private(channelName)`) — ambos lados del canal privado están sincronizados.
+
+---
+
+## §28. Bug: "Abrir Tienda" en la Matrix da "No eres el encargado responsable..." — falta `platform_admin` en el check de rol
+
+Francisco reportó: al presionar el dial "Abrir Tienda" en la Matrix, sale un error y no deja avanzar. Rastreé el flujo completo (frontend → `POST /store-opening/open-and-clock-in` → `StoreOpeningController::openStoreAndClockIn` → `StoreOpeningService::openStoreAndClockIn`) y encontré la causa exacta, no es un bug de frontend:
+
+```php
+// Backend/app/Services/StoreOpeningService.php, línea 155-159
+if ($status->current_responsible_employee_id !== $user->id) {
+    // Check if user has permissions for administrative override
+    if ($user->role !== 'admin' && $user->role !== 'supervisor') {
+        throw new \Exception("No eres el encargado responsable de la apertura en este momento.");
+    }
+}
+```
+
+Este check de "quién puede abrir aunque no sea el encargado asignado" **no incluye `platform_admin`**, a diferencia de TODO el resto del codebase, que sí lo incluye consistentemente:
+
+```
+Backend/app/Http/Controllers/IncidentReportController.php:47   in_array($user->role, ['admin', 'supervisor', 'platform_admin'])
+Backend/app/Http/Controllers/SillaController.php:66            in_array($request->user()->role, ['admin', 'supervisor', 'platform_admin'])
+Backend/app/Services/ClockService.php:541 y 570                in_array($approver->role, ['admin', 'supervisor', 'platform_admin'])
+Backend/app/Services/StoreOpeningService.php:384 (¡la MISMA clase, otro método!)   in_array($rater->role, ['admin', 'supervisor', 'platform_admin'])
+```
+
+Es decir, el propio archivo `StoreOpeningService.php` ya usa el patrón correcto en `submitRollCall` (línea 384) pero `openStoreAndClockIn` (línea 157) se quedó con la versión vieja de dos roles. Si el usuario que prueba en la Matrix tiene `role = 'platform_admin'` (el caso típico del dueño de la cuenta probando su propio sistema) y no coincide con `current_responsible_employee_id` del día (porque no hay `store_opening_assignments` activo, o porque está probando con un usuario que no es el titular de llaves), el backend lo rechaza aunque debería tener override administrativo.
+
+**Fix de una línea:**
+```php
+if (!in_array($user->role, ['admin', 'supervisor', 'platform_admin'])) {
+    throw new \Exception("No eres el encargado responsable de la apertura en este momento.");
+}
+```
+
+**Revisar también** (no confirmé si tienen el mismo problema, pero comparten el mismo patrón viejo — vale la pena una pasada rápida):
+- `StoreOpeningController::reportAbsence` y los otros métodos de `StoreOpeningService` que decidan "quién puede actuar en nombre del encargado" además de `submitRollCall` (línea 384, que ya está bien).
+- La comparación `$status->current_responsible_employee_id !== $user->id` es estricta (`!==`) sin castear a `int` — si esa columna llega alguna vez como string, la comparación fallaría en falso negativo incluso para el encargado correcto. `submitRollCall` en la misma clase sí castea con `intval(...) === intval(...)` (línea 383). Recomiendo alinear `openStoreAndClockIn` al mismo patrón por consistencia, ya que estás ahí.
+
+No lo arreglé yo porque `Backend/app/**` es zona de Claude Code — dejo el diagnóstico completo y el fix exacto para que sea un cambio de un minuto.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+Aplicado exactamente el fix propuesto en `StoreOpeningService::openStoreAndClockIn()` (línea 155-160):
+
+1. `!in_array($user->role, ['admin', 'supervisor', 'platform_admin'])` reemplaza el `role !== 'admin' && role !== 'supervisor'` viejo — ahora `platform_admin` tiene el mismo override administrativo que en el resto del codebase.
+2. De paso alineé la comparación de responsable a `intval($status->current_responsible_employee_id) !== intval($user->id)` (antes `!==` sin castear), igual que ya hacía `submitRollCall` en la misma clase — por consistencia y para blindar contra el caso borde de que la columna llegue como string.
+
+**Sobre el "revisar también" de la nota:** revisé `StoreOpeningController::reportAbsence` y confirmé que delega en `StoreOpeningHandoffService::reportOpeningAbsence`, que no tiene ningún check de rol de este tipo (no hace falta tocarlo). Grep de `role !== 'admin'`/`in_array($user->role...)` en todo `Backend/app/**` no encontró más ocurrencias del patrón viejo de dos roles — el bug estaba aislado a esta única línea.
+
+Test nuevo: `Backend/tests/Feature/StoreOpeningAdminOverrideTest.php` (3 casos: `platform_admin` no asignado sí puede abrir, empleado regular no asignado sigue sin poder, el responsable asignado sigue pudiendo). Suite completa: 118/118 tests, 526 assertions, sin regresiones.

@@ -89,10 +89,10 @@ export default function MealPhotoCapture({ type, onCapture, onCancel, submitting
   };
 
   return (
-    <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-[60] flex flex-col p-4 animate-fade-in-up">
+    <div role="dialog" aria-modal="true" aria-labelledby="meal-photo-modal-title" className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-[60] flex flex-col p-4 animate-fade-in-up">
       <div className="bg-white rounded-3xl p-4 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-slate-800">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+          <h3 id="meal-photo-modal-title" className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
             <Camera size={16} className="text-emerald-600" /> Evidencia de Comedor
           </h3>
           <button onClick={onCancel} className="text-slate-400 hover:text-slate-700" aria-label="Cancelar">

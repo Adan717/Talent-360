@@ -2570,7 +2570,7 @@ export default function RelojVisual({
     if (!isFabSheetOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-[90] flex items-end justify-center">
+      <div role="dialog" aria-modal="true" aria-label="Operaciones & Soporte AI" className="fixed inset-0 z-[90] flex items-end justify-center">
         {/* Backdrop overlay */}
         <div 
           onClick={() => setIsFabSheetOpen(false)}
@@ -2827,7 +2827,7 @@ export default function RelojVisual({
     if (!isTaskCreatorOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚡ Crear Tarea Rápida">
         {/* Backdrop overlay */}
         <div 
           onClick={() => setIsTaskCreatorOpen(false)}
@@ -2943,9 +2943,9 @@ export default function RelojVisual({
     if (!isCopilotChatOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+      <div role="dialog" aria-modal="true" aria-label="Copiloto AI" className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
         {/* Backdrop overlay */}
-        <div 
+        <div
           onClick={() => setIsCopilotChatOpen(false)}
           className="absolute inset-0 bg-slate-950/65 backdrop-blur-sm transition-opacity"
         ></div>
@@ -4566,7 +4566,7 @@ export default function RelojVisual({
 
           {/* Modal Forzosa */}
           {showForzosaModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚠️ Apertura Forzosa">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border-4 border-amber-500 text-slate-800">
                 <h3 className="font-black text-xl text-amber-600 mb-2">⚠️ Apertura Forzosa</h3>
                 <p className="text-sm text-slate-600 mb-4">El Titular no avisó de su ausencia. Si tomas el control, se generará una alerta de seguridad.</p>
@@ -4579,7 +4579,7 @@ export default function RelojVisual({
 
           {/* Modal Eval */}
           {showEvalModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Evaluación 360">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800">
                 <div className="text-center mb-6">
                   <span className="text-4xl">🌟</span>
@@ -4602,7 +4602,7 @@ export default function RelojVisual({
 
           {/* Modal Amnesty */}
           {showAmnestyModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in-up">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in-up" role="dialog" aria-modal="true" aria-label="Justificación de Amnistía">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl text-slate-800">
                 <h3 className="font-bold text-lg text-slate-800">Justificación de Amnistía</h3>
                 <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm my-4 outline-none focus:ring-2 focus:ring-indigo-500" rows={3} placeholder="Motivo..."></textarea>
@@ -4613,7 +4613,7 @@ export default function RelojVisual({
 
           {/* Modal Absence */}
           {showAbsenceModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="🏥 Reportar Incidencia de Asistencia">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
                   <h3 className="font-black text-lg text-rose-600">🏥 Reportar Incidencia de Asistencia</h3>
@@ -4712,7 +4712,7 @@ export default function RelojVisual({
               (docs/BACKEND_INTERFACES.md §3). Ver advertencia en useClockEngine.tsx: sin un endpoint
               PUT /me/pin todavía, la validación del backend rechazará cualquier PIN por ahora. */}
           {showEmergencyOpenModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚠️ Apertura de Emergencia">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
                   <h3 className="font-black text-lg text-rose-600">⚠️ Apertura de Emergencia</h3>
@@ -4785,7 +4785,7 @@ export default function RelojVisual({
               POST /clock/declare-contingency (docs/BACKEND_INTERFACES.md §4) o encola offline
               si no hay conexión. */}
           {showContingencyModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚡ Declarar Eventualidad">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
                   <h3 className="font-black text-lg text-amber-600">⚡ Declarar Eventualidad</h3>
@@ -4866,7 +4866,7 @@ export default function RelojVisual({
 
           {/* Modal de Checklist de Apertura */}
           {showOpeningChecklistModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="📋 Checklist de Apertura">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
                   <h3 className="font-black text-lg text-slate-800">📋 Checklist de Apertura</h3>
@@ -4955,7 +4955,7 @@ export default function RelojVisual({
           
           {/* Modal Justificante */}
           {showJustificanteModal && (
-            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col justify-center p-6 animate-fade-in text-slate-800">
+            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col justify-center p-6 animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label="Retardo Crítico Detectado">
               <div className="bg-white rounded-3xl p-6 w-full shadow-2xl border-4 border-rose-500 overflow-hidden relative max-w-md mx-auto">
                 <div className="absolute top-0 left-0 right-0 bg-rose-500 text-white text-center py-2 font-black tracking-widest text-xs uppercase">
                   Acceso Bloqueado
@@ -5000,7 +5000,7 @@ export default function RelojVisual({
 
           {/* Modal KeyDelegation / Entrega de Turno (Shift Handover) */}
           {showKeyDelegationModal && !isHandoverCompleted && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="🗝️ Entrega de Turno">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
                 <h3 className="font-bold text-cyan-600 mb-2 text-xl flex items-center gap-2"><span>🗝️</span> Entrega de Turno</h3>
                 <p className="text-sm text-slate-600 mb-4 bg-cyan-50 p-3 rounded-xl border border-cyan-100">
@@ -5065,7 +5065,7 @@ export default function RelojVisual({
           )}
 
           {showKeyDelegationModal && isHandoverCompleted && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="🔑 Entregar Llaves">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
                 <h3 className="font-bold text-indigo-600 mb-2 text-xl flex items-center gap-2"><span>🔑</span> Entregar Llaves</h3>
                 <p className="text-sm text-slate-700 mb-4 bg-indigo-50 p-3 rounded-xl border border-indigo-100">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
@@ -5358,10 +5358,10 @@ export default function RelojVisual({
 
           {/* Modal Bloqueo de Salida: Validación de Supervisor */}
           {pendingTasksBlocker && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
+            <div role="dialog" aria-modal="true" aria-label="Validación de supervisor requerida" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
               <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border ${
-                  isOvertimeValidation 
+                  isOvertimeValidation
                     ? 'bg-amber-50 border-amber-100 text-amber-500' 
                     : 'bg-rose-50 border-rose-100 text-rose-500'
                 }`}>
@@ -5475,7 +5475,7 @@ export default function RelojVisual({
 
           {/* Modal de Salida Anticipada */}
           {showEarlyDepartureModal && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800 animate-fade-in">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[99999] select-none text-slate-800 animate-fade-in" role="dialog" aria-modal="true" aria-label="🚪 Registrar Salida Anticipada">
               <div className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-4 shadow-sm">
                   <LogOut size={22} className="animate-pulse" />
@@ -5527,7 +5527,7 @@ export default function RelojVisual({
 
           {/* Overlay de Bloqueo de Pánico */}
           {isPanicActive && (
-            <div className="fixed inset-0 bg-rose-950/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <div role="alertdialog" aria-modal="true" aria-live="assertive" aria-label="Sucursal en paro de emergencia" className="fixed inset-0 bg-rose-950/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
               <div className="w-24 h-24 bg-rose-600 rounded-full flex items-center justify-center animate-ping absolute opacity-20"></div>
               <div className="bg-rose-900 border-4 border-rose-500 text-white rounded-full p-6 mb-6 animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.6)]">
                 <AlertOctagon size={48} />
@@ -5548,7 +5548,7 @@ export default function RelojVisual({
 
           {/* Modal MealDetailsModal */}
           {showMealDetailsModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+            <div role="dialog" aria-modal="true" aria-label="Detalles de tu horario de comida" className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 {(() => {
                   const mySlots = userReservedMealSlots[currentUser?.id] || [];
@@ -5702,7 +5702,7 @@ export default function RelojVisual({
           )}
 
       {showEntryDetailsModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+        <div role="dialog" aria-modal="true" aria-label="Detalles de tu entrada" className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
           <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             {(() => {
               const isLate = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
@@ -5749,7 +5749,7 @@ export default function RelojVisual({
       )}
 
       {showBreakDetailsModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+        <div role="dialog" aria-modal="true" aria-label="Detalles de tu descanso" className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
           <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             {(() => {
               const info = getBreakInfo();
@@ -5880,7 +5880,7 @@ export default function RelojVisual({
       )}
 
       {showExitDetailsModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+        <div role="dialog" aria-modal="true" aria-label="Detalles de tu salida" className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
           <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
             {(() => {
               const isLate = lateUsers[currentUser.id];
@@ -5936,7 +5936,7 @@ export default function RelojVisual({
 
                               {/* Modal MealReservation */}
           {showMealReservationModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Enviando Solicitud...">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative overflow-hidden">
                 {isSwappingLoading && pendingSwapPartner ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
@@ -6151,7 +6151,7 @@ export default function RelojVisual({
 
           {/* Modal de Desempeño Semanal */}
           {showPerformanceModal && weeklyPayrollData && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800" role="dialog" aria-modal="true" aria-label="Mi Desempeño Semanal">
               <div 
                 className="absolute inset-0" 
                 onClick={() => setShowPerformanceModal(false)}
@@ -6298,7 +6298,7 @@ export default function RelojVisual({
 
           {/* Modal de Alerta de Pánico */}
           {showPanicModal && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800" role="dialog" aria-modal="true" aria-label="Alerta de Emergencia (Pánico)">
               <div 
                 className="absolute inset-0" 
                 onClick={() => setShowPanicModal(false)}
@@ -6338,7 +6338,7 @@ export default function RelojVisual({
 
           {/* Modal Report */}
           {showReportModal && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex flex-col justify-end text-slate-800" role="dialog" aria-modal="true" aria-label="Reporte 100% Anónimo">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">📢</span>
@@ -6402,7 +6402,9 @@ export default function RelojVisual({
               className="fixed inset-0 z-[85] bg-black/10 backdrop-blur-xs"
               onClick={() => setShowProfileMenu(false)}
             >
-              <div 
+              <div
+                role="menu"
+                aria-label="Menú de perfil"
                 className="fixed top-[76px] right-3.5 w-52 sm:w-56 z-[90] bg-white border border-slate-200 rounded-2xl shadow-xl py-2 animate-in fade-in slide-in-from-top-3 duration-200 text-left"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -6487,7 +6489,7 @@ export default function RelojVisual({
 
           {/* settings Modal (User Profile & App Settings) */}
           {showSettingsModal && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="⚙️ Ajustes de Perfil">
               <div className={`rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border text-left ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-black text-lg flex items-center gap-2">
@@ -6837,7 +6839,7 @@ export default function RelojVisual({
 
           {/* Desktop Organigrama Modal */}
           {showDesktopOrgModal && (
-            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Organigrama de la Empresa">
               <div className="bg-slate-50 dark:bg-slate-950 w-full max-w-6xl h-[85vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">

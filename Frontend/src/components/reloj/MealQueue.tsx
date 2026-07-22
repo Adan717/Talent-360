@@ -110,10 +110,10 @@ export default function MealQueue({ currentUserId, globalUsers, onClose }: MealQ
   };
 
   return (
-    <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="meal-queue-modal-title" className="absolute inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-5 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative flex flex-col max-h-[85%]">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
+          <h3 id="meal-queue-modal-title" className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
             <Utensils size={18} className="text-amber-500" /> Apartar Turno de Comida
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Cerrar">

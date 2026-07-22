@@ -373,7 +373,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
         {/* Modal de Quiz */}
         {showQuiz && (
-          <div className="absolute inset-0 bg-slate-50 z-50 flex flex-col overflow-y-auto">
+          <div className="absolute inset-0 bg-slate-50 z-50 flex flex-col overflow-y-auto" role="dialog" aria-modal="true" aria-label="Evaluación Corporativa">
             <div className="sticky top-0 bg-white/90 backdrop-blur-md p-4 border-b border-slate-200 flex justify-between items-center z-10 shadow-sm">
               <h3 className="font-black text-lg text-slate-800 tracking-tight">Evaluación Corporativa</h3>
               <button onClick={() => setShowQuiz(false)} className="text-slate-400 hover:text-slate-800 bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors">✕</button>

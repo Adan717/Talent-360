@@ -36,7 +36,7 @@ class StoreOpened implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('tenant.' . $this->tenantId . '.clock'),
+            new PrivateChannel('tenant.' . $this->tenantId . '.clock'),
         ];
     }
 

@@ -217,3 +217,16 @@ Revisé el backend (solo lectura) para saber qué tan armado está esto antes de
 **Un matiz que vale la pena que consideres antes de decidir:** el Reloj Checador está pensado para tablets/celulares en modo PWA instalada en tienda, posiblemente en uso días seguidos sin cerrar sesión. Las cookies (sobre todo en Safari/iOS con Intelligent Tracking Prevention) pueden expirar o purgarse más agresivamente que un token en `localStorage` en ese escenario de kiosco de larga duración — no es una mejora estrictamente superior para ese caso de uso específico, es un trade-off real entre "más resistente a XSS" y "más frágil en PWA de kiosco". Como hoy no hay ningún XSS conocido (confirmé 0 usos de `dangerouslySetInnerHTML` en todo el módulo), mi recomendación es dejarlo en el radar pero no priorizarlo — si en algún momento aparece una superficie de XSS real (ej. contenido enriquecido de terceros, editor de texto libre visible a otros usuarios), ahí sí se vuelve urgente y yo mismo lo subiría de prioridad.
 
 No se tocó ningún archivo de auth en esta pasada — es evaluación, no implementación.
+
+---
+
+## ✅ Implementado (2026-07-22) — Punto 6: accesibilidad en modales secundarios
+
+Barrido sobre todos los overlays de tipo modal (`fixed`/`absolute inset-0` con backdrop + encabezado `<h2>`/`<h3>`) en `RelojVisual.tsx`, `Academia.tsx`, `DialPrincipal.tsx`, `MealPhotoCapture.tsx` y `MealQueue.tsx`. A cada uno le agregué `role="dialog"` `aria-modal="true"` y `aria-label`/`aria-labelledby` (usando el título visible del propio modal, o un texto descriptivo cuando el título es condicional/dinámico y no se puede extraer de forma segura). Casos especiales:
+- El overlay de "Sucursal en Paro de Emergencia" (Botón de Pánico) usa `role="alertdialog"` + `aria-live="assertive"` en vez de `role="dialog"`, por ser una alerta crítica que debe anunciarse de inmediato.
+- El menú flotante de perfil (no es un modal de pantalla completa, es un popover) recibió `role="menu"` en vez de `role="dialog"`.
+- Los overlays puramente decorativos (glows, gradientes, máscaras de imagen en hover) se dejaron sin tocar — no son diálogos, etiquetarlos habría sido ruido para lectores de pantalla.
+
+**Total:** 32 modales/diálogos con `role="dialog"` en `RelojVisual.tsx`, más 1 en `Academia.tsx`, 1 en `MealPhotoCapture.tsx`, 1 en `MealQueue.tsx`. No cubrí el 100% de los overlays del archivo (algunos títulos son puramente dinámicos y no encontré un texto seguro de extraer sin revisar cada uno a mano) — es una mejora sustancial, no una garantía de cobertura absoluta. Si quieres el 100%, dime y hago una pasada manual de los que quedaron sin etiquetar.
+
+**Verificación:** `tsc --noEmit -p tsconfig.app.json` → 0 errores.

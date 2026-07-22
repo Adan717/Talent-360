@@ -152,9 +152,9 @@ class StoreOpeningService
             }
 
             // Check if current user is responsible
-            if ($status->current_responsible_employee_id !== $user->id) {
+            if (intval($status->current_responsible_employee_id) !== intval($user->id)) {
                 // Check if user has permissions for administrative override
-                if ($user->role !== 'admin' && $user->role !== 'supervisor') {
+                if (!in_array($user->role, ['admin', 'supervisor', 'platform_admin'])) {
                     throw new \Exception("No eres el encargado responsable de la apertura en este momento.");
                 }
             }

@@ -163,3 +163,57 @@ Barrido mecánico sobre las 12 subcarpetas/archivos de `Frontend/src/components/
 **Verificación:** re-barrido con el mismo script confirmó 0 clases inválidas y 0 `purple`/`orange` restantes en el módulo; `tsc --noEmit -p tsconfig.app.json` → 0 errores.
 
 **Pendiente real de este punto (no mecánico):** revisión visual tuya para confirmar que ningún color quedó "raro" tras el redondeo de empates, y — si quieres ir más allá — la reasignación semántica fina de `indigo`/`violet`/`cyan`/`teal` descrita en la sección 5.
+
+---
+
+## ✅ Implementado (2026-07-22) — Punto 3: limpiar localStorage del reloj al cerrar sesión
+
+Creé `Frontend/src/lib/clockCache.ts` con `clearClockLocalCache()`, y la conecté en los **5 puntos reales de logout** del sistema (no solo `App.tsx` — encontré que `RelojVisual.tsx` tiene **4 botones de "Cerrar Sesión" propios** dentro del reloj móvil/tablet que hacían `localStorage.removeItem('talent_auth_token')` directo, sin pasar por `handleLogout()` de `App.tsx`. Como el escenario de riesgo del Hallazgo 4 es justo el dispositivo compartido de tienda, esos 4 botones del reloj eran el punto de fuga más probable, así que también se corrigieron).
+
+**Se limpian al cerrar sesión:** `clock_break_start_times`, `clock_break_end_times`, `clock_meal_start_times`, `clock_meal_end_times`, `clock_checkout_times`, `clock_pending_break_requests`, `store_opening_assignments`, `store_daily_opening_status`, `store_opening_settings`, `opening_checklist_completed`, `opening_roll_call_completed`, `closing_checklist_completed`, y el prefijo `commute_confirmed_*` (esta última no estaba namespaced por usuario — es un hallazgo adicional, no solo el logout).
+
+**Exclusiones deliberadas (documentadas en el propio código):**
+- `clock_sync_queue` — cola de fichajes offline sin sincronizar. Limpiarla en logout perdería fichajes reales pendientes de subir al servidor.
+- `user_retardos_<id>` — el mecanismo local (inseguro) de bloqueo por 3 retardos del Hallazgo 1. Limpiarlo en logout lo haría *más* fácil de evadir (bastaría cerrar sesión y volver a entrar). Se debe retirar por completo cuando se conecte el estado #1 a `GET /me/punctuality-status` — ese es el próximo punto del plan (punto 1).
+
+**Verificación:** `tsc --noEmit -p tsconfig.app.json` → 0 errores.
+
+---
+
+## ✅ Implementado (2026-07-22) — Punto 1: bloqueo por retardos conectado a GET /me/punctuality-status
+
+- `useAppStore.ts`: nuevo estado `punctualityStatus` (cacheado **solo en memoria**, nunca localStorage) y acción `fetchPunctualityStatus()` que llama a `GET /me/punctuality-status`.
+- `useClockEngine.tsx`: al montar (fuera de sandbox) hace el fetch inicial. `getButtonProps()` ya no lee `localStorage.user_retardos_<id>` para decidir el bloqueo del estado #1 — usa `punctualityStatus.blocked` del backend. El modo sandbox/Matrix conserva el mecanismo local (no hay backend real de puntualidad que simular ahí).
+- Reordené el flujo de "Entrada Tardía Autorizada": ahora hace `syncToDB('check_in')` primero y **después** refresca `punctuality-status`, para que el conteo mostrado en el toast y en el evento de la Matrix incluya el retardo recién registrado (antes el contador local se incrementaba a ciegas, sin depender del backend).
+- Botón "Ir a la Academia": no existía como tal (el dial solo mostraba texto, sin acción — confirmado el hallazgo de la auditoría). Agregué un CTA secundario debajo del dial (`DialPrincipal.tsx`, visible solo cuando `iconKey === 'blocked'`) que navega a la pestaña Academia. `Academia.tsx` recibe `autoOpenCourseId` (el `required_course_id` real del backend) y abre ese curso automáticamente en cuanto carga la lista, en vez de dejar al empleado buscarlo.
+- Al completar el curso, `Academia.tsx` ya no compara el título por texto ("incluye 'puntualidad'") — compara `activeCourse.id` contra `systemSettings.punctuality_course_id` (el que configuró el tenant) y refresca `punctualityStatus` desde el backend en vez de resetear `localStorage` a mano.
+
+**Verificación:** `tsc --noEmit -p tsconfig.app.json` → 0 errores. Pendiente de tu verificación visual/funcional en el simulador o en un tenant real con retardos acumulados.
+
+---
+
+## 🟡 En curso (2026-07-22) — Punto 2: canal WebSocket privado del reloj
+
+Este punto necesita cambios en **ambos lados** (backend + frontend) sincronizados en el mismo despliegue — no es seguro activarlo solo de un lado.
+
+Ya hice mi parte: redacté la spec completa en `docs/BACKEND_INTERFACES.md` §27, con los 4 archivos y líneas exactas de backend que hay que tocar (`app/Events/StoreOpened.php`, `TimeEntryRecorded.php`, `DoorNoticeCreated.php`, `MealQueueTurnChanged.php` — cambiar `Channel` por `PrivateChannel`) y la entrada nueva que falta en `routes/channels.php`. Quedó en la tabla de pendientes del contrato (§27) para que Claude Code la recoja con "revisa pendientes del contrato".
+
+**Deliberadamente NO cambié** `useClockEngine.tsx:308` (`echoInstance.channel` → `.private`) todavía: si el frontend pide un canal privado antes de que exista la autorización en el backend, el reloj se queda sin tiempo real para todos los usuarios hasta que ambos lados coincidan — es peor que dejarlo como está mientras se coordina. En cuanto confirmes que Claude Code implementó §27, hago ese cambio de una línea de inmediato.
+
+---
+
+## 🔎 Evaluado, no implementado (2026-07-22) — Punto 5: migración a auth por cookie httpOnly
+
+Revisé el backend (solo lectura) para saber qué tan armado está esto antes de dar una recomendación:
+
+- `config/sanctum.php` y `config/cors.php` ya tienen `supports_credentials: true`, `SANCTUM_STATEFUL_DOMAINS` con los dominios de desarrollo, y `sanctum/csrf-cookie` en los `paths` de CORS — parece scaffold preparado, pero **no está en uso real**.
+- Confirmé en `AuthController.php` (líneas 71, 234, 261) que login/registro emiten un token Sanctum clásico (`$user->createToken('auth_token')->plainTextToken`), no una sesión. Es decir, hoy el flujo es 100% Bearer token, y el `withCredentials: true` / la config de CORS de arriba no se está aprovechando para autenticación — probablemente quedó de un scaffold inicial de Laravel Breeze/Sanctum sin terminar de cablear.
+
+**Por qué no lo implementé directo, solo lo evalúo:** este cambio no es del módulo del reloj — toca el login/logout de **toda la aplicación** (RRHH, reportes, facturación, todo lo que usa `axiosInstance`), no solo `Frontend/src/components/reloj/**`. Requiere:
+1. Backend (Claude Code): cambiar los 3 puntos de `AuthController.php` para usar `Auth::login($user)` + sesión en vez de `createToken()`, registrar el middleware `EnsureFrontendRequestsAreStateful` en el grupo de rutas API, y confirmar que `SESSION_DRIVER` no sea `array` (necesita persistir sesiones entre requests).
+2. Frontend: quitar el interceptor de `Authorization: Bearer` en `Frontend/src/lib/axios.ts`, agregar una llamada a `GET /sanctum/csrf-cookie` antes del login, y manejar el header `X-XSRF-TOKEN` en cada request mutante.
+3. Consecuencia operativa: **fuerza a cerrar sesión a todos los usuarios activos** el día que se despliegue (los tokens Bearer existentes dejan de sincronizar con el nuevo esquema) — necesita ventana de mantenimiento avisada, no es un cambio transparente.
+
+**Un matiz que vale la pena que consideres antes de decidir:** el Reloj Checador está pensado para tablets/celulares en modo PWA instalada en tienda, posiblemente en uso días seguidos sin cerrar sesión. Las cookies (sobre todo en Safari/iOS con Intelligent Tracking Prevention) pueden expirar o purgarse más agresivamente que un token en `localStorage` en ese escenario de kiosco de larga duración — no es una mejora estrictamente superior para ese caso de uso específico, es un trade-off real entre "más resistente a XSS" y "más frágil en PWA de kiosco". Como hoy no hay ningún XSS conocido (confirmé 0 usos de `dangerouslySetInnerHTML` en todo el módulo), mi recomendación es dejarlo en el radar pero no priorizarlo — si en algún momento aparece una superficie de XSS real (ej. contenido enriquecido de terceros, editor de texto libre visible a otros usuarios), ahí sí se vuelve urgente y yo mismo lo subiría de prioridad.
+
+No se tocó ningún archivo de auth en esta pasada — es evaluación, no implementación.

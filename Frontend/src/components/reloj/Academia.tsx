@@ -92,7 +92,7 @@ function ProgressRing({ percentage, color = '#6366F1', size = 96, strokeWidth = 
   );
 }
 
-function AcademiaContent({ onBack }: { onBack: () => void }) {
+function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; autoOpenCourseId?: number | null }) {
   const [courses, setCourses] = useState<any[]>([]);
   const setCoursesSafe = (rawList: any[]) => {
     let list = Array.isArray(rawList) ? rawList : [];
@@ -196,6 +196,17 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
       });
   }, []);
 
+  // Auditoría reloj checador (2026-07-22), Hallazgo 1: el botón "Ir a la Academia" del estado #1
+  // (Fichaje Bloqueado) navega aquí con el required_course_id real del backend — este efecto abre
+  // ese curso directo en cuanto la lista de cursos termina de cargar, en vez de dejar al empleado
+  // buscarlo manualmente.
+  useEffect(() => {
+    if (autoOpenCourseId && !activeCourse && courses.length > 0) {
+      const target = courses.find((c: any) => Number(c.id) === Number(autoOpenCourseId));
+      if (target) setActiveCourse(target);
+    }
+  }, [autoOpenCourseId, courses]);
+
   const handleStartCourse = (course: any) => {
     setActiveCourse(course);
     setShowQuiz(false);
@@ -266,8 +277,12 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
           completeInduction(loggedUser.id);
           alert('Recursos Humanos ha sido notificado. Tu BLOQUEO OPERATIVO ha sido levantado. Ya puedes registrar tu entrada en el Reloj Checador.');
         }
-        if (activeCourse.title && activeCourse.title.toLowerCase().includes('puntualidad') && loggedUser) {
-          localStorage.setItem('user_retardos_' + loggedUser.id, '0');
+        // Auditoría reloj checador (2026-07-22), Hallazgo 1: ya no se detecta el curso de puntualidad
+        // por coincidencia de texto en el título (frágil) sino por el id real configurado por el
+        // tenant (systemSettings.punctuality_course_id, §12 de docs/BACKEND_INTERFACES.md). El estatus
+        // se refresca desde el backend (course_completed pasa a true ahí), no tocando localStorage.
+        if (loggedUser && Number(activeCourse.id) === Number(systemSettings?.punctuality_course_id)) {
+          useAppStore.getState().fetchPunctualityStatus();
           alert('¡Excelente! Tu checador ha sido desbloqueado tras completar tu capacitación de Puntualidad.');
         }
       })
@@ -1187,7 +1202,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
   );
 }
 
-export default function Academia(props: { onBack: () => void }) {
+export default function Academia(props: { onBack: () => void; autoOpenCourseId?: number | null }) {
   return (
     <AcademiaErrorBoundary>
       <AcademiaContent {...props} />

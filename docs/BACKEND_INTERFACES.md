@@ -35,6 +35,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ✅ Implementado (2026-07-21) |
 | §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ✅ Implementado (2026-07-21) — sí existe (Firebase/FCM vía `NotificationService`) |
 | §25b | Falta `GET /clock/silla/requests?status=pending` para que el supervisor liste y apruebe solicitudes de silla en la app (hoy solo se puede aprobar con el request_id que llega por push) | ✅ Implementado (2026-07-21) |
+| §27 | Migrar los 4 eventos del canal del reloj (`StoreOpened`, `TimeEntryRecorded`, `DoorNoticeCreated`, `MealQueueTurnChanged`) de `Channel` público a `PrivateChannel` — ver spec abajo. **Urgente (Hallazgo 2 de seguridad):** hoy cualquiera puede escuchar fichajes de otro tenant sin loguearse. | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1041,3 +1042,40 @@ Tests: 1 caso (supervisor ve la solicitud pendiente, empleado normal no puede, d
 ---
 
 > **Nota de fase (2026-07-21):** las secciones §22–§26 corresponden a los 5 hallazgos de `docs/VIABILIDAD_LOGICA_DIAL.md` (alineación del dial a `docs/Logica Dial.md`). El frontend de las partes autocontenidas (Enviar Mensaje degradado, cronómetro del estado 16) ya se está implementando; las UIs acopladas al backend (calificación pase de lista, foto comedor, cola de comida, aforo de sillas) se construirán contra los contratos de arriba una vez que Claude Code confirme o ajuste las formas de datos. Dos decisiones de producto siguen abiertas y están marcadas con ⚠️ en §24 y §26.
+
+---
+
+## §27. Canal WebSocket del reloj: migrar de público a privado (Hallazgo 2 de seguridad, urgente)
+
+`docs/AUDITORIA_RELOJ_CHECADOR_2026-07-22.md`, Hallazgo 2: los 4 eventos en tiempo real del reloj transmiten hoy sobre un canal **público** de Reverb — cualquiera que sepa o adivine un `tenant_id` (entero secuencial pequeño) puede suscribirse sin haber iniciado sesión y ver en vivo fichajes, apertura/cierre de tienda, avisos con nombres de empleados y turnos de la cola de comida de un tenant ajeno. Confirmado por código, no solo por sospecha:
+
+```
+Backend/app/Events/StoreOpened.php:39          new Channel('tenant.' . $this->tenantId . '.clock'),
+Backend/app/Events/TimeEntryRecorded.php:24    return [new Channel('tenant.' . $this->tenantId . '.clock')];
+Backend/app/Events/DoorNoticeCreated.php:24    return [new Channel('tenant.' . $this->tenantId . '.clock')];
+Backend/app/Events/MealQueueTurnChanged.php:22 return [new Channel('tenant.' . $this->tenantId . '.clock')];
+```
+
+`Channel` (no `PrivateChannel`) no exige autenticación para suscribirse. Ya existe el patrón correcto para copiar — `routes/channels.php` ya tiene una autorización para canales privados de tenant:
+
+```php
+Broadcast::channel('tenant.{tenantId}', function ($user, $tenantId) {
+    return (int) $user->tenant_id === (int) $tenantId;
+});
+```
+
+**Lo que falta (backend, dos cambios):**
+
+1. En los 4 archivos de `Backend/app/Events/*.php` citados arriba, cambiar `new Channel(...)` → `new PrivateChannel(...)` (import `Illuminate\Broadcasting\PrivateChannel` en vez de/además de `Channel`).
+2. En `routes/channels.php`, agregar una entrada para el canal específico del reloj (el patrón `tenant.{tenantId}` ya existente NO cubre `tenant.{tenantId}.clock` — son nombres de canal distintos en Reverb/Pusher, hace falta una entrada propia):
+   ```php
+   Broadcast::channel('tenant.{tenantId}.clock', function ($user, $tenantId) {
+       return (int) $user->tenant_id === (int) $tenantId;
+   });
+   ```
+
+**Lo que hace el frontend (Cowork), ya preparado pero SIN activar todavía:** `Frontend/src/components/reloj/useClockEngine.tsx:308` hoy hace `echoInstance.channel(channelName)`. El cambio a `echoInstance.private(channelName)` es trivial (una palabra), pero **NO lo voy a activar hasta que confirmes que el backend ya tiene los dos cambios de arriba desplegados** — si el frontend pide un canal privado antes de que exista la entrada en `routes/channels.php`, la suscripción falla la autorización (`/broadcasting/auth` responde 403/404) y el reloj se queda sin tiempo real para todos los usuarios hasta que ambos lados coincidan. Es un cambio que debe ir sincronizado en el mismo despliegue, no independiente.
+
+**Cuando termines el backend:** dímelo o dilo en el chat de Francisco — hago el cambio de una línea en el frontend en el mismo momento y quedan sincronizados.
+
+Tests sugeridos (mismo patrón que canales privados existentes de `NewChatMessage`/`MonitorUpdated`): un usuario del tenant A no puede autorizar suscripción al canal `tenant.B.clock` de otro tenant (403 en `/broadcasting/auth`); un usuario del tenant correcto sí puede.

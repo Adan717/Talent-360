@@ -45,7 +45,12 @@ interface AppState {
   allowedModules: string[];
   allowedFeatures: string[];
   simulatedTierOverride: 'freemium' | 'pro' | 'enterprise' | null;
-  
+
+  // Auditoría reloj checador (2026-07-22), Hallazgo 1 / punto 1 del plan de acción:
+  // estatus real de puntualidad desde el backend (GET /me/punctuality-status), cacheado
+  // SOLO en memoria (nunca localStorage — así no es evadible borrando datos del navegador).
+  punctualityStatus: { blocked: boolean; lates_count: number; required_course_id: number | null; course_completed: boolean } | null;
+
   // Setters
   setIsLoadingDB: (loading: boolean) => void;
   setGlobalUsers: (users: User[]) => void;
@@ -75,7 +80,8 @@ interface AppState {
   // Actions
   fetchState: () => Promise<void>;
   updateSetting: (key: string, value: any) => Promise<void>;
-  
+  fetchPunctualityStatus: () => Promise<void>;
+
   // SaaS Actions
   addSaaSTenant: (tenant: Tenant) => void;
   updateSaaSPricing: (moduleId: string, price: number) => void;
@@ -119,7 +125,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     ? [] 
     : ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'],
   simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'pro',
-  
+  punctualityStatus: null,
+
   // Initial SaaS State
   saasTenants: [],
   saasPricing: {
@@ -691,7 +698,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error("Error guardando configuración:", e);
     }
   },
- 
+
+  fetchPunctualityStatus: async () => {
+    try {
+      const res = await axiosInstance.get('/me/punctuality-status');
+      set({
+        punctualityStatus: {
+          blocked: !!res.data?.blocked,
+          lates_count: Number(res.data?.lates_count) || 0,
+          required_course_id: res.data?.required_course_id ?? null,
+          course_completed: !!res.data?.course_completed,
+        },
+      });
+    } catch (e) {
+      console.warn('No se pudo obtener el estatus de puntualidad (GET /me/punctuality-status):', e);
+    }
+  },
+
   isModuleUnlocked: (moduleId: string) => {
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedModules } = get();
     if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'matrix') return true;

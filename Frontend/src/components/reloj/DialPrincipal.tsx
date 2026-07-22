@@ -65,6 +65,10 @@ interface DialPrincipalProps {
   onDeclareContingencyClick?: () => void;
   hasActiveContingency?: boolean;
   isKeyholder?: boolean;
+  // Auditoría reloj checador (2026-07-22), Hallazgo 1: el botón principal queda `disabled` (HTML)
+  // cuando btnProps.iconKey === 'blocked', así que un onClick en el propio dial nunca dispara.
+  // Este callback se renderiza aparte, como CTA secundario, para llevar al curso de puntualidad real.
+  onGoToRequiredCourseClick?: () => void;
 }
 
 export default function DialPrincipal({
@@ -98,7 +102,8 @@ export default function DialPrincipal({
   onPanicClick,
   onDeclareContingencyClick,
   hasActiveContingency = false,
-  isKeyholder
+  isKeyholder,
+  onGoToRequiredCourseClick
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
   const [showGpsModal, setShowGpsModal] = useState(false);
@@ -341,6 +346,17 @@ export default function DialPrincipal({
       </div>
         );
       })()}
+
+      {btnProps.iconKey === 'blocked' && onGoToRequiredCourseClick && (
+        <button
+          type="button"
+          onClick={onGoToRequiredCourseClick}
+          aria-label="Ir al curso obligatorio de Puntualidad en la Academia para desbloquear tu fichaje"
+          className="mt-3.5 py-1.5 px-4 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 hover:border-violet-400 text-violet-700 dark:text-violet-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-violet-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20 border-solid"
+        >
+          🎓 Ir a la Academia
+        </button>
+      )}
 
       {clockState === 'active' && hasMealReservation && onMealSwapClick && (
         <button

@@ -3576,6 +3576,7 @@ export default function RelojVisual({
                         onSendDoorNoticeClick={handleSendDoorNotice}
                         onDeclareContingencyClick={() => setShowContingencyModal(true)}
                         hasActiveContingency={!!activeContingency}
+                        onGoToRequiredCourseClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
                       />
                     </div>
 
@@ -3751,7 +3752,7 @@ export default function RelojVisual({
                     <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
                   )}
                   {phoneTab === 'academia' && (
-                    <Academia onBack={() => setPhoneTab('checador')} />
+                    <Academia onBack={() => setPhoneTab('checador')} autoOpenCourseId={btnProps.iconKey === 'blocked' ? (btnProps.requiredCourseId ?? null) : null} />
                   )}
                   {phoneTab === 'nomina' && (
                     <NominaColaborador isDark={isDark} />
@@ -3992,6 +3993,7 @@ export default function RelojVisual({
                       onSendDoorNoticeClick={handleSendDoorNotice}
                       onDeclareContingencyClick={() => setShowContingencyModal(true)}
                       hasActiveContingency={!!activeContingency}
+                      onGoToRequiredCourseClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
                     />
                 </div>
               </div>
@@ -4269,7 +4271,7 @@ export default function RelojVisual({
             <div className={`w-full mx-auto border flex flex-col animate-fade-in-up p-6 md:p-8 rounded-3xl max-w-5xl transition-colors ${
               isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
             }`}>
-              <Academia onBack={() => setPhoneTab('checador')} />
+              <Academia onBack={() => setPhoneTab('checador')} autoOpenCourseId={btnProps.iconKey === 'blocked' ? (btnProps.requiredCourseId ?? null) : null} />
             </div>
           )}
 
@@ -4457,10 +4459,10 @@ export default function RelojVisual({
           )}
 
           {showPaseListaModal && (
-            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col pt-12 pb-6 px-4 animate-fade-in-up">
+            <div role="dialog" aria-modal="true" aria-labelledby="pase-lista-modal-title" className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col pt-12 pb-6 px-4 animate-fade-in-up">
               <div className="bg-white rounded-3xl p-5 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-slate-800">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-extrabold text-xl text-slate-800">Pase de Lista</h3>
+                  <h3 id="pase-lista-modal-title" className="font-extrabold text-xl text-slate-800">Pase de Lista</h3>
                   <button onClick={toggleSelectAll} className="text-xs bg-indigo-50 text-indigo-700 font-bold px-3 py-1.5 rounded-full border border-indigo-100 hover:bg-indigo-100">
                     Seleccionar Todos
                   </button>
@@ -4825,10 +4827,10 @@ export default function RelojVisual({
               Consume submitClosingChecklist(), que llama a POST /store-opening/closing-checklist
               (docs/BACKEND_INTERFACES.md §6). */}
           {showClosingChecklistModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
+            <div role="dialog" aria-modal="true" aria-labelledby="closing-checklist-modal-title" className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-55 flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-                  <h3 className="font-black text-lg text-rose-600">🚪 Checklist de Cierre Seguro</h3>
+                  <h3 id="closing-checklist-modal-title" className="font-black text-lg text-rose-600">🚪 Checklist de Cierre Seguro</h3>
                   <button onClick={() => setShowClosingChecklistModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
                 </div>
 
@@ -5104,7 +5106,7 @@ export default function RelojVisual({
 
           {/* Modal Ley Silla Task Selection */}
           {showBreakSeatModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label="🧘 Descanso Ley Silla">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-violet-700 mb-2 text-xl flex items-center gap-2"><span>🧘</span> Descanso Ley Silla</h3>
                 <p className="text-sm text-slate-600 mb-5">
@@ -5150,7 +5152,7 @@ export default function RelojVisual({
 
           {/* Modal Pase de Salida Temporal */}
           {showTempExitModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label="🚪 Pase de Salida Temporal">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-teal-700 mb-2 text-xl flex items-center gap-2"><span>🚪</span> Pase de Salida Temporal</h3>
                 <p className="text-sm text-slate-600 mb-5">
@@ -5182,7 +5184,7 @@ export default function RelojVisual({
 
           {/* Modal Botón de Pánico */}
           {showPanicModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label="🚨 Botón de Pánico">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-rose-700 mb-2 text-xl flex items-center gap-2"><span>🚨</span> Botón de Pánico</h3>
                 <p className="text-sm text-slate-600 mb-5">
@@ -5213,7 +5215,7 @@ export default function RelojVisual({
 
           {/* Modal Intercambio Rápido de Comida */}
           {showMealSwapModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label="🔄 Intercambio de Comida">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-amber-700 mb-2 text-xl flex items-center gap-2"><span>🔄</span> Intercambio de Comida</h3>
                 <p className="text-sm text-slate-600 mb-5">
@@ -5257,7 +5259,7 @@ export default function RelojVisual({
 
           {/* Modal Ajustes de Alarmas y Alertas */}
           {showAlarmSettingsModal && (
-            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] select-none text-slate-800" role="dialog" aria-modal="true" aria-label="🔔 Alertas y Alarmas">
               <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-violet-700 dark:text-violet-400 mb-2 text-lg flex items-center gap-2">
                   <span>🔔</span> Alertas y Alarmas

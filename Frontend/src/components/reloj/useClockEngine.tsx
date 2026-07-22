@@ -45,7 +45,9 @@ export function useClockEngine(overrideUser?: any) {
     activeEncargadoId, setActiveEncargadoId,
     globalSimDay, setGlobalSimDay,
     isSandboxMode,
-    currentTier
+    currentTier,
+    punctualityStatus,
+    fetchPunctualityStatus
   } = useAppStore();
   
   const currentUser = overrideUser || globalUser;
@@ -93,6 +95,16 @@ export function useClockEngine(overrideUser?: any) {
       warmOfflineSecret();
     }
   }, [isSimulator, isSandboxMode, currentUser?.id]);
+
+  // Auditoría reloj checador (2026-07-22), Hallazgo 1 / punto 1 del plan de acción: al montar,
+  // trae el estatus real de puntualidad del backend (GET /me/punctuality-status) en vez de confiar
+  // en el contador local de localStorage (evadible borrando datos del navegador). En sandbox/Matrix
+  // sin backend real detrás no aplica; se sigue usando el mecanismo local solo ahí.
+  useEffect(() => {
+    if (!isSandboxMode && currentUser?.id) {
+      fetchPunctualityStatus();
+    }
+  }, [isSandboxMode, currentUser?.id]);
 
   // NOTA (refactor Jul 2026): useStoreOpening() y useKeyholderDelegation() necesitan poder llamar a
   // syncToDB/processFinalClockOut, pero esas dos funciones son lógica central del motor y se definen
@@ -2849,28 +2861,42 @@ export function useClockEngine(overrideUser?: any) {
         });
       } catch {}
 
-      const newRetardos = Number(localStorage.getItem('user_retardos_' + currentUser.id) || 0) + 1;
-      localStorage.setItem('user_retardos_' + currentUser.id, String(newRetardos));
-
-      useAppStore.getState().addMatrixEvent(
-        '🔑 Entrada Tardía Autorizada',
-        `Se autorizó la entrada tardía de ${currentUser.name} tras vencer la tolerancia mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}. Retardos acumulados este mes: ${newRetardos}.`,
-        'warning',
-        currentUser.id
-      );
-
       setPendingTasksBlocker(false);
       setSupervisorQrToken('');
       setSupervisorPin('');
       setIsLateEntryValidation(false);
 
-      if (newRetardos >= 3) {
-        showCustomAlert(`⚠️ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos. Tu checador queda BLOQUEADO hasta completar el curso obligatorio de Puntualidad en la Academia.`);
+      await syncToDB('check_in');
+
+      // Auditoría reloj checador (2026-07-22), Hallazgo 1: el contador de retardos ya no vive
+      // en localStorage — se lee del backend (TimeEntry.is_late acumulado del periodo vigente,
+      // §12 de docs/BACKEND_INTERFACES.md). Se refresca aquí, DESPUÉS del check_in, para que el
+      // conteo incluya el retardo recién registrado.
+      let newRetardos = 0;
+      let willBeBlocked = false;
+      if (!isSandboxMode) {
+        await fetchPunctualityStatus();
+        const status = useAppStore.getState().punctualityStatus;
+        newRetardos = status?.lates_count ?? 0;
+        willBeBlocked = !!status?.blocked;
       } else {
-        showCustomAlert(`✅ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos este mes.`);
+        newRetardos = Number(localStorage.getItem('user_retardos_' + currentUser.id) || 0) + 1;
+        localStorage.setItem('user_retardos_' + currentUser.id, String(newRetardos));
+        willBeBlocked = newRetardos >= 3;
       }
 
-      await syncToDB('check_in');
+      useAppStore.getState().addMatrixEvent(
+        '🔑 Entrada Tardía Autorizada',
+        `Se autorizó la entrada tardía de ${currentUser.name} tras vencer la tolerancia mediante ${isPro ? 'QR Dinámico' : 'PIN de Supervisor'}. Retardos acumulados este periodo: ${newRetardos}.`,
+        'warning',
+        currentUser.id
+      );
+
+      if (willBeBlocked) {
+        showCustomAlert(`⚠️ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos. Tu checador queda BLOQUEADO hasta completar el curso obligatorio de Puntualidad en la Academia.`);
+      } else {
+        showCustomAlert(`✅ Entrada autorizada con penalización. Has acumulado ${newRetardos} retardos este periodo.`);
+      }
       return;
     }
 
@@ -3023,8 +3049,13 @@ export function useClockEngine(overrideUser?: any) {
 
   const getButtonProps = () => {
     const hasCheckedIn = checkInTimes[currentUser?.id] !== undefined;
-    const retardosCount = Number(localStorage.getItem('user_retardos_' + currentUser?.id) || 0);
-    const hasPunctualityBlock = retardosCount >= 3;
+    // Auditoría reloj checador (2026-07-22), Hallazgo 1: en producción (no sandbox) el bloqueo
+    // real viene del backend (GET /me/punctuality-status, cacheado en memoria vía Zustand) — ya
+    // no es evadible borrando localStorage. En sandbox/Matrix no hay ese respaldo real, así que
+    // se conserva el contador local solo para ese modo de prueba.
+    const hasPunctualityBlock = !isSandboxMode
+      ? !!punctualityStatus?.blocked
+      : Number(localStorage.getItem('user_retardos_' + currentUser?.id) || 0) >= 3;
 
     if (!hasCheckedIn && clockState === 'inactive' && hasPunctualityBlock) {
       return {
@@ -3033,7 +3064,8 @@ export function useClockEngine(overrideUser?: any) {
         icon: '🔒',
         iconKey: 'blocked',
         disabled: true,
-        subtext: 'Acumulaste 3 retardos. Completa el curso de Puntualidad en la Academia.'
+        subtext: 'Acumulaste 3 retardos. Completa el curso de Puntualidad en la Academia.',
+        requiredCourseId: !isSandboxMode ? punctualityStatus?.required_course_id ?? null : null
       };
     }
 

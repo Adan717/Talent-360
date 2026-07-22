@@ -41,7 +41,7 @@ class StoreOpeningService
         $todayStatus = StoreDailyOpeningStatus::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
-            ->where('date', $date)
+            ->whereDate('date', $date)
             ->first();
 
         if (!$todayStatus) {

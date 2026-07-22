@@ -140,7 +140,7 @@ class StoreOpeningHandoffService
         $status = StoreDailyOpeningStatus::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
-            ->where('date', Carbon::now()->format('Y-m-d'))
+            ->whereDate('date', Carbon::now()->format('Y-m-d'))
             ->first();
 
         if (!$status) {

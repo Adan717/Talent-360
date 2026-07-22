@@ -61,7 +61,7 @@ class StoreOpeningAdminOverrideTest extends TestCase
 
     // store_opening_assignments.employee_id es employees.id (migración
     // 2026_07_07_192928_fix_store_opening_assignments_foreign_key), no users.id.
-    private function assignResponsible(User $responsible): void
+    private function assignResponsible(User $responsible, int $priority = 1): void
     {
         $employeeId = DB::table('employees')->where('user_id', $responsible->id)->value('id');
 
@@ -69,7 +69,7 @@ class StoreOpeningAdminOverrideTest extends TestCase
             'tenant_id' => 1,
             'store_id' => 1,
             'employee_id' => $employeeId,
-            'priority_order' => 1,
+            'priority_order' => $priority,
             'can_open_store' => true,
             'can_close_store' => true,
             'has_keys' => true,
@@ -129,5 +129,42 @@ class StoreOpeningAdminOverrideTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJson(['success' => true]);
+    }
+
+    public function test_handoff_to_next_responsible_resolves_the_real_users_id_of_the_backup(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-07-22 08:05:00');
+
+        $primary = $this->makeUser();
+        $this->assignResponsible($primary, 1);
+
+        $backup = $this->makeUser();
+        $this->assignResponsible($backup, 2);
+
+        $this->actingAs($primary);
+
+        app(\App\Services\StoreOpeningService::class)->getTodayOpeningStatus(1, 1);
+
+        $handoff = app(\App\Services\StoreOpeningHandoffService::class)
+            ->handoffToNextResponsible(1, $primary->id, 'report_absence', null, 1);
+
+        $this->assertIsArray($handoff);
+        $this->assertSame($backup->id, $handoff['next_responsible_id']);
+
+        $this->assertDatabaseHas('store_daily_opening_statuses', [
+            'tenant_id' => 1,
+            'store_id' => 1,
+            'current_responsible_employee_id' => $backup->id,
+            'status' => 'transferred',
+        ]);
+
+        $openResponse = $this->actingAs($backup)->postJson('/api/v1/store-opening/open-and-clock-in', [
+            'store_id' => 1,
+        ]);
+
+        $openResponse->assertStatus(200);
+        $openResponse->assertJson(['success' => true]);
+
+        \Illuminate\Support\Carbon::setTestNow();
     }
 }

@@ -564,7 +564,23 @@ export function useClockEngine(overrideUser?: any) {
   
   // Hora para alertas y logs
   const formattedTime = `${displayHours.toString()}:${simMins.toString().padStart(2, '0')} ${ampm}`;
-  
+
+  // NUEVO (estado #16 de docs/Logica Dial.md — "Jornada Activa"): en turno activo, el centro del dial
+  // debe mostrar un cronómetro VIVO de tiempo trabajado (HH:MM:SS) en vez de la hora actual. Se calcula
+  // aquí y se pasa a <DialPrincipal> como workedElapsedLabel; el componente decide mostrarlo solo cuando
+  // clockState === 'active'. Los minutos salen de (currentSimTime - hora de check-in); los segundos de
+  // realSeconds (ticker 0-59 de pared) para que el contador avance visualmente segundo a segundo. En modo
+  // simulado los segundos igual corren para dar sensación de vivo, aunque el reloj sim avance por minutos.
+  const workedCheckInMins = checkInTimes[currentUser?.id];
+  const workedElapsedLabel = (clockState === 'active' && workedCheckInMins !== undefined)
+    ? (() => {
+        const total = Math.max(0, currentSimTime - workedCheckInMins);
+        const wh = Math.floor(total / 60);
+        const wm = total % 60;
+        return `${wh.toString().padStart(2, '0')}:${wm.toString().padStart(2, '0')}:${realSeconds.toString().padStart(2, '0')}`;
+      })()
+    : null;
+
   
   // const clockState = globalClockStates[currentUser.id];
   
@@ -2414,6 +2430,42 @@ export function useClockEngine(overrideUser?: any) {
     showCustomAlert('🧘 Descanso (Ley Silla) iniciado y tarea sentado asignada.');
   };
 
+  // NUEVO (estados #7 y #11 de docs/Logica Dial.md): el empleado común sin llaves avisa al encargado
+  // que ya está en puerta esperando la apertura. DEGRADADO por ahora: registra el aviso en la Matrix
+  // y confirma in-app. El push real al celular del encargado (aunque no tenga la app abierta) depende
+  // de backend §26 (POST /clock/door-notice) — cuando exista, esta función además hará el POST.
+  const handleSendDoorNotice = async () => {
+    const responsibleId = openingStatus?.current_responsible_employee_id ?? 1;
+    const responsibleUser = globalUsers.find((u: any) => Number(u.id) === Number(responsibleId));
+    const responsibleName = responsibleUser?.name?.split(' ')[0] || 'Encargado';
+    const message = `${currentUser?.name || 'Un colaborador'} está esperando en puerta.`;
+
+    useAppStore.getState().addMatrixEvent(
+      '💬 Aviso de Presencia en Puerta',
+      `${message} Se notificó a ${responsibleName} que la tienda sigue cerrada.`,
+      'info',
+      currentUser?.id
+    );
+
+    if (isSandboxMode) {
+      showCustomAlert(`💬 Aviso enviado a ${responsibleName} (Sandbox): estás esperando en puerta.`);
+      return;
+    }
+
+    try {
+      await axiosInstance.post('/clock/door-notice', {
+        date: new Date().toLocaleDateString('sv-SE'),
+        responsible_employee_id: responsibleId,
+        message,
+      });
+    } catch (e) {
+      // Backend §26 puede no estar implementado todavía — el aviso in-app/Matrix ya se mostró, así
+      // que no se trata como error visible para el usuario; solo se deja traza en consola.
+      console.warn('door-notice endpoint no disponible aún (backend §26 pendiente):', e);
+    }
+    showCustomAlert(`💬 Aviso enviado a ${responsibleName}: estás esperando en puerta.`);
+  };
+
   const startTempExit = async (reason: string) => {
     const res = await syncToDB('temp_exit_start', false, 0, reason);
     if (!res?.offline) {
@@ -3454,6 +3506,7 @@ export function useClockEngine(overrideUser?: any) {
     expandedCards,
     featureFlags,
     formattedTime,
+    workedElapsedLabel,
     getButtonProps,
     globalBroadcastMessage,
     globalClockStates,
@@ -3680,6 +3733,7 @@ export function useClockEngine(overrideUser?: any) {
     isHandoverCompleted,
     setIsHandoverCompleted,
     startBreakWithSittingTask,
+    handleSendDoorNotice,
     startTempExit,
     endTempExit,
     triggerPanic,

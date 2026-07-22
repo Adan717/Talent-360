@@ -317,6 +317,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Protege contra fuerza bruta del PIN de testigos — mismo límite que /login.
         Route::middleware('throttle:5,1')->post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
+        Route::post('/clock/meal-photo', [TimeEntryController::class, 'uploadMealPhoto']);
 
         // Apertura de tienda (Operativa del Reloj Checador)
         Route::get('/features/company', [StoreOpeningController::class, 'getCompanyFeatures']);
@@ -326,6 +327,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/store-opening/report-late', [StoreOpeningController::class, 'reportLate']);
         Route::post('/store-opening/report-store-still-closed', [StoreOpeningController::class, 'reportStoreStillClosed']);
         Route::post('/store-opening/closing-checklist', [StoreOpeningController::class, 'closingChecklist']);
+        Route::post('/clock/pase-lista/ratings', [StoreOpeningController::class, 'submitPaseListaRatings']);
 
         // Sincronización de tareas y checklists
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);

@@ -227,7 +227,11 @@ function PuestoNode({ data }: NodeProps) {
         {role.area || 'General'}
       </div>
 
-      <div className="space-y-1.5 overflow-y-auto pr-0.5 nodrag nowheel" style={{ maxHeight: COLLAB_LIST_MAX_H }}>
+      {/* nopan es la clase clave aquí: sin ella, el gesto de "mousedown + arrastrar" sobre una ficha
+          de colaborador lo capta el pan-on-drag del LIENZO de React Flow (que sigue activo aunque
+          nodesDraggable={false} — eso solo desactiva mover el NODO, no el paneo del fondo) y termina
+          arrastrando todo el organigrama en vez de iniciar el drag-and-drop nativo HTML5 de la ficha. */}
+      <div className="space-y-1.5 overflow-y-auto pr-0.5 nodrag nopan nowheel" style={{ maxHeight: COLLAB_LIST_MAX_H }}>
         {collaborators.length > 0 ? (
           collaborators.map((c: any) => (
             <div
@@ -239,7 +243,7 @@ function PuestoNode({ data }: NodeProps) {
                 e.dataTransfer.setData('type', 'collaborator');
                 e.dataTransfer.setData('text/plain', String(c.id));
               }}
-              className={`flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-xl text-left select-none ${
+              className={`nodrag nopan flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-xl text-left select-none ${
                 readOnly ? '' : 'cursor-grab active:cursor-grabbing hover:bg-indigo-50/50 hover:border-indigo-100'
               }`}
               title={readOnly ? c.name : `Arrastra a otro puesto para reasignar a ${c.name}`}

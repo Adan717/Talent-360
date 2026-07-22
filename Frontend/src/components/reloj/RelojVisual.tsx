@@ -161,6 +161,7 @@ export default function RelojVisual({
     evalStars,
     featureFlags,
     formattedTime,
+    workedElapsedLabel,
     getButtonProps,
     globalClockStates,
     globalPermissions,
@@ -332,6 +333,7 @@ export default function RelojVisual({
     isHandoverCompleted,
     setIsHandoverCompleted,
     startBreakWithSittingTask,
+    handleSendDoorNotice,
     startTempExit,
     endTempExit,
     triggerPanic,
@@ -3529,6 +3531,7 @@ export default function RelojVisual({
                         globalUsers={globalUsers}
                         clockState={clockState}
                         formattedTime={formattedTime}
+                        workedElapsedLabel={workedElapsedLabel}
                         btnProps={btnProps}
                         lateUsers={lateUsers}
                         currentDay={currentDay}
@@ -3553,6 +3556,7 @@ export default function RelojVisual({
                           showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                         }}
                         onCallSuplenteClick={handleCallSuplente}
+                        onSendDoorNoticeClick={handleSendDoorNotice}
                         onDeclareContingencyClick={() => setShowContingencyModal(true)}
                         hasActiveContingency={!!activeContingency}
                       />
@@ -3943,6 +3947,7 @@ export default function RelojVisual({
                       globalUsers={globalUsers}
                       clockState={clockState}
                       formattedTime={formattedTime}
+                      workedElapsedLabel={workedElapsedLabel}
                       btnProps={btnProps}
                       lateUsers={lateUsers}
                       currentDay={currentDay}
@@ -3967,6 +3972,7 @@ export default function RelojVisual({
                         showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
                       onCallSuplenteClick={handleCallSuplente}
+                      onSendDoorNoticeClick={handleSendDoorNotice}
                       onDeclareContingencyClick={() => setShowContingencyModal(true)}
                       hasActiveContingency={!!activeContingency}
                     />

@@ -29,6 +29,11 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §16 | Rate limiting en `/clock/punch`, `/clock/punch-batch` y validación de PIN de testigos en `/clock/emergency-open` | ✅ Implementado (2026-07-21) |
 | §20 | Nuevo evento `TimeEntryRecorded` (broadcast) emitido desde `ClockService::processPunch()` | ✅ Implementado (2026-07-21) |
 | §21 | Validación de ciclos para `reports_to_role_ids` en `JobRoleController::update()` (hoy solo existe para `org_parent_role_id`) | ⏳ Pendiente |
+| §22 | Calificación en Pase de Lista (tabla `pase_lista_ratings` + `POST /clock/pase-lista/ratings`) — estado #8 | ⏳ Pendiente |
+| §23 | Evidencia fotográfica de comedor (tabla `meal_photo_evidences` + `POST /clock/meal-photo`) — estados #17/#18b | ⏳ Pendiente |
+| §24 | Cola secuencial de reserva de comida (`GET/POST /meal-reservations/queue`) — estado #16b — ⚠️ decisión de producto abierta (reemplaza vs. convive) | ⏳ Pendiente |
+| §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ⏳ Pendiente |
+| §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -799,3 +804,159 @@ private function wouldCreateReportsToCycle(int $tenantId, int $sourceId, int $ta
 Se llamaría por cada id nuevo que se agregue a `reports_to_role_ids` en la validación del `update()` (comparando el id del puesto que se está editando como `$sourceId` contra cada `$targetId` del array entrante), devolviendo un 422 con mensaje claro si algún id crearía un ciclo — mismo formato de error que ya usan para `org_parent_role_id`.
 
 Sin preferencia fuerte de nuestro lado sobre el nombre exacto del método o si se hace como método privado del controller o se mueve a un service — lo importante es que quede la validación, ya que hoy el único guardarraíl es del lado del cliente.
+
+---
+
+## 22. Calificación en Pase de Lista (Presentación / Imagen / Energía) — Estado #8 del dial
+
+**Contexto (2026-07-21, `docs/Logica Dial.md`):** al abrir la tienda (estado #8), el encargado hace el pase de lista de los presentes. Hoy `handleSubmitPaseLista()` en `useClockEngine.tsx` **solo registra `check_in`** de cada empleado marcado como presente. El documento pide además calificar a cada colaborador con estrellas (1–5) en tres ejes: **Presentación (uniforme)**, **Imagen (aseo)** y **Energía (actitud)**. Frontend agregará los tres controles de estrellas al modal; falta dónde persistirlo.
+
+**Pedimos:**
+
+Nueva tabla `pase_lista_ratings` (o el nombre que prefieran), con al menos:
+
+```
+id, tenant_id, employee_id (a quién se califica), rated_by_employee_id (encargado),
+date (Y-m-d), presentacion (tinyint 1-5), imagen (tinyint 1-5), energia (tinyint 1-5),
+created_at
+```
+
+Endpoint para guardarlas en lote (una llamada con todos los presentes calificados):
+
+```
+POST /api/clock/pase-lista/ratings
+{
+  "date": "2026-07-21",
+  "ratings": [
+    { "employee_id": 11, "presentacion": 5, "imagen": 4, "energia": 5 },
+    { "employee_id": 12, "presentacion": 3, "imagen": 3, "energia": 4 }
+  ]
+}
+```
+
+- Solo el encargado responsable de la apertura del día (o admin/supervisor) puede llamarlo — validar contra el `current_responsible_employee_id` del `store_daily_opening_status` o el rol, como ya se hace en otros endpoints de apertura.
+- Idempotente por `(tenant_id, employee_id, date)`: si ya existe calificación de ese empleado ese día, se actualiza en vez de duplicar.
+- El `check_in` de los presentes se sigue registrando por el flujo actual (`/clock/punch`), **este endpoint es solo la calificación** — no mezclar ambas cosas.
+- Config: habrá un switch `require_pase_lista_rating` en `clockOpConfig` (lado frontend). Cuando esté apagado, el frontend simplemente no llama a este endpoint. El backend no necesita conocer el switch.
+
+**Uso futuro:** estas calificaciones alimentarán métricas de clima/desempeño en el Dashboard; por ahora solo persistirlas.
+
+---
+
+## 23. Evidencia Fotográfica de Comedor (inicio y fin de comida) — Estados #17 y #18b
+
+**Contexto (2026-07-21, `docs/Logica Dial.md`):** al **iniciar** comida (estado #17) el sistema exige una foto del comedor limpio; al **terminar** (estado #18b), otra foto del comedor limpio. Sin la foto, el estado no avanza. Hoy no existe ninguna captura ni almacenamiento de imágenes en el flujo de comida. La PWA ya tiene permisos de cámara (se usan para validación facial), así que la captura del lado cliente es reutilizable; falta el almacenamiento.
+
+**Pedimos:**
+
+Aceptar una imagen (base64 o multipart, lo que prefieran; el frontend se adapta) asociada al fichaje de comida, en dos momentos:
+
+```
+POST /api/clock/meal-photo
+{
+  "type": "meal_start" | "meal_end",
+  "date": "2026-07-21",
+  "image": "data:image/jpeg;base64,...",   // el frontend comprime antes de enviar
+  "client_timestamp": "2026-07-21T13:05:00-06:00"
+}
+```
+
+- Guardar la imagen en el storage que usen (disco/S3), y una fila que la ligue a `employee_id + tenant_id + date + type + url`. Sugerencia: tabla `meal_photo_evidences`.
+- **Ojo con el peso:** son 2 fotos por empleado por día. El frontend comprimirá (probablemente ≤ 200 KB c/u), pero conviene que definan **política de retención** (p. ej. purgar > 90 días) para que no crezca sin límite. Dejamos la decisión de retención de su lado.
+- Devolver `{ "success": true, "url": "..." }`. El frontend NO bloquea el avance del estado si el switch de evidencia está apagado; cuando está encendido, sí exige el 200 antes de continuar.
+- Config: switch `require_meal_photo_evidence` en `clockOpConfig` (lado frontend). El backend solo recibe la foto cuando el frontend decide enviarla.
+
+---
+
+## 24. Cola Secuencial de Reserva de Comida ("Apartar Turno") — Estado #16b
+
+**Contexto (2026-07-21, `docs/Logica Dial.md`):** el documento describe la reserva de comida como una **cola secuencial** que se dispara ~20 min antes de la ventana de comida (ej. 10:10): los colaboradores eligen su slot **uno a uno**, en un orden (por hora de llegada o aleatorio), y **el dialer del siguiente se habilita solo cuando el anterior ya eligió**. Hoy `MealReservation.tsx` + `/meal-reservations/slots` es **selección libre** (cualquiera reserva cualquier slot disponible, con bloqueo por mismo puesto), sin cola ni orden.
+
+**⚠️ Decisión de producto abierta (Francisco):** aún no se decide si la cola **reemplaza** la selección libre actual o **convive** como un modo opcional configurable. La propuesta de contrato de abajo asume **convivencia** (un modo `meal_reservation_mode: 'free' | 'queue'` por sucursal), que es lo menos destructivo. Si se decide reemplazar, se elimina el modo `free`.
+
+**Pedimos (si/ cuando se apruebe el modo `queue`):**
+
+Un recurso de "ronda de selección" por sucursal y día, que exponga a quién le toca elegir:
+
+```
+GET /api/meal-reservations/queue?date=2026-07-21
+→ {
+    "mode": "queue",
+    "order_by": "arrival" | "random",
+    "current_turn_employee_id": 12,      // a quién le toca elegir ahora (null si terminó la ronda)
+    "queue": [
+      { "employee_id": 11, "status": "done",     "slot_start": "11:15", "slot_end": "12:00" },
+      { "employee_id": 12, "status": "choosing" },
+      { "employee_id": 13, "status": "waiting" }
+    ]
+  }
+```
+
+```
+POST /api/meal-reservations/queue/pick
+{ "date": "2026-07-21", "slot_start": "12:00", "slot_end": "12:45" }
+```
+
+- Al hacer `pick`, el backend valida que **sea el turno de ese empleado** (`current_turn_employee_id`), registra su slot, y avanza `current_turn_employee_id` al siguiente `waiting`. Si no es su turno → 409/422.
+- El orden inicial se calcula al abrir la ronda: `arrival` usa las horas de `check_in` del día; `random` baraja. Config `meal_queue_order` viene del frontend al abrir la ronda, o se guarda en `clockOpConfig`.
+- El disparo (10:10 / offset) lo maneja el frontend (cuándo muestra el botón "Apartar Turno"); el backend solo necesita el endpoint de ronda.
+- El WebSocket `tenant.{id}.clock` (ya existe, evento `TimeEntryRecorded`) puede reutilizarse para avisar en vivo "es tu turno de elegir", o se agrega un evento `MealQueueTurnChanged`. Dejamos a su criterio si emiten un evento nuevo; el frontend puede hacer polling del `GET` como fallback.
+
+---
+
+## 25. Ley Silla — Aprobación de Supervisor + Control de Aforo — Estado #19
+
+**Contexto (2026-07-21, `docs/Logica Dial.md`):** hoy `startBreakWithSittingTask()` inicia el descanso de silla directamente (con detección de 120 min de pie vía `leySillaConfig.consecutiveMinutes`). El documento pide dos cosas que faltan: (1) **aprobación previa del supervisor** — el empleado ve "Solicitar Silla", el supervisor aprueba (PIN/QR presencial o clic remoto) y **recién ahí** se desbloquea el descanso; (2) **control de aforo** con `sillas_maximas_simultaneas`: si se alcanza el límite, se encola al empleado y se le avisa su turno de espera.
+
+**Pedimos:**
+
+**a) Solicitud + aprobación:**
+
+```
+POST /api/clock/silla/request        → crea solicitud, devuelve { request_id, status: 'pending' }
+POST /api/clock/silla/{id}/approve   → supervisor aprueba (body: { method: 'pin'|'qr'|'remote', supervisor_pin? })
+POST /api/clock/silla/{id}/reject
+```
+
+- Tabla `silla_requests`: `id, tenant_id, employee_id, requested_at, status ('pending'|'approved'|'rejected'|'active'|'finished'), approved_by_employee_id, approval_method, started_at, ended_at`.
+- La marca de inicio/fin del descanso sigue el flujo de fichaje existente pero con **tipo propio `silla_start` / `silla_end`** (el documento los nombra así) en vez de reusar `break_start`/`break_end`, para que nómina distinga una silla (Ley Silla, obligación normativa) de un descanso ordinario. Si prefieren mantener `break_*` con un flag `is_ley_silla`, también sirve — lo importante es poder distinguirlos en reportes.
+- Registrar la **firma/aprobación del supervisor** (compliance LFT ante inspección): quién aprobó, cuándo, método.
+
+**b) Control de aforo:**
+
+```
+GET /api/clock/silla/status?date=2026-07-21
+→ { "max_simultaneous": 3, "active_count": 2, "available": 1, "queue": [ {employee_id, position} ] }
+```
+
+- `max_simultaneous` viene de config `sillas_maximas_simultaneas` (frontend lo manda o se guarda en `clockOpConfig`).
+- Si `active_count >= max_simultaneous`, un nuevo `request` aprobado queda en cola (`status` sigue en espera) y el `status` endpoint devuelve su posición. Al terminar alguien (`silla_end`), se libera un lugar y avanza la cola.
+- Idealmente el contador de sillas activas se emite por el WebSocket `tenant.{id}.clock` para que el panel del supervisor lo vea en vivo (opcional; el `GET` sirve de fallback).
+
+---
+
+## 26. Aviso "Enviar Mensaje" — Empleado común esperando en puerta — Estados #7 y #11
+
+**Contexto (2026-07-21, `docs/Logica Dial.md`):** el empleado común sin llaves **no puede llamar** por teléfono; su botón secundario es `💬 Enviar Mensaje`, que notifica al encargado en camino ("Sofía López está esperando en puerta") y registra la presencia. Frontend implementará el botón **degradado a aviso in-app + registro en la Matrix** de inmediato (no bloquea), pero para que el encargado reciba un **push real** aunque no tenga la app abierta, hace falta backend.
+
+**⚠️ Decisión / verificación abierta:** ¿existe ya infraestructura de push server-side (FCM/APNs/web-push) en Talent360? El reloj hoy usa solo notificaciones **locales** del navegador. Si NO existe push server-side, este endpoint puede limitarse a **registrar el aviso** (y que el encargado lo vea al abrir la app / por el WebSocket), y el push real queda como mejora posterior.
+
+**Pedimos (mínimo viable):**
+
+```
+POST /api/clock/door-notice
+{
+  "date": "2026-07-21",
+  "responsible_employee_id": 1,   // el encargado a quien se avisa (opcional; el backend puede resolverlo)
+  "message": "Sofía López está esperando en puerta"
+}
+```
+
+- Registrar el aviso (tabla `door_notices` o reutilizar el log de la Matrix/eventos): `id, tenant_id, from_employee_id, to_employee_id, date, message, created_at, seen_at`.
+- **Si hay push server-side:** disparar la notificación al `responsible_employee_id`.
+- **Si NO hay push:** emitir por el WebSocket `tenant.{id}.clock` un evento (`DoorNoticeCreated`) para que, si el encargado tiene la app abierta, lo vea al instante; y que quede en la tabla para cuando la abra.
+- Devolver `{ "success": true }`. El frontend ya mostró el aviso in-app localmente, así que no depende del resultado para su UX inmediata.
+
+---
+
+> **Nota de fase (2026-07-21):** las secciones §22–§26 corresponden a los 5 hallazgos de `docs/VIABILIDAD_LOGICA_DIAL.md` (alineación del dial a `docs/Logica Dial.md`). El frontend de las partes autocontenidas (Enviar Mensaje degradado, cronómetro del estado 16) ya se está implementando; las UIs acopladas al backend (calificación pase de lista, foto comedor, cola de comida, aforo de sillas) se construirán contra los contratos de arriba una vez que Claude Code confirme o ajuste las formas de datos. Dos decisiones de producto siguen abiertas y están marcadas con ⚠️ en §24 y §26.

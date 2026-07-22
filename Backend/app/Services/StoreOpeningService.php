@@ -363,6 +363,57 @@ class StoreOpeningService
     }
 
     /**
+     * Calificación en Pase de Lista (estado #8): el encargado responsable de la apertura
+     * (o admin/supervisor) califica Presentación/Imagen/Energía de cada presente. El
+     * check_in en sí sigue el flujo normal de /clock/punch — esto SOLO persiste la
+     * calificación. Idempotente por (tenant_id, employee_id, date): recalificar el mismo
+     * día actualiza en vez de duplicar.
+     */
+    public function submitPaseListaRatings(int $raterId, string $date, array $ratings, int $storeId = 1): array
+    {
+        $rater = User::withoutGlobalScopes()->findOrFail($raterId);
+        $tenantId = $rater->tenant_id ?? 1;
+
+        $status = \App\Models\StoreDailyOpeningStatus::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('date', $date)
+            ->first();
+
+        $isResponsible = $status && intval($status->current_responsible_employee_id) === intval($raterId);
+        $isAdminOrSupervisor = in_array($rater->role, ['admin', 'supervisor', 'platform_admin']);
+
+        if (!$isResponsible && !$isAdminOrSupervisor) {
+            throw new \Exception('Solo el encargado responsable de la apertura, un administrador o un supervisor puede calificar el pase de lista.');
+        }
+
+        $saved = 0;
+        foreach ($ratings as $rating) {
+            \App\Models\PaseListaRating::withoutGlobalScopes()->updateOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'employee_id' => $rating['employee_id'],
+                    'date' => $date,
+                ],
+                [
+                    'store_id' => $storeId,
+                    'rated_by_employee_id' => $raterId,
+                    'presentacion' => $rating['presentacion'],
+                    'imagen' => $rating['imagen'],
+                    'energia' => $rating['energia'],
+                ]
+            );
+            $saved++;
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Calificaciones de pase de lista guardadas.',
+            'saved' => $saved,
+        ];
+    }
+
+    /**
      * Trigger opening checklist routing by assigning opening tasks.
      */
     protected function triggerOpeningChecklist($tenantId, User $user)

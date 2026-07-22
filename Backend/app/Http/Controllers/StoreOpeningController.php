@@ -315,6 +315,51 @@ class StoreOpeningController extends Controller
     }
 
     /**
+     * Calificación en Pase de Lista (Presentación/Imagen/Energía) — estado #8.
+     */
+    public function submitPaseListaRatings(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'ratings' => 'required|array|min:1',
+            'ratings.*.employee_id' => 'required|integer|exists:users,id',
+            'ratings.*.presentacion' => 'required|integer|min:1|max:5',
+            'ratings.*.imagen' => 'required|integer|min:1|max:5',
+            'ratings.*.energia' => 'required|integer|min:1|max:5',
+            'store_id' => 'nullable|integer',
+        ]);
+
+        // Anti-tenant-spoofing: los empleados calificados deben pertenecer al mismo tenant.
+        $employeeIds = array_column($validated['ratings'], 'employee_id');
+        $foreignEmployee = \App\Models\User::withoutGlobalScopes()
+            ->whereIn('id', $employeeIds)
+            ->where('tenant_id', '!=', auth()->user()->tenant_id)
+            ->exists();
+
+        if ($foreignEmployee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Uno o más empleados no pertenecen a tu empresa.'
+            ], 403);
+        }
+
+        try {
+            $result = $this->openingService->submitPaseListaRatings(
+                auth()->id(),
+                $validated['date'],
+                $validated['ratings'],
+                $validated['store_id'] ?? 1
+            );
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 403);
+        }
+    }
+
+    /**
      * Checklist de Cierre Seguro (luces, caja fuerte, alarma) antes de registrar salida.
      */
     public function closingChecklist(Request $request)

@@ -18,7 +18,8 @@ import {
   ShieldAlert,
   Ban,
   X,
-  Camera
+  Camera,
+  MessageSquare
 } from 'lucide-react';
 
 interface DialPrincipalProps {
@@ -31,6 +32,7 @@ interface DialPrincipalProps {
   globalUsers: any[];
   clockState: string;
   formattedTime: string;
+  workedElapsedLabel?: string | null;
   btnProps: {
     disabled: boolean;
     isIncidenceReport?: boolean;
@@ -58,6 +60,7 @@ interface DialPrincipalProps {
   onOvertimeClick?: () => void;
   onCallManagerClick?: () => void;
   onCallSuplenteClick?: () => void;
+  onSendDoorNoticeClick?: () => void;
   onPanicClick?: () => void;
   onDeclareContingencyClick?: () => void;
   hasActiveContingency?: boolean;
@@ -75,6 +78,7 @@ export default function DialPrincipal({
   clockState,
   formattedTime,
   btnProps,
+  workedElapsedLabel,
   lateUsers,
   currentDay,
   currentSimTime,
@@ -90,6 +94,7 @@ export default function DialPrincipal({
   onOvertimeClick,
   onCallManagerClick,
   onCallSuplenteClick,
+  onSendDoorNoticeClick,
   onPanicClick,
   onDeclareContingencyClick,
   hasActiveContingency = false,
@@ -277,7 +282,22 @@ export default function DialPrincipal({
               {getDialIcon(size)}
             </div>
 
-            {/* CENTRAL ZONE: Digital Time */}
+            {/* CENTRAL ZONE: Digital Time — o cronómetro de jornada (estado #16, Logica Dial.md).
+                Cuando el empleado está en turno activo y hay un workedElapsedLabel (HH:MM:SS), el centro
+                del dial muestra el tiempo TRABAJADO corriendo en vivo, en vez de la hora de pared. */}
+            {clockState === 'active' && workedElapsedLabel ? (
+              <div
+                className={`flex flex-col items-center justify-center font-mono mt-0.5 mb-1.5 ${
+                  isMobile ? 'text-[22px]' : 'text-3xl md:text-[34px] leading-none'
+                }`}
+                aria-label={`Tiempo trabajado ${workedElapsedLabel}`}
+              >
+                <span className="font-black tracking-tight text-emerald-600 tabular-nums">{workedElapsedLabel}</span>
+                <span className={`font-bold uppercase tracking-wider text-emerald-500/70 ${isMobile ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1'}`}>
+                  Tiempo trabajado
+                </span>
+              </div>
+            ) : (
             <div className={`flex items-baseline font-mono font-black tracking-tight mt-0.5 mb-1.5 ${
               isGpsError ? 'text-rose-600' : byKey?.textColor || 'text-slate-800'
             } ${isMobile ? 'text-[24px]' : 'text-3xl md:text-4xl leading-none'}`}>
@@ -303,6 +323,7 @@ export default function DialPrincipal({
                 {formattedTime.split(' ')[1] ? formattedTime.split(' ')[1].toLowerCase() : ''}
               </span>
             </div>
+            )}
 
             {/* LOWER ZONE: Bottom Label */}
             <div className={`px-2 text-center w-full min-h-[32px] flex flex-col items-center justify-center mb-1.5 ${isGpsError ? 'text-rose-600' : 'text-slate-700'} ${isMobile ? 'max-w-[155px]' : 'max-w-[170px]'}`}>
@@ -368,6 +389,23 @@ export default function DialPrincipal({
         >
           <Phone size={12} className="text-indigo-500" />
           Llamar a Encargado de Llaves
+        </button>
+      )}
+
+      {/* NUEVO (estados #7 y #11 de docs/Logica Dial.md): "Enviar Mensaje" — el empleado común SIN
+          llaves no puede llamar por teléfono; en su lugar avisa al encargado que ya está en puerta
+          esperando la apertura. Espejo exacto de la condición del botón de llaves pero para el caso
+          contrario (!isUserKeyholder). Hoy degradado a aviso in-app + registro (ver
+          handleSendDoorNotice en useClockEngine.tsx); el push real depende de backend §26. */}
+      {(storeStatus === 'closed' || clockState === 'waiting_room' || btnProps.text === '⏳ Esperando Apertura') && !isUserKeyholder && onSendDoorNoticeClick && (
+        <button
+          type="button"
+          onClick={onSendDoorNoticeClick}
+          aria-label="Enviar mensaje al encargado avisando que ya estás en puerta"
+          className="mt-2.5 py-1.5 px-4 bg-sky-50 dark:bg-sky-955/20 border border-sky-250 text-sky-700 dark:text-sky-400 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm hover:bg-sky-100 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 z-20"
+        >
+          <MessageSquare size={12} className="text-sky-500" />
+          Enviar Mensaje
         </button>
       )}
 

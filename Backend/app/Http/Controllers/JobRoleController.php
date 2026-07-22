@@ -322,6 +322,20 @@ class JobRoleController extends Controller
             ], 422);
         }
 
+        // §21: reports_to_role_ids es un grafo (puede tener varios "padres"), a diferencia
+        // de org_parent_role_id que es una sola cadena — cada id nuevo se valida por
+        // separado con BFS sobre el grafo de "reporta a".
+        if (isset($data['reports_to_role_ids']) && is_array($data['reports_to_role_ids'])) {
+            $tenantId = auth()->user()->tenant_id ?? $jobRole->tenant_id;
+            foreach ($data['reports_to_role_ids'] as $targetId) {
+                if ($this->wouldCreateReportsToCycle($tenantId, (int) $id, (int) $targetId)) {
+                    return response()->json([
+                        'message' => 'No se puede agregar esta jerarquía de "Reporta A" ya que crearía un ciclo de referencias.'
+                    ], 422);
+                }
+            }
+        }
+
         $jobRole->update($data);
 
         return response()->json($jobRole);
@@ -381,7 +395,41 @@ class JobRoleController extends Controller
             $parent = JobRole::find($currentId);
             $currentId = $parent ? $parent->org_parent_role_id : null;
         }
-        
+
+        return false;
+    }
+
+    /**
+     * A diferencia de org_parent_role_id (cadena simple), reports_to_role_ids es un
+     * array — un puesto puede "reportar a" varios otros — así que hace falta recorrer
+     * el grafo dirigido completo (BFS) en vez de seguir un solo padre.
+     */
+    private function wouldCreateReportsToCycle(int $tenantId, int $sourceId, int $targetId): bool
+    {
+        if ($sourceId === $targetId) {
+            return true;
+        }
+
+        $queue = [$targetId];
+        $visited = [];
+
+        while (!empty($queue)) {
+            $currentId = array_shift($queue);
+            if (in_array($currentId, $visited, true)) {
+                continue;
+            }
+            $visited[] = $currentId;
+
+            if ($currentId === $sourceId) {
+                return true;
+            }
+
+            $current = JobRole::where('tenant_id', $tenantId)->find($currentId);
+            foreach (($current->reports_to_role_ids ?? []) as $nextId) {
+                $queue[] = (int) $nextId;
+            }
+        }
+
         return false;
     }
 }

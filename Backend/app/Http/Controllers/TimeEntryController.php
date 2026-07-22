@@ -233,4 +233,64 @@ class TimeEntryController extends Controller
             ], 400);
         }
     }
+
+    /**
+     * Evidencia fotográfica de comedor (estados #17/#18b) — recibe la foto en base64
+     * (misma captura de cámara que ya usa la PWA para validación facial), la guarda en
+     * disco y persiste la referencia. No decide si es obligatoria: eso lo controla el
+     * switch require_meal_photo_evidence del lado del frontend.
+     */
+    public function uploadMealPhoto(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => ['required', 'string', Rule::in(['meal_start', 'meal_end'])],
+            'date' => 'required|date',
+            'image' => 'required|string',
+            'client_timestamp' => 'nullable|date',
+        ]);
+
+        if (!preg_match('/^data:image\/(\w+);base64,(.+)$/', $validated['image'], $matches)) {
+            return response()->json(['success' => false, 'message' => 'Formato de imagen inválido.'], 422);
+        }
+
+        $extension = strtolower($matches[1]) === 'jpeg' ? 'jpg' : strtolower($matches[1]);
+        if (!in_array($extension, ['jpg', 'png', 'webp'])) {
+            return response()->json(['success' => false, 'message' => 'Formato de imagen no soportado (usa jpg, png o webp).'], 422);
+        }
+
+        $decoded = base64_decode($matches[2], true);
+        if ($decoded === false) {
+            return response()->json(['success' => false, 'message' => 'No se pudo decodificar la imagen.'], 422);
+        }
+
+        // Límite defensivo — el frontend ya comprime a ~200KB, esto solo evita abuso.
+        if (strlen($decoded) > 2 * 1024 * 1024) {
+            return response()->json(['success' => false, 'message' => 'La imagen supera el tamaño máximo permitido (2MB).'], 422);
+        }
+
+        $user = auth()->user();
+        $tenantId = $user->tenant_id ?? 1;
+
+        $filename = "meal_{$validated['type']}_{$user->id}_" . now()->format('YmdHis') . '_' . \Illuminate\Support\Str::random(6) . ".{$extension}";
+        $relativeDir = "uploads/meal-evidence/{$tenantId}";
+        $destinationPath = public_path($relativeDir);
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+        $fullPath = $destinationPath . DIRECTORY_SEPARATOR . $filename;
+        file_put_contents($fullPath, $decoded);
+
+        $url = "/{$relativeDir}/{$filename}";
+
+        \App\Models\MealPhotoEvidence::create([
+            'tenant_id' => $tenantId,
+            'employee_id' => $user->id,
+            'date' => $validated['date'],
+            'type' => $validated['type'],
+            'url' => $url,
+            'path' => $fullPath,
+        ]);
+
+        return response()->json(['success' => true, 'url' => $url]);
+    }
 }

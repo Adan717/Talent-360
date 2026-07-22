@@ -5,12 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
-    use Tenantable;
-
-    use HasFactory;
+    use Tenantable, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'id', 'title', 'estimated_mins', 'points', 'priority', 'category', 'target_type',

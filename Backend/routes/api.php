@@ -228,6 +228,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Validación de Tareas (Aprobación/Rechazo)
         Route::post('/admin/assignments/{id}/validate', [TaskValidationController::class, 'validateAssignment']);
 
+        // Monedero Digital y Recompensas (Wallet)
+        Route::get('/wallet/balance', [\App\Http\Controllers\UserWalletController::class, 'getBalance']);
+        Route::get('/wallet/transactions', [\App\Http\Controllers\UserWalletController::class, 'getTransactions']);
+
         // Respaldos (Exclusivos Pro/Empresas en controlador)
         Route::get('/tenant/backup/export', [BackupController::class, 'export']);
         Route::post('/tenant/backup/import', [BackupController::class, 'import']);

@@ -14,7 +14,8 @@ class TaskValidationController extends Controller
     {
         $request->validate([
             'status' => 'required|in:completed,in_progress',
-            'feedback' => 'nullable|string'
+            'feedback' => 'nullable|string',
+            'score_percentage' => 'nullable|integer|min:0|max:100'
         ]);
 
         $assignment = TaskAssignment::findOrFail($id);
@@ -22,6 +23,7 @@ class TaskValidationController extends Controller
         $validator = auth()->user();
         $userId = $validator->id;
         $tenantId = $validator->tenant_id ?? 1;
+        $scorePct = $request->input('score_percentage', 100);
 
         // 1. Prevent self-validation
         if ($userId === $employee->id) {
@@ -47,11 +49,30 @@ class TaskValidationController extends Controller
 
         // 3. Update state in database
         if ($request->status === 'completed') {
+            $task = Task::find($assignment->task_id);
+            $basePoints = $task ? ($task->points ?? 10) : 10;
+            $awardedPoints = round(($basePoints * $scorePct) / 100);
+            $coinsEarned = round($awardedPoints * 0.10, 2);
+
             $assignment->update([
                 'status' => 'completed',
-                'validation_feedback' => null,
+                'validation_feedback' => $request->feedback,
                 'validated_by' => $userId,
+                'score_percentage' => $scorePct,
+                'points_awarded' => $awardedPoints,
+                'coins_awarded' => $coinsEarned,
             ]);
+
+            // Depositar recompensa aprobada por el supervisor en el Monedero Digital
+            $wallet = \App\Models\UserWallet::getOrCreateForUser($employee->id, $tenantId);
+            $wallet->deposit(
+                $coinsEarned,
+                $awardedPoints,
+                'earned_task',
+                "Recompensa validada por supervisor ({$scorePct}%): " . ($task->title ?? 'Tarea Operativa'),
+                'TaskAssignment',
+                $assignment->id
+            );
 
             // Dispatch background Job for logging and WebSockets
             LogTaskValidationJob::dispatch(
@@ -64,8 +85,11 @@ class TaskValidationController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tarea aprobada con éxito.',
-                'status' => 'completed'
+                'message' => "Tarea aprobada con éxito ({$scorePct}% calificación - +{$coinsEarned} monedas).",
+                'status' => 'completed',
+                'points_awarded' => $awardedPoints,
+                'coins_awarded' => $coinsEarned,
+                'score_percentage' => $scorePct
             ]);
         } else {
             // Rejected: return to 'in_progress'

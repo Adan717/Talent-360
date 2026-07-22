@@ -5,12 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Tenantable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TaskAssignment extends Model
 {
-    use Tenantable;
-
-    use HasFactory;
+    use Tenantable, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'id', 'task_id', 'user_id', 'status', 'started_at_mins', 'expected_end_time_mins',

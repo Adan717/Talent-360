@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Tenantable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WeeklyPayroll extends Model
 {
-    use Tenantable;
+    use Tenantable, SoftDeletes;
 
     protected $guarded = [];
 

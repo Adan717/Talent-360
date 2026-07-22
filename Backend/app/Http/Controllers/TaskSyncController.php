@@ -215,8 +215,33 @@ class TaskSyncController extends Controller
 
                     // §14.1: date/points_awarded existen en la tabla pero nunca se poblaban.
                     $mappedData['date'] = $assignment['date'] ?? ($existing->date ?? \Carbon\Carbon::today()->toDateString());
+
+                    // Cálculo del Costo Financiero de la Tarea basándose en el salario del empleado:
+                    // Costo = (Salario Base Diario / 480 min) * Minutos Acumulados Invertidos
+                    $baseSalary = ($user && $user->employee && $user->employee->base_salary > 0) ? (float)$user->employee->base_salary : 300.00;
+                    $accumulatedMins = (float)($mappedData['accumulated_mins'] ?? 15);
+                    $taskCost = round(($baseSalary / 480) * $accumulatedMins, 2);
+                    $mappedData['task_cost'] = $taskCost;
+
                     if ($mappedData['status'] === 'completed') {
-                        $mappedData['points_awarded'] = $task->points ?? 0;
+                        $basePoints = $task->points ?? 10;
+                        $mappedData['points_awarded'] = $basePoints;
+                        // 1 Pobre de Puntos = 0.10 Monedas Digitales
+                        $coinsEarned = round($basePoints * 0.10, 2);
+                        $mappedData['coins_awarded'] = $coinsEarned;
+
+                        // Depositar en el Monedero Digital del usuario si no se ha depositado ya
+                        if ($mappedData['user_id'] && (!$existing || $existing->status !== 'completed')) {
+                            $wallet = \App\Models\UserWallet::getOrCreateForUser($mappedData['user_id'], $tenantId);
+                            $wallet->deposit(
+                                $coinsEarned,
+                                $basePoints,
+                                'earned_task',
+                                "Recompensa por completar tarea: " . ($task->title ?? 'Tarea Operativa'),
+                                'TaskAssignment',
+                                $assignment['id']
+                            );
+                        }
                     }
 
                     if ($existing) {

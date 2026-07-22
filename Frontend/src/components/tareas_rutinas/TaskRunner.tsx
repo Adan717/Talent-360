@@ -9,6 +9,7 @@ import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
+import axiosInstance from '../../lib/axios';
 
 // Componente para tarjeta de tarea unificada (Ficha de Tarea)
 export interface FichaTareaProps {
@@ -244,6 +245,33 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     // Estado local para feedback de rechazo en supervisión
     const [rejectingAssignmentId, setRejectingAssignmentId] = useState<string | null>(null);
     const [rejectFeedback, setRejectFeedback] = useState('');
+
+    // Monedero Digital y Celebración de Gamificación
+    const [walletData, setWalletData] = useState<{ balance_coins: number; xp_points: number; level: number }>({
+        balance_coins: 0,
+        xp_points: 0,
+        level: 1
+    });
+    const [celebration, setCelebration] = useState<{ coins: number; xp: number; title: string } | null>(null);
+
+    const fetchWallet = async () => {
+        try {
+            const res = await axiosInstance.get('/wallet/balance');
+            if (res.data && res.data.success) {
+                setWalletData({
+                    balance_coins: res.data.balance_coins,
+                    xp_points: res.data.xp_points,
+                    level: res.data.level
+                });
+            }
+        } catch (e) {
+            console.log('Wallet endpoint offline/simulated', e);
+        }
+    };
+
+    useEffect(() => {
+        fetchWallet();
+    }, []);
 
     // Sistema de notificaciones toast interno
     const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'warning' } | null>(null);
@@ -565,6 +593,28 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
     return (
         <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-2.5 pb-4 pt-1.5 select-none relative overflow-hidden">
+            {/* Header de Monedero Digital & Gamificación (XP + Level + Coins) */}
+            <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white rounded-2xl p-3 mb-3 shadow-md flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl shadow-inner">
+                        🪙
+                    </div>
+                    <div className="text-left">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-100 block leading-tight">Monedero Digital Talent360</span>
+                        <span className="text-lg font-black tracking-tight text-white leading-none">
+                            ${walletData.balance_coins.toFixed(2)} <span className="text-xs font-bold text-amber-200">Coins</span>
+                        </span>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-xl border border-white/20 backdrop-blur-sm">
+                    <span className="text-xs">🌟</span>
+                    <div className="text-right">
+                        <span className="text-[9.5px] font-black text-amber-100 uppercase tracking-wide block leading-none">Nivel {walletData.level}</span>
+                        <span className="text-xs font-extrabold text-white">{walletData.xp_points} XP</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Fila fija de 2 botones principales (Todas y Mis Tareas) */}
             <div className="grid grid-cols-2 gap-2.5 mb-3.5 shrink-0 select-none">
                 {/* Botón 1: Todas (Muestra todas, con badge de completadas/total) */}
@@ -1287,107 +1337,123 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                     </button>
                                                 )}
                                                 <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        handleStartTaskCooperative(a.id, false);
-                                                    }}
-                                                    className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
-                                                >
-                                                    <Play size={13} className="fill-white" /> Iniciar Tarea
-                                                </button>
-                                            </div>
-                                        ) : isActive ? (
-                                            <div className="space-y-3">
-                                                {/* Controles de pausar y completar */}
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => pauseTask(a.id)}
-                                                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl border border-slate-200 cursor-pointer flex items-center justify-center gap-2"
-                                                    >
-                                                        <Pause size={13} /> Pausar Tarea
-                                                    </button>
-                                                    {t.assistantType === 'ninguno' && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                completeTask(a.id, globalSimTime);
-                                                                showToast("¡Tarea completada!", 'success');
-                                                                handleSelectAssignment(null);
-                                                            }}
-                                                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
-                                                        >
-                                                            <Check size={13} /> Completar
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                     type="button"
+                                                     onClick={() => {
+                                                         handleStartTaskCooperative(a.id, false);
+                                                     }}
+                                                     className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 border-none cursor-pointer flex items-center justify-center gap-2"
+                                                 >
+                                                     <Play size={13} className="fill-white" /> Iniciar Tarea
+                                                 </button>
+                                             </div>
+                                         ) : isActive ? (
+                                             <div className="space-y-3">
+                                                 {/* Controles de pausar y completar */}
+                                                 <div className="flex gap-2">
+                                                     <button
+                                                         type="button"
+                                                         onClick={() => pauseTask(a.id)}
+                                                         className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl border border-slate-200 cursor-pointer flex items-center justify-center gap-2"
+                                                     >
+                                                         <Pause size={13} /> Pausar Tarea
+                                                     </button>
+                                                     {t.assistantType === 'ninguno' && (
+                                                         <button
+                                                             type="button"
+                                                             onClick={() => {
+                                                                 completeTask(a.id, globalSimTime);
+                                                                 const basePts = t.points || 10;
+                                                                 const coins = Number((basePts * 0.1).toFixed(2));
+                                                                 setCelebration({ coins, xp: basePts, title: t.title });
+                                                                 setWalletData(prev => ({
+                                                                     ...prev,
+                                                                     balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
+                                                                     xp_points: prev.xp_points + basePts
+                                                                 }));
+                                                                 showToast("¡Tarea completada!", 'success');
+                                                                 handleSelectAssignment(null);
+                                                             }}
+                                                             className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
+                                                         >
+                                                             <Check size={13} /> Completar
+                                                         </button>
+                                                     )}
+                                                 </div>
 
-                                                {/* Mini Asistente de evidencias */}
-                                                {t.assistantType !== 'ninguno' && (
-                                                    <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2.5 text-left">
-                                                        <p className="font-black text-indigo-900 flex items-center gap-1 text-[11px]">
-                                                            <Bot size={13} className="text-[#8a2be2]" /> Asistente de Evidencias
-                                                        </p>
-                                                        <p className="text-slate-655 font-bold text-[10.5px] leading-relaxed">{t.assistantPrompt}</p>
-                                                        
-                                                        {t.assistantType === 'evidencia_foto' && (
-                                                            <div className="space-y-2">
-                                                                {!photoDone ? (
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }}
-                                                                        className="w-full py-2.5 bg-white hover:bg-slate-50 text-indigo-805 rounded-xl border border-indigo-200 text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                                                                    >
-                                                                        <Camera size={13} /> Capturar Foto de Evidencia
-                                                                    </button>
-                                                                ) : (
-                                                                    <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-[11px]">
-                                                                        <Check size={13} className="text-emerald-600 font-black" />
-                                                                        <span className="font-bold truncate">evidencia_checador_foto.jpg</span>
-                                                                        <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                                 {/* Mini Asistente de evidencias */}
+                                                 {t.assistantType !== 'ninguno' && (
+                                                     <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2.5 text-left">
+                                                         <p className="font-black text-indigo-900 flex items-center gap-1 text-[11px]">
+                                                             <Bot size={13} className="text-[#8a2be2]" /> Asistente de Evidencias
+                                                         </p>
+                                                         <p className="text-slate-655 font-bold text-[10.5px] leading-relaxed">{t.assistantPrompt}</p>
+                                                         
+                                                         {t.assistantType === 'evidencia_foto' && (
+                                                             <div className="space-y-2">
+                                                                 {!photoDone ? (
+                                                                     <button 
+                                                                         type="button"
+                                                                         onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }}
+                                                                         className="w-full py-2.5 bg-white hover:bg-slate-50 text-indigo-805 rounded-xl border border-indigo-200 text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                                                     >
+                                                                         <Camera size={13} /> Capturar Foto de Evidencia
+                                                                     </button>
+                                                                 ) : (
+                                                                     <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-[11px]">
+                                                                         <Check size={13} className="text-emerald-600 font-black" />
+                                                                         <span className="font-bold truncate">evidencia_checador_foto.jpg</span>
+                                                                         <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
+                                                                     </div>
+                                                                 )}
+                                                             </div>
+                                                         )}
 
-                                                        {t.assistantType === 'captura_numero' && (
-                                                            <input 
-                                                                type="number"
-                                                                value={localInput}
-                                                                onChange={e => setLocalInput(e.target.value)}
-                                                                placeholder="Ingresa la cantidad..."
-                                                                className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
-                                                            />
-                                                        )}
+                                                         {t.assistantType === 'captura_numero' && (
+                                                             <input 
+                                                                 type="number"
+                                                                 value={localInput}
+                                                                 onChange={e => setLocalInput(e.target.value)}
+                                                                 placeholder="Ingresa la cantidad..."
+                                                                 className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
+                                                             />
+                                                         )}
 
-                                                        {t.assistantType === 'texto' && (
-                                                            <input 
-                                                                type="text"
-                                                                value={localInput}
-                                                                onChange={e => setLocalInput(e.target.value)}
-                                                                placeholder="Escribe reporte de fin de tarea..."
-                                                                className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
-                                                            />
-                                                        )}
+                                                         {t.assistantType === 'texto' && (
+                                                             <input 
+                                                                 type="text"
+                                                                 value={localInput}
+                                                                 onChange={e => setLocalInput(e.target.value)}
+                                                                 placeholder="Escribe reporte de fin de tarea..."
+                                                                 className="w-full p-2 border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-semibold"
+                                                             />
+                                                         )}
 
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (!localInput.trim()) return;
-                                                                completeTask(a.id, globalSimTime, localInput);
-                                                                showToast("Evidencia guardada y completada", 'success');
-                                                                addMatrixEvent('✅ Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
-                                                                handleSelectAssignment(null);
-                                                            }}
-                                                            disabled={!localInput}
-                                                            className="w-full py-2 bg-indigo-650 disabled:bg-slate-100 disabled:text-slate-400 hover:bg-indigo-755 text-white rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
-                                                        >
-                                                            Enviar Evidencia y Completar
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : null}
+                                                         <button 
+                                                             type="button"
+                                                             onClick={() => {
+                                                                 if (!localInput.trim()) return;
+                                                                 completeTask(a.id, globalSimTime, localInput);
+                                                                 const basePts = t.points || 10;
+                                                                 const coins = Number((basePts * 0.1).toFixed(2));
+                                                                 setCelebration({ coins, xp: basePts, title: t.title });
+                                                                 setWalletData(prev => ({
+                                                                     ...prev,
+                                                                     balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
+                                                                     xp_points: prev.xp_points + basePts
+                                                                 }));
+                                                                 showToast("Evidencia guardada y completada", 'success');
+                                                                 addMatrixEvent('✅ Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
+                                                                 handleSelectAssignment(null);
+                                                             }}
+                                                             disabled={!localInput}
+                                                             className="w-full py-2 bg-indigo-650 disabled:bg-slate-100 disabled:text-slate-400 hover:bg-indigo-755 text-white rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
+                                                         >
+                                                             Enviar Evidencia y Completar
+                                                         </button>
+                                                     </div>
+                                                 )}
+                                             </div>
+                                         ) : null}
 
                                         {/* Botón de Omitir (si es normal y no bloqueante) */}
                                         {t.priority !== 'bloqueante' && (
@@ -1410,6 +1476,39 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     </div>
                 );
             })()}
+
+            {/* Modal Celebrativo de Monedas Ganadas (+XP & +Coins) */}
+            {celebration && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] p-7 max-w-xs w-full shadow-2xl text-center border border-amber-200 relative animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30 animate-bounce">
+                            <span className="text-4xl">🪙</span>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-1">¡Recompensa Obtenida! 🎉</h3>
+                        <p className="text-xs font-bold text-slate-500 mb-4 px-2 truncate">{celebration.title}</p>
+                        
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 flex items-center justify-around">
+                            <div className="text-center">
+                                <span className="text-xs font-black text-amber-700 block uppercase tracking-wider">Monedas</span>
+                                <span className="text-2xl font-black text-amber-600">+${celebration.coins.toFixed(2)}</span>
+                            </div>
+                            <div className="h-8 w-px bg-amber-200"></div>
+                            <div className="text-center">
+                                <span className="text-xs font-black text-indigo-700 block uppercase tracking-wider">Experiencia</span>
+                                <span className="text-2xl font-black text-indigo-600">+{celebration.xp} XP</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setCelebration(null)}
+                            className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md border-none cursor-pointer active:scale-95 transition-all"
+                        >
+                            ¡Excelente! Continuar
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -135,7 +135,6 @@ class TaskValidationRuleTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'success' => true,
-            'message' => 'Tarea aprobada con éxito.',
             'status' => 'completed'
         ]);
 

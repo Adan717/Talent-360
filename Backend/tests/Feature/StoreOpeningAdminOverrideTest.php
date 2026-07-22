@@ -33,18 +33,11 @@ class StoreOpeningAdminOverrideTest extends TestCase
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
         $user->refresh();
 
-        DB::table('employees')->insert([
-            'tenant_id' => 1,
-            'user_id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         return $user;
     }
 
+    // store_opening_assignments.employee_id es users.id pese al nombre de la columna
+    // (migración 2026_06_28_030000: ->constrained('users')).
     private function assignResponsible(User $responsible): void
     {
         DB::table('store_opening_assignments')->insert([

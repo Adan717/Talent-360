@@ -151,7 +151,11 @@ class StoreOpeningService
                 throw new \Exception("La tienda ya se encuentra abierta.");
             }
 
-            // Check if current user is responsible
+            // Check if current user is responsible. A diferencia de otras tablas del
+            // codebase, store_opening_assignments.employee_id SÍ es users.id (migración
+            // 2026_06_28_030000: ->constrained('users'), y el seed de este mismo archivo
+            // inserta users.id reales) — no confundir con el patrón employees.id de
+            // otras tablas (pase_lista_ratings, meal_photo_evidences, etc.).
             if (intval($status->current_responsible_employee_id) !== intval($user->id)) {
                 // Check if user has permissions for administrative override
                 if (!in_array($user->role, ['admin', 'supervisor', 'platform_admin'])) {

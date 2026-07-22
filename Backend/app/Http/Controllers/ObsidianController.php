@@ -216,7 +216,9 @@ class ObsidianController extends Controller
                             $frontmatter[$key] = $value;
                         }
                     }
-                           // Extracción de metadatos básicos con limpiador inteligente d                // Extracción de metadatos básicos con limpiador inteligente de títulos
+                }
+
+                // Extracción de metadatos básicos con limpiador inteligente de títulos
                 $title = $frontmatter['title'] ?? null;
                 if (!$title) {
                     $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
@@ -290,7 +292,6 @@ class ObsidianController extends Controller
                     elseif ($type === 'organizacion') $icon = 'building-2';
                     else $icon = 'file-text';
                 }
-            }
 
                 // Upsert document to keep IDs intact
                 $document = ObsidianDocument::withTrashed()

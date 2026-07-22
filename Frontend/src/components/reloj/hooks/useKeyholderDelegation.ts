@@ -83,8 +83,11 @@ export function useKeyholderDelegation({
     try {
       const savedAss = localStorage.getItem('store_opening_assignments');
       const ass = savedAss ? JSON.parse(savedAss) : [];
+      // §29 (docs/BACKEND_INTERFACES.md): el backend ahora expone resolved_user_id (users.id) además
+      // del employee_id crudo (employees.id) en /store-opening/assignments. Se prioriza el resuelto y
+      // se cae a employee_id solo como resguardo (localStorage viejo sin el campo nuevo todavía).
       hasActiveAssignment = ass.some(
-        (a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.has_keys
+        (a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.has_keys
       );
     } catch {}
 
@@ -107,7 +110,7 @@ export function useKeyholderDelegation({
       ass = savedAss ? JSON.parse(savedAss) : [];
     } catch {}
 
-    const currentAss = ass.find((a: any) => Number(a.employee_id) === Number(currentUser?.id));
+    const currentAss = ass.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(currentUser?.id));
     const currentOrder = currentAss ? currentAss.priority_order : 1;
 
     const nextAss = ass
@@ -115,7 +118,7 @@ export function useKeyholderDelegation({
       .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
 
     if (!nextAss) return null;
-    return globalUsers.find((u: any) => Number(u.id) === Number(nextAss.employee_id)) || null;
+    return globalUsers.find((u: any) => Number(u.id) === Number(nextAss.resolved_user_id ?? nextAss.employee_id)) || null;
   };
 
   const handleCallSuplente = () => {

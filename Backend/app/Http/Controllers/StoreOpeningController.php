@@ -123,8 +123,12 @@ class StoreOpeningController extends Controller
         $user = Auth::user();
         $tenantId = $user->tenant_id ?? 1;
 
+        // §30: el endpoint recibe user_id (lo único que el frontend puede conocer con
+        // certeza de un colaborador) y resuelve internamente al employees.id real que
+        // store_opening_assignments.employee_id exige como FK — simétrico al accessor
+        // resolved_user_id agregado en §29 para la lectura.
         $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
+            'user_id' => 'required|integer|exists:users,id',
             'priority_order' => 'integer|min:1',
             'can_open_store' => 'boolean',
             'can_close_store' => 'boolean',
@@ -132,10 +136,22 @@ class StoreOpeningController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        $employee = \App\Models\Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $validated['user_id'])
+            ->first();
+
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este colaborador no tiene un registro de empleado (employees) asociado. Complétalo en RRHH antes de asignarlo a la apertura.'
+            ], 422);
+        }
+
         // Evitar duplicados para el mismo empleado
         $exists = StoreOpeningAssignment::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->where('employee_id', $validated['employee_id'])
+            ->where('employee_id', $employee->id)
             ->exists();
 
         if ($exists) {
@@ -145,6 +161,8 @@ class StoreOpeningController extends Controller
             ], 422);
         }
 
+        unset($validated['user_id']);
+        $validated['employee_id'] = $employee->id;
         $validated['tenant_id'] = $tenantId;
         $validated['company_id'] = 1;
         $validated['store_id'] = $request->input('store_id', 1);

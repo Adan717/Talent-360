@@ -217,7 +217,9 @@ export default function PanelSimulador() {
   const getUserKeysIcon = (userId: number) => {
     try {
       const assignments = getOpeningAssignments();
-      const match = assignments.find((a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
+      // §29: preferir resolved_user_id (users.id, ya resuelto por backend) sobre employee_id crudo
+      // (employees.id) — el heurístico local de arriba solo tiene employee_id, y ahí ya vale u.id.
+      const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
       }
@@ -229,7 +231,7 @@ export default function PanelSimulador() {
     try {
       const assignments = getOpeningAssignments();
       const empId = user.employee_id || user.id;
-      const match = assignments.find((a: any) => Number(a.employee_id) === Number(empId) && a.is_active && a.can_open_store);
+      const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(empId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order;
       }

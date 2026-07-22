@@ -36,6 +36,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
   });
   const [assignments, setAssignments] = useState<any[]>([]);
   const [selectedUserForAss, setSelectedUserForAss] = useState('');
+  const [assignmentError, setAssignmentError] = useState('');
   const isSandbox = useAppStore(state => state.isSandboxMode);
   const globalUsers = useAppStore(state => state.globalUsers);
 
@@ -108,13 +109,15 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
     const userObj = globalUsers.find(u => u.id === userId);
     if (!userObj) return;
 
-    const empId = userObj.employee_id || userObj.id;
+    setAssignmentError('');
     const nextOrder = assignments.length > 0 ? Math.max(...assignments.map(a => a.priority_order)) + 1 : 1;
 
     if (isSandbox) {
+      // En sandbox no hay tabla `employees` real detrás — se sigue usando userObj.id como
+      // employee_id "de mentiras", consistente con el resto de los mocks de este módulo.
       const newAss = {
         id: Date.now(),
-        employee_id: empId,
+        employee_id: userObj.id,
         priority_order: nextOrder,
         can_open_store: true,
         can_close_store: true,
@@ -127,8 +130,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
       localStorage.setItem('store_opening_assignments', JSON.stringify(updated));
     } else {
       try {
+        // §30 (docs/BACKEND_INTERFACES.md): cambio de contrato — el endpoint ahora recibe user_id
+        // (users.id) y resuelve employees.id internamente, en vez del employee_id crudo que antes
+        // se armaba mal en el frontend (userObj.employee_id era un código de texto libre, no una FK).
         const res = await axiosInstance.post('/store-opening/assignments', {
-          employee_id: empId,
+          user_id: userObj.id,
           priority_order: nextOrder,
           can_open_store: true,
           can_close_store: true,
@@ -136,7 +142,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           is_active: true
         });
         setAssignments([...assignments, res.data.assignment]);
-      } catch (e) {
+      } catch (e: any) {
+        // El backend responde 422 con un mensaje ya listo para mostrar (ej. colaborador sin fila
+        // en `employees` todavía) cuando no puede resolver el user_id a un empleado real.
+        setAssignmentError(e?.response?.data?.message || 'No se pudo agregar al encargado. Intenta de nuevo.');
         console.error(e);
       }
     }
@@ -1078,7 +1087,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                   >
                     <option value="">-- Selecciona Colaborador --</option>
                     {globalUsers
-                      .filter(u => (u as any).is_active_employee !== false && !assignments.some(a => a.employee_id === (u.employee_id || u.id)))
+                      /* §29 (docs/BACKEND_INTERFACES.md): comparar contra resolved_user_id (users.id,
+                         ya resuelto por backend) en vez del employee_id crudo (employees.id) — antes
+                         esta comparación casi nunca coincidía de verdad, así que un colaborador ya
+                         asignado podía seguir apareciendo disponible en este selector. */
+                      .filter(u => (u as any).is_active_employee !== false && !assignments.some(a => Number(a.resolved_user_id ?? a.employee_id) === Number(u.id)))
                       .map(u => (
                         <option key={u.id} value={u.id}>{u.name} ({u.role || 'Colaborador'})</option>
                       ))}
@@ -1093,6 +1106,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     <span>Agregar</span>
                   </button>
                 </div>
+                {assignmentError && (
+                  <p className="mt-2 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+                    {assignmentError}
+                  </p>
+                )}
               </div>
             </div>
           </div>

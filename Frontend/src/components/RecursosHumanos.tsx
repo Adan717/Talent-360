@@ -30,7 +30,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
         ]
       );
-      const match = assignments.find((a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
+      // §29 (docs/BACKEND_INTERFACES.md): preferir resolved_user_id (users.id, ya resuelto por
+      // backend) sobre el employee_id crudo (employees.id) que trae /store-opening/assignments.
+      const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
       }
@@ -53,13 +55,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
         ]
       );
+      // §29: preferir resolved_user_id (users.id) sobre employee_id crudo (employees.id).
       const authorizedUserIds = assignments
         .filter((a: any) => a.is_active && a.can_open_store)
-        .map((a: any) => Number(a.employee_id));
+        .map((a: any) => Number(a.resolved_user_id ?? a.employee_id));
 
       const roleUsers = users.filter((u: any) => u.job_role_id === roleId && authorizedUserIds.includes(u.employee_id ? Number(u.employee_id) : Number(u.id)));
       if (roleUsers.length > 0) {
-        const roleAssignments = assignments.filter((a: any) => a.is_active && a.can_open_store && roleUsers.some((u: any) => Number(u.employee_id ? u.employee_id : u.id) === Number(a.employee_id)));
+        const roleAssignments = assignments.filter((a: any) => a.is_active && a.can_open_store && roleUsers.some((u: any) => Number(u.employee_id ? u.employee_id : u.id) === Number(a.resolved_user_id ?? a.employee_id)));
         const minPriority = Math.min(...roleAssignments.map((a: any) => a.priority_order));
         return minPriority === 1 ? ' 🔑' : ' 🔑🔑';
       }

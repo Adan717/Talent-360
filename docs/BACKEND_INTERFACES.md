@@ -38,6 +38,10 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §27 | Migrar los 4 eventos del canal del reloj (`StoreOpened`, `TimeEntryRecorded`, `DoorNoticeCreated`, `MealQueueTurnChanged`) de `Channel` público a `PrivateChannel` — ver spec abajo. **Urgente (Hallazgo 2 de seguridad):** hoy cualquiera puede escuchar fichajes de otro tenant sin loguearse. | ✅ Implementado (2026-07-21) — **desplegado, listo para que Cowork active `.private()` en el frontend** |
 | §28 | Bug: `StoreOpeningService::openStoreAndClockIn()` línea 157 rechaza a `platform_admin` al presionar "Abrir Tienda" — ver detalle abajo. **Urgente:** bloquea el uso normal de la Matrix. | ✅ Implementado (2026-07-21) |
 | §29 | `GET /store-opening/assignments` sigue devolviendo `employee_id` como `employees.id` (post-migración del 7-jul), pero 26 sitios del frontend (RRHH, Matrix, useStoreOpening, useKeyholderDelegation, MealQueue, RelojVisual) comparan ese valor contra `users.id` — mismo bug de raíz que §28, sin corregir en este endpoint. Ver detalle abajo. | ✅ Implementado (2026-07-22) — campo `resolved_user_id` agregado |
+| §30 | `POST /store-opening/assignments` — al crear un encargado nuevo desde `CompanySettingsPanel.tsx`, el frontend envía `employee_id: (userObj.employee_id \|\| userObj.id)`. Ninguno de los dos es el `employees.id` real: `userObj.employee_id` es un campo de texto libre (código/gafete, ej. "EMP-0004", no garantizado numérico ni único) y `userObj.id` es `users.id`. El frontend no tiene forma de conocer el `employees.id` real de un usuario — no viene hidratado en `globalUsers`. Ver detalle abajo. | ✅ Implementado (2026-07-22) — **Opción A, cambio de contrato: ver nota para Cowork abajo** |
+| §31 | **Seguridad:** `POST /sync/tasks` (crear/editar Tareas y Rutinas, no las asignaciones operativas) no valida el rol de quien llama. Ver detalle abajo — **ya preparé el lado frontend para que el fix de 3 líneas sea seguro de aplicar sin romper nada operativo.** | ✅ Implementado (2026-07-22) |
+| §32 | Tarea placeholder "Monitoreo de seguridad desde silla" (Ley Silla) usa `taskId: 9999` inventado, sin registro real en `tasks`; falta operador null-safe en `TaskSyncController::sync()` línea ~227. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §33 | Sugerencia de arquitectura (no urgente): el módulo de Tareas sincroniza reenviando el estado completo en cada clic en vez de por fila. Ver detalle abajo para el plan completo de migración. | ✅ Punto 1 implementado (2026-07-22) — **listo para que Cowork empiece el punto 3 (frontend)** |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1207,3 +1211,166 @@ En vez de calcularlo a mano en cada uno de los 3 métodos del controller, lo agr
 `employee_id` (el crudo, `employees.id`) se queda tal cual en la respuesta — no lo quité para no romper nada que ya dependa de él — así que Cowork puede migrar sus 26 sitios de `a.employee_id` a `a.resolved_user_id` sin que ambos campos dejen de convivir mientras dure la migración del lado frontend.
 
 Test nuevo: `test_get_assignments_exposes_resolved_user_id_alongside_the_raw_employees_id` en `StoreOpeningAdminOverrideTest.php`, con la misma técnica de "decoy" en `employees` para garantizar que `employees.id` y `users.id` difieran en la prueba. Suite completa: **121/121 tests, 537 assertions**, sin regresiones.
+
+---
+
+## §30. `POST /store-opening/assignments` recibe un `employee_id` que no es el `employees.id` real (bug en la dirección opuesta a §29)
+
+Mientras migraba los 26 sitios de lectura del §29 a `resolved_user_id` (2026-07-22), encontré que **crear** un encargado nuevo tiene el mismo problema pero al revés. En `Frontend/src/components/CompanySettingsPanel.tsx`, `handleAddAssignment()`:
+
+```js
+const empId = userObj.employee_id || userObj.id;
+...
+await axiosInstance.post('/store-opening/assignments', {
+  employee_id: empId,
+  ...
+});
+```
+
+`userObj.employee_id` es un campo de texto libre en el perfil del colaborador (un código/gafete visible en RRHH, ej. "EMP-0004" — no garantizado numérico, no es una FK a nada). `userObj.id` es `users.id`. Ninguno de los dos es el `employees.id` que la tabla `store_opening_assignments.employee_id` espera como FK — y el frontend no tiene ese dato disponible en ningún lado (`globalUsers` no trae `employees.id`).
+
+No lo corregí porque es 100% un cambio de contrato/backend: ¿qué debería aceptar `POST /store-opening/assignments`? Dos opciones que veo, díganme cuál prefieren:
+
+**Opción A (recomendada):** que el endpoint acepte `user_id` en el body (en vez de `employee_id`) y resuelva internamente a `employees.id` vía `Employee::where('user_id', $request->user_id)->firstOrFail()->id` antes de crear el registro — simétrico con el accessor `resolved_user_id` que ya agregaron en la lectura. Si el usuario no tiene fila en `employees` todavía, decidan si se crea una automáticamente o se rechaza con un mensaje claro.
+
+**Opción B:** mantener `employee_id` en el body tal cual, pero documentarnos que el frontend debe resolver primero el `employees.id` real antes de enviarlo — para eso necesitaríamos un endpoint tipo `GET /employees/by-user/{userId}` o que `globalUsers`/`/sync/state` ya traiga el `employees.id` de cada colaborador.
+
+Mientras se decide, dejé el código de `CompanySettingsPanel.tsx` sin tocar (sigue enviando el valor viejo) para no adivinar un contrato que no existe todavía — cualquier intento de "adivinar" el id correcto del lado frontend sería tan frágil como el bug que estamos corrigiendo.
+
+## ✅ Implementado (2026-07-22) — resumen y nota para Cowork
+
+Fue **Opción A**. La decisión no tenía trade-off de producto real (ninguna de las dos opciones cambia el comportamiento visible para el usuario final, solo la forma del contrato), así que la tomé del lado backend en vez de interrumpir a Francisco por algo puramente técnico — avisando aquí en el documento como corresponde.
+
+**Cambio de contrato — `POST /store-opening/assignments`:**
+
+- **Antes:** `{ "employee_id": <valor no confiable> }`
+- **Ahora:** `{ "user_id": <users.id>, "priority_order": ..., "can_open_store": ..., ... }` — el resto de los campos no cambia.
+
+El backend resuelve `Employee::where('tenant_id', $tenantId)->where('user_id', $request->user_id)->first()` y usa `employee->id` como el `employee_id` real al crear la asignación. Si el usuario no tiene fila en `employees` todavía, responde `422` con `{"success": false, "message": "Este colaborador no tiene un registro de empleado (employees) asociado. Complétalo en RRHH antes de asignarlo a la apertura."}` — no se crea nada automáticamente, para no enmascarar un perfil de RRHH incompleto.
+
+La respuesta (`assignment` en el body) sigue trayendo tanto `employee_id` (crudo, `employees.id`) como `resolved_user_id` (de §29), así que el frontend puede confirmar visualmente contra `userObj.id` sin otra llamada.
+
+**Lo que le toca a Cowork:** en `Frontend/src/components/CompanySettingsPanel.tsx`, `handleAddAssignment()` — cambiar
+```js
+const empId = userObj.employee_id || userObj.id;
+await axiosInstance.post('/store-opening/assignments', { employee_id: empId, ... });
+```
+a
+```js
+await axiosInstance.post('/store-opening/assignments', { user_id: userObj.id, ... });
+```
+y manejar el nuevo `422` mostrando el `message` del backend tal cual (ya viene listo para UI). No hace falta ningún endpoint nuevo (`GET /employees/by-user/{userId}` no fue necesario — la Opción A lo evita por diseño).
+
+Test nuevo: 3 casos en `StoreOpeningAdminOverrideTest.php` (crea con `user_id` válido y resuelve el `employees.id` correcto, rechaza usuario sin fila en `employees`, rechaza asignación duplicada). Suite completa: **124/124 tests, 548 assertions**, sin regresiones.
+
+## ✅ Frontend aplicado (2026-07-22)
+
+`handleAddAssignment()` en `CompanySettingsPanel.tsx` ahora envía `{ user_id: userObj.id, ... }` en vez del `employee_id` no confiable. Se agregó estado local `assignmentError` que muestra el `message` del 422 tal cual debajo del selector si el backend rechaza al colaborador (sin fila en `employees`). Rama sandbox sin cambios de contrato — sigue usando `userObj.id` como `employee_id` de mentiras, igual que el resto de los mocks del módulo. Verificado con `tsc --noEmit`: 0 errores.
+
+---
+
+## §31. Seguridad: `POST /sync/tasks` no valida rol para crear/editar Tareas y Rutinas
+
+De `docs/AUDITORIA_RELOJ_TAREAS_2026-07-22.md`, sección 3 — spec completa aquí para no depender del otro documento.
+
+**El problema (verificado en el código, no es hipotético):** `routes/api.php` línea 292 registra `/sync/tasks` bajo `role:empleado,employee,admin,supervisor,platform_admin` — cualquier colaborador autenticado del tenant puede llamarlo. `TaskSyncController::sync()` (líneas 30-75 y 77-121) procesa `tasks` y `routines` del payload sin ningún chequeo de `auth()->user()->role`; solo valida que el `tenant_id` sea el correcto, no quién hizo la petición. La UI (`PanelTareasRutinas.tsx`) no expone esta pantalla a un `empleado` normal, pero eso es solo navegación de React — una petición HTTP directa a `/sync/tasks` con `tasks`/`routines` en el body la acepta igual viniendo de cualquier rol permitido por el middleware.
+
+**Impacto concreto:** un colaborador con rol `empleado` podría, vía API directa: crear tareas nuevas, cambiar el `validation_mode` de una tarea existente a `'auto'` (quitándose a sí mismo la validación de supervisor), o modificar `points`/`estimated_mins` de cualquier tarea del tenant.
+
+**Contraste con el patrón correcto que ya existe en el mismo módulo:** `SillaController::approve()/reject()` → `ClockService::approveSillaRequest()` valida `in_array($approver->role, ['admin','supervisor','platform_admin'])` a nivel de servicio antes de aprobar un descanso. `TaskSyncController::sync()` simplemente no tiene el equivalente para las porciones `tasks`/`routines` (la porción `assignments` — completar/pausar/tomar de la bolsa tu propia tarea asignada — sí debe seguir abierta a cualquier empleado, esa parte no se toca).
+
+**Fix propuesto (3 líneas, al inicio de `sync()` antes de procesar `tasks`/`routines`):**
+```php
+if ($request->has('tasks') || $request->has('routines')) {
+    if (!in_array(auth()->user()->role, ['admin', 'supervisor', 'platform_admin'])) {
+        return response()->json(['message' => 'No autorizado para crear o editar tareas/rutinas.'], 403);
+    }
+}
+```
+
+**Actualización (2026-07-22) — ya verifiqué esto, no era solo una duda teórica:** confirmé que `useTaskStore.ts`'s `syncToBackend()` SÍ mandaba siempre los 3 arrays completos (`tasks`, `routines`, `assignments`) en **cada** llamada, incluidas las 10 acciones puramente operativas (completar/pausar/tomar de la bolsa, etc.). Con el fix tal como estaba propuesto, el 403 habría bloqueado también esas acciones legítimas de cualquier empleado — no era un riesgo hipotético, era una regresión garantizada. Ya lo corregí del lado frontend: `syncToBackend(includeCatalog = false)` ahora solo incluye `tasks`/`routines` en el payload cuando `includeCatalog === true`, y solo las acciones que de verdad tocan el catálogo lo pasan así (`addTask`, `updateTask`, `addRoutine`, `updateRoutine`, `createDynamicTask`). Las 10 acciones operativas ahora mandan únicamente `{ assignments: [...] }`. De paso encontré un hallazgo relacionado: el botón "Crear Tarea Rápida" en `RelojVisual.tsx` (la hoja de "Operaciones & Soporte AI") no tenía ningún gate de rol — cualquier empleado lo veía y podía usarlo, a diferencia de `TaskRunner.tsx` donde el equivalente ya está reservado a `isSupervisor`. Ya lo gateé igual (`admin`/`supervisor`/`platform_admin`). Con esto, el fix de 3 líneas de arriba ya es seguro de aplicar tal cual, sin que rompa nada operativo.
+
+**Sugerencia de test:** un caso que loguea como `empleado` e intenta `POST /sync/tasks` con `tasks: [...]` no vacío → espera 403. Otro que loguea como `empleado` con solo `assignments` (sin `tasks`/`routines`) → espera 200 (no debe romper el flujo operativo normal).
+
+## ✅ Implementado (2026-07-22) — resumen
+
+El fix de 3 líneas tal cual estaba propuesto, en `TaskSyncController::sync()` justo antes de abrir la transacción.
+
+**Efecto colateral que encontré al correr la suite:** 3 tests preexistentes en `TaskValidationRuleTest.php` (`test_sync_with_auto_validation_mode...`, `..._forced_validation_mode...`, `..._dynamic_validation_mode_calculates_probability_new_hire`) actuaban como `empleado` y mandaban `tasks` **y** `assignments` en la misma llamada — el patrón viejo que ya corrigieron del lado frontend, pero que quedó como residuo en la suite de tests. Los corregí quitando el array `tasks` redundante (la tarea ya se creaba directo en el `setUp()` del test vía `Task::create()`, reenviarla en el sync siempre fue innecesario) — no cambié ninguna aserción de negocio, solo el payload de la petición.
+
+Test nuevo: `TaskSyncSecurityTest.php` — empleado no puede crear `tasks`/`routines` (403), empleado sí puede seguir mandando solo `assignments` (200), admin sí puede crear tasks. Suite completa: **130/130 tests, 558 assertions**, sin regresiones.
+
+---
+
+## §32. Tarea placeholder de Ley Silla (`taskId: 9999`) sin registro real + falta null-safe en `TaskSyncController`
+
+De `docs/AUDITORIA_RELOJ_TAREAS_2026-07-22.md`, sección 6 — spec completa aquí.
+
+**El problema:** `RelojVisual.tsx` línea 5181, el botón "Monitoreo de seguridad desde silla" del modal de Ley Silla llama a `startBreakWithSittingTask(9999)` — un ID fijo que no corresponde a ningún registro en `tasks`. `TaskSyncController::sync()` línea 161 hace `$task = Task::find($mappedData['task_id'])`, que da `null` para el 9999. Eso es inofensivo mientras la asignación no se marque `completed` — pero en la línea 227, `$basePoints = $task->points ?? 10` **no tiene el operador null-safe** (`$task?->points`). Si `$task` es `null` y esa asignación llega a `status === 'completed'`, PHP truena con "Attempt to read property 'points' on null" → 500 para ese usuario, dentro de una transacción que además hace rollback de todo el sync (tasks/routines/assignments del resto del payload también se pierden en esa llamada).
+
+**Por qué no ha reventado todavía:** hoy no hay ningún botón "Terminar" que marque esa asignación en concreto como `completed` — pero es frágil apoyarse en que nadie conecte ese botón sin saber de este bug.
+
+**Fix inmediato (resguardo mínimo, 1 carácter):**
+```php
+// línea 227
+$basePoints = $task?->points ?? 10;
+```
+
+**Fix de raíz (recomendado, evita el `null` de origen):** crear una fila real en `tasks` por tenant (vía seeder o migración de datos, ejemplo de payload):
+```php
+Task::firstOrCreate(
+    ['tenant_id' => $tenantId, 'title' => 'Monitoreo de seguridad desde silla'],
+    ['estimated_mins' => 15, 'points' => 5, 'priority' => 'normal', 'category' => 'operativo',
+     'can_be_done_sitting' => true, 'validation_mode' => 'auto', 'frequency' => 'Diaria']
+);
+```
+y usar su `id` real en vez de `9999`.
+
+**Lo que le toca a Cowork (frontend) una vez decidan el enfoque:** si crean la tarea real, avísenme el `id` (o si prefieren que sea configurable, expónganlo en `/sync/state` como parte de `systemSettings`, similar a como ya se hizo con `punctuality_course_id`) y actualizo el `9999` hardcodeado en `RelojVisual.tsx` línea 5181. Si solo aplican el null-safe como resguardo temporal, no se requiere ningún cambio de frontend.
+
+## ✅ Implementado (2026-07-22) — resumen
+
+Los dos fixes, resguardo Y raíz:
+
+1. **Null-safe:** `$basePoints = $task?->points ?? 10;` en la línea que reportaron, y también en `$task->title ?? '...'` unas líneas abajo (mismo patrón, mismo riesgo, no lo mencionaron pero es idéntico y gratis arreglarlo de una vez).
+2. **Tarea real:** migración `2026_07_22_000003_seed_silla_monitoring_task.php` — crea "Monitoreo de seguridad desde silla" (`can_be_done_sitting: true`, `validation_mode: 'auto'`) para cada tenant existente, idempotente (`firstOrCreate`-equivalente por `tenant_id`+`title`).
+
+**No hizo falta exponer nada nuevo en `/sync/state`:** ya devuelve el array completo `tasks` por tenant (`ClockController.php:255`, `DB::table('tasks')->where('tenant_id', $tenantId)->get()`), así que en cuanto la migración corre, la tarea real ya aparece ahí con su `id` verdadero. Cowork puede resolverlo del lado frontend con `tasks.find(t => t.title === 'Monitoreo de seguridad desde silla')?.id` en vez de un campo dedicado — más simple que la opción de `system_settings` que propusieron (ver nota abajo sobre por qué evité esa tabla para esto).
+
+**⚠️ Hallazgo colateral, no lo toqué — para que quede on the record:** `system_settings.key` es la **primary key** de la tabla (`2026_06_09_090049_create_system_settings_table.php` línea 15, nunca se migró a una PK compuesta cuando se agregó `tenant_id` en `2026_06_19_062150`). Eso significa que dos tenants **no pueden tener cada uno su propia fila** para la misma `key` — `tasksConfig`, `punctuality_course_id` y cualquier otro setting "por tenant" que ya exista hoy en `system_settings` en realidad solo puede tener un valor global a la vez en todo el sistema; el segundo tenant que intente guardar esa misma `key` (vía `updateOrInsert(['key' => ..., 'tenant_id' => ...], ...)`, que sí filtra por ambas columnas al buscar pero no al insertar) se encontraría con una violación de PK cruda. Es la razón real por la que decidí NO usar `system_settings` para exponer el id de la tarea de Ley Silla — habría sido agregar un caso más al mismo bug en vez de evitarlo. Esto es una migración de esquema real (agregar `tenant_id` a una PK compuesta, con los datos existentes ya mezclados) — no la até a este fix porque es un cambio de forma distinta y con su propio riesgo, pero avisen si quieren que lo aborde aparte.
+
+Test nuevo: `TaskSyncSecurityTest.php` — completar una asignación cuyo `task_id` apunta a una tarea de OTRO tenant (mismo id numérico, FK satisfecha porque la fila existe físicamente, pero `Task::find()` con tenant-scope da `null` — el escenario real detrás de "inofensivo hasta completed") ya no truena; y verificación de que la migración sembró la tarea real. Suite completa: **130/130 tests, 558 assertions**, sin regresiones.
+
+---
+
+## §33. Sugerencia de arquitectura (sin urgencia): migrar la sincronización operativa de Tareas de "reenviar todo" a "actualizar por fila"
+
+De `docs/AUDITORIA_RELOJ_TAREAS_2026-07-22.md`, sección 4 — spec completa aquí. No aplica urgencia de seguridad, es deuda técnica real que conviene planear antes de que el módulo se use con tenants de plantilla grande.
+
+**El problema:** `useTaskStore.ts`'s `syncToBackend()` reenvía `{ tasks: state.tasks, routines: state.routines, assignments: state.assignments }` — los arrays **completos** — en cada acción operativa (tomar de la bolsa, iniciar, pausar, completar, liberar, omitir). `TaskSyncController::sync()` recorre cada fila del arreglo recibido con `find()`/`update()` individuales. Ya existen endpoints por fila sin usar: `GET /task-assignments` y `PUT /task-assignments/{id}` (`TaskAssignmentController.php`), con scoping por tenant/fecha.
+
+**Consecuencias reales:**
+- **Carrera de datos:** si el celular de un empleado tiene una copia local vieja de una asignación (otro colaborador ya la tomó de la Bolsa de Trabajo, pero a este celular no le llegó la actualización), cualquier otra acción de este empleado reenvía también su copia vieja de esa asignación ajena — el backend la sobreescribe sin control de versión (solo protege asignaciones ya `completed`; `pending`/`in_progress` no tienen ningún resguardo).
+- **Costo que crece con el historial:** cada sync procesa todas las filas que el navegador tenga cargadas, no solo la que cambió.
+
+**Plan de migración propuesto (requiere backend primero, por eso no lo apliqué yo):**
+1. Backend: portar a `TaskAssignmentController::update()` la misma lógica de recálculo que hoy solo vive en `TaskSyncController::sync()` líneas 151-245 (chequeo de `reportsTo`/`requiresValidation` según `validation_mode`, cálculo de `task_cost`, `points_awarded`/`coins_awarded` y depósito en `UserWallet` — con el mismo guard `$existing->status !== 'completed'` para no pagar dos veces).
+2. Backend (opcional pero recomendado): agregar `updated_at`/versión a `TaskAssignment` para que `PUT /task-assignments/{id}` pueda responder `409` si alguien más ya la modificó, en vez de sobreescribir a ciegas.
+3. Frontend (Cowork, una vez el punto 1 esté listo): migrar `startTask`, `pauseTask`, `completeTask`, `releaseTask`, `omitAssignment`, `grabTaskFromPool`, `reserveTaskFromPool` en `useTaskStore.ts` para llamar a `PUT /task-assignments/{id}` en vez de `syncToBackend()` completo.
+4. Dejar `POST /sync/tasks` únicamente para crear/editar definiciones de `tasks`/`routines` (cambian con poca frecuencia), no para el trajín operativo de cada clic.
+
+**Avísenme cuando el punto 1 esté listo** y empiezo la migración del punto 3 del lado frontend.
+
+## ✅ Punto 1 implementado (2026-07-22) — resumen
+
+Porté la lógica de `TaskSyncController::sync()` (bloque de `assignments`, líneas ~151-245) a `TaskAssignmentController::update()`, tal cual: chequeo de `reportsTo`/`requiresValidation` según `validation_mode` (`auto`/`forced`/`dynamic`) y `tasksConfig`, cálculo de `task_cost` por salario/minutos acumulados, `points_awarded`/`coins_awarded` + depósito en `UserWallet` al completar — con el mismo guard `$assignment->status === 'completed'` para no volver a calcular ni a pagar una asignación ya completada (si ya estaba `completed`, el nuevo `update()` la deja tal cual sin tocar wallet/puntos, sin importar qué más venga en el body).
+
+**Bug colateral real que encontré haciendo esto (no inventado, confirmado con test):** `TaskAssignment::$fillable` (`Backend/app/Models/TaskAssignment.php`) nunca incluyó `task_cost` ni `coins_awarded` — esas dos columnas existen desde `2026_07_22_000002_add_cost_and_score_to_task_assignments_table.php`, pero como no estaban en `$fillable`, tanto `TaskSyncController::sync()` como mi nuevo código en `TaskAssignmentController::update()` las calculaban correctamente pero el mass-assignment (`create()`/`update()`) las descartaba en silencio — `coins_awarded` se quedaba en `0.00` (su default) siempre, pase lo que pase. Es decir: **el feature de "monedas por completar tarea" nunca funcionó**, ni en `/sync/tasks` ni en ningún lado, desde que se agregó. Lo arreglé agregando ambos campos a `$fillable` — es un fix de una línea, sin riesgo, y corrige el mismo bug en los dos controladores a la vez (no lo cuento como parte separada del contrato porque no cambia ningún payload ni comportamiento visible más allá de "ahora sí paga lo que decía que iba a pagar").
+
+`GET /task-assignments` y `PUT /task-assignments/{id}` (`TaskAssignmentController.php`) ya existían y ya tenían el scoping correcto por `tenant_id`/`date` — no hizo falta tocar `index()`.
+
+**No implementé el punto 2** (versión/`409` en conflicto) — el documento lo marca como "opcional pero recomendado", no como requisito del punto 1, y agregarlo ahora sin que el punto 3 (frontend) esté listo para manejar un `409` sería trabajo especulativo. Avísenme si lo quieren antes de que Cowork empiece la migración del frontend.
+
+Test nuevo: `TaskAssignmentUpdateTest.php` — completar con `validation_mode: 'auto'` paga puntos/monedas correctamente, `'forced'` degrada a `awaiting_validation` y no paga, una asignación ya `completed` no se vuelve a pagar en un update posterior, y el mismo caso de tarea de otro tenant que §32 cubrió para `sync()` (aquí para `update()`). Suite completa: **134/134 tests, 569 assertions**, sin regresiones.
+
+**Listo para Cowork:** ya pueden migrar `startTask`, `pauseTask`, `completeTask`, `releaseTask`, `omitAssignment`, `grabTaskFromPool`, `reserveTaskFromPool` en `useTaskStore.ts` para llamar a `PUT /task-assignments/{id}` en vez de `syncToBackend()` completo — el endpoint ya calcula y persiste todo lo que antes solo pasaba por `/sync/tasks`.

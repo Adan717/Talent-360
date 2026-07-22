@@ -183,4 +183,66 @@ class StoreOpeningAdminOverrideTest extends TestCase
         $response->assertJsonPath('0.resolved_user_id', $employee->id);
         $this->assertNotEquals($employeesTableId, $employee->id, 'El decoy debe garantizar que employees.id y users.id difieran en este test.');
     }
+
+    public function test_create_assignment_accepts_user_id_and_resolves_the_real_employees_id(): void
+    {
+        $admin = $this->makeUser(['role' => 'admin']);
+        $employee = $this->makeUser();
+        $employeesTableId = DB::table('employees')->where('user_id', $employee->id)->value('id');
+
+        $response = $this->actingAs($admin)->postJson('/api/v1/store-opening/assignments', [
+            'user_id' => $employee->id,
+            'priority_order' => 1,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+        $response->assertJsonPath('assignment.employee_id', $employeesTableId);
+        $response->assertJsonPath('assignment.resolved_user_id', $employee->id);
+
+        $this->assertDatabaseHas('store_opening_assignments', [
+            'tenant_id' => 1,
+            'employee_id' => $employeesTableId,
+        ]);
+        $this->assertNotEquals($employeesTableId, $employee->id, 'El decoy debe garantizar que employees.id y users.id difieran en este test.');
+    }
+
+    public function test_create_assignment_rejects_a_user_without_an_employees_row(): void
+    {
+        $admin = $this->makeUser(['role' => 'admin']);
+
+        // Usuario creado a propósito sin pasar por makeUser() para que NO tenga fila
+        // en employees (caso real: cuenta de usuario existe, perfil de RRHH incompleto).
+        $userWithoutEmployee = User::factory()->create(['role' => 'empleado']);
+        DB::table('users')->where('id', $userWithoutEmployee->id)->update(['tenant_id' => 1]);
+
+        $response = $this->actingAs($admin)->postJson('/api/v1/store-opening/assignments', [
+            'user_id' => $userWithoutEmployee->id,
+            'priority_order' => 1,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson(['success' => false]);
+        $this->assertDatabaseMissing('store_opening_assignments', [
+            'tenant_id' => 1,
+        ]);
+    }
+
+    public function test_create_assignment_rejects_duplicate_assignment_for_the_same_employee(): void
+    {
+        $admin = $this->makeUser(['role' => 'admin']);
+        $employee = $this->makeUser();
+        $this->assignResponsible($employee);
+
+        $response = $this->actingAs($admin)->postJson('/api/v1/store-opening/assignments', [
+            'user_id' => $employee->id,
+            'priority_order' => 2,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+            'message' => 'El colaborador ya cuenta con una asignación de apertura.',
+        ]);
+    }
 }

@@ -652,7 +652,13 @@ export const useAppStore = create<AppState>((set, get) => ({
                assignedFromRoutineId: a.assigned_from_routine_id,
                assistantData: a.assistant_data ? (typeof a.assistant_data === 'string' ? JSON.parse(a.assistant_data) : a.assistant_data) : null,
                accumulatedMins: a.accumulated_mins || 0,
-               reservedAtMins: a.reserved_at_mins
+               reservedAtMins: a.reserved_at_mins,
+               // BUG FIX (auditoría Reloj+Tareas, 2026-07-22): el backend ya puebla `date` y
+               // `points_awarded` desde §14.1, pero esta hidratación nunca los leía — TaskRunner.tsx
+               // filtra "Historial de Hoy" y "puntos de hoy" con a.date, y como siempre llegaba
+               // undefined, mostraba el historial completo de TODOS los días como si fuera el de hoy.
+               date: a.date,
+               pointsAwarded: a.points_awarded
            }));
            useTaskStore.getState().setAssignments(camelCaseAssignments);
         }

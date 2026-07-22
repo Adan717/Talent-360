@@ -136,7 +136,7 @@ export function useStoreOpening({
             scheduled_opening_time: openTimeStr,
             pre_opening_window_start_mins: windowStartMins,
             report_deadline_mins: reportDeadlineMins,
-            current_responsible_employee_id: firstActive ? firstActive.employee_id : 1,
+            current_responsible_employee_id: firstActive ? (firstActive.resolved_user_id ?? firstActive.employee_id) : 1,
             status: 'pending',
           };
           localStorage.setItem('store_daily_opening_status', JSON.stringify(statusObj));
@@ -166,7 +166,9 @@ export function useStoreOpening({
                 );
               } catch {}
 
-              const currentAss = assList.find((a: any) => a.employee_id === statusObj.current_responsible_employee_id);
+              // §29: preferir resolved_user_id (users.id, ya resuelto por backend) sobre el employee_id
+              // crudo (employees.id); se conserva employee_id como resguardo para datos viejos en caché.
+              const currentAss = assList.find((a: any) => (a.resolved_user_id ?? a.employee_id) === statusObj.current_responsible_employee_id);
               const currentOrder = currentAss ? currentAss.priority_order : 1;
 
               const nextAss = assList
@@ -174,10 +176,10 @@ export function useStoreOpening({
                 .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
 
               if (nextAss) {
-                statusObj.current_responsible_employee_id = nextAss.employee_id;
+                statusObj.current_responsible_employee_id = nextAss.resolved_user_id ?? nextAss.employee_id;
                 statusObj.status = 'transferred';
                 statusObj.report_deadline_mins = currentSimTimeNow + (openingSettings.absence_late_report_window_minutes || 5);
-                const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
+                const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.resolved_user_id ?? nextAss.employee_id))?.name || 'suplente';
                 showCustomAlert(`⏳ Límite excedido. Responsabilidad de apertura cedida a ${nextName}.`);
               } else {
                 statusObj.status = 'failed';
@@ -441,7 +443,8 @@ export function useStoreOpening({
         ];
       } catch {}
 
-      const currentAss = ass.find((a: any) => a.employee_id === currentUser.id);
+      // §29: preferir resolved_user_id sobre employee_id crudo (ver nota en el mismo hook, arriba).
+      const currentAss = ass.find((a: any) => (a.resolved_user_id ?? a.employee_id) === currentUser.id);
       const currentOrder = currentAss ? currentAss.priority_order : 1;
 
       const nextAss = ass
@@ -450,10 +453,10 @@ export function useStoreOpening({
 
       const updated = { ...openingStatus };
       if (nextAss) {
-        updated.current_responsible_employee_id = nextAss.employee_id;
+        updated.current_responsible_employee_id = nextAss.resolved_user_id ?? nextAss.employee_id;
         updated.status = 'transferred';
         updated.report_deadline_mins = globalSimTime + (openingSettings.absence_late_report_window_minutes || 5);
-        const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
+        const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.resolved_user_id ?? nextAss.employee_id))?.name || 'suplente';
         showCustomAlert(`Ausencia reportada. Apertura cedida a ${nextName}.`);
       } else {
         updated.status = 'failed';
@@ -499,7 +502,8 @@ export function useStoreOpening({
           ];
         } catch {}
 
-        const currentAss = ass.find((a: any) => a.employee_id === currentUser.id);
+        // §29: preferir resolved_user_id sobre employee_id crudo (ver nota en el mismo hook, arriba).
+        const currentAss = ass.find((a: any) => (a.resolved_user_id ?? a.employee_id) === currentUser.id);
         const currentOrder = currentAss ? currentAss.priority_order : 1;
 
         const nextAss = ass
@@ -508,10 +512,10 @@ export function useStoreOpening({
 
         const updated = { ...openingStatus };
         if (nextAss) {
-          updated.current_responsible_employee_id = nextAss.employee_id;
+          updated.current_responsible_employee_id = nextAss.resolved_user_id ?? nextAss.employee_id;
           updated.status = 'transferred';
           updated.report_deadline_mins = globalSimTime + (openingSettings.absence_late_report_window_minutes || 5);
-          const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
+          const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.resolved_user_id ?? nextAss.employee_id))?.name || 'suplente';
           showCustomAlert(`Retardo reportado. Apertura cedida a ${nextName}.`);
         } else {
           updated.status = 'failed';

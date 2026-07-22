@@ -286,15 +286,11 @@ class TaskValidationRuleTest extends TestCase
             'priority' => 'normal',
         ]);
 
+        // §31: tasks/routines requieren admin/supervisor/platform_admin — un empleado
+        // normal solo puede mandar assignments (tomar/completar su propia tarea). La
+        // tarea ya existe en la BD (creada arriba vía Task::create()), no hace falta
+        // reenviarla en el sync.
         $syncData = [
-            'tasks' => [
-                [
-                    'id' => 101,
-                    'title' => 'Auto Task',
-                    'validation_mode' => 'auto',
-                    'priority' => 'normal',
-                ]
-            ],
             'assignments' => [
                 [
                     'id' => 'assign-sync-1',
@@ -347,14 +343,6 @@ class TaskValidationRuleTest extends TestCase
         ]);
 
         $syncData = [
-            'tasks' => [
-                [
-                    'id' => 102,
-                    'title' => 'Forced Task',
-                    'validation_mode' => 'forced',
-                    'priority' => 'normal',
-                ]
-            ],
             'assignments' => [
                 [
                     'id' => 'assign-sync-2',
@@ -408,14 +396,6 @@ class TaskValidationRuleTest extends TestCase
         ]);
 
         $syncData = [
-            'tasks' => [
-                [
-                    'id' => 103,
-                    'title' => 'Dynamic Task New Hire',
-                    'validation_mode' => 'dynamic',
-                    'priority' => 'normal',
-                ]
-            ],
             'assignments' => [
                 [
                     'id' => 'assign-sync-3',

@@ -3104,7 +3104,8 @@ export function useClockEngine(overrideUser?: any) {
           .filter((a: any) => a.is_active)
           .sort((a: any, b: any) => a.priority_order - b.priority_order)[0];
         if (firstActive) {
-          responsibleId = firstActive.employee_id;
+          // §29: preferir resolved_user_id (users.id, resuelto por backend) sobre employee_id crudo.
+          responsibleId = firstActive.resolved_user_id ?? firstActive.employee_id;
         }
       } catch {}
     }
@@ -3307,7 +3308,7 @@ export function useClockEngine(overrideUser?: any) {
         const savedAss = localStorage.getItem('store_opening_assignments');
         const ass = savedAss ? JSON.parse(savedAss) : [];
         hasActiveKeyAssignment = ass.some(
-          (a: any) => Number(a.employee_id) === Number(currentUser?.id) && a.is_active && a.has_keys
+          (a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(currentUser?.id) && a.is_active && a.has_keys
         );
       } catch {}
 

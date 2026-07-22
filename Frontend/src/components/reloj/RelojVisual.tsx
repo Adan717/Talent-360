@@ -1686,7 +1686,8 @@ export default function RelojVisual({
           { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
         ]
       );
-      const match = assignments.find((a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
+      // §29: preferir resolved_user_id (users.id) sobre el employee_id crudo (employees.id).
+      const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
       }
@@ -2569,6 +2570,13 @@ export default function RelojVisual({
   const renderFabOperationsSheet = () => {
     if (!isFabSheetOpen) return null;
 
+    // §31 (docs/BACKEND_INTERFACES.md): "Crear Tarea Rápida" escribe en el catálogo de Tareas
+    // (createDynamicTask → syncToBackend(true)), lo mismo que en TaskRunner.tsx ya está reservado a
+    // isSupervisor allá — aquí no tenía ningún gate y cualquier colaborador podía verlo y usarlo.
+    const canCreateQuickTask = currentUser?.role === 'admin' ||
+                                currentUser?.role === 'supervisor' ||
+                                currentUser?.system_role === 'platform_admin';
+
     return (
       <div role="dialog" aria-modal="true" aria-label="Operaciones & Soporte AI" className="fixed inset-0 z-[90] flex items-end justify-center">
         {/* Backdrop overlay */}
@@ -2620,7 +2628,7 @@ export default function RelojVisual({
                   </div>
                 </button>
 
-                <button 
+                {canCreateQuickTask && <button
                   onClick={() => {
                     setIsFabSheetOpen(false);
                     setIsTaskCreatorOpen(true);
@@ -2636,7 +2644,7 @@ export default function RelojVisual({
                     <p className="font-bold text-xs">Crear Tarea</p>
                     <p className="text-[9px] text-slate-400 mt-0.5">Lanzar on-the-fly</p>
                   </div>
-                </button>
+                </button>}
               </div>
             </div>
 

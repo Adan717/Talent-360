@@ -91,7 +91,7 @@ interface TaskStoreState {
     setTasks: (tasks: Task[]) => void;
     setRoutines: (routines: Routine[]) => void;
     setAssignments: (assignments: TaskAssignment[]) => void;
-    syncToBackend: () => Promise<void>;
+    syncToBackend: (includeCatalog?: boolean) => Promise<void>;
 
     // Acciones Admin
     addTask: (task: Task) => void;
@@ -122,26 +122,35 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
     setRoutines: (routines) => set({ routines }),
     setAssignments: (assignments) => set({ assignments }),
 
-    syncToBackend: async () => {
+    // §31 (docs/BACKEND_INTERFACES.md): antes se mandaban SIEMPRE `tasks`/`routines` completos
+    // (el catálogo entero), incluso en acciones puramente operativas (completar/pausar/tomar de la
+    // bolsa una asignación propia). Eso no solo era ineficiente (§33) — además hacía imposible que el
+    // backend distinguiera "esto es una edición real del catálogo" de "esto es un empleado operando su
+    // propia tarea", que es justo lo que necesita para poder exigir rol admin/supervisor solo cuando
+    // corresponde. `includeCatalog` (default false) controla si se incluyen `tasks`/`routines` en el
+    // payload: solo las 4 acciones de administración (addTask/updateTask/addRoutine/updateRoutine) lo
+    // pasan en true; las acciones operativas siguen mandando `assignments` como siempre.
+    syncToBackend: async (includeCatalog: boolean = false) => {
         try {
             if (useAppStore.getState().isSandboxMode) return; // Guardado en memoria RAM solamente
-            
+
             const state = get();
-            await axiosInstance.post('/sync/tasks', {
-                tasks: state.tasks,
-                routines: state.routines,
-                assignments: state.assignments
-            });
+            const payload: any = { assignments: state.assignments };
+            if (includeCatalog) {
+                payload.tasks = state.tasks;
+                payload.routines = state.routines;
+            }
+            await axiosInstance.post('/sync/tasks', payload);
         } catch (e) {
             console.error("Failed to sync tasks to backend:", e);
             alert("Error al guardar tareas. Verifique que el servidor backend esté encendido.");
         }
     },
 
-    addTask: (task) => { set(state => ({ tasks: [...state.tasks, task] })); get().syncToBackend(); },
-    updateTask: (task) => { set(state => ({ tasks: state.tasks.map(t => t.id === task.id ? task : t) })); get().syncToBackend(); },
-    addRoutine: (routine) => { set(state => ({ routines: [...state.routines, routine] })); get().syncToBackend(); },
-    updateRoutine: (routine) => { set(state => ({ routines: state.routines.map(r => r.id === routine.id ? routine : r) })); get().syncToBackend(); },
+    addTask: (task) => { set(state => ({ tasks: [...state.tasks, task] })); get().syncToBackend(true); },
+    updateTask: (task) => { set(state => ({ tasks: state.tasks.map(t => t.id === task.id ? task : t) })); get().syncToBackend(true); },
+    addRoutine: (routine) => { set(state => ({ routines: [...state.routines, routine] })); get().syncToBackend(true); },
+    updateRoutine: (routine) => { set(state => ({ routines: state.routines.map(r => r.id === routine.id ? routine : r) })); get().syncToBackend(true); },
 
     triggerCheckInRoutines: (userId, roleId, currentSimTime) => {
         const { routines, tasks, assignments } = get();
@@ -444,7 +453,8 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                 completedAtMins: null
             }]
         }));
-        get().syncToBackend();
+        // Crea una Task nueva de verdad (no solo una asignación) — necesita ir en el catálogo.
+        get().syncToBackend(true);
 
         useAppStore.getState().addMatrixEvent(
             '⚡ Tarea On-the-fly',

@@ -25,6 +25,15 @@ class TaskSyncController extends Controller
 
         $tenantId = auth()->user()->tenant_id ?? 1;
 
+        // §31: crear/editar el catálogo de tasks/routines es una acción administrativa
+        // — la porción de assignments (tomar/pausar/completar tu propia tarea) sigue
+        // abierta a cualquier rol autenticado, ese flujo no se toca.
+        if ($request->has('tasks') || $request->has('routines')) {
+            if (!in_array(auth()->user()->role, ['admin', 'supervisor', 'platform_admin'])) {
+                return response()->json(['message' => 'No autorizado para crear o editar tareas/rutinas.'], 403);
+            }
+        }
+
         DB::beginTransaction();
         try {
             if ($request->has('tasks')) {
@@ -224,7 +233,11 @@ class TaskSyncController extends Controller
                     $mappedData['task_cost'] = $taskCost;
 
                     if ($mappedData['status'] === 'completed') {
-                        $basePoints = $task->points ?? 10;
+                        // §32: $task puede ser null si el taskId no existe (ej. el
+                        // placeholder 9999 de Ley Silla) — sin operador null-safe esto
+                        // tronaba con "Attempt to read property 'points' on null" y
+                        // hacía rollback de todo el sync.
+                        $basePoints = $task?->points ?? 10;
                         $mappedData['points_awarded'] = $basePoints;
                         // 1 Pobre de Puntos = 0.10 Monedas Digitales
                         $coinsEarned = round($basePoints * 0.10, 2);
@@ -237,7 +250,7 @@ class TaskSyncController extends Controller
                                 $coinsEarned,
                                 $basePoints,
                                 'earned_task',
-                                "Recompensa por completar tarea: " . ($task->title ?? 'Tarea Operativa'),
+                                "Recompensa por completar tarea: " . ($task?->title ?? 'Tarea Operativa'),
                                 'TaskAssignment',
                                 $assignment['id']
                             );

@@ -1703,6 +1703,40 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       </label>
                     </div>
 
+                    {/* Switch §22: require_pase_lista_rating */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Calificar Pase de Lista</h5>
+                        <p className="text-[9px] text-slate-400">Estrellas: Presentación / Imagen / Energía</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.require_pase_lista_rating ?? false}
+                          onChange={(e) => handleNestedChange('clockOpConfig', 'require_pase_lista_rating', e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Switch §23: require_meal_photo_evidence */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Foto de Comedor (Comida)</h5>
+                        <p className="text-[9px] text-slate-400">Evidencia al iniciar y terminar la comida</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.require_meal_photo_evidence ?? false}
+                          onChange={(e) => handleNestedChange('clockOpConfig', 'require_meal_photo_evidence', e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
                     {/* Switch 5: revalidate_gps_on_punch */}
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
                       <div>

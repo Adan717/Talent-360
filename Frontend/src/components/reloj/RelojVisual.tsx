@@ -12,6 +12,7 @@ import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import { MobileBottomNav } from './MobileBottomNav';
 const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
 import DialPrincipal from './DialPrincipal';
+import MealPhotoCapture from './MealPhotoCapture';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -334,6 +335,11 @@ export default function RelojVisual({
     setIsHandoverCompleted,
     startBreakWithSittingTask,
     handleSendDoorNotice,
+    showMealPhotoModal,
+    setShowMealPhotoModal,
+    mealPhotoType,
+    mealPhotoSubmitting,
+    submitMealPhoto,
     startTempExit,
     endTempExit,
     triggerPanic,
@@ -4422,6 +4428,15 @@ export default function RelojVisual({
           {/* ========================================================================= */}
 
           {/* Modal Pase de Lista */}
+          {showMealPhotoModal && (
+            <MealPhotoCapture
+              type={mealPhotoType}
+              submitting={mealPhotoSubmitting}
+              onCapture={submitMealPhoto}
+              onCancel={() => setShowMealPhotoModal(false)}
+            />
+          )}
+
           {showPaseListaModal && (
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col pt-12 pb-6 px-4 animate-fade-in-up">
               <div className="bg-white rounded-3xl p-5 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-slate-800">
@@ -4464,6 +4479,42 @@ export default function RelojVisual({
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${emp.onTime ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                               {emp.onTime ? `✓ En Tolerancia (${emp.statusLabel})` : `⚠️ Fuera de Tolerancia (${emp.statusLabel})`}
                             </span>
+                          )}
+
+                          {/* NUEVO (§22 / estado #8 Logica Dial.md): calificación por estrellas al hacer el
+                              pase de lista. Solo visible si el switch clockOpConfig.require_pase_lista_rating
+                              está activo y el empleado está marcado como presente. */}
+                          {systemSettings?.clockOpConfig?.require_pase_lista_rating === true && emp.selected && (
+                            <div className="mt-2 space-y-1.5 w-full">
+                              {([
+                                { key: 'presentacion', label: 'Presentación' },
+                                { key: 'imagen', label: 'Imagen' },
+                                { key: 'energia', label: 'Energía' },
+                              ] as const).map((axis) => (
+                                <div key={axis.key} className="flex items-center justify-between gap-2">
+                                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider w-20 shrink-0">{axis.label}</span>
+                                  <div className="flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = [...paseListaEmployees];
+                                          updated[index] = { ...updated[index], [axis.key]: star };
+                                          setPaseListaEmployees(updated);
+                                        }}
+                                        className={`text-sm leading-none transition-transform active:scale-90 ${
+                                          (emp[axis.key] || 0) >= star ? 'text-amber-400' : 'text-slate-300'
+                                        }`}
+                                        aria-label={`${axis.label} ${star} estrella${star === 1 ? '' : 's'}`}
+                                      >
+                                        ★
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>

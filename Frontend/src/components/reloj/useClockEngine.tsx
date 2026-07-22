@@ -737,6 +737,11 @@ export function useClockEngine(overrideUser?: any) {
   }, [gpsDistance, clockState, gpsStatus, currentUser?.name, currentUser?.id, clockOpConfig.gpsAlertRangeMeters]);
 
   const [paseListaEmployees, setPaseListaEmployees] = useState<any[]>([]);
+  // §23: evidencia fotográfica de comedor
+  const [showMealPhotoModal, setShowMealPhotoModal] = useState(false);
+  const [mealPhotoType, setMealPhotoType] = useState<'meal_start' | 'meal_end'>('meal_start');
+  const [mealPhotoSubmitting, setMealPhotoSubmitting] = useState(false);
+  const isMealPhotoRequired = systemSettings?.clockOpConfig?.require_meal_photo_evidence === true;
   const [cashCount, setCashCount] = useState("");
   const [kioscoInput, setKioscoInput] = useState('');
   const [evalStars, setEvalStars] = useState(0);
@@ -2084,6 +2089,32 @@ export function useClockEngine(overrideUser?: any) {
       }
 
       window.dispatchEvent(new Event('db_sync_updated'));
+
+      // NUEVO (§22 / estado #8 Logica Dial.md): si el switch require_pase_lista_rating está activo,
+      // además del check_in se envían las calificaciones (Presentación/Imagen/Energía) de los presentes.
+      // Endpoint separado del check_in (POST /clock/pase-lista/ratings), tal como quedó en el contrato.
+      // employee_id apunta a users.id (mismo identificador que usa /clock/punch), no a employees.id.
+      const requireRating = systemSettings?.clockOpConfig?.require_pase_lista_rating === true;
+      if (requireRating && !isSandboxMode) {
+        const ratings = paseListaEmployees
+          .filter((emp: any) => emp.selectedStatus === 'presente' || emp.selected)
+          .filter((emp: any) => emp.presentacion || emp.imagen || emp.energia)
+          .map((emp: any) => ({
+            employee_id: emp.id,
+            presentacion: emp.presentacion || 0,
+            imagen: emp.imagen || 0,
+            energia: emp.energia || 0,
+          }));
+        if (ratings.length > 0) {
+          try {
+            await axiosInstance.post('/clock/pase-lista/ratings', { date: todayStr, ratings });
+          } catch (e) {
+            // No bloquea el pase de lista: el check_in ya se hizo; la calificación es complementaria.
+            console.warn('No se pudieron guardar las calificaciones de pase de lista (§22):', e);
+          }
+        }
+      }
+
       setPaseListaDone(true); // <--- CORRECCION VITAL: Marcar que ya se hizo
       showCustomAlert(`✅ Pase de Lista completado. Se dio acceso a ${registrados} empleados.`);
     } catch(e) {
@@ -2348,10 +2379,22 @@ export function useClockEngine(overrideUser?: any) {
         handleOpenStore(false);
       } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida') {
         // BUG FIX: getButtonProps retorna 'Iniciar Comida', unificamos ambos strings
+        // NUEVO (§23): si se exige evidencia fotográfica, se abre la cámara PRIMERO; el fichaje real
+        // (meal_start) ocurre después, ya con la foto subida (ver submitMealPhotoAndPunch).
+        if (isMealPhotoRequired && !isSandboxMode) {
+          setMealPhotoType('meal_start');
+          setShowMealPhotoModal(true);
+          return;
+        }
         await syncToDB('meal_start');
         showCustomAlert('🍔 Horario de comida iniciado.');
       } else if (actionText === 'Terminar Comida' || actionText === 'Regresar de Comida') {
         // BUG FIX: getButtonProps retorna 'Terminar Comida' (clockState === meal)
+        if (isMealPhotoRequired && !isSandboxMode) {
+          setMealPhotoType('meal_end');
+          setShowMealPhotoModal(true);
+          return;
+        }
         const res = await syncToDB('meal_end');
         if (!res?.offline) {
           showCustomAlert('🏃 Has regresado de comer.');
@@ -2464,6 +2507,34 @@ export function useClockEngine(overrideUser?: any) {
       console.warn('door-notice endpoint no disponible aún (backend §26 pendiente):', e);
     }
     showCustomAlert(`💬 Aviso enviado a ${responsibleName}: estás esperando en puerta.`);
+  };
+
+  // NUEVO (§23): recibe el data URL de la foto capturada, la sube a POST /clock/meal-photo y, solo si
+  // la subida tiene éxito, ejecuta el fichaje real (meal_start / meal_end). Si la subida falla, NO
+  // avanza el estado — la evidencia es obligatoria cuando el switch está activo (a diferencia del
+  // door-notice, que es informativo). El modal se cierra y muestra el resultado.
+  const submitMealPhoto = async (dataUrl: string) => {
+    setMealPhotoSubmitting(true);
+    const todayStr = new Date().toLocaleDateString('sv-SE');
+    try {
+      await axiosInstance.post('/clock/meal-photo', {
+        type: mealPhotoType,
+        date: todayStr,
+        image: dataUrl,
+        client_timestamp: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      setMealPhotoSubmitting(false);
+      showCustomAlert(e?.response?.data?.message || '❌ No se pudo subir la foto del comedor. Intenta de nuevo.');
+      return; // No avanza el fichaje: la evidencia es obligatoria.
+    }
+
+    const res = await syncToDB(mealPhotoType);
+    setMealPhotoSubmitting(false);
+    setShowMealPhotoModal(false);
+    if (!res?.offline) {
+      showCustomAlert(mealPhotoType === 'meal_start' ? '🍔 Comida iniciada (evidencia registrada).' : '🏃 Regreso de comida registrado (evidencia registrada).');
+    }
   };
 
   const startTempExit = async (reason: string) => {
@@ -3734,6 +3805,10 @@ export function useClockEngine(overrideUser?: any) {
     setIsHandoverCompleted,
     startBreakWithSittingTask,
     handleSendDoorNotice,
+    showMealPhotoModal, setShowMealPhotoModal,
+    mealPhotoType,
+    mealPhotoSubmitting,
+    submitMealPhoto,
     startTempExit,
     endTempExit,
     triggerPanic,

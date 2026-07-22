@@ -32,9 +32,21 @@ Convención: 🆓 Freemium incluido · 💎 Pro y superior · 🏢 Solo Enterpri
 
 | Función | Flag | Hoy | Propuesta |
 |---|---|---|---|
-| Cálculo de portadores de llaves, delegación al cierre, aviso a suplente | `keys_control` (existe el flag pero el módulo hoy no lo consulta — ver hallazgo) | 🔓 en la práctica | 💎 — recomiendo activarle el gate a `keys_control` ya que el flag existe y el negocio (control de llaves/responsabilidad) es un caso de venta claro para Pro |
-| Transferencia de llaves en vivo entre dos titulares (`/key-transfers/*`) | 🔓 sin gating | 🔓 | 💎 Agrupar con lo de arriba bajo `keys_control` |
+| Entrega de Turno / arqueo al cierre (estado #21 de la matriz) | `keys_control` | 💎 (corregido 2026-07-21, antes usaba un chequeo de tier hardcodeado que ignoraba el array real por tenant) | 💎 Se mantiene |
+| Transferencia de llaves en vivo entre dos titulares (`/key-transfers/*`) | `keys_control` (gate agregado 2026-07-21) | 💎 | 💎 Se mantiene |
+| Cálculo de portadores de llaves (`isUserActiveKeyholder`) y aviso proactivo a suplente (estado #5) | Sin gate propio — es parte del flujo de apertura, cubierto por `store_opening` | 💎 (vía `store_opening`) | Se queda así a propósito: es información de seguridad (quién puede abrir/responder en emergencia), no conviene aislarla detrás de un segundo flag |
 | Alerta de abandono de tienda | 🔓 sin gating | 🔓 | 🆓 Dejar libre — es seguridad, no conveniencia |
+
+### ✅ Implementado (2026-07-21) — `keys_control`
+
+Antes, `keys_control` existía en los arrays de `allowedFeatures` de `useAppStore.ts` pero ningún componente lo consultaba (confirmado por grep: cero resultados en `Frontend/src/components`). La "Entrega de Turno" (estado #21) se gateaba con un chequeo de tier hardcodeado (`isPro = currentTier === 'pro' || 'enterprise' || tenant_id === 1`) que ignora `allowedFeatures` por completo, y la transferencia de llaves en vivo no tenía ningún gate.
+
+Cambios en `Frontend/src/components/reloj/hooks/useKeyholderDelegation.ts` y `useClockEngine.tsx`:
+- `isKeysControlUnlocked = isFeatureUnlocked('keys_control')` ahora gatea `handleKeyDelegation`, `initiateKeyTransfer`, `checkPendingKeyTransfers` y `respondToKeyTransfer` (con alerta explicando que es función Pro cuando corresponde).
+- El botón "Entrega de Turno" del dial (estado #21) ahora exige `isKeysControlUnlocked` además de `isPro` — sin cambio de comportamiento para tenants actuales (el flag ya viene incluido por default en pro/enterprise), pero ahora si el backend manda `tenant_allowed_features` sin `keys_control` para un tenant Pro específico, el gate lo respeta de verdad.
+- El banner de transferencia de llaves pendiente en `RelojVisual.tsx` ahora también revisa `isKeysControlUnlocked` como defensa adicional (aunque `pendingKeyTransfers` ya no se puebla sin el flag).
+- Deliberadamente NO se gateó `isUserActiveKeyholder`/`handleCallSuplente` (estado #5) con `keys_control` — siguen dependiendo solo de `store_opening`, porque saber quién tiene llaves es información de seguridad que se necesita incluso en apertura de emergencia (que es 🆓 siempre libre, ver fila de arriba en la sección 2). El badge de "Sucursal Abierta/Cerrada" tampoco se tocó — sigue visible en todos los planes, sin relación con `keys_control`.
+- Verificado con `tsc --noEmit`, 0 errores.
 
 ## 4. GPS / Offline (hooks/useGeoAndOfflineSync.ts)
 

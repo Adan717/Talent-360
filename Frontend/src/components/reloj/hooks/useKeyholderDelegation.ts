@@ -28,6 +28,12 @@ export function useKeyholderDelegation({
 }: UseKeyholderDelegationParams) {
   const isSandboxMode = useAppStore(s => s.isSandboxMode);
   const fetchState = useAppStore(s => s.fetchState);
+  // NUEVO (2026-07-21): 'keys_control' existía en los arrays de allowedFeatures de useAppStore.ts
+  // desde hace tiempo, pero ningún componente lo consultaba — la "Entrega de Turno" (estado #21)
+  // usaba en su lugar un chequeo de tier hardcodeado (isPro) en useClockEngine.tsx, y la
+  // transferencia de llaves en vivo (initiateKeyTransfer/respondToKeyTransfer) no tenía ningún
+  // gate. Este flag es ahora la fuente real de verdad para ambas cosas.
+  const isKeysControlUnlocked = useAppStore(s => s.isFeatureUnlocked('keys_control'));
 
   // Fase 1: Portadores de Llaves
   const [keyholders, setKeyholders] = useState<number[]>([]);
@@ -45,6 +51,11 @@ export function useKeyholderDelegation({
   const [nextDayEncargadoId, setNextDayEncargadoId] = useState<number | null>(null);
 
   const handleKeyDelegation = async () => {
+    if (!isKeysControlUnlocked) {
+      showCustomAlert("🔒 La entrega de turno y delegación de llaves es una función del Plan Pro.");
+      setShowKeyDelegationModal(false);
+      return;
+    }
     if (!nextDayEncargadoId) {
       showCustomAlert("Debes seleccionar a un encargado suplente.");
       return;
@@ -130,6 +141,10 @@ export function useKeyholderDelegation({
   const [pendingKeyTransfers, setPendingKeyTransfers] = useState<any[]>([]);
 
   const initiateKeyTransfer = async (receiverId: number, notes: string) => {
+    if (!isKeysControlUnlocked) {
+      showCustomAlert("🔒 La transferencia de llaves en vivo es una función del Plan Pro.");
+      return false;
+    }
     if (isSandboxMode) {
       setDesignatedCloserId(receiverId);
       showCustomAlert("✅ Cierre transferido con éxito (Modo Sandbox).");
@@ -150,7 +165,9 @@ export function useKeyholderDelegation({
   };
 
   const checkPendingKeyTransfers = async () => {
-    if (isSandboxMode) return;
+    // Sin keys_control ni siquiera consultamos el endpoint — así un tenant Freemium jamás ve el
+    // banner de "te propuso cederte la custodia de llaves", ni aunque quedara un registro viejo.
+    if (!isKeysControlUnlocked || isSandboxMode) return;
     try {
       const res = await axiosInstance.get('/key-transfers/pending');
       if (res.data) {
@@ -162,7 +179,7 @@ export function useKeyholderDelegation({
   };
 
   const respondToKeyTransfer = async (transferId: number, status: 'accepted' | 'rejected') => {
-    if (isSandboxMode) return;
+    if (!isKeysControlUnlocked || isSandboxMode) return;
     try {
       const res = await axiosInstance.post(`/key-transfers/${transferId}/respond`, { status });
       if (res.data) {
@@ -191,6 +208,7 @@ export function useKeyholderDelegation({
   };
 
   return {
+    isKeysControlUnlocked,
     keyholders, setKeyholders,
     showKeyDelegationModal, setShowKeyDelegationModal,
     nextDayEncargadoId, setNextDayEncargadoId,

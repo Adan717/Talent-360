@@ -234,6 +234,7 @@ export default function RelojVisual({
     showEvalModal,
     showForzosaModal,
     showJustificanteModal,
+    isKeysControlUnlocked,
     showKeyDelegationModal,
     showMealReservationModal,
     showPaseListaModal,
@@ -3405,7 +3406,7 @@ export default function RelojVisual({
                 {/* Banners Superiores (No empujan el Dial, se agrupan al inicio) */}
                 <div className="w-full shrink-0 flex flex-col gap-1.5">
                   {/* Banner de transferencia de llaves pendiente */}
-                  {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
+                  {isKeysControlUnlocked && pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
                     <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-1.5 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
                       <div className="flex items-start gap-2.5">
                         <span className="text-xl mt-0.5 shrink-0">🔑</span>

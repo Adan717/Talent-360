@@ -138,6 +138,7 @@ export function useClockEngine(overrideUser?: any) {
   });
 
   const {
+    isKeysControlUnlocked,
     keyholders, setKeyholders,
     showKeyDelegationModal, setShowKeyDelegationModal,
     nextDayEncargadoId, setNextDayEncargadoId,
@@ -3190,7 +3191,12 @@ export function useClockEngine(overrideUser?: any) {
       const currentShiftEndStrHO = shiftConfigs[currentUser?.id]?.end || '17:00';
       const currentShiftEndMinsHO = parseTimeToMins(currentShiftEndStrHO);
       const isHandoverWindow = currentSimTime >= currentShiftEndMinsHO - 15;
-      if (isPro && isManager && !isHandoverCompleted && isHandoverWindow) {
+      // NUEVO (2026-07-21): antes este gate era solo "isPro" (chequeo de tier hardcodeado). Ahora
+      // exige también 'keys_control' vía isFeatureUnlocked — hoy es idéntico en la práctica porque
+      // el flag viene incluido por default en pro/enterprise, pero ya respeta de verdad el array
+      // allowedFeatures real que manda el backend por tenant (ver docs/FEATURE_TIERS.md).
+      const isKeysControlUnlockedHO = useAppStore.getState().isFeatureUnlocked('keys_control');
+      if (isPro && isKeysControlUnlockedHO && isManager && !isHandoverCompleted && isHandoverWindow) {
         return {
           text: 'Entrega de Turno',
           bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse',
@@ -3408,6 +3414,7 @@ export function useClockEngine(overrideUser?: any) {
     securityPinSubmitting,
     handleUpdateSecurityPin,
     isOpeningPremium,
+    isKeysControlUnlocked,
 
     isGlobalLoading: false,
     DIAS_SEMANA,

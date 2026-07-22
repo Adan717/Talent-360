@@ -542,6 +542,13 @@ export default function PanelSimulador() {
                   </button>
                 )}
               </div>
+              <span className={`text-[10px] font-bold flex items-center gap-1 ${simulatedTierOverride ? 'text-indigo-400' : 'text-slate-500'}`}>
+                {simulatedTierOverride ? (
+                  <>🧪 Override manual activo — no refleja la BD real</>
+                ) : (
+                  <>🗄️ Mostrando el plan real del tenant #{currentUser?.tenant_id ?? '?'} desde la base de datos</>
+                )}
+              </span>
             </div>
 
             <div className="flex flex-col gap-1.5 w-full lg:w-auto">

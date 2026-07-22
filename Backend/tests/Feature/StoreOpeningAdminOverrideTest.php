@@ -33,13 +33,25 @@ class StoreOpeningAdminOverrideTest extends TestCase
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
         $user->refresh();
 
+        // Fila "decoy" antes de la real para que employees.id nunca coincida por
+        // accidente con users.id — si el código volviera a comparar mal (bug de
+        // 2026-07-07: store_opening_assignments.employee_id es employees.id, pero
+        // store_daily_opening_statuses.current_responsible_employee_id sigue siendo
+        // users.id), este desfase lo delataría en vez de esconderlo.
         DB::table('employees')->insert([
-            'id' => $user->id,
+            'tenant_id' => 1,
+            'user_id' => null,
+            'name' => 'Decoy',
+            'email' => 'decoy-' . uniqid() . '@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('employees')->insert([
             'tenant_id' => 1,
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'is_active_employee' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -47,14 +59,16 @@ class StoreOpeningAdminOverrideTest extends TestCase
         return $user;
     }
 
-    // store_opening_assignments.employee_id es users.id pese al nombre de la columna
-    // (migración 2026_06_28_030000: ->constrained('users')).
+    // store_opening_assignments.employee_id es employees.id (migración
+    // 2026_07_07_192928_fix_store_opening_assignments_foreign_key), no users.id.
     private function assignResponsible(User $responsible): void
     {
+        $employeeId = DB::table('employees')->where('user_id', $responsible->id)->value('id');
+
         DB::table('store_opening_assignments')->insert([
             'tenant_id' => 1,
             'store_id' => 1,
-            'employee_id' => $responsible->id,
+            'employee_id' => $employeeId,
             'priority_order' => 1,
             'can_open_store' => true,
             'can_close_store' => true,

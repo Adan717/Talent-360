@@ -97,6 +97,57 @@ class ClockEmergencyContingencyTest extends TestCase
         ]);
     }
 
+    public function test_emergency_open_succeeds_when_employees_id_diverges_from_users_id(): void
+    {
+        // makeEmployee() alinea employees.id con users.id por construcción 1:1 — este
+        // test rompe esa coincidencia a propósito (fila "decoy" antes de cada real) para
+        // probar que isSuplenteConLlaves resuelve el employees.id del requester de
+        // verdad, en vez de comparar users.id contra employee_id (bug corregido en
+        // StoreOpeningService::emergencyOpenWithWitnesses).
+        $decoyOffset = fn () => DB::table('employees')->insert([
+            'tenant_id' => 1,
+            'user_id' => null,
+            'name' => 'Decoy',
+            'email' => 'decoy-' . uniqid() . '@example.com',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $decoyOffset();
+        $requester = $this->makeEmployee();
+        $decoyOffset();
+        $witness1 = $this->makeEmployee([], '1111');
+        $decoyOffset();
+        $witness2 = $this->makeEmployee([], '2222');
+
+        $requesterEmployeeId = DB::table('employees')->where('user_id', $requester->id)->value('id');
+
+        DB::table('store_opening_assignments')->insert([
+            'tenant_id' => 1,
+            'store_id' => 1,
+            'employee_id' => $requesterEmployeeId,
+            'priority_order' => 1,
+            'can_open_store' => true,
+            'can_close_store' => true,
+            'has_keys' => true,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($requester)->postJson('/api/v1/clock/emergency-open', [
+            'requester_id' => $requester->id,
+            'witness_1_id' => $witness1->id,
+            'witness_1_pin' => '1111',
+            'witness_2_id' => $witness2->id,
+            'witness_2_pin' => '2222',
+            'store_id' => 1,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+    }
+
     public function test_emergency_open_rejects_incorrect_witness_pin(): void
     {
         $requester = $this->makeEmployee();

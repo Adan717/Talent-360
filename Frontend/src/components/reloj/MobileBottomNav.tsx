@@ -57,8 +57,8 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
   return (
     <nav className={`absolute bottom-3 left-2.5 right-2.5 z-[75] flex items-center justify-between py-2.5 px-3 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200 ${
       isDark 
-        ? 'bg-slate-955/85 border-violet-900/40 shadow-[0_-8px_32px_rgba(124,58,237,0.12),0_8px_32px_rgba(124,58,237,0.1)] text-slate-400' 
-        : 'bg-white/85 border-violet-100/50 shadow-[0_-8px_32px_rgba(124,58,237,0.06),0_8px_32px_rgba(124,58,237,0.04)] text-slate-505'
+        ? 'bg-slate-950/85 border-violet-900/40 shadow-[0_-8px_32px_rgba(124,58,237,0.12),0_8px_32px_rgba(124,58,237,0.1)] text-slate-400' 
+        : 'bg-white/85 border-violet-100/50 shadow-[0_-8px_32px_rgba(124,58,237,0.06),0_8px_32px_rgba(124,58,237,0.04)] text-slate-500'
     }`}>
       
       {/* 1. RELOJ */}
@@ -117,7 +117,7 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
       >
         <div className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all ${
           phoneTab === 'academia' 
-            ? 'bg-violet-500/10 border-2 border-violet-650 dark:border-violet-500 shadow-sm scale-105' 
+            ? 'bg-violet-500/10 border-2 border-violet-600 dark:border-violet-500 shadow-sm scale-105' 
             : `bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 ${isAcademiaBlocked ? 'opacity-40' : ''}`
         }`}>
           <GraduationCap size={19} />

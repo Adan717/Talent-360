@@ -806,7 +806,7 @@ export function useClockEngine(overrideUser?: any) {
 
     if (mealTaken > timeBankConfigs.mealMinutes) {
         status = 'Penalidad';
-        statusClass = 'bg-orange-100 text-orange-700';
+        statusClass = 'bg-amber-100 text-amber-700';
         penaltyText = `-${(mealTaken - timeBankConfigs.mealMinutes) * 3}m`;
     }
 
@@ -3174,7 +3174,7 @@ export function useClockEngine(overrideUser?: any) {
     if (!hasCheckedIn && isLate && clockState === 'inactive') {
       return {
         text: '🔒 Acceso Bloqueado',
-        bg: 'bg-slate-700 text-slate-350 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',
+        bg: 'bg-slate-700 text-slate-300 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',
         icon: '🔒',
         iconKey: 'access_blocked',
         isQrUnlockRequired: true,
@@ -3232,7 +3232,7 @@ export function useClockEngine(overrideUser?: any) {
             }
             return {
               text: '🚨 Notificar Tienda Cerrada',
-              bg: 'bg-orange-500 hover:bg-orange-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
+              bg: 'bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
               icon: '🚨',
               iconKey: 'report_store_closed',
               isReportStoreClosed: true,
@@ -3290,7 +3290,7 @@ export function useClockEngine(overrideUser?: any) {
       if (Number(currentUser.id) === Number(responsibleId)) {
         return {
           text: 'Abrir Tienda',
-          bg: 'bg-violet-650 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
+          bg: 'bg-violet-600 hover:bg-violet-700 text-white font-black shadow-[0_0_25px_rgba(139,92,246,0.35)] animate-pulse',
           icon: '🗝️',
           iconKey: 'open_store',
           isOpeningActive: true,
@@ -3391,7 +3391,7 @@ export function useClockEngine(overrideUser?: any) {
       if (isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
         return {
           text: 'Descanso',
-          bg: 'bg-purple-600 hover:bg-purple-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
+          bg: 'bg-violet-600 hover:bg-violet-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
           icon: '🧘',
           iconKey: 'break_start',
           subtext: 'Descanso Ley Silla (15 min)'
@@ -3451,7 +3451,7 @@ export function useClockEngine(overrideUser?: any) {
       return { text: 'Terminar Comida', bg: 'bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)]', icon: '🏃', iconKey: 'meal_end', subtext: 'Haz clic al regresar a la sucursal' };
     }
     if (clockState === 'short_break') {
-      return { text: 'Terminar Descanso', bg: 'bg-indigo-650 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
+      return { text: 'Terminar Descanso', bg: 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
     }
     if (clockState === 'temp_exit') {
       return { text: 'Registrar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };

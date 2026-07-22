@@ -8,6 +8,7 @@ import Academia from './Academia';
 import Evaluacion360 from './Evaluacion360';
 import NominaColaborador from './NominaColaborador';
 import axiosInstance from '../../lib/axios';
+import { clearClockLocalCache } from '../../lib/clockCache';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import { MobileBottomNav } from './MobileBottomNav';
 const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
@@ -814,7 +815,7 @@ export default function RelojVisual({
           <button 
             onClick={() => setInnerTool(null)} 
             className={`flex-1 font-bold py-3 rounded-xl text-xs border ${
-              isDark ? 'border-slate-800 text-slate-350 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              isDark ? 'border-slate-800 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
             Cancelar
@@ -839,7 +840,7 @@ export default function RelojVisual({
                 <path d="M 25 15 C 25 15, 25 35, 45 48 C 47.5 49.5, 47.5 50.5, 45 52 C 25 65, 25 85, 25 85 L 75 85 C 75 85, 75 65, 55 52 C 52.5 50.5, 52.5 49.5, 55 48 C 75 35, 75 15, 75 15 Z" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="white" />
                 <path d="M 28 18 C 28 18, 32 35, 50 46 C 68 35, 72 18, 72 18 Z" fill="currentColor" className="top-sand text-violet-400" />
                 <path d="M 38 82 C 30 76, 28 82, 50 82 C 72 82, 70 76, 62 82 Z" fill="currentColor" className="bottom-sand text-violet-600" />
-                <line x1="50" y1="46" x2="50" y2="82" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="4 4" className="animate-sand text-violet-505" />
+                <line x1="50" y1="46" x2="50" y2="82" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="4 4" className="animate-sand text-violet-500" />
               </svg>
             </div>
             {/* Hour time (scaled down slightly) */}
@@ -849,7 +850,7 @@ export default function RelojVisual({
       );
     }
     return (
-      <span className="text-[10px] md:text-[11.5px] font-black uppercase tracking-wider text-slate-655 block text-center max-w-[150px] leading-tight mx-auto">
+      <span className="text-[10px] md:text-[11.5px] font-black uppercase tracking-wider text-slate-700 block text-center max-w-[150px] leading-tight mx-auto">
         {text}
       </span>
     );
@@ -933,12 +934,12 @@ export default function RelojVisual({
           {/* Left: Store status */}
           <div className="flex items-center select-none">
             {storeStatus === 'open' ? (
-              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+              <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
                 <span>🏪 Sucursal Abierta</span>
               </span>
             ) : (
-              <span className="text-rose-600 dark:text-rose-455 font-black flex items-center gap-1.5">
+              <span className="text-rose-600 dark:text-rose-500 font-black flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                 <span>🔒 Sucursal Cerrada</span>
               </span>
@@ -948,17 +949,17 @@ export default function RelojVisual({
           {/* Right: Employee Shift status */}
           <div className="flex items-center select-none">
             {hasCheckedOut ? (
-              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+              <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span>Turno Finalizado ✓</span>
               </span>
             ) : hasCheckedIn ? (
-              <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5 animate-pulse">
+              <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>Turno Activo ✓</span>
               </span>
             ) : (
-              <span className="text-slate-400 dark:text-slate-550 font-black flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-600"></span>
+              <span className="text-slate-400 dark:text-slate-500 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                 <span>Turno Inactivo</span>
               </span>
             )}
@@ -1012,13 +1013,13 @@ export default function RelojVisual({
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-purple-600 dark:text-purple-400">Descanso</span>
+                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-violet-600 dark:text-violet-400">Descanso</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-11 h-11' : 'w-12 h-12'
                 } ${
                   isAccessible
-                    ? 'border-purple-500 bg-purple-500 text-white font-extrabold scale-105 shadow-purple-500/20' 
+                    ? 'border-violet-500 bg-violet-500 text-white font-extrabold scale-105 shadow-violet-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
                   <Armchair size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
@@ -1118,7 +1119,7 @@ export default function RelojVisual({
                 {segmentsList.map((seg, sIdx) => {
                   const segWidth = (seg.mins / elapsedTotal) * 100;
                   let segColor = 'bg-emerald-500'; // Active Work
-                  if (seg.type === 'break') segColor = 'bg-purple-400'; // Rest Day/Seat Break
+                  if (seg.type === 'break') segColor = 'bg-violet-400'; // Rest Day/Seat Break
                   if (seg.type === 'meal') segColor = 'bg-amber-400'; // Meal break (yellow)
                   
                   return (
@@ -1192,7 +1193,7 @@ export default function RelojVisual({
         type: 'warning',
         title: 'Custodia de Llaves',
         desc: `${keyTransfer.sender?.name} te propuso cederte las llaves de la sucursal.`,
-        icon: <Key className="text-amber-505 w-4 h-4" />,
+        icon: <Key className="text-amber-500 w-4 h-4" />,
         buttons: [
           { text: 'Aceptar', onClick: () => respondToKeyTransfer(keyTransfer.id, 'accepted'), variant: 'success' },
           { text: 'Rechazar', onClick: () => respondToKeyTransfer(keyTransfer.id, 'danger'), variant: 'secondary' }
@@ -1211,7 +1212,7 @@ export default function RelojVisual({
             type: 'info',
             title: 'Descanso Ley Silla',
             desc: `${emp.name} solicita descanso (De pie: ${elapsedMins} min).`,
-            icon: <Coffee className="text-purple-500 w-4 h-4" />,
+            icon: <Coffee className="text-violet-500 w-4 h-4" />,
             buttons: [
               { text: '✓ Aprobar', onClick: () => approveBreakRequest(emp.id), variant: 'success' },
               { text: '✕ Rechazar', onClick: () => rejectBreakRequest(emp.id), variant: 'danger' }
@@ -1263,7 +1264,7 @@ export default function RelojVisual({
         type: 'warning',
         title: 'Reserva de Comida',
         desc: 'Aparta tu horario de comida hoy.',
-        icon: <Utensils className="text-amber-505 w-4 h-4" />,
+        icon: <Utensils className="text-amber-500 w-4 h-4" />,
         action: () => openMealReservationFlow(),
         actionText: 'Reservar'
       });
@@ -1285,7 +1286,7 @@ export default function RelojVisual({
         type: 'success',
         title: 'Tareas al Día',
         desc: 'Todas tus tareas están al día.',
-        icon: <CheckSquare className="text-emerald-505 w-4 h-4" />,
+        icon: <CheckSquare className="text-emerald-500 w-4 h-4" />,
         action: () => { setInnerTool(null); setPhoneTab('tareas'); },
         actionText: 'Ir a tareas'
       });
@@ -1297,7 +1298,7 @@ export default function RelojVisual({
         type: 'warning',
         title: 'Inducción Pendiente',
         desc: 'Completa tu inducción en la Academia.',
-        icon: <GraduationCap className="text-amber-505 w-4 h-4" />,
+        icon: <GraduationCap className="text-amber-500 w-4 h-4" />,
         action: () => { setInnerTool(null); setPhoneTab('academia'); },
         actionText: 'Completar'
       });
@@ -1307,7 +1308,7 @@ export default function RelojVisual({
         type: 'warning',
         title: 'Cursos Pendientes',
         desc: `Tienes ${pendingCoursesCount} ${pendingCoursesCount === 1 ? 'curso pendiente' : 'cursos pendientes'} de tu plan.`,
-        icon: <GraduationCap className="text-amber-555 w-4 h-4" />,
+        icon: <GraduationCap className="text-amber-600 w-4 h-4" />,
         action: () => { setInnerTool(null); setPhoneTab('academia'); },
         actionText: 'Estudiar'
       });
@@ -1372,7 +1373,7 @@ export default function RelojVisual({
                   key={item.id}
                   onClick={() => isClickable && item.action()}
                   className={`flex flex-col gap-2 p-2.5 border rounded-xl transition-all duration-200 text-[11px] leading-tight ${bgSeverity} ${
-                    isClickable ? 'cursor-pointer hover:scale-[1.01] hover:border-slate-350 active:scale-[0.99]' : ''
+                    isClickable ? 'cursor-pointer hover:scale-[1.01] hover:border-slate-300 active:scale-[0.99]' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -1384,7 +1385,7 @@ export default function RelojVisual({
                       <p className="font-semibold text-[11px] mt-0.5 opacity-95">{item.desc}</p>
                     </div>
                     {isClickable && item.actionText && (
-                      <span className="bg-white/90 font-black text-[8px] uppercase tracking-wider px-2 py-1 rounded-md shrink-0 border border-slate-200/20 shadow-xs hover:bg-white text-slate-750">
+                      <span className="bg-white/90 font-black text-[8px] uppercase tracking-wider px-2 py-1 rounded-md shrink-0 border border-slate-200/20 shadow-xs hover:bg-white text-slate-700">
                         {item.actionText} →
                       </span>
                     )}
@@ -1430,7 +1431,7 @@ export default function RelojVisual({
       return <Fingerprint size={size} className="text-emerald-500 shrink-0" />;
     }
     if (clockState === 'short_break') {
-      return <Armchair size={size} className="text-purple-500 animate-pulse shrink-0" />;
+      return <Armchair size={size} className="text-violet-500 animate-pulse shrink-0" />;
     }
     if (clockState === 'meal') {
       return <Utensils size={size} className="text-amber-500 animate-pulse shrink-0" />;
@@ -1445,7 +1446,7 @@ export default function RelojVisual({
     if (isOpeningPremium && storeStatus === 'closed') {
       const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
       if (Number(currentUser?.id) === Number(responsibleId)) {
-        return <Store size={size} className="text-violet-505 animate-pulse shrink-0" />;
+        return <Store size={size} className="text-violet-500 animate-pulse shrink-0" />;
       }
       return <Hourglass size={size} className="text-slate-400 animate-pulse shrink-0" />;
     }
@@ -1626,12 +1627,12 @@ export default function RelojVisual({
     if (!isSupervisor || pendingCount === 0) return null;
 
     return (
-      <div className="bg-purple-650 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-purple-500/20">
+      <div className="bg-violet-600 text-white rounded-2xl p-4 shadow-lg mb-3 flex flex-col gap-3 text-left border border-violet-500/20">
         <div className="flex items-center gap-2">
           <span className="text-xl">🧘</span>
           <div>
             <p className="font-black text-xs sm:text-sm">Solicitudes de Descanso Pendientes (Ley Silla)</p>
-            <p className="text-[9px] sm:text-[10px] text-purple-100 opacity-90 leading-tight">Colaboradores solicitando descanso activo</p>
+            <p className="text-[9px] sm:text-[10px] text-violet-100 opacity-90 leading-tight">Colaboradores solicitando descanso activo</p>
           </div>
         </div>
         <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -1643,10 +1644,10 @@ export default function RelojVisual({
             const elapsedMins = empCheckInMins !== undefined ? Math.max(0, currentSimTime - empCheckInMins) : 0;
             
             return (
-              <div key={empId} className="bg-purple-700/40 border border-purple-500/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div key={empId} className="bg-violet-700/40 border border-violet-500/30 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                 <div className="flex flex-col text-left">
                   <span className="text-xs font-black text-white">{emp.name}</span>
-                  <span className="text-[10px] text-purple-100">Trabajado: <strong className="text-white font-bold">{elapsedMins} min</strong> de pie hoy</span>
+                  <span className="text-[10px] text-violet-100">Trabajado: <strong className="text-white font-bold">{elapsedMins} min</strong> de pie hoy</span>
                 </div>
                 <div className="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
                   <button 
@@ -1836,7 +1837,7 @@ export default function RelojVisual({
     if (gpsStatus === 'seeking') {
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center animate-pulse min-h-[220px]">
-          <div className="w-14 h-14 bg-violet-100 dark:bg-violet-955/20 rounded-full flex items-center justify-center text-violet-600 dark:text-violet-400 mb-4 shadow-sm">
+          <div className="w-14 h-14 bg-violet-100 dark:bg-violet-950/20 rounded-full flex items-center justify-center text-violet-600 dark:text-violet-400 mb-4 shadow-sm">
             <Clock size={28} className="animate-spin" />
           </div>
           <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Buscando señal GPS de alta precisión...</p>
@@ -1856,7 +1857,7 @@ export default function RelojVisual({
           </p>
           
           <div className="text-left bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3.5 text-[10.5px] space-y-2.5 mb-4 shadow-sm">
-            <p className="font-bold text-slate-700 dark:text-slate-350 font-sans">¿Cómo dar permiso de ubicación?</p>
+            <p className="font-bold text-slate-700 dark:text-slate-300 font-sans">¿Cómo dar permiso de ubicación?</p>
             <div className="flex gap-2 text-slate-600 dark:text-slate-400 font-sans">
               <span className="font-black text-violet-600">1.</span>
               <span>Haz clic en el candado 🔒 (junto a la URL del navegador).</span>
@@ -1875,7 +1876,7 @@ export default function RelojVisual({
             <button 
               type="button"
               onClick={requestGPS}
-              className="w-full py-2.5 bg-violet-600 hover:bg-violet-750 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 border-none outline-none cursor-pointer"
+              className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 border-none outline-none cursor-pointer"
             >
               Reintentar Solicitar GPS
             </button>
@@ -2057,7 +2058,7 @@ export default function RelojVisual({
               <button 
                 onClick={() => { setInnerTool(null); setPhoneTab('checador'); }}
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                  isDark ? 'bg-slate-950/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-205 hover:bg-slate-100 text-slate-700'
+                  isDark ? 'bg-slate-950/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
                 }`}
               >
                 <Clock size={20} className="text-violet-500" />
@@ -2067,7 +2068,7 @@ export default function RelojVisual({
               <button 
                 onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }}
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                  isDark ? 'bg-slate-955/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-205 hover:bg-slate-100 text-slate-700'
+                  isDark ? 'bg-slate-950/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
                 }`}
               >
                 <ListTodo size={20} className="text-emerald-500" />
@@ -2077,7 +2078,7 @@ export default function RelojVisual({
               <button 
                 onClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                  isDark ? 'bg-slate-955/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-205 hover:bg-slate-100 text-slate-700'
+                  isDark ? 'bg-slate-950/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
                 }`}
               >
                 <GraduationCap size={20} className="text-indigo-500" />
@@ -2087,7 +2088,7 @@ export default function RelojVisual({
               <button 
                 onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }}
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-                  isDark ? 'bg-slate-955/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-205 hover:bg-slate-100 text-slate-700'
+                  isDark ? 'bg-slate-950/40 border-slate-900 hover:bg-slate-900/30 text-slate-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
                 }`}
               >
                 <Settings size={20} className="text-amber-500" />
@@ -2126,7 +2127,7 @@ export default function RelojVisual({
               {Array.from({ length: 24 }).map((_, i) => (
                 <div 
                   key={i} 
-                  className="bg-slate-450" 
+                  className="bg-slate-400" 
                   style={{ 
                     width: `${(i % 3 === 0 ? 3 : i % 2 === 0 ? 1 : 2)}px`, 
                     height: '100%',
@@ -2151,15 +2152,15 @@ export default function RelojVisual({
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Entrada</p>
               <p className="font-black text-xs text-slate-700 dark:text-slate-200 mt-0.5 font-mono">{shiftConfigs[currentUser?.id]?.start || '09:00'}</p>
             </div>
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-955/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Salida</p>
               <p className="font-black text-xs text-slate-700 dark:text-slate-200 mt-0.5 font-mono">{shiftConfigs[currentUser?.id]?.end || '18:00'}</p>
             </div>
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-955/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Día Descanso</p>
               <p className="font-black text-xs text-violet-500 mt-0.5 uppercase">{shiftConfigs[currentUser?.id]?.restDay || 'Domingo'}</p>
             </div>
-            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-955/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+            <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Comida</p>
               <p className="font-black text-xs text-slate-700 dark:text-slate-200 mt-0.5 font-mono">{shiftConfigs[currentUser?.id]?.mealMinutes || 45} min</p>
             </div>
@@ -2212,16 +2213,16 @@ export default function RelojVisual({
 
             <div>
               <label className="block text-[9px] font-bold uppercase text-slate-500 mb-1.5">Validaciones de Asistencia</label>
-              <div className={`space-y-2 p-3 rounded-xl border text-[11px] ${isDark ? 'bg-slate-950/40 border-slate-905' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`space-y-2 p-3 rounded-xl border text-[11px] ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">📍 Geolocalización (GPS):</span>
-                  <span className={`font-bold ${isFeatureUnlocked('gps_validation') ? 'text-emerald-450' : 'text-slate-400'}`}>
+                  <span className={`font-bold ${isFeatureUnlocked('gps_validation') ? 'text-emerald-400' : 'text-slate-400'}`}>
                     {isFeatureUnlocked('gps_validation') ? 'Activo (Geocerca)' : 'Desactivado'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">📷 Validación Facial (Selfie):</span>
-                  <span className={`font-bold ${isFeatureUnlocked('face_validation') ? 'text-emerald-455' : 'text-slate-400'}`}>
+                  <span className={`font-bold ${isFeatureUnlocked('face_validation') ? 'text-emerald-500' : 'text-slate-400'}`}>
                     {isFeatureUnlocked('face_validation') ? 'Obligatoria' : 'Desactivado'}
                   </span>
                 </div>
@@ -2245,6 +2246,7 @@ export default function RelojVisual({
             <button
               onClick={() => {
                 localStorage.removeItem('talent_auth_token');
+                clearClockLocalCache();
                 window.location.href = '/login';
               }}
               className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider text-center mt-2 focus:outline-none transition-colors shadow-lg shadow-rose-600/10"
@@ -2322,19 +2324,19 @@ export default function RelojVisual({
       <div className={`flex flex-col items-center justify-center text-center p-8 transition-all animate-fade-in ${
         isMobile 
           ? 'flex-1 pt-[100px] pb-[100px] px-6' 
-          : `w-full border rounded-3xl p-16 ${isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-202 shadow-md'}`
+          : `w-full border rounded-3xl p-16 ${isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-200 shadow-md'}`
       }`}>
         <div className={`rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800 bg-gradient-to-tr from-amber-500 to-rose-500 text-white animate-pulse ${
           isMobile ? 'w-20 h-20 text-3xl mb-6' : 'w-28 h-28 text-5xl mb-8'
         }`}>
           🔒
         </div>
-        <h2 className={`font-black text-slate-850 dark:text-slate-100 ${
+        <h2 className={`font-black text-slate-800 dark:text-slate-100 ${
           isMobile ? 'text-xl mb-2' : 'text-3xl mb-3'
         }`}>
           Empresa Cerrada
         </h2>
-        <p className={`text-slate-505 dark:text-slate-400 font-medium leading-relaxed max-w-md mx-auto ${
+        <p className={`text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-md mx-auto ${
           isMobile ? 'text-xs mb-8' : 'text-sm mb-10'
         }`}>
           Por el momento la empresa se encuentra cerrada. Para poder visualizar este reloj checador, deberás de esperar.
@@ -2342,13 +2344,13 @@ export default function RelojVisual({
         
         <div className={`w-full max-w-sm rounded-2xl border p-4.5 text-center transition-all ${
           isDark 
-            ? 'bg-slate-950/60 border-slate-850 shadow-inner' 
+            ? 'bg-slate-950/60 border-slate-800 shadow-inner' 
             : 'bg-slate-50 border-slate-200 shadow-inner'
         }`}>
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-450 block mb-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
             Tiempo de espera restante
           </span>
-          <div className="text-2xl font-black text-indigo-605 dark:text-indigo-400 tracking-tight animate-pulse">
+          <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight animate-pulse">
             ⏳ {waitTimeText}
           </div>
         </div>
@@ -2451,7 +2453,7 @@ export default function RelojVisual({
     return (
       <div className={`fixed top-3 left-3 right-3 z-[75] flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3.5 text-left rounded-[1.25rem] xs:rounded-2xl border transition-all duration-200 select-none ${
         isDark 
-          ? 'bg-slate-955/80 backdrop-blur-md border-violet-900/40 shadow-[0_8px_32px_rgba(124,58,237,0.15)] text-slate-100' 
+          ? 'bg-slate-950/80 backdrop-blur-md border-violet-900/40 shadow-[0_8px_32px_rgba(124,58,237,0.15)] text-slate-100' 
           : 'bg-white/80 backdrop-blur-md border-violet-100/50 shadow-[0_8px_32px_rgba(124,58,237,0.06)] text-slate-900'
       }`}>
         {/* Columna Izquierda: Info de Módulo */}
@@ -2497,7 +2499,7 @@ export default function RelojVisual({
           {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
             <button 
               onClick={() => initPaseLista(false)}
-              className="bg-violet-600 hover:bg-violet-755 text-white font-extrabold text-[8px] xs:text-[9px] uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
+              className="bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-[8px] xs:text-[9px] uppercase px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer active:scale-95 transition-all select-none shrink-0"
             >
               <span>📋</span>
               <span className="hidden xxs:inline">Lista</span>
@@ -2525,7 +2527,7 @@ export default function RelojVisual({
               }`}>
                 {currentUser?.name || 'Colaborador'}
               </span>
-              <span className="text-[7.5px] xs:text-[8px] font-extrabold text-slate-450 dark:text-slate-500 uppercase tracking-widest truncate mt-0.5 max-w-[80px] xxs:max-w-[105px] xs:max-w-[130px]">
+              <span className="text-[7.5px] xs:text-[8px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate mt-0.5 max-w-[80px] xxs:max-w-[105px] xs:max-w-[130px]">
                 {userPositionName}
               </span>
             </div>
@@ -2535,7 +2537,7 @@ export default function RelojVisual({
                 src={currentUser?.avatar || "https://i.pravatar.cc/150?img=11"} 
                 alt="Avatar" 
                 className={`w-10 h-10 xs:w-12 xs:h-12 rounded-full object-cover border-2 shadow-md hover:scale-105 transition-transform ${
-                  isDark ? 'border-slate-700' : 'border-slate-202'
+                  isDark ? 'border-slate-700' : 'border-slate-200'
                 }`} 
               />
               <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 xs:w-3.5 xs:h-3.5 rounded-full border ${isDark ? 'border-slate-900' : 'border-white'} ${hasCheckedIn && !hasCheckedOut ? 'bg-[#2dce89]' : 'bg-slate-400'}`}></span>
@@ -2572,12 +2574,12 @@ export default function RelojVisual({
         {/* Backdrop overlay */}
         <div 
           onClick={() => setIsFabSheetOpen(false)}
-          className="absolute inset-0 bg-slate-955/40 backdrop-blur-sm transition-opacity"
+          className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity"
         ></div>
 
         {/* Sheet Content */}
         <div className={`relative w-full max-h-[85vh] rounded-t-[2rem] border-t shadow-2xl z-10 flex flex-col transition-transform duration-300 animate-slide-up pb-8 ${
-          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-202 text-slate-850'
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
         }`}>
           {/* Drag Handle */}
           <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-3 shrink-0"></div>
@@ -2589,7 +2591,7 @@ export default function RelojVisual({
             </div>
             <button 
               onClick={() => setIsFabSheetOpen(false)}
-              className="w-8 h-8 rounded-full bg-slate-105 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-none cursor-pointer font-bold"
+              className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-none cursor-pointer font-bold"
             >
               &times;
             </button>
@@ -2606,7 +2608,7 @@ export default function RelojVisual({
                     setIsCopilotChatOpen(true);
                   }}
                   className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 text-center transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-202 bg-slate-50 hover:bg-slate-105 text-slate-850'
+                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
                   }`}
                 >
                   <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
@@ -2624,10 +2626,10 @@ export default function RelojVisual({
                     setIsTaskCreatorOpen(true);
                   }}
                   className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 text-center transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-202 bg-slate-50 hover:bg-slate-105 text-slate-850'
+                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
                   }`}
                 >
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-500 text-white flex items-center justify-center shadow-md">
                     <Play size={20} />
                   </div>
                   <div>
@@ -2651,12 +2653,12 @@ export default function RelojVisual({
                   }} 
                   className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-indigo-400 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-indigo-400 flex items-center justify-center shrink-0">
                     <MessageSquare size={16} />
                   </div>
                   <div>
                     <p className="font-bold text-xs">Chat de Equipo 💬</p>
-                    <p className="text-[9.5px] text-slate-505">Mensajes temporales entre colaboradores de la sucursal</p>
+                    <p className="text-[9.5px] text-slate-500">Mensajes temporales entre colaboradores de la sucursal</p>
                   </div>
                 </button>
 
@@ -2666,14 +2668,14 @@ export default function RelojVisual({
                     setPhoneTab('herramientas');
                     setInnerTool('soplon');
                   }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-rose-400 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-rose-400 flex items-center justify-center shrink-0">
                     <AlertOctagon size={16} />
                   </div>
                   <div>
                     <p className="font-bold text-xs">El Soplón 📢</p>
-                    <p className="text-[9.5px] text-slate-505">Reportar ausencias o faltas de compañeros de forma directa</p>
+                    <p className="text-[9.5px] text-slate-500">Reportar ausencias o faltas de compañeros de forma directa</p>
                   </div>
                 </button>
 
@@ -2683,14 +2685,14 @@ export default function RelojVisual({
                     setPhoneTab('herramientas');
                     setInnerTool('buzon');
                   }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-sky-400 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-sky-400 flex items-center justify-center shrink-0">
                     <Fingerprint size={16} />
                   </div>
                   <div>
                     <p className="font-bold text-xs">Buzón Anónimo RRHH 🕵️</p>
-                    <p className="text-[9.5px] text-slate-505">Enviar sugerencias o reportes generales 100% privados</p>
+                    <p className="text-[9.5px] text-slate-500">Enviar sugerencias o reportes generales 100% privados</p>
                   </div>
                 </button>
 
@@ -2701,14 +2703,14 @@ export default function RelojVisual({
                       setPhoneTab('herramientas');
                       setInnerTool('transfer');
                     }} 
-                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                   >
-                    <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-indigo-400 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-indigo-400 flex items-center justify-center shrink-0">
                       <Key size={16} />
                     </div>
                     <div>
                       <p className="font-bold text-xs">Transferir Cierre 🔑</p>
-                      <p className="text-[9.5px] text-slate-550">Ceder llaves de la sucursal a un compañero</p>
+                      <p className="text-[9.5px] text-slate-500">Ceder llaves de la sucursal a un compañero</p>
                     </div>
                   </button>
                 )}
@@ -2719,14 +2721,14 @@ export default function RelojVisual({
                     setPhoneTab('herramientas');
                     setInnerTool('huida');
                   }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-amber-500 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-amber-500 flex items-center justify-center shrink-0">
                     <WifiOff size={16} />
                   </div>
                   <div>
                     <p className="font-bold text-xs">Simular Desconexión (Huida) 🏃</p>
-                    <p className="text-[9.5px] text-slate-550">Detección de desconexión sin entregar el turno</p>
+                    <p className="text-[9.5px] text-slate-500">Detección de desconexión sin entregar el turno</p>
                   </div>
                 </button>
 
@@ -2738,12 +2740,12 @@ export default function RelojVisual({
                     }} 
                     className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                   >
-                    <div className="w-9 h-9 rounded-xl bg-teal-50/50 text-teal-650 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-teal-50/50 text-teal-600 flex items-center justify-center shrink-0">
                       <LogOut size={16} />
                     </div>
                     <div>
                       <p className="font-bold text-xs">Pase de Salida Temporal 🚪</p>
-                      <p className="text-[9.5px] text-slate-505 font-medium">Registrar una salida temporal de la tienda con GPS activo</p>
+                      <p className="text-[9.5px] text-slate-500 font-medium">Registrar una salida temporal de la tienda con GPS activo</p>
                     </div>
                   </button>
                 )}
@@ -2754,14 +2756,14 @@ export default function RelojVisual({
                       setIsFabSheetOpen(false);
                       setShowMealSwapModal(true);
                     }} 
-                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                   >
                     <div className="w-9 h-9 rounded-xl bg-amber-50/50 text-amber-600 flex items-center justify-center shrink-0">
                       <Utensils size={16} />
                     </div>
                     <div>
                       <p className="font-bold text-xs">Intercambio de Comida 🍽️</p>
-                      <p className="text-[9.5px] text-slate-505 font-medium">Intercambiar rápidamente tu horario de comida con un compañero</p>
+                      <p className="text-[9.5px] text-slate-500 font-medium">Intercambiar rápidamente tu horario de comida con un compañero</p>
                     </div>
                   </button>
                 )}
@@ -2787,14 +2789,14 @@ export default function RelojVisual({
                     setIsFabSheetOpen(false);
                     setPhoneTab('evaluacion360');
                   }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-202 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-amber-450 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-amber-400 flex items-center justify-center shrink-0">
                     <Star size={16} />
                   </div>
                   <div>
                     <p className="font-bold text-xs">Evaluación de Compañeros ⭐</p>
-                    <p className="text-[9.5px] text-slate-550">Evaluar desempeño y puntualidad en el turno</p>
+                    <p className="text-[9.5px] text-slate-500">Evaluar desempeño y puntualidad en el turno</p>
                   </div>
                 </button>
 
@@ -2803,14 +2805,14 @@ export default function RelojVisual({
                     setIsFabSheetOpen(false);
                     setPhoneTab('organigrama');
                   }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-955/20 hover:bg-slate-955/40 text-slate-200' : 'border-slate-202 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
                 >
-                  <div className="w-9 h-9 rounded-xl bg-slate-955/50 text-emerald-450 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-emerald-400 flex items-center justify-center shrink-0">
                     <Network size={16} />
                   </div>
                   <div>
                     <p className="font-bold text-xs">Organigrama de la Empresa 🕸️</p>
-                    <p className="text-[9.5px] text-slate-550">Consulta los puestos y responsabilidades</p>
+                    <p className="text-[9.5px] text-slate-500">Consulta los puestos y responsabilidades</p>
                   </div>
                 </button>
               </div>
@@ -2829,12 +2831,12 @@ export default function RelojVisual({
         {/* Backdrop overlay */}
         <div 
           onClick={() => setIsTaskCreatorOpen(false)}
-          className="absolute inset-0 bg-slate-955/65 backdrop-blur-sm transition-opacity"
+          className="absolute inset-0 bg-slate-950/65 backdrop-blur-sm transition-opacity"
         ></div>
 
         {/* Modal Content */}
         <div className={`relative w-full max-w-md rounded-3xl p-6 shadow-2xl border text-left animate-in zoom-in-95 duration-200 ${
-          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-202 text-slate-850'
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
         }`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-base font-black flex items-center gap-1.5 text-indigo-500">
@@ -2883,7 +2885,7 @@ export default function RelojVisual({
                   value={newTaskMins}
                   onChange={(e) => setNewTaskMins(Number(e.target.value))}
                   className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
-                    isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 >
                   <option value={15}>15 Minutos</option>
@@ -2895,12 +2897,12 @@ export default function RelojVisual({
               </div>
 
               <div>
-                <label className="block text-[10px] font-black uppercase text-slate-405 tracking-wider mb-1">Prioridad</label>
+                <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Prioridad</label>
                 <select 
                   value={newTaskPriority}
                   onChange={(e) => setNewTaskPriority(e.target.value as any)}
                   className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
-                    isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 >
                   <option value="normal">Normal</option>
@@ -2910,12 +2912,12 @@ export default function RelojVisual({
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase text-slate-405 tracking-wider mb-1">Puesto Dirigido (Rol)</label>
+              <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Puesto Dirigido (Rol)</label>
               <select 
                 value={newTaskRoleTarget}
                 onChange={(e) => setNewTaskRoleTarget(Number(e.target.value))}
                 className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-colors ${
-                  isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                 }`}
               >
                 <option value={6}>Ayudante Integral (General)</option>
@@ -2945,12 +2947,12 @@ export default function RelojVisual({
         {/* Backdrop overlay */}
         <div 
           onClick={() => setIsCopilotChatOpen(false)}
-          className="absolute inset-0 bg-slate-955/65 backdrop-blur-sm transition-opacity"
+          className="absolute inset-0 bg-slate-950/65 backdrop-blur-sm transition-opacity"
         ></div>
 
         {/* Chat Drawer Content */}
         <div className={`relative w-full max-w-md h-[80vh] sm:h-[600px] rounded-t-[2rem] sm:rounded-3xl shadow-2xl border flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300 ${
-          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-202 text-slate-850'
+          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
         }`}>
           {/* Header */}
           <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 px-5 py-4 flex items-center justify-between text-white shrink-0 shadow-md">
@@ -2985,7 +2987,7 @@ export default function RelojVisual({
                   className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs leading-relaxed text-left ${
                     msg.sender === 'user'
                       ? 'bg-violet-600 text-white rounded-br-none shadow-md shadow-violet-600/10'
-                      : 'bg-white dark:bg-slate-800 text-slate-850 dark:text-slate-200 border rounded-bl-none shadow-sm border-slate-100 dark:border-slate-700/80'
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border rounded-bl-none shadow-sm border-slate-100 dark:border-slate-700/80'
                   }`}
                 >
                   {msg.text}
@@ -3012,13 +3014,13 @@ export default function RelojVisual({
               onChange={(e) => setCopilotInput(e.target.value)}
               placeholder="Escribe tu duda de soporte aquí..."
               className={`flex-grow px-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none ${
-                isDark ? 'bg-slate-955 border-slate-800 text-white focus:border-violet-500' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-violet-400'
+                isDark ? 'bg-slate-950 border-slate-800 text-white focus:border-violet-500' : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-violet-400'
               }`}
             />
             <button
               type="submit"
               disabled={copilotLoading}
-              className="bg-violet-600 hover:bg-violet-750 text-white p-2.5 rounded-xl flex items-center justify-center transition-colors shadow-md border-none cursor-pointer"
+              className="bg-violet-600 hover:bg-violet-700 text-white p-2.5 rounded-xl flex items-center justify-center transition-colors shadow-md border-none cursor-pointer"
             >
               <Send size={16} />
             </button>
@@ -3032,8 +3034,8 @@ export default function RelojVisual({
   return (
     <div className={`w-full relative select-none font-sans transition-colors ${
       isScrollableMobile 
-        ? (isMobileFrame ? 'h-full' : 'h-[100dvh]') + ' flex flex-col justify-between overflow-hidden p-4 ' + (isDark ? 'bg-slate-955 text-slate-100' : 'bg-slate-50 text-slate-850')
-        : 'min-h-screen ' + (isDark ? 'bg-[#090d16] text-slate-100' : 'bg-[#f8fafc] text-slate-850')
+        ? (isMobileFrame ? 'h-full' : 'h-[100dvh]') + ' flex flex-col justify-between overflow-hidden p-4 ' + (isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800')
+        : 'min-h-screen ' + (isDark ? 'bg-[#090d16] text-slate-100' : 'bg-[#f8fafc] text-slate-800')
     }`}>
       
       {/* Global CSS hourglass animations */}
@@ -3106,7 +3108,7 @@ export default function RelojVisual({
       {/* GLOBAL TOAST DENTRO DEL COMPONENTE */}
       {globalToast && (
         <div className={`z-[100] backdrop-blur-md font-semibold px-4 py-3 rounded-2xl shadow-xl animate-fade-in border text-xs flex items-center gap-3 ${
-          isDark ? 'bg-slate-900/90 text-white border-slate-805' : 'bg-white/95 text-slate-800 border-slate-200'
+          isDark ? 'bg-slate-900/90 text-white border-slate-800' : 'bg-white/95 text-slate-800 border-slate-200'
         } ${isScrollableMobile ? 'absolute top-4 left-4 right-4' : 'fixed top-20 left-4 right-4 md:left-auto md:right-6 md:w-96'}`}>
           <div className="bg-violet-600 rounded-lg p-1 flex-shrink-0">
             <span role="img" aria-label="alert" className="text-white text-xs">🔔</span>
@@ -3154,7 +3156,7 @@ export default function RelojVisual({
         <div 
           onClick={activePushNotification.action}
           className={`z-[105] backdrop-blur-lg font-semibold px-4 py-3.5 rounded-2xl shadow-2xl animate-fade-in border text-xs flex flex-col gap-1.5 cursor-pointer hover:scale-[1.01] transition-transform ${
-            isDark ? 'bg-slate-900/95 text-white border-slate-805' : 'bg-white/95 text-slate-800 border-slate-200'
+            isDark ? 'bg-slate-900/95 text-white border-slate-800' : 'bg-white/95 text-slate-800 border-slate-200'
           } ${isScrollableMobile ? 'absolute top-4 left-4 right-4' : 'fixed top-20 left-4 right-4 md:left-auto md:right-6 md:w-96'}`}
         >
           <div className="flex justify-between items-center w-full">
@@ -3197,8 +3199,8 @@ export default function RelojVisual({
                         {getActiveTabHeader().title}
                       </h2>
                       {getActiveTabHeader().badge && (
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-455 border-rose-500/20'}`}>
-                          <span className={`w-1 h-1 rounded-full ${storeStatus === 'open' ? 'bg-emerald-505 animate-pulse' : 'bg-rose-500'}`}></span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
+                          <span className={`w-1 h-1 rounded-full ${storeStatus === 'open' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
                           {storeStatus === 'open' ? 'Abierto' : 'Cerrado'}
                         </span>
                       )}
@@ -3210,38 +3212,38 @@ export default function RelojVisual({
                 </div>
 
                 {/* Center Section: Navigation Tabs */}
-                <nav className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-950 border-slate-850' : 'bg-slate-100 border-slate-250'}`}>
+                <nav className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('checador'); }} 
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     ⏱️ Checador
                   </button>
                   {!isStoreClosed && (
                     <button 
                       onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} 
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       ✅ Tareas
                     </button>
                   )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('academia'); }} 
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     🎓 Academia
                   </button>
                   {!isStoreClosed && (
                     <button 
                       onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }} 
-                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       🛠️ Herramientas
                     </button>
                   )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }} 
-                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     🪪 Perfil & Ajustes
                   </button>
@@ -3252,7 +3254,7 @@ export default function RelojVisual({
                   {storeStatus === 'open' && Number(currentUser?.id) === Number(activeEncargadoId) && (
                     <button 
                       onClick={() => initPaseLista(false)}
-                      className="bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-[11px] px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md border-none outline-none select-none cursor-pointer active:scale-95 transition-all"
+                      className="bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-[11px] px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-md border-none outline-none select-none cursor-pointer active:scale-95 transition-all"
                     >
                       <span>📋</span>
                       <span>Pase Lista</span>
@@ -3261,7 +3263,7 @@ export default function RelojVisual({
                   <button 
                     onClick={() => setShowReportModal(true)}
                     className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-colors ${
-                      isDark ? 'bg-slate-955 hover:bg-slate-900 border-slate-800' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                      isDark ? 'bg-slate-950 hover:bg-slate-900 border-slate-800' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
                     }`}
                     title="Auditoría Anónima"
                   >
@@ -3274,7 +3276,7 @@ export default function RelojVisual({
                       className="flex items-center gap-2.5 p-1 rounded-2xl transition-colors focus:outline-none select-none text-left"
                     >
                       <div className="hidden lg:flex flex-col items-end mr-1 text-right leading-tight">
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-250">{currentUser?.name || 'Colaborador'}{getUserKeysIcon(currentUser?.id)}</span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{currentUser?.name || 'Colaborador'}{getUserKeysIcon(currentUser?.id)}</span>
                         <span className="text-[9px] text-violet-500 font-extrabold bg-violet-500/10 px-2 py-0.5 rounded-md mt-1 capitalize border border-violet-500/10">
                           {userPositionName}
                         </span>
@@ -3324,6 +3326,7 @@ export default function RelojVisual({
                           <button 
                             onClick={() => {
                               localStorage.removeItem('talent_auth_token');
+                              clearClockLocalCache();
                               useAppStore.getState().setCurrentUser(null as any);
                               setIsProfileMenuOpen(false);
                               window.location.href = '/login';
@@ -3343,38 +3346,38 @@ export default function RelojVisual({
           ) : (
             <header className="bg-white border-b border-slate-200 shadow-sm relative z-30 flex-shrink-0 dark:bg-slate-900 dark:border-slate-800 mb-4 rounded-xl">
               <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-center">
-                <nav className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-950 border-slate-855' : 'bg-slate-105 border-slate-250'}`}>
+                <nav className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-950 border-slate-900' : 'bg-slate-100 border-slate-200'}`}>
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('checador'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'checador' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     ⏱️ Checador
                   </button>
                   {!isStoreClosed && (
                     <button 
                       onClick={() => { setInnerTool(null); setPhoneTab('tareas'); }} 
-                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'tareas' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       ✅ Tareas
                     </button>
                   )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('academia'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'academia' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     🎓 Academia
                   </button>
                   {!isStoreClosed && (
                     <button 
                       onClick={() => { setInnerTool(null); setPhoneTab('herramientas'); }} 
-                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${['herramientas', 'evaluacion360'].includes(phoneTab) ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       🛠️ Herramientas
                     </button>
                   )}
                   <button 
                     onClick={() => { setInnerTool(null); setPhoneTab('perfil'); }} 
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-955 shadow-sm font-black') : 'text-slate-500 hover:text-slate-750'}`}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all focus:outline-none ${phoneTab === 'perfil' ? (isDark ? 'bg-slate-900 text-white shadow-sm font-black' : 'bg-white text-slate-950 shadow-sm font-black') : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     🪪 Perfil & Ajustes
                   </button>
@@ -3401,7 +3404,7 @@ export default function RelojVisual({
                 <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/40 rounded-full flex items-center justify-center text-3xl mb-1 shadow-inner border-2 border-white dark:border-slate-800">
                   {isSimulatedHoliday ? '📅' : '🌴'}
                 </div>
-                <h2 className="text-xl font-extrabold text-slate-850 dark:text-slate-200 mb-1">
+                <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-200 mb-1">
                   {isSimulatedHoliday ? 'Día Feriado Obligatorio (LFT)' : 'Día de Descanso'}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-xs font-medium max-w-sm leading-relaxed mb-2">
@@ -3423,7 +3426,7 @@ export default function RelojVisual({
                 <div className="w-full shrink-0 flex flex-col gap-1.5">
                   {/* Banner de transferencia de llaves pendiente */}
                   {isKeysControlUnlocked && pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg mb-1.5 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
+                    <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-lg mb-1.5 shrink-0 flex flex-col gap-2.5 text-left border border-amber-400/20">
                       <div className="flex items-start gap-2.5">
                         <span className="text-xl mt-0.5 shrink-0">🔑</span>
                         <div>
@@ -3441,7 +3444,7 @@ export default function RelojVisual({
                       <div className="flex gap-2 justify-end shrink-0">
                         <button 
                           onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
-                          className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
+                          className="bg-white hover:bg-slate-50 text-amber-600 font-extrabold text-[9.5px] px-3 py-1.5 rounded-lg shadow-sm transition-colors border-none cursor-pointer"
                         >
                           Aceptar Llaves
                         </button>
@@ -3474,7 +3477,7 @@ export default function RelojVisual({
                       </div>
                       <button 
                         onClick={() => setShowOpeningChecklistModal(true)} 
-                        className="bg-white text-emerald-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
+                        className="bg-white text-emerald-700 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
                       >
                         Completar
                       </button>
@@ -3489,7 +3492,7 @@ export default function RelojVisual({
                       </div>
                       <button 
                         onClick={() => initPaseLista(false)} 
-                        className="bg-white text-violet-750 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
+                        className="bg-white text-violet-700 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
                       >
                         Iniciar
                       </button>
@@ -3521,13 +3524,13 @@ export default function RelojVisual({
                         !hasCheckedIn
                           ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
                           : isDark 
-                            ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-750 active:scale-95 cursor-pointer' 
-                            : 'bg-white border-slate-202 text-amber-500 hover:bg-slate-50 active:scale-95 cursor-pointer'
+                            ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700 active:scale-95 cursor-pointer' 
+                            : 'bg-white border-slate-200 text-amber-500 hover:bg-slate-50 active:scale-95 cursor-pointer'
                       }`}
                     >
                       <Trophy size={20} />
                       {hasCheckedIn && weeklyPerformanceScore !== null && (
-                        <span className="absolute -top-1.5 -right-1 bg-violet-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-white">
+                        <span className="absolute -top-1.5 -right-1 bg-violet-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-white">
                           {weeklyPerformanceScore}%
                         </span>
                       )}
@@ -3602,12 +3605,12 @@ export default function RelojVisual({
             <div className="flex-1 overflow-hidden p-4 pt-[82px] pb-[100px] scrollbar-none flex flex-col">
               {isSimulated && simulatedTier === 'free' ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
-                  <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                  <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
                     <Lock size={22} className="text-rose-500" />
                   </div>
                   <div className="space-y-1">
                     <h5 className="text-[9px] font-black text-rose-800 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
-                    <h4 className="text-[11px] font-black text-slate-805 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
+                    <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
                     <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
                       La gestión de {phoneTab === 'tareas' ? 'Tareas' : phoneTab === 'academia' ? 'Academia' : 'Herramientas'} requiere la Versión Pro del Reloj Checador.
                     </p>
@@ -3639,33 +3642,33 @@ export default function RelojVisual({
                         <div className="space-y-2">
                           {/* Tarea 1 */}
                           <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
-                            simTask1Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
+                            simTask1Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm'
                           }`}>
                             <input 
                               type="checkbox" 
                               checked={simTask1Done}
                               onChange={() => setSimTask1Done(!simTask1Done)}
-                              className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                             />
                             <div className="leading-tight text-left">
                               <p className="text-[8.5px] font-bold">Limpieza General Sucursal</p>
-                              <p className="text-[7.5px] text-slate-450">Sanitizar mostradores y barrer entrada</p>
+                              <p className="text-[7.5px] text-slate-400">Sanitizar mostradores y barrer entrada</p>
                             </div>
                           </label>
 
                           {/* Tarea 2 */}
                           <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all select-none ${
-                            simTask2Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-150 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 shadow-sm'
+                            simTask2Done ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm'
                           }`}>
                             <input 
                               type="checkbox" 
                               checked={simTask2Done}
                               onChange={() => setSimTask2Done(!simTask2Done)}
-                              className="rounded border-slate-350 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
                             />
                             <div className="leading-tight text-left">
                               <p className="text-[8.5px] font-bold">Arqueo de Caja y Cierre</p>
-                              <p className="text-[7.5px] text-slate-450">Conciliar ventas del día en terminal</p>
+                              <p className="text-[7.5px] text-slate-400">Conciliar ventas del día en terminal</p>
                             </div>
                           </label>
                         </div>
@@ -3721,22 +3724,22 @@ export default function RelojVisual({
                       <div className="grid grid-cols-2 gap-2">
                         <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
                           <span className="text-sm">🏖️</span>
-                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Solicitar Vacaciones</span>
+                          <span className="text-[7.5px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none">Solicitar Vacaciones</span>
                         </button>
 
                         <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
                           <span className="text-sm">📄</span>
-                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Recibos Nómina</span>
+                          <span className="text-[7.5px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none">Recibos Nómina</span>
                         </button>
 
                         <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
                           <span className="text-sm">🤕</span>
-                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Nueva Incidencia</span>
+                          <span className="text-[7.5px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none">Nueva Incidencia</span>
                         </button>
 
                         <button type="button" className="p-2.5 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-center flex flex-col items-center justify-center gap-1 transition-all active:scale-[0.98] border-none bg-transparent cursor-pointer">
                           <span className="text-sm">🔑</span>
-                          <span className="text-[7.5px] font-black text-slate-750 dark:text-slate-300 uppercase leading-none">Cambiar PIN</span>
+                          <span className="text-[7.5px] font-black text-slate-700 dark:text-slate-300 uppercase leading-none">Cambiar PIN</span>
                         </button>
                       </div>
                     </div>
@@ -3757,8 +3760,8 @@ export default function RelojVisual({
                     <Evaluacion360 onBack={() => setPhoneTab('herramientas')} />
                   )}
                   {phoneTab === 'organigrama' && (
-                    <div className="h-full w-full bg-white dark:bg-slate-955 rounded-3xl p-4 overflow-y-auto shadow-inner">
-                      <React.Suspense fallback={<div className="p-4 text-center text-xs text-slate-450">Cargando Organigrama...</div>}>
+                    <div className="h-full w-full bg-white dark:bg-slate-950 rounded-3xl p-4 overflow-y-auto shadow-inner">
+                      <React.Suspense fallback={<div className="p-4 text-center text-xs text-slate-400">Cargando Organigrama...</div>}>
                         <RecursosHumanos readOnly={true} initialTab="organigrama" />
                       </React.Suspense>
                     </div>
@@ -3773,7 +3776,7 @@ export default function RelojVisual({
                         </div>
                       ) : (
                         <div className="flex flex-col h-full bg-transparent">
-                          <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-505 mb-4 flex items-center gap-1">
+                          <button onClick={() => setInnerTool(null)} className="text-xs font-bold text-slate-500 mb-4 flex items-center gap-1">
                             ← Volver a Herramientas
                           </button>
                           {innerTool === 'chat' && renderToolChat()}
@@ -3810,12 +3813,12 @@ export default function RelojVisual({
               renderStoreClosedScreen(false)
             ) : (shiftConfigs[currentUser?.id]?.restDay === currentDay || isSimulatedHoliday) && !isOvertimeUnlocked[currentUser?.id] ? (
               <div className={`w-full border rounded-3xl p-12 flex flex-col items-center justify-center text-center transition-colors gap-4 ${
-                isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-202 shadow-md'
+                isDark ? 'bg-slate-900/20 border-slate-900/40' : 'bg-white border-slate-200 shadow-md'
               }`}>
                 <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-950/40 rounded-full flex items-center justify-center text-4xl mb-2 shadow-inner border-4 border-white dark:border-slate-800">
                   {isSimulatedHoliday ? '📅' : '🌴'}
                 </div>
-                <h2 className="text-3xl font-black text-slate-850 dark:text-slate-100 mb-1">
+                <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 mb-1">
                   {isSimulatedHoliday ? 'Día Feriado Obligatorio (LFT)' : 'Día de Descanso'}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-base font-medium max-w-lg leading-relaxed font-sans mb-4">
@@ -3841,12 +3844,12 @@ export default function RelojVisual({
                   inferior de tareas. Ahora ocupa 8/12 y su columna hermana (col-span-4, abajo) llena
                   el resto con contenido real. */}
               <div className={`col-span-12 lg:col-span-8 flex flex-col gap-6 p-6 rounded-3xl border transition-colors ${
-                isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
+                isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
               }`}>
               
               {/* Banner de transferencia de llaves pendiente - Desktop */}
               {pendingKeyTransfers && pendingKeyTransfers.length > 0 && (
-                <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-5 shadow-lg mb-2 flex flex-col sm:flex-row items-center justify-between gap-4 text-left border border-amber-400/20">
+                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-5 shadow-lg mb-2 flex flex-col sm:flex-row items-center justify-between gap-4 text-left border border-amber-400/20">
                   <div className="flex items-start gap-3">
                     <span className="text-2xl mt-0.5 shrink-0">🔑</span>
                     <div>
@@ -3864,7 +3867,7 @@ export default function RelojVisual({
                   <div className="flex gap-2.5 w-full sm:w-auto justify-end shrink-0">
                     <button 
                       onClick={() => respondToKeyTransfer(pendingKeyTransfers[0].id, 'accepted')}
-                      className="bg-white hover:bg-slate-50 text-orange-600 font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition-colors border-none cursor-pointer"
+                      className="bg-white hover:bg-slate-50 text-amber-600 font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition-colors border-none cursor-pointer"
                     >
                       Aceptar Llaves
                     </button>
@@ -3895,7 +3898,7 @@ export default function RelojVisual({
                 </div>
                 <button 
                   onClick={() => setShowOpeningChecklistModal(true)} 
-                  className="bg-white text-emerald-750 hover:bg-slate-50 font-black text-xs px-4 py-2 rounded-xl border-none cursor-pointer shadow-sm transition-all active:scale-95"
+                  className="bg-white text-emerald-700 hover:bg-slate-50 font-black text-xs px-4 py-2 rounded-xl border-none cursor-pointer shadow-sm transition-all active:scale-95"
                 >
                   Completar Checklist
                 </button>
@@ -3910,7 +3913,7 @@ export default function RelojVisual({
                 </div>
                 <button 
                   onClick={() => initPaseLista(false)} 
-                  className="bg-white text-violet-750 hover:bg-slate-50 font-black text-xs px-4 py-2 rounded-xl border-none cursor-pointer shadow-sm transition-all active:scale-95"
+                  className="bg-white text-violet-700 hover:bg-slate-50 font-black text-xs px-4 py-2 rounded-xl border-none cursor-pointer shadow-sm transition-all active:scale-95"
                 >
                   Iniciar Pase Lista
                 </button>
@@ -3931,7 +3934,7 @@ export default function RelojVisual({
                   {isOpeningPremium && storeStatus === 'closed' && (
                     <div className={`px-5 py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-inner border mb-5 select-none shrink-0 text-center animate-fade-in ${
                       Number(currentUser.id) === Number(openingStatus ? openingStatus.current_responsible_employee_id : 1) && !isWithinPerimeter
-                        ? 'bg-violet-50 dark:bg-violet-955/20 border-violet-300 dark:border-violet-800/50 text-violet-750 dark:text-violet-300 font-black animate-pulse'
+                        ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-300 dark:border-violet-800/50 text-violet-700 dark:text-violet-300 font-black animate-pulse'
                         : 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border-slate-200/50'
                     }`}>
                       <span className="animate-pulse text-sm">⏳</span>
@@ -4003,12 +4006,12 @@ export default function RelojVisual({
 
                 {/* Estado de la Sucursal */}
                 <div className={`p-5 rounded-3xl border flex flex-col gap-3 transition-colors ${
-                  isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
+                  isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Estado de la Sucursal</h4>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-455 border-rose-500/20'}`}>
-                      <span className={`w-1 h-1 rounded-full ${storeStatus === 'open' ? 'bg-emerald-505 animate-pulse' : 'bg-rose-500'}`}></span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
+                      <span className={`w-1 h-1 rounded-full ${storeStatus === 'open' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
                       {storeStatus === 'open' ? 'Abierto' : 'Cerrado'}
                     </span>
                   </div>
@@ -4035,7 +4038,7 @@ export default function RelojVisual({
                 {/* Accesos Directos: mismas acciones que ya existen como botones secundarios del
                     Dialer (docs/funcionamiento_del_dial.md §5), con más espacio para leerse en desktop. */}
                 <div className={`p-5 rounded-3xl border flex flex-col gap-2.5 transition-colors ${
-                  isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-202 shadow-sm'
+                  isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide mb-1">Accesos Directos</h4>
                   {isUserActiveKeyholder(currentUser?.id) && (storeStatus === 'closed' || clockState === 'waiting_room') && (
@@ -4046,7 +4049,7 @@ export default function RelojVisual({
                         if (respUser?.phone) window.location.href = `tel:${respUser.phone}`;
                         showCustomAlert(`📞 Contactando al Encargado de Llaves: ${respUser?.name || 'Titular'}`);
                       }}
-                      className="w-full text-left py-2.5 px-3.5 bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-250 text-indigo-700 dark:text-indigo-400 font-bold text-xs rounded-xl hover:bg-indigo-100 transition-all flex items-center gap-2 active:scale-[0.98]"
+                      className="w-full text-left py-2.5 px-3.5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 text-indigo-700 dark:text-indigo-400 font-bold text-xs rounded-xl hover:bg-indigo-100 transition-all flex items-center gap-2 active:scale-[0.98]"
                     >
                       <Phone size={13} /> Llamar a Encargado de Llaves
                     </button>
@@ -4082,7 +4085,7 @@ export default function RelojVisual({
 
                 {/* Bottom Row (span 12): Tasks & Alerts Hub */}
               <div className={`col-span-12 border rounded-3xl p-5 flex flex-col gap-3 h-[200px] mt-4 transition-colors ${
-                isDark ? 'bg-slate-900/20 border-slate-905' : 'bg-white border-slate-202 shadow-md'
+                isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-md'
               }`}>
                 
                 {/* Dynamic Alert Banner */}
@@ -4099,10 +4102,10 @@ export default function RelojVisual({
                   
                   if (privateMessages[currentUser.id]) {
                     alertMsg = `🚨 Mensaje del Admin: ${privateMessages[currentUser.id]}`;
-                    alertBg = "bg-rose-500/10 border-rose-500/20 text-rose-505 animate-pulse";
+                    alertBg = "bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse";
                   } else if (alerts.length > 0) {
                     alertMsg = `⚠️ ${alerts[0].msg}`;
-                    alertBg = "bg-rose-500/10 border-rose-500/20 text-rose-505";
+                    alertBg = "bg-rose-500/10 border-rose-500/20 text-rose-500";
                   } else if (needsMealRes) {
                     alertMsg = "🍔 Tienes pendiente apartar tu comida del día.";
                     alertBg = "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400";
@@ -4146,18 +4149,18 @@ export default function RelojVisual({
                         
                         return (
                           <div key={assignment.id} className={`flex items-center justify-between p-3 rounded-xl text-left gap-2 border ${
-                            isDark ? 'bg-slate-955/20 border-slate-900/60' : 'bg-slate-50 border-slate-202/60'
+                            isDark ? 'bg-slate-950/20 border-slate-900/60' : 'bg-slate-50 border-slate-200/60'
                           }`}>
                             <div className="min-w-0 flex-1 text-left">
-                              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-202 truncate leading-snug">{task.title}</p>
-                              <p className="text-[9px] text-slate-455 uppercase font-black tracking-wider mt-0.5">{task.priority === 'bloqueante' ? '🚨 Urgente' : 'Rutina'}</p>
+                              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate leading-snug">{task.title}</p>
+                              <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider mt-0.5">{task.priority === 'bloqueante' ? '🚨 Urgente' : 'Rutina'}</p>
                             </div>
                             
                             <div className="flex-shrink-0">
                               {assignment.status === 'pending' && (
                                 <button 
                                   onClick={() => startTask(assignment.id, currentSimTime)}
-                                  className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-505 flex items-center justify-center hover:bg-emerald-500/20 active:scale-90 transition-all focus:outline-none"
+                                  className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center hover:bg-emerald-500/20 active:scale-90 transition-all focus:outline-none"
                                 >
                                   <Play size={11} fill="currentColor" className="ml-0.5" />
                                 </button>
@@ -4165,13 +4168,13 @@ export default function RelojVisual({
                               {assignment.status === 'in_progress' && (
                                 <button 
                                   onClick={() => completeTask(assignment.id, currentSimTime, 'Completado')}
-                                  className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-605 dark:text-amber-400 flex items-center justify-center hover:bg-amber-500/20 active:scale-90 transition-all focus:outline-none"
+                                  className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-500/20 active:scale-90 transition-all focus:outline-none"
                                 >
                                   <Check size={11} strokeWidth={3} />
                                 </button>
                               )}
                               {(assignment.status === 'completed' || assignment.status === 'awaiting_validation') && (
-                                <span className="w-6.5 h-6.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 text-emerald-505 flex items-center justify-center text-[10px] font-black font-sans">
+                                <span className="w-6.5 h-6.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 text-emerald-500 flex items-center justify-center text-[10px] font-black font-sans">
                                   ✓
                                 </span>
                               )}
@@ -4189,10 +4192,10 @@ export default function RelojVisual({
                       if (isFreemium) {
                         return (
                           <div className={`absolute inset-0 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 rounded-xl z-20 border ${
-                            isDark ? 'bg-slate-955/85 border-slate-900' : 'bg-white/90 border-slate-202'
+                            isDark ? 'bg-slate-950/85 border-slate-900' : 'bg-white/90 border-slate-200'
                           }`}>
                             <Lock size={18} className="text-violet-500 mb-1 animate-pulse" />
-                            <p className="text-[10px] font-black text-violet-505 uppercase tracking-widest leading-none">Bolsa Pro</p>
+                            <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest leading-none">Bolsa Pro</p>
                             <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight mt-1 max-w-[200px]">
                               Actualiza tu plan de suscripción SaaS corporativo para desbloquear la Bolsa de Trabajo.
                             </p>
@@ -4223,15 +4226,15 @@ export default function RelojVisual({
                             
                             return (
                               <div key={assignment.id} className={`flex items-center justify-between p-3 rounded-xl text-left gap-2 border ${
-                                isDark ? 'bg-slate-955/20 border-slate-900/60' : 'bg-slate-50 border-slate-202/60'
+                                isDark ? 'bg-slate-950/20 border-slate-900/60' : 'bg-slate-50 border-slate-200/60'
                               }`}>
                                 <div className="min-w-0 flex-1 text-left">
-                                  <p className="text-xs font-bold text-slate-805 dark:text-slate-202 truncate leading-snug">{task.title}</p>
-                                  <p className="text-[9px] text-emerald-500 dark:text-emerald-450 font-extrabold mt-0.5 font-sans">+{task.points || 15} pts</p>
+                                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-snug">{task.title}</p>
+                                  <p className="text-[9px] text-emerald-500 dark:text-emerald-400 font-extrabold mt-0.5 font-sans">+{task.points || 15} pts</p>
                                 </div>
                                 <button 
                                   onClick={() => grabTaskFromPool(assignment.id, currentUser.id, currentSimTime)}
-                                  className="flex-shrink-0 bg-violet-650 hover:bg-violet-750 text-white font-extrabold text-[10px] px-3.5 py-1 rounded-lg active:scale-90 transition-all focus:outline-none"
+                                  className="flex-shrink-0 bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-[10px] px-3.5 py-1 rounded-lg active:scale-90 transition-all focus:outline-none"
                                 >
                                   Tomar Tarea
                                 </button>
@@ -4252,7 +4255,7 @@ export default function RelojVisual({
           {/* Desktop Tareas runner */}
           {phoneTab === 'tareas' && (
             <div className={`w-full mx-auto border flex flex-col animate-fade-in-up p-6 md:p-8 rounded-3xl max-w-4xl transition-colors ${
-              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-250 shadow-sm'
+              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
             }`}>
               <h3 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
                 <span>✅</span> Tareas y Rutinas Asignadas
@@ -4264,7 +4267,7 @@ export default function RelojVisual({
           {/* Desktop Academia */}
           {phoneTab === 'academia' && (
             <div className={`w-full mx-auto border flex flex-col animate-fade-in-up p-6 md:p-8 rounded-3xl max-w-5xl transition-colors ${
-              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-250 shadow-sm'
+              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
             }`}>
               <Academia onBack={() => setPhoneTab('checador')} />
             </div>
@@ -4273,7 +4276,7 @@ export default function RelojVisual({
           {/* Desktop Nómina */}
           {phoneTab === 'nomina' && (
             <div className={`w-full mx-auto border flex flex-col animate-fade-in-up p-6 md:p-8 rounded-3xl max-w-4xl transition-colors ${
-              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-250 shadow-sm'
+              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
             }`}>
               <h3 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
                 <span>💵</span> Resumen y Liquidación de Pagos
@@ -4292,24 +4295,24 @@ export default function RelojVisual({
           {/* Desktop Herramientas list */}
           {phoneTab === 'herramientas' && (
             <div className={`w-full mx-auto border flex flex-col gap-4 animate-fade-in text-left p-6 md:p-8 rounded-3xl max-w-3xl transition-colors ${
-              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-255 shadow-sm'
+              isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-300 shadow-sm'
             }`}>
               {innerTool === null ? (
                 <>
-                  <h4 className="font-extrabold text-xl text-slate-805 dark:text-slate-100 mb-4">Caja de Herramientas</h4>
+                  <h4 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 mb-4">Caja de Herramientas</h4>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button 
                       onClick={() => { setInnerTool('chat'); fetchChatMessages(); }} 
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-slate-800 text-violet-400 flex items-center justify-center shrink-0">
                         <MessageSquare size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Chat de Equipo 💬</p>
+                        <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Chat de Equipo 💬</p>
                         <p className="text-xs text-slate-500 mt-0.5">Mensajes temporales entre colaboradores (Se borran cada semana)</p>
                       </div>
                     </button>
@@ -4317,14 +4320,14 @@ export default function RelojVisual({
                     <button 
                       onClick={() => setInnerTool('soplon')} 
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-slate-800 text-rose-400 flex items-center justify-center shrink-0">
                         <AlertOctagon size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">El Soplón 📢</p>
+                        <p className="font-bold text-sm text-slate-800 dark:text-slate-100">El Soplón 📢</p>
                         <p className="text-xs text-slate-500 mt-0.5">Reportar ausencias o faltas de compañeros de forma directa</p>
                       </div>
                     </button>
@@ -4332,14 +4335,14 @@ export default function RelojVisual({
                     <button 
                       onClick={() => setInnerTool('buzon')} 
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center shrink-0">
                         <Fingerprint size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Buzón Anónimo RRHH 🕵️</p>
+                        <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Buzón Anónimo RRHH 🕵️</p>
                         <p className="text-xs text-slate-500 mt-0.5">Enviar sugerencias o reportes generales 100% privados</p>
                       </div>
                     </button>
@@ -4348,14 +4351,14 @@ export default function RelojVisual({
                       <button 
                         onClick={() => setInnerTool('transfer')} 
                         className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                          isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                          isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                         }`}
                       >
                         <div className="w-12 h-12 rounded-full bg-slate-800 text-indigo-400 flex items-center justify-center shrink-0">
                           <Key size={20} />
                         </div>
                         <div>
-                          <h5 className="font-bold text-sm text-slate-850 dark:text-slate-100">Transferir Cierre 🔑</h5>
+                          <h5 className="font-bold text-sm text-slate-800 dark:text-slate-100">Transferir Cierre 🔑</h5>
                           <p className="text-xs text-slate-500 mt-0.5">Ceder llaves de la sucursal a un compañero</p>
                         </div>
                       </button>
@@ -4364,14 +4367,14 @@ export default function RelojVisual({
                     <button 
                       onClick={() => setInnerTool('huida')} 
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-slate-800 text-amber-500 flex items-center justify-center shrink-0">
                         <WifiOff size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Simular Desconexión (Huida) 🏃</p>
+                        <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Simular Desconexión (Huida) 🏃</p>
                         <p className="text-xs text-slate-500 mt-0.5">Detección de desconexión sin entregar el turno</p>
                       </div>
                     </button>
@@ -4379,14 +4382,14 @@ export default function RelojVisual({
                     <button 
                       onClick={() => setPhoneTab('evaluacion360')} 
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center shrink-0">
                         <Star size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-850 dark:text-slate-100">Evaluación de Compañeros ⭐</p>
+                        <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Evaluación de Compañeros ⭐</p>
                         <p className="text-xs text-slate-500 mt-0.5">Evaluar desempeño y puntualidad en el turno</p>
                       </div>
                     </button>
@@ -4394,14 +4397,14 @@ export default function RelojVisual({
                     <button 
                       onClick={() => setShowDesktopOrgModal(true)} 
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
-                        isDark ? 'border-slate-800 bg-slate-955/40 hover:bg-slate-900/40' : 'border-slate-205 bg-white hover:bg-slate-50'
+                        isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full bg-slate-800 text-emerald-400 flex items-center justify-center shrink-0">
                         <Network size={20} />
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-855 dark:text-slate-100">Organigrama de la Empresa 🕸️</p>
+                        <p className="font-bold text-sm text-slate-900 dark:text-slate-100">Organigrama de la Empresa 🕸️</p>
                         <p className="text-xs text-slate-500 mt-0.5">Consulta los puestos y responsabilidades</p>
                       </div>
                     </button>
@@ -4562,11 +4565,11 @@ export default function RelojVisual({
           {/* Modal Forzosa */}
           {showForzosaModal && (
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border-4 border-orange-500 text-slate-800">
-                <h3 className="font-black text-xl text-orange-600 mb-2">⚠️ Apertura Forzosa</h3>
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up border-4 border-amber-500 text-slate-800">
+                <h3 className="font-black text-xl text-amber-600 mb-2">⚠️ Apertura Forzosa</h3>
                 <p className="text-sm text-slate-600 mb-4">El Titular no avisó de su ausencia. Si tomas el control, se generará una alerta de seguridad.</p>
-                <textarea className="w-full bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-orange-500" rows={3} placeholder="Ej. El titular olvidó su celular..."></textarea>
-                <button onClick={handleAperturaForzosa} className="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl mb-2 shadow-lg">Tomar el Control y Abrir</button>
+                <textarea className="w-full bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-amber-500" rows={3} placeholder="Ej. El titular olvidó su celular..."></textarea>
+                <button onClick={handleAperturaForzosa} className="w-full bg-amber-600 text-white font-bold py-4 rounded-2xl mb-2 shadow-lg">Tomar el Control y Abrir</button>
                 <button onClick={() => setShowForzosaModal(false)} className="w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-2xl">Cancelar</button>
               </div>
             </div>
@@ -4627,7 +4630,7 @@ export default function RelojVisual({
                     
                     <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Motivo o Justificación</label>
                     <textarea 
-                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-indigo-500 text-slate-850" 
+                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800" 
                        rows={3} 
                        placeholder="Describe detalladamente el motivo..."
                        value={absenceReason}
@@ -4896,7 +4899,7 @@ export default function RelojVisual({
                       {openingAssignments.map((assignment: any) => {
                         const isCompleted = assignment.status === 'completed' || assignment.status === 'awaiting_validation';
                         return (
-                          <label key={assignment.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-55 cursor-pointer border border-slate-150 transition-colors bg-slate-50/50">
+                          <label key={assignment.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 cursor-pointer border border-slate-100 transition-colors bg-slate-50/50">
                             <input 
                               type="checkbox"
                               checked={isCompleted}
@@ -4998,12 +5001,12 @@ export default function RelojVisual({
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
                 <h3 className="font-bold text-cyan-600 mb-2 text-xl flex items-center gap-2"><span>🗝️</span> Entrega de Turno</h3>
-                <p className="text-sm text-slate-650 mb-4 bg-cyan-50 p-3 rounded-xl border border-cyan-100">
+                <p className="text-sm text-slate-600 mb-4 bg-cyan-50 p-3 rounded-xl border border-cyan-100">
                   Para registrar tu salida, debes realizar el arqueo de caja y delegar las llaves de la sucursal.
                 </p>
                 
                 <div className="mb-5">
-                  <label className="block text-xs font-bold text-slate-505 uppercase tracking-wider mb-2">Arqueo de Caja (Efectivo en Caja)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Arqueo de Caja (Efectivo en Caja)</label>
                   <div className="relative">
                     <span className="absolute left-4 top-3 font-bold text-slate-400">$</span>
                     <input 
@@ -5017,7 +5020,7 @@ export default function RelojVisual({
                 </div>
 
                 <div className="mb-5">
-                  <label className="block text-xs font-bold text-slate-505 uppercase tracking-wider mb-2">Entregar llaves a:</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Entregar llaves a:</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id).map((u: any) => (
                       <button
@@ -5029,7 +5032,7 @@ export default function RelojVisual({
                           <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
                           <div className="text-left">
                             <p className="font-bold text-slate-800 text-xs">{u.name}</p>
-                            <p className="text-[9px] text-slate-505">{u.role}</p>
+                            <p className="text-[9px] text-slate-500">{u.role}</p>
                           </div>
                         </div>
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${nextDayEncargadoId === u.id ? 'border-cyan-500' : 'border-slate-300'}`}>
@@ -5063,7 +5066,7 @@ export default function RelojVisual({
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col justify-end">
               <div className="bg-white rounded-t-3xl p-6 pb-12 w-full animate-fade-in-up text-slate-800">
                 <h3 className="font-bold text-indigo-600 mb-2 text-xl flex items-center gap-2"><span>🔑</span> Entregar Llaves</h3>
-                <p className="text-sm text-slate-665 mb-4 bg-indigo-50 p-3 rounded-xl border border-indigo-100">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
+                <p className="text-sm text-slate-700 mb-4 bg-indigo-50 p-3 rounded-xl border border-indigo-100">Mañana es tu día de descanso. Selecciona al encargado que abrirá la sucursal mañana.</p>
                 
                 <div className="space-y-2 mb-6">
                   {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id).map((u: any) => (
@@ -5076,7 +5079,7 @@ export default function RelojVisual({
                         <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
                         <div className="text-left">
                           <p className="font-bold text-slate-800 text-sm">{u.name}</p>
-                          <p className="text-[10px] text-slate-505">{u.role}</p>
+                          <p className="text-[10px] text-slate-500">{u.role}</p>
                         </div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${nextDayEncargadoId === u.id ? 'border-indigo-500' : 'border-slate-300'}`}>
@@ -5103,7 +5106,7 @@ export default function RelojVisual({
           {showBreakSeatModal && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-purple-700 mb-2 text-xl flex items-center gap-2"><span>🧘</span> Descanso Ley Silla</h3>
+                <h3 className="font-extrabold text-violet-700 mb-2 text-xl flex items-center gap-2"><span>🧘</span> Descanso Ley Silla</h3>
                 <p className="text-sm text-slate-600 mb-5">
                   De acuerdo con la <strong>Ley Silla</strong>, puedes tomar un descanso de 15 minutos. Selecciona una tarea que puedas realizar sentado durante este periodo:
                 </p>
@@ -5113,13 +5116,13 @@ export default function RelojVisual({
                     <button
                       key={t.id}
                       onClick={() => startBreakWithSittingTask(t.id)}
-                      className="w-full p-4 rounded-2xl border border-purple-100 bg-purple-50/30 hover:bg-purple-50 text-left transition-colors flex justify-between items-center"
+                      className="w-full p-4 rounded-2xl border border-violet-100 bg-violet-50/30 hover:bg-violet-50 text-left transition-colors flex justify-between items-center"
                     >
                       <div>
-                        <p className="font-bold text-purple-950 text-sm">{t.title}</p>
-                        <p className="text-[10px] text-purple-700 mt-0.5">⏱️ {t.estimatedMins} min | 🏆 {t.points} pts</p>
+                        <p className="font-bold text-violet-950 text-sm">{t.title}</p>
+                        <p className="text-[10px] text-violet-700 mt-0.5">⏱️ {t.estimatedMins} min | 🏆 {t.points} pts</p>
                       </div>
-                      <span className="text-purple-650 bg-purple-100 p-1.5 rounded-full">🪑</span>
+                      <span className="text-violet-600 bg-violet-100 p-1.5 rounded-full">🪑</span>
                     </button>
                   ))}
                   
@@ -5131,13 +5134,13 @@ export default function RelojVisual({
                       <p className="font-bold text-slate-800 text-sm">Monitoreo de seguridad desde silla</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">⏱️ 15 min | Tarea predeterminada</p>
                     </div>
-                    <span className="text-slate-505 bg-slate-200 p-1.5 rounded-full">🪑</span>
+                    <span className="text-slate-500 bg-slate-200 p-1.5 rounded-full">🪑</span>
                   </button>
                 </div>
                 
                 <button 
                   onClick={() => setShowBreakSeatModal(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-655 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-2xl transition-colors border-none"
                 >
                   Cancelar Descanso
                 </button>
@@ -5162,7 +5165,7 @@ export default function RelojVisual({
                       className="w-full p-4 rounded-2xl border border-slate-100 hover:border-teal-200 bg-white hover:bg-teal-50/35 text-slate-800 font-bold text-sm text-left transition-all flex justify-between items-center"
                     >
                       <span>{reason}</span>
-                      <span className="text-xs text-teal-650 font-normal">Solicitar ➡️</span>
+                      <span className="text-xs text-teal-600 font-normal">Solicitar ➡️</span>
                     </button>
                   ))}
                 </div>
@@ -5181,7 +5184,7 @@ export default function RelojVisual({
           {showPanicModal && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-rose-655 mb-2 text-xl flex items-center gap-2"><span>🚨</span> Botón de Pánico</h3>
+                <h3 className="font-extrabold text-rose-700 mb-2 text-xl flex items-center gap-2"><span>🚨</span> Botón de Pánico</h3>
                 <p className="text-sm text-slate-600 mb-5">
                   Reporta una emergencia crítica en la sucursal de forma inmediata. Se bloqueará la pantalla y se avisará a todos los supervisores.
                 </p>
@@ -5191,7 +5194,7 @@ export default function RelojVisual({
                     <button
                       key={emergency}
                       onClick={() => triggerPanic(emergency, `Reportado por ${currentUser.name}`)}
-                      className="w-full p-4 rounded-2xl border border-rose-100 hover:border-rose-300 bg-rose-50/20 hover:bg-rose-50 text-rose-955 font-bold text-sm text-left transition-all animate-pulse"
+                      className="w-full p-4 rounded-2xl border border-rose-100 hover:border-rose-300 bg-rose-50/20 hover:bg-rose-50 text-rose-950 font-bold text-sm text-left transition-all animate-pulse"
                     >
                       🚨 {emergency}
                     </button>
@@ -5200,7 +5203,7 @@ export default function RelojVisual({
                 
                 <button 
                   onClick={() => setShowPanicModal(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-605 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl transition-colors border-none"
                 >
                   Cancelar Reporte
                 </button>
@@ -5213,7 +5216,7 @@ export default function RelojVisual({
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] select-none animate-fade-in text-slate-800">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
                 <h3 className="font-extrabold text-amber-700 mb-2 text-xl flex items-center gap-2"><span>🔄</span> Intercambio de Comida</h3>
-                <p className="text-sm text-slate-605 mb-5">
+                <p className="text-sm text-slate-600 mb-5">
                   Selecciona un compañero de turno que tenga reservación de comida para intercambiar su horario por el tuyo de forma rápida.
                 </p>
                 
@@ -5225,26 +5228,26 @@ export default function RelojVisual({
                         await swapMealSlots(currentUser.id, u.id);
                         setShowMealSwapModal(false);
                       }}
-                      className="w-full p-3.5 rounded-2xl border border-slate-100 hover:border-amber-250 bg-white hover:bg-amber-50/20 text-left transition-colors flex justify-between items-center"
+                      className="w-full p-3.5 rounded-2xl border border-slate-100 hover:border-amber-200 bg-white hover:bg-amber-50/20 text-left transition-colors flex justify-between items-center"
                     >
                       <div className="flex items-center gap-3">
                         <img src={u.avatar} alt="Avatar" className="w-8 h-8 rounded-full" />
                         <div>
                           <p className="font-bold text-slate-800 text-xs">{u.name}</p>
-                          <p className="text-[9px] text-slate-550">Slot: {userReservedMealSlots[u.id]?.[0] || 'Reservado'}</p>
+                          <p className="text-[9px] text-slate-500">Slot: {userReservedMealSlots[u.id]?.[0] || 'Reservado'}</p>
                         </div>
                       </div>
                       <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-1 rounded-md">Intercambiar</span>
                     </button>
                   ))}
                   {globalUsers.filter((u: any) => u.is_active_employee !== false && u.id !== currentUser.id && hasReservedMeal[u.id]).length === 0 && (
-                    <p className="text-slate-500 text-sm text-center py-4 bg-slate-55 rounded-2xl">No hay compañeros con reservas activas hoy para realizar intercambio.</p>
+                    <p className="text-slate-500 text-sm text-center py-4 bg-slate-50 rounded-2xl">No hay compañeros con reservas activas hoy para realizar intercambio.</p>
                   )}
                 </div>
                 
                 <button 
                   onClick={() => setShowMealSwapModal(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-605 font-bold py-3.5 rounded-2xl transition-colors border-none"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl transition-colors border-none"
                 >
                   Cerrar
                 </button>
@@ -5256,7 +5259,7 @@ export default function RelojVisual({
           {showAlarmSettingsModal && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] select-none text-slate-800">
               <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-                <h3 className="font-extrabold text-violet-750 dark:text-violet-400 mb-2 text-lg flex items-center gap-2">
+                <h3 className="font-extrabold text-violet-700 dark:text-violet-400 mb-2 text-lg flex items-center gap-2">
                   <span>🔔</span> Alertas y Alarmas
                 </h3>
                 <p className="text-xs text-slate-500 mb-5">
@@ -5273,7 +5276,7 @@ export default function RelojVisual({
                       type="checkbox" 
                       checked={userClockPrefs.alarmsEnabled} 
                       onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, alarmsEnabled: e.target.checked }))}
-                      className="w-4 h-4 accent-violet-650 cursor-pointer"
+                      className="w-4 h-4 accent-violet-600 cursor-pointer"
                     />
                   </div>
 
@@ -5293,7 +5296,7 @@ export default function RelojVisual({
                             }}
                             className={`py-2 px-3 text-[10px] uppercase font-black rounded-xl border text-center transition-all cursor-pointer ${
                               userClockPrefs.selectedTone === tone
-                                ? 'bg-violet-650 text-white border-violet-650 shadow-md'
+                                ? 'bg-violet-600 text-white border-violet-600 shadow-md'
                                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100'
                             }`}
                           >
@@ -5325,7 +5328,7 @@ export default function RelojVisual({
                         type="checkbox" 
                         checked={userClockPrefs.leySillaAlert} 
                         onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, leySillaAlert: e.target.checked }))}
-                        className="w-4 h-4 accent-violet-650 cursor-pointer"
+                        className="w-4 h-4 accent-violet-600 cursor-pointer"
                       />
                     </div>
 
@@ -5335,7 +5338,7 @@ export default function RelojVisual({
                         type="checkbox" 
                         checked={userClockPrefs.newTaskAlert} 
                         onChange={e => setUserClockPrefs((prev: any) => ({ ...prev, newTaskAlert: e.target.checked }))}
-                        className="w-4 h-4 accent-violet-650 cursor-pointer"
+                        className="w-4 h-4 accent-violet-600 cursor-pointer"
                       />
                     </div>
                   </div>
@@ -5343,7 +5346,7 @@ export default function RelojVisual({
 
                 <button 
                   onClick={() => setShowAlarmSettingsModal(false)}
-                  className="w-full bg-violet-650 hover:bg-violet-700 text-white font-bold py-3 rounded-2xl transition-colors border-none cursor-pointer text-xs"
+                  className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-2xl transition-colors border-none cursor-pointer text-xs"
                 >
                   Guardar
                 </button>
@@ -5402,7 +5405,7 @@ export default function RelojVisual({
 
                 {isPro ? (
                   <div className="space-y-3 mb-5">
-                    <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">Token QR del Supervisor</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block text-left">Token QR del Supervisor</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -5422,7 +5425,7 @@ export default function RelojVisual({
                             alert("Error al simular QR");
                           }
                         }}
-                        className="bg-violet-650 hover:bg-violet-750 text-white font-bold px-3 py-2 rounded-2xl border-none cursor-pointer text-[10px]"
+                        className="bg-violet-600 hover:bg-violet-700 text-white font-bold px-3 py-2 rounded-2xl border-none cursor-pointer text-[10px]"
                         title="Simular escaneo de QR"
                         type="button"
                       >
@@ -5435,7 +5438,7 @@ export default function RelojVisual({
                   </div>
                 ) : (
                   <div className="space-y-3 mb-5">
-                    <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">PIN del Supervisor</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block text-left">PIN del Supervisor</label>
                     <input
                       type="password"
                       maxLength={6}
@@ -5484,11 +5487,11 @@ export default function RelojVisual({
                 </p>
 
                 <div className="space-y-3 mb-5">
-                  <label className="text-[10px] font-black text-slate-550 uppercase tracking-wider block text-left">Motivo de Salida</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block text-left">Motivo de Salida</label>
                   <select
                     value={earlyDepartureReason}
                     onChange={e => setEarlyDepartureReason(e.target.value)}
-                    className="w-full py-3 px-4 border border-slate-200 rounded-2xl text-xs font-bold text-slate-705 bg-white focus:outline-none focus:border-rose-500 cursor-pointer"
+                    className="w-full py-3 px-4 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-rose-500 cursor-pointer"
                   >
                     <option value="Enfermedad">Enfermedad / Malestar</option>
                     <option value="Urgencia Familiar">Urgencia Familiar</option>
@@ -5522,7 +5525,7 @@ export default function RelojVisual({
 
           {/* Overlay de Bloqueo de Pánico */}
           {isPanicActive && (
-            <div className="fixed inset-0 bg-rose-955/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <div className="fixed inset-0 bg-rose-950/90 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
               <div className="w-24 h-24 bg-rose-600 rounded-full flex items-center justify-center animate-ping absolute opacity-20"></div>
               <div className="bg-rose-900 border-4 border-rose-500 text-white rounded-full p-6 mb-6 animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.6)]">
                 <AlertOctagon size={48} />
@@ -5575,17 +5578,17 @@ export default function RelojVisual({
                       {/* Minimal Header */}
                       <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
                         <div className="flex items-center gap-2 text-left">
-                          <Utensils className="w-5 h-5 text-amber-550 shrink-0" />
+                          <Utensils className="w-5 h-5 text-amber-500 shrink-0" />
                           <h3 className="font-black text-slate-800 text-sm">
                             Horario de Almuerzo
                           </h3>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                            modalState === 'active' ? 'bg-amber-50 border-amber-100 text-amber-650' :
-                            modalState === 'completed' ? (hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-650' : 'bg-emerald-50 border-emerald-100 text-emerald-650') :
-                            modalState === 'reserved_pending' ? 'bg-indigo-50 border-indigo-100 text-indigo-650' :
-                            'bg-slate-50 border-slate-150 text-slate-500'
+                            modalState === 'active' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                            modalState === 'completed' ? (hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600') :
+                            modalState === 'reserved_pending' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' :
+                            'bg-slate-50 border-slate-100 text-slate-500'
                           }`}>
                             {modalState === 'active' ? '⏳ En curso' :
                              modalState === 'completed' ? (hasExceeded ? '⚠️ Límite Excedido' : '✓ Cumplido') :
@@ -5600,15 +5603,15 @@ export default function RelojVisual({
                         modalState === 'active' ? 'bg-amber-50/40 border-amber-100/60 text-amber-900' :
                         modalState === 'completed' ? (hasExceeded ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' : 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900') :
                         modalState === 'reserved_pending' ? 'bg-indigo-50/40 border-indigo-100/60 text-indigo-900' :
-                        'bg-slate-50/50 border-slate-150 text-slate-700'
+                        'bg-slate-50/50 border-slate-100 text-slate-700'
                       }`}>
                         {modalState === 'active' ? (
-                          <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu tiempo de comida reservado. Recuerda registrar tu reingreso a tiempo.</>
+                          <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Buen provecho. Actualmente te encuentras en tu tiempo de comida reservado. Recuerda registrar tu reingreso a tiempo.</>
                         ) : modalState === 'completed' ? (
                           hasExceeded ? (
-                            <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-rose-600 font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info?.extra} minutos</strong>. ⚠️</>
+                            <>Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>. Hoy tu almuerzo duró <strong className="text-rose-600 font-bold">{info?.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info?.extra} minutos</strong>. ⚠️</>
                           ) : (
-                            <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-650 font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación! 🌟</>
+                            <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Tu almuerzo de hoy duró <strong className="text-emerald-600 font-bold">{info?.duration} minutos</strong> (dentro del límite regular de {limit} minutos). ¡Excelente coordinación! 🌟</>
                           )
                         ) : modalState === 'reserved_pending' ? (
                           <>Hola, tu horario de comida es a las <strong className="text-indigo-600 font-bold">{mySlots[0]}</strong>.</>
@@ -5623,7 +5626,7 @@ export default function RelojVisual({
                           {mySlots.length > 0 && (
                             <div className="p-3 bg-amber-50/45 border border-amber-100/60 rounded-xl text-center">
                               <span className="text-[10px] font-extrabold uppercase text-amber-700 block">Horario Reservado</span>
-                              <span className="text-xs font-black text-amber-660">{mySlots.join(' - ')}</span>
+                              <span className="text-xs font-black text-amber-700">{mySlots.join(' - ')}</span>
                             </div>
                           )}
 
@@ -5718,7 +5721,7 @@ export default function RelojVisual({
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                        isLate ? 'bg-rose-50 border-rose-100 text-rose-650' : 'bg-emerald-50 border-emerald-100 text-emerald-650'
+                        isLate ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
                       }`}>
                         {isLate ? '⚠️ Retardo' : '✓ Puntual'}
                       </span>
@@ -5733,7 +5736,7 @@ export default function RelojVisual({
                     {isLate ? (
                       <>Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>. Buen día. Registraste tu entrada hoy a las <strong className="text-rose-600 font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}), acumulando un retardo de <strong className="text-rose-600 font-bold">{delayMins} minutos</strong>. Recuerda ingresar a tiempo para proteger tu bono de puntualidad mensual. ¡Mucho éxito en el turno de hoy! 💪</>
                     ) : (
-                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Buen día. Registraste tu entrada de forma puntual hoy a las <strong className="text-emerald-650 font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}). ¡Excelente inicio de jornada! Sigue así para asegurar tu bono de puntualidad. ⭐</>
+                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Buen día. Registraste tu entrada de forma puntual hoy a las <strong className="text-emerald-600 font-bold">{actualIn !== undefined ? formatMinsToTimeClean(actualIn) : '--:--'}</strong> (tu entrada regular es a las {formatStringToTimeClean(expectedInStr)}). ¡Excelente inicio de jornada! Sigue así para asegurar tu bono de puntualidad. ⭐</>
                     )}
                   </div>
                 </div>
@@ -5761,7 +5764,7 @@ export default function RelojVisual({
                   <div className="space-y-4 text-left">
                     <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
                       <div className="flex items-center gap-2">
-                        <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
+                        <Armchair className="w-5 h-5 text-violet-600 shrink-0" />
                         <h3 className="font-black text-slate-800 text-sm">
                           Solicitud de Descanso (Ley Silla)
                         </h3>
@@ -5769,17 +5772,17 @@ export default function RelojVisual({
                       <button onClick={() => setShowBreakDetailsModal(false)} className="bg-transparent border-none text-slate-400 hover:text-slate-600 text-sm cursor-pointer select-none">✕</button>
                     </div>
 
-                    <div className="p-4 rounded-2xl border bg-purple-50/40 border-purple-100/60 text-purple-900 leading-relaxed text-xs font-semibold">
+                    <div className="p-4 rounded-2xl border bg-violet-50/40 border-violet-100/60 text-violet-900 leading-relaxed text-xs font-semibold">
                       <p className="mb-2">
                         La <strong>Ley Silla</strong> establece tu derecho a tomar un descanso periódico para mitigar la fatiga laboral de pie.
                       </p>
                       {hasCheckedInUser ? (
                         <div className="space-y-1 mt-2">
-                          <p>⏱️ Tiempo de pie acumulado hoy: <strong className="text-purple-700">{elapsedMins} minutos</strong>.</p>
+                          <p>⏱️ Tiempo de pie acumulado hoy: <strong className="text-violet-700">{elapsedMins} minutos</strong>.</p>
                           {remainingMins > 0 ? (
                             <p>⏳ Tiempo restante para el descanso de ley: <strong className="text-amber-600">{remainingMins} minutos</strong>.</p>
                           ) : (
-                            <p className="text-emerald-650 font-black">✓ Ya tienes derecho a tomar tu descanso de {leySillaConfig?.breakMinutes || 15} min.</p>
+                            <p className="text-emerald-600 font-black">✓ Ya tienes derecho a tomar tu descanso de {leySillaConfig?.breakMinutes || 15} min.</p>
                           )}
                         </div>
                       ) : (
@@ -5816,7 +5819,7 @@ export default function RelojVisual({
                               await requestBreak(currentUser.id);
                               setShowBreakDetailsModal(false);
                             }}
-                            className="w-full bg-purple-600 hover:bg-purple-750 text-white font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider border-none cursor-pointer shadow-md shadow-purple-500/10 active:scale-98"
+                            className="w-full bg-violet-600 hover:bg-violet-700 text-white font-extrabold py-3.5 rounded-xl text-xs transition-all uppercase tracking-wider border-none cursor-pointer shadow-md shadow-violet-500/10 active:scale-98"
                           >
                             Solicitar Descanso al Supervisor
                           </button>
@@ -5834,16 +5837,16 @@ export default function RelojVisual({
                   {/* Minimal Header */}
                   <div className="flex justify-between items-start mb-1 pb-2.5 border-b border-slate-100">
                     <div className="flex items-center gap-2 text-left">
-                      <Armchair className="w-5 h-5 text-purple-600 shrink-0" />
+                      <Armchair className="w-5 h-5 text-violet-600 shrink-0" />
                       <h3 className="font-black text-slate-800 text-sm">
                         Registro de Descanso
                       </h3>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                        info.isActive ? 'bg-purple-50 border-purple-100 text-purple-650' :
-                        hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-650' :
-                        'bg-emerald-50 border-emerald-100 text-emerald-650'
+                        info.isActive ? 'bg-violet-50 border-violet-100 text-violet-600' :
+                        hasExceeded ? 'bg-rose-50 border-rose-100 text-rose-600' :
+                        'bg-emerald-50 border-emerald-100 text-emerald-600'
                       }`}>
                         {info.isActive ? '⏳ En curso' :
                          hasExceeded ? '⚠️ Límite Excedido' :
@@ -5855,16 +5858,16 @@ export default function RelojVisual({
 
                   {/* Colored status container */}
                   <div className={`p-4 rounded-2xl border text-left leading-relaxed text-xs font-semibold ${
-                    info.isActive ? 'bg-purple-50/40 border-purple-100/60 text-purple-900' :
+                    info.isActive ? 'bg-violet-50/40 border-violet-100/60 text-violet-900' :
                     hasExceeded ? 'bg-rose-50/40 border-rose-100/60 text-rose-900' :
                     'bg-emerald-50/40 border-emerald-100/60 text-emerald-900'
                   }`}>
                     {info.isActive ? (
-                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso de hoy, iniciado a las <strong className="text-purple-600 font-bold">{formatMinsToTimeClean(info.start)}</strong>. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
+                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Actualmente te encuentras en tu descanso de hoy, iniciado a las <strong className="text-violet-600 font-bold">{formatMinsToTimeClean(info.start)}</strong>. Disfruta tu café o estiramiento. Recuerda registrar tu reingreso a tiempo.</>
                     ) : hasExceeded ? (
-                      <>Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>. Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-rose-600 font-bold">{info.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info.extra} minutos</strong>. Te sugerimos cuidar más tus tiempos en tus siguientes descansos. ⚠️</>
+                      <>Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>. Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-rose-600 font-bold">{info.duration} minutos</strong> (tu límite regular es de {limit} minutos), lo cual representa un exceso de <strong className="text-rose-600 font-bold">{info.extra} minutos</strong>. Te sugerimos cuidar más tus tiempos en tus siguientes descansos. ⚠️</>
                     ) : (
-                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-emerald-650 font-bold">{info.duration} minutos</strong> (dentro de tu límite regular de {limit} minutos). ¡Excelente coordinación con tus tiempos de descanso! ☕</>
+                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Tu descanso (iniciado a las {formatMinsToTimeClean(info.start)}) duró <strong className="text-emerald-600 font-bold">{info.duration} minutos</strong> (dentro de tu límite regular de {limit} minutos). ¡Excelente coordinación con tus tiempos de descanso! ☕</>
                     )}
                   </div>
                 </div>
@@ -5904,7 +5907,7 @@ export default function RelojVisual({
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                        hasAnyDeviation ? 'bg-amber-50 border-amber-100 text-amber-650' : 'bg-emerald-50 border-emerald-100 text-emerald-650'
+                        hasAnyDeviation ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
                       }`}>
                         {hasAnyDeviation ? '⚠️ Con Novedad' : '🏆 Impecable'}
                       </span>
@@ -5919,7 +5922,7 @@ export default function RelojVisual({
                     {hasAnyDeviation ? (
                       <>Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>. Concluiste tu turno con <strong className="text-slate-950">{workedHours} horas</strong> registradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Registramos algunas novedades: <strong className="text-rose-600">{devList.join(', ')}</strong>. ¡No te preocupes, mañana será una gran oportunidad para retomar tu récord de puntualidad! Buen descanso. 🌟</>
                     ) : (
-                      <>¡Hola, <strong className="font-black text-slate-955">{currentUser?.name}</strong>! Excelente trabajo hoy. Finalizaste tu jornada con <strong className="text-emerald-650 font-bold">{workedHours} horas</strong> laboradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Cumpliste perfectamente con tus horarios y límites de asistencia. ¡Muchas gracias por tu compromiso y descansa! 🏆</>
+                      <>¡Hola, <strong className="font-black text-slate-950">{currentUser?.name}</strong>! Excelente trabajo hoy. Finalizaste tu jornada con <strong className="text-emerald-600 font-bold">{workedHours} horas</strong> laboradas (entrada a las {checkInTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkInTimes[currentUser.id]) : '--:--'} y salida a las {checkOutTimes[currentUser.id] !== undefined ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) : '--:--'}). Cumpliste perfectamente con tus horarios y límites de asistencia. ¡Muchas gracias por tu compromiso y descansa! 🏆</>
                     )}
                   </div>
                 </div>
@@ -5982,7 +5985,7 @@ export default function RelojVisual({
                             </button>
                           </div>
 
-                          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-150 rounded-2xl mb-6 flex items-start gap-3">
+                          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl mb-6 flex items-start gap-3">
                             <span className="text-lg">⭐</span>
                             <div className="text-left">
                               <h4 className="font-black text-blue-900 text-xs uppercase tracking-wider mb-0.5">Accede al Comedor Pro</h4>
@@ -6225,7 +6228,7 @@ export default function RelojVisual({
 
                 {/* Grid de Incidencias */}
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">📅</span>
                       <div className="leading-none">
@@ -6236,7 +6239,7 @@ export default function RelojVisual({
                     <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.incidents?.total_absences || 0} faltas</span>
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">⏱️</span>
                       <div className="leading-none">
@@ -6247,7 +6250,7 @@ export default function RelojVisual({
                     <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.incidents?.lates || 0} retardos</span>
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">🍔</span>
                       <div className="leading-none">
@@ -6258,7 +6261,7 @@ export default function RelojVisual({
                     <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.performance?.meal_overtime_mins || 0} mins</span>
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">☕</span>
                       <div className="leading-none">
@@ -6269,7 +6272,7 @@ export default function RelojVisual({
                     <span className="text-xs font-extrabold text-slate-700">{weeklyPayrollData.performance?.break_overtime_mins || 0} mins</span>
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-xl">
+                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-100 rounded-xl">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">✅</span>
                       <div className="leading-none">
@@ -6283,7 +6286,7 @@ export default function RelojVisual({
 
                 <button 
                   onClick={() => setShowPerformanceModal(false)}
-                  className="w-full mt-5 py-3 bg-[#8a2be2] hover:bg-violet-750 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all border-none cursor-pointer"
+                  className="w-full mt-5 py-3 bg-[#8a2be2] hover:bg-violet-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all border-none cursor-pointer"
                 >
                   Entendido
                 </button>
@@ -6454,7 +6457,7 @@ export default function RelojVisual({
                         <Settings size={14} className="text-slate-400" />
                         <span>Modo Simulador</span>
                       </div>
-                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${isSandboxMode ? 'bg-emerald-50 border-emerald-250 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                      <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border ${isSandboxMode ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                         {isSandboxMode ? 'ON' : 'OFF'}
                       </span>
                     </button>
@@ -6465,6 +6468,7 @@ export default function RelojVisual({
                   <button 
                     onClick={() => {
                       localStorage.removeItem('talent_auth_token');
+                      clearClockLocalCache();
                       useAppStore.getState().setCurrentUser(null as any);
                       setShowProfileMenu(false);
                       window.location.href = '/login';
@@ -6541,7 +6545,7 @@ export default function RelojVisual({
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contraseña (PIN)</label>
                     <input 
                       type="text" 
-                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
                       value={editPassword}
                       onChange={e => setEditPassword(e.target.value)}
                     />
@@ -6551,7 +6555,7 @@ export default function RelojVisual({
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Día de Descanso</label>
                     <select 
-                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
                       value={editRestDay}
                       onChange={e => setEditRestDay(e.target.value)}
                     >
@@ -6566,7 +6570,7 @@ export default function RelojVisual({
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">🔔 Configura tu Alarma</label>
                     <select
-                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-955 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                      className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
                       value={editPreShiftAlarm === null ? '' : editPreShiftAlarm}
                       onChange={e => setEditPreShiftAlarm(e.target.value === '' ? null : Number(e.target.value))}
                     >
@@ -6642,7 +6646,7 @@ export default function RelojVisual({
                   </div>
 
                   {/* App Settings Toggles */}
-                  <div className="pt-3 border-t border-slate-850/10 dark:border-slate-800/30 space-y-3">
+                  <div className="pt-3 border-t border-slate-800/10 dark:border-slate-800/30 space-y-3">
                     <p className="text-[10px] font-bold text-slate-400 uppercase">Ajustes de la Aplicación</p>
                     
                     {/* Dark Mode */}
@@ -6662,7 +6666,7 @@ export default function RelojVisual({
                       <span className="text-xs font-semibold">Notificaciones de Turno</span>
                       <button 
                         onClick={() => setNotifShift(!notifShift)}
-                        className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${notifShift ? 'bg-violet-650' : 'bg-slate-300'}`}
+                        className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${notifShift ? 'bg-violet-600' : 'bg-slate-300'}`}
                       >
                         <div className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${notifShift ? 'translate-x-5' : 'translate-x-0'}`}></div>
                       </button>
@@ -6738,7 +6742,7 @@ export default function RelojVisual({
                       showCustomAlert('✅ Cambios guardados con éxito.');
                       setShowSettingsModal(false);
                     }}
-                    className="w-full bg-violet-600 hover:bg-violet-755 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 border-none outline-none cursor-pointer"
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all active:scale-95 border-none outline-none cursor-pointer"
                   >
                     Guardar Cambios
                   </button>
@@ -6746,6 +6750,7 @@ export default function RelojVisual({
                   <button 
                     onClick={() => {
                       localStorage.removeItem('talent_auth_token');
+                      clearClockLocalCache();
                       useAppStore.getState().setCurrentUser(null as any);
                       setShowSettingsModal(false);
                       window.location.href = '/login';
@@ -6816,7 +6821,7 @@ export default function RelojVisual({
                       showCustomAlert('❌ PIN / Contraseña incorrecta.');
                     }
                   }}
-                  className="w-full bg-violet-600 hover:bg-violet-755 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider mt-4 shadow-lg active:scale-95 transition-all border-none outline-none cursor-pointer"
+                  className="w-full bg-violet-600 hover:bg-violet-700 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider mt-4 shadow-lg active:scale-95 transition-all border-none outline-none cursor-pointer"
                 >
                   Desbloquear
                 </button>
@@ -6835,7 +6840,7 @@ export default function RelojVisual({
                 <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <Network className="text-emerald-500" size={24} />
-                    <h3 className="text-lg font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider">Organigrama de la Empresa</h3>
+                    <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Organigrama de la Empresa</h3>
                   </div>
                   <button 
                     onClick={() => setShowDesktopOrgModal(false)}
@@ -6845,7 +6850,7 @@ export default function RelojVisual({
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6">
-                  <React.Suspense fallback={<div className="p-4 text-center text-xs text-slate-450">Cargando Organigrama...</div>}>
+                  <React.Suspense fallback={<div className="p-4 text-center text-xs text-slate-400">Cargando Organigrama...</div>}>
                     <RecursosHumanos readOnly={true} initialTab="organigrama" />
                   </React.Suspense>
                 </div>

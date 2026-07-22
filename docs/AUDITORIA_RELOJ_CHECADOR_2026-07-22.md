@@ -146,3 +146,20 @@ Si quieres, puedo aplicar esta paleta como parte de la limpieza de las 285 clase
 7. **Ya en el contrato:** §25b (listar solicitudes de silla pendientes) — pendiente de Claude Code.
 
 Dime cuáles quieres que ataque y en qué orden.
+
+---
+
+## ✅ Implementado (2026-07-22) — Punto 4: clases de color inválidas + consolidación de familias redundantes
+
+Barrido mecánico sobre las 12 subcarpetas/archivos de `Frontend/src/components/reloj/**` (incluye `hooks/`), no solo `RelojVisual.tsx`. El conteo real detectado por script fue **367 ocurrencias inválidas** (más que las 285 estimadas a ojo en la sección 4 — el conteo manual original no cubrió todos los archivos del módulo).
+
+**Qué se hizo:**
+1. Cada shade inválido (`955, 850, 202, 750, 505, 350, 250, 650, 450, 550, 105, 55, 655, 605, 455, 405, 855, 555, 705, 805, 905, 665, 660, 205, 150, 255, 755`, etc.) se mapeó al paso válido más cercano de la escala estándar de Tailwind (`50‑950`). En los casos de empate exacto entre dos pasos válidos (ej. `650` entre `600` y `700`), se redondeó siempre hacia abajo por consistencia — es una decisión mecánica razonable, no una revisión visual por color.
+2. Se renombraron las familias redundantes que la sección 5 marcó para retirar: **todo `purple-*` → `violet-*`** y **todo `orange-*` → `amber-*`** (mismo número, solo cambia el nombre de familia).
+3. **No se tocó** la asignación semántica más fina de la paleta (ej. sacar `indigo` de los estados operativos del dial y dejarlo solo para navegación/marca, o que `violet` aparezca únicamente en contexto de llaves) — esa parte requiere criterio visual por componente, no es mecánica, y la propia auditoría recomendaba hacerla con verificación visual tuya. Queda pendiente si la quieres como siguiente pasada.
+
+**Archivos tocados:** `RelojVisual.tsx` (2047 sustituciones), `Academia.tsx` (236), `PanelSimulador.tsx` (165), `NominaColaborador.tsx` (144), `useClockEngine.tsx` (85), `MobileBottomNav.tsx` (56), `MealQueue.tsx` (46), `MealReservation.tsx` (39), `Evaluacion360.tsx` (28), `iOSInstallGuide.tsx` (25), `CertificadoImprimible.tsx` (17), `MealPhotoCapture.tsx` (18). Total: 3,182 sustituciones.
+
+**Verificación:** re-barrido con el mismo script confirmó 0 clases inválidas y 0 `purple`/`orange` restantes en el módulo; `tsc --noEmit -p tsconfig.app.json` → 0 errores.
+
+**Pendiente real de este punto (no mecánico):** revisión visual tuya para confirmar que ningún color quedó "raro" tras el redondeo de empates, y — si quieres ir más allá — la reasignación semántica fina de `indigo`/`violet`/`cyan`/`teal` descrita en la sección 5.

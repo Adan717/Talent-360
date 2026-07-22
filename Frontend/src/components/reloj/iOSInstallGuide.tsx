@@ -27,7 +27,7 @@ export default function IOSInstallGuide() {
   if (!showGuide) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[99] bg-slate-900/95 backdrop-blur border border-slate-750 text-white rounded-3xl p-5 shadow-2xl animate-fade-in-up flex flex-col gap-4 pointer-events-auto">
+    <div className="fixed bottom-4 left-4 right-4 z-[99] bg-slate-900/95 backdrop-blur border border-slate-700 text-white rounded-3xl p-5 shadow-2xl animate-fade-in-up flex flex-col gap-4 pointer-events-auto">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
@@ -41,7 +41,7 @@ export default function IOSInstallGuide() {
         </div>
         <button 
           onClick={handleDismiss}
-          className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-400 transition"
+          className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 transition"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -80,7 +80,7 @@ export default function IOSInstallGuide() {
       {/* Button to confirm */}
       <button 
         onClick={handleDismiss}
-        className="w-full py-2.5 bg-slate-850 hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-750 active:scale-98"
+        className="w-full py-2.5 bg-slate-800 hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-700 active:scale-98"
       >
         Entendido
       </button>

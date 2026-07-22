@@ -433,7 +433,7 @@ export default function PanelSimulador() {
 
              <button
                type="submit"
-               className="w-full bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold py-3.5 rounded-xl transition-all border-none cursor-pointer shadow-lg shadow-indigo-600/10 active:scale-[0.98]"
+               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-xl transition-all border-none cursor-pointer shadow-lg shadow-indigo-600/10 active:scale-[0.98]"
              >
                Desbloquear Simulador
              </button>
@@ -446,7 +446,7 @@ export default function PanelSimulador() {
   return (
     <div className="flex flex-col gap-4">
       {(!isSandboxMode || isProduction) && (
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 px-5 flex items-center gap-3 text-xs text-rose-450 font-bold shadow-inner">
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 px-5 flex items-center gap-3 text-xs text-rose-400 font-bold shadow-inner">
           <span className="text-xl select-none">⚠️</span>
           <span>
             <strong>ADVERTENCIA — MODO PRODUCCIÓN EN VIVO ACTIVO:</strong> El modo Sandbox está apagado para DecorArte. Cualquier fichaje, retardo, comida o apertura de tienda que realices en estos celulares virtuales escribirá directamente en la base de datos de producción real en PostgreSQL.
@@ -526,7 +526,7 @@ export default function PanelSimulador() {
                   onClick={() => setSimulatedTierOverride('enterprise')}
                   className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1 cursor-pointer select-none border border-transparent ${
                     currentTier === 'enterprise' 
-                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-md shadow-purple-500/5' 
+                      ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30 shadow-md shadow-violet-500/5' 
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >

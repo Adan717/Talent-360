@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from './store/useAppStore';
 import axiosInstance from './lib/axios';
+import { clearClockLocalCache } from './lib/clockCache';
 
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ColorMap } from './components/SaaSAccountSettings';
@@ -139,6 +140,9 @@ function MainLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem('talent_auth_token');
+    // Hallazgo 4 auditoría reloj checador (2026-07-22): limpiar caché personal del reloj
+    // para evitar fuga de datos del usuario saliente en dispositivos compartidos de tienda.
+    clearClockLocalCache();
     window.location.href = '/login';
   };
 

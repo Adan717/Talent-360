@@ -147,7 +147,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
       
       {/* Mensajes */}
       {successMsg && (
-        <div className="p-3 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
           {successMsg}
         </div>
@@ -322,7 +322,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                         <button
                           disabled={approvingDate === day.date}
                           onClick={() => handleApproveDaily(day.date)}
-                          className="px-2 py-1 bg-[#8a2be2] hover:bg-violet-750 text-white rounded-lg text-[10.5px] font-black shadow-xs transition-all border-none cursor-pointer flex items-center gap-0.5 active:scale-95 disabled:opacity-50"
+                          className="px-2 py-1 bg-[#8a2be2] hover:bg-violet-700 text-white rounded-lg text-[10.5px] font-black shadow-xs transition-all border-none cursor-pointer flex items-center gap-0.5 active:scale-95 disabled:opacity-50"
                         >
                           {approvingDate === day.date ? '...' : 'Firmar'}
                         </button>
@@ -347,7 +347,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
                 {/* Comentarios de aclaración */}
                 {day.approval_status === 'disputed' && day.comments && (
-                  <div className="text-[9.5px] bg-rose-50/50 dark:bg-rose-955/10 text-rose-700 p-2 rounded-xl border border-rose-100/50 font-medium">
+                  <div className="text-[9.5px] bg-rose-50/50 dark:bg-rose-950/10 text-rose-700 p-2 rounded-xl border border-rose-100/50 font-medium">
                     <span className="font-extrabold block mb-0.5">Motivo reportado:</span>
                     "{day.comments}"
                   </div>
@@ -405,7 +405,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           <div className="flex gap-2">
             <Fingerprint size={20} className="text-[#8a2be2] shrink-0" />
             <div>
-              <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>Firma de Nómina Semanal</h4>
+              <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Firma de Nómina Semanal</h4>
               <p className="text-[10.5px] text-slate-400 mt-0.5">
                 Para cerrar el periodo del sábado, primero debes firmar de conformidad tus asistencias diarias y la liquidación calculada.
               </p>
@@ -418,7 +418,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
             className={`w-full py-3 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border-none ${
               allDaysApproved 
                 ? 'bg-gradient-to-r from-violet-600 to-[#8a2be2] text-white hover:opacity-90 active:scale-95' 
-                : 'bg-slate-150 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             }`}
           >
             {isApprovingWeekly ? 'Procesando firma...' : 'Firmar Nómina de Conformidad'}

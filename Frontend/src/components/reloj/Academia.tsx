@@ -55,7 +55,7 @@ const getRoleIcon = (roleName: string) => {
     return <ShieldCheck className="w-6 h-6 text-cyan-500" />;
   }
   if (name.includes('repartidor') || name.includes('chofer')) {
-    return <Truck className="w-6 h-6 text-orange-500" />;
+    return <Truck className="w-6 h-6 text-amber-500" />;
   }
   return <Briefcase className="w-6 h-6 text-slate-500" />;
 };
@@ -561,14 +561,14 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   <button 
                     key={role.id}
                     onClick={() => setTargetRoleId(role.id)}
-                    className="w-full bg-white py-2.5 px-3.5 rounded-2xl border border-slate-150 shadow-xs hover:border-violet-400 hover:shadow-sm transition-all text-left flex items-center gap-3 group animate-fade-in cursor-pointer"
+                    className="w-full bg-white py-2.5 px-3.5 rounded-2xl border border-slate-100 shadow-xs hover:border-violet-400 hover:shadow-sm transition-all text-left flex items-center gap-3 group animate-fade-in cursor-pointer"
                   >
                     <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-violet-50 group-hover:scale-105 transition-all shadow-xs border border-slate-100 shrink-0">
                       {IconComponent && React.cloneElement(IconComponent as React.ReactElement<any>, { className: `w-5.5 h-5.5 ${IconComponent.props.className?.replace('w-6 h-6', '') || ''}` })}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-black text-slate-805 text-sm truncate group-hover:text-violet-900 transition-colors">
+                        <h4 className="font-black text-slate-800 text-sm truncate group-hover:text-violet-900 transition-colors">
                           {role.name}
                         </h4>
                         <ChevronRight className="text-slate-400 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all shrink-0" size={16} />
@@ -645,7 +645,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                         setTargetRoleId(null);
                         setSelectedCourseForDrawer(null);
                       }}
-                      className="text-[9.5px] font-black uppercase tracking-wider bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-850 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer border-none bg-transparent"
+                      className="text-[9.5px] font-black uppercase tracking-wider bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer border-none bg-transparent"
                     >
                       Cambiar
                     </button>
@@ -807,7 +807,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
           <div className="animate-fade-in-up space-y-6">
             {/* Carreras Culminadas */}
             <div>
-              <h3 className="font-black text-xl text-slate-905 mb-4 tracking-tight">Metas Profesionales Alcanzadas</h3>
+              <h3 className="font-black text-xl text-slate-900 mb-4 tracking-tight">Metas Profesionales Alcanzadas</h3>
               <div className="space-y-3">
                 {roles.filter((role: any) => {
                   if (role.is_active === false) return false;
@@ -830,7 +830,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                       </div>
                       <div className="relative z-10 flex-1 min-w-0 pr-4">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[8px] font-black tracking-widest bg-amber-400 text-amber-955 px-2 py-0.5 rounded-full uppercase">Puesto Alcanzado</span>
+                          <span className="text-[8px] font-black tracking-widest bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full uppercase">Puesto Alcanzado</span>
                         </div>
                         <h4 className="text-sm font-black truncate mt-1 leading-tight">{role.name}</h4>
                         <p className="text-[10px] text-white/80 font-bold truncate mt-0.5">{role.description || "Ruta culminada con éxito"}</p>
@@ -858,7 +858,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
 
             {/* Certificados individuales */}
             <div>
-              <h3 className="font-black text-xl text-slate-905 mb-4 tracking-tight">Mis Certificados</h3>
+              <h3 className="font-black text-xl text-slate-900 mb-4 tracking-tight">Mis Certificados</h3>
               <div className="space-y-3">
                 {filteredCourses.filter(course => {
                   const prog = userProgress.find((p: any) => p.course_id === course.id);
@@ -873,7 +873,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                   }
                   
                   return (
-                    <div key={idx} className="bg-white border border-slate-250/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
+                    <div key={idx} className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
                       <div className="absolute top-0 right-0 p-6 opacity-5 text-slate-900 pointer-events-none">
                         <Trophy size={60} />
                       </div>
@@ -888,7 +888,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                             window.print();
                           }, 100);
                         }}
-                        className="relative z-10 bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl border border-violet-150 font-black text-[11px] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                        className="relative z-10 bg-violet-50 hover:bg-violet-100 text-violet-700 px-3 py-2 rounded-xl border border-violet-100 font-black text-[11px] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
                         <span>🖨️</span> Imprimir
                       </button>
@@ -910,7 +910,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
 
             {/* Insignias Obtenidas */}
             <div>
-              <h4 className="font-black text-slate-805 mb-3.5 tracking-tight flex items-center justify-between">
+              <h4 className="font-black text-slate-800 mb-3.5 tracking-tight flex items-center justify-between">
                 <span>Insignias de Desempeño</span>
                 <span className="text-[10px] text-violet-600 bg-violet-50 px-2.5 py-0.5 rounded-full font-black">
                   {(() => {
@@ -1166,7 +1166,7 @@ function AcademiaContent({ onBack }: { onBack: () => void }) {
                     localStorage.removeItem('decorarte_academy_welcome_dismissed');
                   }
                 }}
-                className="w-3.5 h-3.5 text-violet-600 border-slate-350 rounded focus:ring-violet-500 cursor-pointer"
+                className="w-3.5 h-3.5 text-violet-600 border-slate-300 rounded focus:ring-violet-500 cursor-pointer"
               />
               <label htmlFor="dontShowAgain" className="text-[10px] text-slate-500 font-bold cursor-pointer">
                 No volver a mostrar este mensaje

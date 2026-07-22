@@ -149,11 +149,16 @@ class StoreOpeningHandoffService
 
         $settings = $this->settingsService->getOpeningSettings($tenantId, $storeId);
 
+        // store_opening_assignments.employee_id es employees.id, no users.id
+        // (migración 2026_07_07_192928_fix_store_opening_assignments_foreign_key) —
+        // $currentUserId (users.id) hay que traducirlo antes de buscar la asignación.
+        $currentEmployeeId = DB::table('employees')->where('user_id', $currentUserId)->value('id');
+
         // Find current assignment to get order
         $currentAssignment = StoreOpeningAssignment::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
-            ->where('employee_id', $currentUserId)
+            ->where('employee_id', $currentEmployeeId)
             ->first();
 
         $currentOrder = $currentAssignment ? $currentAssignment->priority_order : 0;
@@ -168,8 +173,11 @@ class StoreOpeningHandoffService
             ->first();
 
         if ($nextAssignment) {
-            $nextUserId = $nextAssignment->employee_id;
-            $nextUser = User::withoutGlobalScopes()->find($nextUserId);
+            // $nextAssignment->employee_id también es employees.id — traducir a
+            // users.id antes de guardarlo en current_responsible_employee_id o de
+            // usarlo para notificar/buscar al usuario.
+            $nextUserId = DB::table('employees')->where('id', $nextAssignment->employee_id)->value('user_id');
+            $nextUser = $nextUserId ? User::withoutGlobalScopes()->find($nextUserId) : null;
 
             // Update status responsible
             $status->current_responsible_employee_id = $nextUserId;

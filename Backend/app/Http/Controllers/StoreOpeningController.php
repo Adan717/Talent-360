@@ -124,13 +124,7 @@ class StoreOpeningController extends Controller
         $tenantId = $user->tenant_id ?? 1;
 
         $validated = $request->validate([
-            // store_opening_assignments.employee_id es una FK a users.id (migración
-            // 2026_06_28_030000: ->constrained('users')), pese al nombre de la columna
-            // — antes validaba contra employees,id, lo que dejaba pasar valores que
-            // luego tronaban con una violación de FK cruda al hacer el create() de abajo,
-            // o silenciosamente vinculaban al empleado equivocado si el id coincidía por
-            // accidente con un users.id distinto.
-            'employee_id' => 'required|exists:users,id',
+            'employee_id' => 'required|exists:employees,id',
             'priority_order' => 'integer|min:1',
             'can_open_store' => 'boolean',
             'can_close_store' => 'boolean',

@@ -29,10 +29,8 @@ class StoreOpeningAssignment extends Model
         'priority_order' => 'integer',
     ];
 
-    // employee_id es una FK a users.id (migración 2026_06_28_030000:
-    // ->constrained('users')), pese al nombre de la columna y de este método.
     public function employee()
     {
-        return $this->belongsTo(User::class, 'employee_id');
+        return $this->belongsTo(Employee::class, 'employee_id');
     }
 }

@@ -78,6 +78,16 @@ class StoreOpeningService
                 ->orderBy('priority_order', 'asc')
                 ->first();
 
+            // store_opening_assignments.employee_id es employees.id (migración
+            // 2026_07_07_192928_fix_store_opening_assignments_foreign_key), pero
+            // store_daily_opening_statuses.current_responsible_employee_id sigue siendo
+            // users.id (esa migración no tocó esta tabla) — hay que traducir por
+            // employees.user_id o la comparación en openStoreAndClockIn/reportAbsence
+            // (que sí usa users.id) nunca cuadra con el responsable real.
+            $responsibleUserId = $firstResponsible
+                ? DB::table('employees')->where('id', $firstResponsible->employee_id)->value('user_id')
+                : null;
+
             $todayStatus = StoreDailyOpeningStatus::create([
                 'tenant_id' => $tenantId,
                 'company_id' => 1,
@@ -86,7 +96,7 @@ class StoreOpeningService
                 'scheduled_opening_time' => $openTimeStr,
                 'pre_opening_window_start' => $windowStart,
                 'report_deadline' => $deadline,
-                'current_responsible_employee_id' => $firstResponsible ? $firstResponsible->employee_id : null,
+                'current_responsible_employee_id' => $responsibleUserId,
                 'status' => 'pending',
             ]);
         }
@@ -247,10 +257,14 @@ class StoreOpeningService
             throw new \Exception('PIN de testigo incorrecto.');
         }
 
+        // store_opening_assignments.employee_id es employees.id, no users.id — hay que
+        // resolver el employees.id del requester antes de comparar.
+        $requesterEmployeeId = DB::table('employees')->where('user_id', $requesterId)->value('id');
+
         $isSuplenteConLlaves = StoreOpeningAssignment::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
-            ->where('employee_id', $requesterId)
+            ->where('employee_id', $requesterEmployeeId)
             ->where('is_active', true)
             ->where('has_keys', true)
             ->exists();

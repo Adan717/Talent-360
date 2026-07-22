@@ -3836,7 +3836,54 @@ export default function RelojVisual({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-12 gap-8 items-start">
+              <>
+                {/* Gen-Z Modern Desktop Gamification & Status Header Bar */}
+                <div className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-xl border border-indigo-500/20 flex flex-wrap items-center justify-between gap-4 mb-2 animate-in fade-in duration-300">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/20 shrink-0">
+                      ⚡
+                    </div>
+                    <div className="text-left">
+                      <h2 className="text-base sm:text-lg font-black text-white tracking-tight leading-tight flex items-center gap-2">
+                        <span>Hola, {currentUser?.name?.split(' ')[0] || 'Colaborador'}</span>
+                        <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 uppercase tracking-wider">
+                          {currentUser?.tenant?.name || 'Talent360'}
+                        </span>
+                      </h2>
+                      <p className="text-xs text-indigo-200/80 font-medium">
+                        Turno de hoy: <strong className="text-white">{shiftConfigs[currentUser?.id]?.shiftStart || '09:00'} - {shiftConfigs[currentUser?.id]?.shiftEnd || '18:00'} hrs</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                      <span className="text-base">🔥</span>
+                      <div className="text-left">
+                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Racha</span>
+                        <span className="text-xs font-black text-white">14 Días Puntual</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                      <span className="text-base">🪙</span>
+                      <div className="text-left">
+                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Monedero</span>
+                        <span className="text-xs font-black text-white">$25.00 Coins</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                      <span className="text-base">🌟</span>
+                      <div className="text-left">
+                        <span className="text-[9px] font-black text-indigo-300 uppercase tracking-wider block leading-none">Nivel 3</span>
+                        <span className="text-xs font-black text-white">1,250 XP</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 gap-8 items-start">
 
               {/* Left Column (span 8): Clock, Timeline, Actions.
                   BUG FIX: antes era col-span-7 sin ninguna columna hermana en la misma fila del grid de
@@ -4251,6 +4298,7 @@ export default function RelojVisual({
               </div>
 
               </div>
+              </>
             )
           )}
 

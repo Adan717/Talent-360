@@ -1092,6 +1092,10 @@ Los dos cambios exactamente como se describieron arriba, sin desviaciones de con
 
 **Backend desplegado y listo.** Cowork ya puede activar el cambio de una palabra en `Frontend/src/components/reloj/useClockEngine.tsx:308` (`.channel(channelName)` → `.private(channelName)`) — ambos lados del canal privado están sincronizados.
 
+## ✅ Frontend activado (2026-07-22)
+
+Cambiado `echoInstance.channel(channelName)` → `echoInstance.private(channelName)` en `useClockEngine.tsx:308`, confirmado que backend ya tiene ambos cambios desplegados (120/120 tests). §27 cerrado en los dos lados.
+
 ---
 
 ## §28. Bug: "Abrir Tienda" en la Matrix da "No eres el encargado responsable..." — falta `platform_admin` en el check de rol
@@ -1142,3 +1146,21 @@ Aplicado exactamente el fix propuesto en `StoreOpeningService::openStoreAndClock
 **Sobre el "revisar también" de la nota:** revisé `StoreOpeningController::reportAbsence` y confirmé que delega en `StoreOpeningHandoffService::reportOpeningAbsence`, que no tiene ningún check de rol de este tipo (no hace falta tocarlo). Grep de `role !== 'admin'`/`in_array($user->role...)` en todo `Backend/app/**` no encontró más ocurrencias del patrón viejo de dos roles — el bug estaba aislado a esta única línea.
 
 Test nuevo: `Backend/tests/Feature/StoreOpeningAdminOverrideTest.php` (3 casos: `platform_admin` no asignado sí puede abrir, empleado regular no asignado sigue sin poder, el responsable asignado sigue pudiendo). Suite completa: 118/118 tests, 526 assertions, sin regresiones.
+
+## ⚠️ Update (2026-07-22) — el error seguía apareciendo: causa real encontrada y corregida
+
+Francisco reportó que el error del dial "Abrir Tienda" seguía pendiente después del fix de arriba. Investigando de nuevo encontré que el fix de `platform_admin` era correcto pero insuficiente — había un bug más profundo y más grave que el reportado originalmente, presente desde hace dos semanas:
+
+**La causa real:** la migración `2026_07_07_192928_fix_store_opening_assignments_foreign_key.php` cambió a propósito la FK de `store_opening_assignments.employee_id` de `users.id` a `employees.id` (para resolver un bug distinto, documentado en esa misma migración). Pero **nadie actualizó los 3 lugares que copian ese valor hacia columnas que siguen siendo `users.id`**:
+
+1. `StoreOpeningService::getTodayOpeningStatus()` — copiaba `$firstResponsible->employee_id` (ahora `employees.id`) directamente a `store_daily_opening_statuses.current_responsible_employee_id` (sigue siendo FK a `users.id`, esa tabla no la tocó la migración de julio). Resultado: el "encargado responsable del día" casi nunca coincidía con el `users.id` real de nadie — ni de la persona correcta, ni de ningún admin haciendo override antes de mi fix del bloque anterior.
+2. `StoreOpeningService::emergencyOpenWithWitnesses()` — el check `isSuplenteConLlaves` comparaba `users.id` del solicitante contra `store_opening_assignments.employee_id` (que ya es `employees.id`), así que el "no cuentas con llaves activas" podía dispararle a un titular de llaves legítimo.
+3. `StoreOpeningHandoffService::handoffToNextResponsible()` — la búsqueda del `currentAssignment` y la resolución de `$nextUserId` (el suplente al que se cede la apertura) tenían el mismo problema en ambas direcciones.
+
+En SQLite (tests) esto simplemente producía comparaciones que nunca cuadraban (400 "No eres el encargado..."); en PostgreSQL (producción, con la FK real activa) además puede lanzar una violación de FK cruda (500) en cuanto `employees.id` del responsable no coincide por casualidad con ningún `users.id` real — que es el caso normal, no la excepción.
+
+**Fix:** en los 3 sitios, se resuelve explícitamente `employees.user_id` (o viceversa) antes de comparar o de escribir en columnas `users.id`, en vez de asumir que ambos ids son intercambiables. Comentado inline en cada punto para que quede claro cuál es cuál.
+
+**Tests nuevos:** `test_handoff_to_next_responsible_resolves_the_real_users_id_of_the_backup` (nuevo, en `StoreOpeningAdminOverrideTest.php`) y `test_emergency_open_succeeds_when_employees_id_diverges_from_users_id` (nuevo, en `ClockEmergencyContingencyTest.php`) — ambos crean deliberadamente una fila "decoy" en `employees` antes de la real para que `employees.id` nunca coincida por accidente con `users.id`, así el test detecta el bug en vez de esconderlo (los tests viejos de este archivo alineaban ambos ids 1:1 sin darse cuenta, lo cual ocultaba el problema).
+
+Suite completa: **120/120 tests, 533 assertions**, sin regresiones.

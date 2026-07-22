@@ -172,18 +172,51 @@ export default function PanelSimulador() {
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
 
+  // Auditoría Matrix (2026-07-22): antes esto leía SOLO localStorage.store_opening_assignments,
+  // que puede estar vacío/desactualizado si no se visitó RRHH en esta sesión del navegador. Como la
+  // Matrix ya opera sobre BD real (isSandboxMode=false, §13), el badge de llaves y el orden de los
+  // celulares deben reflejar la asignación real del backend, no un heurístico local desconectado
+  // de lo que realmente decide quién puede abrir la tienda (ver §28 del contrato).
+  const [realOpeningAssignments, setRealOpeningAssignments] = useState<any[] | null>(null);
+
+  const fetchRealAssignments = async () => {
+    try {
+      const res = await axiosInstance.get('/store-opening/assignments');
+      const list = Array.isArray(res.data) ? res.data : (res.data?.assignments || []);
+      setRealOpeningAssignments(list);
+      localStorage.setItem('store_opening_assignments', JSON.stringify(list));
+    } catch (err) {
+      console.error('Error al cargar asignaciones reales de apertura para la Matrix:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealAssignments();
+  }, []);
+
+  const getOpeningAssignments = () => {
+    if (realOpeningAssignments && realOpeningAssignments.length > 0) {
+      return realOpeningAssignments;
+    }
+    // Fallback SOLO mientras la petición real no ha terminado (o falló) — no debe confundirse
+    // con la fuente de verdad, que siempre es la respuesta de /store-opening/assignments.
+    try {
+      const savedAss = localStorage.getItem('store_opening_assignments');
+      if (savedAss) return JSON.parse(savedAss);
+    } catch {}
+    return (globalUsers || []).map((u: any, idx: number) => ({
+      id: u.id,
+      employee_id: u.id,
+      priority_order: idx + 1,
+      can_open_store: u.role === 'admin' || u.role === 'encargado' || u.system_role === 'platform_admin',
+      has_keys: true,
+      is_active: true
+    }));
+  };
+
   const getUserKeysIcon = (userId: number) => {
     try {
-      const isSandbox = useAppStore.getState().isSandboxMode;
-      const savedAss = localStorage.getItem('store_opening_assignments');
-      const assignments = savedAss ? JSON.parse(savedAss) : (globalUsers || []).map((u: any, idx: number) => ({
-        id: u.id,
-        employee_id: u.id,
-        priority_order: idx + 1,
-        can_open_store: u.role === 'admin' || u.role === 'encargado' || u.system_role === 'platform_admin',
-        has_keys: true,
-        is_active: true
-      }));
+      const assignments = getOpeningAssignments();
       const match = assignments.find((a: any) => Number(a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
@@ -194,16 +227,7 @@ export default function PanelSimulador() {
 
   const getUserOpeningPriority = (user: any) => {
     try {
-      const isSandbox = useAppStore.getState().isSandboxMode;
-      const savedAss = localStorage.getItem('store_opening_assignments');
-      const assignments = savedAss ? JSON.parse(savedAss) : (globalUsers || []).map((u: any, idx: number) => ({
-        id: u.id,
-        employee_id: u.id,
-        priority_order: idx + 1,
-        can_open_store: u.role === 'admin' || u.role === 'encargado' || u.system_role === 'platform_admin',
-        has_keys: true,
-        is_active: true
-      }));
+      const assignments = getOpeningAssignments();
       const empId = user.employee_id || user.id;
       const match = assignments.find((a: any) => Number(a.employee_id) === Number(empId) && a.is_active && a.can_open_store);
       if (match) {
@@ -255,7 +279,10 @@ export default function PanelSimulador() {
   }, []);
 
   useEffect(() => {
-    const handleUpdate = () => setAssignmentsVersion(v => v + 1);
+    const handleUpdate = () => {
+      setAssignmentsVersion(v => v + 1);
+      fetchRealAssignments();
+    };
     window.addEventListener('store_opening_assignments_updated', handleUpdate);
     return () => window.removeEventListener('store_opening_assignments_updated', handleUpdate);
   }, []);
@@ -407,7 +434,7 @@ export default function PanelSimulador() {
            </div>
            <h3 className="text-xl font-black text-slate-100 mb-2">Simulador Matrix QA Protegido</h3>
            <p className="text-slate-400 text-xs leading-relaxed mb-6">
-             Estás en el entorno de producción de <strong>DecorArte</strong>. Ingresa la Clave de Seguridad para habilitar el simulador en vivo sobre la base de datos real.
+             Estás en el entorno de producción de <strong>{currentUser?.tenant?.name || 'tu empresa'}</strong>. Ingresa la Clave de Seguridad para habilitar el simulador en vivo sobre la base de datos real.
            </p>
 
            <form onSubmit={(e) => {
@@ -449,7 +476,7 @@ export default function PanelSimulador() {
         <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 px-5 flex items-center gap-3 text-xs text-rose-400 font-bold shadow-inner">
           <span className="text-xl select-none">⚠️</span>
           <span>
-            <strong>ADVERTENCIA — MODO PRODUCCIÓN EN VIVO ACTIVO:</strong> El modo Sandbox está apagado para DecorArte. Cualquier fichaje, retardo, comida o apertura de tienda que realices en estos celulares virtuales escribirá directamente en la base de datos de producción real en PostgreSQL.
+            <strong>ADVERTENCIA — MODO PRODUCCIÓN EN VIVO ACTIVO:</strong> El modo Sandbox está apagado para {currentUser?.tenant?.name || 'tu empresa'}. Cualquier fichaje, retardo, comida o apertura de tienda que realices en estos celulares virtuales escribirá directamente en la base de datos de producción real en PostgreSQL.
           </span>
         </div>
       )}

@@ -305,7 +305,10 @@ export function useClockEngine(overrideUser?: any) {
   useEffect(() => {
     if (!currentUser || !currentUser.tenant_id) return;
     const channelName = `tenant.${currentUser.tenant_id}.clock`;
-    const channel = echoInstance.channel(channelName);
+    // §27 (docs/BACKEND_INTERFACES.md): backend ya migró StoreOpened/TimeEntryRecorded/
+    // DoorNoticeCreated/MealQueueTurnChanged a PrivateChannel y agregó la autorización en
+    // routes/channels.php — canal privado real, ya no cualquiera puede escuchar fichajes de otro tenant.
+    const channel = echoInstance.private(channelName);
     
     channel.listen('.App\\Events\\StoreOpened', (e: any) => {
       console.log('StoreOpened event received via WebSockets:', e);

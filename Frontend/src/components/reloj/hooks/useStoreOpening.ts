@@ -82,6 +82,16 @@ export function useStoreOpening({
       const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
       if (!isOpeningPremium) return;
 
+      // Auditoría Matrix (2026-07-22): antes este efecto tenía `globalSimTime` en su arreglo de
+      // dependencias, y como la Máquina del Tiempo lo cambia cada ~1s durante Auto-Run, el efecto
+      // se desmontaba y volvía a montar en cada tick — el `setInterval` de 5s nunca llegaba a
+      // completar un ciclo y `syncApertura()` (la llamada inmediata de la línea de abajo) terminaba
+      // disparándose ~1 vez por segundo por cada celular de la Matrix en vez de 1 vez cada 5s. Con
+      // varios empleados en pantalla eso multiplicaba las peticiones a /store-opening/today. Se
+      // saca `globalSimTime` de las deps y se lee aquí adentro, fresco en cada llamada, vía
+      // useAppStore.getState() (mismo patrón que ya usa el resto de este archivo).
+      const currentSimTimeNow = useAppStore.getState().globalSimTime;
+
       if (isSandboxMode) {
         try {
           const savedSettings = localStorage.getItem('store_opening_settings');
@@ -140,11 +150,11 @@ export function useStoreOpening({
         }
 
         if (statusObj.status !== 'opened' && statusObj.status !== 'failed' && statusObj.status !== 'closed_reported_by_employees') {
-          if (globalSimTime < windowStartMins) {
+          if (currentSimTimeNow < windowStartMins) {
             statusObj.status = 'pending';
-          } else if (globalSimTime >= windowStartMins && globalSimTime < statusObj.report_deadline_mins) {
+          } else if (currentSimTimeNow >= windowStartMins && currentSimTimeNow < statusObj.report_deadline_mins) {
             statusObj.status = 'active_window';
-          } else if (globalSimTime >= statusObj.report_deadline_mins) {
+          } else if (currentSimTimeNow >= statusObj.report_deadline_mins) {
             if (openingSettings.allow_automatic_handoff) {
               let assList = [];
               try {
@@ -173,7 +183,7 @@ export function useStoreOpening({
               if (nextAss) {
                 statusObj.current_responsible_employee_id = nextAss.employee_id;
                 statusObj.status = 'transferred';
-                statusObj.report_deadline_mins = globalSimTime + (openingSettings.absence_late_report_window_minutes || 5);
+                statusObj.report_deadline_mins = currentSimTimeNow + (openingSettings.absence_late_report_window_minutes || 5);
                 const nextName = globalUsers.find((u: any) => u.id === Number(nextAss.employee_id))?.name || 'suplente';
                 showCustomAlert(`⏳ Límite excedido. Responsabilidad de apertura cedida a ${nextName}.`);
               } else {
@@ -191,7 +201,7 @@ export function useStoreOpening({
       } else {
         try {
           const res = await axiosInstance.get('/store-opening/today', {
-            params: { simTime: getSimTimeStr(globalSimTime) }
+            params: { simTime: getSimTimeStr(currentSimTimeNow) }
           });
           setOpeningStatus(res.data.status);
         } catch (e) {
@@ -203,7 +213,7 @@ export function useStoreOpening({
     syncApertura();
     const interval = setInterval(syncApertura, 5000);
     return () => clearInterval(interval);
-  }, [globalSimTime, isSandboxMode]);
+  }, [isSandboxMode]);
 
   const handleOpenStorePremium = async () => {
     if (isSandboxMode) {

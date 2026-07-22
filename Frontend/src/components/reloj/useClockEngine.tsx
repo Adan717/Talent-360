@@ -3267,7 +3267,7 @@ export function useClockEngine(overrideUser?: any) {
               };
             }
             return {
-              text: '🚨 Notificar Tienda Cerrada',
+              text: '🚨 Reportar Cerrado',
               bg: 'bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-[0_0_20px_rgba(249,115,22,0.3)] animate-pulse',
               icon: '🚨',
               iconKey: 'report_store_closed',
@@ -3395,7 +3395,9 @@ export function useClockEngine(overrideUser?: any) {
              }
           } else {
              return {
-                text: 'Reserva tu horario primero',
+                // Alineado a docs/Logica Dial.md estado #16b ("Apartar Turno") — antes era una
+                // frase de 4 palabras ("Reserva tu horario primero"), fuera del límite de 2-3.
+                text: 'Apartar Turno',
                 bg: 'bg-amber-600/20 text-amber-500 border border-amber-500/30 hover:bg-amber-600/30 font-bold shadow-md cursor-pointer animate-pulse',
                 icon: '🍔',
                 iconKey: 'meal_prompt',

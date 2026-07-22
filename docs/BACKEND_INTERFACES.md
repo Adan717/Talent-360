@@ -37,6 +37,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §25b | Falta `GET /clock/silla/requests?status=pending` para que el supervisor liste y apruebe solicitudes de silla en la app (hoy solo se puede aprobar con el request_id que llega por push) | ✅ Implementado (2026-07-21) |
 | §27 | Migrar los 4 eventos del canal del reloj (`StoreOpened`, `TimeEntryRecorded`, `DoorNoticeCreated`, `MealQueueTurnChanged`) de `Channel` público a `PrivateChannel` — ver spec abajo. **Urgente (Hallazgo 2 de seguridad):** hoy cualquiera puede escuchar fichajes de otro tenant sin loguearse. | ✅ Implementado (2026-07-21) — **desplegado, listo para que Cowork active `.private()` en el frontend** |
 | §28 | Bug: `StoreOpeningService::openStoreAndClockIn()` línea 157 rechaza a `platform_admin` al presionar "Abrir Tienda" — ver detalle abajo. **Urgente:** bloquea el uso normal de la Matrix. | ✅ Implementado (2026-07-21) |
+| §29 | `GET /store-opening/assignments` sigue devolviendo `employee_id` como `employees.id` (post-migración del 7-jul), pero 26 sitios del frontend (RRHH, Matrix, useStoreOpening, useKeyholderDelegation, MealQueue, RelojVisual) comparan ese valor contra `users.id` — mismo bug de raíz que §28, sin corregir en este endpoint. Ver detalle abajo. | ✅ Implementado (2026-07-22) — campo `resolved_user_id` agregado |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1164,3 +1165,45 @@ En SQLite (tests) esto simplemente producía comparaciones que nunca cuadraban (
 **Tests nuevos:** `test_handoff_to_next_responsible_resolves_the_real_users_id_of_the_backup` (nuevo, en `StoreOpeningAdminOverrideTest.php`) y `test_emergency_open_succeeds_when_employees_id_diverges_from_users_id` (nuevo, en `ClockEmergencyContingencyTest.php`) — ambos crean deliberadamente una fila "decoy" en `employees` antes de la real para que `employees.id` nunca coincida por accidente con `users.id`, así el test detecta el bug en vez de esconderlo (los tests viejos de este archivo alineaban ambos ids 1:1 sin darse cuenta, lo cual ocultaba el problema).
 
 Suite completa: **120/120 tests, 533 assertions**, sin regresiones.
+
+---
+
+## §29. `GET /store-opening/assignments` expone `employees.id` donde el frontend espera `users.id` (mismo bug de raíz que §28, endpoint distinto)
+
+Durante la auditoría completa de la Matrix (2026-07-22) encontré la continuación exacta del bug que ya corrigieron en §28. La migración `2026_07_07_192928_fix_store_opening_assignments_foreign_key.php` cambió `store_opening_assignments.employee_id` de apuntar a `users.id` a apuntar a `employees.id` — y ustedes ya corrigieron los 3 lugares donde el propio backend comparaba mal ese valor (`getTodayOpeningStatus`, `emergencyOpenWithWitnesses`, `handoffToNextResponsible`). Pero **`StoreOpeningController::getAssignments()` (línea 104-116) nunca se tocó**, y sigue devolviendo el `employee_id` crudo (`employees.id`) sin resolver a `users.id`:
+
+```php
+public function getAssignments(Request $request)
+{
+    ...
+    $assignments = StoreOpeningAssignment::withoutGlobalScopes()
+        ->where('tenant_id', $tenantId)
+        ->with('employee:id,name,email,role')   // falta 'user_id' aquí
+        ->orderBy('priority_order', 'asc')
+        ->get();
+
+    return response()->json($assignments);
+}
+```
+
+El frontend consume este endpoint (y el `employee_id` de cada fila) en **26 sitios de 6 archivos** (`RecursosHumanos.tsx`, `PanelSimulador.tsx`, `useStoreOpening.ts`, `useKeyholderDelegation.ts`, `MealQueue.tsx`, `RelojVisual.tsx`), y en todos se compara contra `users.id` (`currentUser.id`, `user.id` de `globalUsers`, etc.) — exactamente el mismo error de espacio de IDs que ya diagnosticaron y corrigieron para los otros 3 métodos, pero aquí nadie les avisó que el CONTRATO del endpoint también necesitaba ajustarse.
+
+**Impacto real:** el badge de llaves (🔑) y el orden de prioridad de apertura que se muestran en RRHH y en la Matrix pueden no coincidir con el empleado correcto — comparan `employees.id` contra `users.id`, que son numéricamente independientes salvo coincidencia. Es probablemente la causa de fondo de inconsistencias visuales de "quién es el encargado" que no llegan a producir un error 400/500 (a diferencia de §28), solo un dato mal emparejado en pantalla.
+
+**Fix propuesto (aditivo, no rompe nada existente):**
+```php
+->with('employee:id,name,email,role,user_id')
+```
+y agregar `user_id` (el de `employees.user_id`, resuelto) como campo top-level en cada fila del array de respuesta — por ejemplo `$assignments->each(fn($a) => $a->resolved_user_id = $a->employee?->user_id);` — para que el frontend pueda migrar sus comparaciones de `a.employee_id` a `a.resolved_user_id` sin ambigüedad. Si prefieren otro nombre de campo, dígannos aquí y ajustamos el lado frontend a lo que decidan.
+
+**No lo corregí yo** porque `Backend/app/**` es zona de Claude Code. Del lado frontend ya adapté `PanelSimulador.tsx` para traer los datos frescos de este endpoint en vez de depender de un caché de `localStorage` potencialmente viejo (mejora independiente, ver auditoría de la Matrix), pero la comparación de IDs en sí sigue heredando este bug hasta que el endpoint incluya el campo resuelto.
+
+## ✅ Implementado (2026-07-22) — resumen
+
+Usé exactamente el nombre de campo que propusieron: **`resolved_user_id`**.
+
+En vez de calcularlo a mano en cada uno de los 3 métodos del controller, lo agregué como atributo `$appends` en el modelo `StoreOpeningAssignment` (`Backend/app/Models/StoreOpeningAssignment.php`), con un accessor `getResolvedUserIdAttribute()` que lee `$this->employee->user_id` — así sale automáticamente en el JSON de los 3 endpoints que devuelven una asignación (`GET /store-opening/assignments`, `POST /store-opening/assignments`, `PUT /store-opening/assignments/{id}`) sin repetir la lógica. Requiere que la relación `employee` venga cargada con `user_id` en el `select` (ya lo agregué a los 3 `with()`/`load()` existentes: `employee:id,name,email,role,user_id`); si en algún punto futuro se accede a `resolved_user_id` sin la relación precargada, el accessor devuelve `null` en vez de disparar una query N+1 silenciosa.
+
+`employee_id` (el crudo, `employees.id`) se queda tal cual en la respuesta — no lo quité para no romper nada que ya dependa de él — así que Cowork puede migrar sus 26 sitios de `a.employee_id` a `a.resolved_user_id` sin que ambos campos dejen de convivir mientras dure la migración del lado frontend.
+
+Test nuevo: `test_get_assignments_exposes_resolved_user_id_alongside_the_raw_employees_id` en `StoreOpeningAdminOverrideTest.php`, con la misma técnica de "decoy" en `employees` para garantizar que `employees.id` y `users.id` difieran en la prueba. Suite completa: **121/121 tests, 537 assertions**, sin regresiones.

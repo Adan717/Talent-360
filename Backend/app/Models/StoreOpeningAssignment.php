@@ -29,8 +29,19 @@ class StoreOpeningAssignment extends Model
         'priority_order' => 'integer',
     ];
 
+    // §29: employee_id es employees.id (migración 2026_07_07_192928), pero el
+    // frontend necesita users.id para comparar contra el usuario autenticado. Se
+    // expone resuelto aquí para no obligar a cada endpoint a repetir la traducción.
+    // Requiere que 'employee' venga cargado con 'user_id' en el select.
+    protected $appends = ['resolved_user_id'];
+
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function getResolvedUserIdAttribute()
+    {
+        return $this->relationLoaded('employee') ? $this->employee?->user_id : null;
     }
 }

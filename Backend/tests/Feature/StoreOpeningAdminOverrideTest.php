@@ -167,4 +167,20 @@ class StoreOpeningAdminOverrideTest extends TestCase
 
         \Illuminate\Support\Carbon::setTestNow();
     }
+
+    public function test_get_assignments_exposes_resolved_user_id_alongside_the_raw_employees_id(): void
+    {
+        $admin = $this->makeUser(['role' => 'admin']);
+        $employee = $this->makeUser();
+        $this->assignResponsible($employee);
+
+        $employeesTableId = DB::table('employees')->where('user_id', $employee->id)->value('id');
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/store-opening/assignments');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('0.employee_id', $employeesTableId);
+        $response->assertJsonPath('0.resolved_user_id', $employee->id);
+        $this->assertNotEquals($employeesTableId, $employee->id, 'El decoy debe garantizar que employees.id y users.id difieran en este test.');
+    }
 }

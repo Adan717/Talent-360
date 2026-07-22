@@ -2394,7 +2394,7 @@ export function useClockEngine(overrideUser?: any) {
     } else {
       const actionText = btnProps.text;
       
-      if (actionText === 'Registrar Entrada' || actionText === 'Registrar Entrada Manual') {
+      if (actionText === 'Registrar Entrada' || actionText === 'Registrar Entrada Manual' || actionText === 'Fichar Entrada') {
         const res = await syncToDB('check_in');
         if (res && res.entry && res.entry.late_type) {
             showCustomAlert(`🟢 Fichaje registrado. Se detectó: ${res.entry.late_type} (${res.entry.penalty_applied}% descuento)`);
@@ -2414,7 +2414,7 @@ export function useClockEngine(overrideUser?: any) {
         showCustomAlert('📍 Llegada registrada. Amnistía de puntualidad asegurada.');
       } else if (actionText === 'Abrir Tienda') {
         handleOpenStore(false);
-      } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida') {
+      } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida' || actionText === 'Tomar Comida') {
         // BUG FIX: getButtonProps retorna 'Iniciar Comida', unificamos ambos strings
         // NUEVO (§23): si se exige evidencia fotográfica, se abre la cámara PRIMERO; el fichaje real
         // (meal_start) ocurre después, ya con la foto subida (ver submitMealPhotoAndPunch).
@@ -2436,17 +2436,17 @@ export function useClockEngine(overrideUser?: any) {
         if (!res?.offline) {
           showCustomAlert('🏃 Has regresado de comer.');
         }
-      } else if (actionText === 'Descanso' || actionText === 'Descanso Ley Silla') {
+      } else if (actionText === 'Descanso' || actionText === 'Descanso Ley Silla' || actionText === 'Tomar Silla') {
         // BUG FIX: getButtonProps retorna 'Descanso', no 'Descanso Ley Silla'
         await handleBreakStart();
       } else if (actionText === 'Terminar Descanso' || actionText === 'Regresar de Descanso') {
         // BUG FIX: getButtonProps retorna 'Terminar Descanso' (clockState === short_break)
         await handleBreakEnd();
-      } else if (actionText === 'Entrega de Turno') {
+      } else if (actionText === 'Entrega de Turno' || actionText === 'Entregar Turno') {
         handleHandoverStart();
-      } else if (actionText === 'Registrar Salida') {
+      } else if (actionText === 'Registrar Salida' || actionText === 'Fichar Salida') {
         handleClockOutRequest();
-      } else if (actionText === 'Registrar Reingreso') {
+      } else if (actionText === 'Registrar Reingreso' || actionText === 'Fichar Reingreso') {
         await endTempExit();
       }
     }
@@ -3074,7 +3074,8 @@ export function useClockEngine(overrideUser?: any) {
 
     if (isSimulatedHoliday && !hasCheckedIn && clockState === 'inactive' && !isOvertimeUnlocked[currentUser?.id]) {
       return {
-        text: 'DÍA FERIADO (LFT)',
+        // Texto alineado a docs/Logica Dial.md (estado #2, "Texto Principal") — solo texto.
+        text: 'Día Feriado',
         bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700 cursor-not-allowed font-extrabold shadow-sm',
         icon: '📅',
         iconKey: 'holiday',
@@ -3084,7 +3085,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay && !isOvertimeUnlocked[currentUser?.id];
-    if (isRestDay) return { text: 'DÍA DE DESCANSO', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
+    if (isRestDay) return { text: 'Día Descanso', bg: 'bg-slate-300 text-slate-500 cursor-not-allowed', icon: '🌴', iconKey: 'restday', disabled: true, subtext: 'Día libre programado' };
 
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
@@ -3133,7 +3134,7 @@ export function useClockEngine(overrideUser?: any) {
           
           if (currentSimTime < managerDeadlineMins && features.allow_manager_incidences !== false) {
             return {
-              text: '⚠️ Reportar Ausencia/Retardo',
+              text: '⚠️ Reportar Falta',
               bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)] animate-pulse',
               icon: '⚠️',
               iconKey: 'incidence_report',
@@ -3146,7 +3147,7 @@ export function useClockEngine(overrideUser?: any) {
           const employeeDeadlineMins = shiftStartMins - 30;
           if (currentSimTime < employeeDeadlineMins && features.allow_employee_incidences !== false) {
             return {
-              text: '⚠️ Reportar Ausencia/Retardo',
+              text: '⚠️ Reportar Falta',
               bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
               icon: '⚠️',
               iconKey: 'incidence_report',
@@ -3185,7 +3186,7 @@ export function useClockEngine(overrideUser?: any) {
           // sí debe verse como MapPin (trayecto), no como el AlertTriangle genérico de "reportar incidencia",
           // aunque ambos comparten el flag isIncidenceReport para mantener accesible esa acción secundaria.
           return {
-            text: 'En Camino a Sucursal',
+            text: 'En Camino',
             bg: 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]',
             icon: '📍',
             iconKey: 'in_transit',
@@ -3233,7 +3234,7 @@ export function useClockEngine(overrideUser?: any) {
       const isHandoverInProgress = isOpeningPremium && openingStatus?.status === 'transferred';
       if (!isOpeningManager && isHandoverInProgress && isUserActiveKeyholder(currentUser?.id)) {
         return {
-          text: 'Llamar a Suplente de Llaves',
+          text: 'Llamar Suplente',
           bg: 'bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-[0_0_20px_rgba(124,58,237,0.3)] animate-pulse',
           icon: '📞',
           iconKey: 'call_suplente',
@@ -3311,7 +3312,7 @@ export function useClockEngine(overrideUser?: any) {
       const isKeyholderPresent = hasActiveKeyAssignment && (isWithinPerimeter || isGpsValidationBypassed);
       if (isKeyholderPresent) {
         return {
-          text: 'Apertura de Emergencia',
+          text: 'Apertura Emergencia',
           bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_25px_rgba(225,29,72,0.35)] animate-pulse',
           icon: '⚠️',
           iconKey: 'emergency_open',
@@ -3365,10 +3366,10 @@ export function useClockEngine(overrideUser?: any) {
     // BUG FIX: Si ya hubo check_out hoy (checkOutTimes tiene registro), mostrar 'Jornada Finalizada'
     // en lugar de 'Registrar Entrada'. Esto previene dobles fichajes accidentales.
     if (clockState === 'inactive' && checkOutTimes[currentUser?.id] !== undefined) {
-      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
+      return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
     }
     if (clockState === 'inactive' || clockState === 'waiting_room') {
-      return { text: 'Registrar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢', iconKey: 'entrada', subtext: 'Fichaje ordinario de entrada' };
+      return { text: 'Fichar Entrada', bg: 'bg-slate-800 hover:bg-slate-900', icon: '🟢', iconKey: 'entrada', subtext: 'Fichaje ordinario de entrada' };
     }
 
     if (clockState === 'active') {
@@ -3390,7 +3391,7 @@ export function useClockEngine(overrideUser?: any) {
              const firstSlotMins = hour * 60 + parseInt(sm);
              
              if (currentSimTime < firstSlotMins - 5) {
-                return { text: 'Iniciar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
+                return { text: 'Tomar Comida', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60', icon: '🍔', disabled: true, subtext: `Reserva programada: ${mySlots[0]}` };
              }
           } else {
              return {
@@ -3409,7 +3410,7 @@ export function useClockEngine(overrideUser?: any) {
         const minMealTimeMins = userCheckInTimeMins ? userCheckInTimeMins + 90 : shiftStartMins + 120;
         if (currentSimTime < minMealTimeMins && (!mySlots || mySlots.length === 0)) {
           return {
-            text: 'Iniciar Comida',
+            text: 'Tomar Comida',
             bg: 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60',
             icon: '🍔',
             iconKey: 'meal_start',
@@ -3418,14 +3419,14 @@ export function useClockEngine(overrideUser?: any) {
           };
         }
 
-        return { text: 'Iniciar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
+        return { text: 'Tomar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
       }
 
       const hasReturnedFromMeal = mealEndTimes[currentUser.id] !== undefined;
       const hasTakenBreak = breakStartTimes[currentUser.id] !== undefined;
       if (isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
         return {
-          text: 'Descanso',
+          text: 'Tomar Silla',
           bg: 'bg-violet-600 hover:bg-violet-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
           icon: '🧘',
           iconKey: 'break_start',
@@ -3446,7 +3447,7 @@ export function useClockEngine(overrideUser?: any) {
       const isKeysControlUnlockedHO = useAppStore.getState().isFeatureUnlocked('keys_control');
       if (isPro && isKeysControlUnlockedHO && isManager && !isHandoverCompleted && isHandoverWindow) {
         return {
-          text: 'Entrega de Turno',
+          text: 'Entregar Turno',
           bg: 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-[0_0_20px_rgba(8,145,178,0.3)] animate-pulse',
           icon: '🗝️',
           iconKey: 'handover',
@@ -3474,7 +3475,7 @@ export function useClockEngine(overrideUser?: any) {
       }
 
       return {
-        text: 'Registrar Salida',
+        text: 'Fichar Salida',
         bg: 'bg-rose-600 hover:bg-rose-700 text-white font-black shadow-[0_0_22px_rgba(225,29,72,0.35)]',
         icon: '🚪',
         iconKey: 'exit',
@@ -3489,13 +3490,13 @@ export function useClockEngine(overrideUser?: any) {
       return { text: 'Terminar Descanso', bg: 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-[0_0_20px_rgba(79,70,229,0.35)]', icon: '🏃', iconKey: 'break_end', subtext: 'Haz clic al reincorporarte' };
     }
     if (clockState === 'temp_exit') {
-      return { text: 'Registrar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
+      return { text: 'Fichar Reingreso', bg: 'bg-teal-500 hover:bg-teal-600 text-white font-bold shadow-[0_0_20px_rgba(20,184,166,0.35)]', icon: '🚶', iconKey: 'reingreso', subtext: 'Pase de salida temporal (Regreso est. 30m)' };
     }
     if (clockState === 'absent') {
       return { text: 'Ausencia Registrada', bg: 'bg-rose-100 text-rose-500 cursor-not-allowed', icon: '🚷', iconKey: 'absent', disabled: true };
     }
     if (clockState === 'finished') {
-      return { text: 'Jornada Finalizada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
+      return { text: 'Fin Jornada', bg: 'bg-slate-200 text-slate-400 cursor-not-allowed', icon: '🏁', iconKey: 'finished', disabled: true, subtext: 'Turno concluido hoy.' };
     }
     return { text: 'Procesando...', bg: 'bg-slate-200', icon: '...' };
   };

@@ -171,7 +171,7 @@ export default function DialPrincipal({
     // para los 23 de la matriz tras esta corrección, pero evita romper estados nuevos/experimentales).
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return 'bg-white border-violet-500 text-violet-600 shadow-violet-500/10 animate-pulse hover:border-violet-600';
-    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
+    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual' || text === 'Fichar Entrada') return 'bg-white border-emerald-500 text-emerald-600 shadow-emerald-500/10 hover:border-emerald-600';
     return 'bg-white border-violet-400 text-violet-700 shadow-violet-500/10 hover:border-violet-500';
   };
 
@@ -191,7 +191,7 @@ export default function DialPrincipal({
     if (btnProps.isIncidenceReport) return <AlertTriangle size={sizeValue} className="text-amber-500 animate-pulse shrink-0" />;
     const text = btnProps.text || '';
     if (text === 'Abrir Tienda') return <Key size={sizeValue} className="text-violet-500 animate-pulse shrink-0" />;
-    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual') return <LogIn size={sizeValue} className="text-emerald-500 shrink-0" />;
+    if (text === 'Registrar Entrada' || text === 'Registrar Entrada Manual' || text === 'Fichar Entrada') return <LogIn size={sizeValue} className="text-emerald-500 shrink-0" />;
 
     return <Fingerprint size={sizeValue} className="text-slate-300 shrink-0" />;
   };
@@ -201,21 +201,30 @@ export default function DialPrincipal({
     const isRestDay = shiftConfigs[currentUser?.id]?.restDay === currentDay;
     if (isRestDay) return 'Día libre';
 
-    // Formateo de etiquetas de la secuencia del dial
+    // Formateo de etiquetas de la secuencia del dial. Textos alineados a docs/Logica Dial.md
+    // (matriz de 23 estados, columna "Texto Principal") — cambio de solo texto, sin tocar
+    // condiciones ni el despacho de acciones en handleAction().
     switch (btnProps.iconKey) {
-      case 'entrada': return 'Registrar Entrada';
+      case 'entrada': return 'Fichar Entrada';
       case 'verifying_gps': return 'Buscando GPS';
       case 'verifying_selfie': return 'Validando Selfie';
       case 'success_check': return 'Fichaje Registrado';
       case 'break_start':
+        // BUG FIX: antes 'break_start' y 'break_end' compartían el mismo texto ("Descanso Ley Silla"),
+        // sin distinguir entre "invitación a sentarse" (estado #19, "Tomar Silla") y "ya estás sentado,
+        // termina cuando quieras" (estado #20, "Terminar Descanso") — inconsistente además con
+        // btnProps.text, que sí ya diferenciaba ambos casos.
+        return 'Tomar Silla';
       case 'break_end':
-        return 'Descanso Ley Silla';
+        return 'Terminar Descanso';
       case 'meal_prompt':
       case 'meal_start':
-        return 'Iniciar Comida';
+        return 'Tomar Comida';
       case 'meal_end':
-        return 'Fin de Comida';
-      case 'exit': return 'Registrar Salida';
+        // BUG FIX: mostraba 'Fin de Comida', pero btnProps.text (y el estado #18b de la matriz) usan
+        // 'Terminar Comida' — quedaban desalineados entre sí.
+        return 'Terminar Comida';
+      case 'exit': return 'Fichar Salida';
     }
 
     if (btnProps.text) {
@@ -225,9 +234,9 @@ export default function DialPrincipal({
       return btnProps.text;
     }
 
-    if (btnProps.isIncidenceReport) return 'Reportar retraso o falta';
+    if (btnProps.isIncidenceReport) return 'Reportar Falta';
 
-    return 'Registrar entrada';
+    return 'Fichar Entrada';
   };
 
   const handleDialClick = () => {
@@ -382,8 +391,10 @@ export default function DialPrincipal({
         </button>
       )}
 
-      {/* BUG FIX: Laborar Horas Extras debe aparecer tanto en Día de Descanso como en Día Feriado LFT */}
-      {(btnProps.text === 'DÍA DE DESCANSO' || btnProps.text === 'DÍA FERIADO (LFT)') && onOvertimeClick && (
+      {/* BUG FIX: Laborar Horas Extras debe aparecer tanto en Día de Descanso como en Día Feriado LFT.
+          Textos alineados a docs/Logica Dial.md (2026-07-22): btnProps.text ahora es 'Día Descanso'/
+          'Día Feriado' — se conservan los strings viejos como resguardo por si algún estado legacy no migrado los sigue usando. */}
+      {(btnProps.text === 'DÍA DE DESCANSO' || btnProps.text === 'DÍA FERIADO (LFT)' || btnProps.text === 'Día Descanso' || btnProps.text === 'Día Feriado') && onOvertimeClick && (
         <button
           type="button"
           onClick={onOvertimeClick}

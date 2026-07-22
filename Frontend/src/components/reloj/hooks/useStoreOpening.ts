@@ -7,24 +7,17 @@ interface UseStoreOpeningParams {
   showCustomAlert: (msg: string) => void;
   isSimulatedOffline: boolean;
   saveOfflineContingency: (item: { userId: number; reason: string; declaredAt: string }) => void;
-  // syncToDB vive en useClockEngine.tsx (es lógica central de fichaje). Se recibe aquí como un
-  // proxy estable (ver el patrón de useRef en useClockEngine.tsx) para poder llamarlo sin importar
-  // el orden real de declaración entre ambos — evita que este módulo tenga que definirse DESPUÉS
-  // de syncToDB, lo cual habría obligado a mover mucho más código central de lo necesario.
   syncToDB: (type: string, isLate?: boolean, lateMinutes?: number, details?: string) => Promise<any>;
+  isSimulator?: boolean;
 }
 
-// Extraído de useClockEngine.tsx (refactor Jul 2026): agrupa toda la lógica de apertura de tienda
-// premium — settings, status diario, checklist/pase de lista de apertura, checklist de cierre,
-// apertura de emergencia con testigos, declaración de contingencia y los reportes de ausencia/
-// retardo/tienda-cerrada que ceden la responsabilidad de apertura al siguiente encargado. Misma
-// lógica y nombres que antes, solo reubicados.
 export function useStoreOpening({
   currentUser,
   showCustomAlert,
   isSimulatedOffline,
   saveOfflineContingency,
   syncToDB,
+  isSimulator = false,
 }: UseStoreOpeningParams) {
   const isSandboxMode = useAppStore(s => s.isSandboxMode);
   const systemSettings = useAppStore(s => s.systemSettings);
@@ -237,7 +230,8 @@ export function useStoreOpening({
       try {
         const res = await axiosInstance.post('/store-opening/open-and-clock-in', {
           simTime: getSimTimeStr(globalSimTime),
-          user_id: currentUser?.id
+          user_id: currentUser?.id,
+          is_simulator: isSimulator
         });
         if (res.data.success) {
           setOpeningStatus(res.data.status);

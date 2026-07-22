@@ -246,11 +246,18 @@ export default function PanelSimulador() {
   const fetchActiveSession = async () => {
     try {
       const res = await axiosInstance.get('/matrix/session/active');
+      const sessId = res.data?.session_id ?? null;
+      if (sessId) {
+        localStorage.setItem('matrix_active_sim_session_id', String(sessId));
+      } else {
+        localStorage.removeItem('matrix_active_sim_session_id');
+      }
       setSimSession({
-        session_id: res.data?.session_id ?? null,
+        session_id: sessId,
         simulated_date: res.data?.simulated_date ?? null,
         status: res.data?.status ?? null,
       });
+      fetchState(sessId);
     } catch (err) {
       console.error('Error al obtener la sesión activa del simulador:', err);
     }
@@ -258,16 +265,13 @@ export default function PanelSimulador() {
 
   useEffect(() => {
      const appState = useAppStore.getState();
-     // El backend ya aísla los datos de prueba por simulation_session_id para cualquier tenant
-     // (docs/BACKEND_INTERFACES.md §13), así que ya no hace falta restringir la persistencia real
-     // en PostgreSQL solo al tenant 1 (DecorArte) — cualquier empresa puede correr el simulador
-     // con BD real y quedar igual de aislada de sus propios reportes.
      appState.setIsSandboxMode(false);
      fetchActiveSession();
 
      // Polling de 5 segundos para mantener la QA Matrix sincronizada con los fichajes reales del backend
      const interval = setInterval(() => {
-         fetchState();
+         const activeId = localStorage.getItem('matrix_active_sim_session_id');
+         fetchState(activeId ? Number(activeId) : undefined);
      }, 5000);
      return () => clearInterval(interval);
   }, []);
@@ -327,9 +331,10 @@ export default function PanelSimulador() {
     try {
       await axiosInstance.post('/sync/store_log', {
         type: isOpening ? 'open' : 'close',
-        date: new Date().toISOString().split('T')[0],
+        date: simSession.simulated_date || new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().split(' ')[0],
-        notes: 'Cierre Maestro/Apertura desde el panel simulador Matrix QA'
+        notes: 'Cierre Maestro/Apertura desde el panel simulador Matrix QA',
+        is_simulator: true
       });
       setStoreStatus(isOpening ? 'open' : 'closed');
       addMatrixEvent(

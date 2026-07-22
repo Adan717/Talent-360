@@ -22,8 +22,9 @@ export function useClockEngine(overrideUser?: any) {
   useEffect(() => {
     fetchState();
 
-    window.addEventListener('db_sync_updated', fetchState);
-    return () => window.removeEventListener('db_sync_updated', fetchState);
+    const handleSync = () => fetchState();
+    window.addEventListener('db_sync_updated', handleSync);
+    return () => window.removeEventListener('db_sync_updated', handleSync);
   }, []);
 
 
@@ -147,6 +148,7 @@ export function useClockEngine(overrideUser?: any) {
     isSimulatedOffline,
     saveOfflineContingency,
     syncToDB: syncToDBProxy,
+    isSimulator,
   });
 
   const {

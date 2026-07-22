@@ -78,7 +78,7 @@ interface AppState {
   setDbRolePermissions: (rolePerms: any[]) => void;
   
   // Actions
-  fetchState: () => Promise<void>;
+  fetchState: (explicitSimSessionId?: number | string | null) => Promise<void>;
   updateSetting: (key: string, value: any) => Promise<void>;
   fetchPunctualityStatus: () => Promise<void>;
 
@@ -343,7 +343,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
 
-  fetchState: async () => {
+  fetchState: async (explicitSimSessionId?: number | string | null) => {
     try {
       const hasToken = !!localStorage.getItem('talent_auth_token');
       const isUserLoaded = get().currentUser && get().currentUser?.role !== 'Loading';
@@ -377,7 +377,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       }
 
-      const res = await axiosInstance.get('/sync/state', { timeout: 5000 });
+      const activeSimSession = explicitSimSessionId || localStorage.getItem('matrix_active_sim_session_id');
+      const syncParams: any = {};
+      if (activeSimSession) {
+        syncParams.simulation_session_id = activeSimSession;
+      }
+
+      const res = await axiosInstance.get('/sync/state', { params: syncParams, timeout: 5000 });
 
       if (res.status === 200) {
         const data = res.data;
@@ -651,15 +657,17 @@ export const useAppStore = create<AppState>((set, get) => ({
            useTaskStore.getState().setAssignments(camelCaseAssignments);
         }
 
-        // Cargar QA Matrix desde audit_logs del Backend (solo si no estamos en Sandbox)
+         // Cargar QA Matrix desde audit_logs del Backend (solo si no estamos en Sandbox)
          if (data.audit_logs && !get().isSandboxMode) {
             const todayStr = new Date().toLocaleDateString('sv-SE');
-            // Filtrar solo los registros de la jornada de hoy para la bitácora del simulador
-            const todayLogs = data.audit_logs.filter((log: any) => log.date === todayStr);
-            
-            const mappedLogs = todayLogs.map((log: any) => ({
+            // Si hay sesión de simulación activa, incluir todos los logs traídos para esa sesión simulada
+            const targetLogs = activeSimSession
+              ? data.audit_logs
+              : data.audit_logs.filter((log: any) => log.date === todayStr);
+
+            const mappedLogs = targetLogs.map((log: any) => ({
                 id: log.id,
-                timeStr: log.timestamp_str ? log.timestamp_str.split(' ')[1] : log.date,
+                timeStr: log.timestamp_str ? (log.timestamp_str.includes(' ') ? log.timestamp_str.split(' ')[1] : log.timestamp_str) : log.date,
                 simTime: 0,
                 title: 'Registro de Auditoría',
                 description: log.reason,
@@ -667,9 +675,9 @@ export const useAppStore = create<AppState>((set, get) => ({
                 actorId: log.user_id,
                 isLocal: false
             })).reverse(); // Mostrar más recientes primero
-            
-            // Preservar eventos del sistema local y eventos locales interactivos del simulador
-            const localEvents = get().matrixTimeline.filter(e => e.type === 'system' || e.isLocal);
+
+            const existingIds = new Set(mappedLogs.map((l: any) => l.id));
+            const localEvents = get().matrixTimeline.filter(e => (e.type === 'system' || e.isLocal) && !existingIds.has(e.id));
             set({ matrixTimeline: [...localEvents, ...mappedLogs] });
          }
 

@@ -149,12 +149,12 @@ class StoreOpeningService
     /**
      * Perform the Store Opening & Manager Check-In in a single transaction.
      */
-    public function openStoreAndClockIn($userId, $storeId = 1, $simTime = null)
+    public function openStoreAndClockIn($userId, $storeId = 1, $simTime = null, $isSimulator = false)
     {
         $user = User::withoutGlobalScopes()->findOrFail($userId);
         $tenantId = $user->tenant_id ?? 1;
 
-        return DB::transaction(function () use ($user, $storeId, $simTime, $tenantId) {
+        return DB::transaction(function () use ($user, $storeId, $simTime, $tenantId, $isSimulator) {
             $status = $this->getTodayOpeningStatus($tenantId, $storeId, $simTime);
 
             if ($status->status === 'opened') {
@@ -175,8 +175,19 @@ class StoreOpeningService
 
             $nowTimeStr = $this->getCurrentTimeStr($simTime);
 
-            // 1. Clock in the employee
-            $punchResult = $this->clockService->processPunch($user, 'check_in', $nowTimeStr);
+            $simSessionId = null;
+            if ($isSimulator) {
+                $simSession = DB::table('simulator_sessions')
+                    ->where('tenant_id', $tenantId)
+                    ->where('status', 'active')
+                    ->orderBy('id', 'desc')
+                    ->first();
+                $simSessionId = $simSession?->id;
+            }
+
+            // 1. Clock in the employee (con is_simulator si aplica)
+            $details = $isSimulator ? ['is_simulator' => true] : [];
+            $punchResult = $this->clockService->processPunch($user, 'check_in', $nowTimeStr, $details);
 
             // 2. Register store opening
             $status->status = 'opened';
@@ -201,6 +212,7 @@ class StoreOpeningService
             StoreLog::create([
                 'tenant_id' => $tenantId,
                 'user_id' => $user->id,
+                'simulation_session_id' => $simSessionId,
                 'date' => Carbon::now()->format('Y-m-d'),
                 'type' => 'open',
                 'time' => $nowTimeStr,

@@ -121,7 +121,7 @@ class ClockController extends Controller
         return response()->json(['message' => "Datos del {$date} archivados y eliminados correctamente."]);
     }
 
-    public function getState()
+    public function getState(Request $request)
     {
         if (!auth()->check()) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
@@ -131,39 +131,56 @@ class ClockController extends Controller
         // Optimización de rendimiento: limitar registros históricos masivos a la última semana
         $oneWeekAgo = now()->subDays(7)->format('Y-m-d');
 
-        // whereNull('simulation_session_id'): esta es la respuesta que alimenta el
-        // dialer/monitor en vivo de colaboradores reales — nunca debe mezclar fichajes
-        // del Simulador Matrix (ver sección 13 de docs/BACKEND_INTERFACES.md).
-        $timeEntries = DB::table('time_entries')
-            ->where('tenant_id', $tenantId)
-            ->whereDate('date', '>=', $oneWeekAgo)
-            ->whereNull('simulation_session_id')
-            ->get();
+        // Soporte para la Matrix QA: si se pasa simulation_session_id (o 'active'),
+        // consultar los datos pertenecientes a esa sesión simulada en lugar de borradores reales.
+        $simSessionId = $request->query('simulation_session_id') ?? $request->input('simulation_session_id');
+        if ($simSessionId === 'active') {
+            $activeSession = DB::table('simulator_sessions')
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'active')
+                ->orderBy('id', 'desc')
+                ->first();
+            $simSessionId = $activeSession?->id;
+        } elseif ($simSessionId !== null) {
+            $simSessionId = (int) $simSessionId;
+        }
 
-        $storeLogs = DB::table('store_logs')
-            ->where('tenant_id', $tenantId)
-            ->whereDate('date', '>=', $oneWeekAgo)
-            ->whereNull('simulation_session_id')
-            ->orderBy('id', 'desc')
-            ->get();
+        $applySimFilter = function ($query, $column = 'simulation_session_id') use ($simSessionId) {
+            if ($simSessionId) {
+                return $query->where($column, $simSessionId);
+            }
+            return $query->whereNull($column);
+        };
 
-        $contingencies = DB::table('contingencies')
-            ->where('tenant_id', $tenantId)
-            ->whereDate('created_at', '>=', $oneWeekAgo)
-            ->whereNull('simulation_session_id')
-            ->get();
+        $timeEntries = $applySimFilter(
+            DB::table('time_entries')
+                ->where('tenant_id', $tenantId)
+                ->whereDate('date', '>=', $oneWeekAgo)
+        )->get();
 
-        $messages = DB::table('internal_messages')
-            ->where('tenant_id', $tenantId)
-            ->whereDate('created_at', '>=', $oneWeekAgo)
-            ->whereNull('simulation_session_id')
-            ->get();
+        $storeLogs = $applySimFilter(
+            DB::table('store_logs')
+                ->where('tenant_id', $tenantId)
+                ->whereDate('date', '>=', $oneWeekAgo)
+        )->orderBy('id', 'desc')->get();
 
-        $auditLogs = DB::table('audit_logs')
-            ->where('tenant_id', $tenantId)
-            ->whereDate('date', '>=', $oneWeekAgo)
-            ->whereNull('simulation_session_id')
-            ->get();
+        $contingencies = $applySimFilter(
+            DB::table('contingencies')
+                ->where('tenant_id', $tenantId)
+                ->whereDate('created_at', '>=', $oneWeekAgo)
+        )->get();
+
+        $messages = $applySimFilter(
+            DB::table('internal_messages')
+                ->where('tenant_id', $tenantId)
+                ->whereDate('created_at', '>=', $oneWeekAgo)
+        )->get();
+
+        $auditLogs = $applySimFilter(
+            DB::table('audit_logs')
+                ->where('tenant_id', $tenantId)
+                ->whereDate('date', '>=', $oneWeekAgo)
+        )->get();
 
         // Get permissions per user (Optimized to avoid N+1 queries)
         $employees = DB::table('employees')->where('tenant_id', $tenantId)->get();
@@ -577,15 +594,27 @@ class ClockController extends Controller
         }
 
         $type = $request->input('type');
+        $isSimulator = $request->boolean('is_simulator') || $request->input('is_simulator') === true;
+        $simSessionId = null;
+        if ($isSimulator) {
+            $activeSession = DB::table('simulator_sessions')
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'active')
+                ->orderBy('id', 'desc')
+                ->first();
+            $simSessionId = $activeSession?->id;
+        }
+
         $id = DB::table('store_logs')->insertGetId([
-            'user_id'    => $userId,
-            'tenant_id'  => $tenantId,
-            'date'       => $request->input('date', now()->format('Y-m-d')),
-            'type'       => $type,
-            'time'       => $request->input('time', now()->format('H:i:s')),
-            'notes'      => $request->input('notes'),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'user_id'               => $userId,
+            'tenant_id'             => $tenantId,
+            'simulation_session_id' => $simSessionId,
+            'date'                  => $request->input('date', now()->format('Y-m-d')),
+            'type'                  => $type,
+            'time'                  => $request->input('time', now()->format('H:i:s')),
+            'notes'                 => $request->input('notes'),
+            'created_at'            => now(),
+            'updated_at'            => now(),
         ]);
 
         if ($type === 'open' && $tenantId) {

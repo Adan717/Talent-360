@@ -306,9 +306,20 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         return;
       }
 
-      const res = await axiosInstance.put(`/employees/${employee.employee_id || employeeId}`, {
-        job_role_id: targetRoleId
+      // BUG FIX (2026-07-21): antes se hacía un PUT PARCIAL con solo { job_role_id }, y el backend
+      // `/employees/{id}` (igual que en handleEditUser) espera/valida el registro completo del empleado,
+      // así que ese PUT parcial se rechazaba y la reasignación no se persistía — al salir y volver a
+      // entrar al organigrama, fetchData recargaba el puesto viejo. Ahora se envía el payload COMPLETO
+      // saneado, exactamente como handleEditUser, con job_role_id ya cambiado.
+      const payload: any = { ...updatedUser, job_role_id: parseInt(String(targetRoleId), 10) };
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === '') payload[key] = null;
       });
+      if (payload.base_salary) payload.base_salary = parseFloat(payload.base_salary);
+      if (payload.salary) payload.salary = parseFloat(payload.salary);
+      if (payload.mealMinutes) payload.mealMinutes = parseInt(payload.mealMinutes, 10);
+
+      const res = await axiosInstance.put(`/employees/${employee.employee_id || employeeId}`, payload);
 
       if (res.status === 200) {
         await fetchData();

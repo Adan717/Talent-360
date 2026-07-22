@@ -310,6 +310,199 @@ class MealReservationController extends Controller
     }
 
     // =========================================================
+    // §24: Cola Secuencial de Reserva de Comida — modo 'queue', convive con la
+    // selección libre de arriba (decisión de Francisco: no la reemplaza).
+    // =========================================================
+
+    // GET /api/v1/meal-reservations/queue?date=&order_by=&store_id=
+    public function getQueue(Request $request)
+    {
+        $user     = Auth::user();
+        $tenantId = $user->tenant_id ?? 1;
+        $date     = $request->input('date', Carbon::today()->toDateString());
+        $storeId  = $request->input('store_id', 1);
+
+        $round = DB::table('meal_queue_rounds')
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('date', $date)
+            ->first();
+
+        if (!$round) {
+            $orderBy = in_array($request->input('order_by'), ['arrival', 'random']) ? $request->input('order_by') : 'arrival';
+
+            $roundId = DB::table('meal_queue_rounds')->insertGetId([
+                'tenant_id'  => $tenantId,
+                'store_id'   => $storeId,
+                'date'       => $date,
+                'order_by'   => $orderBy,
+                'status'     => 'open',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Elegibles: quienes ya ficharon check_in hoy (no se puede apartar turno de
+            // comida si no se está en la sucursal). El orden 'arrival' usa esa misma hora.
+            $employeeIds = DB::table('time_entries')
+                ->where('tenant_id', $tenantId)
+                ->where('date', $date)
+                ->where('type', 'check_in')
+                ->whereNull('simulation_session_id')
+                ->orderBy('time')
+                ->pluck('user_id')
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($orderBy === 'random') {
+                shuffle($employeeIds);
+            }
+
+            foreach ($employeeIds as $i => $employeeId) {
+                DB::table('meal_queue_entries')->insert([
+                    'round_id'   => $roundId,
+                    'employee_id'=> $employeeId,
+                    'position'   => $i + 1,
+                    'status'     => $i === 0 ? 'choosing' : 'waiting',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $round = DB::table('meal_queue_rounds')->find($roundId);
+        }
+
+        $entries = DB::table('meal_queue_entries')
+            ->where('round_id', $round->id)
+            ->orderBy('position')
+            ->get();
+
+        $currentTurn = $entries->firstWhere('status', 'choosing');
+
+        return response()->json([
+            'mode'                     => 'queue',
+            'order_by'                 => $round->order_by,
+            'current_turn_employee_id' => $currentTurn->employee_id ?? null,
+            'queue'                    => $entries->map(fn($e) => [
+                'employee_id' => $e->employee_id,
+                'status'      => $e->status,
+                'slot_start'  => $e->slot_start,
+                'slot_end'    => $e->slot_end,
+            ])->values()->all(),
+        ]);
+    }
+
+    // POST /api/v1/meal-reservations/queue/pick
+    public function pickFromQueue(Request $request)
+    {
+        $request->validate([
+            'date'       => 'required|date',
+            'slot_start' => 'required|date_format:H:i',
+            'store_id'   => 'nullable|integer',
+        ]);
+
+        $user     = Auth::user();
+        $tenantId = $user->tenant_id ?? 1;
+        $date     = $request->date;
+        $storeId  = $request->input('store_id', 1);
+        $slotStart= $request->slot_start;
+
+        return DB::transaction(function () use ($user, $tenantId, $date, $storeId, $slotStart) {
+            $round = DB::table('meal_queue_rounds')
+                ->where('tenant_id', $tenantId)
+                ->where('store_id', $storeId)
+                ->where('date', $date)
+                ->where('status', 'open')
+                ->first();
+
+            if (!$round) {
+                return response()->json(['success' => false, 'message' => 'No hay una ronda de comida abierta para este día.'], 404);
+            }
+
+            $myEntry = DB::table('meal_queue_entries')
+                ->where('round_id', $round->id)
+                ->where('employee_id', $user->id)
+                ->first();
+
+            if (!$myEntry || $myEntry->status !== 'choosing') {
+                return response()->json(['success' => false, 'message' => 'No es tu turno de elegir horario todavía.'], 409);
+            }
+
+            $employee     = Employee::where('user_id', $user->id)->first();
+            $settings     = DB::table('meal_capacity_settings')->where('tenant_id', $tenantId)->first();
+            $maxCapacity  = $settings?->max_capacity ?? 5;
+            $slotDuration = $settings?->slot_duration_minutes ?? 60;
+            $slotEnd      = Carbon::parse($slotStart)->addMinutes($slotDuration)->format('H:i');
+
+            // Mismas reglas que la reserva libre: aforo y "no dejar el piso vacío".
+            $booked = DB::table('meal_reservations')
+                ->where('tenant_id', $tenantId)
+                ->where('reservation_date', $date)
+                ->where('slot_start', $slotStart)
+                ->whereIn('status', ['reserved', 'confirmed'])
+                ->count();
+
+            if ($booked >= $maxCapacity) {
+                return response()->json(['success' => false, 'message' => 'Este horario de comedor está lleno. Elige otro bloque.'], 422);
+            }
+
+            if ($employee?->job_role_id) {
+                $sameRoleCount = DB::table('meal_reservations')
+                    ->where('tenant_id', $tenantId)
+                    ->where('reservation_date', $date)
+                    ->where('job_role_id', $employee->job_role_id)
+                    ->where('slot_start', $slotStart)
+                    ->whereIn('status', ['reserved', 'confirmed'])
+                    ->count();
+
+                if ($sameRoleCount > 0) {
+                    return response()->json(['success' => false, 'message' => 'Ya hay un compañero de tu mismo puesto en este horario.'], 422);
+                }
+            }
+
+            $reservationId = DB::table('meal_reservations')->insertGetId([
+                'tenant_id'              => $tenantId,
+                'user_id'                => $user->id,
+                'job_role_id'            => $employee?->job_role_id,
+                'reservation_date'       => $date,
+                'slot_start'             => $slotStart,
+                'slot_end'               => $slotEnd,
+                'status'                 => 'reserved',
+                'employee_name_at_time'  => $user->name,
+                'job_role_title_at_time' => $employee?->jobRole?->name ?? 'N/A',
+                'created_at'             => now(),
+                'updated_at'             => now(),
+            ]);
+
+            DB::table('meal_queue_entries')->where('id', $myEntry->id)->update([
+                'status'     => 'done',
+                'slot_start' => $slotStart,
+                'slot_end'   => $slotEnd,
+                'updated_at' => now(),
+            ]);
+
+            $next = DB::table('meal_queue_entries')
+                ->where('round_id', $round->id)
+                ->where('status', 'waiting')
+                ->orderBy('position')
+                ->first();
+
+            if ($next) {
+                DB::table('meal_queue_entries')->where('id', $next->id)->update(['status' => 'choosing', 'updated_at' => now()]);
+            }
+
+            event(new \App\Events\MealQueueTurnChanged($tenantId, $next->employee_id ?? null));
+
+            return response()->json([
+                'success'                => true,
+                'message'                => "Turno elegido: {$slotStart} - {$slotEnd}.",
+                'reservation'            => DB::table('meal_reservations')->find($reservationId),
+                'next_turn_employee_id'  => $next->employee_id ?? null,
+            ]);
+        });
+    }
+
+    // =========================================================
     // POST /api/v1/meal-reservations/release-by-absence
     // Liberación reactiva al reportar inasistencia (llamado internamente)
     // =========================================================

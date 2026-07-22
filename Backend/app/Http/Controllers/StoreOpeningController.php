@@ -11,6 +11,7 @@ use App\Services\FeatureAccessService;
 use App\Services\StoreOpeningSettingsService;
 use App\Services\StoreOpeningService;
 use App\Services\StoreOpeningHandoffService;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 
 class StoreOpeningController extends Controller
@@ -18,15 +19,18 @@ class StoreOpeningController extends Controller
     protected $settingsService;
     protected $openingService;
     protected $handoffService;
+    protected $notificationService;
 
     public function __construct(
         StoreOpeningSettingsService $settingsService,
         StoreOpeningService $openingService,
-        StoreOpeningHandoffService $handoffService
+        StoreOpeningHandoffService $handoffService,
+        NotificationService $notificationService
     ) {
         $this->settingsService = $settingsService;
         $this->openingService = $openingService;
         $this->handoffService = $handoffService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -312,6 +316,61 @@ class StoreOpeningController extends Controller
                 'message' => $e->getMessage()
             ], 400);
         }
+    }
+
+    /**
+     * Aviso "Enviar Mensaje" (estados #7/#11): el empleado sin llaves esperando en
+     * puerta avisa al encargado en camino. Sí existe infraestructura de push
+     * server-side en el proyecto (Firebase vía NotificationService), así que se
+     * implementa completo, no solo el registro/WebSocket de respaldo.
+     */
+    public function doorNotice(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'responsible_employee_id' => 'nullable|integer|exists:users,id',
+            'message' => 'required|string|max:500',
+            'store_id' => 'nullable|integer',
+        ]);
+
+        $fromUser = auth()->user();
+        $tenantId = $fromUser->tenant_id;
+        $storeId = $validated['store_id'] ?? 1;
+
+        $toEmployeeId = $validated['responsible_employee_id'] ?? null;
+        if (!$toEmployeeId) {
+            $status = \App\Models\StoreDailyOpeningStatus::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('store_id', $storeId)
+                ->where('date', $validated['date'])
+                ->first();
+            $toEmployeeId = $status?->current_responsible_employee_id;
+        }
+
+        if (!$toEmployeeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo determinar a quién avisar (no hay encargado responsable asignado hoy).'
+            ], 422);
+        }
+
+        \App\Models\DoorNotice::create([
+            'tenant_id' => $tenantId,
+            'from_employee_id' => $fromUser->id,
+            'to_employee_id' => $toEmployeeId,
+            'date' => $validated['date'],
+            'message' => $validated['message'],
+        ]);
+
+        $this->notificationService->sendToUser(
+            $toEmployeeId,
+            '🚪 Aviso en la puerta',
+            $validated['message']
+        );
+
+        event(new \App\Events\DoorNoticeCreated($tenantId, $toEmployeeId, $fromUser->id, $validated['message']));
+
+        return response()->json(['success' => true]);
     }
 
     /**

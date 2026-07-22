@@ -28,12 +28,12 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §15 | Validación de secuencia de eventos en `ClockService::processPunch()` (tabla de prerequisitos) | ✅ Implementado (2026-07-21) |
 | §16 | Rate limiting en `/clock/punch`, `/clock/punch-batch` y validación de PIN de testigos en `/clock/emergency-open` | ✅ Implementado (2026-07-21) |
 | §20 | Nuevo evento `TimeEntryRecorded` (broadcast) emitido desde `ClockService::processPunch()` | ✅ Implementado (2026-07-21) |
-| §21 | Validación de ciclos para `reports_to_role_ids` en `JobRoleController::update()` (hoy solo existe para `org_parent_role_id`) | ⏳ Pendiente |
-| §22 | Calificación en Pase de Lista (tabla `pase_lista_ratings` + `POST /clock/pase-lista/ratings`) — estado #8 | ⏳ Pendiente |
-| §23 | Evidencia fotográfica de comedor (tabla `meal_photo_evidences` + `POST /clock/meal-photo`) — estados #17/#18b | ⏳ Pendiente |
-| §24 | Cola secuencial de reserva de comida (`GET/POST /meal-reservations/queue`) — estado #16b — ⚠️ decisión de producto abierta (reemplaza vs. convive) | ⏳ Pendiente |
-| §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ⏳ Pendiente |
-| §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ⏳ Pendiente |
+| §21 | Validación de ciclos para `reports_to_role_ids` en `JobRoleController::update()` (hoy solo existe para `org_parent_role_id`) | ✅ Implementado (2026-07-21) |
+| §22 | Calificación en Pase de Lista (tabla `pase_lista_ratings` + `POST /clock/pase-lista/ratings`) — estado #8 | ✅ Implementado (2026-07-21) |
+| §23 | Evidencia fotográfica de comedor (tabla `meal_photo_evidences` + `POST /clock/meal-photo`) — estados #17/#18b | ✅ Implementado (2026-07-21) |
+| §24 | Cola secuencial de reserva de comida (`GET/POST /meal-reservations/queue`) — estado #16b — ⚠️ decisión de producto abierta (reemplaza vs. convive) | ✅ Implementado (2026-07-21) — Francisco decidió: **convive** |
+| §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ✅ Implementado (2026-07-21) |
+| §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ✅ Implementado (2026-07-21) — sí existe (Firebase/FCM vía `NotificationService`) |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -805,6 +805,12 @@ Se llamaría por cada id nuevo que se agregue a `reports_to_role_ids` en la vali
 
 Sin preferencia fuerte de nuestro lado sobre el nombre exacto del método o si se hace como método privado del controller o se mueve a un service — lo importante es que quede la validación, ya que hoy el único guardarraíl es del lado del cliente.
 
+## ✅ Implementado (2026-07-21) — resumen
+
+`wouldCreateReportsToCycle()` agregado como método privado de `JobRoleController` (mismo lugar que `wouldCreateOrgCycle`), con la firma y el BFS que propusieron, más el filtro `tenant_id` en cada `JobRole::find()` del recorrido. Se llama una vez por cada id en `reports_to_role_ids` dentro de `update()`, justo después de la validación de ciclo de `org_parent_role_id` existente. Mensaje de error 422 en el mismo formato que ya usan. No hizo falta tocar `store()` — un puesto recién creado no puede formar parte de un ciclo porque nada puede apuntar todavía a un id que no existe.
+
+Tests: 2 casos en `OrgCycleRatingsMealPhotoTest` (ciclo rechazado, cadena válida sin ciclo aceptada). Suite completa: 106/106 verde.
+
 ---
 
 ## 22. Calificación en Pase de Lista (Presentación / Imagen / Energía) — Estado #8 del dial
@@ -841,6 +847,15 @@ POST /api/clock/pase-lista/ratings
 
 **Uso futuro:** estas calificaciones alimentarán métricas de clima/desempeño en el Dashboard; por ahora solo persistirlas.
 
+## ✅ Implementado (2026-07-21) — resumen
+
+Tabla `pase_lista_ratings`, modelo `PaseListaRating`, lógica en `StoreOpeningService::submitPaseListaRatings()` (mismo patrón que `submitClosingChecklist`), endpoint en `StoreOpeningController::submitPaseListaRatings` → `POST /clock/pase-lista/ratings`. Permiso validado igual que en el resto de endpoints de apertura: `current_responsible_employee_id` del `store_daily_opening_status` del día, o rol `admin`/`supervisor`/`platform_admin`. Idempotente por `(tenant_id, employee_id, date)` vía `updateOrCreate`.
+
+- **Decisión sobre `employee_id`:** apunta a `users.id`, no a `employees.id`. El payload de ejemplo no lo aclaraba, pero es el mismo identificador que ya usa `/clock/punch` y todo el módulo de reloj — usar `employees.id` ahí hubiera repetido exactamente el bug que ya encontramos y corregimos en `store_opening_assignments`/`KeyTransferController` (sección 10.1).
+- **Gotcha de Eloquent que vale la pena que sepan si tocan este código:** el modelo NO tiene cast `'date' => 'date'` a propósito. Con el cast, `updateOrCreate()` guardaba el segundo `INSERT` con la fecha desfasada un día (`"2026-07-22 00:00:00"` en vez de `"2026-07-21"`), porque el cast serializa como datetime completo y el WHERE de búsqueda dejaba de coincidir con lo ya guardado — terminaba disparando el índice único en vez de actualizar. Es el mismo motivo por el que `TimeEntry`/`StoreLog` en este proyecto tampoco castean su columna `date`; seguimos esa misma convención aquí y en `MealPhotoEvidence`.
+
+Tests: 2 casos (idempotencia confirmada con recalificación, encargado no-responsable rechazado). Suite completa: 106/106 verde.
+
 ---
 
 ## 23. Evidencia Fotográfica de Comedor (inicio y fin de comida) — Estados #17 y #18b
@@ -865,6 +880,18 @@ POST /api/clock/meal-photo
 - **Ojo con el peso:** son 2 fotos por empleado por día. El frontend comprimirá (probablemente ≤ 200 KB c/u), pero conviene que definan **política de retención** (p. ej. purgar > 90 días) para que no crezca sin límite. Dejamos la decisión de retención de su lado.
 - Devolver `{ "success": true, "url": "..." }`. El frontend NO bloquea el avance del estado si el switch de evidencia está apagado; cuando está encendido, sí exige el 200 antes de continuar.
 - Config: switch `require_meal_photo_evidence` en `clockOpConfig` (lado frontend). El backend solo recibe la foto cuando el frontend decide enviarla.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+`POST /clock/meal-photo` en `TimeEntryController::uploadMealPhoto`, exactamente el payload base64 que proponían (`data:image/{ext};base64,...`). Decisiones tomadas donde el pedido daba libertad:
+
+- **base64 sobre multipart:** el pedido dejaba elegir; base64 encaja mejor con que "la captura del lado cliente es reutilizable" de la validación facial (que ya deben tener como data URI) y con el ejemplo de payload que ustedes mismos escribieron.
+- **Guardado en disco**, mismo patrón que `AuthController::uploadAvatar` (el único precedente de subida de archivos en el proyecto): `public_path('uploads/meal-evidence/{tenant_id}')`, nombre de archivo con `type + user_id + timestamp + random`. La fila guarda `url` (pública) y `path` (física, para poder purgar).
+- **Formatos aceptados:** jpg/png/webp. **Límite defensivo de 2MB** por imagen (el frontend comprime a ~200KB; esto solo corta un abuso, no es la compresión esperada).
+- **Política de retención (la dejaban a nuestro criterio):** 90 días. Implementé un comando `php artisan meal-evidence:purge {--days=90}` que borra archivo + fila. **No lo programé solo** — no sabemos qué mecanismo de cron/scheduler usan en el servidor real; hay que agregarlo al scheduler de Laravel (`bootstrap/app.php` → `withSchedule`) o a un cron del sistema con la periodicidad que prefieran (sugerido: diario).
+- Mismo gotcha del cast `'date'` que en §22 — `MealPhotoEvidence` tampoco lo castea, por la misma razón.
+
+Tests: 4 casos (subida exitosa con archivo verificado en disco, formato inválido rechazado, imagen de más de 2MB rechazada, comando de purga borra solo lo vencido). Suite completa: 106/106 verde.
 
 ---
 
@@ -902,6 +929,18 @@ POST /api/meal-reservations/queue/pick
 - El disparo (10:10 / offset) lo maneja el frontend (cuándo muestra el botón "Apartar Turno"); el backend solo necesita el endpoint de ronda.
 - El WebSocket `tenant.{id}.clock` (ya existe, evento `TimeEntryRecorded`) puede reutilizarse para avisar en vivo "es tu turno de elegir", o se agrega un evento `MealQueueTurnChanged`. Dejamos a su criterio si emiten un evento nuevo; el frontend puede hacer polling del `GET` como fallback.
 
+## ✅ Implementado (2026-07-21) — resumen
+
+Francisco confirmó: **convive** (no reemplaza la selección libre). `GET /meal-reservations/queue` y `POST /meal-reservations/queue/pick` agregados a `MealReservationController`, exactamente el shape de request/response propuesto. Decisiones tomadas:
+
+- **Elegibilidad para la cola:** solo empleados que ya hicieron `check_in` hoy (consulta a `time_entries`, excluyendo datos del Simulador Matrix vía `whereNull('simulation_session_id')`) — no tiene sentido apartar turno de comida sin estar en la sucursal. `arrival` ordena por la hora de ese `check_in`; `random` los baraja.
+- **La ronda se abre sola** en el primer `GET` del día (get-or-create), no hace falta un endpoint separado de "abrir ronda".
+- **`pick` reutiliza las mismas reglas que la reserva libre** (aforo por slot vía `meal_capacity_settings`, restricción de "no dejar el piso vacío" del mismo `job_role_id`) y crea una fila real en `meal_reservations` — así todo lo que ya lee esa tabla (swap, cancelación, reportes) sigue funcionando igual sin importar si la reserva vino de la cola o de selección libre.
+- **Si `pick` falla las reglas de aforo/mismo-puesto, el turno NO avanza** (la persona sigue en `choosing` y puede intentar otro horario) — solo avanza tras una reserva exitosa.
+- Se agregó `App\Events\MealQueueTurnChanged` (mismo canal `tenant.{id}.clock`) — se emite en cada `pick` exitoso con el siguiente `employee_id` en turno.
+
+Tests: `SillaMealQueueDoorNoticeTest` (2 casos de cola — orden por llegada, "no es tu turno" rechazado, avance correcto). Suite completa: 112/112 verde.
+
 ---
 
 ## 25. Ley Silla — Aprobación de Supervisor + Control de Aforo — Estado #19
@@ -933,6 +972,17 @@ GET /api/clock/silla/status?date=2026-07-21
 - Si `active_count >= max_simultaneous`, un nuevo `request` aprobado queda en cola (`status` sigue en espera) y el `status` endpoint devuelve su posición. Al terminar alguien (`silla_end`), se libera un lugar y avanza la cola.
 - Idealmente el contador de sillas activas se emite por el WebSocket `tenant.{id}.clock` para que el panel del supervisor lo vea en vivo (opcional; el `GET` sirve de fallback).
 
+## ✅ Implementado (2026-07-21) — resumen
+
+Tabla `silla_requests`, endpoints `/clock/silla/request|{id}/approve|{id}/reject|status` en un `SillaController` nuevo. `silla_start`/`silla_end` agregados a `ClockService::ALLOWED_TYPES` (tipo propio, no `break_*` con flag, tal como preferían) con sus reglas de secuencia en la misma tabla de prerequisitos de §15 (`silla_start` exige `check_in` y se bloquea si ya hay `check_out`; `silla_end` exige `silla_start`).
+
+- **method='pin' reutiliza `employees.security_pin`** (el mismo mecanismo que ya construimos para los testigos de `emergency-open`, sección 10.2) — valida contra el PIN del propio supervisor que aprueba. `qr`/`remote` se registran como bitácora de cumplimiento (quién/cuándo/cómo) sin exigir credencial adicional, porque la sesión autenticada del supervisor ya es la autorización.
+- **La aprobación NO inicia el descanso por sí sola** — solo cambia `status` a `approved`. El inicio real ocurre cuando el empleado ficha `silla_start` por el flujo normal de `/clock/punch`, que en ese momento valida que exista una solicitud `approved` y que haya aforo disponible, y recién ahí la pasa a `active`. `silla_end` la pasa a `finished`. Esta transición ocurre **dentro de la misma transacción** que el `INSERT` del fichaje, para que nunca queden desincronizados.
+- **Aforo:** `sillas_maximas_simultaneas` se lee de `clockOpConfig` (default 1 si no está configurado). Si está lleno, `silla_start` se rechaza con un mensaje claro y la solicitud se queda `approved` — el `GET /clock/silla/status` expone su posición en la cola de aprobadas-esperando-cupo. No se implementó el WebSocket opcional para el contador en vivo (el `GET` cubre el caso, como ustedes mismos dejaban como aceptable) — avisen si lo quieren de todos modos.
+- **Bug de timezone que encontramos al probar esto** (relevante para cualquiera que toque `ClockService` en el futuro): usar `Carbon::now()` a secas en vez de `Carbon::now($timezone)` dentro de `processPunch()` desalinea las comparaciones de fecha del aforo con el resto de la función, que sí resuelve la fecha vía `system_settings.timezone` del tenant. Ya corregido en los puntos donde se guarda `started_at`/`ended_at`.
+
+Tests: 3 casos en `SillaMealQueueDoorNoticeTest` (ciclo completo solicitud→aprobación→inicio→fin, `silla_start` sin aprobación rechazado, aforo lleno bloquea al segundo). Suite completa: 112/112 verde.
+
 ---
 
 ## 26. Aviso "Enviar Mensaje" — Empleado común esperando en puerta — Estados #7 y #11
@@ -956,6 +1006,14 @@ POST /api/clock/door-notice
 - **Si hay push server-side:** disparar la notificación al `responsible_employee_id`.
 - **Si NO hay push:** emitir por el WebSocket `tenant.{id}.clock` un evento (`DoorNoticeCreated`) para que, si el encargado tiene la app abierta, lo vea al instante; y que quede en la tabla para cuando la abra.
 - Devolver `{ "success": true }`. El frontend ya mostró el aviso in-app localmente, así que no depende del resultado para su UX inmediata.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+Respuesta a la pregunta abierta: **sí existe infraestructura de push server-side** — `App\Services\NotificationService` ya envía por Firebase Cloud Messaging (`sendToUser`, `sendToRole`, `sendBroadcast`; ya la usamos en esta misma sesión para las alertas de RRHH de `emergency-open`, sección 3). Así que se implementó completo, no el mínimo viable de solo registro.
+
+`POST /clock/door-notice` en `StoreOpeningController::doorNotice`: guarda el aviso en `door_notices`, dispara push real vía `NotificationService::sendToUser()`, y además emite `App\Events\DoorNoticeCreated` (mismo canal `tenant.{id}.clock`) para que si el encargado ya tiene la app abierta lo vea al instante sin esperar el push. Si no se manda `responsible_employee_id`, se resuelve automáticamente desde `store_daily_opening_statuses.current_responsible_employee_id` del día — si tampoco hay uno asignado, `422` con mensaje claro en vez de fallar en silencio.
+
+Tests: 2 casos (resuelve encargado automáticamente y envía, falla claro sin encargado resoluble). Suite completa: 112/112 verde.
 
 ---
 

@@ -14,7 +14,7 @@ class PaseListaRating extends Model
         'date', 'presentacion', 'imagen', 'energia',
     ];
 
-    protected $casts = [
-        'date' => 'date',
-    ];
+    // Sin cast 'date' a propósito: igual que TimeEntry/StoreLog en este mismo proyecto,
+    // se maneja como string plano 'Y-m-d'. El cast 'date' de Eloquent lo serializa con
+    // hora y puede desfasar un día en updateOrCreate() al comparar contra lo ya guardado.
 }

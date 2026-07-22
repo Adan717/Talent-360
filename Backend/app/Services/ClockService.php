@@ -24,7 +24,10 @@ class ClockService
     public const ALLOWED_TYPES = [
         'check_in', 'check_out', 'break_start', 'break_end',
         'meal_start', 'meal_end', 'waiting',
-        'temp_exit_start', 'temp_exit_end'
+        'temp_exit_start', 'temp_exit_end',
+        // §25: Ley Silla — tipo propio (no reusa break_*) para que nómina/reportes
+        // puedan distinguir un descanso obligatorio por ley de uno ordinario.
+        'silla_start', 'silla_end',
     ];
 
     public function processPunch(User $user, $type, $simTime = null, $details = [])
@@ -130,6 +133,8 @@ class ClockService
             'temp_exit_end'   => ['requires' => 'temp_exit_start', 'blocked_by' => null],
             'check_out'       => ['requires' => 'check_in',        'blocked_by' => null],
             'waiting'         => ['requires' => null,              'blocked_by' => null],
+            'silla_start'     => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
+            'silla_end'       => ['requires' => 'silla_start',     'blocked_by' => null],
         ];
 
         $rule = $sequenceRules[$type] ?? null;
@@ -154,6 +159,35 @@ class ClockService
                 if ($dayAlreadyClosed) {
                     throw new \Exception("Fichaje Denegado: ya se registró '{$rule['blocked_by']}' hoy, no se puede registrar '{$type}' después de cerrar el día.");
                 }
+            }
+        }
+
+        // §25: Ley Silla — silla_start exige una solicitud 'approved' (el supervisor ya
+        // autorizó) y respeta el aforo máximo simultáneo antes de dejar iniciar.
+        $sillaRequestForThisPunch = null;
+        if ($type === 'silla_start') {
+            $sillaRequestForThisPunch = \App\Models\SillaRequest::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('employee_id', $user->id)
+                ->where('status', 'approved')
+                ->whereDate('requested_at', $date)
+                ->orderByDesc('requested_at')
+                ->first();
+
+            if (!$sillaRequestForThisPunch) {
+                throw new \Exception('Fichaje Denegado: no tienes una solicitud de Ley Silla aprobada por tu supervisor.');
+            }
+
+            $clockOpConfig = isset($settings['clockOpConfig']) ? json_decode($settings['clockOpConfig'], true) : [];
+            $maxSimultaneous = $clockOpConfig['sillas_maximas_simultaneas'] ?? 1;
+            $activeCount = \App\Models\SillaRequest::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'active')
+                ->whereDate('started_at', $date)
+                ->count();
+
+            if ($activeCount >= $maxSimultaneous) {
+                throw new \Exception('Fichaje Denegado: el aforo máximo de sillas simultáneas está lleno. Espera tu turno.');
             }
         }
 
@@ -384,7 +418,8 @@ class ClockService
         // Si falla la inserción del audit_log, el time_entry también se revierte.
         $entry = DB::transaction(function () use (
             $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
-            $snapshotName, $snapshotRole, $snapshotSalary, $simulationSessionId
+            $snapshotName, $snapshotRole, $snapshotSalary, $simulationSessionId,
+            $sillaRequestForThisPunch, $timezone
         ) {
             try {
                 $entry = TimeEntry::create([
@@ -424,6 +459,27 @@ class ClockService
                 'updated_at'       => Carbon::now(),
             ]);
 
+            // §25: Ley Silla — transición de la solicitud en el mismo commit que el fichaje,
+            // para que nunca queden desincronizados (ej. el fichaje se guarda pero la
+            // solicitud se queda en 'approved' para siempre).
+            if ($type === 'silla_start' && $sillaRequestForThisPunch) {
+                $sillaRequestForThisPunch->status = 'active';
+                $sillaRequestForThisPunch->started_at = Carbon::now($timezone);
+                $sillaRequestForThisPunch->save();
+            } elseif ($type === 'silla_end') {
+                $activeSilla = \App\Models\SillaRequest::withoutGlobalScopes()
+                    ->where('tenant_id', $user->tenant_id ?? 1)
+                    ->where('employee_id', $user->id)
+                    ->where('status', 'active')
+                    ->orderByDesc('started_at')
+                    ->first();
+                if ($activeSilla) {
+                    $activeSilla->status = 'finished';
+                    $activeSilla->ended_at = Carbon::now($timezone);
+                    $activeSilla->save();
+                }
+            }
+
             return $entry;
         });
 
@@ -439,6 +495,137 @@ class ClockService
                 : "Registro exitoso.",
             'entry' => $entry
         ];
+    }
+
+    /**
+     * §25 (Ley Silla): el empleado solicita el descanso; queda 'pending' hasta que un
+     * supervisor la apruebe. Si ya tiene una solicitud viva hoy, la reutiliza en vez de
+     * crear una duplicada.
+     */
+    public function createSillaRequest(User $user, int $storeId = 1): array
+    {
+        $tenantId = $user->tenant_id ?? 1;
+        $timezone = $this->resolveTenantTimezone($tenantId);
+        $today = Carbon::now($timezone)->format('Y-m-d');
+
+        $existing = \App\Models\SillaRequest::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('employee_id', $user->id)
+            ->whereDate('requested_at', $today)
+            ->whereIn('status', ['pending', 'approved', 'active'])
+            ->first();
+
+        if ($existing) {
+            return ['success' => true, 'request_id' => $existing->id, 'status' => $existing->status];
+        }
+
+        $request = \App\Models\SillaRequest::create([
+            'tenant_id' => $tenantId,
+            'store_id' => $storeId,
+            'employee_id' => $user->id,
+            'requested_at' => Carbon::now($timezone),
+            'status' => 'pending',
+        ]);
+
+        return ['success' => true, 'request_id' => $request->id, 'status' => 'pending'];
+    }
+
+    /**
+     * Aprueba una solicitud de Ley Silla. method='pin' valida contra employees.security_pin
+     * del propio supervisor que aprueba (mismo mecanismo que ya usan los testigos de
+     * emergency-open) — 'qr'/'remote' se registran solo como bitácora de cumplimiento
+     * (quién, cuándo, cómo), la sesión autenticada del supervisor ya es la autorización.
+     */
+    public function approveSillaRequest(int $requestId, User $approver, string $method, ?string $supervisorPin = null): array
+    {
+        if (!in_array($approver->role, ['admin', 'supervisor', 'platform_admin'])) {
+            throw new \Exception('Solo un supervisor o administrador puede aprobar una solicitud de Ley Silla.');
+        }
+
+        $silla = \App\Models\SillaRequest::withoutGlobalScopes()->findOrFail($requestId);
+        if ((int) $silla->tenant_id !== (int) ($approver->tenant_id ?? 1)) {
+            throw new \Exception('Esta solicitud no pertenece a tu empresa.');
+        }
+        if ($silla->status !== 'pending') {
+            throw new \Exception('Esta solicitud ya fue procesada.');
+        }
+
+        if ($method === 'pin') {
+            $employee = $approver->employee;
+            if (!$employee || !$employee->security_pin || !$supervisorPin || !\Illuminate\Support\Facades\Hash::check($supervisorPin, $employee->security_pin)) {
+                throw new \Exception('PIN de supervisor incorrecto.');
+            }
+        }
+
+        $silla->status = 'approved';
+        $silla->approved_by_employee_id = $approver->id;
+        $silla->approval_method = $method;
+        $silla->save();
+
+        return ['success' => true, 'request_id' => $silla->id, 'status' => 'approved'];
+    }
+
+    public function rejectSillaRequest(int $requestId, User $approver): array
+    {
+        if (!in_array($approver->role, ['admin', 'supervisor', 'platform_admin'])) {
+            throw new \Exception('Solo un supervisor o administrador puede rechazar una solicitud de Ley Silla.');
+        }
+
+        $silla = \App\Models\SillaRequest::withoutGlobalScopes()->findOrFail($requestId);
+        if ((int) $silla->tenant_id !== (int) ($approver->tenant_id ?? 1)) {
+            throw new \Exception('Esta solicitud no pertenece a tu empresa.');
+        }
+        if ($silla->status !== 'pending') {
+            throw new \Exception('Esta solicitud ya fue procesada.');
+        }
+
+        $silla->status = 'rejected';
+        $silla->approved_by_employee_id = $approver->id;
+        $silla->save();
+
+        return ['success' => true, 'request_id' => $silla->id, 'status' => 'rejected'];
+    }
+
+    /**
+     * Aforo de sillas del día: cuántas activas, cuántas disponibles, y la cola de
+     * solicitudes ya aprobadas esperando que se libere un lugar.
+     */
+    public function getSillaStatus(int $tenantId, string $date, int $storeId = 1): array
+    {
+        $settings = DB::table('system_settings')->where('tenant_id', $tenantId)->pluck('value', 'key')->toArray();
+        $clockOpConfig = isset($settings['clockOpConfig']) ? json_decode($settings['clockOpConfig'], true) : [];
+        $maxSimultaneous = $clockOpConfig['sillas_maximas_simultaneas'] ?? 1;
+
+        $activeCount = \App\Models\SillaRequest::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('status', 'active')
+            ->whereDate('started_at', $date)
+            ->count();
+
+        $queue = \App\Models\SillaRequest::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('status', 'approved')
+            ->whereDate('requested_at', $date)
+            ->orderBy('requested_at')
+            ->get()
+            ->values()
+            ->map(fn($r, $i) => ['employee_id' => $r->employee_id, 'position' => $i + 1])
+            ->all();
+
+        return [
+            'max_simultaneous' => $maxSimultaneous,
+            'active_count' => $activeCount,
+            'available' => max(0, $maxSimultaneous - $activeCount),
+            'queue' => $queue,
+        ];
+    }
+
+    private function resolveTenantTimezone(int $tenantId): string
+    {
+        $tz = DB::table('system_settings')->where('tenant_id', $tenantId)->where('key', 'timezone')->value('value');
+        return $tz ? trim($tz, '"') : 'America/Mexico_City';
     }
 
     /**

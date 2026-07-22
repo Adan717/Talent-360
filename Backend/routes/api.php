@@ -28,6 +28,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TaskValidationController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\StoreOpeningController;
+use App\Http\Controllers\SillaController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\TeamChatController;
 use App\Http\Controllers\IncidentReportController;
@@ -328,6 +329,13 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/store-opening/report-store-still-closed', [StoreOpeningController::class, 'reportStoreStillClosed']);
         Route::post('/store-opening/closing-checklist', [StoreOpeningController::class, 'closingChecklist']);
         Route::post('/clock/pase-lista/ratings', [StoreOpeningController::class, 'submitPaseListaRatings']);
+        Route::post('/clock/door-notice', [StoreOpeningController::class, 'doorNotice']);
+
+        // §25: Ley Silla — solicitud/aprobación/aforo
+        Route::post('/clock/silla/request', [SillaController::class, 'request']);
+        Route::post('/clock/silla/{id}/approve', [SillaController::class, 'approve']);
+        Route::post('/clock/silla/{id}/reject', [SillaController::class, 'reject']);
+        Route::get('/clock/silla/status', [SillaController::class, 'status']);
 
         // Sincronización de tareas y checklists
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);
@@ -342,6 +350,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/', [MealReservationController::class, 'store']);           // Crear reserva
             Route::delete('/{id}', [MealReservationController::class, 'cancel']);   // Cancelar reserva
             Route::post('/{id}/swap', [MealReservationController::class, 'swap']); // Intercambio con compañero
+            // §24: modo 'queue', convive con la selección libre de arriba
+            Route::get('/queue', [MealReservationController::class, 'getQueue']);
+            Route::post('/queue/pick', [MealReservationController::class, 'pickFromQueue']);
         });
 
         // Sincronización del cliente local y registros offline (Kiosko)

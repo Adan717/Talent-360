@@ -622,6 +622,32 @@ class ClockService
         ];
     }
 
+    /**
+     * §25b: panel de supervisor — listar solicitudes de Ley Silla por status (default
+     * 'pending') sin depender de que la aprobación llegue solo por push con el id.
+     */
+    public function listSillaRequests(int $tenantId, string $status = 'pending', ?string $date = null, int $storeId = 1): array
+    {
+        $query = \App\Models\SillaRequest::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('status', $status);
+
+        if ($date) {
+            $query->whereDate('requested_at', $date);
+        }
+
+        return $query->orderBy('requested_at')
+            ->get()
+            ->map(fn($r) => [
+                'id' => $r->id,
+                'employee_id' => $r->employee_id,
+                'requested_at' => $r->requested_at->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+    }
+
     private function resolveTenantTimezone(int $tenantId): string
     {
         $tz = DB::table('system_settings')->where('tenant_id', $tenantId)->where('key', 'timezone')->value('value');

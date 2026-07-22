@@ -336,6 +336,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/clock/silla/{id}/approve', [SillaController::class, 'approve']);
         Route::post('/clock/silla/{id}/reject', [SillaController::class, 'reject']);
         Route::get('/clock/silla/status', [SillaController::class, 'status']);
+        Route::get('/clock/silla/requests', [SillaController::class, 'listRequests']);
 
         // Sincronización de tareas y checklists
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);

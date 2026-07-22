@@ -205,6 +205,29 @@ class SillaMealQueueDoorNoticeTest extends TestCase
         $this->assertCount(1, $status->json('queue'));
     }
 
+    public function test_supervisor_can_list_pending_silla_requests(): void
+    {
+        $supervisor = $this->makeUser('supervisor', '9999');
+        $employee = $this->makeUser('empleado');
+        $this->checkIn($employee);
+
+        $req = $this->actingAs($employee)->postJson('/api/v1/clock/silla/request');
+        $requestId = $req->json('request_id');
+
+        $list = $this->actingAs($supervisor)->getJson('/api/v1/clock/silla/requests?status=pending');
+        $list->assertStatus(200);
+        $ids = collect($list->json('requests'))->pluck('id')->all();
+        $this->assertContains($requestId, $ids);
+
+        // Un empleado normal no puede ver el panel de solicitudes.
+        $this->actingAs($employee)->getJson('/api/v1/clock/silla/requests?status=pending')->assertStatus(403);
+
+        // Tras aprobar, ya no aparece en la lista de pendientes.
+        $this->actingAs($supervisor)->postJson("/api/v1/clock/silla/{$requestId}/approve", ['method' => 'remote'])->assertStatus(200);
+        $listAfter = $this->actingAs($supervisor)->getJson('/api/v1/clock/silla/requests?status=pending');
+        $this->assertNotContains($requestId, collect($listAfter->json('requests'))->pluck('id')->all());
+    }
+
     // §24 -----------------------------------------------------------------------
 
     public function test_meal_queue_creates_round_ordered_by_arrival_and_advances_turn(): void

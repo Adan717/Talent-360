@@ -34,7 +34,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §24 | Cola secuencial de reserva de comida (`GET/POST /meal-reservations/queue`) — estado #16b — ⚠️ decisión de producto abierta (reemplaza vs. convive) | ✅ Implementado (2026-07-21) — Francisco decidió: **convive** |
 | §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ✅ Implementado (2026-07-21) |
 | §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ✅ Implementado (2026-07-21) — sí existe (Firebase/FCM vía `NotificationService`) |
-| §25b | Falta `GET /clock/silla/requests?status=pending` para que el supervisor liste y apruebe solicitudes de silla en la app (hoy solo se puede aprobar con el request_id que llega por push) | ⏳ Pendiente |
+| §25b | Falta `GET /clock/silla/requests?status=pending` para que el supervisor liste y apruebe solicitudes de silla en la app (hoy solo se puede aprobar con el request_id que llega por push) | ✅ Implementado (2026-07-21) |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1029,6 +1029,14 @@ GET /api/clock/silla/requests?status=pending&date=YYYY-MM-DD
 
 - Filtrado por `tenant_id` y, para supervisores, idealmente solo las de su equipo/sucursal (o todas si es admin).
 - Con esto el frontend arma la lista y llama a los endpoints de approve/reject que ya existen. Es lo único que falta para cerrar el lado supervisor de §25; el lado empleado ya quedó completo en el frontend.
+
+## ✅ Implementado (2026-07-21) — resumen
+
+`GET /clock/silla/requests` en `SillaController::listRequests` → `ClockService::listSillaRequests()`, mismo shape de respuesta propuesto (`{ requests: [{id, employee_id, requested_at}] }`). Acepta `status` (default `pending`), `date` y `store_id` opcionales — no lo restringí solo a `pending` porque no le vi ventaja a esa rigidez si el frontend algún día quiere reusar el mismo endpoint para ver aprobadas/activas.
+
+**Sobre "idealmente solo las de su equipo/sucursal si es supervisor":** no lo implementé — filtré por `tenant_id` + `store_id` (ya acota a la sucursal), pero no agregué un filtro adicional por "equipo del supervisor" porque no existe hoy en el proyecto un concepto establecido y consultable de "a qué empleados supervisa este supervisor" (no es lo mismo que `reports_to_role_id`, que es jerarquía de puestos, no asignación de equipo). Construir eso a ciegas hubiera sido inventar un contrato nuevo sin que lo pidieran. Si lo necesitan, avisen cómo se determina "el equipo de un supervisor" en el resto del sistema y lo agrego.
+
+Tests: 1 caso (supervisor ve la solicitud pendiente, empleado normal no puede, desaparece de la lista tras aprobarse). Suite completa: 113/113 verde.
 
 ---
 

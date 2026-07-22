@@ -57,6 +57,29 @@ class SillaController extends Controller
         }
     }
 
+    /**
+     * §25b: panel de supervisor — listar solicitudes por status para poder aprobar/
+     * rechazar dentro de la app, sin depender de que el push traiga el request_id.
+     */
+    public function listRequests(Request $request)
+    {
+        if (!in_array($request->user()->role, ['admin', 'supervisor', 'platform_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo un supervisor o administrador puede ver las solicitudes de Ley Silla.'
+            ], 403);
+        }
+
+        $tenantId = $request->user()->tenant_id ?? 1;
+        $status = $request->query('status', 'pending');
+        $date = $request->query('date');
+        $storeId = $request->query('store_id', 1);
+
+        $requests = $this->clockService->listSillaRequests($tenantId, $status, $date, $storeId);
+
+        return response()->json(['requests' => $requests]);
+    }
+
     public function status(Request $request)
     {
         $tenantId = $request->user()->tenant_id ?? 1;

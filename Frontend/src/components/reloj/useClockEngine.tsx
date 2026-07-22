@@ -1337,12 +1337,22 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   // Push Notification: Pase de Lista Retardado
+  // BUG FIX (2026-07-21): antes esta notificación se re-disparaba en CADA tick del reloj mientras
+  // paseListaDone siguiera en false. Al descartarla (setActivePushNotification(null)), el efecto se
+  // re-ejecutaba porque currentSimTime cambia cada segundo y la volvía a poner de inmediato — para el
+  // encargado activo (p.ej. Francisco en la Matrix) quedaba en un bucle que no dejaba hacer nada.
+  // Ahora se dispara UNA SOLA VEZ por cada apertura (se recuerda el storeOpenSimTime ya notificado en
+  // un ref); si el usuario la descarta, no vuelve a insistir — igual puede hacer el pase de lista desde
+  // el botón. El ref se reinicia solo cuando hay una apertura nueva (otro storeOpenSimTime).
+  const paseListaPromptedForRef = useRef<number | null>(null);
   useEffect(() => {
     if (storeStatus === 'open' && storeOpenSimTime !== null && !paseListaDone) {
       if (currentSimTime >= storeOpenSimTime && !showPaseListaModal) {
-         if (Number(currentUser.id) === Number(activeEncargadoId) && activePushNotification?.type !== 'pase_lista') {
+         const alreadyPrompted = paseListaPromptedForRef.current === storeOpenSimTime;
+         if (Number(currentUser.id) === Number(activeEncargadoId) && !alreadyPrompted && activePushNotification?.type !== 'pase_lista') {
             const rollCallUnlocked = useAppStore.getState().isFeatureUnlocked('roll_call');
             if (rollCallUnlocked) {
+              paseListaPromptedForRef.current = storeOpenSimTime;
               setActivePushNotification({
                  type: 'pase_lista',
                  text: 'Recordatorio: Tienes pendiente el Pase de Lista de apertura.',

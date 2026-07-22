@@ -34,6 +34,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §24 | Cola secuencial de reserva de comida (`GET/POST /meal-reservations/queue`) — estado #16b — ⚠️ decisión de producto abierta (reemplaza vs. convive) | ✅ Implementado (2026-07-21) — Francisco decidió: **convive** |
 | §25 | Ley Silla: aprobación de supervisor + control de aforo (tabla `silla_requests`, tipos `silla_start/end`, endpoints `/clock/silla/*`) — estado #19 | ✅ Implementado (2026-07-21) |
 | §26 | Aviso "Enviar Mensaje" empleado en puerta (`POST /clock/door-notice`) — estados #7/#11 — ⚠️ verificar si hay push server-side | ✅ Implementado (2026-07-21) — sí existe (Firebase/FCM vía `NotificationService`) |
+| §25b | Falta `GET /clock/silla/requests?status=pending` para que el supervisor liste y apruebe solicitudes de silla en la app (hoy solo se puede aprobar con el request_id que llega por push) | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1014,6 +1015,20 @@ Respuesta a la pregunta abierta: **sí existe infraestructura de push server-sid
 `POST /clock/door-notice` en `StoreOpeningController::doorNotice`: guarda el aviso en `door_notices`, dispara push real vía `NotificationService::sendToUser()`, y además emite `App\Events\DoorNoticeCreated` (mismo canal `tenant.{id}.clock`) para que si el encargado ya tiene la app abierta lo vea al instante sin esperar el push. Si no se manda `responsible_employee_id`, se resuelve automáticamente desde `store_daily_opening_statuses.current_responsible_employee_id` del día — si tampoco hay uno asignado, `422` con mensaje claro en vez de fallar en silencio.
 
 Tests: 2 casos (resuelve encargado automáticamente y envía, falla claro sin encargado resoluble). Suite completa: 112/112 verde.
+
+---
+
+## 25b. Falta: listar solicitudes de silla pendientes para el supervisor
+
+**Contexto (2026-07-21, al construir el frontend de §25):** el flujo de Ley Silla con aprobación quedó así del lado del empleado: solicita (`POST /clock/silla/request`) → espera → cuando el supervisor aprueba, el empleado ficha `silla_start`. El frontend ya tiene el handler `approveSillaRequest(requestId, method, pin)` que pega a `POST /clock/silla/{id}/approve`. **Pero el supervisor no tiene cómo VER las solicitudes pendientes dentro de la app** — §25 asumió que la aprobación llega por push con el `request_id`. Para un panel de supervisor donde vea y apruebe las solicitudes (como ya existe para los descansos locales), hace falta:
+
+```
+GET /api/clock/silla/requests?status=pending&date=YYYY-MM-DD
+→ { "requests": [ { "id": 42, "employee_id": 11, "requested_at": "2026-07-21T15:30:00-06:00" } ] }
+```
+
+- Filtrado por `tenant_id` y, para supervisores, idealmente solo las de su equipo/sucursal (o todas si es admin).
+- Con esto el frontend arma la lista y llama a los endpoints de approve/reject que ya existen. Es lo único que falta para cerrar el lado supervisor de §25; el lado empleado ya quedó completo en el frontend.
 
 ---
 

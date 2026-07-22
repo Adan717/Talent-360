@@ -13,6 +13,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
 import DialPrincipal from './DialPrincipal';
 import MealPhotoCapture from './MealPhotoCapture';
+import MealQueue from './MealQueue';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -1263,7 +1264,7 @@ export default function RelojVisual({
         title: 'Reserva de Comida',
         desc: 'Aparta tu horario de comida hoy.',
         icon: <Utensils className="text-amber-505 w-4 h-4" />,
-        action: () => setShowMealReservationModal(true),
+        action: () => openMealReservationFlow(),
         actionText: 'Reservar'
       });
     }
@@ -1528,6 +1529,13 @@ export default function RelojVisual({
   const [securityPinCurrentPassword, setSecurityPinCurrentPassword] = useState('');
   const [showOpeningChecklistModal, setShowOpeningChecklistModal] = useState(false);
   const [showDesktopOrgModal, setShowDesktopOrgModal] = useState(false);
+  // §24: cola secuencial de comida (convive con la selección libre). El modo lo decide la sucursal.
+  const [showMealQueue, setShowMealQueue] = useState(false);
+  const mealReservationMode = systemSettings?.clockOpConfig?.meal_reservation_mode || 'free';
+  const openMealReservationFlow = () => {
+    if (mealReservationMode === 'queue') setShowMealQueue(true);
+    else setShowMealReservationModal(true);
+  };
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRestDay, setEditRestDay] = useState('');
@@ -4437,6 +4445,14 @@ export default function RelojVisual({
             />
           )}
 
+          {showMealQueue && (
+            <MealQueue
+              currentUserId={Number(currentUser?.id)}
+              globalUsers={globalUsers}
+              onClose={() => setShowMealQueue(false)}
+            />
+          )}
+
           {showPaseListaModal && (
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex flex-col pt-12 pb-6 px-4 animate-fade-in-up">
               <div className="bg-white rounded-3xl p-5 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-slate-800">
@@ -5652,7 +5668,7 @@ export default function RelojVisual({
                             <button 
                               onClick={() => {
                                 setShowMealDetailsModal(false);
-                                setShowMealReservationModal(true);
+                                openMealReservationFlow();
                               }}
                               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-3.5 rounded-xl text-xs transition-colors uppercase tracking-wider border-none cursor-pointer shadow-sm active:scale-98"
                             >

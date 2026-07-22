@@ -742,6 +742,12 @@ export function useClockEngine(overrideUser?: any) {
   const [mealPhotoType, setMealPhotoType] = useState<'meal_start' | 'meal_end'>('meal_start');
   const [mealPhotoSubmitting, setMealPhotoSubmitting] = useState(false);
   const isMealPhotoRequired = systemSettings?.clockOpConfig?.require_meal_photo_evidence === true;
+  // §25: Ley Silla con aprobación de supervisor + aforo. Cuando el switch está activo, el descanso de
+  // silla exige: (1) el empleado SOLICITA (POST /clock/silla/request), (2) el supervisor APRUEBA, y
+  // (3) el empleado presiona de nuevo para fichar silla_start (el backend valida aprobación + aforo).
+  const isSillaApprovalRequired = systemSettings?.clockOpConfig?.require_silla_approval === true;
+  const [sillaRequestStage, setSillaRequestStage] = useState<'none' | 'requested'>('none');
+  const [sillaStatus, setSillaStatus] = useState<{ max_simultaneous: number; active_count: number; available: number } | null>(null);
   const [cashCount, setCashCount] = useState("");
   const [kioscoInput, setKioscoInput] = useState('');
   const [evalStars, setEvalStars] = useState(0);
@@ -2193,6 +2199,8 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'meal_end') newState = 'active';
           else if (type === 'break_start') newState = 'short_break';
           else if (type === 'break_end') newState = 'active';
+          else if (type === 'silla_start') newState = 'short_break';
+          else if (type === 'silla_end') newState = 'active';
           else if (type === 'temp_exit_start') newState = 'temp_exit';
           else if (type === 'temp_exit_end') newState = 'active';
           else if (type === 'check_out') newState = 'finished'; // BUG FIX: 'inactive' causaba que el dial mostrara 'Registrar Entrada' post checkout
@@ -2220,6 +2228,8 @@ export function useClockEngine(overrideUser?: any) {
           else if (type === 'meal_end') newState = 'active';
           else if (type === 'break_start') newState = 'short_break';
           else if (type === 'break_end') newState = 'active';
+          else if (type === 'silla_start') newState = 'short_break';
+          else if (type === 'silla_end') newState = 'active';
           else if (type === 'temp_exit_start') newState = 'temp_exit';
           else if (type === 'temp_exit_end') newState = 'active';
           else if (type === 'check_out') newState = 'finished'; // BUG FIX: sandbox mode también debe usar 'finished'
@@ -2255,6 +2265,8 @@ export function useClockEngine(overrideUser?: any) {
              else if (type === 'meal_end') newState = 'active';
              else if (type === 'break_start') newState = 'short_break';
              else if (type === 'break_end') newState = 'active';
+             else if (type === 'silla_start') newState = 'short_break';
+             else if (type === 'silla_end') newState = 'active';
              else if (type === 'temp_exit_start') newState = 'temp_exit';
              else if (type === 'temp_exit_end') newState = 'active';
              else if (type === 'check_out') newState = 'finished'; // BUG FIX: producción también debe usar 'finished'
@@ -2416,7 +2428,10 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   const handleBreakEnd = async () => {
-    const res = await syncToDB('break_end');
+    // §25: en modo con aprobación, el fin de descanso se ficha como silla_end (tipo propio para que
+    // nómina lo distinga de un break ordinario). En modo normal sigue siendo break_end.
+    const endType = (isSillaApprovalRequired && !isSandboxMode) ? 'silla_end' : 'break_end';
+    const res = await syncToDB(endType);
     if (!res?.offline) {
       // Marcar la tarea sentada como completada
       useTaskStore.setState(state => {
@@ -2439,6 +2454,34 @@ export function useClockEngine(overrideUser?: any) {
 
   const handleBreakStart = async () => {
       const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
+
+      // §25: modo con aprobación de supervisor + aforo.
+      if (isSillaApprovalRequired && !isSandboxMode) {
+        if (sillaRequestStage === 'none') {
+          // Paso 1: solicitar la silla. NO inicia el descanso — espera aprobación del supervisor.
+          try {
+            await axiosInstance.post('/clock/silla/request', {});
+            setSillaRequestStage('requested');
+            showCustomAlert('🪑 Solicitud de silla enviada. Pide a tu supervisor que la apruebe y luego presiona de nuevo para iniciar.');
+          } catch (e: any) {
+            showCustomAlert(e?.response?.data?.message || 'No se pudo enviar la solicitud de silla.');
+          }
+          return;
+        }
+        // Paso 2 (ya solicitada): intentar fichar silla_start. El backend valida aprobación + aforo y
+        // rechaza con mensaje claro si aún no aprueban o si no hay cupo (queda en cola).
+        try {
+          const res = await syncToDB('silla_start');
+          if (!res?.offline) {
+            setSillaRequestStage('none');
+            showCustomAlert('🧘 Descanso de Ley Silla iniciado (aprobado).');
+          }
+        } catch (e: any) {
+          showCustomAlert(e?.response?.data?.message || 'Aún no se aprueba tu silla o no hay cupo disponible. Intenta en un momento.');
+        }
+        return;
+      }
+
       if (isPro) {
         setShowBreakSeatModal(true);
       } else {
@@ -2447,6 +2490,43 @@ export function useClockEngine(overrideUser?: any) {
           showCustomAlert('🧘 Has iniciado tu descanso (Ley Silla - Básico).');
         }
       }
+  };
+
+  // §25: el supervisor aprueba/rechaza una solicitud de silla. request_id se obtiene de la
+  // notificación push / del panel de pendientes. method: 'pin' valida contra el PIN del supervisor;
+  // 'remote' registra la aprobación sin credencial extra (la sesión ya autoriza).
+  const approveSillaRequest = async (requestId: number, method: 'pin' | 'qr' | 'remote' = 'remote', supervisorPin?: string) => {
+    try {
+      await axiosInstance.post(`/clock/silla/${requestId}/approve`, { method, supervisor_pin: supervisorPin });
+      showCustomAlert('✅ Silla aprobada. El colaborador ya puede sentarse cuando haya cupo.');
+      return true;
+    } catch (e: any) {
+      showCustomAlert(e?.response?.data?.message || 'No se pudo aprobar la solicitud de silla.');
+      return false;
+    }
+  };
+
+  const rejectSillaRequest = async (requestId: number) => {
+    try {
+      await axiosInstance.post(`/clock/silla/${requestId}/reject`, {});
+      showCustomAlert('Solicitud de silla rechazada.');
+      return true;
+    } catch (e: any) {
+      showCustomAlert(e?.response?.data?.message || 'No se pudo rechazar la solicitud.');
+      return false;
+    }
+  };
+
+  // §25: consulta el aforo actual de sillas (cupo/activas/cola). Útil para mostrar "sin cupo" en la UI.
+  const refreshSillaStatus = async () => {
+    if (isSandboxMode) return;
+    try {
+      const todayStr = new Date().toLocaleDateString('sv-SE');
+      const res = await axiosInstance.get('/clock/silla/status', { params: { date: todayStr } });
+      setSillaStatus(res.data || null);
+    } catch (e) {
+      // Silencioso: es informativo.
+    }
   };
 
   const startBreakWithSittingTask = async (taskId: number) => {
@@ -3809,6 +3889,12 @@ export function useClockEngine(overrideUser?: any) {
     mealPhotoType,
     mealPhotoSubmitting,
     submitMealPhoto,
+    sillaRequestStage,
+    sillaStatus,
+    isSillaApprovalRequired,
+    approveSillaRequest,
+    rejectSillaRequest,
+    refreshSillaStatus,
     startTempExit,
     endTempExit,
     triggerPanic,

@@ -1737,6 +1737,63 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       </label>
                     </div>
 
+                    {/* §25: Ley Silla con aprobación de supervisor + aforo */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
+                      <div>
+                        <h5 className="font-bold text-slate-700 text-[11px]">Silla con Aprobación</h5>
+                        <p className="text-[9px] text-slate-400">Requiere que el supervisor autorice el descanso</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer scale-90">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={formData.clockOpConfig?.require_silla_approval ?? false}
+                          onChange={(e) => handleNestedChange('clockOpConfig', 'require_silla_approval', e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      </label>
+                    </div>
+
+                    {/* §25: aforo máximo de sillas simultáneas */}
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <h5 className="font-bold text-slate-700 text-[11px] mb-1">Aforo de Sillas</h5>
+                      <p className="text-[9px] text-slate-400 mb-2">Máximo de colaboradores sentados a la vez (Ley Silla)</p>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={formData.clockOpConfig?.sillas_maximas_simultaneas ?? 1}
+                        onChange={(e) => handleNestedChange('clockOpConfig', 'sillas_maximas_simultaneas', parseInt(e.target.value) || 1)}
+                        className="w-24 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                      />
+                    </div>
+
+                    {/* §24: Modo de reserva de comida (libre vs cola secuencial) */}
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <h5 className="font-bold text-slate-700 text-[11px] mb-1">Reserva de Comida</h5>
+                      <p className="text-[9px] text-slate-400 mb-2">Libre = cualquiera aparta cualquier horario. Cola = por turnos, uno a uno.</p>
+                      <div className="flex gap-2">
+                        <select
+                          value={formData.clockOpConfig?.meal_reservation_mode || 'free'}
+                          onChange={(e) => handleNestedChange('clockOpConfig', 'meal_reservation_mode', e.target.value)}
+                          className="flex-1 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                        >
+                          <option value="free">Selección libre</option>
+                          <option value="queue">Cola secuencial (Apartar Turno)</option>
+                        </select>
+                        {formData.clockOpConfig?.meal_reservation_mode === 'queue' && (
+                          <select
+                            value={formData.clockOpConfig?.meal_queue_order || 'arrival'}
+                            onChange={(e) => handleNestedChange('clockOpConfig', 'meal_queue_order', e.target.value)}
+                            className="flex-1 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none"
+                          >
+                            <option value="arrival">Orden: por llegada</option>
+                            <option value="random">Orden: aleatorio</option>
+                          </select>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Switch 5: revalidate_gps_on_punch */}
                     <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100">
                       <div>

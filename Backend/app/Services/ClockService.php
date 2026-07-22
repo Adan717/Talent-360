@@ -177,52 +177,55 @@ class ClockService
 
         // 2. Bloqueo de entrada si la tienda está cerrada (Plan Gratuito)
         if (!$isPro && $type === 'check_in') {
-            $openingStatus = \DB::table('store_daily_opening_statuses')
+            $hasAssignments = \DB::table('store_opening_assignments')
                 ->where('tenant_id', $user->tenant_id)
-                ->where('date', $date)
-                ->first();
-            
-            $isOpened = false;
-            $isOpeningManager = false;
-            if ($openingStatus) {
-                $isOpened = $openingStatus->status === 'opened';
-                $isOpeningManager = intval($user->id) === intval($openingStatus->current_responsible_employee_id);
-            } else {
-                $firstActive = \DB::table('store_opening_assignments')
-                    ->where('tenant_id', $user->tenant_id)
-                    ->where('is_active', true)
-                    ->orderBy('priority_order', 'asc')
-                    ->first();
-                if ($firstActive) {
-                    $isOpeningManager = intval($user->id) === intval($firstActive->employee_id);
-                }
-            }
+                ->where('is_active', true)
+                ->exists();
 
-            if (!$isOpened && !$isOpeningManager) {
-                throw new \Exception("Fichaje Denegado: La tienda física se encuentra cerrada. Debes esperar a que el encargado realice la apertura.");
+            if ($hasAssignments) {
+                $openingStatus = \DB::table('store_daily_opening_statuses')
+                    ->where('tenant_id', $user->tenant_id)
+                    ->where('date', $date)
+                    ->first();
+                
+                $isOpened = false;
+                $isOpeningManager = false;
+                if ($openingStatus) {
+                    $isOpened = $openingStatus->status === 'opened';
+                    $isOpeningManager = intval($user->id) === intval($openingStatus->current_responsible_employee_id);
+                } else {
+                    $firstActive = \DB::table('store_opening_assignments')
+                        ->where('tenant_id', $user->tenant_id)
+                        ->where('is_active', true)
+                        ->orderBy('priority_order', 'asc')
+                        ->first();
+                    if ($firstActive) {
+                        $isOpeningManager = intval($user->id) === intval($firstActive->employee_id);
+                    }
+                }
+
+                if (!$isOpened && !$isOpeningManager) {
+                    throw new \Exception("Fichaje Denegado: La tienda física se encuentra cerrada. Debes esperar a que el encargado realice la apertura.");
+                }
             }
         }
 
         // 2.b Bloqueo de salida si falta el checklist de cierre seguro (espejo del
         // checklist de apertura). Solo aplica a tenants con el módulo store_opening activo
-        // — de lo contrario bloquearía el check_out de cualquier tenant que nunca configuró
-        // esta función, algo que el contrato no pide.
+        // y con la opción require_closing_checklist explícitamente activada en sus ajustes.
         if ($type === 'check_out' && \App\Services\FeatureAccessService::tenantHasFeature($tenantId, 'store_opening')) {
             $closingSettings = \DB::table('store_opening_settings')
                 ->where('tenant_id', $tenantId)
-                ->where('store_id', 1)
                 ->first();
 
-            $requiresClosingChecklist = $closingSettings ? (bool)$closingSettings->require_closing_checklist : true;
+            $requiresClosingChecklist = $closingSettings ? (bool)$closingSettings->require_closing_checklist : false;
 
             if ($requiresClosingChecklist) {
                 $hasCompletedChecklist = \DB::table('store_opening_events')
                     ->where('tenant_id', $tenantId)
-                    ->where('store_id', 1)
-                    ->where('employee_id', $user->id)
                     ->where('event_type', 'closing_checklist')
                     ->where('event_status', 'success')
-                    ->whereDate('event_time', $date)
+                    ->where('event_time', '>=', now()->subHours(24))
                     ->exists();
 
                 if (!$hasCompletedChecklist) {

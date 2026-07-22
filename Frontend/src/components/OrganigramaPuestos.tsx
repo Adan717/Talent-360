@@ -37,9 +37,16 @@ import '@xyflow/react/dist/style.css';
 // borra conexiones — así no hace falta guardar coordenadas x/y en la base de datos.
 
 const NODE_WIDTH = 260;
-const NODE_HEIGHT = 130;
+// NODE_HEIGHT es solo la altura usada para el CÁLCULO del layout (separación entre filas del
+// árbol). Ahora que cada tarjeta puede mostrar varias fichas de colaboradores, la altura visual
+// real puede variar; para no tener que recalcular el árbol dinámicamente, la lista de
+// colaboradores dentro de la tarjeta tiene scroll interno con una altura máxima (ver
+// COLLAB_LIST_MAX_H más abajo) para que la tarjeta nunca crezca más allá de lo que este valor
+// contempla y así no se encime con la fila de abajo.
+const NODE_HEIGHT = 230;
+const COLLAB_LIST_MAX_H = 150;
 const H_GAP = 36;
-const V_GAP = 110;
+const V_GAP = 120;
 
 const LEVEL_BADGES: Record<number, { text: string; bg: string; border: string }> = {
   1: { text: '👑 Dirección', bg: 'bg-amber-100 text-amber-800 border-amber-200', border: 'border-amber-400' },
@@ -165,14 +172,42 @@ function layoutForest(forest: PuestoTreeNode[]): { nodes: Node[]; edges: Edge[] 
 
 function PuestoNode({ data }: NodeProps) {
   const role = (data as any).role;
-  const collaboratorCount = (data as any).collaboratorCount || 0;
+  const collaborators: any[] = (data as any).collaborators || [];
+  const readOnly: boolean = !!(data as any).readOnly;
+  const onCollaboratorDrop: ((employeeId: number, targetRoleId: number) => void | Promise<void>) | undefined =
+    (data as any).onCollaboratorDrop;
   const level = role.nivel_mando ?? 4;
   const levelInfo = LEVEL_BADGES[level] || LEVEL_BADGES[4];
   const isActive = role.is_active !== false;
+  const [isDropTarget, setIsDropTarget] = useState(false);
 
   return (
     <div
-      className={`bg-white border-2 rounded-2xl px-4 py-3 text-center shadow-sm ${levelInfo.border} ${!isActive ? 'opacity-60' : ''}`}
+      onDragOver={(e) => {
+        if (readOnly || !onCollaboratorDrop) return;
+        // Solo reaccionamos si lo que se arrastra es una ficha de colaborador (marcada más abajo
+        // con type='collaborator'); así no interferimos con el propio sistema de arrastre de
+        // conexiones de React Flow, que no usa el HTML5 Drag and Drop nativo.
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (!isDropTarget) setIsDropTarget(true);
+      }}
+      onDragLeave={() => {
+        if (isDropTarget) setIsDropTarget(false);
+      }}
+      onDrop={(e) => {
+        setIsDropTarget(false);
+        if (readOnly || !onCollaboratorDrop) return;
+        const draggedType = e.dataTransfer.getData('type');
+        if (draggedType !== 'collaborator') return;
+        e.preventDefault();
+        const employeeId = Number(e.dataTransfer.getData('text/plain'));
+        if (!employeeId) return;
+        onCollaboratorDrop(employeeId, role.id);
+      }}
+      className={`bg-white border-2 rounded-2xl px-4 py-3 text-center shadow-sm transition-all ${levelInfo.border} ${
+        !isActive ? 'opacity-60' : ''
+      } ${isDropTarget ? 'ring-4 ring-indigo-400/40 border-dashed border-indigo-500 bg-indigo-50/50 scale-[1.03]' : ''}`}
       style={{ width: NODE_WIDTH }}
     >
       {/* Handle superior: se usa para ARRASTRAR desde este puesto hacia su superior (el puesto
@@ -188,13 +223,46 @@ function PuestoNode({ data }: NodeProps) {
       <div className="font-black text-xs text-slate-800 uppercase tracking-widest mt-2 mb-1 truncate" title={role.name}>
         {role.name}
       </div>
-      <div className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-1">
+      <div className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">
         {role.area || 'General'}
       </div>
-      <div className="text-[10px] font-bold text-slate-500 mt-1">
-        {collaboratorCount > 0 ? `👥 ${collaboratorCount} colaborador${collaboratorCount === 1 ? '' : 'es'}` : '🕳️ Vacante / Sin asignar'}
+
+      <div className="space-y-1.5 overflow-y-auto pr-0.5 nodrag nowheel" style={{ maxHeight: COLLAB_LIST_MAX_H }}>
+        {collaborators.length > 0 ? (
+          collaborators.map((c: any) => (
+            <div
+              key={c.id}
+              draggable={!readOnly}
+              onDragStart={(e) => {
+                if (readOnly) return;
+                e.stopPropagation();
+                e.dataTransfer.setData('type', 'collaborator');
+                e.dataTransfer.setData('text/plain', String(c.id));
+              }}
+              className={`flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-xl text-left select-none ${
+                readOnly ? '' : 'cursor-grab active:cursor-grabbing hover:bg-indigo-50/50 hover:border-indigo-100'
+              }`}
+              title={readOnly ? c.name : `Arrastra a otro puesto para reasignar a ${c.name}`}
+            >
+              <img
+                src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`}
+                alt={c.name}
+                className="w-6 h-6 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+                draggable={false}
+              />
+              <div className="overflow-hidden">
+                <div className="text-[10px] font-black text-slate-800 truncate leading-tight">{c.name}</div>
+                {c.email && <div className="text-[8px] font-medium text-slate-400 truncate">{c.email}</div>}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-[10px] font-bold italic text-slate-400 bg-slate-50 border border-dashed border-slate-200 py-2 rounded-xl">
+            🕳️ Vacante / Sin asignar
+          </div>
+        )}
       </div>
-      {!isActive && <div className="text-[9px] font-bold text-rose-500 mt-1">Inactivo</div>}
+      {!isActive && <div className="text-[9px] font-bold text-rose-500 mt-1.5">Inactivo</div>}
     </div>
   );
 }
@@ -207,17 +275,28 @@ interface OrganigramaPuestosProps {
   readOnly?: boolean;
   onUpdateRole: (roleId: number, patch: Record<string, any>) => void | Promise<void>;
   onNodeClick?: (role: any) => void;
+  /** Reasigna a un colaborador a otro puesto — se dispara al soltar su ficha sobre otra tarjeta. */
+  onCollaboratorDrop?: (employeeId: number, targetRoleId: number) => void | Promise<void>;
 }
 
-function OrganigramaPuestosInner({ jobRoles, employees, readOnly, onUpdateRole, onNodeClick }: OrganigramaPuestosProps) {
+function OrganigramaPuestosInner({
+  jobRoles,
+  employees,
+  readOnly,
+  onUpdateRole,
+  onNodeClick,
+  onCollaboratorDrop,
+}: OrganigramaPuestosProps) {
   const [connectMode, setConnectMode] = useState<'jerarquia' | 'reporta_a'>('jerarquia');
 
-  const employeeCountByRole = useMemo(() => {
-    const map = new Map<number, number>();
+  const employeesByRole = useMemo(() => {
+    const map = new Map<number, any[]>();
     employees
       .filter((e: any) => e.is_active_employee !== false && e.job_role_id)
       .forEach((e: any) => {
-        map.set(e.job_role_id, (map.get(e.job_role_id) || 0) + 1);
+        const list = map.get(e.job_role_id) || [];
+        list.push(e);
+        map.set(e.job_role_id, list);
       });
     return map;
   }, [employees]);
@@ -226,10 +305,12 @@ function OrganigramaPuestosInner({ jobRoles, employees, readOnly, onUpdateRole, 
     const forest = buildForest(jobRoles);
     const { nodes, edges } = layoutForest(forest);
     nodes.forEach((n) => {
-      (n.data as any).collaboratorCount = employeeCountByRole.get(Number(n.id)) || 0;
+      (n.data as any).collaborators = employeesByRole.get(Number(n.id)) || [];
+      (n.data as any).readOnly = !!readOnly;
+      (n.data as any).onCollaboratorDrop = onCollaboratorDrop;
     });
     return { nodes, edges };
-  }, [jobRoles, employeeCountByRole]);
+  }, [jobRoles, employeesByRole, readOnly, onCollaboratorDrop]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
@@ -382,6 +463,7 @@ function OrganigramaPuestosInner({ jobRoles, employees, readOnly, onUpdateRole, 
           {connectMode === 'jerarquia'
             ? 'Arrastra desde el punto superior de un puesto hasta el punto inferior de su jefe visual (línea sólida). Clic en una línea para quitarla.'
             : 'Arrastra desde el punto superior de un puesto hasta el punto inferior de cada supervisor operativo (línea punteada, puede haber varias). Clic en una línea para quitarla.'}
+          {' '}Arrastra la ficha de un colaborador y suéltala sobre otra tarjeta para cambiarlo de puesto.
         </Panel>
       </ReactFlow>
     </div>

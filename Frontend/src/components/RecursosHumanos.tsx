@@ -2081,6 +2081,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 readOnly={readOnly}
                 onUpdateRole={handleUpdateRoleFromChart}
                 onNodeClick={handleNodeClick}
+                onCollaboratorDrop={handleCollaboratorRoleDrop}
               />
             ) : (
               <div className="space-y-6">

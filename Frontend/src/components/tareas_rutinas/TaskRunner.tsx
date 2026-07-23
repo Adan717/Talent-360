@@ -10,6 +10,7 @@ import type { Task, TaskAssignment } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import axiosInstance from '../../lib/axios';
+import TaskEvidenceCapture from './TaskEvidenceCapture';
 
 // Componente para tarjeta de tarea unificada (Ficha de Tarea)
 export interface FichaTareaProps {
@@ -241,6 +242,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [localInput, setLocalInput] = useState('');
     const [photoDone, setPhotoDone] = useState(false);
+    // §35: captura real de cámara para evidencia_foto (reemplaza el stub anterior). Guarda
+    // el id de la asignación que está capturando en este momento (null = modal cerrado).
+    const [capturingEvidenceFor, setCapturingEvidenceFor] = useState<string | null>(null);
+    const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
     
     // Modal de creación de tareas
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -731,6 +736,77 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         setNewPriority(parsedPriority);
         setNewTargetRole(parsedRoleId);
         showToast("Asistente IA completó el formulario", "success");
+    };
+
+    // §35: completar una tarea con evidencia — si la tarea usa validationMode: 'ai_comparison'
+    // (solo aplica a assistantType 'evidencia_foto'), se manda la foto real a
+    // POST /task-assignments/{id}/ai-validate en vez de completar localmente; el backend ya
+    // resuelve ahí la curva de antigüedad (nuevos: siempre humano) y, si le toca IA, compara
+    // contra las imágenes de referencia con Gemini. Para el resto de asistentes (número/texto)
+    // o evidencia_foto sin ai_comparison, se conserva el flujo local de siempre (completeTask).
+    const submitTaskEvidence = async (assignmentId: string, task: Task, evidenceValue: string) => {
+        const isAiMode = task.assistantType === 'evidencia_foto' && task.validationMode === 'ai_comparison' && task.aiComparisonEnabled;
+
+        if (!isAiMode) {
+            completeTask(assignmentId, globalSimTime, evidenceValue || undefined);
+            const basePts = task.points || 10;
+            const coins = Number((basePts * 0.1).toFixed(2));
+            setCelebration({ coins, xp: basePts, title: task.title });
+            setWalletData(prev => ({
+                ...prev,
+                balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
+                xp_points: prev.xp_points + basePts
+            }));
+            showToast(task.assistantType === 'ninguno' ? '¡Tarea completada!' : 'Evidencia guardada y completada', 'success');
+            return true;
+        }
+
+        setEvidenceSubmitting(true);
+        try {
+            const res = await axiosInstance.post(`/task-assignments/${assignmentId}/ai-validate`, {
+                evidence_photo_base64: evidenceValue
+            });
+            const status = res.data?.status;
+            const reviewedBy = res.data?.reviewed_by;
+            const aiResult = res.data?.ai_result || null;
+
+            useTaskStore.setState(state => ({
+                assignments: state.assignments.map(a => a.id === assignmentId ? {
+                    ...a,
+                    status: status === 'completed' ? 'completed' : 'awaiting_validation',
+                    assistantData: evidenceValue,
+                    aiValidationResult: aiResult,
+                    validationFeedback: status === 'awaiting_validation'
+                        ? (aiResult?.reasoning || (reviewedBy === 'ai_unavailable' ? 'Validación por IA no disponible en este momento; enviado a revisión humana.' : null))
+                        : null
+                } : a)
+            }));
+
+            if (status === 'completed') {
+                const basePts = task.points || 10;
+                const coins = Number((basePts * 0.1).toFixed(2));
+                setCelebration({ coins, xp: basePts, title: task.title });
+                setWalletData(prev => ({
+                    ...prev,
+                    balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
+                    xp_points: prev.xp_points + basePts
+                }));
+                showToast('La IA validó tu evidencia. ¡Tarea completada!', 'success');
+            } else if (reviewedBy === 'ai_unavailable') {
+                showToast('IA no disponible en este momento; se envió a revisión de tu supervisor.', 'warning');
+            } else if (reviewedBy === 'human_spotcheck') {
+                showToast('Enviado a revisión de tu supervisor (verificación aleatoria).', 'info');
+            } else {
+                showToast('La IA no encontró coincidencia con la referencia; tu supervisor lo revisará.', 'warning');
+            }
+            return true;
+        } catch (e) {
+            console.error('Fallo la validación por IA:', e);
+            showToast('No se pudo validar la evidencia. Intenta de nuevo.', 'warning');
+            return false;
+        } finally {
+            setEvidenceSubmitting(false);
+        }
     };
 
     // Acciones de Validación de Supervisor
@@ -1637,11 +1713,15 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                             <p className="text-[10px] font-black text-indigo-800 flex items-center gap-1"><Bot size={12} className="text-[#8a2be2]" /> {t.assistantPrompt || 'Asistente de evidencia'}</p>
                                                             {t.assistantType === 'evidencia_foto' && (
                                                                 !photoDone ? (
-                                                                    <button type="button" onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }} className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-700 rounded-lg border border-indigo-150 text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer">
+                                                                    <button type="button" onClick={() => setCapturingEvidenceFor(a.id)} className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-700 rounded-lg border border-indigo-150 text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer">
                                                                         <Camera size={12} /> Capturar foto de evidencia
                                                                     </button>
                                                                 ) : (
-                                                                    <div className="flex items-center gap-1.5 text-emerald-700 text-[10.5px] font-bold"><Check size={12} /> Evidencia lista</div>
+                                                                    <div className="flex items-center gap-1.5 text-emerald-700 text-[10.5px] font-bold">
+                                                                        <img src={localInput} alt="Evidencia" className="w-6 h-6 rounded object-cover border border-emerald-200" />
+                                                                        <Check size={12} /> Evidencia lista
+                                                                        <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
+                                                                    </div>
                                                                 )
                                                             )}
                                                             {t.assistantType === 'captura_numero' && (
@@ -1655,31 +1735,25 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
 
                                                     <button
                                                         type="button"
-                                                        disabled={showAssistantHere && t.assistantType !== 'evidencia_foto' && !localInput.trim()}
-                                                        onClick={() => {
+                                                        disabled={showAssistantHere && (
+                                                            (t.assistantType === 'evidencia_foto' && !photoDone) ||
+                                                            (t.assistantType !== 'evidencia_foto' && t.assistantType !== 'ninguno' && !localInput.trim())
+                                                        ) || evidenceSubmitting}
+                                                        onClick={async () => {
                                                             const stepKey = `${currentStep.step_number}_${currentStep.title}`;
                                                             if (showAssistantHere) {
                                                                 // Último paso y requiere evidencia: aquí sí se completa la tarea de verdad,
                                                                 // no solo se avanza el paso — evita el hueco de "todos los pasos marcados
                                                                 // pero la asignación nunca pasó a completed/awaiting_validation".
-                                                                completeTask(a.id, globalSimTime, localInput || undefined);
-                                                                const basePts = t.points || 10;
-                                                                const coins = Number((basePts * 0.1).toFixed(2));
-                                                                setCelebration({ coins, xp: basePts, title: t.title });
-                                                                setWalletData(prev => ({
-                                                                    ...prev,
-                                                                    balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
-                                                                    xp_points: prev.xp_points + basePts
-                                                                }));
-                                                                showToast("¡Tarea completada!", 'success');
-                                                                handleSelectAssignment(null);
+                                                                const ok = await submitTaskEvidence(a.id, t, localInput);
+                                                                if (ok) handleSelectAssignment(null);
                                                             } else {
                                                                 markStepDone(a.id, stepKey, activeStepIndex + 1);
                                                             }
                                                         }}
                                                         className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10.5px] font-black cursor-pointer border-none"
                                                     >
-                                                        {showAssistantHere ? 'Completar tarea' : 'Marcar paso listo'}
+                                                        {showAssistantHere ? (evidenceSubmitting ? 'Validando…' : 'Completar tarea') : 'Marcar paso listo'}
                                                     </button>
                                                 </div>
                                             ) : (
@@ -1960,25 +2034,26 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                          {t.assistantType === 'evidencia_foto' && (
                                                              <div className="space-y-2">
                                                                  {!photoDone ? (
-                                                                     <button 
+                                                                     <button
                                                                          type="button"
-                                                                         onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }}
+                                                                         onClick={() => setCapturingEvidenceFor(a.id)}
                                                                          className="w-full py-2.5 bg-white hover:bg-slate-50 text-indigo-805 rounded-xl border border-indigo-200 text-[10px] font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                                                                      >
                                                                          <Camera size={13} /> Capturar Foto de Evidencia
                                                                      </button>
                                                                  ) : (
                                                                      <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-[11px]">
-                                                                         <Check size={13} className="text-emerald-600 font-black" />
-                                                                         <span className="font-bold truncate">evidencia_checador_foto.jpg</span>
-                                                                         <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer">Cambiar</button>
+                                                                         <img src={localInput} alt="Evidencia" className="w-7 h-7 rounded object-cover border border-emerald-200 shrink-0" />
+                                                                         <Check size={13} className="text-emerald-600 font-black shrink-0" />
+                                                                         <span className="font-bold truncate">Evidencia capturada</span>
+                                                                         <button type="button" onClick={() => { setPhotoDone(false); setLocalInput(''); }} className="ml-auto text-[9.5px] font-black underline text-slate-500 hover:text-slate-700 border-none bg-transparent cursor-pointer shrink-0">Cambiar</button>
                                                                      </div>
                                                                  )}
                                                              </div>
                                                          )}
 
                                                          {t.assistantType === 'captura_numero' && (
-                                                             <input 
+                                                             <input
                                                                  type="number"
                                                                  value={localInput}
                                                                  onChange={e => setLocalInput(e.target.value)}
@@ -1988,7 +2063,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                          )}
 
                                                          {t.assistantType === 'texto' && (
-                                                             <input 
+                                                             <input
                                                                  type="text"
                                                                  value={localInput}
                                                                  onChange={e => setLocalInput(e.target.value)}
@@ -1997,27 +2072,20 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                              />
                                                          )}
 
-                                                         <button 
+                                                         <button
                                                              type="button"
-                                                             onClick={() => {
+                                                             onClick={async () => {
                                                                  if (!localInput.trim()) return;
-                                                                 completeTask(a.id, globalSimTime, localInput);
-                                                                 const basePts = t.points || 10;
-                                                                 const coins = Number((basePts * 0.1).toFixed(2));
-                                                                 setCelebration({ coins, xp: basePts, title: t.title });
-                                                                 setWalletData(prev => ({
-                                                                     ...prev,
-                                                                     balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
-                                                                     xp_points: prev.xp_points + basePts
-                                                                 }));
-                                                                 showToast("Evidencia guardada y completada", 'success');
-                                                                 addMatrixEvent('✅ Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
-                                                                 handleSelectAssignment(null);
+                                                                 const ok = await submitTaskEvidence(a.id, t, localInput);
+                                                                 if (ok) {
+                                                                     addMatrixEvent('✅ Asistente completado', `Tarea "${t.title}" con reporte: ${localInput}`, 'success', currentUser.id);
+                                                                     handleSelectAssignment(null);
+                                                                 }
                                                              }}
-                                                             disabled={!localInput}
+                                                             disabled={!localInput || evidenceSubmitting}
                                                              className="w-full py-2 bg-indigo-650 disabled:bg-slate-100 disabled:text-slate-400 hover:bg-indigo-755 text-white rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer border-none"
                                                          >
-                                                             Enviar Evidencia y Completar
+                                                             {evidenceSubmitting ? 'Validando…' : 'Enviar Evidencia y Completar'}
                                                          </button>
                                                      </div>
                                                  )}
@@ -2108,6 +2176,24 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* §35: captura real de cámara para evidencia_foto — reemplaza el stub anterior */}
+            {capturingEvidenceFor && (
+                <TaskEvidenceCapture
+                    title={(() => {
+                        const capturingAssignment = assignments.find(a => a.id === capturingEvidenceFor);
+                        const capturingTask = capturingAssignment ? tasks.find(t => t.id === capturingAssignment.taskId) : null;
+                        return capturingTask?.assistantPrompt || capturingTask?.title || 'Evidencia Fotográfica de la Tarea';
+                    })()}
+                    submitting={evidenceSubmitting}
+                    onCancel={() => setCapturingEvidenceFor(null)}
+                    onCapture={(dataUrl) => {
+                        setPhotoDone(true);
+                        setLocalInput(dataUrl);
+                        setCapturingEvidenceFor(null);
+                    }}
+                />
             )}
         </div>
     );

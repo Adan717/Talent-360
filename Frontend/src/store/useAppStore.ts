@@ -626,7 +626,11 @@ export const useAppStore = create<AppState>((set, get) => ({
                validationCriteria: typeof t.validation_criteria === 'string' ? JSON.parse(t.validation_criteria) : (t.validation_criteria || []),
                frequency: t.frequency,
                evidenceType: t.evidence_type,
-               is_validated: t.is_validated
+               is_validated: t.is_validated,
+               // §35: modo de validación "Comparación (IA)" — solo aplica a assistantType 'evidencia_foto'.
+               aiComparisonEnabled: t.ai_comparison_enabled ? true : false,
+               aiReferenceImages: typeof t.ai_reference_images === 'string' ? JSON.parse(t.ai_reference_images) : (t.ai_reference_images || []),
+               aiToleranceDescription: t.ai_tolerance_description ?? null
            }));
            useTaskStore.getState().setTasks(camelCaseTasks);
         }
@@ -661,7 +665,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                // undefined, mostraba el historial completo de TODOS los días como si fuera el de hoy.
                date: a.date,
                pointsAwarded: a.points_awarded,
-               origin: a.origin || 'planned'
+               origin: a.origin || 'planned',
+               aiValidationResult: typeof a.ai_validation_result === 'string' ? JSON.parse(a.ai_validation_result) : (a.ai_validation_result || null)
            }));
            useTaskStore.getState().setAssignments(camelCaseAssignments);
         }

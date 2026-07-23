@@ -38,10 +38,10 @@ export interface Task {
     assistantPrompt?: string; // Ej: "¿Cuántas mermas hubo?"
     isAutoCapture: boolean;
     historicalMins: number[]; // Para calcular el promedio de autocaptura
-    validationMode?: 'forced' | 'auto' | 'dynamic';
+    validationMode?: 'forced' | 'auto' | 'dynamic' | 'ai_comparison';
     canBeDoneSitting?: boolean;
     scheduledTime?: string | null;
-    
+
     // Nuevas propiedades ricas alineadas con Obsidian
     frequency?: string;
     evidenceType?: string;
@@ -52,6 +52,14 @@ export interface Task {
     // academy_courses, que es donde vive video_url — no hay tabla de lecciones aparte).
     academyLessonId?: number | null;
     academyLessonVideoUrl?: string | null;
+
+    // §35: modo de validación "Comparación (IA)" — solo tiene sentido si
+    // assistantType === 'evidencia_foto'. El admin sube 3-5 imágenes de referencia +
+    // una descripción de tolerancia al configurar la tarea; el backend usa Gemini para
+    // comparar la evidencia del empleado contra esas referencias en POST /task-assignments/{id}/ai-validate.
+    aiComparisonEnabled?: boolean;
+    aiReferenceImages?: string[]; // data URLs base64, 3-5
+    aiToleranceDescription?: string | null;
 }
 
 export interface Routine {
@@ -90,6 +98,9 @@ export interface TaskAssignment {
     // pendiente de un día anterior que se retomó hoy, 'extra' = agregada fuera de esa
     // ventana (creación ad-hoc durante el día), 'routine' = generada por una rutina.
     origin?: 'planned' | 'carried_over' | 'extra' | 'routine';
+    // §35: resultado guardado por POST /task-assignments/{id}/ai-validate, para que el
+    // supervisor pueda auditar después por qué la IA aprobó/rechazó una entrega.
+    aiValidationResult?: { match: boolean; confidence?: number; reasoning?: string } | null;
 }
 
 interface TaskStoreState {

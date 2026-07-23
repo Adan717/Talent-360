@@ -108,8 +108,11 @@ export function PanelTareasRutinas() {
     const [newTaskAutoCap, setNewTaskAutoCap] = useState(false);
     const [newTaskAssistant, setNewTaskAssistant] = useState<'ninguno'|'evidencia_foto'|'captura_numero'|'texto'>('ninguno');
     const [newTaskPrompt, setNewTaskPrompt] = useState('');
-    const [newTaskValidationMode, setNewTaskValidationMode] = useState<'forced'|'auto'|'dynamic'>('forced');
+    const [newTaskValidationMode, setNewTaskValidationMode] = useState<'forced'|'auto'|'dynamic'|'ai_comparison'>('forced');
     const [newTaskCanBeDoneSitting, setNewTaskCanBeDoneSitting] = useState(false);
+    // §35: modo de validación "Comparación (IA)" — solo válido junto con assistantType 'evidencia_foto'.
+    const [newTaskAiReferenceImages, setNewTaskAiReferenceImages] = useState<string[]>([]);
+    const [newTaskAiTolerance, setNewTaskAiTolerance] = useState('');
     // null = usar la detección automática por título; un valor = el usuario la corrigió a mano
     const [newTaskCategoryOverride, setNewTaskCategoryOverride] = useState<Task['category'] | null>(null);
 
@@ -233,6 +236,8 @@ export function PanelTareasRutinas() {
         setNewTaskExecutorRoleId(0);
         setNewTaskScheduledTime('');
         setNewTaskAcademyLessonId('');
+        setNewTaskAiReferenceImages([]);
+        setNewTaskAiTolerance('');
         setCreatorStep(1);
         setAiQuickInput('');
 
@@ -266,6 +271,8 @@ export function PanelTareasRutinas() {
         setNewTaskExecutorRoleId(t.targetType === 'role' ? Number(t.targetId) : 0);
         setNewTaskScheduledTime((t as any).scheduledTime || '');
         setNewTaskAcademyLessonId((t as any).academyLessonId || '');
+        setNewTaskAiReferenceImages((t as any).aiReferenceImages || []);
+        setNewTaskAiTolerance((t as any).aiToleranceDescription || '');
         setCreatorStep(1);
 
         setCreatorMode('tarea');
@@ -312,7 +319,10 @@ export function PanelTareasRutinas() {
                 targetId,
                 category,
                 scheduledTime: newTaskScheduledTime || null,
-                academyLessonId: newTaskAcademyLessonId || null
+                academyLessonId: newTaskAcademyLessonId || null,
+                aiComparisonEnabled: newTaskValidationMode === 'ai_comparison' && newTaskAssistant === 'evidencia_foto',
+                aiReferenceImages: newTaskAiReferenceImages,
+                aiToleranceDescription: newTaskAiTolerance || null
             });
         } else {
             addTask({
@@ -336,7 +346,10 @@ export function PanelTareasRutinas() {
                 frequency: newTaskFrequency,
                 evidenceType: newTaskEvidenceType,
                 scheduledTime: newTaskScheduledTime || null,
-                academyLessonId: newTaskAcademyLessonId || null
+                academyLessonId: newTaskAcademyLessonId || null,
+                aiComparisonEnabled: newTaskValidationMode === 'ai_comparison' && newTaskAssistant === 'evidencia_foto',
+                aiReferenceImages: newTaskAiReferenceImages,
+                aiToleranceDescription: newTaskAiTolerance || null
             });
         }
         setShowCreator(false);
@@ -352,6 +365,8 @@ export function PanelTareasRutinas() {
         setNewTaskCategoryOverride(null);
         setNewTaskScheduledTime('');
         setNewTaskAcademyLessonId('');
+        setNewTaskAiReferenceImages([]);
+        setNewTaskAiTolerance('');
         setCreatorStep(1);
         setEditingTask(null);
     };
@@ -889,11 +904,12 @@ export function PanelTareasRutinas() {
                                         {/* Modo de Supervisión */}
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-2">Modo de Supervisión</label>
-                                            <div className="grid grid-cols-3 gap-2">
+                                            <div className={`grid gap-2 ${newTaskAssistant === 'evidencia_foto' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
                                                 {([
                                                     { value: 'forced' as const, label: 'Forzosa', hint: 'Siempre valida', Icon: Lock },
                                                     { value: 'auto' as const, label: 'Automática', hint: 'Auto-aprueba', Icon: Rocket },
                                                     { value: 'dynamic' as const, label: 'Dinámica', hint: 'Por antigüedad', Icon: Brain },
+                                                    ...(newTaskAssistant === 'evidencia_foto' ? [{ value: 'ai_comparison' as const, label: 'Comparación (IA)', hint: 'IA revisa la foto', Icon: Bot }] : []),
                                                 ]).map(opt => {
                                                     const active = newTaskValidationMode === opt.value;
                                                     return (
@@ -914,12 +930,78 @@ export function PanelTareasRutinas() {
                                                     );
                                                 })}
                                             </div>
+                                            {newTaskValidationMode === 'ai_comparison' && newTaskAssistant !== 'evidencia_foto' && (
+                                                <p className="text-[10px] text-amber-600 font-bold mt-1.5">La Comparación (IA) requiere que el Mini-Asistente sea "Evidencia Fotográfica" (más abajo).</p>
+                                            )}
                                         </div>
+
+                                        {/* Configuración de Comparación (IA): imágenes de referencia + tolerancia */}
+                                        {newTaskValidationMode === 'ai_comparison' && newTaskAssistant === 'evidencia_foto' && (
+                                            <div className="p-4 sm:p-5 bg-indigo-50/50 rounded-2xl border border-indigo-200 space-y-3">
+                                                <label className="text-sm font-bold text-indigo-900 flex items-center gap-2"><Bot size={16} /> Imágenes de Referencia (3-5)</label>
+                                                <p className="text-[10px] text-indigo-600">La IA comparará la foto del empleado contra estas imágenes al completar la tarea.</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {newTaskAiReferenceImages.map((img, idx) => (
+                                                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-indigo-200">
+                                                            <img src={img} alt={`Referencia ${idx + 1}`} className="w-full h-full object-cover" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setNewTaskAiReferenceImages(prev => prev.filter((_, i) => i !== idx))}
+                                                                className="absolute top-0 right-0 w-4 h-4 bg-rose-600 text-white rounded-bl-md flex items-center justify-center text-[9px] border-none cursor-pointer"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {newTaskAiReferenceImages.length < 5 && (
+                                                        <label className="w-16 h-16 rounded-lg border-2 border-dashed border-indigo-300 flex items-center justify-center cursor-pointer hover:bg-indigo-100/40 text-indigo-500 text-xl font-black">
+                                                            +
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                multiple
+                                                                className="hidden"
+                                                                onChange={(e) => {
+                                                                    const files = Array.from(e.target.files || []);
+                                                                    const remaining = 5 - newTaskAiReferenceImages.length;
+                                                                    files.slice(0, remaining).forEach(file => {
+                                                                        const reader = new FileReader();
+                                                                        reader.onload = () => {
+                                                                            setNewTaskAiReferenceImages(prev => prev.length < 5 ? [...prev, reader.result as string] : prev);
+                                                                        };
+                                                                        reader.readAsDataURL(file);
+                                                                    });
+                                                                    e.target.value = '';
+                                                                }}
+                                                            />
+                                                        </label>
+                                                    )}
+                                                </div>
+                                                {newTaskAiReferenceImages.length > 0 && newTaskAiReferenceImages.length < 3 && (
+                                                    <p className="text-[10px] text-amber-600 font-bold">Se recomiendan al menos 3 imágenes para una comparación confiable.</p>
+                                                )}
+                                                <label className="text-sm font-bold text-indigo-900 block mt-2">Descripción de Tolerancia</label>
+                                                <textarea
+                                                    value={newTaskAiTolerance}
+                                                    onChange={e => setNewTaskAiTolerance(e.target.value)}
+                                                    rows={2}
+                                                    placeholder='Ej: "Debe haber al menos 8 de las 10 piezas visibles en el anaquel"'
+                                                    className="w-full p-3 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-white"
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Mini-Asistente */}
                                         <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
                                             <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2"><Bot size={18} className="text-blue-600"/> Mini-Asistente Acoplado</label>
-                                            <select value={newTaskAssistant} onChange={e => setNewTaskAssistant(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3 bg-white mt-2 text-sm">
+                                            <select value={newTaskAssistant} onChange={e => {
+                                                const val = e.target.value as any;
+                                                setNewTaskAssistant(val);
+                                                // La Comparación (IA) solo tiene sentido con evidencia fotográfica.
+                                                if (val !== 'evidencia_foto' && newTaskValidationMode === 'ai_comparison') {
+                                                    setNewTaskValidationMode('forced');
+                                                }
+                                            }} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3 bg-white mt-2 text-sm">
                                                 <option value="ninguno">Ninguno</option>
                                                 <option value="evidencia_foto">Evidencia Fotográfica</option>
                                                 <option value="captura_numero">Captura de Cantidad / Número</option>

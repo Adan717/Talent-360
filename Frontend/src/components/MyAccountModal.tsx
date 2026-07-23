@@ -40,6 +40,16 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
   const [avatar, setAvatar] = useState(currentUser?.avatar || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  // §38: asistente de Academia (video antes de iniciar una tarea vinculada). Bloqueado
+  // encendido mientras el empleado esté en su ventana de nuevo ingreso (<30 días).
+  const [academyAssistantEnabled, setAcademyAssistantEnabled] = useState(
+    currentUser?.clock_preferences?.academy_assistant_enabled !== false
+  );
+  const isNewHireForAcademyToggle = (() => {
+    if (!currentUser?.hire_date) return false;
+    const days = Math.floor((Date.now() - new Date(currentUser.hire_date).getTime()) / 86400000);
+    return days >= 0 && days < 30;
+  })();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -99,6 +109,7 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
     if (isOpen) {
       setName(currentUser?.name || '');
       setAvatar(currentUser?.avatar || '');
+      setAcademyAssistantEnabled(currentUser?.clock_preferences?.academy_assistant_enabled !== false);
       fetchRestDayRequests();
       // Reset success/error states
       setProfileSuccess(false);
@@ -128,9 +139,19 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
     setIsUpdatingProfile(true);
     setProfileSuccess(false);
     try {
-      const res = await axiosInstance.post('/me/update-profile', { name, avatar });
+      // Mientras esté en su ventana de nuevo ingreso, se manda siempre true sin importar
+      // lo que haya marcado — el toggle ya aparece bloqueado en la UI para esos casos.
+      const effectiveAcademyPref = isNewHireForAcademyToggle ? true : academyAssistantEnabled;
+      const res = await axiosInstance.post('/me/update-profile', { name, avatar, academy_assistant_enabled: effectiveAcademyPref });
       const updatedUser = res.data.user;
-      setCurrentUser({ ...updatedUser, system_role: updatedUser.role });
+      setCurrentUser({
+        ...updatedUser,
+        system_role: updatedUser.role,
+        clock_preferences: {
+          ...(updatedUser?.clock_preferences || currentUser?.clock_preferences || {}),
+          academy_assistant_enabled: res.data.academy_assistant_enabled ?? effectiveAcademyPref
+        }
+      });
       setProfileSuccess(true);
       showToast('Perfil actualizado correctamente.');
     } catch (err: any) {
@@ -339,13 +360,34 @@ export const MyAccountModal = ({ isOpen, onClose }: MyAccountModalProps) => {
               {/* Custom Avatar URL */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">O pega una URL de Imagen personalizada</label>
-                <input 
-                  type="url" 
+                <input
+                  type="url"
                   value={avatar}
                   onChange={e => setAvatar(e.target.value)}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium text-slate-800 text-xs"
                   placeholder="https://ejemplo.com/mi-foto.jpg"
                 />
+              </div>
+
+              {/* Asistente de Academia (§38) */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <label className={`flex items-center justify-between gap-3 ${isNewHireForAcademyToggle ? 'opacity-60' : 'cursor-pointer'}`}>
+                  <div className="pr-3">
+                    <span className="font-bold text-slate-800 text-sm flex items-center gap-1.5">🎓 Asistente de Academia</span>
+                    <span className="text-xs text-slate-500 block mt-0.5">
+                      {isNewHireForAcademyToggle
+                        ? 'Activado automáticamente durante tus primeros 30 días.'
+                        : 'Muestra un video antes de iniciar tareas que tengan una lección vinculada.'}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isNewHireForAcademyToggle ? true : academyAssistantEnabled}
+                    disabled={isNewHireForAcademyToggle}
+                    onChange={e => setAcademyAssistantEnabled(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 rounded border-slate-350 shrink-0"
+                  />
+                </label>
               </div>
 
               {/* Form Action */}

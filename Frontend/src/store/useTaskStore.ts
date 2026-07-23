@@ -47,6 +47,11 @@ export interface Task {
     evidenceType?: string;
     validationCriteria?: string[];
     is_validated?: boolean;
+
+    // §38: vínculo con una lección de la Academia (cada "lección" es una fila de
+    // academy_courses, que es donde vive video_url — no hay tabla de lecciones aparte).
+    academyLessonId?: number | null;
+    academyLessonVideoUrl?: string | null;
 }
 
 export interface Routine {

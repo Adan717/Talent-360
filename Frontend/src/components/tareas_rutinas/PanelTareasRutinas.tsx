@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair, Mic, Check, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, Routine, ProcedureStep } from '../../store/useTaskStore';
@@ -121,6 +121,15 @@ export function PanelTareasRutinas() {
     const [newTaskEvidenceType, setNewTaskEvidenceType] = useState('Supervisión directa');
     const [newTaskExecutorRoleId, setNewTaskExecutorRoleId] = useState(0);
     const [newTaskScheduledTime, setNewTaskScheduledTime] = useState('');
+    // §38: vincular la tarea con una lección de la Academia (video antes de empezar).
+    const [newTaskAcademyLessonId, setNewTaskAcademyLessonId] = useState<number | ''>('');
+    const [academyCourses, setAcademyCourses] = useState<{ id: number; title: string }[]>([]);
+
+    useEffect(() => {
+        axiosInstance.get('/academy/courses')
+            .then(res => setAcademyCourses(res.data?.courses || []))
+            .catch(e => console.warn('No se pudo cargar el catálogo de la Academia', e));
+    }, []);
 
     // Constructor de tarea dividido en 4 pasos (antes era una sola pantalla larga con
     // ~11 grupos de campos). 1: Qué y para quién, 2: Cuándo y cuánto, 3: Validación y
@@ -223,6 +232,7 @@ export function PanelTareasRutinas() {
         setNewTaskEvidenceType('Supervisión directa');
         setNewTaskExecutorRoleId(0);
         setNewTaskScheduledTime('');
+        setNewTaskAcademyLessonId('');
         setCreatorStep(1);
         setAiQuickInput('');
 
@@ -255,6 +265,7 @@ export function PanelTareasRutinas() {
         setNewTaskEvidenceType(t.evidenceType || 'Supervisión directa');
         setNewTaskExecutorRoleId(t.targetType === 'role' ? Number(t.targetId) : 0);
         setNewTaskScheduledTime((t as any).scheduledTime || '');
+        setNewTaskAcademyLessonId((t as any).academyLessonId || '');
         setCreatorStep(1);
 
         setCreatorMode('tarea');
@@ -300,7 +311,8 @@ export function PanelTareasRutinas() {
                 targetType,
                 targetId,
                 category,
-                scheduledTime: newTaskScheduledTime || null
+                scheduledTime: newTaskScheduledTime || null,
+                academyLessonId: newTaskAcademyLessonId || null
             });
         } else {
             addTask({
@@ -323,7 +335,8 @@ export function PanelTareasRutinas() {
                 validationCriteria: newTaskValidationCriteria,
                 frequency: newTaskFrequency,
                 evidenceType: newTaskEvidenceType,
-                scheduledTime: newTaskScheduledTime || null
+                scheduledTime: newTaskScheduledTime || null,
+                academyLessonId: newTaskAcademyLessonId || null
             });
         }
         setShowCreator(false);
@@ -338,6 +351,7 @@ export function PanelTareasRutinas() {
         setNewTaskExecutorRoleId(0);
         setNewTaskCategoryOverride(null);
         setNewTaskScheduledTime('');
+        setNewTaskAcademyLessonId('');
         setCreatorStep(1);
         setEditingTask(null);
     };
@@ -914,6 +928,22 @@ export function PanelTareasRutinas() {
                                             {newTaskAssistant !== 'ninguno' && (
                                                 <input value={newTaskPrompt} onChange={e => setNewTaskPrompt(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white" placeholder="¿Qué le preguntará el asistente al empleado?" />
                                             )}
+                                        </div>
+
+                                        {/* Vincular con lección de la Academia: muestra el video antes de que el colaborador empiece */}
+                                        <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                            <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">🎓 Lección de la Academia (opcional)</label>
+                                            <select
+                                                value={newTaskAcademyLessonId}
+                                                onChange={e => setNewTaskAcademyLessonId(e.target.value ? Number(e.target.value) : '')}
+                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white mt-2 text-sm"
+                                            >
+                                                <option value="">Sin lección vinculada</option>
+                                                {academyCourses.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.title}</option>
+                                                ))}
+                                            </select>
+                                            <p className="text-[10px] text-slate-400 mt-2">Antes de iniciar esta tarea, el colaborador verá el video de esa lección — cuenta como progreso real en su Academia.</p>
                                         </div>
                                     </div>
                                     )}

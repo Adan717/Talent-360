@@ -118,6 +118,31 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
     return `${Math.floor(days / 365)} años`;
   };
 
+  // Rendimiento (privilegio de admin): usa assignments/tasks ya sincronizados vía
+  // /sync/state (tenant-wide, no filtrado por usuario — confirmado en ClockController.php)
+  // para calcular tiempo trabajado real vs. estimado por colaborador, sin requerir
+  // cambios de backend. `getMonitorData()` no sirve para esto: solo trae accumulated_mins
+  // de tareas activas y no suma tiempo de tareas ya completadas.
+  const isAdminRole = currentUser?.role === 'admin';
+  const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD local
+
+  const getUserWorkStats = (userId: number) => {
+    const todays = assignments.filter(a => a.userId === userId && (!a.date || a.date === todayStr));
+    const attempted = todays.filter(a => ['completed', 'in_progress', 'paused', 'awaiting_validation', 'omitted'].includes(a.status));
+    let workedMins = 0;
+    let estimatedMins = 0;
+    attempted.forEach(a => {
+      workedMins += a.accumulatedMins || 0;
+      const task = tasks.find(t => t.id === a.taskId);
+      if (task) estimatedMins += task.estimatedMins || 0;
+    });
+    const completedCount = todays.filter(a => a.status === 'completed').length;
+    const efficiencyPct = workedMins > 0
+      ? Math.round((estimatedMins / workedMins) * 100)
+      : (completedCount > 0 ? 100 : null);
+    return { workedMins, estimatedMins, taskCount: todays.length, completedCount, efficiencyPct };
+  };
+
   // Chat States
   const [chatTab, setChatTab] = useState<'chat' | 'feed'>('chat');
   const [chatInput, setChatInput] = useState('');
@@ -1119,7 +1144,40 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                     {monitorData.users.length} En Turno
                   </span>
                 </div>
-                
+
+                {/* Rendimiento (privilegio de admin): ranking de eficiencia real de hoy */}
+                {isAdminRole && monitorData.users.length > 0 && (() => {
+                  const ranked = monitorData.users
+                    .map(u => ({ user: u, stats: getUserWorkStats(u.id) }))
+                    .filter(r => r.stats.efficiencyPct !== null)
+                    .sort((a, b) => (b.stats.efficiencyPct as number) - (a.stats.efficiencyPct as number));
+                  if (ranked.length === 0) return null;
+                  return (
+                    <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-3">
+                      <h4 className="text-[9px] font-black text-indigo-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+                        <BarChart3 size={11} /> Rendimiento del Día (solo admin)
+                      </h4>
+                      <div className="space-y-1">
+                        {ranked.slice(0, 5).map(({ user: u, stats }, i) => (
+                          <div key={u.id} className="flex items-center justify-between text-[10px]">
+                            <span className="flex items-center gap-1.5 text-slate-600 font-bold truncate">
+                              <span className="text-slate-300 font-black w-3 shrink-0">{i + 1}</span>
+                              {u.name}
+                              <span className="text-slate-400 font-medium">· {stats.completedCount} tareas</span>
+                            </span>
+                            <span className={`font-black px-1.5 py-0.5 rounded-md shrink-0 ${
+                              (stats.efficiencyPct as number) >= 100 ? 'bg-emerald-100 text-emerald-700' :
+                              (stats.efficiencyPct as number) >= 80 ? 'bg-slate-100 text-slate-600' : 'bg-rose-100 text-rose-600'
+                            }`}>
+                              {stats.efficiencyPct}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {monitorData.users.map((user) => {
                     const timeEntries = user.time_entries || [];
@@ -1349,12 +1407,39 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               <span>Jornada: {progressPercent}%</span>
                             </div>
                             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
-                              <div 
+                              <div
                                 className={`h-full transition-all duration-500 ${user.status === 'break' ? 'bg-amber-400' : 'bg-blue-600'}`}
                                 style={{ width: `${progressPercent}%` }}
                               ></div>
                             </div>
                           </div>
+
+                          {/* Tiempo trabajado real vs. turno (privilegio de admin) */}
+                          {isAdminRole && (() => {
+                            const stats = getUserWorkStats(user.id);
+                            let shiftMins = 540; // fallback: 9h
+                            if (user.shift_start && user.shift_end) {
+                              const [sh, sm] = user.shift_start.split(':').map(Number);
+                              const [eh, em] = user.shift_end.split(':').map(Number);
+                              const diff = (eh * 60 + em) - (sh * 60 + sm);
+                              if (diff > 0) shiftMins = diff;
+                            }
+                            const workedPercent = Math.min(100, Math.round((stats.workedMins / shiftMins) * 100));
+                            return (
+                              <div className="mt-2">
+                                <div className="flex items-center justify-between text-[9px] text-indigo-400 font-bold">
+                                  <span>Trabajado: {(stats.workedMins / 60).toFixed(1)}h de {(shiftMins / 60).toFixed(1)}h turno</span>
+                                  {stats.efficiencyPct !== null && <span>{stats.efficiencyPct}% efic.</span>}
+                                </div>
+                                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
+                                  <div
+                                    className="h-full bg-indigo-500 transition-all duration-500"
+                                    style={{ width: `${workedPercent}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Tareas del Día del Colaborador */}

@@ -1592,6 +1592,14 @@ Implementé el resto de la tabla de pendientes (§34-§38, §40) en esta misma p
 
 En cuanto me digan esto en el chat (o Francisco decide y me lo pasan), lo implemento en la siguiente pasada de "revisa pendientes del contrato".
 
+## Decisión de Cowork (2026-07-23)
+
+1. **Versión reducida (3 etapas) para arrancar.** Compras/producción/ventas hardcodeado por nombre de puesto en esta primera vuelta — Francisco todavía no me ha detallado el flujo completo de proveedores (visitas de levantar pedido vs. entrega en días distintos, que mencionó que platicaríamos después), así que no tiene sentido invertir en la tabla configurable por tenant antes de saber si el modelo de 3 etapas siquiera cubre lo que necesita.
+2. **Ni por nombre exacto ni un campo nuevo todavía: por eso mismo, prefiero no resolver "el puesto de compras" adivinando por `job_roles.name`** — es exactamente el mismo riesgo multi-tenant que ya corregimos en `PanelTareasRutinas.tsx`/`handleSpillOver` esta semana (ver §8 de mi lado). Si van a hardcodear algo para la v1, que sea contra un campo explícito que el admin configure una vez (ej. `job_roles.department` con valores `compras`/`produccion`/`ventas`/`general`, nullable, sin migrar nada existente) en vez de contra el texto del nombre del puesto — así no depende de que el tenant haya nombrado el puesto exactamente "Compras". Si les parece demasiado para una v1 "reducida", la alternativa que sí aceptaría es que el admin lo configure manualmente por `job_role_id` (un selector de 3 puestos en Configuración) en vez de auto-detectarlo — cualquiera de las dos evita adivinar por nombre.
+3. **`sendToJobRole()` nuevo en `NotificationService`** — consistente con que ya lo mencionan como encapsulado en el servicio, y porque ya es el segundo lugar (después de §34) que necesita "avisar a quien tiene tal `job_role_id`"; mejor un solo lugar que lo resuelva.
+
+Avísenme cuando esté listo y conecto el frontend de la cadena de pedidos.
+
 ---
 
 ## §40. Plan de trabajo diario: origen de la tarea + reporte de cierre

@@ -618,6 +618,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                validationMode: t.validation_mode,
                canBeDoneSitting: t.can_be_done_sitting ? true : false,
                scheduledTime: t.scheduled_time,
+               academyLessonId: t.academy_lesson_id ?? null,
+               academyLessonVideoUrl: t.academy_lesson_video_url ?? null,
                historicalMins: [],
                description: t.description,
                procedureSteps: typeof t.procedure_steps === 'string' ? JSON.parse(t.procedure_steps) : (t.procedure_steps || []),

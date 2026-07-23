@@ -674,7 +674,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     };
 
     // Manejar reanudación de una tarea deteniendo la actual si estuviera activa
-    const handleStartTaskCooperative = (assignmentId: string, isFromPool: boolean) => {
+    const doStartTaskCooperative = (assignmentId: string, isFromPool: boolean) => {
         // Encontrar si hay alguna tarea en progreso para pausarla primero
         const currentActive = activeAssignmentsFiltered.find(a => a.status === 'in_progress');
         if (currentActive) {
@@ -687,6 +687,36 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         } else {
             startTask(assignmentId, globalSimTime);
         }
+    };
+
+    // §38: si la tarea trae una lección de la Academia vinculada, se interpone el video
+    // antes de arrancar. Obligatorio de ver mientras el empleado esté en su ventana de
+    // nuevo ingreso (<30 días, mismo criterio que validation_mode:dynamic) o si nunca lo
+    // ha visto; después queda disponible para repetir pero ya no bloquea.
+    const [pendingStart, setPendingStart] = useState<{ assignmentId: string; isFromPool: boolean } | null>(null);
+    const [academyGateDismissable, setAcademyGateDismissable] = useState(false);
+
+    const academyAssistantEnabled = currentUser?.clock_preferences?.academy_assistant_enabled !== false;
+    const isNewHire = (() => {
+        if (!currentUser?.hire_date) return false;
+        const days = Math.floor((Date.now() - new Date(currentUser.hire_date).getTime()) / 86400000);
+        return days >= 0 && days < 30;
+    })();
+
+    const handleStartTaskCooperative = (assignmentId: string, isFromPool: boolean) => {
+        const a = assignments.find(x => x.id === assignmentId);
+        const t = a ? tasks.find(tsk => tsk.id === a.taskId) : null;
+        const lessonVideoUrl = (t as any)?.academyLessonVideoUrl;
+
+        if (lessonVideoUrl && academyAssistantEnabled) {
+            setPendingStart({ assignmentId, isFromPool });
+            // Obligatorio (no se puede cerrar hasta terminar) solo durante la ventana de
+            // nuevo ingreso; fuera de ella se puede saltar de inmediato para repetirlo
+            // "por si se les olvida" sin que estorbe el flujo del día a día.
+            setAcademyGateDismissable(!isNewHire);
+            return;
+        }
+        doStartTaskCooperative(assignmentId, isFromPool);
     };
 
     return (
@@ -950,6 +980,78 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     )}
                 </button>
             </div>
+
+            {/* Modal de video de la Academia antes de iniciar una tarea vinculada (§38) */}
+            {pendingStart && (() => {
+                const a = assignments.find(x => x.id === pendingStart.assignmentId);
+                const t = a ? tasks.find(tsk => tsk.id === a.taskId) : null;
+                const videoUrl = (t as any)?.academyLessonVideoUrl as string | undefined;
+                const lessonId = (t as any)?.academyLessonId as number | undefined;
+                if (!t || !videoUrl) return null;
+
+                // Además de la tarea, esto es una lección real de la Academia — se marca
+                // como completada ahí para que cuente en gamificación/ascenso, no solo
+                // como un clip aislado dentro del módulo de Tareas.
+                const markLessonSeen = () => {
+                    if (!lessonId) return;
+                    axiosInstance.post(`/academy/courses/${lessonId}/progress`, { status: 'completed' })
+                        .catch(e => console.warn('No se pudo registrar el progreso en la Academia', e));
+                };
+
+                // Controles mínimos: sin marca, sin relacionados, sin pantalla completa,
+                // sin anotaciones — solo play/pausa, como pidió Francisco.
+                const embedUrl = `${videoUrl}${videoUrl.includes('?') ? '&' : '?'}modestbranding=1&rel=0&fs=0&disablekb=1&iv_load_policy=3`;
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in text-left">
+                        <div className="bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 w-full max-w-md">
+                            <h3 className="font-black text-slate-800 text-sm mb-1 flex items-center gap-1.5">
+                                🎓 Antes de empezar: {t.title}
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-3">
+                                {academyGateDismissable
+                                    ? 'Ya la completaste antes — puedes verla de nuevo o continuar directo.'
+                                    : 'Es tu primera vez con esta tarea. Míralo completo antes de empezar.'}
+                            </p>
+                            <div className="rounded-2xl overflow-hidden bg-slate-100 aspect-video mb-4">
+                                <iframe
+                                    src={embedUrl}
+                                    className="w-full h-full border-0"
+                                    allow="autoplay; encrypted-media"
+                                    title={`Lección: ${t.title}`}
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                {academyGateDismissable && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const p = pendingStart;
+                                            setPendingStart(null);
+                                            if (p) doStartTaskCooperative(p.assignmentId, p.isFromPool);
+                                        }}
+                                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl border-none cursor-pointer"
+                                    >
+                                        Saltar video
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        markLessonSeen();
+                                        const p = pendingStart;
+                                        setPendingStart(null);
+                                        if (p) doStartTaskCooperative(p.assignmentId, p.isFromPool);
+                                    }}
+                                    className="flex-1 py-3 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white font-black text-xs rounded-xl border-none cursor-pointer"
+                                >
+                                    Comenzar tarea
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Modal de Historial */}
             {showHistoryModal && (

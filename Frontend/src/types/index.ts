@@ -27,6 +27,9 @@ export interface User {
   esAperturador?: boolean;
   jerarquiaLlaves?: number;
   is_active_employee?: boolean;
+  // §38: preferencias sueltas del empleado (hoy solo academy_assistant_enabled), viven
+  // en employees.clock_preferences (json) del lado backend.
+  clock_preferences?: { academy_assistant_enabled?: boolean; [key: string]: any };
 }
 
 export interface Tenant {

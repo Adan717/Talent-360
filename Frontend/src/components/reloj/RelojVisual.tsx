@@ -2592,13 +2592,18 @@ export default function RelojVisual({
     const closeAnd = (fn: () => void) => () => { setIsFabSheetOpen(false); fn(); };
 
     return (
-      <div className="fixed bottom-24 right-6 z-[80] font-sans" ref={fabMenuRef}>
+      // Posición/tamaño coordinados a mano con la muesca cóncava de MobileBottomNav.tsx
+      // (NOTCH_RADIUS_PX/NOTCH_CENTER_FROM_RIGHT_PX allá) — mismo `right` que la barra (right-2.5)
+      // y bottom ajustado 2px más abajo que la barra (bottom-2.5 vs bottom-3 de la barra) para que,
+      // siendo el botón 4px más alto (68px vs 64px) que la barra, ambos compartan el mismo centro
+      // vertical exacto en vez de quedar descuadrados.
+      <div className="fixed bottom-2.5 right-2.5 z-[80] font-sans" ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"
             aria-label="Menú de Operaciones y Soporte AI"
-            className={`absolute bottom-16 right-0 w-64 max-h-[65vh] overflow-y-auto rounded-2xl shadow-xl border p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 ${
-              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'
+            className={`absolute bottom-24 right-0 w-64 max-h-[65vh] overflow-y-auto rounded-2xl shadow-xl border backdrop-blur-md p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 ${
+              isDark ? 'bg-slate-900/70 border-slate-800' : 'bg-white/70 border-slate-200/80'
             }`}
           >
             {/* Asistencia */}
@@ -2682,7 +2687,7 @@ export default function RelojVisual({
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(prev => !prev)}
-          className="w-14 h-14 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer outline-none"
+          className="w-[68px] h-[68px] bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer outline-none"
           title="Menú de Operaciones y Soporte AI"
         >
           {isFabSheetOpen ? <X size={22} /> : <Sparkles size={22} />}
@@ -3668,7 +3673,7 @@ export default function RelojVisual({
       )}
 
       {/* RENDER OPERATIONAL MODALS FOR MOBILE */}
-      {isScrollableMobile && !isStoreClosed && renderFloatingActionButton()}
+      {isScrollableMobile && renderFloatingActionButton()}
       {isScrollableMobile && renderTaskCreatorModal()}
       {isScrollableMobile && renderCopilotChatDrawer()}
 

@@ -1026,56 +1026,57 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
       </div>
 
-      {/* RENDER MOBILE BOTTOM NAVIGATION */}
+      {/* RENDER MOBILE BOTTOM NAVIGATION + botón flotante único (2026-07-23, mismo tratamiento
+          que RelojVisual.tsx): el botón vive DENTRO de este mismo contenedor con scale(0.85) para
+          que se escale junto con la barra y la muesca cóncava de MobileBottomNav.tsx quede
+          alineada con él sin cálculos aparte. Antes vivía afuera, a la izquierda, para no
+          empalmarse con Herramientas — ya no hace falta, Herramientas se quitó de la barra. */}
       <div style={{ transform: 'scale(0.85)', transformOrigin: 'bottom center' }} className="absolute bottom-0 inset-x-0 z-30 shrink-0">
-        <MobileBottomNav 
-          phoneTab={phoneTab} 
+        <MobileBottomNav
+          phoneTab={phoneTab}
           setPhoneTab={(tab) => {
             if (tier === 'free' && tab !== 'checador') {
               setShowBlockProModal(tab);
             } else {
               setPhoneTab(tab);
             }
-          }} 
-          setInnerTool={setInnerTool} 
-          isDark={isDark} 
+          }}
+          setInnerTool={setInnerTool}
+          isDark={isDark}
           clockState={clockState}
           showCustomAlert={(msg) => console.log('Landing Alert:', msg)}
         />
+
+        <div className="absolute bottom-2.5 right-2.5 z-40">
+          <button
+            type="button"
+            onClick={() => setIsFabSheetOpen(prev => !prev)}
+            className="w-[68px] h-[68px] bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all border-none outline-none cursor-pointer"
+          >
+            {isFabSheetOpen ? <X size={26} /> : <Sparkles size={26} className="text-white" />}
+          </button>
+        </div>
       </div>
 
-      {/* BOTÓN FLOTANTE OPERATIVO (🛠️ Sparkles) - Posicionado a la izquierda para no empalmarse */}
-      <div className="absolute bottom-20 left-4 z-40">
-        <button
-          type="button"
-          onClick={() => setIsFabSheetOpen(true)}
-          className="w-11 h-11 bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 relative border-none outline-none cursor-pointer"
-        >
-          <Sparkles size={18} className="text-white" />
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white animate-ping"></span>
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
-        </button>
-      </div>
-
-      {/* SHEET OPERATIVO FLOTANTE (MENÚ DE OPERACIONES FAB) */}
+      {/* SHEET OPERATIVO FLOTANTE (MENÚ DE OPERACIONES FAB) — traslúcido, igual que en RelojVisual.tsx */}
       {isFabSheetOpen && (
         <div className="absolute inset-0 z-50 flex items-end justify-center">
-          <div 
+          <div
             onClick={() => setIsFabSheetOpen(false)}
             className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
           ></div>
 
-          <div className={`relative w-full rounded-t-3xl border-t shadow-2xl z-10 flex flex-col pb-6 max-h-[80%] animate-slide-up ${
-            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-850'
+          <div className={`relative w-full rounded-t-3xl border-t shadow-2xl z-10 flex flex-col pb-6 max-h-[80%] animate-slide-up backdrop-blur-md ${
+            isDark ? 'bg-slate-900/70 border-slate-800 text-white' : 'bg-white/70 border-slate-100 text-slate-850'
           }`}>
             <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 shrink-0"></div>
-            
+
             <div className="px-4 pb-2 border-b dark:border-slate-800 text-left flex justify-between items-center">
               <div>
                 <h3 className="text-xs font-black">Operaciones & Soporte AI</h3>
                 <p className="text-[9px] text-slate-400">Accesos y herramientas rápidas (Simulado)</p>
               </div>
-              <button 
+              <button
                 onClick={() => setIsFabSheetOpen(false)}
                 className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-none cursor-pointer text-xs"
               >
@@ -1085,7 +1086,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             <div className="overflow-y-auto p-4 space-y-4 text-left">
               <div className="grid grid-cols-2 gap-3">
-                <button 
+                <button
                   onClick={() => {
                     setIsFabSheetOpen(false);
                     setIsCopilotOpen(true);
@@ -1100,7 +1101,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   <span className="font-bold text-[10px]">Copiloto AI</span>
                 </button>
 
-                <button 
+                <button
                   onClick={() => {
                     setIsFabSheetOpen(false);
                     setPhoneTab('tareas');

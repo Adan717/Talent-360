@@ -205,6 +205,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
         Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
 
+        // §39: configuración de la cadena de pedidos (qué puesto en cada etapa) — admin/supervisor
+        Route::get('/supply-chain/config', [\App\Http\Controllers\SupplyOrderController::class, 'getConfig']);
+        Route::put('/supply-chain/config', [\App\Http\Controllers\SupplyOrderController::class, 'updateConfig']);
+
         // Ley Federal del Trabajo (LFT) settings
         Route::get('/admin/lft-settings', [LftSettingController::class, 'getSettings']);
         Route::post('/admin/lft-settings', [LftSettingController::class, 'saveSettings']);
@@ -353,6 +357,13 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/task-assignments/{id}/omit', [TaskAssignmentController::class, 'omit']);
         Route::post('/task-assignments/{id}/ai-validate', [TaskAssignmentController::class, 'aiValidate']);
         Route::post('/task-assignments/{id}/validate-with-pin', [TaskAssignmentController::class, 'validateWithPin']);
+
+        // §39: cadena de pedidos (compras→producción→ventas) — operativa abierta a
+        // cualquier rol autenticado, ya que los puestos operativos son quienes avanzan
+        // las etapas; el scoping por tenant protege el aislamiento entre empresas.
+        Route::get('/supply-orders', [\App\Http\Controllers\SupplyOrderController::class, 'index']);
+        Route::post('/supply-orders', [\App\Http\Controllers\SupplyOrderController::class, 'store']);
+        Route::patch('/supply-orders/{id}/advance-stage', [\App\Http\Controllers\SupplyOrderController::class, 'advanceStage']);
 
         // =====================================================================
         // PILAR III: Reservas de Comedor y Control de Aforo

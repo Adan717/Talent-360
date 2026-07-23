@@ -69,6 +69,37 @@ class NotificationService
     }
 
     /**
+     * §39: enviar a todos los usuarios que ocupan un PUESTO específico (job_role_id)
+     * dentro de un tenant. Distinto de sendToRole(), que filtra por la columna gruesa
+     * users.role (admin/supervisor/empleado) — aquí resolvemos por employees.job_role_id,
+     * que es el puesto real que RRHH mantiene (ej. "Compras", "Producción").
+     */
+    public function sendToJobRole(int $jobRoleId, int $tenantId, string $title, string $body, array $data = []): bool
+    {
+        $userIds = DB::table('employees')
+            ->where('tenant_id', $tenantId)
+            ->where('job_role_id', $jobRoleId)
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->unique()
+            ->all();
+
+        if (empty($userIds)) {
+            Log::info("No users with job_role_id {$jobRoleId} in tenant {$tenantId}. Logged notification: [{$title}] {$body}");
+            return true;
+        }
+
+        $success = true;
+        foreach ($userIds as $userId) {
+            if (!$this->sendToUser($userId, $title, $body, $data)) {
+                $success = false;
+            }
+        }
+
+        return $success;
+    }
+
+    /**
      * Broadcast notification to all users of a tenant.
      */
     public function sendBroadcast(int $tenantId, string $title, string $body, array $data = []): bool

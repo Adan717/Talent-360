@@ -2269,6 +2269,18 @@ export default function RelojVisual({
   // su propio FAB que chocaba visualmente con este. Ahora sus acciones (Crear Tarea, Crear
   // con IA, Historial, Plan del Día) se disparan desde la hoja de este FAB único, vía ref.
   const taskRunnerRef = useRef<TaskRunnerHandle>(null);
+  // Ancla el menú desplegable compacto del FAB único y permite cerrarlo al tocar fuera
+  // (mismo patrón que usaba el viejo FAB de TaskRunner.tsx antes de consolidarse aquí).
+  const fabMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutsideFab = (e: MouseEvent) => {
+      if (fabMenuRef.current && !fabMenuRef.current.contains(e.target as Node)) {
+        setIsFabSheetOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutsideFab);
+    return () => document.removeEventListener('mousedown', handleClickOutsideFab);
+  }, []);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskMins, setNewTaskMins] = useState(15);
   const [newTaskPriority, setNewTaskPriority] = useState<'normal' | 'bloqueante'>('normal');
@@ -2554,27 +2566,22 @@ export default function RelojVisual({
     );
   };
 
+  // Botón flotante único (2026-07-23, a petición de Francisco): el estilo con panel grande
+  // tipo bottom-sheet no le gustó — pidió volver al estilo compacto que tenía el botón de
+  // TaskRunner.tsx (círculo sólido morado + menú desplegable corto ancorado arriba-derecha del
+  // botón). Se mantiene la idea de UN SOLO botón consolidado (esa parte sí se quedó), pero
+  // ahora con el look & feel del menú viejo en vez del sheet de pantalla completa.
+  const fabSectionDivider = (isDark: boolean, isFirst: boolean) =>
+    `text-[9px] font-black uppercase tracking-widest px-3 py-1.5 ${isFirst ? '' : `border-t mt-1 pt-2 ${isDark ? 'border-slate-800' : 'border-slate-100'}`} ${isDark ? 'text-slate-500' : 'text-slate-400'}`;
+
+  const fabItemClass = (isDark: boolean, danger?: boolean) =>
+    `w-full text-left px-3 py-2 rounded-xl text-xs font-black border-none bg-transparent cursor-pointer flex items-center gap-2.5 ${
+      danger
+        ? 'text-rose-600 hover:bg-rose-50'
+        : isDark ? 'text-slate-200 hover:bg-slate-800' : 'text-slate-655 hover:bg-slate-50'
+    }`;
+
   const renderFloatingActionButton = () => {
-    return (
-      <div className="fixed bottom-24 right-6 z-[80] font-sans">
-        <button
-          type="button"
-          onClick={() => setIsFabSheetOpen(true)}
-          className="w-14 h-14 bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-600 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-all active:scale-95 duration-300 relative group cursor-pointer border-none outline-none animate-pulse-radial"
-          title="Menú de Operaciones y Soporte AI"
-        >
-          <div className="absolute inset-0 bg-violet-400 rounded-full blur-[8px] opacity-40 group-hover:opacity-75 transition-opacity pointer-events-none"></div>
-          <Sparkles size={24} className="relative z-10 text-white" />
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-ping"></span>
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></span>
-        </button>
-      </div>
-    );
-  };
-
-  const renderFabOperationsSheet = () => {
-    if (!isFabSheetOpen) return null;
-
     // §31 (docs/BACKEND_INTERFACES.md): "Crear Tarea Rápida" escribe en el catálogo de Tareas
     // (createDynamicTask → syncToBackend(true)), lo mismo que en TaskRunner.tsx ya está reservado a
     // isSupervisor allá — aquí no tenía ningún gate y cualquier colaborador podía verlo y usarlo.
@@ -2582,323 +2589,104 @@ export default function RelojVisual({
                                 currentUser?.role === 'supervisor' ||
                                 currentUser?.system_role === 'platform_admin';
 
+    const closeAnd = (fn: () => void) => () => { setIsFabSheetOpen(false); fn(); };
+
     return (
-      <div role="dialog" aria-modal="true" aria-label="Operaciones & Soporte AI" className="fixed inset-0 z-[90] flex items-end justify-center">
-        {/* Backdrop overlay */}
-        <div 
-          onClick={() => setIsFabSheetOpen(false)}
-          className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity"
-        ></div>
-
-        {/* Sheet Content */}
-        <div className={`relative w-full max-h-[85vh] rounded-t-[2rem] border-t shadow-2xl z-10 flex flex-col transition-transform duration-300 animate-slide-up pb-8 ${
-          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-        }`}>
-          {/* Drag Handle */}
-          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-3 shrink-0"></div>
-
-          <div className="px-5 pb-2 border-b dark:border-slate-800 text-left shrink-0 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-black tracking-tight">Operaciones & Soporte AI</h3>
-              <p className="text-[11px] text-slate-400 font-medium">Accesos rápidos y caja de herramientas operativas</p>
-            </div>
-            <button 
-              onClick={() => setIsFabSheetOpen(false)}
-              className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-none cursor-pointer font-bold"
-            >
-              &times;
+      <div className="fixed bottom-24 right-6 z-[80] font-sans" ref={fabMenuRef}>
+        {isFabSheetOpen && (
+          <div
+            role="menu"
+            aria-label="Menú de Operaciones y Soporte AI"
+            className={`absolute bottom-16 right-0 w-64 max-h-[65vh] overflow-y-auto rounded-2xl shadow-xl border p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'
+            }`}
+          >
+            {/* Asistencia */}
+            <p className={fabSectionDivider(isDark, true)}>Asistencia</p>
+            <button type="button" onClick={closeAnd(() => setIsCopilotChatOpen(true))} className={fabItemClass(isDark)}>
+              <Bot size={14} className="text-violet-400 shrink-0" /> Copiloto AI
             </button>
-          </div>
-
-          <div className="flex-grow overflow-y-auto p-5 space-y-6 scrollbar-none text-left">
-            {/* Section 1: AI Assistant & Actions */}
-            <div className="space-y-3">
-              <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Asistencia & Creación</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setIsCopilotChatOpen(true);
-                  }}
-                  className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 text-center transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
-                    <Bot size={20} className="animate-pulse" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Copiloto AI</p>
-                    <p className="text-[9px] text-slate-400 mt-0.5">Soporte Técnico</p>
-                  </div>
-                </button>
-
-                {canCreateQuickTask && <button
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setIsTaskCreatorOpen(true);
-                  }}
-                  className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2 text-center transition-all active:scale-95 border-none bg-transparent cursor-pointer ${
-                    isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 text-white' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-500 text-white flex items-center justify-center shadow-md">
-                    <Play size={20} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Crear Tarea</p>
-                    <p className="text-[9px] text-slate-400 mt-0.5">Lanzar on-the-fly</p>
-                  </div>
-                </button>}
-              </div>
-            </div>
-
-            {/* Sección "Módulo de Tareas": solo aparece con phoneTab === 'tareas' — antes estas
-                4 acciones vivían en el FAB propio de TaskRunner.tsx, ahora consolidado aquí. */}
-            {phoneTab === 'tareas' && (
-              <div className="space-y-3">
-                <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Módulo de Tareas</h4>
-                <div className="grid grid-cols-1 gap-2.5">
-                  {canCreateQuickTask && (
-                    <button
-                      onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openCreateTask(); }}
-                      className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-indigo-400 flex items-center justify-center shrink-0">
-                        <Plus size={16} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs">Crear Tarea Nueva</p>
-                        <p className="text-[9.5px] text-slate-500">Formulario completo (SOP, evidencia, validación)</p>
-                      </div>
-                    </button>
-                  )}
-
-                  {canCreateQuickTask && (
-                    <button
-                      onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openAiCreateTask(); }}
-                      className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-violet-400 flex items-center justify-center shrink-0">
-                        <Bot size={16} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs">Crear con Asistente de IA</p>
-                        <p className="text-[9.5px] text-slate-500">Dicta o escribe y la IA arma la tarea</p>
-                      </div>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openHistory(); }}
-                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-emerald-400 flex items-center justify-center shrink-0">
-                      <ClipboardList size={16} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs">Ver Historial de Hoy</p>
-                      <p className="text-[9.5px] text-slate-500">Tareas completadas u omitidas en tu turno</p>
-                    </div>
-                  </button>
-
-                  {canCreateQuickTask && (
-                    <button
-                      onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openPlanDelDia(); }}
-                      className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-amber-400 flex items-center justify-center shrink-0">
-                        <span className="text-sm">🗓️</span>
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs">Plan del Día</p>
-                        <p className="text-[9.5px] text-slate-500">Armar plan de hoy y reporte de cierre</p>
-                      </div>
-                    </button>
-                  )}
-                </div>
-              </div>
+            {canCreateQuickTask && phoneTab !== 'tareas' && (
+              <button type="button" onClick={closeAnd(() => setIsTaskCreatorOpen(true))} className={fabItemClass(isDark)}>
+                <Play size={14} className="text-amber-500 shrink-0" /> Crear Tarea
+              </button>
             )}
 
-            {/* Section 2: Caja de Herramientas Operativa */}
-            <div className="space-y-3">
-              <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Caja de Herramientas</h4>
-              <div className="grid grid-cols-1 gap-2.5">
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setPhoneTab('herramientas');
-                    setInnerTool('chat');
-                    fetchChatMessages();
-                  }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-indigo-400 flex items-center justify-center shrink-0">
-                    <MessageSquare size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Chat de Equipo 💬</p>
-                    <p className="text-[9.5px] text-slate-500">Mensajes temporales entre colaboradores de la sucursal</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setPhoneTab('herramientas');
-                    setInnerTool('soplon');
-                  }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-rose-400 flex items-center justify-center shrink-0">
-                    <AlertOctagon size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">El Soplón 📢</p>
-                    <p className="text-[9.5px] text-slate-500">Reportar ausencias o faltas de compañeros de forma directa</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setPhoneTab('herramientas');
-                    setInnerTool('buzon');
-                  }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-sky-400 flex items-center justify-center shrink-0">
-                    <Fingerprint size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Buzón Anónimo RRHH 🕵️</p>
-                    <p className="text-[9.5px] text-slate-500">Enviar sugerencias o reportes generales 100% privados</p>
-                  </div>
-                </button>
-
-                {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
-                  <button 
-                    onClick={() => {
-                      setIsFabSheetOpen(false);
-                      setPhoneTab('herramientas');
-                      setInnerTool('transfer');
-                    }} 
-                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-indigo-400 flex items-center justify-center shrink-0">
-                      <Key size={16} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs">Transferir Cierre 🔑</p>
-                      <p className="text-[9.5px] text-slate-500">Ceder llaves de la sucursal a un compañero</p>
-                    </div>
+            {/* Módulo de Tareas: solo con phoneTab === 'tareas' — antes vivía en el FAB propio
+                de TaskRunner.tsx, ahora consolidado aquí con el mismo estilo de aquel menú. */}
+            {phoneTab === 'tareas' && (
+              <>
+                <p className={fabSectionDivider(isDark, false)}>Módulo de Tareas</p>
+                {canCreateQuickTask && (
+                  <button type="button" onClick={closeAnd(() => taskRunnerRef.current?.openCreateTask())} className={fabItemClass(isDark)}>
+                    <Plus size={14} className="text-indigo-400 shrink-0" /> Crear Tarea Nueva
                   </button>
                 )}
-
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setPhoneTab('herramientas');
-                    setInnerTool('huida');
-                  }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-amber-500 flex items-center justify-center shrink-0">
-                    <WifiOff size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Simular Desconexión (Huida) 🏃</p>
-                    <p className="text-[9.5px] text-slate-500">Detección de desconexión sin entregar el turno</p>
-                  </div>
-                </button>
-
-                {isPro && clockState === 'active' && (
-                  <button 
-                    onClick={() => {
-                      setIsFabSheetOpen(false);
-                      setShowTempExitModal(true);
-                    }} 
-                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-teal-50/50 text-teal-600 flex items-center justify-center shrink-0">
-                      <LogOut size={16} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs">Pase de Salida Temporal 🚪</p>
-                      <p className="text-[9.5px] text-slate-500 font-medium">Registrar una salida temporal de la tienda con GPS activo</p>
-                    </div>
+                {canCreateQuickTask && (
+                  <button type="button" onClick={closeAnd(() => taskRunnerRef.current?.openAiCreateTask())} className={fabItemClass(isDark)}>
+                    <Sparkles size={14} className="text-violet-400 shrink-0" /> Crear con Asistente de IA
                   </button>
                 )}
-
-                {isPro && clockState === 'active' && mealStartTimes[currentUser.id] === undefined && (
-                  <button 
-                    onClick={() => {
-                      setIsFabSheetOpen(false);
-                      setShowMealSwapModal(true);
-                    }} 
-                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-amber-50/50 text-amber-600 flex items-center justify-center shrink-0">
-                      <Utensils size={16} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-xs">Intercambio de Comida 🍽️</p>
-                      <p className="text-[9.5px] text-slate-500 font-medium">Intercambiar rápidamente tu horario de comida con un compañero</p>
-                    </div>
+                <button type="button" onClick={closeAnd(() => taskRunnerRef.current?.openHistory())} className={fabItemClass(isDark)}>
+                  <ClipboardList size={14} className="text-emerald-400 shrink-0" /> Ver Historial de Hoy
+                </button>
+                {canCreateQuickTask && (
+                  <button type="button" onClick={closeAnd(() => taskRunnerRef.current?.openPlanDelDia())} className={fabItemClass(isDark)}>
+                    <span className="text-sm w-3.5 text-center shrink-0">🗓️</span> Plan del Día
                   </button>
                 )}
+              </>
+            )}
 
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setShowPanicModal(true);
-                  }} 
-                  className="p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-rose-50 hover:bg-rose-100/50 text-rose-800 cursor-pointer"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                    <AlertTriangle size={16} className="animate-pulse" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs text-rose-900">🚨 BOTÓN DE PÁNICO</p>
-                    <p className="text-[9.5px] text-rose-700 font-medium">Declarar una emergencia crítica inmediata en la sucursal</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setPhoneTab('evaluacion360');
-                  }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-amber-400 flex items-center justify-center shrink-0">
-                    <Star size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Evaluación de Compañeros ⭐</p>
-                    <p className="text-[9.5px] text-slate-500">Evaluar desempeño y puntualidad en el turno</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setIsFabSheetOpen(false);
-                    setPhoneTab('organigrama');
-                  }} 
-                  className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
-                >
-                  <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Network size={16} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-xs">Organigrama de la Empresa 🕸️</p>
-                    <p className="text-[9.5px] text-slate-500">Consulta los puestos y responsabilidades</p>
-                  </div>
-                </button>
-              </div>
-            </div>
+            {/* Caja de Herramientas */}
+            <p className={fabSectionDivider(isDark, false)}>Caja de Herramientas</p>
+            <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('chat'); fetchChatMessages(); })} className={fabItemClass(isDark)}>
+              <MessageSquare size={14} className="text-indigo-400 shrink-0" /> Chat de Equipo 💬
+            </button>
+            <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('soplon'); })} className={fabItemClass(isDark)}>
+              <AlertOctagon size={14} className="text-rose-400 shrink-0" /> El Soplón 📢
+            </button>
+            <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('buzon'); })} className={fabItemClass(isDark)}>
+              <Fingerprint size={14} className="text-sky-400 shrink-0" /> Buzón Anónimo RRHH 🕵️
+            </button>
+            {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
+              <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('transfer'); })} className={fabItemClass(isDark)}>
+                <Key size={14} className="text-indigo-400 shrink-0" /> Transferir Cierre 🔑
+              </button>
+            )}
+            <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('huida'); })} className={fabItemClass(isDark)}>
+              <WifiOff size={14} className="text-amber-500 shrink-0" /> Simular Desconexión 🏃
+            </button>
+            {isPro && clockState === 'active' && (
+              <button type="button" onClick={closeAnd(() => setShowTempExitModal(true))} className={fabItemClass(isDark)}>
+                <LogOut size={14} className="text-teal-500 shrink-0" /> Pase de Salida Temporal 🚪
+              </button>
+            )}
+            {isPro && clockState === 'active' && mealStartTimes[currentUser.id] === undefined && (
+              <button type="button" onClick={closeAnd(() => setShowMealSwapModal(true))} className={fabItemClass(isDark)}>
+                <Utensils size={14} className="text-amber-500 shrink-0" /> Intercambio de Comida 🍽️
+              </button>
+            )}
+            <button type="button" onClick={closeAnd(() => setShowPanicModal(true))} className={fabItemClass(isDark, true)}>
+              <AlertTriangle size={14} className="shrink-0" /> Botón de Pánico 🚨
+            </button>
+            <button type="button" onClick={closeAnd(() => setPhoneTab('evaluacion360'))} className={fabItemClass(isDark)}>
+              <Star size={14} className="text-amber-400 shrink-0" /> Evaluación de Compañeros ⭐
+            </button>
+            <button type="button" onClick={closeAnd(() => setPhoneTab('organigrama'))} className={fabItemClass(isDark)}>
+              <Network size={14} className="text-emerald-400 shrink-0" /> Organigrama de la Empresa 🕸️
+            </button>
           </div>
-        </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsFabSheetOpen(prev => !prev)}
+          className="w-14 h-14 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer outline-none"
+          title="Menú de Operaciones y Soporte AI"
+        >
+          {isFabSheetOpen ? <X size={22} /> : <Sparkles size={22} />}
+        </button>
       </div>
     );
   };
@@ -3881,7 +3669,6 @@ export default function RelojVisual({
 
       {/* RENDER OPERATIONAL MODALS FOR MOBILE */}
       {isScrollableMobile && !isStoreClosed && renderFloatingActionButton()}
-      {isScrollableMobile && renderFabOperationsSheet()}
       {isScrollableMobile && renderTaskCreatorModal()}
       {isScrollableMobile && renderCopilotChatDrawer()}
 

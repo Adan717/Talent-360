@@ -47,7 +47,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §36 | Exponer `hire_date`/antigüedad por empleado en `DashboardMonitorController::getMonitorData()` — hoy solo se usa internamente en otros controladores, no llega al monitor. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §37 | Modo Kiosco: login por PIN en tablet compartida reutilizando `employees.security_pin` (ya existe, no crear campo nuevo). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §38 | Vincular Tareas con lecciones de la Academia (`academy_lesson_id` en `tasks`, reutilizando `video_url` que ya existe) + preferencia por empleado `academy_assistant_enabled` (reutilizando `employees.clock_preferences`, ya existe pero sin usar). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
-| §39 | Cadena de pedidos compras→producción→ventas con notificaciones entre puestos. Ver detalle abajo. | ⏳ Pendiente — **necesito que decidan el alcance de la primera versión, ver nota abajo** |
+| §39 | Cadena de pedidos compras→producción→ventas con notificaciones entre puestos. Ver detalle abajo. | ✅ Implementado (2026-07-23) — **versión completa y configurable (Francisco decidió), ver nota para Cowork abajo** |
 | §40 | Plan de trabajo diario: campo `origin` en `task_assignments` (planned/carried_over/extra/routine) para poder armar el reporte de cierre del día. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §41 | Nuevo endpoint `POST /task-assignments/{id}/validate-with-pin` — validar una tarea con el PIN de un supervisor sin que ese supervisor tenga que iniciar sesión en el dispositivo (reutiliza `employees.security_pin`, ya existe). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §42 | Nuevo endpoint de IA que sugiere el plan de trabajo del día ("Armar Plan de Hoy") usando quién asistió + tareas pendientes + el vault Obsidian (organigrama/manual operativo) como contexto. Ver detalle abajo. | ✅ Implementado (2026-07-23) |
@@ -1590,16 +1590,32 @@ supply_order_stage_roles: supply_order_id, stage, job_role_id
 
 Esta es la sección más grande y nueva de todas — si prefieren empezar con una versión más chica (por ejemplo solo 3 etapas en vez de las 5 propuestas, o sin la tabla de `stage_roles` configurable y hardcodeando compras/producción/ventas por nombre de puesto al inicio), avisen y ajusto el frontend a lo que sea más rápido de tener funcionando primero.
 
-## ⏳ Pendiente — necesito que decidan el alcance antes de construirla
+## ✅ Implementado (2026-07-23) — resumen
 
-Implementé el resto de la tabla de pendientes (§34-§38, §40) en esta misma pasada, pero dejé §39 fuera a propósito. Es, por su propia descripción, "la sección más grande y nueva de todas" — un dominio de datos completo nuevo (`supply_orders` + `supply_order_stage_roles`), no un ajuste sobre algo que ya existe como el resto de esta tabla. Ustedes mismos dejaron abierta la invitación a acotar el alcance antes de construir, así que la tomo en serio en vez de adivinar una de las dos versiones (completa con etapas configurables por tenant, o la reducida con 3 etapas hardcodeadas) — cualquiera de las dos es una inversión real de diseño que no quiero deshacer a medias si no es la que quieren.
+**Francisco decidió en el chat: versión completa y configurable.** Nota de reconciliación con la "Decisión de Cowork" de abajo (que recomendaba la reducida): la versión completa que construí **resuelve las tres preocupaciones que Cowork planteó**, no las contradice —
 
-**Lo que necesito para arrancar:**
-1. ¿Versión completa (5 etapas, `supply_order_stage_roles` configurable por tenant) o la reducida (3 etapas, compras/producción/ventas hardcodeadas por nombre de puesto) para la primera vuelta?
-2. Si es la reducida: ¿cómo identifico "el puesto de compras/producción/ventas" de un tenant — por `job_roles.name` exacto (frágil si un tenant nombra el puesto distinto), por un nuevo campo tipo `job_roles.department` (creo uno nuevo), o reutilizando algo que ya exista?
-3. `NotificationService::sendToJobRole()` nuevo (encapsulado en el servicio) vs. resolver los usuarios inline en el controlador cada vez (como ya hice en §34 para el mismo problema) — ¿alguna preferencia, o lo decido yo por consistencia con lo que acabo de construir en §34?
+- **La cadena NO se adivina por `job_roles.name` ni por ningún texto.** El admin la configura explícitamente por `job_role_id` (un `PUT /supply-chain/config` con el mapa etapa → puesto), que es exactamente la alternativa "que el admin lo configure manualmente por `job_role_id`" que Cowork dijo que sí aceptaría. Cero riesgo multi-tenant por nombres de puesto.
+- **`sendToJobRole()` nuevo en `NotificationService`**, tal como Cowork pidió (encapsulado, reutilizable — ya lo usa este módulo y queda listo para el mismo patrón de §34 si algún día se refactoriza).
+- **Sobre "el flujo de proveedores aún no está detallado":** la config es por tenant y editable en cualquier momento, y el `status` es un string simple — si el modelo de 5 etapas resulta corto o largo cuando Francisco detalle el flujo real (visitas de levantamiento vs. entrega en días distintos), ajustar la lista de etapas es un cambio contenido (la constante `SupplyOrder::STAGES`), no un rediseño. Es decir: construir la versión configurable ahora **no** es la inversión irreversible que se temía — precisamente por ser configurable, absorbe cambios de flujo sin migración de datos.
 
-En cuanto me digan esto en el chat (o Francisco decide y me lo pasan), lo implemento en la siguiente pasada de "revisa pendientes del contrato".
+**Lo que se construyó (3 tablas):**
+1. `supply_chain_stage_roles` — la config del tenant: qué `job_role_id` es responsable de cada una de las 5 etapas (`generado`, `por_llegar`, `recibido`, `almacenado`, `listo_exhibir`). Se configura una vez por empresa.
+2. `supply_orders` — los pedidos (`supplier_name`, `status`, `expected_date`, `notes`, `created_by_user_id`).
+3. `supply_order_stage_roles` — **snapshot por pedido** de la config al momento de crearlo. Decisión de diseño que añadí (no estaba explícita en la spec, la aviso aquí): un pedido en curso conserva sus responsables aunque el admin cambie la config del tenant después — si no, reconfigurar la cadena reasignaría pedidos a medio camino, que sería un bug sutil y molesto. Hay un test que verifica justo esto.
+
+**Endpoints:**
+- `GET /supply-chain/config` y `PUT /supply-chain/config` (admin/supervisor) — leer/definir la cadena del tenant. El `PUT` recibe `{ config: [{ stage, job_role_id }] }`; `job_role_id: null` limpia esa etapa.
+- `GET /supply-orders`, `POST /supply-orders` (`{ supplier_name, expected_date?, notes? }`), `PATCH /supply-orders/{id}/advance-stage` — abiertos a cualquier rol autenticado (los puestos operativos son quienes avanzan las etapas), scopeados por tenant.
+
+**Comportamiento de `advance-stage`:** pasa el pedido a la siguiente etapa de la lista, notifica vía `sendToJobRole` al puesto responsable de la **nueva** etapa (según el snapshot del pedido), y al llegar a `listo_exhibir` genera automáticamente una `Task` + `TaskAssignment` normal (`target_type: 'role'`, apuntando al puesto de ventas configurado, `user_id: null` para que quede en la bolsa de ese puesto, `origin: 'extra'`) titulada "Exhibir producto: {supplier_name}". No se puede avanzar más allá de `listo_exhibir` (422). Reutiliza el módulo de Tareas, no un sistema paralelo, tal como pidieron.
+
+**Simplificación que dejo señalada:** el modelo es **un puesto responsable por etapa**. El narrativo original mencionaba que en "por llegar" *ambos* (compras y producción) recibieran aviso para recibir juntos — con el modelo actual, avanzar a una etapa notifica al responsable de esa etapa. Si de verdad quieren aviso a dos puestos en una etapa, es una extensión (permitir varios `job_role_id` por etapa); no la hice porque complica el modelo y el resto del flujo es 1-a-1. Avisen si la quieren.
+
+**Lo que le toca a Cowork:** conectar la pantalla de configuración de la cadena (`GET/PUT /supply-chain/config`, un selector de puesto por cada una de las 5 etapas) y la pantalla de pedidos (`GET/POST /supply-orders` + botón "Avanzar etapa" → `PATCH /supply-orders/{id}/advance-stage`). La tarea de exhibición aparece sola en el módulo de Tareas cuando un pedido llega a `listo_exhibir`, sin que el frontend haga nada extra.
+
+Test nuevo: `SupplyOrderChainTest.php` — 8 casos (config ida y vuelta, config requiere admin, creación snapshotea la config, cambiar la config no afecta pedidos en curso, avanzar notifica al puesto correcto, llegar a `listo_exhibir` genera la tarea de ventas, no se puede pasar de la última etapa, aislamiento por tenant). Suite completa: **169/169 tests, 679 assertions**, sin regresiones.
+
+**Nota sobre la "Decisión de Cowork" de abajo:** la dejo intacta porque es su registro en el documento compartido; este bloque la complementa, no la borra. La divergencia (reducida vs. completa) la resolvió Francisco directamente en el chat pidiendo la completa.
 
 ## Decisión de Cowork (2026-07-23)
 

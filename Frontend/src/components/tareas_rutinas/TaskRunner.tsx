@@ -208,10 +208,11 @@ export function FichaTarea({
 
 // Componente Principal TaskRunner
 export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: any, onBack: () => void, hideHeader?: boolean }) {
-    const { 
-        tasks, routines, assignments, grabTaskFromPool, startTask, 
+    const {
+        tasks, routines, assignments, grabTaskFromPool, startTask,
         pauseTask, completeTask, omitAssignment, createDynamicTask,
-        validateTaskAssignment, reserveTaskFromPool, releaseTask
+        validateTaskAssignment, reserveTaskFromPool, releaseTask,
+        carryOverAssignment
     } = useTaskStore();
     const { globalSimTime, addMatrixEvent, globalRoles, globalUsers, systemSettings } = useAppStore(); // Filtros y pestañas locales
     
@@ -248,6 +249,17 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const [newMins, setNewMins] = useState(15);
     const [newPriority, setNewPriority] = useState<'normal' | 'bloqueante'>('normal');
     const [newTargetRole, setNewTargetRole] = useState<number>(0);
+    // Cuando la creación se dispara desde "Armar Plan de Hoy" (ver más abajo), la tarea
+    // nueva debe contar como 'planned' en el reporte de cierre en vez de 'extra' (que es
+    // el default para creación ad-hoc durante el día).
+    const [creatingTaskOrigin, setCreatingTaskOrigin] = useState<'extra' | 'planned'>('extra');
+
+    // Plan de Trabajo Diario (§40): armar el plan de hoy retomando pendientes de ayer,
+    // y ver el reporte de cierre (planeadas/extras/completadas/omitidas) por persona.
+    const [showPlanModal, setShowPlanModal] = useState(false);
+    const [planModalTab, setPlanModalTab] = useState<'armar' | 'reporte'>('armar');
+    const [planReportDate, setPlanReportDate] = useState(() => new Date().toLocaleDateString('sv-SE'));
+    const [carryOverChecked, setCarryOverChecked] = useState<Record<string, boolean>>({});
 
     // AI Assistant state
     const [aiInput, setAiInput] = useState('');
@@ -505,6 +517,70 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         return priorityWeight(taskA?.priority) - priorityWeight(taskB?.priority);
     };
 
+    // Plan de Trabajo Diario (§40): a qué personas puede ver un supervisor en "Armar Plan"
+    // y en el "Reporte de Cierre" — admin ve a todos, un supervisor ve solo su propio
+    // trabajo y el de los puestos que le reportan (mismo criterio que mySubordinateRoles).
+    const isAdminRole = currentUser?.role === 'admin' || currentUser?.role === 'platform_admin';
+    const managedRoleIds = new Set<number>([
+        Number(currentUser?.job_role_id),
+        ...mySubordinateRoles.map((r: any) => Number(r.id))
+    ]);
+    const canSeeUserInPlan = (userId: number | null) => {
+        if (userId === null) return true;
+        if (isAdminRole) return true;
+        if (userId === currentUser.id) return true;
+        const u = (globalUsers || []).find((gu: any) => gu.id === userId);
+        return !!u && managedRoleIds.has(Number(u.job_role_id));
+    };
+
+    const yesterdayStr = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        return d.toLocaleDateString('sv-SE');
+    })();
+
+    // Pendientes de ayer que todavía no se resolvieron — candidatas a "traer a hoy".
+    const yesterdayLeftovers = assignments.filter(a =>
+        a.date === yesterdayStr &&
+        ['pending', 'in_progress', 'paused'].includes(a.status) &&
+        canSeeUserInPlan(a.userId)
+    );
+
+    // Asignaciones del día seleccionado para el reporte de cierre.
+    const reportAssignments = assignments.filter(a =>
+        (a.date || todayStr) === planReportDate && canSeeUserInPlan(a.userId)
+    );
+    const reportByUser = (() => {
+        const map = new Map<number, { name: string; roleName: string; items: TaskAssignment[] }>();
+        reportAssignments.forEach(a => {
+            const uid = a.userId ?? 0;
+            if (!map.has(uid)) {
+                const u = (globalUsers || []).find((gu: any) => gu.id === uid);
+                map.set(uid, { name: u?.name || (uid === 0 ? 'Bolsa de Trabajo' : `Usuario #${uid}`), roleName: getRoleName(u?.job_role_id), items: [] });
+            }
+            map.get(uid)!.items.push(a);
+        });
+        return Array.from(map.entries()).map(([uid, data]) => {
+            const items = data.items;
+            const completed = items.filter(a => a.status === 'completed' || a.status === 'awaiting_validation').length;
+            const omitted = items.filter(a => a.status === 'omitted').length;
+            const stillOpen = items.filter(a => ['pending', 'in_progress', 'paused'].includes(a.status)).length;
+            const extra = items.filter(a => a.origin === 'extra').length;
+            const carriedOver = items.filter(a => a.origin === 'carried_over').length;
+            const planned = items.filter(a => !a.origin || a.origin === 'planned' || a.origin === 'routine').length;
+            return { userId: uid, ...data, total: items.length, completed, omitted, stillOpen, extra, carriedOver, planned };
+        }).sort((a, b) => b.total - a.total);
+    })();
+    const reportTotals = reportByUser.reduce((acc, r) => ({
+        total: acc.total + r.total,
+        completed: acc.completed + r.completed,
+        omitted: acc.omitted + r.omitted,
+        stillOpen: acc.stillOpen + r.stillOpen,
+        extra: acc.extra + r.extra,
+        carriedOver: acc.carriedOver + r.carriedOver,
+        planned: acc.planned + r.planned
+    }), { total: 0, completed: 0, omitted: 0, stillOpen: 0, extra: 0, carriedOver: 0, planned: 0 });
+
     // El listado actual a mostrar
     const displayedAssignments = (() => {
         let baseList: TaskAssignment[] = [];
@@ -591,9 +667,9 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         e.preventDefault();
         if (!newTitle.trim()) return;
 
-        createDynamicTask(newTitle, newTargetRole, newMins, newPriority);
+        createDynamicTask(newTitle, newTargetRole, newMins, newPriority, creatingTaskOrigin);
         showToast(`Tarea "${newTitle}" creada con éxito`, 'success');
-        
+
         // Limpiar form
         setNewTitle('');
         setNewDesc('');
@@ -601,6 +677,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         setNewPriority('normal');
         setAiInput('');
         setShowCreateModal(false);
+        setCreatingTaskOrigin('extra'); // vuelve al default de creación ad-hoc
     };
 
     // Asistente de IA para parsear oraciones naturales
@@ -957,6 +1034,14 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                         >
                             📜 Ver Historial de Hoy
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => { setShowPlanModal(true); setPlanModalTab('armar'); setShowFabMenu(false); }}
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-655 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
+                        >
+                            🗓️ Plan del Día
+                        </button>
                     </div>
                 )}
 
@@ -1115,6 +1200,184 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                             </div>
                                         );
                                     })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Plan de Trabajo Diario (§40): armar el plan de hoy + reporte de cierre */}
+            {showPlanModal && isSupervisor && (
+                <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
+                    <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80 w-full max-w-lg max-h-[90vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-3 sticky top-0 bg-white pb-2 border-b border-slate-150 z-10 shrink-0">
+                            <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                🗓️ Plan de Trabajo Diario
+                            </h3>
+                            <button
+                                onClick={() => setShowPlanModal(false)}
+                                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center border-none cursor-pointer"
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        {/* Sub-tabs: Armar Plan / Reporte de Cierre */}
+                        <div className="flex bg-slate-100 rounded-xl p-1 mb-4 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setPlanModalTab('armar')}
+                                className={`flex-1 py-1.5 rounded-lg text-[11px] font-black border-none cursor-pointer transition-colors ${
+                                    planModalTab === 'armar' ? 'bg-white shadow-sm' : 'bg-transparent text-slate-400'
+                                }`}
+                                style={planModalTab === 'armar' ? { color: activeColor.hex } : {}}
+                            >
+                                Armar Plan de Hoy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPlanModalTab('reporte')}
+                                className={`flex-1 py-1.5 rounded-lg text-[11px] font-black border-none cursor-pointer transition-colors ${
+                                    planModalTab === 'reporte' ? 'bg-white shadow-sm' : 'bg-transparent text-slate-400'
+                                }`}
+                                style={planModalTab === 'reporte' ? { color: activeColor.hex } : {}}
+                            >
+                                Reporte de Cierre
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                            {planModalTab === 'armar' && (
+                                <div className="space-y-4">
+                                    <p className="text-[11px] text-slate-500 font-semibold leading-normal">
+                                        Retoma los pendientes de ayer que quieras traer al plan de hoy, o agrega tareas nuevas. Al confirmar, cada pendiente marcado queda re-fechado a hoy.
+                                    </p>
+
+                                    <div>
+                                        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Pendientes de Ayer ({yesterdayLeftovers.length})
+                                        </h4>
+                                        {yesterdayLeftovers.length === 0 ? (
+                                            <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
+                                                No quedaron pendientes de ayer. 🎉
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {yesterdayLeftovers.map(a => {
+                                                    const t = tasks.find(tsk => tsk.id === a.taskId);
+                                                    if (!t) return null;
+                                                    const u = (globalUsers || []).find((gu: any) => gu.id === a.userId);
+                                                    const checked = carryOverChecked[a.id] !== false; // default true
+                                                    return (
+                                                        <label
+                                                            key={a.id}
+                                                            className="flex items-start gap-2.5 bg-slate-55/40 border border-slate-200/60 rounded-xl p-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={checked}
+                                                                onChange={(e) => setCarryOverChecked(prev => ({ ...prev, [a.id]: e.target.checked }))}
+                                                                className="mt-0.5 shrink-0"
+                                                            />
+                                                            <div className="min-w-0 flex-1">
+                                                                <h5 className="font-extrabold text-xs text-slate-750 truncate">{t.title}</h5>
+                                                                <p className="text-[9px] text-slate-400 font-semibold">
+                                                                    {u?.name || (a.userId === null ? 'Bolsa de Trabajo' : `Usuario #${a.userId}`)}
+                                                                </p>
+                                                            </div>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowPlanModal(false);
+                                            setCreatingTaskOrigin('planned');
+                                            setShowCreateModal(true);
+                                        }}
+                                        className="w-full py-2.5 rounded-xl text-xs font-black border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 bg-transparent cursor-pointer"
+                                    >
+                                        + Agregar Tarea Nueva para Hoy
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const toCarryOver = yesterdayLeftovers.filter(a => carryOverChecked[a.id] !== false);
+                                            toCarryOver.forEach(a => carryOverAssignment(a.id, todayStr));
+                                            showToast(`Plan de hoy confirmado: ${toCarryOver.length} pendiente(s) traídos de ayer.`, 'success');
+                                            setCarryOverChecked({});
+                                            setShowPlanModal(false);
+                                        }}
+                                        disabled={yesterdayLeftovers.length === 0}
+                                        className="w-full py-2.5 rounded-xl text-xs font-black text-white border-none cursor-pointer disabled:opacity-40"
+                                        style={{ backgroundColor: activeColor.hex }}
+                                    >
+                                        Confirmar Plan de Hoy
+                                    </button>
+                                </div>
+                            )}
+
+                            {planModalTab === 'reporte' && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase">Fecha</label>
+                                        <input
+                                            type="date"
+                                            value={planReportDate}
+                                            onChange={(e) => setPlanReportDate(e.target.value)}
+                                            className="p-1.5 border border-slate-200 rounded-lg text-xs font-semibold outline-none"
+                                        />
+                                    </div>
+
+                                    {/* Totales agregados */}
+                                    <div className="grid grid-cols-4 gap-1.5">
+                                        <div className="bg-slate-50 border border-slate-150 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-slate-700">{reportTotals.total}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase">Total</p>
+                                        </div>
+                                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-emerald-700">{reportTotals.completed}</p>
+                                            <p className="text-[8px] font-bold text-emerald-500 uppercase">Hechas</p>
+                                        </div>
+                                        <div className="bg-rose-50 border border-rose-100 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-rose-700">{reportTotals.omitted}</p>
+                                            <p className="text-[8px] font-bold text-rose-500 uppercase">Omitidas</p>
+                                        </div>
+                                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 text-center">
+                                            <p className="text-sm font-black text-amber-700">{reportTotals.extra}</p>
+                                            <p className="text-[8px] font-bold text-amber-500 uppercase">Extras</p>
+                                        </div>
+                                    </div>
+
+                                    {reportByUser.length === 0 ? (
+                                        <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-[11px] text-slate-400 font-bold">
+                                            Sin asignaciones registradas ese día.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {reportByUser.map(r => (
+                                                <div key={r.userId} className="bg-white border border-slate-200 rounded-xl p-3">
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <h5 className="font-extrabold text-xs text-slate-750">{r.name}</h5>
+                                                        <span className="text-[9px] font-bold text-slate-400">{r.total} tareas</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700">✔ {r.completed} hechas</span>
+                                                        {r.omitted > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700">✕ {r.omitted} omitidas</span>}
+                                                        {r.stillOpen > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">⏳ {r.stillOpen} abiertas</span>}
+                                                        {r.extra > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700">+{r.extra} extras</span>}
+                                                        {r.carriedOver > 0 && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700">↺ {r.carriedOver} de ayer</span>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

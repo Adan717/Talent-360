@@ -85,6 +85,11 @@ export interface TaskAssignment {
     // Puntos realmente otorgados al completar (columna points_awarded, ya existe en BD
     // pero aún no se puebla desde el backend). Cuando no venga, se usa task.points como fallback.
     pointsAwarded?: number;
+    // §40: origen de la asignación para el reporte de cierre del plan de trabajo diario.
+    // 'planned' = agregada en la ventana matutina (armar plan de hoy), 'carried_over' =
+    // pendiente de un día anterior que se retomó hoy, 'extra' = agregada fuera de esa
+    // ventana (creación ad-hoc durante el día), 'routine' = generada por una rutina.
+    origin?: 'planned' | 'carried_over' | 'extra' | 'routine';
 }
 
 interface TaskStoreState {
@@ -115,8 +120,12 @@ interface TaskStoreState {
     completeTask: (assignmentId: string, currentSimTime: number, assistantData?: any) => void;
     validateTaskAssignment: (assignmentId: string, status: 'completed' | 'in_progress', feedback?: string) => Promise<void>;
     handleSpillOver: (userId: number, roleId: number) => void;
-    createDynamicTask: (title: string, roleTarget: any, estimatedMins?: number, priority?: TaskPriority) => void; // On-the-fly
+    createDynamicTask: (title: string, roleTarget: any, estimatedMins?: number, priority?: TaskPriority, origin?: TaskAssignment['origin']) => void; // On-the-fly
     omitAssignment: (assignmentId: string, reason?: string) => void;
+    // §40: retoma una asignación pendiente de un día anterior y la re-fecha a hoy con
+    // origin: 'carried_over', para que el reporte de cierre la cuente como parte del plan
+    // del día en curso en vez de perderse en el día en que quedó pendiente.
+    carryOverAssignment: (assignmentId: string, newDate: string) => void;
 }
 
 export const useTaskStore = create<TaskStoreState>((set, get) => ({
@@ -191,7 +200,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                 routine.taskIds.forEach(tId => {
                     newAssignments.push({
                         id: `chk_${userId}_${routine.id}_${tId}_${Date.now()}`,
-                        taskId: tId, userId, status: 'pending', startedAtMins: null, completedAtMins: null, assignedFromRoutineId: routine.id
+                        taskId: tId, userId, status: 'pending', startedAtMins: null, completedAtMins: null, assignedFromRoutineId: routine.id, origin: 'routine'
                     });
                 });
             } else if (routine.assignMode === 'equitativo') {
@@ -203,7 +212,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                     if (!existingEq) {
                         newAssignments.push({
                             id: `eq_${userId}_${routine.id}_${tId}_${Date.now()}`,
-                            taskId: tId, userId, status: 'pending', startedAtMins: null, completedAtMins: null, assignedFromRoutineId: routine.id
+                            taskId: tId, userId, status: 'pending', startedAtMins: null, completedAtMins: null, assignedFromRoutineId: routine.id, origin: 'routine'
                         });
                     }
                 });
@@ -460,7 +469,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
         }
     },
 
-    createDynamicTask: (title, roleTarget, estimatedMins = 15, priority = 'normal') => {
+    createDynamicTask: (title, roleTarget, estimatedMins = 15, priority = 'normal', origin = 'extra') => {
         const newTask: Task = {
             id: Date.now(),
             title,
@@ -474,8 +483,9 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             isAutoCapture: false,
             historicalMins: []
         };
-        
-        set(state => ({ 
+
+        const todayStr = new Date().toLocaleDateString('sv-SE');
+        set(state => ({
             tasks: [...state.tasks, newTask],
             assignments: [...state.assignments, {
                 id: `dyn_${newTask.id}`,
@@ -483,7 +493,9 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                 userId: null, // Cae directo a la bolsa
                 status: 'pending',
                 startedAtMins: null,
-                completedAtMins: null
+                completedAtMins: null,
+                date: todayStr,
+                origin
             }]
         }));
         // Crea una Task nueva de verdad (no solo una asignación) — necesita ir en el catálogo.
@@ -494,6 +506,15 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             `Un supervisor ha lanzado la tarea "${title}" a la Bolsa de Trabajo.`,
             'info'
         );
+    },
+
+    carryOverAssignment: (assignmentId, newDate) => {
+        set(state => ({
+            assignments: state.assignments.map(a =>
+                a.id === assignmentId ? { ...a, date: newDate, origin: 'carried_over' } : a
+            )
+        }));
+        get().syncAssignmentRow(assignmentId);
     },
 
     omitAssignment: (assignmentId, reason) => {

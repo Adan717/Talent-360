@@ -660,7 +660,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                // filtra "Historial de Hoy" y "puntos de hoy" con a.date, y como siempre llegaba
                // undefined, mostraba el historial completo de TODOS los días como si fuera el de hoy.
                date: a.date,
-               pointsAwarded: a.points_awarded
+               pointsAwarded: a.points_awarded,
+               origin: a.origin || 'planned'
            }));
            useTaskStore.getState().setAssignments(camelCaseAssignments);
         }

@@ -42,6 +42,8 @@ use App\Http\Controllers\MealReservationController;
 Route::prefix('v1')->middleware('device.security')->group(function () {
     // Auth & SaaS Onboarding (Públicas)
     Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+    // §37: Modo Kiosco — throttle agresivo porque el PIN es corto (4-6 dígitos).
+    Route::middleware('throttle:5,1')->post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login/social', [AuthController::class, 'loginSocial']);
     Route::post('/tenants', [TenantController::class, 'store']); // Checkout / Compra directa
@@ -298,6 +300,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
 
         // Sesión
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/clock/kiosk-logout', [AuthController::class, 'kioskLogout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/me/update-profile', [AuthController::class, 'updateProfile']);
         Route::post('/me/upload-avatar', [AuthController::class, 'uploadAvatar']);
@@ -346,6 +349,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);
         Route::get('/task-assignments', [TaskAssignmentController::class, 'index']);
         Route::put('/task-assignments/{id}', [TaskAssignmentController::class, 'update']);
+        Route::post('/task-assignments/{id}/omit', [TaskAssignmentController::class, 'omit']);
+        Route::post('/task-assignments/{id}/ai-validate', [TaskAssignmentController::class, 'aiValidate']);
+        Route::post('/task-assignments/{id}/validate-with-pin', [TaskAssignmentController::class, 'validateWithPin']);
 
         // =====================================================================
         // PILAR III: Reservas de Comedor y Control de Aforo

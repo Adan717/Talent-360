@@ -154,4 +154,40 @@ class TaskAssignmentUpdateTest extends TestCase
             'points_awarded' => 10,
         ]);
     }
+
+    public function test_update_accepts_and_persists_origin(): void
+    {
+        $employee = $this->makeEmployeeWithSupervisorChain();
+        $task = Task::create(['title' => 'Extra Task', 'tenant_id' => 1, 'validation_mode' => 'auto']);
+        $assignment = TaskAssignment::create([
+            'id' => 'ta-5', 'task_id' => $task->id, 'user_id' => $employee->id,
+            'status' => 'pending', 'tenant_id' => 1, 'date' => now()->toDateString(),
+        ]);
+
+        $response = $this->actingAs($employee)->putJson("/api/v1/task-assignments/{$assignment->id}", [
+            'status' => 'in_progress',
+            'origin' => 'extra',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('task_assignments', ['id' => 'ta-5', 'origin' => 'extra']);
+    }
+
+    public function test_get_task_assignments_returns_origin(): void
+    {
+        $employee = $this->makeEmployeeWithSupervisorChain();
+        $task = Task::create(['title' => 'Carried Task', 'tenant_id' => 1, 'validation_mode' => 'auto']);
+        TaskAssignment::create([
+            'id' => 'ta-6', 'task_id' => $task->id, 'user_id' => $employee->id,
+            'status' => 'pending', 'tenant_id' => 1, 'date' => now()->toDateString(),
+            'origin' => 'carried_over',
+        ]);
+
+        $response = $this->actingAs($employee)->getJson('/api/v1/task-assignments?date=' . now()->toDateString());
+
+        $response->assertStatus(200);
+        $row = collect($response->json())->firstWhere('id', 'ta-6');
+        $this->assertNotNull($row);
+        $this->assertEquals('carried_over', $row['origin']);
+    }
 }

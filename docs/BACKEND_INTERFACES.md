@@ -42,6 +42,14 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §31 | **Seguridad:** `POST /sync/tasks` (crear/editar Tareas y Rutinas, no las asignaciones operativas) no valida el rol de quien llama. Ver detalle abajo — **ya preparé el lado frontend para que el fix de 3 líneas sea seguro de aplicar sin romper nada operativo.** | ✅ Implementado (2026-07-22) |
 | §32 | Tarea placeholder "Monitoreo de seguridad desde silla" (Ley Silla) usa `taskId: 9999` inventado, sin registro real en `tasks`; falta operador null-safe en `TaskSyncController::sync()` línea ~227. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §33 | Sugerencia de arquitectura (no urgente): el módulo de Tareas sincroniza reenviando el estado completo en cada clic en vez de por fila. Ver detalle abajo para el plan completo de migración. | ✅ Punto 1 implementado (2026-07-22) — **listo para que Cowork empiece el punto 3 (frontend)** |
+| §34 | Nuevo endpoint `POST /task-assignments/{id}/omit` — avisar al supervisor cuando un empleado omite una tarea (hoy solo cambia el estado local, nadie se entera). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §35 | Nuevo modo de validación `'ai_comparison'` para Tareas: el admin sube 3-5 imágenes de referencia + tolerancia por tarea; la IA (Gemini, ya integrado en `GeminiAIService.php` pero sin usar) compara la evidencia del empleado. Además, subir evidencia de foto real en el módulo de Tareas (hoy es un stub sin cámara real). Ver detalle abajo. | ✅ Backend implementado (2026-07-22) — **pendiente la captura de cámara real del lado Cowork, ver nota** |
+| §36 | Exponer `hire_date`/antigüedad por empleado en `DashboardMonitorController::getMonitorData()` — hoy solo se usa internamente en otros controladores, no llega al monitor. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §37 | Modo Kiosco: login por PIN en tablet compartida reutilizando `employees.security_pin` (ya existe, no crear campo nuevo). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §38 | Vincular Tareas con lecciones de la Academia (`academy_lesson_id` en `tasks`, reutilizando `video_url` que ya existe) + preferencia por empleado `academy_assistant_enabled` (reutilizando `employees.clock_preferences`, ya existe pero sin usar). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §39 | Cadena de pedidos compras→producción→ventas con notificaciones entre puestos. Ver detalle abajo. | ⏳ Pendiente — **necesito que decidan el alcance de la primera versión, ver nota abajo** |
+| §40 | Plan de trabajo diario: campo `origin` en `task_assignments` (planned/carried_over/extra/routine) para poder armar el reporte de cierre del día. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §41 | Nuevo endpoint `POST /task-assignments/{id}/validate-with-pin` — validar una tarea con el PIN de un supervisor sin que ese supervisor tenga que iniciar sesión en el dispositivo (reutiliza `employees.security_pin`, ya existe). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1374,3 +1382,270 @@ Porté la lógica de `TaskSyncController::sync()` (bloque de `assignments`, lín
 Test nuevo: `TaskAssignmentUpdateTest.php` — completar con `validation_mode: 'auto'` paga puntos/monedas correctamente, `'forced'` degrada a `awaiting_validation` y no paga, una asignación ya `completed` no se vuelve a pagar en un update posterior, y el mismo caso de tarea de otro tenant que §32 cubrió para `sync()` (aquí para `update()`). Suite completa: **134/134 tests, 569 assertions**, sin regresiones.
 
 **Listo para Cowork:** ya pueden migrar `startTask`, `pauseTask`, `completeTask`, `releaseTask`, `omitAssignment`, `grabTaskFromPool`, `reserveTaskFromPool` en `useTaskStore.ts` para llamar a `PUT /task-assignments/{id}` en vez de `syncToBackend()` completo — el endpoint ya calcula y persiste todo lo que antes solo pasaba por `/sync/tasks`.
+
+## ✅ Punto 3 implementado (2026-07-23) — resumen (Cowork)
+
+Las 7 funciones migraron a un helper nuevo `syncAssignmentRow(assignmentId)` que hace `PUT /task-assignments/{id}` con la fila completa (mismo shape que antes iba dentro del arreglo `assignments` de `/sync/tasks`), en vez de `syncToBackend()`. `triggerCheckInRoutines` y `handleSpillOver` se quedaron en `syncToBackend()` completo a propósito — generan/mueven varias filas a la vez, no una sola, así que no encajan en el patrón "una fila por clic". No leemos de vuelta la respuesta del `PUT` para reflejar recálculos del servidor (por simplicidad y porque no confirmamos el shape exacto de la respuesta) — si el backend recalcula algo que el frontend deba reflejar de inmediato (más allá de lo que ya calcula localmente antes de mandar), avisen y lo agregamos.
+
+De paso generalizamos los roles hardcodeados que señalaba la auditoría: `handleSpillOver`'s `[1,2,3,4].includes(roleId)` ahora revisa si algún puesto le reporta a `roleId` (mismo criterio de jerarquía que `reports_to_role_id`/`reports_to_role_ids` que ya usa `TaskRunner.tsx`), y los fallbacks de `getRoleIdFromRoleName`/`getRoleNameFromRoleId` en `PanelTareasRutinas.tsx` ya no adivinan IDs fijos (6=Ayudante, 5=Cajera, 1=Encargado) — si no encuentran el puesto en `globalRoles`, caen a la Bolsa de Trabajo (id 0) en vez de asignar a un puesto que podría no existir o significar otra cosa en otro tenant.
+
+---
+
+## §34. Avisar al supervisor cuando se omite una tarea
+
+**Contexto (auditoría del módulo de Tareas, 2026-07-22):** hoy `omitAssignment()` en `useTaskStore.ts` solo cambia `status: 'omitted'` local y lo resincroniza vía `syncToBackend()` (dentro del payload completo de `assignments`, §33). Nadie del lado de supervisión se entera de que una tarea se omitió salvo que abra el dashboard y note la ausencia. El frontend ya pide confirmación con motivo obligatorio (textarea) antes de omitir, y ya intenta pegarle a este endpoint (con `.catch()` — si no existe, la UX local sigue funcionando igual, solo no hay aviso):
+
+```
+POST /api/task-assignments/{id}/omit
+{
+  "reason": "No había producto suficiente en el almacén para reponer la góndola."
+}
+```
+
+**Lo que pedimos:**
+- Marcar la asignación `status: 'omitted'`, `validation_feedback: reason` (esa columna ya existe en `task_assignments`, ya la usa `TaskValidationController`, no hace falta migración nueva).
+- Resolver quién es "el supervisor" del empleado dueño de la asignación — mismo criterio ya usado en `TaskValidationController::validateAssignment()` (`$validatorJobRole->isSupervisorOf($employeeJobRole)`, más `admin`/`platform_admin` como fallback si el puesto no tiene supervisor directo).
+- Avisar por push real con `NotificationService` (mismo patrón que §26, `door-notice`) — algo como "Juan Pérez omitió la tarea 'Rellenado de góndola'. Motivo: no había producto suficiente." Si `NotificationService` no tiene ya un método para "avisar a quien supervisa a este empleado" (a diferencia de `sendToUser`/`sendToRole`/`sendBroadcast`, que asumen que el frontend ya sabe el destinatario), lo más simple es resolver el/los `job_role_id` que supervisan el puesto del empleado y usar `sendToRole` sobre esos puestos.
+- Devolver `{ "success": true }`. El frontend ya optimizó el estado local (`status: 'omitted'`) antes de llamar, así que no depende de la respuesta para su UX inmediata — solo lo usamos para loguear en consola si falla.
+
+**No es bloqueante:** si tarda en implementarse, la app sigue funcionando (omitir ya funciona del lado del empleado); esto solo añade la visibilidad para el supervisor.
+
+## ✅ Implementado (2026-07-22) — resumen
+
+`POST /task-assignments/{id}/omit` en `TaskAssignmentController::omit()`. Marca `status: 'omitted'` y `validation_feedback: reason`, tal cual pedido.
+
+**Resolución de supervisor:** no usé `sendToRole` sobre "puestos" porque, como ya lo señalaron ustedes mismos en §39, `NotificationService::sendToRole()` filtra por la columna gruesa `users.role` (admin/supervisor/empleado), no por `job_role_id` — habría notificado a TODOS los supervisores del tenant, no solo al de este empleado. En vez de eso: recorro los usuarios del tenant, resuelvo el `job_role_id` de cada uno vía `employee->jobRole` (mismo camino que `TaskValidationController::validateAssignment()`), aplico `isSupervisorOf($employeeJobRole)` y notifico con `sendToUser()` a cada supervisor resuelto (puede haber más de uno en cadenas de mando anidadas). Si no se resuelve ningún supervisor directo (puesto huérfano o empleado sin `job_role_id`), cae al respaldo `sendToRole('admin', ...)` + `sendToRole('platform_admin', ...)`.
+
+Devuelve `{ "success": true }` tal cual pedido.
+
+Test nuevo: `TaskOmitNotifiesSupervisorTest.php` — notifica al supervisor correcto vía `sendToUser` cuando se resuelve, y cae al respaldo de rol cuando no hay supervisor directo (mockeando `NotificationService` para verificar las llamadas exactas sin depender de Firebase real). Suite completa: 143/143 tests, 596 assertions en el momento de este fix, sin regresiones.
+
+---
+
+## §35. Nuevo modo de validación "Comparación (IA)" + evidencia fotográfica real en Tareas
+
+**Contexto (2026-07-22, a petición de Francisco):** hoy existen 3 `validation_mode` para una tarea: `forced` (siempre pide validación humana), `auto` (nunca la pide) y `dynamic` (probabilidad según antigüedad del empleado: <30 días siempre valida, <90 días 50%, >90 días 15% — ya implementado en `TaskSyncController::sync()` y portado a `TaskAssignmentController::update()` en §33). Se pide un 4° modo, `ai_comparison`, que reduzca la carga de supervisión humana usando IA para comparar la evidencia fotográfica del empleado contra imágenes de referencia que el admin sube al configurar la tarea.
+
+**Decisión de producto (las 2 preguntas abiertas que Francisco me pidió resolver yo):**
+1. **¿Reemplaza o convive con `dynamic`?** Convive — es una opción adicional en el selector de modo de validación, disponible solo para tareas con `assistant_type: 'evidencia_foto'` (no aplica a tareas de texto/número, que no tienen imagen que comparar).
+2. **¿Qué % de spot-check aleatorio humano para empleados veteranos (>90 días)?** 10% — más bajo que el 15% de `dynamic` porque aquí la IA ya está revisando cada entrega (no es "nunca se revisa", es "casi siempre revisa la IA, y de vez en cuando un humano verifica que la IA no se esté equivocando"). Igual que `dynamic`, los empleados nuevos (<30 días) siempre pasan por revisión humana — la IA solo entra en juego después del período de adaptación, y la curva de porcentaje por antigüedad se reutiliza tal cual (<30 días: 100% humano, <90 días: 50% humano / 50% IA, >90 días: 10% humano / 90% IA).
+
+### Cambios de datos
+
+`tasks` — agregar:
+```
+ai_comparison_enabled: boolean (default false)
+ai_reference_images: json (array de 3-5 URLs, subidas por el admin al configurar la tarea)
+ai_tolerance_description: text (nullable) — ej. "Debe haber al menos 8 de las 10 piezas visibles en el anaquel"
+```
+
+`task_assignments` — agregar:
+```
+ai_validation_result: json (nullable) — { "match": true, "confidence": 0.87, "reasoning": "..." } — para que el supervisor pueda auditar después por qué la IA aprobó/rechazó algo si hay dudas
+```
+
+### Endpoint
+
+```
+POST /api/task-assignments/{id}/ai-validate
+{ "evidence_photo_base64": "..." }
+```
+
+- Resuelve `validation_mode === 'ai_comparison'` de la tarea asociada.
+- Aplica la curva de antigüedad de arriba para decidir si esta entrega en particular la revisa la IA o se manda a `awaiting_validation` para un humano (nuevos: siempre humano; <90 días: 50/50; veteranos: 90% IA / 10% humano al azar).
+- Si le toca IA: usa `GeminiAIService` (ya existe en `Backend/app/Services/GeminiAIService.php`, actualmente sin conectar a ningún controlador) para comparar `evidence_photo_base64` contra `ai_reference_images` + `ai_tolerance_description`, pidiendo un JSON de salida tipo `{ match, confidence, reasoning }`. Si `match: true`, completa la asignación y paga (misma lógica de puntos/monedas ya portada en §33). Si `match: false`, la manda a `awaiting_validation` con el `reasoning` de la IA como `validation_feedback`, para que el supervisor vea por qué la rechazó y decida si confirma o corrige.
+- Si Gemini falla (timeout, sin API key, error de red) — igual que el resto de `GeminiAIService`, degradar con gracia: mandar la asignación a `awaiting_validation` para revisión humana en vez de fallar la petición completa.
+
+**Config de API key:** Francisco confirmó que ya tiene claves de Gemini y/o OpenAI disponibles — dijo explícitamente que no hay problema en usar cualquiera de las dos, o un modelo gratuito si conviene más. Como `GeminiAIService.php` ya está construido y listo (solo falta la env var real `GEMINI_API_KEY` en `Backend/.env`, hoy solo existe el placeholder en `.env.example`), lo más simple es usar ese servicio ya existente en vez de integrar uno nuevo — si prefieren otro proveedor, avisen y ajustamos.
+
+**Evidencia fotográfica real (prerequisito):** hoy el `assistant_type: 'evidencia_foto'` en el módulo de Tareas (`TaskRunner.tsx`, lado Cowork) es un stub — no captura foto real, solo simula (`localInput: 'evidencia_checador_foto.jpg'` hardcodeado). Antes de que `ai_comparison` tenga sentido, Cowork migrará esa parte a captura real de cámara + base64, reusando el patrón ya probado de `MealPhotoCapture.tsx` (§23, `POST /clock/meal-photo`, límite 2MB) — esto no requiere nada de backend adicional más allá del endpoint de arriba, que ya recibe `evidence_photo_base64`.
+
+**Subida de imágenes de referencia (lado admin):** en el formulario de creación/edición de tarea (`PanelTareasRutinas.tsx`), cuando se elija `ai_comparison`, aparecerá un uploader de 3-5 imágenes. Necesitamos saber si prefieren que las subamos como base64 directo en el payload de `POST/PUT /sync/tasks` (más simple, similar a `ai_reference_images: ["data:image/jpeg;base64,...", ...]`) o si prefieren un endpoint dedicado de subida (`POST /tasks/{id}/reference-images`) que devuelva URLs y guardemos solo esas URLs en `ai_reference_images`. Cualquiera de las dos nos sirve — avisen cuál es más simple de implementar de su lado y ajustamos el frontend a eso.
+
+## ✅ Backend implementado (2026-07-22) — resumen
+
+**Decisión sobre la subida de referencia:** base64 directo en `POST/PUT /sync/tasks`, tal cual la opción A que propusieron (`ai_reference_images: ["data:image/jpeg;base64,...", ...]`) — no construí el endpoint dedicado de subida. Es simétrico con `evidence_photo_base64` del endpoint de abajo y no requiere manejo de storage/URLs del lado backend. Si el volumen de imágenes crece y el payload se vuelve pesado, se puede migrar a URLs después sin romper el contrato (`ai_reference_images` seguiría siendo un array de strings, solo cambiaría qué contienen).
+
+**Cambios de datos:** exactamente los propuestos — `tasks.ai_comparison_enabled` (boolean), `tasks.ai_reference_images` (json), `tasks.ai_tolerance_description` (text), `task_assignments.ai_validation_result` (json). `POST/PUT /sync/tasks` ya acepta los 3 campos nuevos de `tasks` (camelCase o snake_case, mismo patrón que el resto del payload).
+
+**Endpoint:** `POST /task-assignments/{id}/ai-validate` en `TaskAssignmentController::aiValidate()`, `{ evidence_photo_base64 }`. Aplica la curva de antigüedad tal cual (nuevos: 100% humano; <90 días: 50/50; veteranos: 90% IA / 10% humano). Si `match: true` completa y paga (misma lógica de costo/puntos/monedas de §33, incluido el depósito en `UserWallet`). Si `match: false`, `awaiting_validation` con el `reasoning` de la IA como `validation_feedback`. Guarda siempre el `{match, confidence, reasoning}` completo en `ai_validation_result` para auditoría posterior, tal cual pedido.
+
+**`GeminiAIService` no soportaba imágenes:** las 4 llamadas existentes (`parseVoiceTask`, `analyzeCandidate`, `generateExam`, `suggestOptimalAssignee`) son texto-solo — su `callGemini()` privado solo arma `parts: [{text: ...}]`. Agregué un método nuevo, `compareTaskEvidence()`, con su propia llamada HTTP que arma `parts` multimodales (`inline_data` con `mime_type`+`data` por cada imagen de referencia, más la evidencia al final) — no toqué `callGemini()` para no arriesgar las 4 llamadas existentes que ya funcionan. A diferencia del resto de métodos del servicio (que atrapan su propia excepción y devuelven un fallback interno), `compareTaskEvidence()` **propaga** la excepción — la decisión de qué hacer si Gemini falla (mandar a revisión humana) es del controlador, no del servicio, para mantener el mismo patrón de "degradación con gracia" que pidieron.
+
+**Config de API key:** no toqué `.env` (`GEMINI_API_KEY`) — eso les toca a ustedes/Francisco directamente, yo no debo ni puedo escribir secretos reales al `.env` del repo. Mientras no esté configurada, `compareTaskEvidence()` lanza la excepción de "GEMINI_API_KEY no configurada" en el primer intento con `reviewsWithAi: true`, y el endpoint degrada correctamente a `awaiting_validation` (`reviewed_by: 'ai_unavailable'`) — es decir, **el endpoint ya es seguro de activar en producción antes de tener la clave real**, simplemente todo caerá a revisión humana hasta que la configuren.
+
+**Pendiente de su lado (no bloqueante para el backend):** la captura de cámara real en `assistant_type: 'evidencia_foto'` (`TaskRunner.tsx`) sigue siendo el stub que ya tenían — el endpoint ya recibe `evidence_photo_base64` tal cual lo necesiten en cuanto migren esa parte, reusando el patrón de `MealPhotoCapture.tsx` como ya lo planeaban.
+
+Test nuevo: `TaskAiComparisonValidationTest.php` — nuevo ingreso siempre humano (sin llamar a Gemini), veterano con match completa y paga, veterano sin match manda a revisión con el `reasoning`, falla de Gemini degrada con gracia, tarea sin `ai_comparison_enabled` rechaza con 422, y `sync/tasks` persiste los 3 campos nuevos. Los casos probabilísticos (veterano) usan el mismo patrón estadístico ya establecido en este archivo para `validation_mode: dynamic` (loop de hasta 25 intentos, cada uno con una asignación nueva, hasta capturar al menos un caso revisado por IA) — con 90% de probabilidad por intento, la posibilidad de que los 25 fallen es estadísticamente insignificante. Suite completa: **153/153 tests, 630 assertions**, sin regresiones.
+
+---
+
+## §36. Exponer antigüedad (`hire_date`) por empleado en el monitor
+
+**Contexto (2026-07-22, rediseño del Centro de Mando):** vamos a mostrar en la nueva pestaña "Equipo" del dashboard el puesto y la antigüedad de cada colaborador en turno (útil para que un supervisor nuevo entienda de un vistazo a quién tiene enfrente, y porque la antigüedad ya es la señal que usa el sistema para decidir cuánta supervisión requiere una tarea — §33/§35). `DashboardMonitorController::getMonitorData()` ya arma `role_name` por usuario pero no trae `hire_date`.
+
+**Pedimos:** agregar al arreglo que ya devuelve `getMonitorData()` por cada usuario (junto a `role_name`, `status`, etc.):
+
+```json
+{ "hire_date": "2026-07-10" }
+```
+
+Nada más — el frontend calcula la etiqueta ("nuevo · 12 días", "8 meses", "2 años") localmente a partir de la fecha, igual que ya hace para la curva de `validation_mode: dynamic`, así que no hace falta que el backend devuelva un texto pre-formateado.
+
+## ✅ Implementado (2026-07-22) — resumen
+
+Una línea: `'hire_date' => $u->hire_date` agregada al arreglo por usuario de `DashboardMonitorController::getMonitorData()`, junto a `role_name`. `$u` ya era una instancia de `Employee` con todos sus atributos disponibles (incluido `hire_date`), no hizo falta ninguna query adicional ni cambio de scoping.
+
+Test nuevo en `TaskAndSequencePendingItemsTest.php` (mismo archivo que ya cubre §14.2 del mismo controlador). Suite completa: 143/143 tests en el momento de este fix, sin regresiones.
+
+---
+
+## §37. Modo Kiosco: login por PIN en tablet compartida
+
+**Contexto (2026-07-22, a petición de Francisco):** el Reloj Checador debe poder vivir en una o varias tablets del negocio para empleados sin celular propio. La tablet queda en una pantalla neutra con la lista de empleados; el empleado toca su nombre, mete un PIN corto para identificarse, usa su vista normal (fichar, comida, tareas) y la tablet regresa sola a la pantalla neutra al terminar o tras inactividad, para que el siguiente la use sin ver nada del anterior.
+
+**No hace falta ningún campo nuevo:** `employees.security_pin` ya existe (hasheado, 4-6 dígitos, lo configura cada empleado desde su cuenta vía `PUT /me/security-pin`, `AuthController::updateSecurityPin`) y ya se usa para autorizar acciones sensibles (testigos de Apertura de Emergencia, aprobación de Ley Silla). Es exactamente el mismo propósito — reutilizamos el PIN que el empleado ya tiene, en vez de inventar uno paralelo. Importante: un empleado que nunca configuró su `security_pin` desde su celular no podrá usar el kiosco hasta hacerlo una vez — es una restricción real y deseable, no un bug.
+
+**Pedimos:**
+
+```
+POST /api/clock/kiosk-login
+{ "employee_id": 11, "pin": "4821" }
+```
+
+- Valida `pin` contra `employees.security_pin` (mismo `Hash::check` que ya usa `ClockService::approveSillaRequest` y `StoreOpeningService`), scoped por `tenant_id` del dispositivo/sucursal (¿cómo identifica el backend a qué tenant pertenece una tablet de kiosco? si no hay ya un mecanismo — ej. un token de dispositivo fijo — avisen cuál usar).
+- Si el PIN es correcto: devolver un token de sesión Sanctum para ese usuario, igual que el login normal, pero marcado de alguna forma como "sesión de kiosco" si les sirve para forzar una expiración corta (sugerencia: 10-15 minutos o hasta logout explícito) en vez de la expiración larga del login normal — para que si alguien olvida cerrar sesión en la tablet, no quede abierta indefinidamente.
+- Si el PIN es incorrecto: `422` con mensaje claro, sin revelar si el `employee_id` existe o no.
+- El frontend usará ese token solo mientras dure la sesión de kiosco; al terminar (botón "Salir" o timeout de inactividad) descarta el token localmente y, si es posible, lo invalida del lado del servidor (`POST /clock/kiosk-logout` o el logout normal que ya exista).
+
+## ✅ Implementado (2026-07-22) — resumen
+
+**Identificación del tenant del dispositivo:** no construí ningún mecanismo de "token de dispositivo" — es innecesario. `employee_id` ya identifica una fila única en `employees` (global, no por tenant), y esa fila ya trae su propio `tenant_id`. `AuthController::kioskLogin()` resuelve el tenant a partir del empleado (`Employee::withoutGlobalScopes()->find($employee_id)` → lee `->tenant_id` de ahí), en vez de necesitar saber el tenant de antemano para poder buscar al empleado. Una tablet de kiosco no necesita configuración ni identificación previa de ningún tipo — cualquier empleado de cualquier tenant puede loguearse en cualquier tablet con su `employee_id` + PIN.
+
+**PIN:** `Hash::check` contra `employees.security_pin`, igual que testigos de emergencia y Ley Silla. Mensaje de error genérico e idéntico tanto para PIN incorrecto como para `employee_id` inexistente (`"PIN incorrecto o colaborador no válido."`), para no revelar cuál de los dos casos ocurrió.
+
+**Token de sesión corta:** `$user->createToken('kiosk_session', ['*'], now()->addMinutes(15))` — Sanctum 4.x soporta expiración por token (parámetro `$expiresAt` de `createToken()`), independiente de la config global de expiración que aplica al resto de tokens del sistema. `POST /clock/kiosk-logout` revoca el token actual (mismo patrón que `logout()` normal).
+
+**Throttle:** `throttle:5,1` en `/clock/kiosk-login` (mismo nivel que `/login` y `/clock/emergency-open`) — el PIN es corto (4-6 dígitos), necesita protección agresiva contra fuerza bruta.
+
+Rutas: `POST /clock/kiosk-login` (pública, throttled) y `POST /clock/kiosk-logout` (autenticada, junto al resto de `/clock/*`).
+
+Test nuevo: `KioskLoginTest.php` — login correcto emite un token funcional y resuelve el tenant del empleado, PIN incorrecto y `employee_id` inexistente devuelven el mismo mensaje genérico, empleado sin PIN configurado se rechaza, logout revoca el token en la base de datos. Suite completa: 147/147 tests en el momento de este fix, sin regresiones.
+
+---
+
+## §38. Vincular Tareas con la Academia + preferencia de asistente por empleado
+
+**Contexto (2026-07-22, a petición de Francisco):** antes de iniciar una tarea, el colaborador vería un clip corto de cómo ejecutarla, para reducir la capacitación repetida. Buena noticia: `video_url` ya existe en la Academia (`AcademyController.php`, con lecciones reales ya cargadas vía YouTube embed) — no hace falta construir nada de video nuevo.
+
+**Pedimos, parte 1 — vincular tarea con lección:**
+
+```sql
+ALTER TABLE tasks ADD COLUMN academy_lesson_id BIGINT UNSIGNED NULLABLE;
+```
+
+Que `POST/PUT /sync/tasks` acepte `academy_lesson_id` igual que el resto de campos de la tarea, y que el `GET` que ya devuelve las tareas (vía `/sync/state` o el que corresponda) incluya el `video_url` de la lección vinculada (join simple) para que el frontend no tenga que pedirlo aparte.
+
+**Pedimos, parte 2 — preferencia por empleado, sin campo nuevo:** `employees.clock_preferences` ya existe (columna `json`, cast `array` en el modelo) pero no está conectada a ningún controlador todavía. Pedimos exponerla en el flujo de perfil que ya existe (`POST /me/update-profile`, `AuthController::updateProfile`) — que acepte y devuelva una clave `academy_assistant_enabled` (boolean) dentro de ese JSON, junto con lo que ya acepte ese endpoint.
+
+**Regla de negocio (la aplica el frontend, no requiere lógica nueva de backend):** mientras el empleado esté dentro de su ventana de nuevo ingreso (misma que ya usa `validation_mode: dynamic`, hoy <30 días desde `hire_date`), el frontend fuerza `academy_assistant_enabled: true` sin importar lo que haya guardado — el backend solo necesita guardar y devolver el valor tal cual, no calcular la ventana de antigüedad él mismo.
+
+## ✅ Implementado (2026-07-22) — resumen
+
+**Parte 1 (vincular tarea con lección):** migración `2026_07_22_000005_add_academy_lesson_id_to_tasks_table.php` — `tasks.academy_lesson_id`, FK nullable a `academy_courses.id` (no hay tabla `academy_lessons` separada; cada "lección" es una fila de `academy_courses`, que es donde ya vive `video_url`). `POST/PUT /sync/tasks` acepta `academy_lesson_id` igual que el resto de campos. `GET /sync/state` trae el `video_url` de la lección vinculada vía `leftJoin` como `academy_lesson_video_url` en cada fila de `tasks` — no hace falta pedirlo aparte.
+
+**Parte 2 (preferencia por empleado):** `POST /me/update-profile` (`AuthController::updateProfile`) acepta `academy_assistant_enabled` (boolean) y lo mergea dentro de `employees.clock_preferences` (lee el JSON existente, agrega/actualiza esa sola clave, no sobreescribe el resto — importante porque esa columna puede acumular otras preferencias futuras). Lo devuelve como campo top-level `academy_assistant_enabled` en la respuesta.
+
+Test nuevo: `TaskAcademyLinkTest.php` — `sync/tasks` persiste `academy_lesson_id`, `sync/state` trae el `video_url` correcto vía el join, `update-profile` persiste y devuelve la preferencia, y un update sin mandar esa clave no la borra (se preserva junto a otras claves ya guardadas en `clock_preferences`). Suite completa: 141/141 tests en el momento de este fix, sin regresiones.
+
+---
+
+## §39. Cadena de pedidos: compras → producción → ventas, con notificaciones entre puestos
+
+**Contexto (2026-07-22, a petición de Francisco):** cuando compras genera un pedido a un proveedor, producción necesita saber para prever espacio/verificar si el pedido es viable; cuando el pedido está por llegar, ambos deben recibir aviso para recibirlo juntos (compras captura en sistema, producción almacena/transforma/etiqueta); de ahí se genera una tarea para ventas (exhibir). Es un relevo lateral entre puestos, no la jerarquía de supervisión que ya existe (`reports_to_role_id`) — compras y producción no se supervisan entre sí.
+
+**Modelo propuesto:**
+
+```
+supply_orders: id, tenant_id, supplier_name, created_by_user_id, status
+  (generado / por_llegar / recibido / almacenado / listo_exhibir), expected_date, notes, created_at, updated_at
+
+supply_order_stage_roles: supply_order_id, stage, job_role_id
+  -- qué puesto es responsable de cada etapa; permite que la cadena sea configurable
+  -- por tenant en vez de hardcodear "compras siempre es X, producción siempre es Y"
+```
+
+**Al cambiar de etapa** (`PATCH /supply-orders/{id}/advance-stage` o similar): notificar a los usuarios cuyo `employee->jobRole->id` coincida con el `job_role_id` de la nueva etapa. **Importante:** `NotificationService::sendToRole(string $role, ...)` que ya existe filtra por la columna `users.role` (admin/supervisor/empleado), no por `job_role_id` — es demasiado amplio para este caso (notificaría a TODOS los supervisores, no solo al de compras o producción). Hace falta resolver primero qué usuarios tienen ese `job_role_id` específico (vía `Employee::where('job_role_id', ...)->with('user')`) y notificarlos uno por uno con `sendToUser`, o agregar un método nuevo tipo `sendToJobRole(int $jobRoleId, ...)` a `NotificationService` si prefieren mantenerlo encapsulado ahí.
+
+**Generación automática de tarea para el siguiente puesto:** al avanzar a `listo_exhibir`, crear una `TaskAssignment` normal (`target_type: 'role'`, apuntando al puesto de ventas) con título tipo "Exhibir producto: {supplier_name}" — reutiliza el módulo de Tareas que ya existe, no un sistema paralelo.
+
+Esta es la sección más grande y nueva de todas — si prefieren empezar con una versión más chica (por ejemplo solo 3 etapas en vez de las 5 propuestas, o sin la tabla de `stage_roles` configurable y hardcodeando compras/producción/ventas por nombre de puesto al inicio), avisen y ajusto el frontend a lo que sea más rápido de tener funcionando primero.
+
+## ⏳ Pendiente — necesito que decidan el alcance antes de construirla
+
+Implementé el resto de la tabla de pendientes (§34-§38, §40) en esta misma pasada, pero dejé §39 fuera a propósito. Es, por su propia descripción, "la sección más grande y nueva de todas" — un dominio de datos completo nuevo (`supply_orders` + `supply_order_stage_roles`), no un ajuste sobre algo que ya existe como el resto de esta tabla. Ustedes mismos dejaron abierta la invitación a acotar el alcance antes de construir, así que la tomo en serio en vez de adivinar una de las dos versiones (completa con etapas configurables por tenant, o la reducida con 3 etapas hardcodeadas) — cualquiera de las dos es una inversión real de diseño que no quiero deshacer a medias si no es la que quieren.
+
+**Lo que necesito para arrancar:**
+1. ¿Versión completa (5 etapas, `supply_order_stage_roles` configurable por tenant) o la reducida (3 etapas, compras/producción/ventas hardcodeadas por nombre de puesto) para la primera vuelta?
+2. Si es la reducida: ¿cómo identifico "el puesto de compras/producción/ventas" de un tenant — por `job_roles.name` exacto (frágil si un tenant nombra el puesto distinto), por un nuevo campo tipo `job_roles.department` (creo uno nuevo), o reutilizando algo que ya exista?
+3. `NotificationService::sendToJobRole()` nuevo (encapsulado en el servicio) vs. resolver los usuarios inline en el controlador cada vez (como ya hice en §34 para el mismo problema) — ¿alguna preferencia, o lo decido yo por consistencia con lo que acabo de construir en §34?
+
+En cuanto me digan esto en el chat (o Francisco decide y me lo pasan), lo implemento en la siguiente pasada de "revisa pendientes del contrato".
+
+---
+
+## §40. Plan de trabajo diario: origen de la tarea + reporte de cierre
+
+**Contexto (2026-07-22, a petición de Francisco):** cada mañana, admin y supervisores arman en junta el plan de trabajo del día. La intención es que cada supervisor arme ese plan desde su celular: retome los pendientes de ayer, agregue lo nuevo, y al cierre del día quede un reporte de qué se hizo, qué se agregó como extra durante el día y qué se omitió, por persona y agregado para el admin.
+
+**Pedimos:**
+
+```sql
+ALTER TABLE task_assignments ADD COLUMN origin VARCHAR(20) NULLABLE DEFAULT 'planned';
+-- valores: 'planned' (agregada en la ventana matutina), 'carried_over' (pendiente de un día anterior),
+-- 'extra' (agregada fuera de la ventana matutina), 'routine' (generada automáticamente por una rutina, ya existe el concepto, solo le ponemos nombre)
+```
+
+- Que `PUT /task-assignments/{id}` y `POST /sync/tasks` acepten y guarden `origin` igual que cualquier otro campo (agregarlo a `$fillable` de `TaskAssignment`).
+- No pedimos lógica de servidor para decidir qué es "ventana matutina" — eso lo decide el frontend al crear la asignación y lo manda ya resuelto en `origin`.
+- Para el reporte de cierre, con que `GET /task-assignments?date=YYYY-MM-DD` (ya existe, `TaskAssignmentController::index`) devuelva el campo `origin` en cada fila es suficiente — el frontend arma el conteo (planeadas vs. completadas vs. extras vs. omitidas) del lado del cliente, no hace falta un endpoint de reporte aparte por ahora.
+
+## ✅ Implementado (2026-07-22) — resumen
+
+Migración `2026_07_22_000004_add_origin_to_task_assignments_table.php` — `task_assignments.origin`, `varchar(20)` nullable, default `'planned'`, tal cual pedido. Agregado a `TaskAssignment::$fillable`. `PUT /task-assignments/{id}` lo acepta y valida contra los 4 valores exactos (`planned|carried_over|extra|routine`). `POST /sync/tasks` lo acepta igual que el resto de campos de `assignments`. `GET /task-assignments` no necesitó ningún cambio — ya devolvía el modelo completo, así que `origin` sale automáticamente en cuanto la columna existe.
+
+Test nuevo: 2 casos en `TaskAssignmentUpdateTest.php` — `PUT` persiste `origin`, `GET /task-assignments` lo devuelve. Suite completa: 141/141 tests en el momento de este fix, sin regresiones.
+
+---
+
+## §41. Validar tarea con PIN de supervisor (sin iniciar sesión)
+
+**Contexto (2026-07-22, a petición de Francisco):** hoy `TaskRunner.tsx` solo muestra los botones "Validar y Firmar"/"Devolver Tarea" cuando quien tiene la sesión abierta ES un supervisor (`isSupervisor`, gate ya existente). Si el celular/tableta lo tiene en la mano el colaborador y el supervisor solo está físicamente presente, no hay forma de validar sin que el supervisor cierre la sesión del colaborador e inicie la suya — friccción real en el día a día. Ya agregué en el frontend un botón "Validar con PIN de supervisor" que aparece junto al mensaje de espera, con un selector de supervisor + campo de PIN.
+
+**No hace falta ningún campo nuevo:** igual que en §37 (Kiosco), reutilizamos `employees.security_pin` — el mismo PIN que el supervisor ya configuró desde su cuenta (`PUT /me/security-pin`).
+
+**Pedimos:**
+
+```
+POST /api/task-assignments/{id}/validate-with-pin
+{
+  "supervisor_user_id": 7,
+  "pin": "4821",
+  "status": "completed"  // o "in_progress" si rechaza, con "feedback" opcional
+}
+```
+
+- Valida `pin` contra `security_pin` del empleado asociado a `supervisor_user_id` (`Hash::check`, mismo patrón que `ClockService::approveSillaRequest`).
+- **Verifica que ese supervisor realmente pueda validar ESTA asignación** — reutilizar exactamente la misma lógica de autorización que ya existe en `TaskValidationController::validateAssignment()` (`isSupervisorOf()` + fallback admin/platform_admin), pero usando `supervisor_user_id` en vez de `auth()->user()` como el validador. Es importante no saltarse este chequeo solo porque el PIN sea correcto — el PIN prueba identidad, no autorización sobre esta tarea en particular.
+- Si todo es válido: aplicar exactamente la misma lógica de puntos/monedas/wallet que ya usa `validateAssignment()` (mismo guard anti-doble-pago), y guardar `validated_by: supervisor_user_id` (no el usuario autenticado, que es el colaborador).
+- Devolver `{ "success": true }` o `422`/`403` con mensaje claro si el PIN es incorrecto o el supervisor no tiene permiso sobre esa tarea (sin revelar cuál de las dos cosas falló, por seguridad).
+
+## ✅ Implementado (2026-07-22) — resumen
+
+`POST /task-assignments/{id}/validate-with-pin` en `TaskAssignmentController::validateWithPin()`, tal cual la spec. Mismo mensaje genérico (`"PIN incorrecto o sin permisos para validar esta tarea."`) tanto para PIN incorrecto (422) como para supervisor sin autorización sobre esa asignación (403) — usé el código HTTP para distinguir el tipo de fallo (validación de datos vs. permisos) pero el `message` es idéntico en ambos casos, para no filtrar cuál de las dos cosas falló como pidieron.
+
+**Autorización:** exactamente `isSupervisorOf()` + fallback `admin`/`platform_admin`, resuelto contra `supervisor_user_id` (no `auth()->user()`), reutilizando el mismo camino `employee->jobRole` de `TaskValidationController` y de §34. Agregué también el bloqueo de auto-validación (un supervisor no puede validarse a sí mismo vía PIN) — no estaba en la lista de bullets de la spec, pero sí lo cubre `validateAssignment()` (paso 1 de ese método) y la spec pide "reutilizar exactamente la misma lógica de autorización", así que lo incluí por consistencia y para no abrir un hueco de seguridad que el flujo normal sí tiene cerrado.
+
+**Pago:** misma estructura que `validateAssignment()` — `points_awarded`/`coins_awarded`/depósito en `UserWallet`, `score_percentage: 100` fijo (la spec de este endpoint no pide un campo `score_percentage` en el payload, a diferencia del endpoint original que sí lo acepta — si lo quieren configurable aquí también, avisen y lo agrego). `validated_by` guarda el `supervisor_user_id`, no el usuario autenticado (que es el colaborador con el celular en mano). Dispara `LogTaskValidationJob` igual que el flujo normal.
+
+Test nuevo: `TaskValidateWithPinTest.php` — PIN correcto + supervisor autorizado completa y paga, PIN incorrecto se rechaza con el mensaje genérico, supervisor con PIN correcto pero sin autorización sobre esa asignación se rechaza igual, rechazo con `status: in_progress` + feedback devuelve la tarea sin pagar, y un supervisor no puede auto-validarse. Suite completa: **158/158 tests, 644 assertions**, sin regresiones.

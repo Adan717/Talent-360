@@ -58,6 +58,12 @@ class TaskSyncController extends Controller
                         'evidence_type' => $task['evidenceType'] ?? $task['evidence_type'] ?? 'Supervisión directa',
                         'procedure_steps' => $task['procedureSteps'] ?? $task['procedure_steps'] ?? null,
                         'is_validated' => $task['isValidated'] ?? $task['is_validated'] ?? false,
+                        // §38: vincula la tarea a una lección de la Academia (academy_courses.id).
+                        'academy_lesson_id' => $task['academyLessonId'] ?? $task['academy_lesson_id'] ?? null,
+                        // §35: modo de validación "Comparación (IA)".
+                        'ai_comparison_enabled' => $task['aiComparisonEnabled'] ?? $task['ai_comparison_enabled'] ?? false,
+                        'ai_reference_images' => $task['aiReferenceImages'] ?? $task['ai_reference_images'] ?? null,
+                        'ai_tolerance_description' => $task['aiToleranceDescription'] ?? $task['ai_tolerance_description'] ?? null,
                         'tenant_id' => $tenantId,
                     ];
                     
@@ -155,6 +161,9 @@ class TaskSyncController extends Controller
                         'tenant_id' => $tenantId,
                         'accumulated_mins' => $assignment['accumulatedMins'] ?? $assignment['accumulated_mins'] ?? 0,
                         'reserved_at_mins' => $assignment['reservedAtMins'] ?? $assignment['reserved_at_mins'] ?? null,
+                        // §40: origen de la asignación para el reporte de cierre del plan de
+                        // trabajo diario — el frontend decide el valor, el backend solo lo guarda.
+                        'origin' => $assignment['origin'] ?? null,
                     ];
 
                     // Check if supervisor validation is required

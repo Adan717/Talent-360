@@ -105,6 +105,19 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
   const [suspendingUser, setSuspendingUser] = useState<number | null>(null);
   const [selectedTaskIdForAssign, setSelectedTaskIdForAssign] = useState<number | null>(null);
 
+  // Vista enfocada del Monitor en móvil: una sección a la vez (Bolsa/Equipo/Actividad).
+  // En escritorio (lg+) las tres siguen viéndose lado a lado, sin cambios.
+  const [activeMonitorTab, setActiveMonitorTab] = useState<'bolsa' | 'equipo' | 'actividad'>('bolsa');
+
+  const getTenureLabel = (hireDate?: string | null): string | null => {
+    if (!hireDate) return null;
+    const days = Math.floor((Date.now() - new Date(hireDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) return null;
+    if (days < 30) return `nuevo · ${days}d`;
+    if (days < 365) return `${Math.floor(days / 30)} meses`;
+    return `${Math.floor(days / 365)} años`;
+  };
+
   // Chat States
   const [chatTab, setChatTab] = useState<'chat' | 'feed'>('chat');
   const [chatInput, setChatInput] = useState('');
@@ -681,12 +694,11 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       });
   };
 
+  // Empleados/Tareas/Prospectos ya se muestran arriba en las píldoras de HeaderStats —
+  // aquí solo van las métricas que no se repiten, para no duplicar la misma cifra dos veces.
   const stats = [
-    { label: 'Empleados Activos', value: realStats.active_users.toString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', trend: 'Base de Datos' },
     { label: 'Asistencia del Día', value: `${realStats.cumplimiento}%`, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: 'Cumplimiento' },
     { label: 'Retardos del Día', value: realStats.retardos_hoy.toString(), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', trend: 'Hoy' },
-    { label: 'Tareas Pendientes', value: realStats.tasks.toString(), icon: ListTodo, color: 'text-violet-600', bg: 'bg-violet-100', trend: 'Activas' },
-    { label: 'Nuevos Prospectos', value: (realStats.candidates_count || 0).toString(), icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-100', trend: 'Reclutamiento', hasActivity: realStats.candidates_recent_activity }
   ];
 
   const visibleStats = stats.filter(stat => {
@@ -813,33 +825,20 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             );
           })()}
 
-      {/* Grid de Métricas (Solo Módulos Activos / Freemium Base) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Métricas complementarias (lo que no repite ya las píldoras de arriba) */}
+      <div className="grid grid-cols-2 gap-4">
         {visibleStats.map((stat, idx) => (
           <div key={idx} className="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3.5 group hover:border-blue-200 transition-colors">
             <div className={`p-3.5 rounded-2xl ${stat.bg} ${stat.color} shrink-0`}>
               <stat.icon size={40} strokeWidth={1.5} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-slate-800 leading-none">{stat.value}</h3>
-                {stat.hasActivity && (
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-                  </span>
-                )}
-              </div>
+              <h3 className="text-xl font-black text-slate-800 leading-none">{stat.value}</h3>
               <p className="text-xs font-semibold text-slate-500 truncate mt-1">{stat.label}</p>
               <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                 <div className="text-[9px] font-bold text-slate-400 bg-slate-50 py-0.5 px-2 rounded inline-block w-max">
                   {stat.trend}
                 </div>
-                {stat.hasActivity && (
-                  <div className="text-[9px] font-extrabold text-purple-600 bg-purple-50 py-0.5 px-1.5 rounded inline-block w-max animate-pulse">
-                    Actividad
-                  </div>
-                )}
               </div>
             </div>
             <ArrowUpRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors shrink-0 self-start mt-0.5" />
@@ -957,10 +956,29 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               </div>
             )}
             
+            {/* Selector de sección: en móvil se ve una a la vez, en escritorio (lg+) esto se oculta y las tres se ven lado a lado */}
+            <div className="flex gap-1 bg-slate-100 rounded-xl p-1 lg:hidden">
+              {([
+                { key: 'bolsa', label: 'Bolsa' },
+                { key: 'equipo', label: 'Equipo' },
+                { key: 'actividad', label: 'Actividad' },
+              ] as const).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveMonitorTab(tab.key)}
+                  className={`flex-1 py-2 text-xs font-black rounded-lg transition-colors ${
+                    activeMonitorTab === tab.key ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              
+
               {/* PANEL 1: Bolsa de Tareas Rápidas & Asistente IA (1/4) */}
-              <div className="lg:col-span-1 bg-slate-50/60 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between h-full min-h-[500px]">
+              <div className={`${activeMonitorTab === 'bolsa' ? 'flex' : 'hidden'} lg:flex lg:col-span-1 bg-slate-50/60 p-4 rounded-2xl border border-slate-200 flex-col justify-between h-full min-h-[500px]`}>
                 <div className="space-y-4 flex-1 flex flex-col">
                   <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
                     <div>
@@ -1091,8 +1109,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 </div>
               </div>
 
-              {/* PANEL 2: Colaboradores en Turno (2/4) */}
-              <div className="lg:col-span-2 space-y-4">
+              {/* PANEL 2: Colaboradores en Turno / "Equipo" (2/4) */}
+              <div className={`${activeMonitorTab === 'equipo' ? 'block' : 'hidden'} lg:block lg:col-span-2 space-y-4`}>
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
                     <Users size={14} className="text-slate-400" /> Colaboradores Activos
@@ -1246,7 +1264,18 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                               </div>
                               <div className="min-w-0">
                                 <h4 className="text-sm font-extrabold text-slate-800 truncate">{user.name}</h4>
-                                <p className="text-[10px] text-slate-400 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-[10px] text-slate-400 font-semibold truncate uppercase tracking-wider">{user.role_name}</p>
+                                  {getTenureLabel((user as any).hire_date) && (
+                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full shrink-0 ${
+                                      getTenureLabel((user as any).hire_date)?.startsWith('nuevo')
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : 'bg-slate-100 text-slate-500'
+                                    }`}>
+                                      {getTenureLabel((user as any).hire_date)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
@@ -1417,8 +1446,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 </div>
               </div>
 
-              {/* PANEL 3: Bitácora & Chat en tiempo real (1/4) */}
-              <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-4 space-y-4">
+              {/* PANEL 3: Bitácora & Chat en tiempo real / "Actividad" (1/4) */}
+              <div className={`${activeMonitorTab === 'actividad' ? 'block' : 'hidden'} lg:block lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-4 space-y-4`}>
                 <div className="flex gap-2 border-b border-slate-150 pb-1 shrink-0">
                   <button 
                     onClick={() => setChatTab('chat')}

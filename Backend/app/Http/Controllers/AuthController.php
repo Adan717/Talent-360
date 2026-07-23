@@ -93,6 +93,54 @@ class AuthController extends Controller
         return response()->json(['message' => 'Sesión cerrada exitosamente']);
     }
 
+    /**
+     * §37: Modo Kiosco — login por PIN en tablet compartida. Reutiliza
+     * employees.security_pin (mismo mecanismo que testigos de Apertura de Emergencia
+     * y aprobación de Ley Silla), no crea un secreto paralelo.
+     *
+     * No hace falta un mecanismo de "tenant del dispositivo": employee_id ya identifica
+     * una fila única en employees, y esa fila ya trae su propio tenant_id — se resuelve
+     * el tenant a partir del empleado, no al revés.
+     */
+    public function kioskLogin(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|integer',
+            'pin' => 'required|string',
+        ]);
+
+        $genericError = ['success' => false, 'message' => 'PIN incorrecto o colaborador no válido.'];
+
+        $employee = \App\Models\Employee::withoutGlobalScopes()->find($request->employee_id);
+        if (!$employee || !$employee->security_pin || !Hash::check($request->pin, $employee->security_pin)) {
+            return response()->json($genericError, 422);
+        }
+
+        $user = $employee->user_id ? User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find($employee->user_id) : null;
+        if (!$user) {
+            return response()->json($genericError, 422);
+        }
+
+        $expiresAt = now()->addMinutes(15);
+        $token = $user->createToken('kiosk_session', ['*'], $expiresAt)->plainTextToken;
+
+        SecurityLogger::log('auth_success', "Inicio de sesión de kiosco: {$user->email}", $user->tenant_id, $user->id);
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'user' => $user,
+            'tenant' => $user->tenant,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ]);
+    }
+
+    public function kioskLogout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['success' => true, 'message' => 'Sesión de kiosco cerrada.']);
+    }
+
     public function me(Request $request)
     {
         $user = $request->user();
@@ -273,7 +321,8 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'avatar' => 'nullable|string',
-            'phone' => 'nullable|string|max:30|unique:users,phone,' . $user->id
+            'phone' => 'nullable|string|max:30|unique:users,phone,' . $user->id,
+            'academy_assistant_enabled' => 'nullable|boolean',
         ], [
             'phone.unique' => 'Este número de WhatsApp ya se encuentra registrado con otra empresa.'
         ]);
@@ -293,15 +342,38 @@ class AuthController extends Controller
             ->where('id', $user->id)
             ->update($updates);
 
+        // §38: academy_assistant_enabled vive dentro de employees.clock_preferences
+        // (columna json ya existente, sin conectar a ningún controlador todavía) — se
+        // mergea en vez de sobreescribir para no perder otras preferencias futuras.
+        if (!($user instanceof \App\Models\PlatformUser) && $request->has('academy_assistant_enabled')) {
+            $employeeRow = \Illuminate\Support\Facades\DB::table('employees')->where('user_id', $user->id)->first();
+            if ($employeeRow) {
+                $preferences = $employeeRow->clock_preferences ? json_decode($employeeRow->clock_preferences, true) : [];
+                $preferences['academy_assistant_enabled'] = (bool) $request->boolean('academy_assistant_enabled');
+                \Illuminate\Support\Facades\DB::table('employees')
+                    ->where('user_id', $user->id)
+                    ->update(['clock_preferences' => json_encode($preferences)]);
+            }
+        }
+
         if ($user instanceof \App\Models\PlatformUser) {
             $updatedUser = \App\Models\PlatformUser::find($user->id);
         } else {
             $updatedUser = \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)->with('tenant')->find($user->id);
         }
 
+        $academyAssistantEnabled = null;
+        if (!($user instanceof \App\Models\PlatformUser)) {
+            $rawPreferences = \Illuminate\Support\Facades\DB::table('employees')->where('user_id', $user->id)->value('clock_preferences');
+            $academyAssistantEnabled = $rawPreferences
+                ? (json_decode($rawPreferences, true)['academy_assistant_enabled'] ?? false)
+                : false;
+        }
+
         return response()->json([
             'message' => 'Perfil actualizado exitosamente',
-            'user' => $updatedUser
+            'user' => $updatedUser,
+            'academy_assistant_enabled' => $academyAssistantEnabled,
         ]);
     }
 

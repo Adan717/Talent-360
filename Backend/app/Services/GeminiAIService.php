@@ -361,6 +361,108 @@ PROMPT;
     }
 
     // =========================================================
+    // 5. COMPARACIÓN DE EVIDENCIA FOTOGRÁFICA DE TAREA (§35)
+    // =========================================================
+
+    /**
+     * Compara la evidencia fotográfica de una tarea contra imágenes de referencia.
+     * A diferencia del resto de métodos de este servicio, NO atrapa la excepción
+     * internamente — el controlador decide cómo degradar (mandar a revisión humana)
+     * si Gemini falla, así que el error debe propagarse.
+     *
+     * @param string $evidenceBase64        Foto del empleado, con o sin prefijo data:image/...;base64,
+     * @param array  $referenceImagesBase64 3-5 imágenes de referencia subidas por el admin
+     * @param string|null $toleranceDescription Criterio de tolerancia en texto libre
+     * @return array {match: bool, confidence: float, reasoning: string}
+     * @throws \Exception si la API key no está configurada o Gemini falla/responde inválido
+     */
+    public function compareTaskEvidence(string $evidenceBase64, array $referenceImagesBase64, ?string $toleranceDescription = null): array
+    {
+        if (empty($this->apiKey) || $this->apiKey === 'YOUR_GEMINI_API_KEY') {
+            throw new \Exception('GEMINI_API_KEY no configurada. Añade tu clave en el archivo .env: GEMINI_API_KEY=tu_clave_aqui');
+        }
+
+        $toleranceText = $toleranceDescription
+            ? "Criterio de tolerancia definido por el supervisor: \"{$toleranceDescription}\""
+            : 'Sin criterio de tolerancia adicional — compara contra el estándar general de las imágenes de referencia.';
+
+        $promptText = <<<PROMPT
+Eres un supervisor de calidad operativa. Te doy primero {$this->countLabel(count($referenceImagesBase64))} de referencia que muestran cómo debe verse una tarea correctamente ejecutada, y al final la foto de evidencia entregada por un colaborador. Compáralas.
+
+{$toleranceText}
+
+Responde ÚNICAMENTE con un JSON con esta estructura exacta:
+{
+  "match": true,
+  "confidence": 0.87,
+  "reasoning": "Explicación breve (1-2 oraciones) de por qué coincide o no coincide"
+}
+PROMPT;
+
+        $parts = [['text' => $promptText]];
+        foreach ($referenceImagesBase64 as $refImage) {
+            [$mimeType, $data] = $this->splitDataUri($refImage);
+            $parts[] = ['inline_data' => ['mime_type' => $mimeType, 'data' => $data]];
+        }
+        [$mimeType, $data] = $this->splitDataUri($evidenceBase64);
+        $parts[] = ['inline_data' => ['mime_type' => $mimeType, 'data' => $data]];
+
+        $endpoint = $this->baseUrl . $this->model . ':generateContent?key=' . $this->apiKey;
+
+        $response = Http::timeout(30)
+            ->retry(2, 1000)
+            ->post($endpoint, [
+                'contents' => [['role' => 'user', 'parts' => $parts]],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'maxOutputTokens' => 512,
+                    'responseMimeType' => 'application/json',
+                ],
+                'safetySettings' => [
+                    ['category' => 'HARM_CATEGORY_HARASSMENT', 'threshold' => 'BLOCK_NONE'],
+                    ['category' => 'HARM_CATEGORY_HATE_SPEECH', 'threshold' => 'BLOCK_NONE'],
+                    ['category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold' => 'BLOCK_NONE'],
+                    ['category' => 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold' => 'BLOCK_NONE'],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            Log::error('Gemini API error (compareTaskEvidence)', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            throw new \Exception('Error al contactar Gemini API: HTTP ' . $response->status());
+        }
+
+        $raw = $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        $decoded = json_decode($this->extractJson($raw), true);
+
+        if (!$decoded || !isset($decoded['match'])) {
+            throw new \Exception('Respuesta inválida de Gemini para comparación de evidencia');
+        }
+
+        return $decoded;
+    }
+
+    private function countLabel(int $count): string
+    {
+        return $count === 1 ? '1 imagen' : "{$count} imágenes";
+    }
+
+    /**
+     * Separa un data URI (data:image/jpeg;base64,XXXX) en [mime_type, base64_data].
+     * Si no trae prefijo, asume que ya es base64 crudo y usa image/jpeg por default.
+     */
+    private function splitDataUri(string $dataUri): array
+    {
+        if (preg_match('/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s', $dataUri, $matches)) {
+            return [$matches[1], $matches[2]];
+        }
+
+        return ['image/jpeg', $dataUri];
+    }
+
+    // =========================================================
     // HELPERS PRIVADOS
     // =========================================================
 

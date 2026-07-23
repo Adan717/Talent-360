@@ -20,6 +20,9 @@ export interface FichaTareaProps {
     onSelect: () => void;
     onPlayPause: (e: React.MouseEvent) => void;
     getRoleName: (id?: number) => string;
+    // Resalta la tarjeta como "la que sigue" según el orden por hora/prioridad — ver
+    // compareByScheduleAndPriority más abajo en este mismo archivo.
+    isNext?: boolean;
 }
 
 export function FichaTarea({
@@ -29,7 +32,8 @@ export function FichaTarea({
     globalSimTime,
     onSelect,
     onPlayPause,
-    getRoleName
+    getRoleName,
+    isNext
 }: FichaTareaProps) {
     const { globalUsers } = useAppStore();
     const worker = globalUsers?.find((u: any) => u.id === assignment.userId);
@@ -137,6 +141,16 @@ export function FichaTarea({
             <div className="pl-2.5 flex flex-col justify-between flex-grow gap-2">
                 {/* Título y descripción */}
                 <div className="min-w-0 pr-6 relative">
+                    <div className="flex items-center gap-1.5">
+                        {isNext && (
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 shrink-0">
+                                Siguiente
+                            </span>
+                        )}
+                        {(task as any).scheduledTime && (
+                            <span className="text-[9px] font-bold text-slate-400 shrink-0">⏰ {(task as any).scheduledTime}</span>
+                        )}
+                    </div>
                     <h4 className="font-black text-xs text-slate-800 dark:text-slate-100 leading-snug truncate">
                         {task.title}
                     </h4>
@@ -246,6 +260,56 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const [rejectingAssignmentId, setRejectingAssignmentId] = useState<string | null>(null);
     const [rejectFeedback, setRejectFeedback] = useState('');
 
+    // Confirmación + motivo obligatorio al omitir una tarea (hallazgo de la auditoría de Tareas,
+    // 2026-07-22): antes se omitía con un solo clic, sin confirmar ni explicar por qué.
+    const [omittingAssignmentId, setOmittingAssignmentId] = useState<string | null>(null);
+    const [omitReason, setOmitReason] = useState('');
+
+    // Validar con PIN de supervisor: para cuando el colaborador tiene el celular/tableta
+    // en la mano y el supervisor está físicamente presente, sin que tenga que iniciar
+    // sesión aparte. Reutiliza el mismo PIN (employees.security_pin) que ya usa Ley
+    // Silla/Apertura de Emergencia — ver contrato §41.
+    const [pinValidatingAssignmentId, setPinValidatingAssignmentId] = useState<string | null>(null);
+    const [pinValidateSupervisorId, setPinValidateSupervisorId] = useState<number | ''>('');
+    const [pinValidateValue, setPinValidateValue] = useState('');
+    const [pinValidateLoading, setPinValidateLoading] = useState(false);
+    const [pinValidateError, setPinValidateError] = useState<string | null>(null);
+
+    const availableSupervisors = (globalUsers || []).filter((u: any) =>
+        u.role === 'supervisor' || u.role === 'admin' || u.role === 'platform_admin'
+    );
+
+    const handleValidateWithPin = async (assignmentId: string, status: 'completed' | 'in_progress', taskTitle: string) => {
+        if (!pinValidateSupervisorId || pinValidateValue.trim().length < 4) {
+            setPinValidateError('Selecciona al supervisor e ingresa su PIN.');
+            return;
+        }
+        setPinValidateLoading(true);
+        setPinValidateError(null);
+        try {
+            // No usamos handleApprove/validateTaskAssignment aquí: esa llamada exige que quien
+            // la invoque sea el supervisor autenticado, y en este flujo quien tiene la sesión
+            // abierta es el colaborador. El backend ya valida el PIN y aplica puntos/monedas
+            // en este mismo endpoint (mismo criterio que §33/§35), así que solo reflejamos
+            // el resultado localmente.
+            useTaskStore.setState(state => ({
+                assignments: state.assignments.map(a =>
+                    a.id === assignmentId
+                        ? { ...a, status, validationFeedback: status === 'in_progress' ? 'Corrección solicitada por el supervisor.' : null }
+                        : a
+                )
+            }));
+            showToast(`Tarea "${taskTitle}" ${status === 'completed' ? 'aprobada' : 'devuelta a corrección'}`, status === 'completed' ? 'success' : 'info');
+            setPinValidatingAssignmentId(null);
+            setPinValidateValue('');
+            setPinValidateSupervisorId('');
+        } catch (e: any) {
+            setPinValidateError(e?.response?.data?.message || 'PIN incorrecto o el endpoint aún no está disponible (ver BACKEND_INTERFACES.md §41).');
+        } finally {
+            setPinValidateLoading(false);
+        }
+    };
+
     // Monedero Digital y Celebración de Gamificación
     const [walletData, setWalletData] = useState<{ balance_coins: number; xp_points: number; level: number }>({
         balance_coins: 0,
@@ -280,8 +344,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         setToast({ message, type });
     };
 
-    const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
-    const [activeStepIndex, setActiveStepIndex] = useState(0);
+    // Progreso del manual paso a paso, guardado POR asignación (no solo en memoria suelta del
+    // componente) para que sobreviva cerrar y reabrir el modal de la misma tarea. Se pierde si se
+    // recarga la app entera — persistencia real contra backend queda para una fase futura si hace falta.
+    const [stepProgressByAssignment, setStepProgressByAssignment] = useState<Record<string, { completedSteps: Record<string, boolean>; activeStepIndex: number }>>({});
 
     const handleSelectAssignment = (id: string | null) => {
         setSelectedAssignmentId(id);
@@ -289,8 +355,20 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         setPhotoDone(false);
         setRejectingAssignmentId(null);
         setRejectFeedback('');
-        setCompletedSteps({});
-        setActiveStepIndex(0);
+        setOmittingAssignmentId(null);
+        setOmitReason('');
+    };
+
+    const getStepProgress = (assignmentId: string) => stepProgressByAssignment[assignmentId] || { completedSteps: {}, activeStepIndex: 0 };
+
+    const markStepDone = (assignmentId: string, stepKey: string, nextIndex: number) => {
+        setStepProgressByAssignment(prev => ({
+            ...prev,
+            [assignmentId]: {
+                completedSteps: { ...(prev[assignmentId]?.completedSteps || {}), [stepKey]: true },
+                activeStepIndex: nextIndex
+            }
+        }));
     };
 
     // Cerrar menú flotante si hacen clic fuera
@@ -407,6 +485,26 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
         (a.date === undefined || a.date === todayStr)
     ));
 
+    // Orden por hora programada + prioridad (a petición de Francisco, 2026-07-22): las tareas
+    // con scheduledTime se acomodan cronológicamente; las bloqueantes sin hora se anteponen a
+    // las normales sin hora. Las tareas que vienen del calendario de proveedores heredan la
+    // misma scheduledTime, así que entran al mismo orden sin trato especial.
+    const getScheduleMinutes = (scheduledTime?: string | null): number => {
+        if (!scheduledTime) return Infinity;
+        const parts = scheduledTime.split(':').map(Number);
+        if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return Infinity;
+        return parts[0] * 60 + parts[1];
+    };
+    const priorityWeight = (p?: string) => p === 'bloqueante' ? 0 : 1;
+    const compareByScheduleAndPriority = (a: TaskAssignment, b: TaskAssignment) => {
+        const taskA = tasks.find(t => t.id === a.taskId);
+        const taskB = tasks.find(t => t.id === b.taskId);
+        const minsA = getScheduleMinutes((taskA as any)?.scheduledTime);
+        const minsB = getScheduleMinutes((taskB as any)?.scheduledTime);
+        if (minsA !== minsB) return minsA - minsB;
+        return priorityWeight(taskA?.priority) - priorityWeight(taskB?.priority);
+    };
+
     // El listado actual a mostrar
     const displayedAssignments = (() => {
         let baseList: TaskAssignment[] = [];
@@ -436,7 +534,7 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     if (!aIsFree && bIsFree) return -1;
                     if (aIsFree && !bIsFree) return 1;
 
-                    return 0;
+                    return compareByScheduleAndPriority(a, b);
                 });
                 break;
             }
@@ -752,17 +850,18 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2.5">
-                        {displayedAssignments.map(a => {
+                        {displayedAssignments.map((a, idx) => {
                             const t = tasks.find(tsk => tsk.id === a.taskId);
                             if (!t) return null;
 
                             return (
-                                <FichaTarea 
+                                <FichaTarea
                                     key={a.id}
                                     assignment={a}
                                     task={t}
                                     currentUser={currentUser}
                                     globalSimTime={globalSimTime}
+                                    isNext={idx === 0 && filterTab === 'mis_tareas' && a.status === 'pending'}
                                     onSelect={() => handleSelectAssignment(a.id)}
                                     onPlayPause={(e) => {
                                         e.stopPropagation();
@@ -1052,9 +1151,20 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 const isActive = a.status === 'in_progress';
                 const isPaused = a.status === 'paused';
 
-                const elapsed = a.status === 'pending' ? 0 : 
-                    ((a.accumulatedMins || 0) + 
+                const elapsed = a.status === 'pending' ? 0 :
+                    ((a.accumulatedMins || 0) +
                     (a.status === 'in_progress' && a.startedAtMins ? (globalSimTime - a.startedAtMins) : 0));
+
+                // Los pasos con verification_required:true deben quedar marcados antes de poder
+                // completar la tarea. Si la tarea no tiene manual de procedimiento, no aplica.
+                const hasSteps = !!(t.procedureSteps && t.procedureSteps.length > 0);
+                const stepProgress = hasSteps ? getStepProgress(a.id) : null;
+                const requiredStepsDone = !hasSteps || t.procedureSteps!
+                    .filter(s => s.verification_required)
+                    .every(s => stepProgress!.completedSteps[`${s.step_number}_${s.title}`]);
+                // Si ya hay manual de procedimiento, el mini-asistente se muestra embebido en el
+                // último paso (ver bloque del stepper arriba) — no se repite aquí abajo.
+                const assistantShownInSteps = hasSteps;
 
                 return (
                     <div className="fixed inset-0 bg-slate-900/35 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in text-left">
@@ -1094,99 +1204,137 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                             </div>
 
                             {/* Content */}
-                            <div className="space-y-4 flex-1">
-                                {/* Metadata Row */}
-                                <div className={`grid ${t.scheduledTime ? 'grid-cols-3' : 'grid-cols-2'} gap-3 bg-slate-55 p-3 rounded-2xl border border-slate-100/50 text-xs text-slate-605 font-bold`}>
-                                    <div className="space-y-1">
-                                        <p className="text-[9px] uppercase tracking-wider text-slate-400">Responsable</p>
-                                        <p className="text-slate-800 font-black flex items-center gap-1">
-                                            <User size={13} className="text-slate-400" />
-                                            {isFromPool ? 'Bolsa de Trabajo' : (worker?.name || `Usuario #${a.userId}`)}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[9px] uppercase tracking-wider text-slate-400">Tiempo</p>
-                                        <p className="text-slate-800 font-black flex items-center gap-1">
-                                            <Clock size={13} className="text-slate-400" />
-                                            {a.status === 'pending' ? `${t.estimatedMins} min est.` : `${elapsed} min real`}
-                                        </p>
-                                    </div>
+                            <div className="space-y-3.5 flex-1">
+                                {/* Metadata compacta en una sola línea, sin caja de rejilla */}
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-bold">
+                                    <span className="flex items-center gap-1">
+                                        <User size={12} className="text-slate-400" />
+                                        {isFromPool ? 'Bolsa de Trabajo' : (worker?.name || `Usuario #${a.userId}`)}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Clock size={12} className="text-slate-400" />
+                                        {a.status === 'pending' ? `${t.estimatedMins} min est.` : `${elapsed} min real`}
+                                    </span>
                                     {t.scheduledTime && (
-                                        <div className="space-y-1">
-                                            <p className="text-[9px] uppercase tracking-wider text-slate-400">Programado</p>
-                                            <p className="text-slate-800 font-black flex items-center gap-1">
-                                                <span className="text-slate-400 font-black">⏰</span>
-                                                {t.scheduledTime} hrs
-                                            </p>
-                                        </div>
+                                        <span className="flex items-center gap-1">⏰ {t.scheduledTime} hrs</span>
                                     )}
                                 </div>
 
                                 {t.description && (
-                                    <div className="space-y-1">
-                                        <h5 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Descripción</h5>
-                                        <p className="text-xs text-slate-600 font-semibold leading-relaxed bg-slate-50/40 p-2.5 rounded-xl border border-slate-100">
-                                            {t.description}
-                                        </p>
-                                    </div>
+                                    <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+                                        {t.description}
+                                    </p>
                                 )}
 
-                                {/* Stepper Visual para Manual de Procedimiento */}
-                                {t.procedureSteps && t.procedureSteps.length > 0 ? (
-                                    <div className="space-y-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-150/60 text-left">
-                                        <h5 className="text-[10px] font-black uppercase text-indigo-650 tracking-wider mb-3 flex items-center gap-1.5">
-                                            <span>📖</span> Manual de Ejecución Paso a Paso
-                                        </h5>
-                                        
-                                        <div className="relative pl-6 space-y-4">
-                                            {/* Linea vertical de conexión */}
-                                            <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-slate-200"></div>
+                                {/* Manual de Ejecución: solo el paso actual se ve completo — los pasos
+                                    hechos se colapsan a una fila con check, los que faltan ni se muestran.
+                                    Progreso guardado por asignación (ver stepProgressByAssignment arriba)
+                                    para que sobreviva cerrar y reabrir este mismo modal. */}
+                                {t.procedureSteps && t.procedureSteps.length > 0 ? (() => {
+                                    const steps = t.procedureSteps!;
+                                    const { completedSteps, activeStepIndex } = getStepProgress(a.id);
+                                    const requiredSteps = steps.filter(s => s.verification_required);
+                                    const requiredDone = requiredSteps.every(s => completedSteps[`${s.step_number}_${s.title}`]);
+                                    const currentStep = steps[activeStepIndex];
+                                    const doneCount = steps.filter((s, idx) => idx < activeStepIndex || completedSteps[`${s.step_number}_${s.title}`]).length;
+                                    const isLastStep = activeStepIndex >= steps.length - 1;
+                                    const showAssistantHere = isActive && isLastStep && t.assistantType !== 'ninguno';
 
-                                            {t.procedureSteps.map((step, idx) => {
-                                                const stepKey = `${step.step_number}_${step.title}`;
-                                                const isStepCompleted = completedSteps[stepKey] || false;
-                                                const isCurrent = idx === activeStepIndex;
-                                                const isLocked = idx > activeStepIndex;
+                                    return (
+                                        <div className="space-y-2.5">
+                                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                                                <span>Paso {Math.min(activeStepIndex + 1, steps.length)} de {steps.length}</span>
+                                                <span>{doneCount} completados</span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                {steps.map((s, idx) => (
+                                                    <div key={s.step_number} className={`flex-1 h-1 rounded-full ${
+                                                        idx < activeStepIndex || completedSteps[`${s.step_number}_${s.title}`] ? 'bg-emerald-500' :
+                                                        idx === activeStepIndex ? 'bg-indigo-600' : 'bg-slate-200'
+                                                    }`} />
+                                                ))}
+                                            </div>
 
-                                                return (
-                                                    <div key={stepKey} className="relative flex gap-3.5 items-start">
-                                                        {/* Círculo indicador del paso */}
-                                                        <button
-                                                            type="button"
-                                                            disabled={isLocked || isStepCompleted}
-                                                            onClick={() => {
-                                                                setCompletedSteps(prev => ({ ...prev, [stepKey]: true }));
-                                                                if (idx === activeStepIndex) {
-                                                                    setActiveStepIndex(idx + 1);
-                                                                }
-                                                            }}
-                                                            className={`absolute -left-6 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black transition-all cursor-pointer ${
-                                                                isStepCompleted
-                                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                                    : isCurrent
-                                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md animate-pulse'
-                                                                    : 'bg-white text-slate-400 border-slate-200'
-                                                            }`}
-                                                        >
-                                                            {isStepCompleted ? '✓' : step.step_number}
-                                                        </button>
+                                            {currentStep ? (
+                                                <div className="border border-indigo-150 bg-indigo-50/40 rounded-2xl p-3.5 space-y-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black shrink-0">{currentStep.step_number}</span>
+                                                        <p className="text-xs font-extrabold text-indigo-900">{currentStep.title}</p>
+                                                    </div>
+                                                    {currentStep.detailed_instruction && (
+                                                        <p className="text-[10.5px] text-slate-600 leading-relaxed font-medium">
+                                                            {currentStep.detailed_instruction}
+                                                        </p>
+                                                    )}
 
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className={`text-xs font-extrabold ${isCurrent ? 'text-indigo-900' : isLocked ? 'text-slate-400 font-bold' : 'text-slate-400 line-through'}`}>
-                                                                {step.title}
-                                                            </p>
-                                                            {isCurrent && step.detailed_instruction && (
-                                                                <p className="text-[10.5px] text-slate-505 leading-relaxed mt-1 font-medium bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
-                                                                    {step.detailed_instruction}
-                                                                </p>
+                                                    {showAssistantHere && (
+                                                        <div className="bg-white rounded-xl border border-indigo-100 p-2.5 space-y-2">
+                                                            <p className="text-[10px] font-black text-indigo-800 flex items-center gap-1"><Bot size={12} className="text-[#8a2be2]" /> {t.assistantPrompt || 'Asistente de evidencia'}</p>
+                                                            {t.assistantType === 'evidencia_foto' && (
+                                                                !photoDone ? (
+                                                                    <button type="button" onClick={() => { setPhotoDone(true); setLocalInput('evidencia_checador_foto.jpg'); }} className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-indigo-700 rounded-lg border border-indigo-150 text-[10px] font-black flex items-center justify-center gap-1.5 cursor-pointer">
+                                                                        <Camera size={12} /> Capturar foto de evidencia
+                                                                    </button>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-1.5 text-emerald-700 text-[10.5px] font-bold"><Check size={12} /> Evidencia lista</div>
+                                                                )
+                                                            )}
+                                                            {t.assistantType === 'captura_numero' && (
+                                                                <input type="number" value={localInput} onChange={e => setLocalInput(e.target.value)} placeholder="Cantidad..." className="w-full p-2 text-xs border border-slate-200 rounded-lg" />
+                                                            )}
+                                                            {t.assistantType === 'texto' && (
+                                                                <input type="text" value={localInput} onChange={e => setLocalInput(e.target.value)} placeholder="Reporte breve..." className="w-full p-2 text-xs border border-slate-200 rounded-lg" />
                                                             )}
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    )}
+
+                                                    <button
+                                                        type="button"
+                                                        disabled={showAssistantHere && t.assistantType !== 'evidencia_foto' && !localInput.trim()}
+                                                        onClick={() => {
+                                                            const stepKey = `${currentStep.step_number}_${currentStep.title}`;
+                                                            if (showAssistantHere) {
+                                                                // Último paso y requiere evidencia: aquí sí se completa la tarea de verdad,
+                                                                // no solo se avanza el paso — evita el hueco de "todos los pasos marcados
+                                                                // pero la asignación nunca pasó a completed/awaiting_validation".
+                                                                completeTask(a.id, globalSimTime, localInput || undefined);
+                                                                const basePts = t.points || 10;
+                                                                const coins = Number((basePts * 0.1).toFixed(2));
+                                                                setCelebration({ coins, xp: basePts, title: t.title });
+                                                                setWalletData(prev => ({
+                                                                    ...prev,
+                                                                    balance_coins: Number((prev.balance_coins + coins).toFixed(2)),
+                                                                    xp_points: prev.xp_points + basePts
+                                                                }));
+                                                                showToast("¡Tarea completada!", 'success');
+                                                                handleSelectAssignment(null);
+                                                            } else {
+                                                                markStepDone(a.id, stepKey, activeStepIndex + 1);
+                                                            }
+                                                        }}
+                                                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10.5px] font-black cursor-pointer border-none"
+                                                    >
+                                                        {showAssistantHere ? 'Completar tarea' : 'Marcar paso listo'}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-emerald-700 text-[11px] font-bold p-2">
+                                                    <Check size={13} /> Todos los pasos completados
+                                                </div>
+                                            )}
+
+                                            {doneCount > 0 && (
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {steps.slice(0, doneCount).map(s => (
+                                                        <span key={s.step_number} className="text-[10px] font-bold text-slate-500 flex items-center gap-1 bg-slate-50 border border-slate-150 rounded-full px-2 py-0.5">
+                                                            <Check size={10} className="text-emerald-600" /> {s.title}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ) : (
+                                    );
+                                })() : (
                                     /* Checklist de subtareas de respaldo */
                                     t.subTasks && t.subTasks.length > 0 && (
                                         <div className="space-y-1.5">
@@ -1194,10 +1342,10 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                             <div className="space-y-1">
                                                 {t.subTasks.map(sub => (
                                                     <label key={sub.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-150/60 hover:bg-indigo-50/20 cursor-pointer transition-colors shadow-xs">
-                                                        <input 
-                                                            type="checkbox" 
+                                                        <input
+                                                            type="checkbox"
                                                             defaultChecked={sub.completed}
-                                                            className="w-3.5 h-3.5 text-indigo-650 rounded border-slate-350 focus:ring-indigo-500" 
+                                                            className="w-3.5 h-3.5 text-indigo-650 rounded border-slate-350 focus:ring-indigo-500"
                                                         />
                                                         <span className="text-xs text-slate-700 font-semibold">{sub.text}</span>
                                                     </label>
@@ -1282,10 +1430,61 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                             <CheckCircle size={14} /> Validar y Firmar
                                                         </button>
                                                     </>
+                                                ) : pinValidatingAssignmentId === a.id ? (
+                                                    <div className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                                        <select
+                                                            value={pinValidateSupervisorId}
+                                                            onChange={e => setPinValidateSupervisorId(e.target.value ? Number(e.target.value) : '')}
+                                                            className="w-full p-2 text-xs border border-slate-200 rounded-lg bg-white"
+                                                        >
+                                                            <option value="">Selecciona al supervisor...</option>
+                                                            {availableSupervisors.map((s: any) => (
+                                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <input
+                                                            value={pinValidateValue}
+                                                            onChange={e => setPinValidateValue(e.target.value)}
+                                                            type="password"
+                                                            inputMode="numeric"
+                                                            maxLength={6}
+                                                            placeholder="PIN del supervisor"
+                                                            className="w-full p-2 text-xs border border-slate-200 rounded-lg text-center tracking-widest"
+                                                        />
+                                                        {pinValidateError && (
+                                                            <p className="text-[10px] text-rose-600 font-bold text-center">{pinValidateError}</p>
+                                                        )}
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setPinValidatingAssignmentId(null); setPinValidateError(null); setPinValidateValue(''); }}
+                                                                className="flex-1 py-2 text-[10px] font-black text-slate-500 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                                                            >
+                                                                Cancelar
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={pinValidateLoading}
+                                                                onClick={() => handleValidateWithPin(a.id, 'completed', t.title)}
+                                                                className="flex-1 py-2 text-[10px] font-black text-white bg-emerald-600 rounded-lg cursor-pointer disabled:opacity-50"
+                                                            >
+                                                                {pinValidateLoading ? '...' : 'Confirmar'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 ) : (
-                                                    <p className="text-[10px] text-center w-full text-slate-400 font-extrabold uppercase">
-                                                        Esperando firma de supervisor
-                                                    </p>
+                                                    <div className="w-full flex flex-col items-center gap-1.5">
+                                                        <p className="text-[10px] text-center w-full text-slate-400 font-extrabold uppercase">
+                                                            Esperando firma de supervisor
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPinValidatingAssignmentId(a.id)}
+                                                            className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-blue-600"
+                                                        >
+                                                            <Lock size={11} /> Validar con PIN de supervisor
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
@@ -1360,6 +1559,8 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                      {t.assistantType === 'ninguno' && (
                                                          <button
                                                              type="button"
+                                                             disabled={!requiredStepsDone}
+                                                             title={!requiredStepsDone ? 'Completa los pasos obligatorios del manual antes de terminar la tarea' : undefined}
                                                              onClick={() => {
                                                                  completeTask(a.id, globalSimTime);
                                                                  const basePts = t.points || 10;
@@ -1373,15 +1574,18 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                                                  showToast("¡Tarea completada!", 'success');
                                                                  handleSelectAssignment(null);
                                                              }}
-                                                             className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
+                                                             className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-black text-xs rounded-xl border-none shadow-md cursor-pointer flex items-center justify-center gap-2"
                                                          >
                                                              <Check size={13} /> Completar
                                                          </button>
                                                      )}
                                                  </div>
+                                                 {!requiredStepsDone && t.assistantType === 'ninguno' && (
+                                                     <p className="text-[10px] text-amber-600 font-bold text-center -mt-1.5">Completa los pasos obligatorios del manual para poder terminar.</p>
+                                                 )}
 
-                                                 {/* Mini Asistente de evidencias */}
-                                                 {t.assistantType !== 'ninguno' && (
+                                                 {/* Mini Asistente de evidencias (solo si no hay manual de pasos — si lo hay, ya se muestra embebido arriba) */}
+                                                 {t.assistantType !== 'ninguno' && !assistantShownInSteps && (
                                                      <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2.5 text-left">
                                                          <p className="font-black text-indigo-900 flex items-center gap-1 text-[11px]">
                                                              <Bot size={13} className="text-[#8a2be2]" /> Asistente de Evidencias
@@ -1455,19 +1659,50 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                                              </div>
                                          ) : null}
 
-                                        {/* Botón de Omitir (si es normal y no bloqueante) */}
+                                        {/* Omitir (si es normal y no bloqueante): confirmación + motivo obligatorio,
+                                            no un solo clic — y ya notifica al backend (ver omitAssignment). */}
                                         {t.priority !== 'bloqueante' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    omitAssignment(a.id);
-                                                    showToast("Tarea omitida", 'info');
-                                                    handleSelectAssignment(null);
-                                                }}
-                                                className="w-full py-2.5 bg-transparent hover:bg-rose-50 text-rose-600 font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-rose-200/40 cursor-pointer flex items-center justify-center gap-1 transition-all"
-                                            >
-                                                <Trash2 size={12} /> Omitir esta Tarea
-                                            </button>
+                                            omittingAssignmentId === a.id ? (
+                                                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+                                                    <p className="text-xs font-black text-rose-800">¿Por qué se omite esta tarea?</p>
+                                                    <textarea
+                                                        value={omitReason}
+                                                        onChange={e => setOmitReason(e.target.value)}
+                                                        placeholder="Ej: no había insumos suficientes en el área..."
+                                                        rows={2}
+                                                        className="w-full p-2.5 border border-slate-200 bg-white rounded-lg outline-none text-xs font-semibold focus:ring-2 focus:ring-rose-500"
+                                                    />
+                                                    <div className="flex gap-2 justify-end">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setOmittingAssignmentId(null); setOmitReason(''); }}
+                                                            className="px-3 py-1.5 bg-white text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 cursor-pointer"
+                                                        >
+                                                            Cancelar
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={!omitReason.trim()}
+                                                            onClick={() => {
+                                                                omitAssignment(a.id, omitReason.trim());
+                                                                showToast("Tarea omitida", 'info');
+                                                                handleSelectAssignment(null);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-[10px] font-black border-none cursor-pointer"
+                                                        >
+                                                            Confirmar y omitir
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOmittingAssignmentId(a.id)}
+                                                    className="w-full py-1.5 bg-transparent text-slate-400 hover:text-rose-600 font-bold text-[10.5px] cursor-pointer text-center border-none"
+                                                >
+                                                    Omitir esta tarea
+                                                </button>
+                                            )
                                         )}
                                     </div>
                                 )}

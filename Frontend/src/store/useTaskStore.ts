@@ -92,6 +92,7 @@ interface TaskStoreState {
     setRoutines: (routines: Routine[]) => void;
     setAssignments: (assignments: TaskAssignment[]) => void;
     syncToBackend: (includeCatalog?: boolean) => Promise<void>;
+    syncAssignmentRow: (assignmentId: string) => Promise<void>;
 
     // Acciones Admin
     addTask: (task: Task) => void;
@@ -110,7 +111,7 @@ interface TaskStoreState {
     validateTaskAssignment: (assignmentId: string, status: 'completed' | 'in_progress', feedback?: string) => Promise<void>;
     handleSpillOver: (userId: number, roleId: number) => void;
     createDynamicTask: (title: string, roleTarget: any, estimatedMins?: number, priority?: TaskPriority) => void; // On-the-fly
-    omitAssignment: (assignmentId: string) => void;
+    omitAssignment: (assignmentId: string, reason?: string) => void;
 }
 
 export const useTaskStore = create<TaskStoreState>((set, get) => ({
@@ -144,6 +145,22 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
         } catch (e) {
             console.error("Failed to sync tasks to backend:", e);
             alert("Error al guardar tareas. Verifique que el servidor backend esté encendido.");
+        }
+    },
+
+    // §33 punto 3: sincroniza solo la fila que cambió vía PUT /task-assignments/{id}, en vez
+    // de reenviar el arreglo completo de assignments por cada clic operativo (tomar de la
+    // bolsa, iniciar, pausar, completar, liberar, omitir). El backend ya porta la misma lógica
+    // de recálculo de puntos/validación que antes solo vivía en POST /sync/tasks (§33 punto 1).
+    syncAssignmentRow: async (assignmentId) => {
+        try {
+            if (useAppStore.getState().isSandboxMode) return;
+            const assignment = get().assignments.find(a => a.id === assignmentId);
+            if (!assignment) return;
+            await axiosInstance.put(`/task-assignments/${assignmentId}`, assignment);
+        } catch (e) {
+            console.error("Failed to sync assignment row to backend:", e);
+            alert("Error al guardar la tarea. Verifique que el servidor backend esté encendido.");
         }
     },
 
@@ -206,22 +223,22 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             const expectedEndTimeMins = (currentSimTime && task) ? currentSimTime + task.estimatedMins : null;
             
             return {
-                assignments: state.assignments.map(a => 
+                assignments: state.assignments.map(a =>
                     a.id === assignmentId ? { ...a, userId, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, accumulatedMins: a.accumulatedMins || 0, reservedAtMins: null } : a
                 )
             };
         });
-        get().syncToBackend();
+        get().syncAssignmentRow(assignmentId);
     },
 
     reserveTaskFromPool: (assignmentId, userId, currentSimTime) => {
         set(state => ({
-            assignments: state.assignments.map(a => 
+            assignments: state.assignments.map(a =>
                 a.id === assignmentId ? { ...a, userId, status: 'pending', reservedAtMins: currentSimTime } : a
             )
         }));
-        get().syncToBackend();
-        
+        get().syncAssignmentRow(assignmentId);
+
         const assignment = get().assignments.find(a => a.id === assignmentId);
         const task = assignment ? get().tasks.find(t => t.id === assignment.taskId) : null;
         useAppStore.getState().addMatrixEvent(
@@ -233,11 +250,11 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
 
     releaseTask: (assignmentId) => {
         set(state => ({
-            assignments: state.assignments.map(a => 
+            assignments: state.assignments.map(a =>
                 a.id === assignmentId ? { ...a, userId: null, status: 'pending', reservedAtMins: null } : a
             )
         }));
-        get().syncToBackend();
+        get().syncAssignmentRow(assignmentId);
 
         const assignment = get().assignments.find(a => a.id === assignmentId);
         const task = assignment ? get().tasks.find(t => t.id === assignment.taskId) : null;
@@ -256,12 +273,12 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             const expectedEndTimeMins = currentSimTime + remainingMins;
             
             return {
-                assignments: state.assignments.map(a => 
+                assignments: state.assignments.map(a =>
                     a.id === assignmentId ? { ...a, status: 'in_progress', startedAtMins: currentSimTime, expectedEndTimeMins, reservedAtMins: null } : a
                 )
             };
         });
-        get().syncToBackend();
+        get().syncAssignmentRow(assignmentId);
     },
 
     pauseTask: (assignmentId) => {
@@ -281,7 +298,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                 return a;
             })
         }));
-        get().syncToBackend();
+        get().syncAssignmentRow(assignmentId);
     },
 
     completeTask: (assignmentId, currentSimTime, assistantData) => {
@@ -347,11 +364,11 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
         }
 
         set(state => ({
-            assignments: state.assignments.map(a => 
+            assignments: state.assignments.map(a =>
                 a.id === assignmentId ? { ...a, status: targetStatus, completedAtMins: currentSimTime, assistantData, validationFeedback: null } : a
             )
         }));
-        get().syncToBackend();
+        get().syncAssignmentRow(assignmentId);
     },
 
     validateTaskAssignment: async (assignmentId, status, feedback) => {
@@ -398,13 +415,24 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
         let spiltCount = 0;
         let transferredCount = 0;
 
+        // Antes esto era [1, 2, 3, 4].includes(roleId) — una lista de IDs de puesto fija que
+        // asumía la estructura de un solo tenant. Generalizado: un puesto cuenta como "jefe"
+        // (sus bloqueantes se transfieren, no caen a la bolsa) si algún otro puesto le reporta
+        // — mismo criterio de jerarquía que ya usa TaskRunner.tsx (mySubordinateRoles) — en vez
+        // de adivinar por número, así funciona igual sin importar cómo cada empresa numere sus puestos.
+        const globalRolesForSpillOver = useAppStore.getState().globalRoles || [];
+        const isManagementRole = globalRolesForSpillOver.some((r: any) =>
+            Number(r.reports_to_role_id) === Number(roleId) ||
+            (Array.isArray(r.reports_to_role_ids) && r.reports_to_role_ids.map(Number).includes(Number(roleId)))
+        );
+
         const newAssignments = assignments.map(a => {
             if (a.userId !== userId || !['pending', 'in_progress', 'paused'].includes(a.status)) return a;
-            
+
             const task = tasks.find(t => t.id === a.taskId);
             if (!task) return a;
 
-            if ([1, 2, 3, 4].includes(roleId) && task.priority === 'bloqueante') {
+            if (isManagementRole && task.priority === 'bloqueante') {
                 // Tareas críticas de jefes NO se van a la bolsa. Se transfieren (Simulado aquí como 'spilled' para que las rescate el suplente)
                 transferredCount++;
                 return { ...a, status: 'spilled', userId: null } as TaskAssignment; // Requires specific rescue logic
@@ -463,18 +491,32 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
         );
     },
 
-    omitAssignment: (assignmentId) => {
+    omitAssignment: (assignmentId, reason) => {
         set(state => ({
-            assignments: state.assignments.map(a => 
-                a.id === assignmentId ? { ...a, status: 'omitted' } : a
+            assignments: state.assignments.map(a =>
+                a.id === assignmentId ? { ...a, status: 'omitted', validationFeedback: reason || null } : a
             )
         }));
-        get().syncToBackend();
-        
+        get().syncAssignmentRow(assignmentId);
+
+        const { tasks, assignments } = get();
+        const assignment = assignments.find(a => a.id === assignmentId);
+        const task = assignment ? tasks.find(t => t.id === assignment.taskId) : null;
+
         useAppStore.getState().addMatrixEvent(
             '❌ Tarea Omitida',
-            `Se omitió la tarea asignada.`,
+            reason ? `Se omitió "${task?.title || 'la tarea'}". Motivo: ${reason}` : `Se omitió la tarea asignada.`,
             'warning'
         );
+
+        // Aviso real al supervisor (hallazgo de la auditoría de Tareas, 2026-07-22): antes esto solo
+        // dejaba rastro en el timeline de la Matrix, que no existe fuera del Simulador — en producción
+        // nadie se enteraba de una tarea omitida salvo que abriera la lista y notara el badge. Sigue el
+        // mismo patrón de compatibilidad hacia adelante que /clock/door-notice: si el endpoint aún no
+        // existe del lado backend, no se trata como error visible — la omisión local ya se aplicó.
+        if (!useAppStore.getState().isSandboxMode && assignment) {
+            axiosInstance.post(`/task-assignments/${assignmentId}/omit`, { reason: reason || null })
+                .catch(e => console.warn('omit-notify endpoint no disponible aún (ver BACKEND_INTERFACES.md):', e));
+        }
     }
 }));

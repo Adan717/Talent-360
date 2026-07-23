@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair } from 'lucide-react';
+import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair, Mic, Check, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, Routine, ProcedureStep } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
+import axiosInstance from '../../lib/axios';
 
 // Detección automática de categoría por palabras clave del título. Se usa tanto
 // para guardar la tarea como para mostrar en vivo la categoría sugerida en el
@@ -30,13 +31,14 @@ export function PanelTareasRutinas() {
     
     const { globalRoles } = useAppStore();
 
+    // Los fallbacks de IDs fijos (1=Gerente, 5=Cajero, 6=Ayudante...) asumían la estructura de
+    // puestos de un solo tenant — en multi-tenant cada empresa define sus propios puestos con
+    // sus propios IDs, así que adivinar un nombre por número podía mostrar el puesto equivocado.
+    // Si globalRoles no trae el puesto, mostramos el id crudo en vez de adivinar.
     const getRoleName = (id: number) => {
+        if (id === 0) return 'Todos';
         const found = globalRoles?.find((r: any) => r.id === id);
         if (found) return found.name;
-        if (id === 1) return 'Gerente';
-        if (id === 5) return 'Cajero';
-        if (id === 6) return 'Ayudante';
-        if (id === 0) return 'Todos';
         return `Rol #${id}`;
     };
     
@@ -50,24 +52,20 @@ export function PanelTareasRutinas() {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
     
+    // Mismo criterio que getRoleName arriba: sin IDs fijos adivinados, para no asignar al
+    // puesto equivocado en un tenant que no tenga esos mismos nombres/IDs.
     const getRoleIdFromRoleName = (roleName: string): number => {
         if (roleName === 'Todos') return 0;
         const found = globalRoles?.find((r: any) => r.name === roleName);
         if (found) return found.id;
-        if (roleName === 'Ayudante General') return 6;
-        if (roleName === 'Cajera') return 5;
-        if (roleName === 'Encargado') return 1;
-        return 1;
+        return 0; // Sin match conocido: cae a la Bolsa de Trabajo en vez de un puesto adivinado
     };
 
     const getRoleNameFromRoleId = (id: number): string => {
         if (id === 0) return 'Todos';
         const found = globalRoles?.find((r: any) => r.id === id);
         if (found) return found.name;
-        if (id === 6) return 'Ayudante General';
-        if (id === 5) return 'Cajera';
-        if (id === 1) return 'Encargado';
-        return 'Todos';
+        return `Rol #${id}`;
     };
 
     // Filtros de Tareas
@@ -122,6 +120,75 @@ export function PanelTareasRutinas() {
     const [newTaskFrequency, setNewTaskFrequency] = useState('Diaria');
     const [newTaskEvidenceType, setNewTaskEvidenceType] = useState('Supervisión directa');
     const [newTaskExecutorRoleId, setNewTaskExecutorRoleId] = useState(0);
+    const [newTaskScheduledTime, setNewTaskScheduledTime] = useState('');
+
+    // Constructor de tarea dividido en 4 pasos (antes era una sola pantalla larga con
+    // ~11 grupos de campos). 1: Qué y para quién, 2: Cuándo y cuánto, 3: Validación y
+    // evidencia, 4: Procedimiento (SOP + checklist). El indicador de paso es clicable
+    // en cualquier momento, así que editar una tarea existente no obliga a ir lineal.
+    const [creatorStep, setCreatorStep] = useState<1 | 2 | 3 | 4>(1);
+    const CREATOR_STEPS = [
+        { step: 1 as const, label: 'Qué y para quién' },
+        { step: 2 as const, label: 'Cuándo y cuánto' },
+        { step: 3 as const, label: 'Validación' },
+        { step: 4 as const, label: 'Procedimiento' },
+    ];
+
+    // Asistente de voz/IA para pre-llenar el formulario en un solo paso, reutilizando
+    // el endpoint ya existente /admin/dashboard/parse-voice-task (mismo que usa el
+    // wizard de voz del dashboard). No crea la tarea directamente: solo pre-llena los
+    // campos para que el admin los revise en los 4 pasos antes de guardar.
+    const [aiQuickInput, setAiQuickInput] = useState('');
+    const [aiQuickLoading, setAiQuickLoading] = useState(false);
+    const [aiQuickListening, setAiQuickListening] = useState(false);
+
+    const handleAiQuickMic = () => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('Tu navegador no soporta dictado por voz. Puedes escribir la descripción de la tarea directamente.');
+            return;
+        }
+        const rec = new SpeechRecognition();
+        rec.lang = 'es-MX';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.onstart = () => setAiQuickListening(true);
+        rec.onerror = () => setAiQuickListening(false);
+        rec.onend = () => setAiQuickListening(false);
+        rec.onresult = (e: any) => {
+            const transcript = e.results[0][0].transcript;
+            setAiQuickInput(transcript);
+        };
+        rec.start();
+    };
+
+    const handleAiQuickGenerate = async () => {
+        if (!aiQuickInput.trim()) return;
+        setAiQuickLoading(true);
+        try {
+            const res = await axiosInstance.post('/admin/dashboard/parse-voice-task', { text: aiQuickInput });
+            const d = res.data?.data;
+            if (d) {
+                if (d.title) setNewTaskTitle(d.title);
+                if (d.estimated_mins) setNewTaskMins(d.estimated_mins);
+                setNewTaskPriority(d.priority === 'bloqueante' ? 'bloqueante' : 'normal');
+                if (d.assistant_detected && d.assistant_type) {
+                    setNewTaskAssistant(d.assistant_type);
+                    if (d.assistant_prompt) setNewTaskPrompt(d.assistant_prompt);
+                }
+                if (d.target_type === 'role' && d.target_id) {
+                    setNewTaskExecutorRoleId(Number(d.target_id));
+                }
+            }
+            setAiQuickInput('');
+            setCreatorStep(1);
+        } catch (e) {
+            console.error('Error al interpretar la tarea por IA', e);
+            alert('No se pudo interpretar la descripción. Puedes llenar el formulario manualmente.');
+        } finally {
+            setAiQuickLoading(false);
+        }
+    };
 
     // Formulario Nueva Rutina
     const [creatorMode, setCreatorMode] = useState<'tarea'|'rutina'>('tarea');
@@ -155,6 +222,9 @@ export function PanelTareasRutinas() {
         setNewTaskFrequency('Diaria');
         setNewTaskEvidenceType('Supervisión directa');
         setNewTaskExecutorRoleId(0);
+        setNewTaskScheduledTime('');
+        setCreatorStep(1);
+        setAiQuickInput('');
 
         setNewRoutineTitle('');
         setNewRoutineRole(globalRoles && globalRoles.length > 0 ? globalRoles[0].name : 'Ayudante General');
@@ -184,7 +254,9 @@ export function PanelTareasRutinas() {
         setNewTaskFrequency(t.frequency || 'Diaria');
         setNewTaskEvidenceType(t.evidenceType || 'Supervisión directa');
         setNewTaskExecutorRoleId(t.targetType === 'role' ? Number(t.targetId) : 0);
-        
+        setNewTaskScheduledTime((t as any).scheduledTime || '');
+        setCreatorStep(1);
+
         setCreatorMode('tarea');
         setShowCreator(true);
     };
@@ -227,7 +299,8 @@ export function PanelTareasRutinas() {
                 evidenceType: newTaskEvidenceType,
                 targetType,
                 targetId,
-                category
+                category,
+                scheduledTime: newTaskScheduledTime || null
             });
         } else {
             addTask({
@@ -238,7 +311,7 @@ export function PanelTareasRutinas() {
                 category,
                 targetType,
                 targetId,
-                subTasks: [], 
+                subTasks: [],
                 assistantType: newTaskAssistant as any,
                 assistantPrompt: newTaskPrompt,
                 isAutoCapture: newTaskAutoCap,
@@ -249,7 +322,8 @@ export function PanelTareasRutinas() {
                 procedureSteps: newTaskProcedureSteps,
                 validationCriteria: newTaskValidationCriteria,
                 frequency: newTaskFrequency,
-                evidenceType: newTaskEvidenceType
+                evidenceType: newTaskEvidenceType,
+                scheduledTime: newTaskScheduledTime || null
             });
         }
         setShowCreator(false);
@@ -263,6 +337,8 @@ export function PanelTareasRutinas() {
         setNewTaskEvidenceType('Supervisión directa');
         setNewTaskExecutorRoleId(0);
         setNewTaskCategoryOverride(null);
+        setNewTaskScheduledTime('');
+        setCreatorStep(1);
         setEditingTask(null);
     };
 
@@ -597,33 +673,57 @@ export function PanelTareasRutinas() {
                         
                         <div className="p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto custom-scrollbar">
                             {creatorMode === 'tarea' ? (
-                                <div className="space-y-4 sm:space-y-6 max-w-2xl mx-auto">
-                                    {/* Título de la Tarea */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Título de la Tarea</label>
-                                        <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-medium" placeholder="Ej. Limpiar cristales frontales" />
+                                <div className="space-y-5 max-w-2xl mx-auto">
+                                    {/* Asistente de voz/IA: dicta o escribe la tarea y se pre-llenan los campos de abajo */}
+                                    <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 flex items-center gap-2">
+                                        <Sparkles size={16} className="text-blue-600 shrink-0" />
+                                        <input
+                                            value={aiQuickInput}
+                                            onChange={e => setAiQuickInput(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAiQuickGenerate(); } }}
+                                            type="text"
+                                            className="flex-1 min-w-0 bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            placeholder="Describe o dicta la tarea: ej. Rellenar góndola de refrescos, 20 min, con foto de evidencia"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAiQuickMic}
+                                            aria-label="Dictar por voz"
+                                            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${aiQuickListening ? 'bg-rose-100 text-rose-600 animate-pulse' : 'bg-white border border-blue-200 text-blue-600 hover:bg-blue-100'}`}
+                                        >
+                                            <Mic size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleAiQuickGenerate}
+                                            disabled={aiQuickLoading || !aiQuickInput.trim()}
+                                            className="shrink-0 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-3 py-2 rounded-lg transition-colors"
+                                        >
+                                            {aiQuickLoading ? '...' : 'Generar'}
+                                        </button>
                                     </div>
 
-                                    {/* Categoría: se detecta sola por el título, pero queda visible y es editable con un clic */}
-                                    <div className="flex items-center gap-2 flex-wrap -mt-2">
-                                        <span className="text-xs font-bold text-slate-500 shrink-0">Categoría:</span>
-                                        {(Object.keys(CATEGORY_LABELS) as Task['category'][]).map(cat => (
-                                            <button
-                                                key={cat}
-                                                type="button"
-                                                onClick={() => setNewTaskCategoryOverride(cat)}
-                                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
-                                                    effectiveCategory === cat
-                                                        ? 'bg-blue-600 text-white border-blue-600'
-                                                        : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'
-                                                }`}
-                                            >
-                                                {CATEGORY_LABELS[cat]}
-                                            </button>
+                                    {/* Indicador de los 4 pasos, clicable en cualquier momento (útil al editar) */}
+                                    <div className="flex items-center gap-1">
+                                        {CREATOR_STEPS.map((s, idx) => (
+                                            <React.Fragment key={s.step}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCreatorStep(s.step)}
+                                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                                                        creatorStep === s.step
+                                                            ? 'bg-blue-600 text-white'
+                                                            : creatorStep > s.step
+                                                                ? 'bg-emerald-50 text-emerald-700'
+                                                                : 'bg-slate-100 text-slate-400'
+                                                    }`}
+                                                >
+                                                    {creatorStep > s.step ? <Check size={12} /> : <span>{s.step}</span>}
+                                                    <span className="hidden sm:inline">{s.label}</span>
+                                                </button>
+                                                {idx < CREATOR_STEPS.length - 1 && <div className="flex-1 h-px bg-slate-200" />}
+                                            </React.Fragment>
                                         ))}
-                                        {newTaskCategoryOverride === null && (
-                                            <span className="text-[10px] text-slate-400 italic">(detectada automáticamente por el título)</span>
-                                        )}
                                     </div>
 
                                     {/* Vista previa en vivo: así la verá el colaborador en su lista de tareas */}
@@ -641,82 +741,107 @@ export function PanelTareasRutinas() {
                                         </div>
                                     </div>
 
-                                    {/* Objetivo de la Tarea */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Objetivo / Propósito (Obsidian Callout)</label>
-                                        <textarea 
-                                            value={newTaskObjective} 
-                                            onChange={e => setNewTaskObjective(e.target.value)} 
-                                            className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm min-h-[70px] leading-relaxed" 
-                                            placeholder="¿Cuál es el fin último de esta tarea?"
-                                        />
-                                    </div>
-
-                                    {/* Puesto Ejecutor y Frecuencia */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    {creatorStep === 1 && (
+                                    <div className="space-y-4 sm:space-y-6">
+                                        {/* Título de la Tarea */}
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Puesto Ejecutor</label>
-                                            <select 
-                                                value={newTaskExecutorRoleId} 
-                                                onChange={e => setNewTaskExecutorRoleId(Number(e.target.value))} 
-                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white"
-                                            >
-                                                <option value={0}>🌐 Bolsa de Trabajo (Pool General)</option>
-                                                {globalRoles?.map((r: any) => (
-                                                    <option key={r.id} value={r.id}>👤 {r.name}</option>
-                                                ))}
-                                            </select>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Título de la Tarea</label>
+                                            <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-medium" placeholder="Ej. Limpiar cristales frontales" />
                                         </div>
+
+                                        {/* Categoría: se detecta sola por el título, pero queda visible y es editable con un clic */}
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs font-bold text-slate-500 shrink-0">Categoría:</span>
+                                            {(Object.keys(CATEGORY_LABELS) as Task['category'][]).map(cat => (
+                                                <button
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={() => setNewTaskCategoryOverride(cat)}
+                                                    className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
+                                                        effectiveCategory === cat
+                                                            ? 'bg-blue-600 text-white border-blue-600'
+                                                            : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300'
+                                                    }`}
+                                                >
+                                                    {CATEGORY_LABELS[cat]}
+                                                </button>
+                                            ))}
+                                            {newTaskCategoryOverride === null && (
+                                                <span className="text-[10px] text-slate-400 italic">(detectada automáticamente por el título)</span>
+                                            )}
+                                        </div>
+
+                                        {/* Objetivo de la Tarea */}
                                         <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Frecuencia</label>
-                                            <input 
-                                                value={newTaskFrequency} 
-                                                onChange={e => setNewTaskFrequency(e.target.value)} 
-                                                type="text" 
-                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" 
-                                                placeholder="Ej. Diaria, Al cierre, Semanal"
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Objetivo / Propósito (Obsidian Callout)</label>
+                                            <textarea
+                                                value={newTaskObjective}
+                                                onChange={e => setNewTaskObjective(e.target.value)}
+                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm min-h-[70px] leading-relaxed"
+                                                placeholder="¿Cuál es el fin último de esta tarea?"
                                             />
                                         </div>
-                                    </div>
 
-                                    {/* Evidencia y Tiempo estimado */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Tiempo Estimado (Mins)</label>
-                                            <input value={newTaskMins} onChange={e => setNewTaskMins(parseInt(e.target.value) || 15)} type="number" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-slate-700" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-bold text-slate-700 mb-2">Evidencia de Cumplimiento</label>
-                                            <input 
-                                                value={newTaskEvidenceType} 
-                                                onChange={e => setNewTaskEvidenceType(e.target.value)} 
-                                                type="text" 
-                                                className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" 
-                                                placeholder="Ej. Supervisión directa, Foto"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Modos (Autocaptura y Ley Silla) */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <label className="flex items-center gap-3 p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-colors">
-                                            <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-350" />
+                                        {/* Puesto Ejecutor y Frecuencia */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             <div>
-                                                <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Modo Autocaptura (IA)</span>
-                                                <span className="text-[10px] text-blue-700">Aprenderá tiempos reales.</span>
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">Puesto Ejecutor</label>
+                                                <select
+                                                    value={newTaskExecutorRoleId}
+                                                    onChange={e => setNewTaskExecutorRoleId(Number(e.target.value))}
+                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white"
+                                                >
+                                                    <option value={0}>🌐 Bolsa de Trabajo (Pool General)</option>
+                                                    {globalRoles?.map((r: any) => (
+                                                        <option key={r.id} value={r.id}>👤 {r.name}</option>
+                                                    ))}
+                                                </select>
                                             </div>
-                                        </label>
-                                        <label className="flex items-center gap-3 p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-colors">
-                                            <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-purple-600 rounded border-slate-355" />
                                             <div>
-                                                <span className="font-bold text-purple-900 block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
-                                                <span className="text-[10px] text-purple-700">Apta para tomar sentado.</span>
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">Frecuencia</label>
+                                                <input
+                                                    value={newTaskFrequency}
+                                                    onChange={e => setNewTaskFrequency(e.target.value)}
+                                                    type="text"
+                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                                                    placeholder="Ej. Diaria, Al cierre, Semanal"
+                                                />
                                             </div>
-                                        </label>
+                                        </div>
                                     </div>
+                                    )}
 
-                                    {/* Prioridad y Modo de Supervisión */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    {creatorStep === 2 && (
+                                    <div className="space-y-4 sm:space-y-6">
+                                        {/* Tiempo, hora programada y evidencia */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">Tiempo Estimado (Mins)</label>
+                                                <input value={newTaskMins} onChange={e => setNewTaskMins(parseInt(e.target.value) || 15)} type="number" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-slate-700" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">Hora Programada</label>
+                                                <input
+                                                    value={newTaskScheduledTime}
+                                                    onChange={e => setNewTaskScheduledTime(e.target.value)}
+                                                    type="time"
+                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                                                />
+                                                <p className="text-[10px] text-slate-400 mt-1">Opcional — ordena el plan de trabajo del día por hora.</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">Evidencia de Cumplimiento</label>
+                                                <input
+                                                    value={newTaskEvidenceType}
+                                                    onChange={e => setNewTaskEvidenceType(e.target.value)}
+                                                    type="text"
+                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                                                    placeholder="Ej. Supervisión directa, Foto"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Prioridad */}
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-2">Nivel de Prioridad</label>
                                             <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white">
@@ -724,6 +849,30 @@ export function PanelTareasRutinas() {
                                                 <option value="bloqueante">Bloqueante (Evita Fichaje de Salida)</option>
                                             </select>
                                         </div>
+
+                                        {/* Modos (Autocaptura y Ley Silla) */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <label className="flex items-center gap-3 p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-colors">
+                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-350" />
+                                                <div>
+                                                    <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Modo Autocaptura (IA)</span>
+                                                    <span className="text-[10px] text-blue-700">Aprenderá tiempos reales.</span>
+                                                </div>
+                                            </label>
+                                            <label className="flex items-center gap-3 p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-colors">
+                                                <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-purple-600 rounded border-slate-355" />
+                                                <div>
+                                                    <span className="font-bold text-purple-900 block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
+                                                    <span className="text-[10px] text-purple-700">Apta para tomar sentado.</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    )}
+
+                                    {creatorStep === 3 && (
+                                    <div className="space-y-4 sm:space-y-6">
+                                        {/* Modo de Supervisión */}
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 mb-2">Modo de Supervisión</label>
                                             <div className="grid grid-cols-3 gap-2">
@@ -752,138 +901,164 @@ export function PanelTareasRutinas() {
                                                 })}
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Mini-Asistente */}
-                                    <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                                        <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2"><Bot size={18} className="text-blue-600"/> Mini-Asistente Acoplado</label>
-                                        <select value={newTaskAssistant} onChange={e => setNewTaskAssistant(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3 bg-white mt-2 text-sm">
-                                            <option value="ninguno">Ninguno</option>
-                                            <option value="evidencia_foto">Evidencia Fotográfica</option>
-                                            <option value="captura_numero">Captura de Cantidad / Número</option>
-                                            <option value="texto">Nota de Texto Corta</option>
-                                        </select>
-                                        {newTaskAssistant !== 'ninguno' && (
-                                            <input value={newTaskPrompt} onChange={e => setNewTaskPrompt(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white" placeholder="¿Qué le preguntará el asistente al empleado?" />
-                                        )}
-                                    </div>
-
-                                    {/* Pasos del Proceso (SOP) */}
-                                    <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
-                                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                            <label className="text-sm font-bold text-slate-800 flex items-center gap-2">📋 Pasos del Proceso (SOP)</label>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    setNewTaskProcedureSteps([
-                                                        ...newTaskProcedureSteps,
-                                                        {
-                                                            step_number: newTaskProcedureSteps.length + 1,
-                                                            title: '',
-                                                            detailed_instruction: '',
-                                                            verification_required: true
-                                                        }
-                                                    ]);
-                                                }}
-                                                className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 font-bold transition-all"
-                                            >
-                                                + Añadir paso
-                                            </button>
+                                        {/* Mini-Asistente */}
+                                        <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                            <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2"><Bot size={18} className="text-blue-600"/> Mini-Asistente Acoplado</label>
+                                            <select value={newTaskAssistant} onChange={e => setNewTaskAssistant(e.target.value as any)} className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3 bg-white mt-2 text-sm">
+                                                <option value="ninguno">Ninguno</option>
+                                                <option value="evidencia_foto">Evidencia Fotográfica</option>
+                                                <option value="captura_numero">Captura de Cantidad / Número</option>
+                                                <option value="texto">Nota de Texto Corta</option>
+                                            </select>
+                                            {newTaskAssistant !== 'ninguno' && (
+                                                <input value={newTaskPrompt} onChange={e => setNewTaskPrompt(e.target.value)} type="text" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm bg-white" placeholder="¿Qué le preguntará el asistente al empleado?" />
+                                            )}
                                         </div>
-                                        
-                                        {newTaskProcedureSteps.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic text-center py-2">No hay pasos definidos. Añade el primer paso del SOP.</p>
-                                        ) : (
-                                            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                                                {newTaskProcedureSteps.map((step, idx) => (
-                                                    <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 relative">
-                                                        <div className="flex items-center gap-2 justify-between">
-                                                            <span className="text-xs font-bold text-blue-600 bg-blue-50 w-5 h-5 rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
-                                                            <input 
-                                                                value={step.title}
+                                    </div>
+                                    )}
+
+                                    {creatorStep === 4 && (
+                                    <div className="space-y-4 sm:space-y-6">
+                                        {/* Pasos del Proceso (SOP) */}
+                                        <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
+                                            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                                                <label className="text-sm font-bold text-slate-800 flex items-center gap-2">📋 Pasos del Proceso (SOP)</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNewTaskProcedureSteps([
+                                                            ...newTaskProcedureSteps,
+                                                            {
+                                                                step_number: newTaskProcedureSteps.length + 1,
+                                                                title: '',
+                                                                detailed_instruction: '',
+                                                                verification_required: true
+                                                            }
+                                                        ]);
+                                                    }}
+                                                    className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 font-bold transition-all"
+                                                >
+                                                    + Añadir paso
+                                                </button>
+                                            </div>
+
+                                            {newTaskProcedureSteps.length === 0 ? (
+                                                <p className="text-xs text-slate-500 italic text-center py-2">No hay pasos definidos. Añade el primer paso del SOP.</p>
+                                            ) : (
+                                                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                                                    {newTaskProcedureSteps.map((step, idx) => (
+                                                        <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col gap-2 relative">
+                                                            <div className="flex items-center gap-2 justify-between">
+                                                                <span className="text-xs font-bold text-blue-600 bg-blue-50 w-5 h-5 rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                                                                <input
+                                                                    value={step.title}
+                                                                    onChange={e => {
+                                                                        const updated = [...newTaskProcedureSteps];
+                                                                        updated[idx].title = e.target.value;
+                                                                        setNewTaskProcedureSteps(updated);
+                                                                    }}
+                                                                    type="text"
+                                                                    className="w-full px-2.5 py-1 text-xs border border-slate-205 rounded-lg font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                                    placeholder="Título del paso"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const updated = newTaskProcedureSteps.filter((_, i) => i !== idx)
+                                                                            .map((s, newIdx) => ({ ...s, step_number: newIdx + 1 }));
+                                                                        setNewTaskProcedureSteps(updated);
+                                                                    }}
+                                                                    className="text-slate-400 hover:text-rose-600 transition-colors"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                            <textarea
+                                                                value={step.detailed_instruction}
                                                                 onChange={e => {
                                                                     const updated = [...newTaskProcedureSteps];
-                                                                    updated[idx].title = e.target.value;
+                                                                    updated[idx].detailed_instruction = e.target.value;
                                                                     setNewTaskProcedureSteps(updated);
                                                                 }}
-                                                                type="text" 
-                                                                className="w-full px-2.5 py-1 text-xs border border-slate-205 rounded-lg font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none" 
-                                                                placeholder="Título del paso"
+                                                                className="w-full p-2 text-xs border border-slate-205 rounded-lg focus:ring-1 focus:ring-blue-500 focus:outline-none min-h-[50px]"
+                                                                placeholder="Descripción detallada de la instrucción..."
                                                             />
-                                                            <button 
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Checklist de Validación */}
+                                        <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
+                                            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                                                <label className="text-sm font-bold text-slate-800 flex items-center gap-2">✅ Checklist de Validación</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNewTaskValidationCriteria([...newTaskValidationCriteria, '']);
+                                                    }}
+                                                    className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 font-bold transition-all"
+                                                >
+                                                    + Añadir criterio
+                                                </button>
+                                            </div>
+
+                                            {newTaskValidationCriteria.length === 0 ? (
+                                                <p className="text-xs text-slate-500 italic text-center py-2">No hay criterios de validación definidos.</p>
+                                            ) : (
+                                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                                    {newTaskValidationCriteria.map((crit, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                            <input
+                                                                value={crit}
+                                                                onChange={e => {
+                                                                    const updated = [...newTaskValidationCriteria];
+                                                                    updated[idx] = e.target.value;
+                                                                    setNewTaskValidationCriteria(updated);
+                                                                }}
+                                                                type="text"
+                                                                className="w-full px-2.5 py-1.5 text-xs border border-slate-205 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                                                placeholder="Ej. La selladora está apagada y limpia."
+                                                            />
+                                                            <button
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    const updated = newTaskProcedureSteps.filter((_, i) => i !== idx)
-                                                                        .map((s, newIdx) => ({ ...s, step_number: newIdx + 1 }));
-                                                                    setNewTaskProcedureSteps(updated);
+                                                                    const updated = newTaskValidationCriteria.filter((_, i) => i !== idx);
+                                                                    setNewTaskValidationCriteria(updated);
                                                                 }}
                                                                 className="text-slate-400 hover:text-rose-600 transition-colors"
                                                             >
                                                                 🗑️
                                                             </button>
                                                         </div>
-                                                        <textarea 
-                                                            value={step.detailed_instruction}
-                                                            onChange={e => {
-                                                                const updated = [...newTaskProcedureSteps];
-                                                                updated[idx].detailed_instruction = e.target.value;
-                                                                setNewTaskProcedureSteps(updated);
-                                                            }}
-                                                            className="w-full p-2 text-xs border border-slate-205 rounded-lg focus:ring-1 focus:ring-blue-500 focus:outline-none min-h-[50px]" 
-                                                            placeholder="Descripción detallada de la instrucción..."
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Checklist de Validación */}
-                                    <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200 space-y-4">
-                                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                            <label className="text-sm font-bold text-slate-800 flex items-center gap-2">✅ Checklist de Validación</label>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    setNewTaskValidationCriteria([...newTaskValidationCriteria, '']);
-                                                }}
-                                                className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 font-bold transition-all"
-                                            >
-                                                + Añadir criterio
-                                            </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        
-                                        {newTaskValidationCriteria.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic text-center py-2">No hay criterios de validación definidos.</p>
-                                        ) : (
-                                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                                {newTaskValidationCriteria.map((crit, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                                        <input 
-                                                            value={crit}
-                                                            onChange={e => {
-                                                                const updated = [...newTaskValidationCriteria];
-                                                                updated[idx] = e.target.value;
-                                                                setNewTaskValidationCriteria(updated);
-                                                            }}
-                                                            type="text" 
-                                                            className="w-full px-2.5 py-1.5 text-xs border border-slate-205 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none" 
-                                                            placeholder="Ej. La selladora está apagada y limpia."
-                                                        />
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const updated = newTaskValidationCriteria.filter((_, i) => i !== idx);
-                                                                setNewTaskValidationCriteria(updated);
-                                                            }}
-                                                            className="text-slate-400 hover:text-rose-600 transition-colors"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                    </div>
+                                    )}
+
+                                    {/* Navegación entre pasos */}
+                                    <div className="flex items-center justify-between pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCreatorStep((s) => (s > 1 ? ((s - 1) as any) : s))}
+                                            disabled={creatorStep === 1}
+                                            className="flex items-center gap-1 text-xs font-bold text-slate-500 disabled:opacity-30 px-3 py-2"
+                                        >
+                                            <ChevronLeft size={14} /> Atrás
+                                        </button>
+                                        {creatorStep < 4 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setCreatorStep((s) => (s < 4 ? ((s + 1) as any) : s))}
+                                                className="flex items-center gap-1 text-xs font-bold text-blue-600 px-3 py-2"
+                                            >
+                                                Siguiente <ChevronRight size={14} />
+                                            </button>
                                         )}
                                     </div>
                                 </div>

@@ -252,7 +252,13 @@ class ClockController extends Controller
                 $activeEncargadoId = $details['delegatedTo'];
             }
         }
-        $tasks = DB::table('tasks')->where('tenant_id', $tenantId)->get();
+        // §38: se trae video_url de la lección vinculada (join simple) para que el
+        // frontend no tenga que pedirla aparte antes de iniciar la tarea.
+        $tasks = DB::table('tasks')
+            ->leftJoin('academy_courses', 'academy_courses.id', '=', 'tasks.academy_lesson_id')
+            ->where('tasks.tenant_id', $tenantId)
+            ->select('tasks.*', 'academy_courses.video_url as academy_lesson_video_url')
+            ->get();
         $routines = DB::table('routines')
             ->where('tenant_id', $tenantId)
             ->get()

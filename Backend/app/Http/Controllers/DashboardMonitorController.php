@@ -133,6 +133,7 @@ class DashboardMonitorController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'role_name' => $u->jobRole ? $u->jobRole->name : 'Colaborador',
+                    'hire_date' => $u->hire_date,
                     'status' => $status,
                     'status_text' => $statusText,
                     'active_task' => $activeTask ? [

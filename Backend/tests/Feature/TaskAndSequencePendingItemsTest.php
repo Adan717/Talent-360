@@ -212,6 +212,32 @@ class TaskAndSequencePendingItemsTest extends TestCase
         $this->assertNotContains('Tarea de otra empresa', $names);
     }
 
+    // §36 --------------------------------------------------------------
+
+    public function test_monitor_exposes_hire_date_per_user(): void
+    {
+        $admin = $this->makeUser('admin', 1);
+        DB::table('employees')->where('user_id', $admin->id)->update(['hire_date' => '2026-01-15']);
+
+        DB::table('time_entries')->insert([
+            'user_id' => $admin->id,
+            'tenant_id' => 1,
+            'date' => now()->format('Y-m-d'),
+            'type' => 'check_in',
+            'time' => '08:00:00',
+            'is_late' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/dashboard/monitor');
+        $response->assertStatus(200);
+
+        $userRow = collect($response->json('data.users'))->firstWhere('id', $admin->id);
+        $this->assertNotNull($userRow);
+        $this->assertEquals('2026-01-15', $userRow['hire_date']);
+    }
+
     // §15 --------------------------------------------------------------------
 
     public function test_meal_end_without_meal_start_is_rejected(): void

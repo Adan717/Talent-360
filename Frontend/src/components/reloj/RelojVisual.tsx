@@ -5170,6 +5170,10 @@ export default function RelojVisual({
                 </p>
                 
                 <div className="space-y-2.5 mb-6 max-h-60 overflow-y-auto pr-1">
+                  {/* §32/§9: el fallback con taskId 9999 inventado ya no hace falta — la migración
+                      de backend siembra una tarea real "Monitoreo de seguridad desde silla" con
+                      can_be_done_sitting:true por cada tenant, así que ya aparece sola en este
+                      filtro con su id verdadero. Dejar el botón hardcodeado la habría duplicado. */}
                   {useTaskStore.getState().tasks.filter(t => t.canBeDoneSitting).map(t => (
                     <button
                       key={t.id}
@@ -5183,17 +5187,12 @@ export default function RelojVisual({
                       <span className="text-violet-600 bg-violet-100 p-1.5 rounded-full">🪑</span>
                     </button>
                   ))}
-                  
-                  <button
-                    onClick={() => startBreakWithSittingTask(9999)}
-                    className="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-bold text-slate-800 text-sm">Monitoreo de seguridad desde silla</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">⏱️ 15 min | Tarea predeterminada</p>
-                    </div>
-                    <span className="text-slate-500 bg-slate-200 p-1.5 rounded-full">🪑</span>
-                  </button>
+
+                  {useTaskStore.getState().tasks.filter(t => t.canBeDoneSitting).length === 0 && (
+                    <p className="text-xs text-slate-400 italic text-center py-4">
+                      No hay tareas configuradas para tomar sentado todavía.
+                    </p>
+                  )}
                 </div>
                 
                 <button 

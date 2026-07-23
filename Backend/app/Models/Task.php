@@ -14,9 +14,15 @@ class Task extends Model
     protected $fillable = [
         'id', 'title', 'estimated_mins', 'points', 'priority', 'category', 'target_type',
         'target_id', 'assistant_type', 'assistant_prompt', 'is_auto_capture', 'validation_mode',
-        'can_be_done_sitting', 'scheduled_time', 'description', 'validation_criteria', 
-        'frequency', 'evidence_type', 'procedure_steps', 'is_validated'
+        'can_be_done_sitting', 'scheduled_time', 'description', 'validation_criteria',
+        'frequency', 'evidence_type', 'procedure_steps', 'is_validated', 'academy_lesson_id',
+        'ai_comparison_enabled', 'ai_reference_images', 'ai_tolerance_description',
     ];
+
+    public function academyLesson()
+    {
+        return $this->belongsTo(AcademyCourse::class, 'academy_lesson_id');
+    }
 
     protected $casts = [
         'is_auto_capture' => 'boolean',
@@ -24,6 +30,8 @@ class Task extends Model
         'procedure_steps' => 'array',
         'validation_criteria' => 'array',
         'is_validated' => 'boolean',
+        'ai_comparison_enabled' => 'boolean',
+        'ai_reference_images' => 'array',
     ];
 
     public function routines()

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone, Plus } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -10,6 +10,7 @@ import NominaColaborador from './NominaColaborador';
 import axiosInstance from '../../lib/axios';
 import { clearClockLocalCache } from '../../lib/clockCache';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
+import type { TaskRunnerHandle } from '../tareas_rutinas/TaskRunner';
 import { MobileBottomNav } from './MobileBottomNav';
 const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
 import DialPrincipal from './DialPrincipal';
@@ -2264,6 +2265,10 @@ export default function RelojVisual({
   const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
   const [isTaskCreatorOpen, setIsTaskCreatorOpen] = useState(false);
   const [isCopilotChatOpen, setIsCopilotChatOpen] = useState(false);
+  // Botón flotante único (2026-07-23, a petición de Francisco): antes TaskRunner.tsx tenía
+  // su propio FAB que chocaba visualmente con este. Ahora sus acciones (Crear Tarea, Crear
+  // con IA, Historial, Plan del Día) se disparan desde la hoja de este FAB único, vía ref.
+  const taskRunnerRef = useRef<TaskRunnerHandle>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskMins, setNewTaskMins] = useState(15);
   const [newTaskPriority, setNewTaskPriority] = useState<'normal' | 'bloqueante'>('normal');
@@ -2647,6 +2652,73 @@ export default function RelojVisual({
                 </button>}
               </div>
             </div>
+
+            {/* Sección "Módulo de Tareas": solo aparece con phoneTab === 'tareas' — antes estas
+                4 acciones vivían en el FAB propio de TaskRunner.tsx, ahora consolidado aquí. */}
+            {phoneTab === 'tareas' && (
+              <div className="space-y-3">
+                <h4 className="font-extrabold text-[10px] text-slate-400 uppercase tracking-widest">Módulo de Tareas</h4>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {canCreateQuickTask && (
+                    <button
+                      onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openCreateTask(); }}
+                      className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-indigo-400 flex items-center justify-center shrink-0">
+                        <Plus size={16} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs">Crear Tarea Nueva</p>
+                        <p className="text-[9.5px] text-slate-500">Formulario completo (SOP, evidencia, validación)</p>
+                      </div>
+                    </button>
+                  )}
+
+                  {canCreateQuickTask && (
+                    <button
+                      onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openAiCreateTask(); }}
+                      className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-violet-400 flex items-center justify-center shrink-0">
+                        <Bot size={16} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs">Crear con Asistente de IA</p>
+                        <p className="text-[9.5px] text-slate-500">Dicta o escribe y la IA arma la tarea</p>
+                      </div>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openHistory(); }}
+                    className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-emerald-400 flex items-center justify-center shrink-0">
+                      <ClipboardList size={16} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs">Ver Historial de Hoy</p>
+                      <p className="text-[9.5px] text-slate-500">Tareas completadas u omitidas en tu turno</p>
+                    </div>
+                  </button>
+
+                  {canCreateQuickTask && (
+                    <button
+                      onClick={() => { setIsFabSheetOpen(false); taskRunnerRef.current?.openPlanDelDia(); }}
+                      className={`p-3.5 rounded-2xl border flex items-center gap-3 text-left transition-all active:scale-98 border-none bg-transparent cursor-pointer ${isDark ? 'border-slate-800 bg-slate-950/20 hover:bg-slate-950/40 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'}`}
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-slate-950/50 text-amber-400 flex items-center justify-center shrink-0">
+                        <span className="text-sm">🗓️</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs">Plan del Día</p>
+                        <p className="text-[9.5px] text-slate-500">Armar plan de hoy y reporte de cierre</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Section 2: Caja de Herramientas Operativa */}
             <div className="space-y-3">
@@ -3757,7 +3829,7 @@ export default function RelojVisual({
               ) : (
                 <>
                   {phoneTab === 'tareas' && (
-                    <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
+                    <TaskRunner ref={taskRunnerRef} currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
                   )}
                   {phoneTab === 'academia' && (
                     <Academia onBack={() => setPhoneTab('checador')} autoOpenCourseId={btnProps.iconKey === 'blocked' ? (btnProps.requiredCourseId ?? null) : null} />
@@ -4318,7 +4390,7 @@ export default function RelojVisual({
               <h3 className="font-extrabold text-xl text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
                 <span>✅</span> Tareas y Rutinas Asignadas
               </h3>
-              <TaskRunner currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
+              <TaskRunner ref={taskRunnerRef} currentUser={currentUser} onBack={() => setPhoneTab('checador')} hideHeader={true} />
             </div>
           )}
 

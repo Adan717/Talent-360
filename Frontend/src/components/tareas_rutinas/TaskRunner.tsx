@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { 
     Coffee, Play, Check, Clock, Lock, Brain, Camera, Bot, 
     Pause, Trash2, Plus, X, AlertCircle, ChevronRight, User, HelpCircle,
@@ -207,8 +207,20 @@ export function FichaTarea({
     );
 }
 
+// Acciones que el botón flotante único de RelojVisual.tsx puede disparar sobre este
+// componente sin tener que levantar todo su estado interno hacia afuera (2026-07-23,
+// consolidación de FABs a petición de Francisco: antes TaskRunner tenía su propio botón
+// flotante que chocaba visualmente con el de RelojVisual — ahora solo existe ese último,
+// y aquí exponemos lo mínimo necesario para que su hoja de opciones pueda abrir estos modales).
+export interface TaskRunnerHandle {
+    openCreateTask: () => void;
+    openAiCreateTask: () => void;
+    openHistory: () => void;
+    openPlanDelDia: () => void;
+}
+
 // Componente Principal TaskRunner
-export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: any, onBack: () => void, hideHeader?: boolean }) {
+export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBack: () => void, hideHeader?: boolean }>(function TaskRunner({ currentUser, onBack, hideHeader }, ref) {
     const {
         tasks, routines, assignments, grabTaskFromPool, startTask,
         pauseTask, completeTask, omitAssignment, createDynamicTask,
@@ -266,12 +278,22 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
     const [planReportDate, setPlanReportDate] = useState(() => new Date().toLocaleDateString('sv-SE'));
     const [carryOverChecked, setCarryOverChecked] = useState<Record<string, boolean>>({});
 
+    // Expone estas 4 acciones al FAB único de RelojVisual.tsx — ver TaskRunnerHandle arriba.
+    useImperativeHandle(ref, () => ({
+        openCreateTask: () => setShowCreateModal(true),
+        openAiCreateTask: () => {
+            setShowCreateModal(true);
+            setTimeout(() => {
+                const aiInputEl = document.querySelector('input[placeholder*="inventario"]');
+                if (aiInputEl) (aiInputEl as HTMLInputElement).focus();
+            }, 100);
+        },
+        openHistory: () => setShowHistoryModal(true),
+        openPlanDelDia: () => { setShowPlanModal(true); setPlanModalTab('armar'); },
+    }));
+
     // AI Assistant state
     const [aiInput, setAiInput] = useState('');
-
-    // FAB menu state
-    const [showFabMenu, setShowFabMenu] = useState(false);
-    const fabMenuRef = useRef<HTMLDivElement>(null);
 
     // Estado local para feedback de rechazo en supervisión
     const [rejectingAssignmentId, setRejectingAssignmentId] = useState<string | null>(null);
@@ -387,17 +409,6 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
             }
         }));
     };
-
-    // Cerrar menú flotante si hacen clic fuera
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (fabMenuRef.current && !fabMenuRef.current.contains(e.target as Node)) {
-                setShowFabMenu(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     useEffect(() => {
         if (toast) {
@@ -1070,77 +1081,12 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
                 </div>
             )}
 
-            {/* Botón Flotante (FAB) - Posicionamiento absoluto contenido en el simulador */}
-            <div className="absolute bottom-20 right-4 z-40" ref={fabMenuRef}>
-                {isSupervisor && showFabMenu && (
-                    <div className="absolute bottom-16 right-0 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 flex flex-col gap-1 min-w-[200px] animate-in fade-in slide-in-from-bottom-3 duration-200 text-left">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 text-left border-b border-slate-50">
-                            Menú de Tareas
-                        </p>
-                        
-                        <button
-                            type="button"
-                            onClick={() => { setShowCreateModal(true); setShowFabMenu(false); }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-655 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
-                        >
-                            ➕ Crear Tarea Nueva
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => { 
-                                setShowCreateModal(true); 
-                                setShowFabMenu(false);
-                                // Auto focus IA assistant
-                                setTimeout(() => {
-                                    const aiInputEl = document.querySelector('input[placeholder*="inventario"]');
-                                    if (aiInputEl) (aiInputEl as HTMLInputElement).focus();
-                                }, 100);
-                            }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black hover:bg-blue-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
-                            style={{ color: activeColor.hex }}
-                        >
-                            🤖 Crear con Asistente de IA
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => { setShowHistoryModal(true); setShowFabMenu(false); }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-655 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
-                        >
-                            📜 Ver Historial de Hoy
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => { setShowPlanModal(true); setPlanModalTab('armar'); setShowFabMenu(false); }}
-                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-black text-slate-655 hover:bg-slate-50 border-none bg-transparent cursor-pointer flex items-center gap-2"
-                        >
-                            🗓️ Plan del Día
-                        </button>
-                    </div>
-                )}
-
-                <button
-                    onClick={() => {
-                        if (isSupervisor) {
-                            setShowFabMenu(!showFabMenu);
-                        } else {
-                            setShowHistoryModal(true);
-                        }
-                    }}
-                    className="w-14 h-14 bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer"
-                    title={isSupervisor ? "Menú de Acciones" : "Ver Historial"}
-                >
-                    {isSupervisor && showFabMenu ? (
-                        <X size={22} />
-                    ) : isSupervisor ? (
-                        <Plus size={22} className="text-white" />
-                    ) : (
-                        <ClipboardList size={22} className="text-white" />
-                    )}
-                </button>
-            </div>
+            {/* Botón flotante propio ELIMINADO (2026-07-23, a petición de Francisco): chocaba
+                visualmente con el FAB global de RelojVisual.tsx ("Operaciones & Soporte AI"),
+                que ahora es el único botón flotante de toda la app. Sus acciones (Crear Tarea,
+                Crear con IA, Historial, Plan del Día) se exponen hacia afuera vía useImperativeHandle
+                (ver TaskRunnerHandle más abajo) y RelojVisual las muestra en una sección propia
+                de su hoja de opciones cuando phoneTab === 'tareas'. */}
 
             {/* Modal de video de la Academia antes de iniciar una tarea vinculada (§38) */}
             {pendingStart && (() => {
@@ -2197,4 +2143,4 @@ export function TaskRunner({ currentUser, onBack, hideHeader }: { currentUser: a
             )}
         </div>
     );
-}
+});

@@ -203,6 +203,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
         Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
         Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
+        Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
 
         // Ley Federal del Trabajo (LFT) settings
         Route::get('/admin/lft-settings', [LftSettingController::class, 'getSettings']);

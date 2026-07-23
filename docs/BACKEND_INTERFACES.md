@@ -43,13 +43,14 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §32 | Tarea placeholder "Monitoreo de seguridad desde silla" (Ley Silla) usa `taskId: 9999` inventado, sin registro real en `tasks`; falta operador null-safe en `TaskSyncController::sync()` línea ~227. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §33 | Sugerencia de arquitectura (no urgente): el módulo de Tareas sincroniza reenviando el estado completo en cada clic en vez de por fila. Ver detalle abajo para el plan completo de migración. | ✅ Punto 1 implementado (2026-07-22) — **listo para que Cowork empiece el punto 3 (frontend)** |
 | §34 | Nuevo endpoint `POST /task-assignments/{id}/omit` — avisar al supervisor cuando un empleado omite una tarea (hoy solo cambia el estado local, nadie se entera). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
-| §35 | Nuevo modo de validación `'ai_comparison'` para Tareas: el admin sube 3-5 imágenes de referencia + tolerancia por tarea; la IA (Gemini, ya integrado en `GeminiAIService.php` pero sin usar) compara la evidencia del empleado. Además, subir evidencia de foto real en el módulo de Tareas (hoy es un stub sin cámara real). Ver detalle abajo. | ✅ Backend implementado (2026-07-22) — **pendiente la captura de cámara real del lado Cowork, ver nota** |
+| §35 | Nuevo modo de validación `'ai_comparison'` para Tareas: el admin sube 3-5 imágenes de referencia + tolerancia por tarea; la IA (Gemini, ya integrado en `GeminiAIService.php` pero sin usar) compara la evidencia del empleado. Además, subir evidencia de foto real en el módulo de Tareas (hoy es un stub sin cámara real). Ver detalle abajo. | ✅ Implementado (backend 2026-07-22, Cowork 2026-07-23) — **completo en ambos lados** |
 | §36 | Exponer `hire_date`/antigüedad por empleado en `DashboardMonitorController::getMonitorData()` — hoy solo se usa internamente en otros controladores, no llega al monitor. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §37 | Modo Kiosco: login por PIN en tablet compartida reutilizando `employees.security_pin` (ya existe, no crear campo nuevo). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §38 | Vincular Tareas con lecciones de la Academia (`academy_lesson_id` en `tasks`, reutilizando `video_url` que ya existe) + preferencia por empleado `academy_assistant_enabled` (reutilizando `employees.clock_preferences`, ya existe pero sin usar). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §39 | Cadena de pedidos compras→producción→ventas con notificaciones entre puestos. Ver detalle abajo. | ⏳ Pendiente — **necesito que decidan el alcance de la primera versión, ver nota abajo** |
 | §40 | Plan de trabajo diario: campo `origin` en `task_assignments` (planned/carried_over/extra/routine) para poder armar el reporte de cierre del día. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §41 | Nuevo endpoint `POST /task-assignments/{id}/validate-with-pin` — validar una tarea con el PIN de un supervisor sin que ese supervisor tenga que iniciar sesión en el dispositivo (reutiliza `employees.security_pin`, ya existe). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
+| §42 | Nuevo endpoint de IA que sugiere el plan de trabajo del día ("Armar Plan de Hoy") usando quién asistió + tareas pendientes + el vault Obsidian (organigrama/manual operativo) como contexto. Ver detalle abajo. | ✅ Implementado (2026-07-23) |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1474,9 +1475,17 @@ POST /api/task-assignments/{id}/ai-validate
 
 **Config de API key:** no toqué `.env` (`GEMINI_API_KEY`) — eso les toca a ustedes/Francisco directamente, yo no debo ni puedo escribir secretos reales al `.env` del repo. Mientras no esté configurada, `compareTaskEvidence()` lanza la excepción de "GEMINI_API_KEY no configurada" en el primer intento con `reviewsWithAi: true`, y el endpoint degrada correctamente a `awaiting_validation` (`reviewed_by: 'ai_unavailable'`) — es decir, **el endpoint ya es seguro de activar en producción antes de tener la clave real**, simplemente todo caerá a revisión humana hasta que la configuren.
 
-**Pendiente de su lado (no bloqueante para el backend):** la captura de cámara real en `assistant_type: 'evidencia_foto'` (`TaskRunner.tsx`) sigue siendo el stub que ya tenían — el endpoint ya recibe `evidence_photo_base64` tal cual lo necesiten en cuanto migren esa parte, reusando el patrón de `MealPhotoCapture.tsx` como ya lo planeaban.
+**Pendiente de su lado (no bloqueante para el backend):** ~~la captura de cámara real en `assistant_type: 'evidencia_foto'` (`TaskRunner.tsx`) sigue siendo el stub que ya tenían~~ — resuelto, ver resumen de Cowork abajo.
 
 Test nuevo: `TaskAiComparisonValidationTest.php` — nuevo ingreso siempre humano (sin llamar a Gemini), veterano con match completa y paga, veterano sin match manda a revisión con el `reasoning`, falla de Gemini degrada con gracia, tarea sin `ai_comparison_enabled` rechaza con 422, y `sync/tasks` persiste los 3 campos nuevos. Los casos probabilísticos (veterano) usan el mismo patrón estadístico ya establecido en este archivo para `validation_mode: dynamic` (loop de hasta 25 intentos, cada uno con una asignación nueva, hasta capturar al menos un caso revisado por IA) — con 90% de probabilidad por intento, la posibilidad de que los 25 fallen es estadísticamente insignificante. Suite completa: **153/153 tests, 630 assertions**, sin regresiones.
+
+## ✅ Cowork implementado (2026-07-23) — resumen
+
+**Captura real de cámara:** nuevo componente `TaskEvidenceCapture.tsx` (calcado de `MealPhotoCapture.tsx`, §23 — mismo `getUserMedia`/canvas/JPEG 0.7 calidad/900px de lado máximo) reemplaza el stub `evidencia_checador_foto.jpg` en los 2 puntos de `TaskRunner.tsx` donde existía (vista embebida en pasos SOP y mini-asistente independiente). El botón "Completar tarea" ahora queda deshabilitado si `assistantType === 'evidencia_foto'` y no se ha capturado foto real — antes se podía completar sin evidencia real, el stub lo disimulaba.
+
+**Configuración de `ai_comparison` (lado admin):** en `PanelTareasRutinas.tsx`, paso 3 del creador, el modo "Comparación (IA)" solo aparece como opción cuando el Mini-Asistente es "Evidencia Fotográfica" (si se cambia el asistente después de elegirlo, se revierte solo a `forced`). Al seleccionarlo aparece un uploader de 3-5 imágenes (base64 vía `FileReader`, igual que decidimos en la nota de arriba) y una textarea de tolerancia. `Task` (useTaskStore.ts) y el mapeo de `/sync/state` (useAppStore.ts) ya cargan/mandan `aiComparisonEnabled`/`aiReferenceImages`/`aiToleranceDescription` en camelCase, tal cual `POST/PUT /sync/tasks` ya los acepta.
+
+**Conexión con `POST /task-assignments/{id}/ai-validate`:** al completar una tarea con `validationMode: 'ai_comparison'` y `aiComparisonEnabled`, `TaskRunner.tsx` llama a este endpoint con la foto real en vez de completar localmente, y refleja `status`/`ai_result` en el store (incluye `aiValidationResult` para auditoría). Mensajes distintos al usuario según `reviewed_by` (`ai` con match, `ai_unavailable`, `human_spotcheck`, o sin match) — sin exponer al empleado la probabilidad exacta de la curva de antigüedad.
 
 ---
 
@@ -1657,3 +1666,61 @@ POST /api/task-assignments/{id}/validate-with-pin
 **Pago:** misma estructura que `validateAssignment()` — `points_awarded`/`coins_awarded`/depósito en `UserWallet`, `score_percentage: 100` fijo (la spec de este endpoint no pide un campo `score_percentage` en el payload, a diferencia del endpoint original que sí lo acepta — si lo quieren configurable aquí también, avisen y lo agrego). `validated_by` guarda el `supervisor_user_id`, no el usuario autenticado (que es el colaborador con el celular en mano). Dispara `LogTaskValidationJob` igual que el flujo normal.
 
 Test nuevo: `TaskValidateWithPinTest.php` — PIN correcto + supervisor autorizado completa y paga, PIN incorrecto se rechaza con el mensaje genérico, supervisor con PIN correcto pero sin autorización sobre esa asignación se rechaza igual, rechazo con `status: in_progress` + feedback devuelve la tarea sin pagar, y un supervisor no puede auto-validarse. Suite completa: **158/158 tests, 644 assertions**, sin regresiones.
+
+---
+
+## §42. IA que sugiere el plan de trabajo del día ("Armar Plan de Hoy")
+
+**Contexto (2026-07-23, a petición de Francisco):** ya existe del lado de Cowork la pantalla "Armar Plan de Hoy" (dentro del módulo de Tareas, FAB del supervisor — ver §40) donde se retoman los pendientes de ayer y se agregan tareas nuevas para hoy. Francisco pidió que, en ese momento (la junta matutina), la IA pueda sugerir cómo repartir el trabajo del día tomando en cuenta con cuánto personal se cuenta realmente hoy (quién asistió, quién no) y el contexto operativo completo de la empresa — puestos, responsabilidades, procedimientos — que ya vive en el vault de Obsidian (`ObsidianDocument`, el módulo que Francisco llama "ISOP", ya usado por el copiloto público en `ObsidianController::copilot()`).
+
+**Aclaración importante:** esto es una sugerencia que el admin revisa y decide aplicar o no — no crea ni asigna nada automáticamente. El resultado se muestra en la pantalla "Armar Plan de Hoy" ya existente; si el admin lo acepta, es el frontend el que dispara las altas/asignaciones normales que el módulo de Tareas ya sabe hacer (mismo mecanismo de siempre, no uno paralelo).
+
+**Pedimos:**
+
+```
+POST /api/admin/dashboard/suggest-work-plan
+{
+  "date": "2026-07-23"  // opcional, default hoy
+}
+```
+
+- Reunir contexto del lado del servidor (todo ya existe, no requiere tablas nuevas):
+  1. **Asistencia de hoy:** empleados con `time_entries` de tipo `check_in` en la fecha dada (presentes) vs. el roster completo de empleados activos del tenant (para poder inferir quién falta), cada uno con su `job_role_id`/nombre de puesto.
+  2. **Tareas pendientes:** `task_assignments` de la fecha dada (o de días anteriores sin resolver) con `status` en `pending`/`in_progress`/`paused`, igual que ya filtra el frontend para "Pendientes de Ayer".
+  3. **Contexto del vault:** `ObsidianDocument::where('tenant_id', $tenantId)->select('title', 'type', 'raw_content')->get()` — exactamente la misma consulta que ya arma `copilot()`, para no duplicar lógica de armado de contexto.
+  4. **Puestos:** `job_roles` del tenant con `description`/`responsibilities` (ya existen esos 2 campos, confirmado en `JobRoleController`).
+- Armar un prompt para Gemini (nuevo método en `GeminiAIService`, ej. `suggestWorkPlan()`, siguiendo el mismo patrón que `suggestOptimalAssignee()`: prompt de texto plano, pide JSON de salida) que reciba: la lista de presentes/ausentes con su puesto, las tareas pendientes, y el contenido del vault — y proponga una redistribución. Sugerencia de estructura de salida:
+
+```json
+{
+  "summary": "Hoy solo hay 2 supervisores y 1 ayudante integral; sugiero que...",
+  "staffing_gap_detected": true,
+  "suggestions": [
+    { "task_assignment_id": "abc123", "suggested_target_type": "role", "suggested_target_id": 6, "reason": "El puesto original (Supervisor de Producción) no vino hoy; este puesto puede cubrirlo según su descripción en el manual." },
+    { "task_assignment_id": null, "suggested_new_task_title": "Cubrir recepción de mercancía", "suggested_target_type": "user", "suggested_target_id": 12, "estimated_mins": 30, "reason": "..." }
+  ]
+}
+```
+  (Esta estructura es una propuesta de arranque — si les resulta más simple otra forma, ajústenla; lo único que de verdad necesitamos es: por cada sugerencia, suficiente información para que el frontend pueda ofrecer un botón "Aplicar" que reutilice `carryOverAssignment`/`createDynamicTask` ya existentes del lado de Cowork.)
+- Igual que el resto de `GeminiAIService`: si Gemini falla (sin API key, timeout, error), degradar con gracia — devolver `{ "success": true, "ai_available": false, "summary": null, "suggestions": [] }` en vez de fallar la petición completa, para que el frontend simplemente oculte la sugerencia y el flujo manual de "Armar Plan de Hoy" (ya construido) siga funcionando exactamente igual sin la IA.
+- No necesitamos que el endpoint persista nada — es de solo lectura/sugerencia, sin efectos secundarios en la base de datos.
+
+Como en `§39`, esta es una sección nueva y no urgente — si prefieren una versión más chica para empezar (por ejemplo, sin el detalle del vault completo, solo con asistencia + tareas pendientes), avisen y ajusto el frontend a lo que sea más rápido de tener funcionando primero.
+
+## ✅ Implementado (2026-07-23) — resumen
+
+Hice la versión completa (con el vault), no la reducida — a diferencia de §39, aquí no había ninguna decisión de diseño irreversible que justificara esperar: todo el contexto que pide (asistencia, pendientes, vault, puestos) ya existe y es solo lectura, y el endpoint no persiste nada, así que construir la versión completa de una vez no tiene riesgo ni costo de rehacer.
+
+`POST /admin/dashboard/suggest-work-plan` en `DashboardMonitorController::suggestWorkPlan()` (bajo `role:admin,supervisor`, junto al resto de `/admin/dashboard/*`). Reúne los 4 contextos exactamente como se pidió:
+1. **Asistencia:** `time_entries` con `check_in` en la fecha (presentes) cruzado contra el roster de `employees` activos → arma listas `present`/`absent`, cada uno con su puesto.
+2. **Pendientes:** `task_assignments` en `pending`/`in_progress`/`paused` de la fecha o anteriores sin resolver.
+3. **Vault:** misma consulta `ObsidianDocument::where('tenant_id',...)->select('title','type','raw_content')` que `copilot()`, envuelta en try/catch por si el tenant no tiene vault (no revienta, manda contexto vacío).
+4. **Puestos:** `job_roles` con `description`/`responsibilities`.
+
+Nuevo método `GeminiAIService::suggestWorkPlan()` (mismo patrón de texto→JSON que `suggestOptimalAssignee`, con fallback graceful). El endpoint responde `{ success: true, ai_available, summary, staffing_gap_detected, suggestions }` — y cuando Gemini falla, `ai_available: false` + `suggestions: []` con **200**, no error, tal cual pidieron, para que el flujo manual siga funcionando. Sin efectos secundarios en la BD.
+
+**Nota igual que en §35:** no toqué `GEMINI_API_KEY` en `.env` — eso lo configuran ustedes/Francisco. Mientras no esté, el endpoint devuelve `ai_available: false` de forma limpia, así que ya es seguro de activar en producción.
+
+Usé la estructura de salida que propusieron tal cual (`task_assignment_id`/`suggested_new_task_title`/`suggested_target_type`/`suggested_target_id`/`estimated_mins`/`reason` por sugerencia) — si al conectarlo del lado de Cowork necesitan otro campo para que los botones "Aplicar" (`carryOverAssignment`/`createDynamicTask`) tengan todo lo que requieren, avisen y lo agrego al prompt.
+
+Test nuevo: `SuggestWorkPlanTest.php` — reúne y pasa el contexto correcto a Gemini (presentes/ausentes/pendientes/puestos/vault, verificado con `withArgs`), degrada con gracia a `ai_available: false`, y exige rol admin/supervisor (403 para empleado). Suite completa: **161/161 tests, 652 assertions**, sin regresiones.

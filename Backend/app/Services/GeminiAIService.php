@@ -361,6 +361,96 @@ PROMPT;
     }
 
     // =========================================================
+    // 6. SUGERENCIA DE PLAN DE TRABAJO DEL DÍA (§42)
+    // =========================================================
+
+    /**
+     * Sugiere cómo repartir el trabajo del día tomando en cuenta quién asistió,
+     * las tareas pendientes y el contexto operativo (vault + puestos). Es solo
+     * sugerencia: no crea ni asigna nada. Sigue el mismo patrón de fallback graceful
+     * que el resto del servicio — si Gemini falla, devuelve ai_available: false.
+     *
+     * @param array  $present   Empleados presentes hoy [{user_id, name, job_role}]
+     * @param array  $absent    Empleados ausentes hoy [{user_id, name, job_role}]
+     * @param array  $pending   Tareas pendientes [{task_assignment_id, title, target_role, status}]
+     * @param array  $jobRoles  Puestos del tenant [{id, name, description, responsibilities}]
+     * @param string $vaultContext Texto plano del manual operativo (vault Obsidian)
+     * @return array {ai_available, summary, staffing_gap_detected, suggestions}
+     */
+    public function suggestWorkPlan(array $present, array $absent, array $pending, array $jobRoles, string $vaultContext): array
+    {
+        $presentJson = json_encode($present, JSON_UNESCAPED_UNICODE);
+        $absentJson  = json_encode($absent, JSON_UNESCAPED_UNICODE);
+        $pendingJson = json_encode($pending, JSON_UNESCAPED_UNICODE);
+        $rolesJson   = json_encode($jobRoles, JSON_UNESCAPED_UNICODE);
+        $vaultTrunc  = mb_strlen($vaultContext) > 8000
+            ? mb_substr($vaultContext, 0, 8000) . "\n\n[Manual truncado para el análisis]"
+            : $vaultContext;
+
+        $prompt = <<<PROMPT
+Eres el asistente operativo de la plataforma Talent360. El admin está armando el plan de trabajo del día en la junta matutina. Sugiere cómo repartir el trabajo tomando en cuenta con cuánto personal se cuenta REALMENTE hoy (quién asistió y quién faltó) y el contexto operativo de la empresa.
+
+EMPLEADOS PRESENTES HOY: $presentJson
+
+EMPLEADOS AUSENTES HOY: $absentJson
+
+TAREAS PENDIENTES (de hoy y días anteriores sin resolver): $pendingJson
+
+PUESTOS DE LA EMPRESA (con descripción y responsabilidades): $rolesJson
+
+MANUAL OPERATIVO / ORGANIGRAMA DE LA EMPRESA:
+$vaultTrunc
+
+Responde ÚNICAMENTE con un JSON con esta estructura exacta:
+{
+  "summary": "Resumen ejecutivo de 1-2 oraciones sobre el estado del personal de hoy y la estrategia sugerida",
+  "staffing_gap_detected": true,
+  "suggestions": [
+    {
+      "task_assignment_id": "id de la tarea pendiente a reasignar, o null si es una tarea nueva sugerida",
+      "suggested_new_task_title": "título de la tarea nueva, o null si es una reasignación",
+      "suggested_target_type": "role",
+      "suggested_target_id": 6,
+      "estimated_mins": 30,
+      "reason": "Por qué se sugiere esta redistribución, citando el manual/puesto cuando aplique"
+    }
+  ]
+}
+
+Reglas:
+- "suggested_target_type" solo puede ser "role" o "user".
+- Prioriza cubrir con personal presente las responsabilidades de los puestos que faltaron hoy, basándote en las descripciones de puestos y el manual.
+- Si no detectas ningún hueco de personal, "staffing_gap_detected": false y "suggestions" puede ir vacío o con mejoras menores.
+- Responde SOLO el JSON, sin explicaciones adicionales.
+PROMPT;
+
+        try {
+            $raw  = $this->callGemini($prompt, 0.3, 2048);
+            $data = json_decode($this->extractJson($raw), true);
+
+            if (!$data || !array_key_exists('suggestions', $data)) {
+                throw new \Exception('Respuesta inválida de Gemini para plan de trabajo');
+            }
+
+            return [
+                'ai_available'          => true,
+                'summary'               => $data['summary'] ?? null,
+                'staffing_gap_detected' => $data['staffing_gap_detected'] ?? false,
+                'suggestions'           => $data['suggestions'] ?? [],
+            ];
+        } catch (\Exception $e) {
+            Log::warning('GeminiAIService::suggestWorkPlan fallback', ['error' => $e->getMessage()]);
+
+            return [
+                'ai_available'          => false,
+                'summary'               => null,
+                'staffing_gap_detected' => false,
+                'suggestions'           => [],
+            ];
+        }
+    }
+
+    // =========================================================
     // 5. COMPARACIÓN DE EVIDENCIA FOTOGRÁFICA DE TAREA (§35)
     // =========================================================
 

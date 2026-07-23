@@ -631,4 +631,104 @@ class DashboardMonitorController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * §42: sugiere el plan de trabajo del día con IA (asistencia + tareas pendientes
+     * + vault Obsidian + puestos como contexto). Solo lectura/sugerencia — no crea ni
+     * asigna nada; el frontend decide qué aplicar. Degrada con gracia si Gemini falla.
+     */
+    public function suggestWorkPlan(Request $request)
+    {
+        $request->validate([
+            'date' => 'nullable|date',
+        ]);
+
+        $user = auth()->user() ?? auth('sanctum')->user();
+        $tenantId = $user ? $user->tenant_id : 1;
+        $date = $request->input('date', Carbon::today()->toDateString());
+
+        // 1. Asistencia: presentes (con check_in hoy) vs. roster completo.
+        $checkedInUserIds = DB::table('time_entries')
+            ->where('tenant_id', $tenantId)
+            ->where('date', $date)
+            ->where('type', 'check_in')
+            ->whereNull('simulation_session_id')
+            ->pluck('user_id')
+            ->unique()
+            ->all();
+
+        $roster = DB::table('employees')
+            ->leftJoin('job_roles', 'job_roles.id', '=', 'employees.job_role_id')
+            ->where('employees.tenant_id', $tenantId)
+            ->where('employees.is_active_employee', '!=', false)
+            ->select('employees.user_id', 'employees.name', 'employees.job_role_id', 'job_roles.name as job_role')
+            ->get();
+
+        $present = [];
+        $absent = [];
+        foreach ($roster as $emp) {
+            $row = [
+                'user_id' => $emp->user_id,
+                'name' => $emp->name,
+                'job_role' => $emp->job_role ?? 'Sin puesto',
+            ];
+            if ($emp->user_id && in_array($emp->user_id, $checkedInUserIds)) {
+                $present[] = $row;
+            } else {
+                $absent[] = $row;
+            }
+        }
+
+        // 2. Tareas pendientes (de la fecha o de días anteriores sin resolver).
+        $pending = DB::table('task_assignments')
+            ->join('tasks', 'tasks.id', '=', 'task_assignments.task_id')
+            ->leftJoin('job_roles', 'job_roles.id', '=', 'tasks.target_id')
+            ->where('tasks.tenant_id', $tenantId)
+            ->whereIn('task_assignments.status', ['pending', 'in_progress', 'paused'])
+            ->where(function ($q) use ($date) {
+                $q->whereNull('task_assignments.date')->orWhere('task_assignments.date', '<=', $date);
+            })
+            ->select(
+                'task_assignments.id as task_assignment_id',
+                'tasks.title',
+                'tasks.target_type',
+                'tasks.target_id',
+                'task_assignments.status',
+                'task_assignments.user_id'
+            )
+            ->limit(100)
+            ->get()
+            ->all();
+
+        // 3. Contexto del vault (misma consulta que ObsidianController::copilot).
+        $vaultContext = '';
+        try {
+            $documents = \App\Models\ObsidianDocument::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->select('title', 'type', 'raw_content')
+                ->get();
+            foreach ($documents as $doc) {
+                $vaultContext .= "Documento: {$doc->title} (Tipo: {$doc->type})\nContenido:\n{$doc->raw_content}\n---\n";
+            }
+        } catch (\Exception $e) {
+            $vaultContext = '';
+        }
+
+        // 4. Puestos con descripción/responsabilidades.
+        $jobRoles = DB::table('job_roles')
+            ->where('tenant_id', $tenantId)
+            ->select('id', 'name', 'description', 'responsibilities')
+            ->get()
+            ->all();
+
+        $result = app(\App\Services\GeminiAIService::class)->suggestWorkPlan(
+            $present,
+            $absent,
+            array_map(fn($p) => (array) $p, $pending),
+            array_map(fn($r) => (array) $r, $jobRoles),
+            $vaultContext
+        );
+
+        return response()->json(array_merge(['success' => true], $result));
+    }
 }

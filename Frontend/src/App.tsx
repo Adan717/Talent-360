@@ -56,7 +56,6 @@ import { SaaSLandingPage } from './components/SaaSLandingPage';
 import { Login } from './components/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { MyAccountModal } from './components/MyAccountModal';
-import { SupportChatCopilot } from './components/SupportChatCopilot';
 
 const IconMap: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={20} />,
@@ -739,12 +738,15 @@ function MainLayout() {
         </div>
       </main>
 
-      <MyAccountModal 
-        isOpen={isMyAccountOpen} 
-        onClose={() => setIsMyAccountOpen(false)} 
+      <MyAccountModal
+        isOpen={isMyAccountOpen}
+        onClose={() => setIsMyAccountOpen(false)}
       />
- 
-      <SupportChatCopilot />
+      {/* 2026-07-23: se quitó <SupportChatCopilot /> (a petición de Francisco) — era un botón
+          flotante independiente que abría su propio chat contra /support/copilot, duplicando
+          al pixel la opción "Copiloto AI" que ya vive dentro del menú unificado del botón morado
+          en RelojVisual.tsx (mismo endpoint). Quitarlo también resuelve el problema de que se
+          viera "encima" del botón morado, ya que ese componente se montaba con z-[9999]. */}
     </div>
   );
 }

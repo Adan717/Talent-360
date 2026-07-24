@@ -2597,7 +2597,14 @@ export default function RelojVisual({
       // y bottom ajustado 2px más abajo que la barra (bottom-2.5 vs bottom-3 de la barra) para que,
       // siendo el botón 4px más alto (68px vs 64px) que la barra, ambos compartan el mismo centro
       // vertical exacto en vez de quedar descuadrados.
-      <div className="fixed bottom-2.5 right-2.5 z-[80] font-sans" ref={fabMenuRef}>
+      // 2026-07-23: cambiado de `fixed` a `absolute` (a petición de Francisco). Con `fixed` el botón
+      // se anclaba al viewport del navegador, mientras que MobileBottomNav usa `absolute` anclado al
+      // contenedor raíz de RelojVisual (el div `relative` que envuelve toda la pantalla) — por eso se
+      // veían "en capas distintas": al hacer scroll o en cualquier contexto donde el contenedor no
+      // ocupe el viewport completo, uno se movía/quedaba fijo y el otro no. Con `absolute` ambos
+      // comparten el mismo ancestro posicionado y se mantienen estáticos juntos, igual que la barra
+      // superior del menú hamburguesa (también `absolute`).
+      <div className="absolute bottom-2.5 right-2.5 z-[80] font-sans" ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"

@@ -6,58 +6,58 @@ use App\Events\MonitorUpdated;
 use App\Models\TimeEntry;
 use App\Models\User;
 use App\Services\ClockService;
+use App\Services\OfflineSignatureService;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 /**
- * Sincronización de la cola offline en LOTE (Ronda 84, Fase 2 / T2.1 del plan v2).
+ * Sincronización de la cola offline en LOTE — PROTOCOLO UNIFICADO (merge F3).
  *
- * Antes la cola (offlineDb.ts, R29) se drenaba 1×1 vía /clock/punch: sin atomicidad (un fallo a mitad
- * dejaba medio lote sincronizado), sin idempotencia (un re-envío duplicaba) y perdiendo el momento
- * offline real (en prod el `time` del cliente se ignora → el ponche quedaba a la hora de SYNC).
+ * Une los dos protocolos de batch que traían las dos líneas:
+ *  - Línea del Reloj (R84/R85): ítems con `client_stamp` (idempotencia) + `occurred_at` (momento
+ *    offline real); firma de INTEGRIDAD sha-256 auto-computada cuando el stamp tiene forma de hash.
+ *  - Línea §1–§42 (§16): ítems con `offline_stamp` = HMAC del SECRETO del tenant (anti-forja real,
+ *    OfflineSignatureService) sobre "user|type|time|client_timestamp".
  *
- * Aquí el lote se procesa en UNA `DB::transaction` (inmutabilidad histórica: o se graba entero o
- * nada), idempotente por `client_stamp`, registrando cada ponche en su MOMENTO offline (`occurred_at`).
- * Cada ponche va en su propio SAVEPOINT (`DB::transaction` anidado): un rechazo (fecha futura, otro
- * tenant, geocerca…) revierte SÓLO ese ponche y el resto del lote sigue — en Postgres una excepción
- * SIN savepoint aborta la transacción completa (lección R51).
+ * Reglas comunes: una sola DB::transaction con SAVEPOINT por ponche (un rechazo no tumba el lote),
+ * idempotencia por stamp, sólo ponches PROPIOS (B1: aceptar user_id ajeno convertía el batch en
+ * "fichar por un colega" a escala), ventana de antigüedad anti-backdating, y el momento offline
+ * REAL viaja a processPunch como `occurredAt` (inmutabilidad histórica LFT).
  */
 class PunchBatchController extends Controller
 {
     /** Tope del lote: una cola offline real no acumula miles; acota abuso/DoS. */
     private const MAX_BATCH = 200;
 
-    /**
-     * Ventana de antigüedad: un ponche offline no puede ser del futuro ni de hace demasiado. 7 días
-     * cubre una desconexión real (rara vez mayor) y ACOTA el backdating: la asistencia offline confía
-     * en la hora del cliente por naturaleza (y el GPS de la geocerca va cacheado, también del cliente),
-     * así que cuanto más corta la ventana, menor la superficie de "fingir asistencia" (review R84).
-     */
+    /** Ventana de antigüedad (R84): acota el backdating inherente a la asistencia offline. */
     private const MAX_AGE_DAYS = 7;
     private const FUTURE_SKEW_MINUTES = 5; // tolera un pequeño desfase de reloj del dispositivo
 
     protected ClockService $clockService;
+    protected OfflineSignatureService $offlineSignatureService;
 
-    public function __construct(ClockService $clockService)
+    public function __construct(ClockService $clockService, OfflineSignatureService $offlineSignatureService)
     {
         $this->clockService = $clockService;
+        $this->offlineSignatureService = $offlineSignatureService;
     }
 
     public function batch(Request $request)
     {
-        // Sólo lo ESTRUCTURAL a nivel request (422 aborta todo el lote). `type` y `occurred_at` se
-        // validan POR ÍTEM en el loop: un ítem legacy/corrupto (tipo obsoleto, fecha no parseable) NO
-        // debe hacer 422 de TODO el lote y volverse una píldora venenosa que atasca la cola para
-        // siempre (review R84, misma clase que R82). client_stamp sí es requisito estructural: sin él
-        // no hay idempotencia ni forma de mapear el resultado en el cliente.
+        // Sólo lo ESTRUCTURAL a nivel request (422 aborta todo el lote); `type` y las fechas se
+        // validan POR ÍTEM en el loop (un ítem corrupto no debe volverse píldora venenosa, R84).
+        // Cada ítem debe traer SU credencial de protocolo: client_stamp (Reloj) u offline_stamp
+        // (§16, con su client_timestamp).
         $request->validate([
             'punches' => ['required', 'array', 'min:1', 'max:' . self::MAX_BATCH],
-            'punches.*.client_stamp' => ['required', 'string', 'max:100'],
+            'punches.*.client_stamp' => ['required_without:punches.*.offline_stamp', 'string', 'max:100'],
+            'punches.*.offline_stamp' => ['required_without:punches.*.client_stamp', 'string'],
+            'punches.*.client_timestamp' => ['required_with:punches.*.offline_stamp', 'date'],
             'punches.*.details' => ['nullable', 'array'],
+            'punches.*.gps' => ['nullable', 'array'],
             'punches.*.user_id' => ['nullable', 'integer'],
         ]);
 
@@ -67,53 +67,65 @@ class PunchBatchController extends Controller
             return response()->json(['success' => false, 'message' => 'Sin tenant.'], 403);
         }
 
-        // Orden cronológico por momento offline (defensivo: un occurred_at no parseable va al final y
-        // el loop lo rechazará). El guard de check_in duplicado (R63) y el pareo de comidas dependen
-        // de ver los ponches previos del lote en el orden correcto.
-        $punches = collect($request->input('punches'))
-            ->sortBy(fn ($p) => $this->parseOrNull($p['occurred_at'] ?? null)?->getTimestamp() ?? PHP_INT_MAX)
-            ->values();
+        // Orden cronológico por momento offline conservando el índice original (el FE de la línea
+        // §16 mapea resultados por `index`; el de la línea del Reloj por `client_stamp`).
+        $indexed = [];
+        foreach ($request->input('punches') as $i => $item) {
+            $indexed[] = ['index' => $i, 'item' => $item];
+        }
+        usort($indexed, function ($a, $b) {
+            $ta = $this->parseOrNull($a['item']['occurred_at'] ?? $a['item']['client_timestamp'] ?? null)?->getTimestamp() ?? PHP_INT_MAX;
+            $tb = $this->parseOrNull($b['item']['occurred_at'] ?? $b['item']['client_timestamp'] ?? null)?->getTimestamp() ?? PHP_INT_MAX;
+            return $ta <=> $tb;
+        });
 
         $now = Carbon::now();
         $results = [];
         $anyRecorded = false;
 
-        DB::transaction(function () use ($punches, $tenantId, $actor, $now, &$results, &$anyRecorded) {
-            foreach ($punches as $p) {
-                $stamp = $p['client_stamp'];
+        DB::transaction(function () use ($indexed, $tenantId, $actor, $now, &$results, &$anyRecorded) {
+            foreach ($indexed as $wrapper) {
+                $index = $wrapper['index'];
+                $p = $wrapper['item'];
 
-                // Idempotencia POR USUARIO (review R84): la firma de un empleado no puede sombrear la
-                // de otro. Lectura simple (no aborta la tx); dentro de la tx externa ve también los
-                // ponches ya grabados en este mismo lote.
+                $isHmacProtocol = isset($p['offline_stamp']) && !isset($p['client_stamp']);
+                // El stamp de idempotencia: el propio client_stamp, o el HMAC (único por ponche).
+                $stamp = (string) ($p['client_stamp'] ?? $p['offline_stamp']);
+
+                // Idempotencia POR USUARIO (review R84): re-enviar un lote no duplica.
                 $yaExiste = TimeEntry::withoutGlobalScopes()
                     ->where('tenant_id', $tenantId)
                     ->where('user_id', $actor->id)
                     ->where('client_stamp', $stamp)
                     ->exists();
                 if ($yaExiste) {
-                    $results[] = ['client_stamp' => $stamp, 'status' => 'duplicate'];
+                    $results[] = ['index' => $index, 'client_stamp' => $stamp, 'status' => 'duplicate', 'success' => false, 'reason' => 'duplicate'];
                     continue;
+                }
+
+                // §16: verificación HMAC con el secreto del tenant ANTES de procesar. Un ítem con
+                // firma inválida se excluye sin abortar el resto del lote.
+                if ($isHmacProtocol) {
+                    $msg = ($p['user_id'] ?? $actor->id) . '|' . ($p['type'] ?? '') . '|' . ($p['time'] ?? '') . '|' . ($p['client_timestamp'] ?? '');
+                    if (!$this->offlineSignatureService->verifyStamp($tenantId, (string) $p['offline_stamp'], $msg)) {
+                        $results[] = ['index' => $index, 'success' => false, 'reason' => 'invalid_signature', 'status' => 'rejected'];
+                        continue;
+                    }
                 }
 
                 try {
                     // SAVEPOINT por ponche: un rechazo revierte sólo éste, no el lote.
-                    $recorded = DB::transaction(function () use ($p, $tenantId, $actor, $now, $stamp) {
-                        // Validación POR ÍTEM (no request-level → un ítem malo no tumba el lote):
+                    $recorded = DB::transaction(function () use ($p, $tenantId, $actor, $now, $stamp, $isHmacProtocol) {
+                        // Validación POR ÍTEM:
                         if (!in_array($p['type'] ?? null, ClockService::PUNCH_TYPES, true)) {
                             throw new \RuntimeException('Tipo de ponche inválido.');
                         }
-                        $occurredAt = $this->parseOrNull($p['occurred_at'] ?? null);
+                        $occurredAt = $this->parseOrNull($p['occurred_at'] ?? $p['client_timestamp'] ?? null);
                         if (!$occurredAt) {
                             throw new \RuntimeException('Fecha del ponche inválida.');
                         }
 
-                        // B1 (review R84): sólo se sincronizan los ponches del PROPIO emisor. Aceptar un
-                        // user_id ajeno convertía el batch en un vector de "fichar por un colega" a
-                        // escala (200 ponches backdated con GPS falso para cualquiera del tenant). La
-                        // cola offline del reloj personal es SIEMPRE del usuario logueado; el kiosko usa
-                        // otro flujo (PIN). Va ANTES de la firma para dar el mensaje preciso (la firma se
-                        // recomputa con actor->id; un ponche de otro usuario daría "firma inválida" en
-                        // vez del motivo real — review R85).
+                        // B1 (review R84): sólo se sincronizan los ponches del PROPIO emisor.
                         $targetId = $p['user_id'] ?? $actor->id;
                         if ((int) $targetId !== (int) $actor->id) {
                             throw new \RuntimeException('Sólo puedes sincronizar tus propios ponches.');
@@ -123,15 +135,14 @@ class PunchBatchController extends Controller
                             throw new \RuntimeException('Usuario no pertenece a su empresa.');
                         }
 
-                        // R85: verificación de la firma offline_stamp. Se comprueba SÓLO si el stamp
-                        // tiene formato de hash SHA-256 (64 hex); los legacy/fallback (UUID, sin firma)
-                        // se aceptan sin verificar (siguen sirviendo de idempotencia). La firma se
-                        // recomputa sobre el occurred_at TAL COMO SE MANDÓ y el GPS de details, con la
-                        // misma canonicalización del FE. Un desajuste = corrupción o campo alterado.
+                        // R85: firma de integridad del protocolo client_stamp — se comprueba SÓLO si
+                        // el stamp tiene formato de hash SHA-256 (64 hex); los legacy/UUID se aceptan
+                        // sin verificar (siguen sirviendo de idempotencia). El protocolo HMAC ya se
+                        // verificó arriba con el secreto del tenant.
                         $gps = is_array($p['details'] ?? null) ? ($p['details']['gps'] ?? null) : null;
-                        if (preg_match('/\A[a-f0-9]{64}\z/', (string) $stamp)) {
+                        if (!$isHmacProtocol && preg_match('/\A[a-f0-9]{64}\z/', $stamp)) {
                             $expected = self::stampFor($actor->id, $p['type'], (string) $p['occurred_at'], $gps);
-                            if (!hash_equals($expected, (string) $stamp)) {
+                            if (!hash_equals($expected, $stamp)) {
                                 throw new \RuntimeException('Firma del ponche inválida (posible corrupción).');
                             }
                         }
@@ -144,10 +155,13 @@ class PunchBatchController extends Controller
                             throw new \RuntimeException('El ponche offline es demasiado antiguo.');
                         }
 
-                        // Detalles del cliente: se scrubbea el bypass del IP-lock (igual que /clock/punch)
-                        // y se fija el override por ROL del emisor (no por lo que mande el cliente).
+                        // Detalles del cliente: scrub del bypass + gps del protocolo §16 + override
+                        // por ROL del emisor (no por lo que mande el cliente).
                         $details = is_array($p['details'] ?? null) ? $p['details'] : [];
                         unset($details['sandbox_bypass']);
+                        if (isset($p['gps']) && is_array($p['gps'])) {
+                            $details['gps'] = $p['gps'];
+                        }
                         $details['supervisor_override'] = in_array($actor->role, ['admin', 'supervisor'], true);
 
                         return $this->clockService->processPunch(
@@ -160,21 +174,27 @@ class PunchBatchController extends Controller
                         );
                     });
 
-                    // El guard R63 devuelve `duplicate:true` sin crear fila (2º check_in con turno abierto).
+                    // El guard R63 devuelve `duplicate:true` sin crear fila.
                     if (isset($recorded['duplicate']) && $recorded['duplicate']) {
-                        $results[] = ['client_stamp' => $stamp, 'status' => 'duplicate'];
+                        $results[] = ['index' => $index, 'client_stamp' => $stamp, 'status' => 'duplicate', 'success' => false, 'reason' => 'duplicate'];
                     } else {
-                        $results[] = ['client_stamp' => $stamp, 'status' => 'recorded'];
+                        $results[] = [
+                            'index' => $index,
+                            'client_stamp' => $stamp,
+                            'status' => 'recorded',
+                            'success' => true,
+                            'entry_id' => $recorded['entry']->id ?? null,
+                            'type' => $p['type'],
+                        ];
                         $anyRecorded = true;
                     }
                 } catch (UniqueConstraintViolationException $e) {
                     // Carrera: otra petición grabó el mismo stamp entre el exists() y el insert.
-                    $results[] = ['client_stamp' => $stamp, 'status' => 'duplicate'];
+                    $results[] = ['index' => $index, 'client_stamp' => $stamp, 'status' => 'duplicate', 'success' => false, 'reason' => 'duplicate'];
                 } catch (\Throwable $e) {
-                    // Rechazo permanente (fecha inválida, otro tenant, geocerca, tienda cerrada…): el
-                    // savepoint ya revirtió este ponche. Se reporta para que el cliente lo DESCARTE de
-                    // la cola (no reintentar; el estado no cambiará) — mismo criterio que el 422 de R29.
-                    $results[] = ['client_stamp' => $stamp, 'status' => 'rejected', 'message' => $e->getMessage()];
+                    // Rechazo permanente: el savepoint ya revirtió este ponche. Se reporta para que
+                    // el cliente lo DESCARTE de la cola (no reintentar).
+                    $results[] = ['index' => $index, 'client_stamp' => $stamp, 'status' => 'rejected', 'success' => false, 'reason' => 'processing_error', 'message' => $e->getMessage()];
                 }
             }
         });
@@ -183,17 +203,21 @@ class PunchBatchController extends Controller
             event(new MonitorUpdated($tenantId));
         }
 
+        // Orden de RESPUESTA = orden original del lote (contrato §16; el FE del Reloj mapea por
+        // client_stamp así que le es indistinto).
+        usort($results, fn ($a, $b) => $a['index'] <=> $b['index']);
+
         return response()->json([
             'success' => true,
-            'results' => $results,
+            'processed' => count(array_filter($results, fn ($r) => $r['success'])),
+            'rejected' => count(array_filter($results, fn ($r) => !$r['success'])),
+            'results' => array_values($results),
         ]);
     }
 
     /**
-     * Parseo defensivo de `occurred_at`: null si falta o no es parseable (el loop lo rechaza como
-     * ítem inválido en vez de reventar). El FE lo manda como ISO-8601 UTC (`toISOString()`); un
-     * cliente que mandara hora local naïve la vería interpretada en app.timezone (UTC) — contrato
-     * documentado, no una vía de fraude (desplazar la fecha sólo perjudica a quien la manda).
+     * Parseo defensivo del momento offline: null si falta o no es parseable (el loop lo rechaza
+     * como ítem inválido en vez de reventar).
      */
     private function parseOrNull($value): ?Carbon
     {
@@ -208,30 +232,18 @@ class PunchBatchController extends Controller
     }
 
     /**
-     * Firma `offline_stamp` (R85): SHA-256 sobre los campos del ponche encolado. El FE la calcula al
-     * ENCOLAR con la MISMA canonicalización (offlineDb.ts) y la manda como `client_stamp`; aquí se
-     * recomputa y se compara para detectar CORRUPCIÓN (bit-rot en IndexedDB / transmisión) y para
-     * ATAR la firma al contenido (no se puede reusar una firma para otro ponche).
-     *
-     * ⚠️ NO es anti-fraude: sin secreto en el cliente (bundle público), un atacante que altere un
-     * campo puede recomputar el hash. El backdating de la hora/GPS offline sigue siendo inherente
-     * (mitigado por ventana + geocerca + que el ponche queda marcado). Ver doc R84/R85.
-     *
-     * Canonical: `userId|type|occurredAtIso|latMicro,lngMicro` (o `...|nogps`). El GPS va en
-     * MICRO-GRADOS ENTEROS (`round(x*1e6)`) para evitar el formateo frágil de floats entre JS y PHP
-     * (verificado: mismo doble IEEE-754 → mismo entero → mismo hash).
+     * Firma `client_stamp` de integridad (R85): SHA-256 sobre los campos del ponche encolado con la
+     * MISMA canonicalización del FE (offlineDb.ts). Detecta CORRUPCIÓN y ata la firma al contenido.
+     * ⚠️ NO es anti-fraude (sin secreto en el cliente); para anti-forja real está el protocolo HMAC.
+     * Canonical: `userId|type|occurredAtIso|latMicro,lngMicro` (o `...|nogps`), GPS en micro-grados
+     * ENTEROS con redondeo estilo JS Math.round (floor(x+0.5)) para paridad exacta JS↔PHP.
      */
     public static function stampFor($userId, string $type, string $occurredAtIso, $gps): string
     {
         $gpsPart = 'nogps';
-        // El guard exige NÚMEROS (no strings numéricos) para casar con el `typeof === 'number'` del FE
-        // (offlineDb.ts); una lat/lng como string "19.43" daría 'nogps' en el FE pero coord en el BE.
         $latOk = isset($gps['latitude']) && (is_int($gps['latitude']) || is_float($gps['latitude']));
         $lngOk = isset($gps['longitude']) && (is_int($gps['longitude']) || is_float($gps['longitude']));
         if (is_array($gps) && $latOk && $lngOk) {
-            // `floor(x + 0.5)` replica EXACTAMENTE JS Math.round (redondea el .5 hacia +∞); PHP round()
-            // aleja de cero, divergiendo en coordenadas NEGATIVAS que caigan en un medio-entero exacto
-            // → hashes distintos → rechazo de un ponche legítimo (review R85). México tiene lng < 0.
             $lat = (int) floor(((float) $gps['latitude']) * 1e6 + 0.5);
             $lng = (int) floor(((float) $gps['longitude']) * 1e6 + 0.5);
             $gpsPart = "{$lat},{$lng}";

@@ -238,6 +238,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Kiosko: asignar/resetear el PIN de un empleado (admin/supervisor). R54.
         Route::post('/admin/employees/{id}/kiosk-pin', [\App\Http\Controllers\KioskController::class, 'setPin']);
 
+        // Salida Doble Llave (spec:53-55): el supervisor autoriza una salida 'pending_approval'. R75.
+        Route::post('/clock/check-out/{id}/authorize', [TimeEntryController::class, 'authorizeCheckout']);
+
         // Tolerancia con autorización: el admin ve y resuelve las solicitudes de entrada. R56.
         Route::get('/admin/late-authorizations', [\App\Http\Controllers\LateAuthorizationController::class, 'pending']);
         Route::post('/admin/late-authorizations/{id}/resolve', [\App\Http\Controllers\LateAuthorizationController::class, 'resolve']);
@@ -343,7 +346,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // §16: throttle por usuario autenticado — antes ningún endpoint de fichaje tenía
         // límite de tasa (el único ejemplo en todo el archivo era /login).
         Route::middleware('throttle:20,1')->post('/clock/punch', [TimeEntryController::class, 'punch']);
-        Route::middleware('throttle:20,1')->post('/clock/punch-batch', [TimeEntryController::class, 'punchBatch']);
+        // Merge F3: batch offline UNIFICADO (client_stamp/occurred_at del Reloj + HMAC offline_stamp
+        // del §16) — vive en PunchBatchController; throttle por USUARIO (Sanctum → key = user id).
+        Route::middleware('throttle:30,1')->post('/clock/punch-batch', [\App\Http\Controllers\PunchBatchController::class, 'batch']);
         Route::get('/clock/offline-secret', [TimeEntryController::class, 'offlineSecret']);
         // Protege contra fuerza bruta del PIN de testigos — mismo límite que /login.
         Route::middleware('throttle:5,1')->post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);

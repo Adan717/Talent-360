@@ -68,8 +68,29 @@ class CheckoutApprovalTest extends TestCase
         ]);
     }
 
+    /**
+     * ENMIENDA merge F3: la máquina de estados de secuencia (§15 reconciliado) exige un turno
+     * ABIERTO para el check_out — se abre el turno con un check_in directo en BD (no cambia lo
+     * que este test afirma: el estado de aprobación de la salida).
+     */
+    private function insertCheckIn(User $user, string $time = '09:00:00'): void
+    {
+        DB::table('time_entries')->insert([
+            'tenant_id' => $user->tenant_id,
+            'user_id' => $user->id,
+            'date' => Carbon::now()->format('Y-m-d'),
+            'type' => 'check_in',
+            'time' => $time,
+            'is_late' => false,
+            'late_minutes' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function checkOutId(User $user): int
     {
+        $this->insertCheckIn($user);
         app(ClockService::class)->processPunch($user, 'check_out');
         return (int) TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->value('id');
     }
@@ -204,6 +225,13 @@ class CheckoutApprovalTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2026-07-10 15:00:00'));
         try {
             [$tenant, $user] = $this->makeSetup(true);
+            // ENMIENDA merge F3: meal_end exige su meal_start abierto (secuencia §15).
+            $this->insertCheckIn($user);
+            DB::table('time_entries')->insert([
+                'tenant_id' => $user->tenant_id, 'user_id' => $user->id,
+                'date' => Carbon::now()->format('Y-m-d'), 'type' => 'meal_start', 'time' => '13:00:00',
+                'is_late' => false, 'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
+            ]);
             app(ClockService::class)->processPunch($user, 'meal_end');
 
             $entry = TimeEntry::where('user_id', $user->id)->where('type', 'meal_end')->first();

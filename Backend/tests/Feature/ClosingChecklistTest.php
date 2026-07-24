@@ -48,6 +48,14 @@ class ClosingChecklistTest extends TestCase
             'created_at' => now(), 'updated_at' => now(),
         ]);
         LftSetting::create(['tenant_id' => $tenant->id, 'require_closing_checklist' => $require]);
+        // ENMIENDA merge F3: la secuencia §15 reconciliada exige turno ABIERTO para el check_out;
+        // se abre con un check_in directo en BD (no cambia lo que estos tests afirman: el gate del
+        // checklist de cierre y sus exenciones).
+        DB::table('time_entries')->insert([
+            'tenant_id' => $tenant->id, 'user_id' => $user->id,
+            'date' => Carbon::now()->format('Y-m-d'), 'type' => 'check_in', 'time' => '09:00:00',
+            'is_late' => false, 'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
         return [$tenant, $user];
     }
 

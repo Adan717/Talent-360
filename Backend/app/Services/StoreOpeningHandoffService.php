@@ -213,10 +213,10 @@ class StoreOpeningHandoffService
 
             // Notify Admin / Supervisors if enabled
             if ($settings->notify_admin_on_handoff) {
-                $this->notificationService->sendToRole('admin', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
+                $this->notificationService->sendToRole($tenantId, 'admin', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
             }
             if ($settings->notify_supervisor_on_handoff) {
-                $this->notificationService->sendToRole('supervisor', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
+                $this->notificationService->sendToRole($tenantId, 'supervisor', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
             }
 
             return [
@@ -243,8 +243,8 @@ class StoreOpeningHandoffService
             ]);
 
             // Broadcast critical alerts to all admins and supervisors
-            $this->notificationService->sendToRole('admin', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
-            $this->notificationService->sendToRole('supervisor', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
+            $this->notificationService->sendToRole($tenantId, 'admin', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
+            $this->notificationService->sendToRole($tenantId, 'supervisor', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
 
             return [
                 'type' => 'failed',

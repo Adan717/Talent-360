@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Hash;
 use App\Traits\Tenantable;
 
 class Employee extends Model
@@ -42,15 +43,25 @@ class Employee extends Model
         'clock_preferences'
     ];
 
-    protected $hidden = ['security_pin'];
-
     protected $appends = ['role'];
+
+    // security_pin (testigos/Silla, línea §1–§42) y el PIN de kiosko (hash + blind index, R54)
+    // NUNCA deben salir en un toArray()/JSON.
+    protected $hidden = [
+        'security_pin',
+        'kiosk_pin_hash',
+        'kiosk_pin_lookup',
+    ];
 
     protected $casts = [
         'is_active_employee' => 'boolean',
         'salary' => 'decimal:2',
         'base_salary' => 'decimal:2',
         'mealMinutes' => 'integer',
+        // R87: garantiza int en el payload de auth (0 = alarma desactivada). El cast lo fija a
+        // nivel de modelo independientemente del driver/versión de PHP; el FE distingue 0 (off)
+        // de null/positivo.
+        'pre_shift_alarm_minutes' => 'integer',
         'clock_preferences' => 'array'
     ];
 
@@ -67,5 +78,40 @@ class Employee extends Model
     public function jobRole()
     {
         return $this->belongsTo(JobRole::class, 'job_role_id');
+    }
+
+    // ---- PIN de kiosko (R54) -------------------------------------------------------
+
+    /**
+     * Blind index del PIN: HMAC-SHA256 con el APP_KEY como pepper. Determinista (permite lookup y
+     * unique) pero irreversible sin la clave, así que un leak sólo de BD no expone los PINs. El
+     * pepper vive en la config, no en la tabla.
+     *
+     * OJO: rotar APP_KEY invalida TODOS los PINs de kiosko (habría que reasignarlos) — igual que
+     * invalida sesiones y datos cifrados. Es el precio de no guardar un pepper aparte.
+     */
+    public static function kioskPinLookup(string $pin): string
+    {
+        return hash_hmac('sha256', $pin, config('app.key'));
+    }
+
+    /**
+     * Asigna (o resetea) el PIN de kiosko: guarda el bcrypt (verificación) y el blind index
+     * (lookup). No persiste por sí solo — el caller hace save() dentro de su propia validación de
+     * unicidad, para no dejar un índice a medias si la unicidad falla.
+     */
+    public function setKioskPin(string $pin): void
+    {
+        $this->kiosk_pin_hash = Hash::make($pin);
+        $this->kiosk_pin_lookup = static::kioskPinLookup($pin);
+    }
+
+    /**
+     * ¿Este empleado puede fichar por kiosko? Cierra el follow-up de R53 en el servidor: necesita
+     * PUESTO (job_role_id) y USUARIO vinculado (para poder registrar el ponche; un huérfano R40 no).
+     */
+    public function canClockIn(): bool
+    {
+        return $this->job_role_id !== null && $this->user_id !== null;
     }
 }

@@ -315,11 +315,13 @@ class StoreOpeningService
 
             // Alerta prioritaria a RRHH (mismo patrón que las alertas críticas de handoff fallido)
             $this->notificationService->sendToRole(
+                $tenantId,
                 'admin',
                 '🚨 Apertura de Emergencia',
                 "{$requester->name} autorizó la apertura de emergencia de la sucursal mediante co-validación de 2 testigos."
             );
             $this->notificationService->sendToRole(
+                $tenantId,
                 'supervisor',
                 '🚨 Apertura de Emergencia',
                 "{$requester->name} autorizó la apertura de emergencia de la sucursal mediante co-validación de 2 testigos."
@@ -499,13 +501,26 @@ class StoreOpeningService
         $tenantId = $user->tenant_id ?? 1;
 
         return DB::transaction(function () use ($user, $storeId, $simTime, $tenantId) {
+            // R90: el gate del reporte también server-side (antes sólo vivía en el FE): un tenant que
+            // apagó la función no debe poder disparar amnistía desde una petición cruda.
+            $settings = $this->settingsService->getOpeningSettings($tenantId, $storeId);
+            if (!($settings->allow_store_closed_report ?? true)) {
+                throw new \Exception("El reporte de tienda cerrada no está habilitado para esta sucursal.");
+            }
+            // R93 (D2, doble-cerebro cazado en review): el switch que el admin SÍ togglea en el panel es
+            // `clockOpConfig.enabledDialerFeatures.allow_store_closed_report`; la columna de arriba
+            // (store_opening_settings) quedó SIN UI desde R71 (congelada en true). Se exigen AMBOS.
+            if (!ClockService::dialerFeatureEnabled($tenantId, 'allow_store_closed_report')) {
+                throw new \Exception("El reporte de tienda cerrada no está habilitado para esta sucursal.");
+            }
+
             $status = $this->getTodayOpeningStatus($tenantId, $storeId, $simTime);
 
             if ($status->status === 'opened') {
                 throw new \Exception("La tienda ya se encuentra abierta.");
             }
 
-            $nowTimeStr = $this->getCurrentTimeStr($simTime);
+            $nowTimeStr = $this->getCurrentTimeStr($simTime, $tenantId);
             $now = Carbon::createFromFormat('H:i:s', $nowTimeStr);
             $openTime = Carbon::createFromFormat('H:i:s', $status->scheduled_opening_time);
 
@@ -513,8 +528,13 @@ class StoreOpeningService
                 throw new \Exception("Aún no es la hora de apertura oficial de la tienda.");
             }
 
-            // Update status
+            // Update status + señal DURABLE de amnistía (R90): que la tienda quedó reportada cerrada hoy.
+            // La lee processPunch para amnistiar al EQUIPO cuando la tienda abra tarde; sobrevive la
+            // transición del status a `opened`. La amnistía se concede SÓLO si el tenant la tiene
+            // activa (`enable_amnesty_if_store_closed`): "reportar sí, amnistiar no" es posible.
+            $grantAmnesty = (bool) ($settings->enable_amnesty_if_store_closed ?? true);
             $status->status = 'closed_reported_by_employees';
+            $status->late_amnesty_granted = $grantAmnesty;
             $status->save();
 
             // Log event
@@ -530,11 +550,11 @@ class StoreOpeningService
                 'notes' => 'El colaborador reportó que la tienda continúa cerrada pasada la hora de apertura oficial.',
             ]);
 
-            // Justify check_in for this user automatically if they check in today
-            // Store a flag or log the report so they are marked as amnesty-eligible
             return [
                 'success' => true,
-                'message' => 'Reporte enviado. Se registrará la incidencia para aplicar amnistía de retardo.',
+                'message' => $grantAmnesty
+                    ? 'Reporte enviado. Cuando la tienda abra, tu retardo (y el de tus compañeros) por la apertura tardía quedará amnistiado.'
+                    : 'Reporte enviado. Se registró la incidencia de tienda cerrada.',
                 'status' => $status
             ];
         });
@@ -543,9 +563,15 @@ class StoreOpeningService
     /**
      * Get current simulated or actual time string formatted as H:i:s.
      */
-    public function getCurrentTimeStr($simTime = null)
+    public function getCurrentTimeStr($simTime = null, $tenantId = null)
     {
-        $settings = DB::table('system_settings')->pluck('value', 'key')->toArray();
+        // Scope por tenant cuando el caller lo pasa (R-fuga: `system_settings.key` es única POR
+        // TENANT, no global; sin filtro el pluck leería el time_mode de un tenant arbitrario).
+        // Con $tenantId null se conserva el comportamiento previo de esta línea (compat con los
+        // callers §1–§42 aún no migrados).
+        $settings = DB::table('system_settings')
+            ->when($tenantId !== null, fn ($q) => $q->where('tenant_id', $tenantId))
+            ->pluck('value', 'key')->toArray();
         $isSimulated = isset($settings['time_mode']) ? json_decode($settings['time_mode'], true) === 'simulated' : false;
 
         if ($isSimulated && $simTime) {

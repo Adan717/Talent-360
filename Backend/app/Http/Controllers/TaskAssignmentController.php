@@ -233,8 +233,8 @@ class TaskAssignmentController extends Controller
             }
         } else {
             // Sin supervisor directo resoluble: aviso amplio a admin/platform_admin.
-            $notificationService->sendToRole('admin', $title, $body);
-            $notificationService->sendToRole('platform_admin', $title, $body);
+            $notificationService->sendToRole($tenantId, 'admin', $title, $body);
+            $notificationService->sendToRole($tenantId, 'platform_admin', $title, $body);
         }
 
         return response()->json(['success' => true]);

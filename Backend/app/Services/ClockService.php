@@ -6,9 +6,17 @@ use App\Models\ContingencyDeclaration;
 use App\Models\TimeEntry;
 use App\Models\User;
 use App\Models\UserCourseProgress;
+use App\Helpers\TenantTimezone;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * RECONCILIACIÓN merge/reloj-v2 (F3): este archivo une la línea del Reloj (dial v2, R1–R104,
+ * autoridad en seguridad/amnistía/offline/nómina LFT) con las features anchas de la línea del
+ * contrato §1–§42 (Simulador Matrix, Ley Silla, snapshot inmutable, candado de nómina cerrada,
+ * anti-GPS-falso, evento TimeEntryRecorded). Cada bloque conserva el comentario de su línea de
+ * origen; los puntos de arbitraje están marcados con "ARBITRAJE F3".
+ */
 class ClockService
 {
     protected MockLocationDetector $mockLocationDetector;
@@ -20,21 +28,304 @@ class ClockService
         $this->simulatorSessionService = $simulatorSessionService;
     }
 
-    // Tipos de evento permitidos en el sistema de fichaje
-    public const ALLOWED_TYPES = [
-        'check_in', 'check_out', 'break_start', 'break_end',
-        'meal_start', 'meal_end', 'waiting',
-        'temp_exit_start', 'temp_exit_end',
-        // §25: Ley Silla — tipo propio (no reusa break_*) para que nómina/reportes
-        // puedan distinguir un descanso obligatorio por ley de uno ordinario.
+    /**
+     * Tipos de registro AUXILIARES (no son ponches de asistencia): se insertan tal
+     * cual y no cuentan como asistencia ni pasan por las reglas de fichaje. Fuente
+     * única de verdad usada por ClockController::sync y por el cálculo de nómina.
+     */
+    public const AUXILIARY_ENTRY_TYPES = ['meal_reservation', 'meal_cancel', 'meal_swap'];
+
+    /**
+     * Vocabulario COMPLETO de tipos de ponche aceptados. Whitelist única (los controllers validan
+     * contra ella). Unión de ambas líneas: asistencia, pausas, salidas temporales, amnistía,
+     * auxiliares, contingencia y Ley Silla (§25: tipo propio para que nómina/reportes distingan
+     * un descanso obligatorio por ley de uno ordinario).
+     */
+    public const PUNCH_TYPES = [
+        'check_in', 'check_out', 'waiting',
+        'meal_start', 'meal_end', 'break_start', 'break_end',
+        'temp_exit_start', 'temp_exit_end', 'contingency',
+        'meal_reservation', 'meal_cancel', 'meal_swap',
         'silla_start', 'silla_end',
     ];
 
-    public function processPunch(User $user, $type, $simTime = null, $details = [])
+    /** Alias de compatibilidad: los controllers de la línea §1–§42 validan contra ALLOWED_TYPES. */
+    public const ALLOWED_TYPES = self::PUNCH_TYPES;
+
+    /** Defaults de mealSettings (espejo del FE: RelojVisual usa `|| 3`, `?? 13`, etc.). */
+    private const MEAL_DEFAULTS = ['maxChairs' => 3, 'stepMins' => 15, 'startHour' => 13, 'endHour' => 17];
+    private const MEAL_MINUTES_DEFAULT = 60;
+
+    /**
+     * Enforcement SERVER-SIDE del aforo de comida (R65, follow-up (b) de la escala de R63). El FE
+     * (RelojVisual) ya valida el aforo `maxChairs`, un choque de puesto (`preventRoleOverlap`) y una
+     * reserva por persona, pero SÓLO en el cliente — un cliente que salte el FE podía sobre-reservar
+     * (el server insertaba cualquier `meal_reservation` sin mirar). Este guard replica la regla en el
+     * servidor y es la única garantía real.
+     *
+     * Devuelve un MOTIVO (string) si la reserva debe rechazarse, o null si se permite. Modelo: cada
+     * `meal_reservation` ocupa [inicio, inicio + mealMinutes_del_usuario) redondeado a bloques de
+     * `stepMins`; `meal_cancel` anula la reserva del usuario; `meal_swap` se ignora para el conteo
+     * (un intercambio preserva el conteo por bloque: uno sale y otro entra simétricamente).
+     */
+    public function mealReservationConflict(User $user, string $date, ?string $time): ?string
     {
-        // Validar tipo de evento antes de cualquier operación
-        if (!in_array($type, self::ALLOWED_TYPES)) {
-            throw new \InvalidArgumentException("Tipo de fichaje inválido: '{$type}'. Valores permitidos: " . implode(', ', self::ALLOWED_TYPES));
+        $tenantId = (int) ($user->tenant_id ?? 1);
+        $settings = $this->mealSettings($tenantId);
+        $maxChairs = max(1, (int) ($settings['maxChairs'] ?? self::MEAL_DEFAULTS['maxChairs']));
+        $stepMins = max(1, (int) ($settings['stepMins'] ?? self::MEAL_DEFAULTS['stepMins']));
+        $preventRoleOverlap = (bool) ($settings['preventRoleOverlap'] ?? false);
+
+        $startMin = $this->minutesOfDay($time);
+        // Una reserva sin hora interpretable no ocupa ningún bloque real → se rechaza (antes se
+        // permitía y dejaba una fila fantasma que ninguna regla contaba). El FE siempre manda "HH:MM".
+        if ($startMin === null) {
+            return 'Horario de reserva inválido.';
+        }
+
+        // Datos del reservante desde el EXPEDIENTE (misma fuente que los demás, para que el choque de
+        // puesto sea simétrico): mealMinutes (duración) y job_role_id (puesto).
+        [$myMealMinutes, $myRole] = $this->employeeMealInfo($tenantId, (int) $user->id);
+        $myDur = $this->mealDurationMinutes($myMealMinutes, $stepMins);
+        $myEnd = $startMin + $myDur;
+
+        // Regla A: una reserva ACTIVA por persona y día (espejo de `hasReservedMeal` del FE). Corta el
+        // abuso más directo — un cliente pidiendo N reservas para sí mismo.
+        if ($this->hasActiveMealReservation($tenantId, (int) $user->id, $date)) {
+            return 'Ya tienes una reserva de comida para hoy.';
+        }
+
+        $others = $this->activeMealReservations($tenantId, $date, (int) $user->id, $stepMins);
+
+        // Aforo = "a lo más maxChairs personas en el mismo instante". Se evalúa por BARRIDO DE
+        // INSTANTES (no por muestreo de una malla fija): la concurrencia de los intervalos existentes
+        // dentro de mi rango sólo crece en mi inicio o en el inicio de otra reserva, así que basta
+        // revisar esos puntos. Esto detecta solapamientos de cola de cualquier tamaño (un intervalo no
+        // alineado a la malla que el muestreo por bloques se saltaba).
+        $instants = [$startMin];
+        foreach ($others as $o) {
+            if ($o['start'] >= $startMin && $o['start'] < $myEnd) {
+                $instants[] = $o['start'];
+            }
+        }
+        foreach ($instants as $t) {
+            $covering = array_filter($others, fn($o) => $o['start'] <= $t && $t < $o['start'] + $o['dur']);
+            if (count($covering) >= $maxChairs) {
+                return 'Aforo lleno para ese horario de comida.';
+            }
+            if ($preventRoleOverlap && $myRole !== null) {
+                foreach ($covering as $o) {
+                    if ($o['jobRoleId'] !== null && (int) $o['jobRoleId'] === $myRole) {
+                        return 'Ya hay alguien de tu mismo puesto comiendo en ese horario.';
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * ¿El switch del dial (`clockOpConfig.enabledDialerFeatures.<key>`) está activo para el tenant?
+     * Convención compartida con el FE: clave AUSENTE = ON (`!== false`). R93 (D2): los switches que
+     * gatean acciones con efecto server-side real se enforcean también en el servidor — hasta ahora
+     * apagarlos sólo escondía el botón y un cliente crudo disparaba la acción igual. Si `$settings`
+     * (las filas de system_settings ya cargadas) se pasa, no re-consulta la BD.
+     */
+    public static function dialerFeatureEnabled(int $tenantId, string $key, ?array $settings = null): bool
+    {
+        $cfgRaw = $settings !== null
+            ? ($settings['clockOpConfig'] ?? null)
+            : \DB::table('system_settings')->where('tenant_id', $tenantId)->where('key', 'clockOpConfig')->value('value');
+        $cfg = is_string($cfgRaw) ? (json_decode($cfgRaw, true) ?: []) : [];
+
+        return ($cfg['enabledDialerFeatures'][$key] ?? null) !== false;
+    }
+
+    /** mealSettings del tenant (system_settings key 'mealSettings'), decodificado; [] si no hay. */
+    private function mealSettings(int $tenantId): array
+    {
+        $row = \DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'mealSettings')
+            ->value('value');
+        if (!$row) {
+            return [];
+        }
+        $decoded = json_decode($row, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Datos de comida del expediente del usuario: [mealMinutes (default 60 si nulo/0), job_role_id
+     * (o null)]. Se lee del expediente para que el choque de puesto use la MISMA fuente que los otros
+     * reservantes (evita el falso negativo de comparar users.job_role_id contra employees.job_role_id).
+     */
+    private function employeeMealInfo(int $tenantId, int $userId): array
+    {
+        $emp = \DB::table('employees')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->first(['mealMinutes', 'job_role_id']);
+        $mealMinutes = $emp && $emp->mealMinutes ? (int) $emp->mealMinutes : self::MEAL_MINUTES_DEFAULT;
+        $jobRoleId = $emp && $emp->job_role_id !== null ? (int) $emp->job_role_id : null;
+        return [$mealMinutes, $jobRoleId];
+    }
+
+    /** Duración de la comida redondeada a bloques de stepMins (neededBlocks * stepMins), como el FE. */
+    private function mealDurationMinutes(int $mealMinutes, int $stepMins): int
+    {
+        $neededBlocks = (int) ceil(max(1, $mealMinutes) / $stepMins);
+        return $neededBlocks * $stepMins;
+    }
+
+    /** ¿Este usuario tiene una reserva de comida ACTIVA hoy? (última reservation sin cancel posterior). */
+    private function hasActiveMealReservation(int $tenantId, int $userId, string $date): bool
+    {
+        $lastReservation = \DB::table('time_entries')
+            ->where('tenant_id', $tenantId)->where('user_id', $userId)
+            ->where('date', $date)->where('type', 'meal_reservation')
+            ->max('id');
+        if (!$lastReservation) {
+            return false;
+        }
+        $lastCancel = \DB::table('time_entries')
+            ->where('tenant_id', $tenantId)->where('user_id', $userId)
+            ->where('date', $date)->where('type', 'meal_cancel')
+            ->max('id');
+        return !$lastCancel || $lastReservation > $lastCancel;
+    }
+
+    /**
+     * Reservas de comida ACTIVAS de OTROS usuarios ese día. Para cada usuario, su reserva vigente es
+     * la última `meal_reservation` sin una `meal_cancel` posterior. Devuelve
+     * [ ['userId','jobRoleId','start'(min),'dur'(min)], ... ].
+     */
+    private function activeMealReservations(int $tenantId, string $date, int $excludeUserId, int $stepMins): array
+    {
+        $rows = \DB::table('time_entries')
+            ->where('tenant_id', $tenantId)->where('date', $date)
+            ->whereIn('type', ['meal_reservation', 'meal_cancel'])
+            ->where('user_id', '!=', $excludeUserId)
+            ->orderBy('id')
+            ->get(['user_id', 'type', 'time']);
+
+        // Replay por usuario: la última reserva gana; una cancel posterior la anula.
+        $state = []; // userId => ['time'=>..., 'active'=>bool]
+        foreach ($rows as $r) {
+            if ($r->type === 'meal_reservation') {
+                $state[$r->user_id] = ['time' => $r->time, 'active' => true];
+            } elseif ($r->type === 'meal_cancel' && isset($state[$r->user_id])) {
+                $state[$r->user_id]['active'] = false;
+            }
+        }
+
+        $activeUserIds = [];
+        foreach ($state as $uid => $s) {
+            if ($s['active']) {
+                $activeUserIds[] = $uid;
+            }
+        }
+        if (empty($activeUserIds)) {
+            return [];
+        }
+
+        // mealMinutes + job_role_id de los reservantes activos en una sola query.
+        $emps = \DB::table('employees')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('user_id', $activeUserIds)
+            ->get(['user_id', 'mealMinutes', 'job_role_id'])
+            ->keyBy('user_id');
+
+        $result = [];
+        foreach ($activeUserIds as $uid) {
+            $start = $this->minutesOfDay($state[$uid]['time']);
+            if ($start === null) {
+                continue;
+            }
+            $emp = $emps->get($uid);
+            $mealMinutes = $emp && $emp->mealMinutes ? (int) $emp->mealMinutes : self::MEAL_MINUTES_DEFAULT;
+            $result[] = [
+                'userId' => (int) $uid,
+                'jobRoleId' => $emp && $emp->job_role_id !== null ? (int) $emp->job_role_id : null,
+                'start' => $start,
+                'dur' => $this->mealDurationMinutes($mealMinutes, $stepMins),
+            ];
+        }
+        return $result;
+    }
+
+    /** Minutos desde medianoche de una hora ("14:00", "14:00:00", "2:00 PM"); null si no se interpreta. */
+    private function minutesOfDay(?string $time): ?int
+    {
+        if (!is_string($time) || trim($time) === '') {
+            return null;
+        }
+        try {
+            $c = Carbon::parse(trim($time));
+            return $c->hour * 60 + $c->minute;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Minutos de exceso de una serie de pares start/end (comida o descanso) en un día.
+     * Los ponches no traen duración, así que se emparejan por orden cronológico con una
+     * pila LIFO (soporta múltiples pausas e ignora start/end huérfanos). Un par excede si
+     * su duración > (permitido + tolerancia); el exceso es (duración − permitido). Se
+     * compara con Carbon sobre "$dateStr $time" (misma fecha → nunca negativo).
+     */
+    private function pairedExcessMinutes($dayEntries, string $dateStr, string $startType, string $endType, int $allowed, int $tolerance): int
+    {
+        $ordered = $dayEntries
+            ->whereIn('type', [$startType, $endType])
+            ->sortBy('time')
+            ->values();
+
+        $openStarts = [];
+        $excess = 0;
+        foreach ($ordered as $e) {
+            if ($e->type === $startType) {
+                $openStarts[] = $e->time;
+            } elseif ($e->type === $endType && !empty($openStarts)) {
+                $startTime = array_pop($openStarts);
+                $mins = (int) abs(
+                    Carbon::parse("$dateStr {$e->time}")->diffInMinutes(Carbon::parse("$dateStr $startTime"))
+                );
+                if ($mins > ($allowed + $tolerance)) {
+                    $excess += max(0, $mins - $allowed);
+                }
+            }
+        }
+
+        return $excess;
+    }
+
+    /**
+     * Normaliza una hora de salida a H:i:s de forma tolerante: acepta null/''/'H:i'/'H:i:s'
+     * y cualquier valor raro cae al default 18:00:00 (evita un 500 al parsear).
+     */
+    private function normalizeExitTime($shiftEnd): string
+    {
+        $val = is_string($shiftEnd) ? trim($shiftEnd) : '';
+        if ($val === '') {
+            return '18:00:00';
+        }
+        if (strlen($val) === 5) {
+            $val .= ':00';
+        }
+        try {
+            return Carbon::createFromFormat('H:i:s', $val)->format('H:i:s');
+        } catch (\Exception $e) {
+            return '18:00:00';
+        }
+    }
+
+    public function processPunch(User $user, $type, $simTime = null, $details = [], $occurredAt = null, $clientStamp = null)
+    {
+        // Validar tipo de evento antes de cualquier operación (whitelist única de la unión).
+        if (!in_array($type, self::PUNCH_TYPES, true)) {
+            throw new \InvalidArgumentException("Tipo de fichaje inválido: '{$type}'. Valores permitidos: " . implode(', ', self::PUNCH_TYPES));
         }
 
         $tenantId = $user->tenant_id ?? 1;
@@ -42,122 +333,169 @@ class ClockService
             ->where('tenant_id', $tenantId)
             ->pluck('value', 'key')
             ->toArray();
-            
-        $isSimulated = isset($settings['time_mode']) ? json_decode($settings['time_mode'], true) === 'simulated' : false;
-        
-        $timezone = isset($settings['timezone']) ? trim($settings['timezone'], '"') : 'America/Mexico_City';
-        
-        try {
-            $now = Carbon::now($timezone);
-        } catch (\Exception $e) {
-            $now = Carbon::now('America/Mexico_City');
-            $timezone = 'America/Mexico_City';
-        }
-        
-        // Simulador Matrix: los fichajes marcados is_simulator se ligan a la sesión activa
+
+        // El modo simulado deja que el CLIENTE fije la hora del ponche (herramienta de QA/demo). En
+        // PRODUCCIÓN la asistencia es un registro legal (LFT) y anti-fraude: se ignora el modo
+        // simulado siempre, aunque un admin haya activado el setting, y se usa la hora del servidor.
+        $isSimulated = !app()->isProduction()
+            && isset($settings['time_mode'])
+            && json_decode($settings['time_mode'], true) === 'simulated';
+
+        // Resolver de tz compartido: valida contra DateTimeZone y decodifica el valor
+        // json-encoded. Devuelve siempre una zona válida.
+        $timezone = TenantTimezone::fromSettings($settings);
+
+        // Simulador Matrix (§13): los fichajes marcados is_simulator se ligan a la sesión activa
         // del tenant y usan su simulated_date en vez de la fecha real — así corridas
-        // sucesivas del simulador nunca chocan entre sí contra UNIQUE(user_id, date, type),
-        // y sus filas quedan aisladas de los reportes reales (ver ExcludeSimulationScope).
+        // sucesivas del simulador nunca chocan entre sí, y sus filas quedan aisladas de los
+        // reportes reales (ver ExcludeSimulationScope).
         $isSimulatorPunch = isset($details['is_simulator']) && $details['is_simulator'] === true;
         $simulationSessionId = null;
         $simulatorSession = null;
-
         if ($isSimulatorPunch) {
             $simulatorSession = $this->simulatorSessionService->getActiveSession($tenantId, $user->id);
             $simulationSessionId = $simulatorSession->id;
         }
 
-        $date = $simulatorSession
-            ? Carbon::parse($simulatorSession->simulated_date)->format('Y-m-d')
-            : $now->format('Y-m-d');
+        // R84 (offline-first): un ponche OFFLINE se registra en su MOMENTO original (inmutabilidad
+        // histórica, LFT), no en la hora de sincronización. `$occurredAt` es un instante UTC (ISO)
+        // que el batch endpoint pasa; se lleva a la tz del tenant. El flag `offline_sync` (protocolo
+        // batch de la línea §16) es el mismo concepto con la hora en `simTime`.
+        $isOfflineSyncFlag = isset($details['offline_sync']) && $details['offline_sync'] === true;
+        $isOffline = $occurredAt !== null || $isOfflineSyncFlag;
 
-        // El simulador manda una hora explícita para pruebas; el sync offline por lotes
-        // (punch-batch) también manda la hora real en que ocurrió el fichaje mientras el
-        // dispositivo estaba sin conexión — sin esto, el registro quedaría con la hora en
-        // que finalmente sincronizó en vez de la hora real del evento.
-        $isOfflineSync = isset($details['offline_sync']) && $details['offline_sync'] === true;
-        if (($isSimulated || $isOfflineSync || $isSimulatorPunch) && $simTime) {
-            $time = $simTime;
-            $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $time", $timezone);
-        } else {
+        if ($occurredAt !== null) {
+            $now = Carbon::parse($occurredAt)->setTimezone($timezone);
+            $date = $now->format('Y-m-d');
             $time = $now->format('H:i:s');
+        } else {
+            $now = Carbon::now($timezone);
+            $date = $simulatorSession
+                ? Carbon::parse($simulatorSession->simulated_date)->format('Y-m-d')
+                : $now->format('Y-m-d');
+
+            if (($isSimulated || $isSimulatorPunch || $isOfflineSyncFlag) && $simTime) {
+                // El simulador/batch envía algo como "09:30:00". Se normaliza a H:i:s: algunos
+                // clientes mandan "H:i" (sin segundos), que rompería createFromFormat. Si el
+                // formato no se reconoce, se cae a la hora del servidor, sin reventar.
+                $simHis = strlen(trim((string) $simTime)) === 5 ? trim((string) $simTime) . ':00' : trim((string) $simTime);
+                try {
+                    $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $simHis", $timezone);
+                    $time = $simHis;
+                } catch (\Exception $e) {
+                    $time = $now->format('H:i:s');
+                }
+            } else {
+                $time = $now->format('H:i:s');
+            }
         }
 
-        // Verificar si es día festivo no laborable y está configurado para bloquear la aplicación
-        $holidayBlock = \DB::table('lft_holidays')
-            ->where('tenant_id', $user->tenant_id ?? 1)
-            ->where('date', $date)
-            ->where('block_app', true)
-            ->first();
-
-        if ($holidayBlock) {
-            throw new \Exception("Fichaje Denegado: Hoy es día festivo oficial obligatorio ({$holidayBlock->name}) y el sistema se encuentra bloqueado.");
+        // Baja operativa (R89, T4.1): un colaborador con `is_active_employee = false` (archivado) NO
+        // puede INICIAR turno EN VIVO por NINGÚN camino.
+        //  - SÓLO check_in: no se estrangula a quien fue archivado a mitad de turno (puede cerrar/comer).
+        //  - EXENTO OFFLINE: un ponche encolado ocurrió en su momento REAL, cuando la persona estaba
+        //    activa; rechazarlo por el estado de HOY borraría un día trabajado legítimo (R84/R88).
+        if ($type === 'check_in' && !$isOffline) {
+            $expediente = method_exists($user, 'expediente') ? $user->expediente() : ($user->employee ?? null);
+            if ($expediente && $expediente->is_active_employee === false) {
+                throw new \Exception('Fichaje Denegado: este colaborador está dado de baja y no puede iniciar turno.');
+            }
         }
 
-        // Validar inmutabilidad de la nómina consolidada (Fase 2 Solidez)
+        // Ventana de comida (R91, T4.3 / N7): la comida no puede EMPEZAR hasta que el colaborador lleva
+        // `mealSettings.minWorkMinutes` de trabajo en su segmento ACTUAL. Opt-in por-tenant (0 = sin
+        // ventana). Hard-reject SERVER-SIDE. Se ancla al ÚLTIMO check_in (el segmento ABIERTO).
+        // EXENTO offline (criterio R88/R89).
+        if ($type === 'meal_start' && !$isOffline) {
+            $minWork = (int) ($this->mealSettings($tenantId)['minWorkMinutes'] ?? 0);
+            if ($minWork > 0) {
+                $lastAttendance = $this->lastEntryOfTypes($user->id, $date, ['check_in', 'check_out'], $isSimulatorPunch, $simulationSessionId);
+                if (!$lastAttendance || $lastAttendance->type !== 'check_in') {
+                    throw new \Exception('No puedes iniciar tu comida: no tienes un turno abierto.');
+                }
+                $checkInAt = Carbon::createFromFormat('Y-m-d H:i:s', "$date {$lastAttendance->time}", $timezone);
+                $worked = (int) abs($checkInAt->diffInMinutes($now));
+                if ($worked < $minWork) {
+                    $faltan = $minWork - $worked;
+                    throw new \Exception("Aún no puedes tomar tu comida: llevas {$worked} min de turno; debes cumplir {$minWork} min (faltan {$faltan}).");
+                }
+            }
+        }
+
+        // Switches del dial con efecto REAL (R93, D2).
+        if ($type === 'waiting' && !self::dialerFeatureEnabled($tenantId, 'enable_proximity_check', $settings)) {
+            throw new \Exception('El registro de cercanía ("Ya llegué") está deshabilitado para esta sucursal.');
+        }
+        if ($type === 'temp_exit_start' && !$isOffline && !self::dialerFeatureEnabled($tenantId, 'enable_temp_exit', $settings)) {
+            throw new \Exception('Las salidas temporales están deshabilitadas para esta sucursal.');
+        }
+
+        // Inmutabilidad de la nómina consolidada (línea §1–§42, Fase 2 Solidez): un periodo aprobado
+        // o pagado no admite ponches nuevos dentro de su rango.
         $closedPayroll = DB::table('weekly_payrolls')
             ->where('tenant_id', $tenantId)
             ->where('start_date', '<=', $date)
             ->where('end_date', '>=', $date)
             ->whereIn('status', ['approved', 'paid'])
             ->exists();
-
         if ($closedPayroll) {
             throw new \Exception("Fichaje Denegado: El período de nómina para la fecha {$date} ya ha sido aprobado o pagado y se encuentra bloqueado para modificaciones.");
         }
 
-        // Anti-duplicados: cada tipo de fichaje solo puede registrarse una vez por día
-        // (Registrar Entrada, Registrar Salida, Iniciar/Terminar Comida, Descansos, etc.).
-        // Sin esto, un doble clic o un reintento de red crea dos filas para el mismo evento.
-        $alreadyPunchedToday = TimeEntry::where('user_id', $user->id)
-            ->where('date', $date)
-            ->where('type', $type)
-            ->exists();
+        // ARBITRAJE F3 — Máquina de estados de secuencia (§15 reconciliada con turno partido R63/R68):
+        // la línea §15 exigía "predecesor existe hoy" + UNIQUE(user,date,type), lo que prohibía el
+        // turno PARTIDO (check_in→check_out→check_in) y las pausas múltiples, ambos flujos legítimos
+        // de la línea del Reloj. La regla unificada mira el ESTADO (último marcador), no la mera
+        // existencia: conserva los rechazos del contrato (meal_end sin meal_start, check_out sin
+        // check_in, meal_start después de cerrar el día) y habilita los segmentos múltiples.
+        // EXENTO OFFLINE (la cola sincroniza fragmentos cuyo ancla puede venir en otro lote, R84)
+        // y exento para auxiliares/waiting/contingency (no son ponches de asistencia).
+        // La regla se acota a la superficie CONTRACTUAL testeada de §15 (TaskAndSequencePendingItems):
+        //  - check_out exige turno abierto ("sin un 'check_in' previo");
+        //  - un *_start tras cerrar el día se rechaza ("después de cerrar el día");
+        //  - meal_end/silla_end exigen su start ABIERTO (pareo por estado → pausas múltiples OK).
+        // break_end/temp_exit_end NO se bloquean (línea Reloj: quien ya está fuera debe poder
+        // registrar su regreso), y los *_start no exigen check_in previo (movimiento interno).
+        $pairRules = [
+            'meal_end' => 'meal_start',
+            'silla_end' => 'silla_start',
+        ];
+        $startsBlockedAfterClose = ['meal_start', 'break_start', 'temp_exit_start', 'silla_start'];
 
-        if ($alreadyPunchedToday) {
-            throw new \Exception("Fichaje Denegado: ya existe un registro de tipo '{$type}' para hoy. No se puede duplicar.");
+        if ($type === 'check_in') {
+            // R63: guard de ESTADO contra check_in duplicado (doble toque, retry de red, REINTENTO
+            // DE LA COLA OFFLINE — por eso corre también con $isOffline). NO es "uno por día": un
+            // check_in sólo se rechaza si hay un turno ABIERTO. Idempotente, devuelve la entrada
+            // existente sin crear fila (la cola offline no debe recibir error).
+            $lastAttendance = $this->lastEntryOfTypes($user->id, $date, ['check_in', 'check_out'], $isSimulatorPunch, $simulationSessionId);
+            if ($lastAttendance && $lastAttendance->type === 'check_in') {
+                return [
+                    'success' => true,
+                    'message' => 'Ya tienes una entrada registrada sin salida.',
+                    'entry' => $lastAttendance,
+                    'duplicate' => true,
+                ];
+            }
         }
 
-        // Validación de secuencia (sección 15 del contrato): el índice único de arriba
-        // solo evita duplicar el MISMO type — no impide que llegue, por ejemplo, un
-        // meal_end sin meal_start previo (dial desincronizado, tab viejo, otra sesión,
-        // cola offline). Cada type exige que su predecesor lógico ya exista hoy, y
-        // algunos no pueden registrarse si el día ya se cerró con check_out.
-        $sequenceRules = [
-            'check_in'        => ['requires' => null,              'blocked_by' => 'check_out'],
-            'meal_start'      => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
-            'meal_end'        => ['requires' => 'meal_start',      'blocked_by' => null],
-            'break_start'     => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
-            'break_end'       => ['requires' => 'break_start',     'blocked_by' => null],
-            'temp_exit_start' => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
-            'temp_exit_end'   => ['requires' => 'temp_exit_start', 'blocked_by' => null],
-            'check_out'       => ['requires' => 'check_in',        'blocked_by' => null],
-            'waiting'         => ['requires' => null,              'blocked_by' => null],
-            'silla_start'     => ['requires' => 'check_in',        'blocked_by' => 'check_out'],
-            'silla_end'       => ['requires' => 'silla_start',     'blocked_by' => null],
-        ];
-
-        $rule = $sequenceRules[$type] ?? null;
-        if ($rule) {
-            if ($rule['requires']) {
-                $hasPrerequisite = TimeEntry::where('user_id', $user->id)
-                    ->where('date', $date)
-                    ->where('type', $rule['requires'])
-                    ->exists();
-
-                if (!$hasPrerequisite) {
-                    throw new \Exception("Fichaje Denegado: no se puede registrar '{$type}' sin un '{$rule['requires']}' previo el mismo día.");
+        if (!$isOffline && !in_array($type, self::AUXILIARY_ENTRY_TYPES, true) && $type !== 'waiting' && $type !== 'contingency') {
+            if ($type === 'check_out') {
+                $lastAttendance = $this->lastEntryOfTypes($user->id, $date, ['check_in', 'check_out'], $isSimulatorPunch, $simulationSessionId);
+                if (!$lastAttendance || $lastAttendance->type !== 'check_in') {
+                    throw new \Exception("Fichaje Denegado: no se puede registrar '{$type}' sin un 'check_in' previo el mismo día.");
+                }
+            } elseif (in_array($type, $startsBlockedAfterClose, true)) {
+                $lastAttendance = $this->lastEntryOfTypes($user->id, $date, ['check_in', 'check_out'], $isSimulatorPunch, $simulationSessionId);
+                if ($lastAttendance && $lastAttendance->type === 'check_out') {
+                    throw new \Exception("Fichaje Denegado: ya se registró 'check_out' hoy, no se puede registrar '{$type}' después de cerrar el día.");
                 }
             }
 
-            if ($rule['blocked_by']) {
-                $dayAlreadyClosed = TimeEntry::where('user_id', $user->id)
-                    ->where('date', $date)
-                    ->where('type', $rule['blocked_by'])
-                    ->exists();
-
-                if ($dayAlreadyClosed) {
-                    throw new \Exception("Fichaje Denegado: ya se registró '{$rule['blocked_by']}' hoy, no se puede registrar '{$type}' después de cerrar el día.");
+            if (isset($pairRules[$type])) {
+                $startType = $pairRules[$type];
+                $lastPair = $this->lastEntryOfTypes($user->id, $date, [$startType, $type], $isSimulatorPunch, $simulationSessionId);
+                if (!$lastPair || $lastPair->type !== $startType) {
+                    throw new \Exception("Fichaje Denegado: no se puede registrar '{$type}' sin un '{$startType}' previo el mismo día.");
                 }
             }
         }
@@ -191,12 +529,33 @@ class ClockService
             }
         }
 
+        // Día festivo no laborable configurado para bloquear la aplicación.
+        $holidayBlock = \DB::table('lft_holidays')
+            ->where('tenant_id', $user->tenant_id ?? 1)
+            ->where('date', $date)
+            ->where('block_app', true)
+            ->first();
+
+        if ($holidayBlock) {
+            // R81 (Laborar Horas Extras real): una autorización de supervisor para HOY levanta el
+            // bloqueo. La emite /clock/authorize-overtime tras validar la credencial server-side.
+            $overtimeAuthorized = \DB::table('overtime_authorizations')
+                ->where('tenant_id', $user->tenant_id ?? 1)
+                ->where('user_id', $user->id)
+                ->where('date', $date)
+                ->exists();
+
+            if (!$overtimeAuthorized) {
+                throw new \Exception("Fichaje Denegado: Hoy es día festivo oficial obligatorio ({$holidayBlock->name}) y el sistema se encuentra bloqueado.");
+            }
+        }
+
         // Obtener el plan del tenant
         $tenant = \App\Models\Tenant::find($user->tenant_id ?? 1);
         $isPro = $tenant && in_array(strtolower($tenant->plan ?? 'freemium'), ['pro', 'enterprise']);
 
-        // 1. IP Lock (Disponible en Freemium y Pro si está configurado en clockOpConfig)
-        if ($type === 'check_in' || $type === 'check_out') {
+        // 1. IP Lock (Plan Gratuito)
+        if (!$isPro && ($type === 'check_in' || $type === 'check_out')) {
             $clockOpConfigRaw = $settings['clockOpConfig'] ?? null;
             $clockOpConfig = $clockOpConfigRaw ? json_decode($clockOpConfigRaw, true) : [];
             $ipLockEnabled = $clockOpConfig['ip_lock_enabled'] ?? false;
@@ -209,34 +568,34 @@ class ClockService
             }
         }
 
-        // 2. Bloqueo de entrada si la tienda está cerrada (Plan Gratuito)
-        if (!$isPro && $type === 'check_in') {
-            $hasAssignments = \DB::table('store_opening_assignments')
+        // 2. Bloqueo de entrada si la tienda está cerrada — TODOS los planes (R76).
+        // Se OMITE cuando el tenant no designó a nadie para abrir. `can_open_store` es el permiso
+        // real (R46). EXENTO el ponche del simulador (§13: replay QA sobre fechas arbitrarias).
+        if ($type === 'check_in' && !$isSimulatorPunch) {
+            $encargados = \DB::table('store_opening_assignments')
                 ->where('tenant_id', $user->tenant_id)
                 ->where('is_active', true)
-                ->exists();
+                ->where('can_open_store', true)
+                ->orderBy('priority_order', 'asc')
+                ->get(['employee_id']);
 
-            if ($hasAssignments) {
+            if ($encargados->isNotEmpty()) {
                 $openingStatus = \DB::table('store_daily_opening_statuses')
                     ->where('tenant_id', $user->tenant_id)
-                    ->where('date', $date)
+                    ->whereDate('date', $date)
                     ->first();
-                
-                $isOpened = false;
-                $isOpeningManager = false;
-                if ($openingStatus) {
-                    $isOpened = $openingStatus->status === 'opened';
-                    $isOpeningManager = intval($user->id) === intval($openingStatus->current_responsible_employee_id);
-                } else {
-                    $firstActive = \DB::table('store_opening_assignments')
-                        ->where('tenant_id', $user->tenant_id)
-                        ->where('is_active', true)
-                        ->orderBy('priority_order', 'asc')
-                        ->first();
-                    if ($firstActive) {
-                        $isOpeningManager = intval($user->id) === intval($firstActive->employee_id);
-                    }
+
+                $isOpened = $openingStatus && $openingStatus->status === 'opened';
+
+                $responsableUserId = $openingStatus->current_responsible_employee_id ?? null;
+                if (!$responsableUserId) {
+                    $responsableUserId = \App\Models\Employee::withoutGlobalScopes()
+                        ->where('id', $encargados->first()->employee_id)
+                        ->value('user_id');
                 }
+
+                $isOpeningManager = $responsableUserId !== null
+                    && intval($user->id) === intval($responsableUserId);
 
                 if (!$isOpened && !$isOpeningManager) {
                     throw new \Exception("Fichaje Denegado: La tienda física se encuentra cerrada. Debes esperar a que el encargado realice la apertura.");
@@ -244,15 +603,17 @@ class ClockService
             }
         }
 
-        // 2.b Bloqueo de salida si falta el checklist de cierre seguro (espejo del
-        // checklist de apertura). Solo aplica a tenants con el módulo store_opening activo
-        // y con la opción require_closing_checklist explícitamente activada en sus ajustes.
-        if ($type === 'check_out' && \App\Services\FeatureAccessService::tenantHasFeature($tenantId, 'store_opening')) {
+        // 2.b Checklist de cierre de la línea §1–§42 (store_opening_events): bloqueo de salida si el
+        // módulo store_opening está activo y `store_opening_settings.require_closing_checklist` lo
+        // exige. Coexiste con el checklist por-punch de la línea del Reloj (más abajo): son dos
+        // flags distintos, ambos default off.
+        if ($type === 'check_out' && !$isOffline && class_exists(\App\Services\FeatureAccessService::class)
+            && \App\Services\FeatureAccessService::tenantHasFeature($tenantId, 'store_opening')) {
             $closingSettings = \DB::table('store_opening_settings')
                 ->where('tenant_id', $tenantId)
                 ->first();
 
-            $requiresClosingChecklist = $closingSettings ? (bool)$closingSettings->require_closing_checklist : false;
+            $requiresClosingChecklist = $closingSettings ? (bool) $closingSettings->require_closing_checklist : false;
 
             if ($requiresClosingChecklist) {
                 $hasCompletedChecklist = \DB::table('store_opening_events')
@@ -268,7 +629,37 @@ class ClockService
             }
         }
 
-        // 3. GPS VALIDATION — MockLocation Detection + Geofence (Plan Pro)
+        // 3. Geocerca validada en SERVIDOR (línea Reloj: clockOpConfig.storeLocation + gpsAlertRangeMeters).
+        if ($type === 'check_in' || $type === 'check_out') {
+            $geoConfigRaw = $settings['clockOpConfig'] ?? null;
+            $geoConfig = is_string($geoConfigRaw) ? (json_decode($geoConfigRaw, true) ?: []) : [];
+            $geoEnabled = ($geoConfig['gpsValidationEnabled'] ?? false) === true
+                && !($geoConfig['allowManualCheckIn'] ?? false)
+                && empty($details['supervisor_override']);
+            $storeLoc = $geoConfig['storeLocation'] ?? null;
+
+            if ($geoEnabled && is_array($storeLoc) && isset($storeLoc['lat'], $storeLoc['lng'])) {
+                $gps = $details['gps'] ?? null;
+                if (!is_array($gps) || !isset($gps['latitude'], $gps['longitude'])) {
+                    throw new \Exception("Fichaje Denegado: Se requiere tu ubicación GPS para validar que estás en la sucursal.");
+                }
+                $radius = max(1.0, (float) ($geoConfig['gpsAlertRangeMeters'] ?? 100));
+                $distance = $this->distanceMeters(
+                    (float) $gps['latitude'], (float) $gps['longitude'],
+                    (float) $storeLoc['lat'], (float) $storeLoc['lng']
+                );
+                if ($distance > $radius) {
+                    throw new \Exception(
+                        'Fichaje Denegado: Estás fuera del perímetro autorizado de la sucursal (' .
+                        round($distance) . ' m; máximo ' . round($radius) . ' m).'
+                    );
+                }
+            }
+        }
+
+        // 3.b GPS VALIDATION de la línea §1–§42 — MockLocation Detection + Geofence
+        // (clockOpConfig.store_latitude/store_longitude). Detecta apps de GPS falso y valida el
+        // perímetro con configuración propia; coexiste con la geocerca anterior (claves distintas).
         if ($isPro && $type === 'check_in' && isset($details['gps'])) {
             $gpsData = $details['gps'];
             $clockOpConfig = isset($settings['clockOpConfig'])
@@ -280,20 +671,18 @@ class ClockService
             if ($gpsEnabled && is_array($gpsData)) {
                 // a) Detectar GPS falso (Bypass si proviene del simulador Matrix QA)
                 $isSimulator = isset($details['is_simulator']) || isset($details['sandbox_bypass']);
-                
+
                 // Mapear coordenadas del simulador de forma relativa a la tienda configurada
                 if ($isSimulator && isset($gpsData['latitude'], $gpsData['longitude'])) {
                     $storeLat = $clockOpConfig['store_latitude']  ?? null;
                     $storeLng = $clockOpConfig['store_longitude'] ?? null;
                     if ($storeLat && $storeLng) {
-                        // Coordenada inyectada en el simulador para "Sucursal" (19.4326)
                         if (abs($gpsData['latitude'] - 19.4326) < 0.0005) {
-                            $gpsData['latitude'] = (float)$storeLat;
-                            $gpsData['longitude'] = (float)$storeLng;
+                            $gpsData['latitude'] = (float) $storeLat;
+                            $gpsData['longitude'] = (float) $storeLng;
                         } else {
-                            // Coordenada lejana ("Casa")
-                            $gpsData['latitude'] = (float)$storeLat + 0.02;
-                            $gpsData['longitude'] = (float)$storeLng + 0.02;
+                            $gpsData['latitude'] = (float) $storeLat + 0.02;
+                            $gpsData['longitude'] = (float) $storeLng + 0.02;
                         }
                     }
                 }
@@ -337,62 +726,147 @@ class ClockService
             }
         }
 
-        // Obtener la política de horario del empleado
-        // shiftStart vive en `employees` desde la migración migrate_existing_users_to_employees_table;
-        // `users` ya no tiene esa columna, así que hay que leerla vía la relación.
-        $expectedTimeStr = $user->employee?->shiftStart ?? '09:00:00';
-        $expectedTime = Carbon::createFromFormat('H:i:s', $expectedTimeStr);
-        
-        // Obtener las políticas LFT del Tenant
+        // Política de horario del empleado, anclada a la MISMA fecha y tz que $now.
+        // OJO: el turno vive en employees.shiftStart, NO en users.
+        $expectedTimeStr = \DB::table('employees')
+            ->where('tenant_id', $user->tenant_id)
+            ->where('user_id', $user->id)
+            ->value('shiftStart') ?? '09:00:00';
+        $expectedTime = Carbon::createFromFormat('Y-m-d H:i:s', "$date $expectedTimeStr", $timezone);
+
+        // Políticas LFT del Tenant
         $lft = \App\Models\LftSetting::where('tenant_id', $user->tenant_id)->first();
         $toleranceMinutes = $lft ? $lft->late_tolerance_minutes : 10;
         $lateActionMode = $lft ? $lft->late_action_mode : 'deduct';
 
         $isLate = false;
         $lateMinutes = 0;
-        $hasAmnesty = isset($details['has_amnesty']) && $details['has_amnesty'] === true;
+        // ARBITRAJE F3 — Amnistía SOLO server-side (spec §2, Amnistía Condicionada): aplica
+        // EXCLUSIVAMENTE si el empleado marcó "Ya llegué" (`waiting`) DENTRO de su ventana de
+        // tolerancia. El flag `has_amnesty` del cliente de la línea §1–§42 era falsificable
+        // (bastaba mandarlo para anular el retardo) y se ELIMINA — regresión caracterizada por
+        // AmnestyWindowTest::test_client_amnesty_flag_is_ignored.
+        $hasAmnesty = false;
+        // hora_llegada_virtual (spec:30,41): el inicio real de jornada es el "Ya llegué"
+        // marcado dentro de ventana; se estampa en el check_in para nómina/métricas.
+        $virtualArrival = null;
 
-        // Declaración de Eventualidad (sin luz / sin internet): mientras esté activa para
-        // el tenant y la fecha, la jornada completa queda protegida al 100% de salario
-        // conforme LFT — se salta el cálculo de retardo igual que la amnistía por espera.
-        $hasContingency = \App\Models\ContingencyDeclaration::withoutGlobalScopes()
+        // Declaración de Eventualidad de la línea §1–§42 (sin luz / sin internet): mientras esté
+        // activa para el tenant y la fecha, la jornada queda protegida — se salta el cálculo de
+        // retardo igual que la amnistía por espera. (El pago 100% de nómina de la línea del Reloj
+        // sigue detrás del gate humano de contingency_days; ver calculatePayrollForEmployee.)
+        $hasContingency = ContingencyDeclaration::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->whereDate('date', $date)
             ->whereNull('resolved_at')
             ->exists();
 
-        if ($hasContingency) {
-            $hasAmnesty = true;
-        }
-
-        if ($type === 'check_in' && !$hasAmnesty) {
-            $proximityRecord = \DB::table('time_entries')
-                ->where('user_id', $user->id)
-                ->where('date', $date)
-                ->where('type', 'waiting')
-                ->first();
-            if ($proximityRecord) {
+        if ($type === 'check_in') {
+            if ($hasContingency) {
                 $hasAmnesty = true;
+            }
+
+            if (!$hasAmnesty) {
+                // Amnistía SOLO si existe un "Ya llegué" (waiting) DENTRO de la ventana
+                // [entrada - tol, entrada + tol] (spec §2). Comparación por string H:i:s
+                // (mismo día, ancho fijo: orden lexicográfico = cronológico).
+                $lowerBound = $expectedTime->copy()->subMinutes($toleranceMinutes)->format('H:i:s');
+                $upperBound = $expectedTime->copy()->addMinutes($toleranceMinutes)->format('H:i:s');
+                $proximityRecord = \DB::table('time_entries')
+                    ->where('user_id', $user->id)
+                    ->where('date', $date)
+                    ->where('type', 'waiting')
+                    ->whereBetween('time', [$lowerBound, $upperBound])
+                    ->first();
+                if ($proximityRecord) {
+                    $hasAmnesty = true;
+                    $virtualArrival = $proximityRecord->time;
+                }
             }
         }
 
-        if ($type === 'check_in' && !$hasAmnesty) {
+        // R68: el retardo sólo se evalúa para el PRIMER check_in del día (el arranque real del turno).
+        // Un 2º check_in es la reanudación de una jornada PARTIDA.
+        $esPrimerCheckInDelDia = $type === 'check_in' && !TimeEntry::withoutGlobalScopes()
+            ->where('user_id', $user->id)
+            ->where('date', $date)
+            ->where('type', 'check_in')
+            ->when($isSimulatorPunch,
+                fn ($q) => $q->where('simulation_session_id', $simulationSessionId),
+                fn ($q) => $q->whereNull('simulation_session_id'))
+            ->exists();
+
+        // Amnistía por REPORTE DE TIENDA CERRADA (R90, T4.2): amnistía de EQUIPO. Si HOY se reportó
+        // la tienda cerrada (`late_amnesty_granted`) Y la tienda ABRIÓ TARDE, quien haga su PRIMER
+        // check_in dentro de la tolerancia de la apertura REAL fue víctima del retraso → amnistía.
+        if ($type === 'check_in' && !$hasAmnesty && $esPrimerCheckInDelDia) {
+            $openingStatus = \DB::table('store_daily_opening_statuses')
+                ->where('tenant_id', $user->tenant_id)
+                ->whereDate('date', $date)
+                ->first();
+            if ($openingStatus
+                && ($openingStatus->late_amnesty_granted ?? false)
+                && $openingStatus->opened_at
+                && $openingStatus->scheduled_opening_time) {
+                $scheduledOpen = Carbon::parse("$date {$openingStatus->scheduled_opening_time}", $timezone);
+                $openedAt = Carbon::parse($openingStatus->opened_at)->setTimezone($timezone);
+                if ($openedAt->greaterThan($scheduledOpen)
+                    && $now->lessThanOrEqualTo($openedAt->copy()->addMinutes($toleranceMinutes))) {
+                    $hasAmnesty = true;
+                    $virtualArrival = $scheduledOpen->format('H:i:s');
+                }
+            }
+        }
+
+        if ($type === 'check_in' && !$hasAmnesty && $esPrimerCheckInDelDia) {
             if ($now->greaterThan($expectedTime->copy()->addMinutes($toleranceMinutes))) {
                 $isLate = true;
-                $lateMinutes = $now->diffInMinutes($expectedTime);
+                // abs(): en Carbon 3 diffInMinutes es con signo.
+                $lateMinutes = (int) abs($now->diffInMinutes($expectedTime));
+            }
+        }
+
+        // Retardo Extremo (spec:46): si el retardo supera el umbral máximo configurado del
+        // tenant, se BLOQUEA la jornada salvo override de un supervisor o solicitud aprobada (R56).
+        $maxLateBlock = (int) ($lft?->max_late_block_minutes ?? 0);
+        $supervisorOverride = isset($details['supervisor_override']) && $details['supervisor_override'] === true;
+        if ($type === 'check_in' && $isLate && $maxLateBlock > 0 && $lateMinutes > $maxLateBlock && !$supervisorOverride) {
+            $hasApprovedAuth = \DB::table('late_authorization_requests')
+                ->where('tenant_id', $user->tenant_id)
+                ->where('user_id', $user->id)
+                ->where('date', $date)
+                ->where('status', 'approved')
+                ->exists();
+
+            if (!$hasApprovedAuth) {
+                throw new \Exception("Fichaje Bloqueado: tu retardo de {$lateMinutes} min supera el máximo permitido ({$maxLateBlock} min). Un supervisor debe autorizar tu entrada.");
             }
         }
 
         // Estructurar detalles del retardo o compensación
         $detailsMerge = $details;
-        if ($hasContingency) {
+        // Señales transitorias del servidor: no se persisten en time_entries/audit_logs.
+        unset($detailsMerge['supervisor_override']);
+        unset($detailsMerge['via_kiosk']);
+        unset($detailsMerge['early_departure']);
+        // ARBITRAJE F3: `has_amnesty` y `offline_sync` son flags de transporte del cliente/batch,
+        // no datos del ponche; el primero además era el vector de forja de amnistía.
+        unset($detailsMerge['has_amnesty']);
+        unset($detailsMerge['offline_sync']);
+
+        if ($hasContingency && $type === 'check_in') {
             $detailsMerge['lft_incident'] = [
                 'type' => 'contingency',
                 'notes' => 'Jornada protegida al 100% por declaración de contingencia (sin luz / sin internet en sucursal).'
             ];
-        } elseif ($hasAmnesty) {
+        }
+        if ($hasAmnesty) {
             $detailsMerge['amnesty_applied'] = true;
             $detailsMerge['amnesty_note'] = 'Amnistía aplicada por apertura tardía de la sucursal.';
+            if ($virtualArrival !== null) {
+                // Inicio real de jornada (para que nómina/métricas paguen el tiempo esperando).
+                $detailsMerge['hora_llegada_virtual'] = $virtualArrival;
+            }
         }
 
         if ($isLate) {
@@ -400,51 +874,99 @@ class ClockService
                 'type' => 'late',
                 'minutes' => $lateMinutes,
                 'action_mode' => $lateActionMode,
-                'notes' => $lateActionMode === 'extend_shift' 
-                    ? "Retardo de {$lateMinutes} min. Compensación requerida: salir {$lateMinutes} min tarde." 
+                'notes' => $lateActionMode === 'extend_shift'
+                    ? "Retardo de {$lateMinutes} min. Compensación requerida: salir {$lateMinutes} min tarde."
                     : "Retardo de {$lateMinutes} min. Descuento de salario o penalización acumulada."
             ];
         }
 
-        // Obtener snapshot del empleado al momento del fichaje (datos inmutables para reportes históricos)
+        // Salida Anticipada REAL (R92, Fase 4): si el check_out ocurre ANTES del shiftEnd del
+        // expediente, se estampa un registro ESTRUCTURADO computado por el SERVIDOR. NO bloquea.
+        if ($type === 'check_out') {
+            $rawShiftEnd = \DB::table('employees')
+                ->where('tenant_id', $user->tenant_id)
+                ->where('user_id', $user->id)
+                ->value('shiftEnd');
+            if (is_string($rawShiftEnd) && trim($rawShiftEnd) !== '') {
+                $shiftEndAt = Carbon::createFromFormat(
+                    'Y-m-d H:i:s', "$date " . $this->normalizeExitTime($rawShiftEnd), $timezone
+                );
+                if ($now->lessThan($shiftEndAt)) {
+                    $authorized = \DB::table('early_departure_authorizations')
+                        ->where('tenant_id', $user->tenant_id)
+                        ->where('user_id', $user->id)
+                        ->where('date', $date)
+                        ->exists();
+                    $detailsMerge['early_departure'] = [
+                        'minutes_early' => (int) abs($now->diffInMinutes($shiftEndAt)),
+                        'authorized' => $authorized,
+                    ];
+                }
+            }
+        }
+
+        // Checklist Exprés de Cierre de la línea del Reloj (R88, T3.3): por-punch, con los 3 ticks
+        // (luces/caja/alarma) en `details`. Opt-in vía lft_settings.require_closing_checklist.
+        // EXENTOS: OFFLINE, KIOSKO (`via_kiosk`) y `supervisor_override` (ver R88).
+        if ($type === 'check_out'
+            && ($lft?->require_closing_checklist ?? false)
+            && !$isOffline
+            && empty($details['via_kiosk'])
+            && empty($details['supervisor_override'])) {
+            $cl = $details['closing_checklist'] ?? null;
+            $checklistComplete = is_array($cl)
+                && ($cl['luces'] ?? false) === true
+                && ($cl['caja'] ?? false) === true
+                && ($cl['alarma'] ?? false) === true;
+            if (!$checklistComplete) {
+                throw new \Exception('Cierre denegado: completa el checklist de cierre (luces, caja fuerte y alarma) antes de registrar tu salida.');
+            }
+        }
+
+        // Salida Doble Llave (spec:53-55): si el tenant lo exige, la salida queda
+        // 'pending_approval' hasta que un supervisor la autoriza; si no, 'final'.
+        $checkOutStatus = null;
+        if ($type === 'check_out') {
+            $checkOutStatus = ($lft?->require_checkout_approval ?? false) ? 'pending_approval' : 'final';
+        }
+
+        // Snapshot del empleado al momento del fichaje (datos inmutables para reportes históricos).
         $employee = DB::table('employees')->where('user_id', $user->id)->first();
-        $jobRole = $employee ? DB::table('job_roles')->find($employee->job_role_id) : null;
+        $jobRole = $employee && $employee->job_role_id ? DB::table('job_roles')->find($employee->job_role_id) : null;
         $snapshotName = $employee ? ($employee->name ?? $user->name) : $user->name;
-        // job_roles no tiene columna `title`, el nombre del puesto vive en `name`.
         $snapshotRole = $jobRole?->name ?? null;
         $snapshotSalary = $employee?->base_salary ?? null;
 
-        // Crear registro en la BD dentro de una transacción atómica.
-        // Si falla la inserción del audit_log, el time_entry también se revierte.
+        // Crear registro + audit + transiciones Silla en una transacción atómica (si falla el
+        // audit_log, el time_entry también se revierte).
+        //
+        // ARBITRAJE F3: el índice UNIQUE(user,date,type) de la línea §15 se RETIRA (migración F3):
+        // prohibía el turno partido y las pausas múltiples. El guard de estado de arriba cubre los
+        // duplicados reales (doble toque, retry, cola offline vía client_stamp). La única brecha
+        // restante es una race verdaderamente simultánea — artefacto de estrés, no uso real (R63).
         $entry = DB::transaction(function () use (
             $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
             $snapshotName, $snapshotRole, $snapshotSalary, $simulationSessionId,
-            $sillaRequestForThisPunch, $timezone
+            $sillaRequestForThisPunch, $timezone, $checkOutStatus, $clientStamp, $lft
         ) {
-            try {
-                $entry = TimeEntry::create([
-                    'user_id'               => $user->id,
-                    'tenant_id'             => $user->tenant_id ?? 1,
-                    'date'                  => $date,
-                    'type'                  => $type,
-                    'time'                  => $time,
-                    'is_late'               => $isLate,
-                    'late_minutes'          => $lateMinutes,
-                    'details'               => json_encode($detailsMerge),
-                    'employee_name_at_time' => $snapshotName,
-                    'job_role_title_at_time'=> $snapshotRole,
-                    'base_salary_at_time'   => $snapshotSalary,
-                    'simulation_session_id' => $simulationSessionId,
-                ]);
-            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
-                // Backstop del índice único (time_entries_user_date_type_unique) para la
-                // ventana de carrera que el exists() de más arriba no puede cerrar solo:
-                // dos peticiones casi simultáneas pasando el chequeo antes de que la
-                // primera confirme su insert.
-                throw new \Exception("Fichaje Denegado: ya existe un registro de tipo '{$type}' para hoy. No se puede duplicar.");
-            }
+            $entry = TimeEntry::create([
+                'user_id'               => $user->id,
+                'tenant_id'             => $user->tenant_id ?? 1,
+                'date'                  => $date,
+                'type'                  => $type,
+                'time'                  => $time,
+                'is_late'               => $isLate,
+                'late_minutes'          => $lateMinutes,
+                'details'               => json_encode($detailsMerge),
+                'check_out_status'      => $checkOutStatus,
+                // R84: firma del ponche offline (idempotencia del batch). NULL en ponches online.
+                'client_stamp'          => $clientStamp,
+                'employee_name_at_time' => $snapshotName,
+                'job_role_title_at_time'=> $snapshotRole,
+                'base_salary_at_time'   => $snapshotSalary,
+                'simulation_session_id' => $simulationSessionId,
+            ]);
 
-            // Registrar en audit log dentro de la misma transacción
             DB::table('audit_logs')->insert([
                 'user_id'          => $user->id,
                 'tenant_id'        => $user->tenant_id ?? 1,
@@ -452,16 +974,15 @@ class ClockService
                 'type'             => $type,
                 'timestamp_str'    => "$date $time",
                 'reason'           => "Fichaje de tipo: $type",
-                'punishment_amount'=> $isLate ? ($lateMinutes * 2) : 0,
+                // Misma tarifa configurable que la nómina (antes hardcodeada `* 2`).
+                'punishment_amount'=> $isLate ? ($lateMinutes * (float) ($lft?->late_penalty_per_minute ?? 2)) : 0,
                 'details'          => json_encode($detailsMerge),
                 'simulation_session_id' => $simulationSessionId,
                 'created_at'       => Carbon::now(),
                 'updated_at'       => Carbon::now(),
             ]);
 
-            // §25: Ley Silla — transición de la solicitud en el mismo commit que el fichaje,
-            // para que nunca queden desincronizados (ej. el fichaje se guarda pero la
-            // solicitud se queda en 'approved' para siempre).
+            // §25: Ley Silla — transición de la solicitud en el mismo commit que el fichaje.
             if ($type === 'silla_start' && $sillaRequestForThisPunch) {
                 $sillaRequestForThisPunch->status = 'active';
                 $sillaRequestForThisPunch->started_at = Carbon::now($timezone);
@@ -483,9 +1004,8 @@ class ClockService
             return $entry;
         });
 
-        // §20: notifica por WebSocket (mismo canal que StoreOpened) una vez que el
-        // fichaje ya quedó confirmado en BD — nunca en rechazos/errores de validación,
-        // que ya cortaron con throw antes de llegar aquí.
+        // §20: notifica por WebSocket una vez que el fichaje ya quedó confirmado en BD — nunca en
+        // rechazos/errores de validación, que ya cortaron con throw antes de llegar aquí.
         event(new \App\Events\TimeEntryRecorded($entry->tenant_id, $entry->user_id, $entry->type, $entry->time));
 
         return [
@@ -495,6 +1015,24 @@ class ClockService
                 : "Registro exitoso.",
             'entry' => $entry
         ];
+    }
+
+    /**
+     * Último ponche de los tipos dados para (user, date), con el aislamiento del Simulador Matrix:
+     * un ponche REAL sólo mira filas reales (simulation_session_id NULL); un ponche del simulador
+     * sólo mira las filas de SU sesión. Base de la máquina de estados de secuencia.
+     */
+    private function lastEntryOfTypes(int $userId, string $date, array $types, bool $isSimulatorPunch, ?int $simulationSessionId): ?TimeEntry
+    {
+        return TimeEntry::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('date', $date)
+            ->whereIn('type', $types)
+            ->when($isSimulatorPunch,
+                fn ($q) => $q->where('simulation_session_id', $simulationSessionId),
+                fn ($q) => $q->whereNull('simulation_session_id'))
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**
@@ -532,9 +1070,8 @@ class ClockService
 
     /**
      * Aprueba una solicitud de Ley Silla. method='pin' valida contra employees.security_pin
-     * del propio supervisor que aprueba (mismo mecanismo que ya usan los testigos de
-     * emergency-open) — 'qr'/'remote' se registran solo como bitácora de cumplimiento
-     * (quién, cuándo, cómo), la sesión autenticada del supervisor ya es la autorización.
+     * del propio supervisor que aprueba — 'qr'/'remote' se registran solo como bitácora de
+     * cumplimiento, la sesión autenticada del supervisor ya es la autorización.
      */
     public function approveSillaRequest(int $requestId, User $approver, string $method, ?string $supervisorPin = null): array
     {
@@ -697,9 +1234,7 @@ class ClockService
 
     /**
      * Estado #1 de la matriz (Fichaje Bloqueado por 3 retardos). El contador NO se
-     * reinicia por periodo de nómina — es un tema de conducta/capacitación, no de
-     * nómina, así que el bloqueo persistiría trivialmente si bastara con esperar a la
-     * siguiente semana. Solo se reinicia cuando el empleado completa (o vuelve a
+     * reinicia por periodo de nómina — solo cuando el empleado completa (o vuelve a
      * completar) el curso de puntualidad que el tenant haya configurado.
      */
     public function getPunctualityStatus(User $user): array
@@ -711,11 +1246,6 @@ class ClockService
             ->pluck('value', 'key')
             ->toArray();
 
-        // El curso de puntualidad es una referencia de configuración del tenant
-        // (system_settings), no una clasificación intrínseca del curso (course_type):
-        // un tenant puede perfectamente reutilizar un curso de inducción/training ya
-        // existente como su remediación de puntualidad, sin necesidad de alterar el
-        // enum de academy_courses.course_type.
         $requiredCourseId = isset($settings['punctuality_course_id'])
             ? (json_decode($settings['punctuality_course_id'], true) ?: null)
             : null;
@@ -779,7 +1309,7 @@ class ClockService
             ->get();
 
         $totalLateMinutes = $entries->sum('late_minutes');
-        
+
         // Simulación: $2 MXN de descuento por cada minuto de retardo
         $penaltyAmount = $totalLateMinutes * 2;
 
@@ -792,18 +1322,15 @@ class ClockService
 
     /**
      * Calcula la nómina detallada y el desglose de LFT de un colaborador.
-     */
-    /**
-     * @param int|null $simulationSessionId "Reportes de Prueba" (sección 13): si se
-     * especifica, incluye EXCLUSIVAMENTE los fichajes de esa sesión del Simulador Matrix
-     * (bypass explícito de ExcludeSimulationScope) en vez de los datos reales. Pensado
-     * para que un admin verifique que el módulo de nómina calcula bien con datos de
-     * prueba, sin que eso toque jamás un número real.
+     *
+     * @param int|null $simulationSessionId "Reportes de Prueba" (§13): si se especifica, incluye
+     * EXCLUSIVAMENTE los fichajes de esa sesión del Simulador Matrix (bypass explícito de
+     * ExcludeSimulationScope) en vez de los datos reales.
      */
     public function calculatePayrollForEmployee($employee, $startDate, $endDate, ?int $simulationSessionId = null)
     {
         $tenantId = $employee->tenant_id;
-        
+
         // 1. Obtener la política LFT
         $lft = \App\Models\LftSetting::where('tenant_id', $tenantId)->first();
         if (!$lft) {
@@ -819,16 +1346,18 @@ class ClockService
                 'rest_tolerance_minutes' => 10,
                 'late_action_mode' => 'deduct',
                 'paid_rest_day' => true,
+                'late_penalty_per_minute' => 2.00,
             ]);
         }
-        
+
         $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
         $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
-        
-        // 2. Obtener registros de asistencia (reales por defecto; ver $simulationSessionId
-        // arriba para el modo "Reportes de Prueba" del Simulador Matrix)
+
+        // 2. Registros de asistencia (excluyendo auxiliares como reservas de comida). Reales por
+        // defecto (ExcludeSimulationScope global); modo "Reportes de Prueba" con $simulationSessionId.
         $entriesQuery = TimeEntry::where('user_id', $employee->user_id)
-            ->whereBetween('date', [$startDate, $endDate]);
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereNotIn('type', self::AUXILIARY_ENTRY_TYPES);
 
         if ($simulationSessionId) {
             $entriesQuery->withoutGlobalScope(\App\Scopes\ExcludeSimulationScope::class)
@@ -836,38 +1365,88 @@ class ClockService
         }
 
         $entries = $entriesQuery->get();
-            
+
         // 3. Agrupar por día
         $entriesByDate = $entries->groupBy('date');
-        
+
+        // Fechas con ASISTENCIA real (R59): la presencia se prueba SÓLO con check_in/check_out.
+        $attendedDates = [];
+        foreach ($entriesByDate as $dateStr => $dayEntries) {
+            if ($dayEntries->whereIn('type', ['check_in', 'check_out'])->isNotEmpty()) {
+                $attendedDates[$dateStr] = true;
+            }
+        }
+
         $latesCount = 0;
         $lateMinutes = 0;
         $mealExcessMinutes = 0;
         $restExcessMinutes = 0;
-        
-        // Días con declaración de contingencia activa (sin luz / sin internet): excluidos
-        // de retardos y faltas, la jornada se paga al 100% conforme LFT.
-        $contingencyDates = \App\Models\ContingencyDeclaration::withoutGlobalScopes()
+
+        // R82: fechas con JUSTIFICANTE APROBADO — el retardo no se deduce ni cuenta para faltas.
+        $justifiedDates = \DB::table('late_justifications')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $employee->user_id)
+            ->where('status', 'approved')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->pluck('date')
+            ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
+            ->flip();
+
+        // R83: fechas con CONTINGENCIA APROBADA (gate humano de la línea del Reloj) — jornada causal
+        // 100% pagada. ARBITRAJE F3: se UNEN las declaraciones ACTIVAS de la línea §1–§42
+        // (contingency_declarations sin resolver: protección inmediata de retardo mientras dura la
+        // eventualidad), manteniendo el gate humano para el resto de efectos.
+        $contingencyDates = \DB::table('contingency_days')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $employee->user_id)
+            ->where('status', 'approved')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->pluck('date')
+            ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
+            ->flip();
+
+        $activeDeclarationDates = ContingencyDeclaration::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->whereBetween('date', [$startDate, $endDate])
             ->whereNull('resolved_at')
             ->pluck('date')
-            ->map(fn($d) => \Illuminate\Support\Carbon::parse($d)->toDateString())
+            ->map(fn ($d) => Carbon::parse($d)->toDateString())
             ->all();
 
         foreach ($entries as $entry) {
-            if ($entry->is_late && !in_array($entry->date, $contingencyDates)) {
+            $entryDate = Carbon::parse($entry->date)->format('Y-m-d');
+            // El retardo se congela por justificante aprobado (R82), contingencia aprobada (R83) o
+            // declaración de eventualidad activa (línea §1–§42).
+            if ($entry->is_late
+                && !$justifiedDates->has($entryDate)
+                && !$contingencyDates->has($entryDate)
+                && !in_array($entryDate, $activeDeclarationDates, true)) {
                 $latesCount++;
                 $lateMinutes += $entry->late_minutes;
             }
-            // Analizar excesos de comida y descanso
-            $details = json_decode($entry->details, true);
-            if ($entry->type === 'meal_end' && isset($details['duration_minutes'])) {
-                $mealMins = (int)$details['duration_minutes'];
-                $allowedMeal = $employee->mealMinutes ?? 60;
-                if ($mealMins > ($allowedMeal + $lft->meal_tolerance_minutes)) {
-                    $mealExcessMinutes += max(0, $mealMins - $allowedMeal);
-                }
+        }
+
+        // Exceso de comida (spec:51) y de descanso Ley-Silla (spec:76) por PAREO de ponches.
+        $allowedMeal = (int) ($employee->mealMinutes ?? 60);
+        $mealTolerance = (int) ($lft?->meal_tolerance_minutes ?? 15);
+
+        $leySillaRaw = \DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'leySillaConfig')
+            ->value('value');
+        $leySillaConfig = $leySillaRaw ? (json_decode($leySillaRaw, true) ?: []) : [];
+        $leySillaEnabled = $leySillaConfig['enabled'] ?? true;
+        $allowedBreak = (int) ($leySillaConfig['breakMinutes'] ?? 15);
+        $restTolerance = (int) ($lft?->rest_tolerance_minutes ?? 10);
+
+        $mealExcessByDate = [];
+        foreach ($entriesByDate as $dateStr => $dayEntries) {
+            $dayMealExcess = $this->pairedExcessMinutes($dayEntries, $dateStr, 'meal_start', 'meal_end', $allowedMeal, $mealTolerance);
+            $mealExcessByDate[$dateStr] = $dayMealExcess;
+            $mealExcessMinutes += $dayMealExcess;
+
+            if ($leySillaEnabled) {
+                $restExcessMinutes += $this->pairedExcessMinutes($dayEntries, $dateStr, 'break_start', 'break_end', $allowedBreak, $restTolerance);
             }
         }
 
@@ -883,10 +1462,10 @@ class ClockService
         // 4. Calcular Faltas
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
-        
+
         $expectedDaysCount = 0;
         $physicalAbsences = 0;
-        
+
         $dayMap = [
             'domingo' => 0, 'sunday' => 0,
             'lunes' => 1, 'monday' => 1,
@@ -896,106 +1475,183 @@ class ClockService
             'viernes' => 5, 'friday' => 5,
             'sabado' => 6, 'saturday' => 6,
         ];
-        $restDayName = strtolower($employee->restDay ?? 'domingo');
+        // OJO (bug de dinero): el picker de RRHH guarda el día de descanso ACENTUADO. Se normaliza
+        // (mb_strtolower + quitar acentos) antes del lookup.
+        $restDayName = strtr(
+            mb_strtolower($employee->restDay ?? 'domingo', 'UTF-8'),
+            ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u']
+        );
         $restDayOfWeek = $dayMap[$restDayName] ?? 0;
-        
+
+        // Un empleado sin usuario enlazado (user_id NULL) NO puede fichar: no se fabrican faltas
+        // para quien no tiene capacidad de fichar.
+        $canTrackAttendance = !is_null($employee->user_id);
+
         $current = $start->copy();
         $analysedDates = [];
         while ($current->lte($end)) {
             $dateStr = $current->toDateString();
             $analysedDates[] = $dateStr;
-            
+
             $isHolidayDate = $holidays->has($dateStr);
-            $isContingencyDate = in_array($dateStr, $contingencyDates);
 
             if ($current->dayOfWeek !== $restDayOfWeek) {
-                if ($isContingencyDate) {
-                    // Día protegido por contingencia: no cuenta como falta aunque no haya
-                    // fichaje (ej. corte total de energía impidió cualquier registro).
-                } elseif ($isHolidayDate) {
-                    // Es día festivo
-                    if (isset($entriesByDate[$dateStr])) {
+                if ($isHolidayDate) {
+                    if (isset($attendedDates[$dateStr])) {
                         $holidayWorkedDaysCount++;
                     }
-                    // Si no laboró, NO cuenta como falta física (es descanso pagado obligatorio)
                 } else {
                     $expectedDaysCount++;
-                    if (!isset($entriesByDate[$dateStr])) {
+                    // R83: contingencia aprobada (o eventualidad activa §1–§42) NO es falta.
+                    if (!isset($attendedDates[$dateStr])
+                        && !$contingencyDates->has($dateStr)
+                        && !in_array($dateStr, $activeDeclarationDates, true)
+                        && $canTrackAttendance) {
                         $physicalAbsences++;
                     }
                 }
             }
             $current->addDay();
         }
-        
+
         // Faltas equivalentes por retardos
-        $absencesFromLates = $lft->lates_per_absence > 0 
-            ? (int)floor($latesCount / $lft->lates_per_absence) 
+        $absencesFromLates = $lft->lates_per_absence > 0
+            ? (int)floor($latesCount / $lft->lates_per_absence)
             : 0;
-            
+
         $totalAbsences = $physicalAbsences + $absencesFromLates;
-        
-        // 5. Calcular Proporcional del Séptimo Día (día de descanso)
+
+        // 5. Proporcional del Séptimo Día (día de descanso)
         $restDayProportion = 1.0;
         if ($lft->proportional_rest_day && $totalAbsences > 0) {
             $workedDays = max(0, 6 - $totalAbsences);
             $restDayProportion = $workedDays / 6.0;
         }
-        
-        // 6. Calcular Deducciones
+
+        // 6. Deducciones
         $deductionAbsence = 0;
         if ($lft->deduct_absence_day) {
             $deductionAbsence = $totalAbsences * $dailySalary;
         }
-        
+
         $deductionRestDay = 0;
         if ($lft->paid_rest_day) {
             $deductionRestDay = (1.0 - $restDayProportion) * $dailySalary;
         }
-        
-        // Penalización por minutos tarde si es deduct y no compensó
+
+        // Penalización por minutos tarde: tarifa configurable (LftSetting) × factor del PUESTO
+        // (R79/D1: job_roles.late_penalty_multiplier, default 1.0; nulo/0 cae a 1.0).
+        $lateMultiplier = 1.0;
+        if ($employee->job_role_id) {
+            $jrMultiplier = \App\Models\JobRole::withoutGlobalScopes()
+                ->where('id', $employee->job_role_id)
+                ->value('late_penalty_multiplier');
+            if ($jrMultiplier) {
+                $lateMultiplier = (float) $jrMultiplier;
+            }
+        }
         $deductionLates = 0;
         if ($lft->late_action_mode === 'deduct') {
-            $deductionLates = $lateMinutes * 2; // Simulación: $2 MXN de descuento por minuto
+            $deductionLates = $lateMinutes * (float) ($lft->late_penalty_per_minute ?? 2) * $lateMultiplier;
         }
-        
+
         $totalDeductions = $deductionAbsence + $deductionRestDay + $deductionLates;
-        
-        // Calcular bono por festivo laborado (salario doble adicional por LFT)
+
+        // Bono por festivo laborado (salario doble adicional por LFT)
         $holidayBonusPay = $holidayWorkedDaysCount * $dailySalary * 2.0;
+
+        // Bono de Cumplimiento (R94, Fase 5 / T5.1): DOS componentes INDEPENDIENTES, opt-in por monto.
+        $punctualityBonus = 0.0;
+        $punctualityEarned = false;
+        $punctualityAmount = (float) ($lft->punctuality_bonus_amount ?? 0);
+        if ($punctualityAmount > 0) {
+            $maxLates = (int) ($lft->punctuality_bonus_max_lates ?? 0);
+            $punctualityEarned = $latesCount <= $maxLates && $physicalAbsences === 0;
+            if ($punctualityEarned) {
+                $punctualityBonus = $punctualityAmount;
+            }
+        }
+
+        $openingBonus = 0.0;
+        $onTimeOpens = 0;
+        $openingAmount = (float) ($lft->opening_bonus_per_open ?? 0);
+        if ($openingAmount > 0) {
+            $tz = TenantTimezone::for($tenantId);
+            $tolerance = (int) ($lft->late_tolerance_minutes ?? 10);
+            $opens = \DB::table('store_daily_opening_statuses')
+                ->where('tenant_id', $tenantId)
+                ->where('opened_by_employee_id', $employee->user_id)
+                ->whereNotNull('opened_at')
+                ->whereDate('date', '>=', $startDate)
+                ->whereDate('date', '<=', $endDate)
+                ->get(['date', 'scheduled_opening_time', 'opened_at']);
+            foreach ($opens as $o) {
+                if (!$o->scheduled_opening_time) {
+                    continue;
+                }
+                $bizDate = Carbon::parse($o->date)->format('Y-m-d');
+                $openedLocal = Carbon::parse($o->opened_at)->setTimezone($tz);
+                $scheduled = Carbon::parse($bizDate . ' ' . $o->scheduled_opening_time, $tz);
+                if ($openedLocal->lessThanOrEqualTo($scheduled->copy()->addMinutes($tolerance))) {
+                    $onTimeOpens++;
+                }
+            }
+            $openingBonus = $onTimeOpens * $openingAmount;
+        }
+
+        $complianceBonus = $punctualityBonus + $openingBonus;
 
         // Sueldo bruto para los 7 días (6 trabajados + 1 descanso) + bono festivo
         $grossPay = ($dailySalary * 7) + $holidayBonusPay;
-        $netPay = max(0, $grossPay - $totalDeductions);
-        
-        // Obtener estatus de aprobaciones diarias
+        $netPay = max(0, $grossPay - $totalDeductions) + $complianceBonus;
+
+        // Estatus de aprobaciones diarias
         $dailyApprovals = \App\Models\DailyApproval::where('employee_id', $employee->id)
             ->whereBetween('date', [$startDate, $endDate])
             ->get()
             ->keyBy('date');
-            
+
+        // Salida oficial normalizada a H:i:s.
+        $officialExit = $this->normalizeExitTime($employee->shiftEnd);
         $datesDetails = [];
         foreach ($analysedDates as $dStr) {
             $cDate = Carbon::parse($dStr);
             $isRestDay = ($cDate->dayOfWeek === $restDayOfWeek);
+            // `has_entries` = ¿hay ponches que MOSTRAR? `attended` = ¿ASISTIÓ de verdad? (R59).
             $hasEntries = isset($entriesByDate[$dStr]);
-            
+            $attended = isset($attendedDates[$dStr]);
+
+            // Hora de Salida requerida = salida oficial + exceso de comida del día (spec:51).
+            $dayMealMakeup = (int) ($mealExcessByDate[$dStr] ?? 0);
+            $requiredExit = $officialExit;
+            if ($dayMealMakeup > 0) {
+                $extended = Carbon::parse("$dStr $officialExit")->addMinutes($dayMealMakeup);
+                $requiredExit = $extended->format('Y-m-d') === $dStr ? $extended->format('H:i:s') : '23:59:59';
+            }
+
             $datesDetails[] = [
                 'date' => $dStr,
                 'day_name' => $cDate->translatedFormat('l'),
                 'is_rest_day' => $isRestDay,
                 'has_entries' => $hasEntries,
+                'attended' => $attended,
+                'late_justified' => $justifiedDates->has(Carbon::parse($dStr)->format('Y-m-d')),
+                'contingency' => $contingencyDates->has(Carbon::parse($dStr)->format('Y-m-d'))
+                    || in_array($dStr, $activeDeclarationDates, true),
+                'official_exit_time' => $officialExit,
+                'meal_makeup_minutes' => $dayMealMakeup,
+                'required_exit_time' => $requiredExit,
                 'entries' => $hasEntries ? $entriesByDate[$dStr]->toArray() : [],
-                'approval_status' => $dailyApprovals->has($dStr) 
-                    ? $dailyApprovals[$dStr]->status 
+                'approval_status' => $dailyApprovals->has($dStr)
+                    ? $dailyApprovals[$dStr]->status
                     : 'pending',
-                'comments' => $dailyApprovals->has($dStr) 
-                    ? $dailyApprovals[$dStr]->comments 
+                'comments' => $dailyApprovals->has($dStr)
+                    ? $dailyApprovals[$dStr]->comments
                     : null
             ];
         }
 
-        // 6. Calcular Rendimiento de Tareas
+        // 6. Rendimiento de Tareas
         $assignments = \DB::table('task_assignments')
             ->where('user_id', $employee->user_id)
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
@@ -1014,21 +1670,19 @@ class ClockService
         }
         $taskPerformancePct = $totalTasks > 0 ? (int)round(($completedTasksOnTime / $totalTasks) * 100) : 100;
 
-        // 7. Calcular Score Global de Rendimiento (Evaluación Ley/Comportamiento)
-        // Base 100, restamos 15 por falta, 5 por retardo, 1 por cada 5 min de exceso en comida/descanso
+        // 7. Score Global de Rendimiento
         $attendanceScore = 100 - ($totalAbsences * 15) - ($latesCount * 5) - (int)floor($mealExcessMinutes / 5) - (int)floor($restExcessMinutes / 5);
         $attendanceScore = max(0, $attendanceScore);
-        
-        // El score global es 60% asistencia/puntualidad y 40% desempeño de tareas
+
         $performanceScore = (int)round(($attendanceScore * 0.6) + ($taskPerformancePct * 0.4));
         $performanceScore = max(0, min(100, $performanceScore));
-        
-        // Buscar si ya se guardó y aprobó la nómina de esta semana
+
+        // Nómina semanal guardada/aprobada
         $weeklyPayrollRecord = \App\Models\WeeklyPayroll::where('employee_id', $employee->id)
             ->where('start_date', $startDate)
             ->where('end_date', $endDate)
             ->first();
-            
+
         return [
             'employee_id' => $employee->id,
             'name' => $employee->name,
@@ -1041,7 +1695,18 @@ class ClockService
                 'daily' => (float)$dailySalary,
                 'gross' => (float)$grossPay,
                 'net' => (float)$netPay,
-                'holiday_bonus' => (float)$holidayBonusPay
+                'holiday_bonus' => (float)$holidayBonusPay,
+                'compliance_bonus' => (float)$complianceBonus
+            ],
+            // Desglose estructurado del Bono de Cumplimiento (R94/R95) para el widget "Mis Bonos".
+            'bonus' => [
+                'punctuality_amount' => (float)$punctualityBonus,
+                'punctuality_earned' => $punctualityEarned,
+                'punctuality_configured' => $punctualityAmount > 0,
+                'opening_amount' => (float)$openingBonus,
+                'on_time_opens' => $onTimeOpens,
+                'opening_configured' => $openingAmount > 0,
+                'total' => (float)$complianceBonus
             ],
             'incidents' => [
                 'lates' => $latesCount,
@@ -1073,5 +1738,21 @@ class ClockService
                 'approved_at' => $weeklyPayrollRecord ? $weeklyPayrollRecord->employee_approved_at : null
             ]
         ];
+    }
+
+    /**
+     * Distancia haversine en metros entre dos coordenadas (mismo cálculo que el frontend:
+     * radio terrestre 6371 km). Usada por la geocerca server-side de processPunch.
+     */
+    private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $r = 6371e3;
+        $phi1 = deg2rad($lat1);
+        $phi2 = deg2rad($lat2);
+        $dPhi = deg2rad($lat2 - $lat1);
+        $dLambda = deg2rad($lng2 - $lng1);
+
+        $a = sin($dPhi / 2) ** 2 + cos($phi1) * cos($phi2) * sin($dLambda / 2) ** 2;
+        return $r * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }

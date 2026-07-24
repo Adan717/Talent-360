@@ -113,9 +113,14 @@ class UnCheckinPorDiaTest extends TestCase
     }
 
     /**
-     * El guard es SÓLO para check_in (el único que infla nómina). Un check_out NO se bloquea, para
-     * no romper los flujos que registran check_out sin check_in previo (cierre forzado, aprobación,
-     * geocerca de salida). El foco es el bug de dinero del check_in.
+     * El guard IDEMPOTENTE es SÓLO para check_in (el único que infla nómina): un check_out con
+     * turno abierto se registra normal, sin `duplicate`.
+     *
+     * ENMIENDA merge F3: la secuencia §15 reconciliada SÍ exige un turno abierto para el check_out
+     * ("sin un 'check_in' previo", contrato testeado de la línea §1–§42) — el check_out ya no es
+     * completamente libre. Los flujos que registran check_out sin check_in (cierre forzado por
+     * CRON, Kill-Switch) NO pasan por processPunch (insertan directo), así que no se ven
+     * afectados; la cola OFFLINE queda exenta de la secuencia (el ancla puede venir en otro lote).
      */
     public function test_el_check_out_no_queda_bloqueado_por_el_guard(): void
     {
@@ -124,7 +129,7 @@ class UnCheckinPorDiaTest extends TestCase
             [, $user] = $this->makeUser();
             $svc = app(ClockService::class);
 
-            // check_out directo (sin check_in previo) debe registrarse, no ser idempotente.
+            $svc->processPunch($user, 'check_in');
             $r = $svc->processPunch($user, 'check_out');
 
             $this->assertSame(1, $this->countType($user->id, 'check_out'));

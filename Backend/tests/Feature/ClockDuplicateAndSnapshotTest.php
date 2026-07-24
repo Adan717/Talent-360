@@ -53,7 +53,14 @@ class ClockDuplicateAndSnapshotTest extends TestCase
         return $user;
     }
 
-    public function test_second_check_in_same_day_is_rejected(): void
+    /**
+     * ENMIENDA merge F3: el contrato reconciliado del check_in duplicado es el IDEMPOTENTE de la
+     * línea del Reloj (R63): con turno ABIERTO, un 2º check_in devuelve 200 con `duplicate: true`
+     * y NO crea fila — la cola offline y los retries de red no deben recibir un error por un
+     * duplicado benigno. La garantía de fondo es la misma que este test protegía: UNA sola fila.
+     * (El turno PARTIDO check_in→check_out→check_in sigue siendo legítimo; ver el test de abajo.)
+     */
+    public function test_second_check_in_same_day_is_idempotent(): void
     {
         $user = $this->makeEmployee();
 
@@ -69,9 +76,8 @@ class ClockDuplicateAndSnapshotTest extends TestCase
             'time' => '09:05:00',
         ]);
 
-        $response->assertStatus(400);
-        $response->assertJsonFragment(['success' => false]);
-        $this->assertStringContainsString('ya existe un registro', $response->json('message'));
+        $response->assertStatus(200);
+        $response->assertJsonFragment(['duplicate' => true]);
 
         $this->assertDatabaseCount('time_entries', 1);
     }
@@ -129,37 +135,41 @@ class ClockDuplicateAndSnapshotTest extends TestCase
         $this->assertEquals(5500.50, (float) $entry->base_salary_at_time);
     }
 
-    public function test_database_rejects_duplicate_insert_at_constraint_level(): void
+    /**
+     * ENMIENDA merge F3: el índice UNIQUE(user,date,type) se RETIRÓ (migración
+     * 2026_07_24_120000) porque prohibía el turno PARTIDO y las pausas múltiples — flujos
+     * legítimos de la línea del Reloj que la nómina soporta (PayrollSplitShiftTest). Este test
+     * fija el contrato positivo que motivó el retiro: check_in→check_out→check_in el mismo día
+     * produce DOS check_ins válidos, y el guard de estado sigue rechazando el duplicado real
+     * (un 2º check_in con turno abierto no crea fila; ver test de arriba).
+     */
+    public function test_split_shift_allows_second_check_in_after_check_out(): void
     {
-        // Prueba el índice único directamente (sin pasar por processPunch), para
-        // confirmar que la ventana de carrera también está cerrada a nivel de BD,
-        // no solo por el exists() de la capa de aplicación.
         $user = $this->makeEmployee();
 
-        DB::table('time_entries')->insert([
+        // El tenant 1 viene sembrado con require_closing_checklist=true (create_store_opening_tables);
+        // aquí se apaga porque este test prueba la SECUENCIA del turno partido, no el checklist.
+        DB::table('store_opening_settings')->where('tenant_id', 1)->update(['require_closing_checklist' => false]);
+
+        $this->actingAs($user)->postJson('/api/v1/clock/punch', [
             'user_id' => $user->id,
-            'tenant_id' => 1,
-            'date' => '2026-07-21',
             'type' => 'check_in',
             'time' => '09:00:00',
-            'is_late' => false,
-            'late_minutes' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        ])->assertStatus(200);
 
-        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
-
-        DB::table('time_entries')->insert([
+        $this->actingAs($user)->postJson('/api/v1/clock/punch', [
             'user_id' => $user->id,
-            'tenant_id' => 1,
-            'date' => '2026-07-21',
+            'type' => 'check_out',
+            'time' => '13:00:00',
+        ])->assertStatus(200);
+
+        $this->actingAs($user)->postJson('/api/v1/clock/punch', [
+            'user_id' => $user->id,
             'type' => 'check_in',
-            'time' => '09:05:00',
-            'is_late' => false,
-            'late_minutes' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            'time' => '15:00:00',
+        ])->assertStatus(200);
+
+        $this->assertSame(2, DB::table('time_entries')
+            ->where('user_id', $user->id)->where('type', 'check_in')->count());
     }
 }

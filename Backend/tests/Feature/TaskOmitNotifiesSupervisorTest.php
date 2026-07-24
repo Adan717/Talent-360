@@ -97,9 +97,11 @@ class TaskOmitNotifiesSupervisorTest extends TestCase
             'status' => 'in_progress', 'tenant_id' => 1, 'date' => now()->toDateString(),
         ]);
 
+        // ENMIENDA merge F3: sendToRole ahora exige tenant_id (fix de seguridad — sin él, el push
+        // se difundía a los admins de TODOS los tenants).
         $this->mock(NotificationService::class, function ($mock) {
-            $mock->shouldReceive('sendToRole')->once()->with('admin', \Mockery::type('string'), \Mockery::type('string'));
-            $mock->shouldReceive('sendToRole')->once()->with('platform_admin', \Mockery::type('string'), \Mockery::type('string'));
+            $mock->shouldReceive('sendToRole')->once()->with(\Mockery::type('int'), 'admin', \Mockery::type('string'), \Mockery::type('string'));
+            $mock->shouldReceive('sendToRole')->once()->with(\Mockery::type('int'), 'platform_admin', \Mockery::type('string'), \Mockery::type('string'));
         });
 
         $response = $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/omit", []);

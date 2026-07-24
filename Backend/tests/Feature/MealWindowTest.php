@@ -201,7 +201,15 @@ class MealWindowTest extends TestCase
         [, $user] = $this->make(90);
         $this->punchAt($user, 'check_in', '09:00:00');
 
-        // meal_end suelto (sin meal_start previo) a los 5 min: no lo bloquea la ventana de comida.
+        // ENMIENDA merge F3: la secuencia §15 exige un meal_start abierto para el meal_end — se
+        // siembra directo en BD (esquiva la ventana, que es justo lo que este test NO prueba).
+        // La afirmación original se conserva: la VENTANA de comida no bloquea el meal_end aunque
+        // no se hayan cumplido los minutos mínimos de trabajo.
+        \DB::table('time_entries')->insert([
+            'tenant_id' => $user->tenant_id, 'user_id' => $user->id,
+            'date' => \Carbon\Carbon::now()->format('Y-m-d'), 'type' => 'meal_start', 'time' => '09:02:00',
+            'is_late' => false, 'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
         $res = $this->punchAt($user, 'meal_end', '09:05:00');
 
         $this->assertTrue($res['ok'], $res['msg']);

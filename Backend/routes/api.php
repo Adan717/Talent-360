@@ -235,6 +235,24 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Validación de Tareas (Aprobación/Rechazo)
         Route::post('/admin/assignments/{id}/validate', [TaskValidationController::class, 'validateAssignment']);
 
+        // Kiosko: asignar/resetear el PIN de un empleado (admin/supervisor). R54.
+        Route::post('/admin/employees/{id}/kiosk-pin', [\App\Http\Controllers\KioskController::class, 'setPin']);
+
+        // Tolerancia con autorización: el admin ve y resuelve las solicitudes de entrada. R56.
+        Route::get('/admin/late-authorizations', [\App\Http\Controllers\LateAuthorizationController::class, 'pending']);
+        Route::post('/admin/late-authorizations/{id}/resolve', [\App\Http\Controllers\LateAuthorizationController::class, 'resolve']);
+
+        // Botón de Pánico: el mando ve los incidentes ACTIVOS de su tenant. R80.
+        Route::get('/admin/panic-incidents', [\App\Http\Controllers\PanicController::class, 'active']);
+
+        // Justificantes de retardo: el admin ve y resuelve las solicitudes. R82.
+        Route::get('/admin/late-justifications', [\App\Http\Controllers\LateJustificationController::class, 'pending']);
+        Route::post('/admin/late-justifications/{id}/resolve', [\App\Http\Controllers\LateJustificationController::class, 'resolve']);
+
+        // Contingencias (fuerza mayor): el admin ve y resuelve las declaraciones. R83.
+        Route::get('/admin/contingencies', [\App\Http\Controllers\ContingencyController::class, 'pending']);
+        Route::post('/admin/contingencies/{id}/resolve', [\App\Http\Controllers\ContingencyController::class, 'resolve']);
+
         // Monedero Digital y Recompensas (Wallet)
         Route::get('/wallet/balance', [\App\Http\Controllers\UserWalletController::class, 'getBalance']);
         Route::get('/wallet/transactions', [\App\Http\Controllers\UserWalletController::class, 'getTransactions']);
@@ -331,6 +349,31 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware('throttle:5,1')->post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
         Route::post('/clock/meal-photo', [TimeEntryController::class, 'uploadMealPhoto']);
+
+        // Kiosko: ponche por PIN desde la tableta compartida. La sesión (cualquier usuario del
+        // tenant) sólo ancla el TENANT; el PIN identifica al empleado y el enforcement es server-side
+        // (can_clock_in + rate-limit). R54.
+        Route::post('/kiosk/punch', [\App\Http\Controllers\KioskController::class, 'punch']);
+
+        // Tolerancia con autorización: el empleado solicita autorización cuando el Retardo Extremo
+        // le bloquea la entrada (R14). Una aprobación levanta el bloqueo server-side. R56.
+        Route::post('/clock/request-late-authorization', [\App\Http\Controllers\LateAuthorizationController::class, 'request']);
+
+        // Botón de Pánico (R80): el empleado declara una emergencia (categoría + geo) → se persiste y
+        // alerta a los mandos del tenant.
+        Route::post('/clock/panic', [\App\Http\Controllers\PanicController::class, 'report']);
+        Route::get('/clock/panic/mine', [\App\Http\Controllers\PanicController::class, 'mine']);
+        Route::post('/clock/panic/resolve-mine', [\App\Http\Controllers\PanicController::class, 'resolveMine']);
+        Route::post('/clock/panic/{id}/resolve', [\App\Http\Controllers\PanicController::class, 'resolve']);
+
+        // Laborar Horas Extras / Feriado (R81): autorización del supervisor server-side.
+        Route::post('/clock/authorize-overtime', [\App\Http\Controllers\OvertimeAuthorizationController::class, 'grant']);
+        Route::get('/clock/overtime/today', [\App\Http\Controllers\OvertimeAuthorizationController::class, 'today']);
+        // R92: salida anticipada — espejo del patrón R81.
+        Route::post('/clock/authorize-early-departure', [\App\Http\Controllers\EarlyDepartureAuthorizationController::class, 'grant']);
+
+        // Justificante de retardo (R82): el empleado justifica el retardo de HOY.
+        Route::post('/clock/request-late-justification', [\App\Http\Controllers\LateJustificationController::class, 'request']);
 
         // Apertura de tienda (Operativa del Reloj Checador)
         Route::get('/features/company', [StoreOpeningController::class, 'getCompanyFeatures']);

@@ -285,6 +285,17 @@ class StoreOpeningController extends Controller
         $user = Auth::user();
         $storeId = $request->input('store_id', 1);
         $simTime = $request->input('simTime');
+        $tenantId = $user->tenant_id ?? 1;
+
+        // R93 (D2, merge F3): este flujo es específico del ENCARGADO de apertura (dispara la
+        // cascada de delegación de llaves) → lo gatea su switch. Antes apagar el toggle sólo
+        // escondía el botón y una petición cruda disparaba la cascada igual.
+        if (!\App\Services\ClockService::dialerFeatureEnabled($tenantId, 'allow_manager_incidences')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El reporte de incidencias del encargado está deshabilitado para esta sucursal.',
+            ], 403);
+        }
 
         // Permitir suplantación de usuario para el simulador Matrix QA si tiene permisos
         $userId = $user->id;

@@ -320,6 +320,14 @@ class ClockSyncTest extends TestCase
         [$tenant, $user] = $this->makeSetup('enterprise');
         $this->enableSimulatedTime($tenant->id);
 
+        // ENMIENDA merge F3: la secuencia §15 exige turno abierto para el check_out; se abre con
+        // un check_in directo en BD (lo que este test prueba es la TOLERANCIA DE FORMATO de hora).
+        \DB::table('time_entries')->insert([
+            'tenant_id' => $tenant->id, 'user_id' => $user->id,
+            'date' => now()->format('Y-m-d'), 'type' => 'check_in', 'time' => '08:00:00',
+            'is_late' => false, 'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
         $response = $this->actingAs($user)->postJson('/api/v1/sync/clock', [
             'user_id' => $user->id,
             'date' => '2026-07-10',

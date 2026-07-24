@@ -58,21 +58,52 @@ class ClockResetTest extends TestCase
      * Fix de scope por tenant: el reset acotado solo borra los datos del tenant
      * indicado y deja intactos los de otros tenants (antes truncaba globalmente).
      */
-    public function test_reset_db_only_deletes_target_tenant_data(): void
+    /**
+     * ENMIENDA merge F3: /sync/reset ya no es un wipe de datos del tenant — es la PURGA del
+     * Simulador Matrix (§13): borra SOLO filas con simulation_session_id (nunca datos reales),
+     * un contrato estrictamente más seguro. La propiedad que este test protegía (aislamiento
+     * cross-tenant del borrado) se conserva: la purga del tenant 1 no toca las filas simuladas
+     * del tenant 2 ni los datos REALES de nadie. La resolución estricta de tenant (422 sin
+     * tenant resoluble, sin fallback `?? 1`) también se conserva — ver los 2 tests de abajo.
+     */
+    public function test_reset_db_only_purges_target_tenant_simulated_data(): void
     {
         $platformAdmin = $this->makePlatformAdmin();
         $u1 = $this->makeTenantUser(1);
         $u2 = $this->makeTenantUser(2);
+
+        // Dato REAL del tenant 1 (debe sobrevivir la purga).
         $this->seedTimeEntry(1, $u1);
-        $this->seedTimeEntry(2, $u2);
+
+        // Sesiones + filas SIMULADAS de ambos tenants.
+        $s1 = DB::table('simulator_sessions')->insertGetId([
+            'tenant_id' => 1, 'started_by_user_id' => $u1, 'simulated_date' => now()->format('Y-m-d'),
+            'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $s2 = DB::table('simulator_sessions')->insertGetId([
+            'tenant_id' => 2, 'started_by_user_id' => $u2, 'simulated_date' => now()->format('Y-m-d'),
+            'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('time_entries')->insert([
+            ['tenant_id' => 1, 'user_id' => $u1, 'date' => now()->format('Y-m-d'), 'type' => 'check_out',
+             'time' => '18:00:00', 'is_late' => false, 'late_minutes' => 0,
+             'simulation_session_id' => $s1, 'created_at' => now(), 'updated_at' => now()],
+            ['tenant_id' => 2, 'user_id' => $u2, 'date' => now()->format('Y-m-d'), 'type' => 'check_out',
+             'time' => '18:00:00', 'is_late' => false, 'late_minutes' => 0,
+             'simulation_session_id' => $s2, 'created_at' => now(), 'updated_at' => now()],
+        ]);
 
         $response = $this->actingAs($platformAdmin)->postJson('/api/v1/sync/reset', [
             'tenant_id' => 1,
         ]);
 
         $response->assertStatus(200);
-        $this->assertDatabaseMissing('time_entries', ['tenant_id' => 1]);
-        $this->assertDatabaseHas('time_entries', ['tenant_id' => 2]);
+        // Purgó SOLO lo simulado del tenant 1:
+        $this->assertDatabaseMissing('time_entries', ['tenant_id' => 1, 'simulation_session_id' => $s1]);
+        // El dato REAL del tenant 1 sobrevive:
+        $this->assertDatabaseHas('time_entries', ['tenant_id' => 1, 'type' => 'check_in']);
+        // Lo simulado del tenant 2 queda intacto:
+        $this->assertDatabaseHas('time_entries', ['tenant_id' => 2, 'simulation_session_id' => $s2]);
     }
 
     /**

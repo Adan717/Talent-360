@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Employee;
 use App\Models\JobRole;
 use App\Models\TimeEntry;
 use App\Models\StoreLog;
@@ -13,8 +14,14 @@ use App\Models\Contingency;
 use App\Models\InternalMessage;
 use App\Models\AuditLog;
 use App\Models\RoleClockPolicy;
+use App\Services\ClockService;
 use App\Services\SimulatorSessionService;
 
+/**
+ * RECONCILIACIÓN merge/reloj-v2 (F3): sync endurecido de la línea del Reloj (aforo R65, meal_swap
+ * R103, switches R93, guard R102, delegación al processPunch server-side) + Simulador Matrix,
+ * archivo histórico y CRUD de usuarios de la línea §1–§42.
+ */
 class ClockController extends Controller
 {
     protected $simulatorSessionService;
@@ -25,15 +32,37 @@ class ClockController extends Controller
     }
 
     /**
-     * Purga los datos del Simulador Matrix — reemplaza el TRUNCATE sin filtrar que
-     * borraba tablas completas de TODAS las empresas. Ahora solo borra filas con
-     * simulation_session_id no nulo (nunca datos reales), opcionalmente acotado a una
-     * sola sesión. Ya no necesita deshabilitarse en producción: la purga está scopeada
-     * por tenant y por origen del dato, no es un TRUNCATE global.
+     * Resuelve el tenant sobre el que operan los endpoints de reset/purga.
+     * Un usuario de tenant usa su propio tenant_id; un platform_admin (sin tenant
+     * propio) debe indicar explícitamente el tenant vía el parámetro tenant_id.
+     * Devuelve null si no se puede determinar (el caller debe responder 422).
+     */
+    private function resolveResetTenantId(Request $request): ?int
+    {
+        $tenantId = auth()->user()->tenant_id ?? $request->input('tenant_id');
+        // Rechazar null, cadenas vacías, no-numéricos y valores < 1 (los tenant_id
+        // reales empiezan en 1). Evita un falso 200 borrando where tenant_id=0.
+        if ($tenantId === null || !is_numeric($tenantId) || (int) $tenantId < 1) {
+            return null;
+        }
+        return (int) $tenantId;
+    }
+
+    /**
+     * ARBITRAJE F3 — Purga del Simulador Matrix (§13): borra SOLO filas con
+     * simulation_session_id no nulo (nunca datos reales), opcionalmente acotado a una sesión.
+     * Reemplaza el wipe de QA de la línea del Reloj (el flujo de pruebas ahora vive en sesiones
+     * simuladas aisladas). Se conserva de la línea del Reloj la resolución ESTRICTA de tenant
+     * (sin `?? 1`: un platform_admin sin tenant debe indicarlo; 422 si no resoluble) — el
+     * aislamiento cross-tenant de la purga queda garantizado por ambas vías.
      */
     public function resetDb(Request $request)
     {
-        $tenantId = auth()->user()->tenant_id ?? 1;
+        $tenantId = $this->resolveResetTenantId($request);
+        if ($tenantId === null) {
+            return response()->json(['error' => 'No se pudo determinar el tenant a reiniciar. Indica tenant_id.'], 422);
+        }
+
         $sessionId = $request->input('session_id');
 
         $result = $this->simulatorSessionService->purge($tenantId, $sessionId ? (int) $sessionId : null);
@@ -65,7 +94,7 @@ class ClockController extends Controller
 
     /**
      * Cierra la sesión activa (si existe) y crea una nueva con simulated_date + 1 día.
-     * Reemplaza al botón "Limpiar" actual — nunca borra datos, solo avanza de día.
+     * Nunca borra datos, solo avanza de día.
      */
     public function startNewSimulatorSession(Request $request)
     {
@@ -80,18 +109,25 @@ class ClockController extends Controller
         ]);
     }
 
-    // ⚠️ DEV-ONLY — Archiva los registros del día indicado antes de borrarlos
+    // ⚠️ DEV-ONLY — Archiva los registros del día indicado antes de borrarlos (merge F3: el
+    // archivado de la línea §1–§42 + el scope por TENANT de la línea del Reloj — sin el scope,
+    // el reset borraba el día de TODAS las empresas).
     public function resetDay(Request $request)
     {
         if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
+        $tenantId = $this->resolveResetTenantId($request);
+        if ($tenantId === null) {
+            return response()->json(['error' => 'No se pudo determinar el tenant a reiniciar. Indica tenant_id.'], 422);
+        }
+
         $date       = $request->input('date', now()->format('Y-m-d'));
         $archivedBy = auth()->check() ? auth()->user()->id : null;
 
-        DB::transaction(function () use ($date, $archivedBy) {
-            // Archivar time_entries del día antes de borrar masivamente (Optimo)
+        DB::transaction(function () use ($date, $archivedBy, $tenantId) {
+            // Archivar time_entries del día antes de borrar masivamente
             $nowStr = now()->toDateTimeString();
             DB::insert("
                 INSERT INTO archived_time_entries (
@@ -99,26 +135,27 @@ class ClockController extends Controller
                     employee_name_at_time, job_role_title_at_time, base_salary_at_time,
                     archived_reason, archived_by_user_id, original_created_at, created_at, updated_at
                 )
-                SELECT 
+                SELECT
                     id, user_id, tenant_id, date, type, time, is_late, late_minutes, details,
                     employee_name_at_time, job_role_title_at_time, base_salary_at_time,
                     'reset_day', :archived_by, created_at, :created_at, :updated_at
                 FROM time_entries
-                WHERE DATE(created_at) = :date
+                WHERE DATE(created_at) = :date AND tenant_id = :tenant_id
             ", [
                 'archived_by' => $archivedBy,
                 'date' => $date,
+                'tenant_id' => $tenantId,
                 'created_at' => $nowStr,
                 'updated_at' => $nowStr
             ]);
 
-            DB::table('time_entries')->whereDate('created_at', $date)->delete();
-            DB::table('store_logs')->where('date', $date)->delete();
-            DB::table('contingencies')->whereDate('created_at', $date)->delete();
-            DB::table('audit_logs')->where('date', $date)->delete();
+            DB::table('time_entries')->where('tenant_id', $tenantId)->whereDate('created_at', $date)->delete();
+            DB::table('store_logs')->where('tenant_id', $tenantId)->where('date', $date)->delete();
+            DB::table('contingencies')->where('tenant_id', $tenantId)->whereDate('created_at', $date)->delete();
+            DB::table('audit_logs')->where('tenant_id', $tenantId)->where('date', $date)->delete();
         });
 
-        return response()->json(['message' => "Datos del {$date} archivados y eliminados correctamente."]);
+        return response()->json(['message' => "Datos de la jornada del {$date} archivados y eliminados con éxito."]);
     }
 
     public function getState(Request $request)
@@ -128,11 +165,11 @@ class ClockController extends Controller
         }
         $tenantId = auth()->user()->tenant_id;
 
-        // Optimización de rendimiento: limitar registros históricos masivos a la última semana
+        // Optimización (§1–§42): limitar registros históricos masivos a la última semana.
         $oneWeekAgo = now()->subDays(7)->format('Y-m-d');
 
-        // Soporte para la Matrix QA: si se pasa simulation_session_id (o 'active'),
-        // consultar los datos pertenecientes a esa sesión simulada en lugar de borradores reales.
+        // Soporte para la Matrix QA (§13): si se pasa simulation_session_id (o 'active'),
+        // consultar los datos de esa sesión simulada en lugar de los reales.
         $simSessionId = $request->query('simulation_session_id') ?? $request->input('simulation_session_id');
         if ($simSessionId === 'active') {
             $activeSession = DB::table('simulator_sessions')
@@ -183,8 +220,20 @@ class ClockController extends Controller
         )->get();
 
         // Get permissions per user (Optimized to avoid N+1 queries)
-        $employees = DB::table('employees')->where('tenant_id', $tenantId)->get();
+        // `has_completed_induction` vive en `users`, NO en `employees`. Sin este join el payload la
+        // omitía → el front la leía como `undefined` → `false`, y como hace `{...currentUser, ...me}`
+        // (useAppStore:452) ese false FANTASMA pisaba el valor bueno que /me sí traía.
+        $employees = DB::table('employees')
+            ->leftJoin('users', 'users.id', '=', 'employees.user_id')
+            ->where('employees.tenant_id', $tenantId)
+            ->select('employees.*', 'users.has_completed_induction')
+            ->get();
         $users = $employees->map(function ($e) {
+            // R54: `select('employees.*')` es query builder → el `$hidden` del modelo Employee NO
+            // aplica, así que el hash y el blind index del PIN de kiosko viajarían CRUDOS a cada
+            // empleado en /sync/state (misma clase de fuga que R44/R50). Se quitan a mano; ídem
+            // security_pin (testigos/Silla, línea §1–§42).
+            unset($e->kiosk_pin_hash, $e->kiosk_pin_lookup, $e->security_pin);
             // Reloj Checador local client expects the primary ID of the employee
             // to match user_id so time entry tracking maps back to users.id
             $e->employee_id = $e->id;
@@ -228,16 +277,15 @@ class ClockController extends Controller
                 $systemSettings[$rs->key] = $rs->value;
             }
         }
-        
+
         // Calculate activeEncargadoId based on yesterday's check_out details
         $lastDelegation = DB::table('time_entries')
             ->where('tenant_id', $tenantId)
             ->where('type', 'check_out')
             ->whereNotNull('details')
-            ->whereNull('simulation_session_id')
             ->orderBy('id', 'desc')
             ->first();
-        
+
         // Find default admin user for this tenant to avoid hardcoded ID 1
         $defaultAdmin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
             ->where('tenant_id', $tenantId)
@@ -252,13 +300,7 @@ class ClockController extends Controller
                 $activeEncargadoId = $details['delegatedTo'];
             }
         }
-        // §38: se trae video_url de la lección vinculada (join simple) para que el
-        // frontend no tenga que pedirla aparte antes de iniciar la tarea.
-        $tasks = DB::table('tasks')
-            ->leftJoin('academy_courses', 'academy_courses.id', '=', 'tasks.academy_lesson_id')
-            ->where('tasks.tenant_id', $tenantId)
-            ->select('tasks.*', 'academy_courses.video_url as academy_lesson_video_url')
-            ->get();
+        $tasks = DB::table('tasks')->where('tenant_id', $tenantId)->get();
         $routines = DB::table('routines')
             ->where('tenant_id', $tenantId)
             ->get()
@@ -271,35 +313,35 @@ class ClockController extends Controller
                 return $r;
             });
         $assignments = DB::table('task_assignments')->where('tenant_id', $tenantId)->get();
- 
+
         // 1. Resolve tenant plan and permissions dynamically
         $tenant = auth()->user()->tenant;
         $tenantPlan = 'freemium';
         $allowedModules = ['reloj', 'rrhh', 'operativo'];
         $allowedFeatures = [];
- 
+
         if ($tenant) {
             $tenant->load('billingPlan');
             $tenantPlan = $tenant->billingPlan ? $tenant->billingPlan->code : ($tenant->plan ?: 'freemium');
-            
+
             // Forzar plan Enterprise para DecorArte (Tenant ID 1)
             if ((int)$tenant->id === 1) {
                 $tenantPlan = 'enterprise';
             }
-            
+
             // Check all potential modules
             $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos'];
             $allowedModules = array_values(array_filter($modulesToCheck, function($m) use ($tenant) {
                 return $tenant->isModuleUnlocked($m);
             }));
- 
+
             // Check all potential features
             $featuresToCheck = ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands'];
             $allowedFeatures = array_values(array_filter($featuresToCheck, function($f) use ($tenant) {
                 return $tenant->isFeatureUnlocked($f);
             }));
         }
- 
+
         return response()->json([
             'time_entries' => $timeEntries,
             'store_logs' => $storeLogs,
@@ -324,15 +366,23 @@ class ClockController extends Controller
         ]);
     }
 
-    // Llaves de configuración que, aunque /sync/settings en general está abierto a
-    // admin+supervisor, solo un admin puede modificar (ej. qué curso destraba el
-    // bloqueo por retardos — es una decisión de política de la empresa).
+    // Claves que, aun cuando la ruta permite admin+supervisor, solo un ADMIN puede modificar
+    // (ej. qué curso destraba el bloqueo por retardos — política de empresa). Línea §1–§42.
     private const ADMIN_ONLY_SETTING_KEYS = ['punctuality_course_id'];
 
     public function syncSettings(Request $request)
     {
+        // Solo admin/supervisor pueden escribir configuración de empresa. La ruta vive en el
+        // grupo `role:empleado,...`, así que sin este gate CUALQUIER empleado podía sobrescribir
+        // `clockOpConfig` (apagar la geocerca/IP-lock server-side de un plumazo), `active_modules`,
+        // etc. — todos los callers legítimos del FE son paneles de admin. Empleado → 403.
+        $role = auth()->user()->role ?? '';
+        if (!in_array($role, ['admin', 'supervisor', 'platform_admin'], true)) {
+            return response()->json(['message' => 'No autorizado para modificar la configuración de la empresa.'], 403);
+        }
+
         $tenantId = auth()->user()->tenant_id ?? 1;
-        $isAdmin = auth()->user()->role === 'admin' || auth()->user()->role === 'platform_admin';
+        $isAdmin = in_array($role, ['admin', 'platform_admin'], true);
         $settings = $request->all();
 
         // Handle single setting format: { key: 'settingName', value: 'settingValue' }
@@ -374,6 +424,9 @@ class ClockController extends Controller
             return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
         }
 
+        // NOTA (Ronda 1): a diferencia de resetDb/resetDay, initDb NO se acotó por
+        // tenant en esta ronda (colisiona con constraints UNIQUE globales al reinsertar
+        // catálogos). DEV-ONLY, platform_admin, ALLOW_QA_RESET-gated, sin llamadores hoy.
         $users = $request->input('users');
         $configs = $request->input('configs');
         $tenantId = auth()->user()->tenant_id ?? 1;
@@ -449,7 +502,7 @@ class ClockController extends Controller
 
         foreach ($users as $u) {
             $conf = $configs[$u['id']] ?? [];
-            
+
             // Insert into users for login access
             $userId = DB::table('users')->insertGetId([
                 'name' => $u['name'],
@@ -485,108 +538,170 @@ class ClockController extends Controller
         $tenantId = auth()->user()->tenant_id ?? 1;
         $userId = $request->input('user_id');
 
-        // Validar que el usuario pertenece al tenant del emisor
+        // Validar que el usuario existe Y pertenece al tenant del emisor (el mensaje ya
+        // lo afirmaba, pero antes no se comprobaba el tenant — fuga cross-tenant).
         $targetUser = User::find($userId);
-        if (!$targetUser) {
+        if (!$targetUser || (int) $targetUser->tenant_id !== (int) $tenantId) {
             return response()->json(['error' => 'Usuario no encontrado o no pertenece a su empresa.'], 403);
         }
 
-        // Validación de IP Lock (Wi-Fi de Tienda)
-        $settingsRow = DB::table('system_settings')
-            ->where('key', 'clockOpConfig')
-            ->where('tenant_id', $tenantId)
-            ->first();
-        if ($settingsRow) {
-            $config = json_decode($settingsRow->value, true);
-            if (!empty($config['ip_lock_enabled']) && !empty($config['store_ip_address'])) {
-                $clientIp = $request->ip();
-                $authorizedIp = trim($config['store_ip_address']);
-                if ($clientIp !== '127.0.0.1' && $clientIp !== '::1' && $clientIp !== $authorizedIp) {
-                    return response()->json(['error' => "Acceso denegado: IP del dispositivo ($clientIp) no coincide con el Wi-Fi autorizado ($authorizedIp)."], 403);
+        $type = $request->input('type');
+
+        // Normalizar details a array (el frontend manda string suelto o JSON string).
+        $rawDetails = $request->input('details');
+        if (is_array($rawDetails)) {
+            $details = $rawDetails;
+        } elseif (is_string($rawDetails) && $rawDetails !== '') {
+            $details = json_decode($rawDetails, true) ?? ['note' => $rawDetails];
+        } else {
+            $details = [];
+        }
+
+        // Escape SÓLO de tests: `sandbox_bypass` salta el IP-lock de sucursal en ClockService (el FE
+        // NUNCA lo manda). Se scrubbea igual que en TimeEntryController::punch y KioskController::punch
+        // — sin esto, un empleado de plan free con IP-lock fichaba desde casa mandando el flag.
+        unset($details['sandbox_bypass']);
+        // R88: `via_kiosk` (exime el checklist de cierre) sólo lo marca el KioskController.
+        unset($details['via_kiosk']);
+
+        // Ponche de asistencia real: delegar a ClockService::processPunch para que el
+        // is_late y las reglas (festivo, tienda cerrada, tolerancia LFT, amnistía, IP lock,
+        // secuencia §15, nómina cerrada) se resuelvan en el SERVIDOR, ignorando el is_late
+        // del cliente. (La versión previa de esta línea insertaba crudo confiando en el cliente.)
+        if (!in_array($type, ClockService::AUXILIARY_ENTRY_TYPES, true)) {
+            // Override server-side del bloqueo de Retardo Extremo: solo un admin/supervisor
+            // autenticado puede saltarlo (se sobrescribe cualquier valor del cliente).
+            $details['supervisor_override'] = in_array(auth()->user()->role ?? '', ['admin', 'supervisor'], true);
+
+            // Normalizar la hora a H:i:s; algunos llamadores mandan formato de display
+            // ("10:05 am"). Si no se puede interpretar, se pasa null (processPunch usa la
+            // hora del servidor).
+            $normalizedTime = $this->normalizeTimeToHis($request->input('time'));
+            try {
+                app(ClockService::class)->processPunch($targetUser, $type, $normalizedTime, $details);
+            } catch (\Exception $e) {
+                // Mismo contrato de error que TimeEntryController::punch (otro cliente de
+                // processPunch): 400 con {success:false, message}.
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+            }
+            event(new \App\Events\MonitorUpdated($tenantId));
+            return response()->json(['message' => 'Clock synced.']);
+        }
+
+        // Registro auxiliar (reserva/cancelación/intercambio de comida): no es asistencia, se
+        // inserta tal cual y nunca es 'late'.
+        $auxRow = [
+            'user_id' => $userId,
+            'tenant_id' => $tenantId,
+            'date' => $request->input('date'),
+            'type' => $type,
+            'time' => $request->input('time'),
+            'is_late' => false,
+            'late_minutes' => 0,
+            'details' => $rawDetails === null ? null : (is_string($rawDetails) ? $rawDetails : json_encode($details)),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        // Aforo de comida SERVER-SIDE (R65): la reserva corre en una TRANSACCIÓN con un advisory
+        // lock por (tenant, fecha) para que "contar y luego insertar" sea atómico (TOCTOU).
+        if ($type === 'meal_reservation') {
+            // R93 (D2): con el switch de slots APAGADO, la reserva se rechaza también server-side.
+            // `meal_cancel` NO se gatea: liberar una silla siempre es válido.
+            if (!ClockService::dialerFeatureEnabled($tenantId, 'enable_meal_slots')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La reserva de comedor está deshabilitada para esta sucursal.',
+                ], 409);
+            }
+            $conflict = DB::transaction(function () use ($tenantId, $targetUser, $request, $auxRow) {
+                $this->lockMealDay($tenantId, (string) $request->input('date'));
+                $reason = app(ClockService::class)->mealReservationConflict(
+                    $targetUser, $request->input('date'), $request->input('time')
+                );
+                if ($reason !== null) {
+                    return $reason;
                 }
+                DB::table('time_entries')->insert($auxRow);
+                return null;
+            });
+            if ($conflict !== null) {
+                return response()->json(['success' => false, 'message' => $conflict], 409);
+            }
+            event(new \App\Events\MonitorUpdated($tenantId));
+            return response()->json(['message' => 'Clock synced.']);
+        }
+
+        // R103 (spec §5.3): Intercambiar Comida validado SERVER-SIDE. Reglas: contraparte
+        // estructurada (`swap_with`), mismo tenant, MISMO job_role_id de EXPEDIENTE, y el actor
+        // es parte del swap o un mando (patrón R87/R102).
+        if ($type === 'meal_swap') {
+            $actor = auth()->user();
+            $swapWith = $request->input('swap_with');
+            if (!$swapWith || !is_numeric($swapWith)) {
+                return response()->json(['success' => false, 'message' => 'Falta la contraparte del intercambio (swap_with).'], 422);
+            }
+            if (!in_array((int) $actor->id, [(int) $userId, (int) $swapWith], true)
+                && !in_array($actor->role ?? '', ['admin', 'supervisor'], true)) {
+                return response()->json(['success' => false, 'message' => 'Sólo los intercambiantes (o un mando) pueden registrar el swap.'], 403);
+            }
+            $expedientes = DB::table('employees')
+                ->where('tenant_id', $tenantId)
+                ->whereIn('user_id', [(int) $userId, (int) $swapWith])
+                ->pluck('job_role_id', 'user_id');
+            if (!$expedientes->has((int) $userId) || !$expedientes->has((int) $swapWith)) {
+                return response()->json(['success' => false, 'message' => 'Ambos intercambiantes necesitan expediente en tu empresa.'], 422);
+            }
+            $rolA = $expedientes[(int) $userId];
+            $rolB = $expedientes[(int) $swapWith];
+            if ($rolA === null || $rolB === null || (int) $rolA !== (int) $rolB) {
+                return response()->json(['success' => false, 'message' => 'Sólo puedes intercambiar comida con compañeros de tu mismo puesto.'], 422);
             }
         }
 
-        $date       = $request->input('date');
-        $type       = $request->input('type');
-        $time       = $request->input('time');
-        $isLate     = $request->input('is_late', false);
-        $lateMinutes= $request->input('late_minutes', 0);
-        $details    = $request->input('details');
-
-        // Validar tipo de evento
-        $allowedTypes = \App\Services\ClockService::ALLOWED_TYPES;
-        if (!in_array($type, $allowedTypes)) {
-            return response()->json(['error' => "Tipo de fichaje inválido: '{$type}'."], 422);
-        }
-
-        // Validar inmutabilidad de la nómina consolidada (Fase 2 Solidez)
-        $closedPayroll = DB::table('weekly_payrolls')
-            ->where('tenant_id', $tenantId)
-            ->where('start_date', '<=', $date)
-            ->where('end_date', '>=', $date)
-            ->whereIn('status', ['approved', 'paid'])
-            ->exists();
-
-        if ($closedPayroll) {
-            return response()->json(['error' => "Sincronización denegada: El período de nómina para la fecha {$date} ya ha sido aprobado o pagado y se encuentra bloqueado para modificaciones."], 422);
-        }
-
-        // Obtener snapshot del empleado
-        $employee = DB::table('employees')->where('user_id', $userId)->first();
-        $jobRole  = $employee ? DB::table('job_roles')->find($employee->job_role_id) : null;
-        $snapshotName   = $employee?->name ?? $targetUser->name;
-        $snapshotRole   = $jobRole?->title ?? null;
-        $snapshotSalary = $employee?->base_salary ?? null;
-
-        // Envolver en transacción: ambas inserciones o ninguna
-        DB::transaction(function () use (
-            $userId, $tenantId, $date, $type, $time, $isLate, $lateMinutes, $details,
-            $snapshotName, $snapshotRole, $snapshotSalary
-        ) {
-            DB::table('time_entries')->insert([
-                'user_id'                => $userId,
-                'tenant_id'              => $tenantId,
-                'date'                   => $date,
-                'type'                   => $type,
-                'time'                   => $time,
-                'is_late'                => $isLate,
-                'late_minutes'           => $lateMinutes,
-                'details'                => $details,
-                'employee_name_at_time'  => $snapshotName,
-                'job_role_title_at_time' => $snapshotRole,
-                'base_salary_at_time'    => $snapshotSalary,
-                'created_at'             => now(),
-                'updated_at'             => now(),
-            ]);
-
-            if ($isLate) {
-                DB::table('audit_logs')->insert([
-                    'user_id'          => $userId,
-                    'tenant_id'        => $tenantId,
-                    'date'             => $date,
-                    'type'             => 'late',
-                    'timestamp_str'    => "$date $time",
-                    'reason'           => "Llegada tarde por $lateMinutes min.",
-                    'punishment_amount'=> 50,
-                    'created_at'       => now(),
-                    'updated_at'       => now(),
-                ]);
-            }
-        });
+        DB::table('time_entries')->insert($auxRow);
 
         event(new \App\Events\MonitorUpdated($tenantId));
 
         return response()->json(['message' => 'Clock synced.']);
     }
 
+    /**
+     * Serializa a los reservantes concurrentes del mismo (tenant, fecha) con un advisory lock de
+     * transacción de Postgres. El aforo de comida es una restricción AGREGADA (nº por bloque), no
+     * expresable como un unique de columna. En SQLite (tests) es no-op.
+     */
+    private function lockMealDay(int $tenantId, string $date): void
+    {
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('SELECT pg_advisory_xact_lock(hashtext(?))', [$tenantId . ':' . $date]);
+        }
+    }
+
+    /**
+     * Normaliza una hora a formato H:i:s. Acepta H:i:s, H:i y formatos de display
+     * ("10:05 am"). Devuelve null si no se puede interpretar.
+     */
+    private function normalizeTimeToHis($time): ?string
+    {
+        if (!is_string($time) || trim($time) === '') {
+            return null;
+        }
+        try {
+            return \Carbon\Carbon::parse($time)->format('H:i:s');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     public function syncStoreLog(Request $request)
     {
+        // Validación de tipo (línea §1–§42) + resolución de tenant de la línea del Reloj.
         $request->validate([
             'type' => ['required', \Illuminate\Validation\Rule::in(['open', 'close', 'forzosa', 'contingency', 'transfer'])],
         ]);
 
-        $userId   = $request->input('user_id') ?? (auth()->check() ? auth()->user()->id : null);
+        $userId = $request->input('user_id') ?? (auth()->check() ? auth()->user()->id : null);
         $tenantId = auth()->check() ? auth()->user()->tenant_id : null;
         if (!$tenantId && $userId) {
             $tenantId = DB::table('users')->where('id', $userId)->value('tenant_id');
@@ -600,6 +715,8 @@ class ClockController extends Controller
         }
 
         $type = $request->input('type');
+
+        // §13: un store_log del simulador se liga a la sesión activa (aislado de reportes reales).
         $isSimulator = $request->boolean('is_simulator') || $request->input('is_simulator') === true;
         $simSessionId = null;
         if ($isSimulator) {
@@ -612,15 +729,15 @@ class ClockController extends Controller
         }
 
         $id = DB::table('store_logs')->insertGetId([
-            'user_id'               => $userId,
-            'tenant_id'             => $tenantId,
+            'user_id' => $userId,
+            'tenant_id' => $tenantId,
             'simulation_session_id' => $simSessionId,
-            'date'                  => $request->input('date', now()->format('Y-m-d')),
-            'type'                  => $type,
-            'time'                  => $request->input('time', now()->format('H:i:s')),
-            'notes'                 => $request->input('notes'),
-            'created_at'            => now(),
-            'updated_at'            => now(),
+            'date' => $request->input('date', now()->format('Y-m-d')),
+            'type' => $type,
+            'time' => $request->input('time', now()->format('H:i:s')),
+            'notes' => $request->input('notes'),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         if ($type === 'open' && $tenantId) {
@@ -631,7 +748,7 @@ class ClockController extends Controller
         return response()->json(['message' => 'Store log synced.', 'id' => $id]);
     }
 
-    // Purga permanente del archivo histórico — SOLO platform_admin
+    // Purga permanente del archivo histórico — SOLO platform_admin (línea §1–§42)
     public function purgeArchive(Request $request)
     {
         $user = auth()->user();
@@ -669,6 +786,16 @@ class ClockController extends Controller
         $targetUser = User::find($userId);
         if (!$targetUser) {
             return response()->json(['error' => 'Usuario no encontrado o no pertenece a su empresa.'], 403);
+        }
+
+        // R93 (D2): con AMBOS switches de incidencias apagados, el reporte se rechaza también
+        // server-side (antes el toggle sólo escondía el botón del dial).
+        if (!ClockService::dialerFeatureEnabled($tenantId, 'allow_employee_incidences')
+            && !ClockService::dialerFeatureEnabled($tenantId, 'allow_manager_incidences')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El reporte de incidencias está deshabilitado para esta sucursal.',
+            ], 403);
         }
 
         $id = DB::table('contingencies')->insertGetId([
@@ -739,6 +866,16 @@ class ClockController extends Controller
         $targetUser = User::find($userId);
         if (!$targetUser) {
             return response()->json(['error' => 'Usuario no encontrado o no pertenece a su empresa.'], 403);
+        }
+
+        // R102: `late_entry_unlocked` alimenta el BLOQUEO del dial (punctuality_lockout_count)
+        // → un empleado que pudiera insertarlo para OTRO le bloquearía el checador al colega
+        // (sabotaje). Sólo el propio usuario o un mando pueden registrarlo para terceros.
+        $actor = auth()->user();
+        if ($request->input('type') === 'late_entry_unlocked'
+            && (int) $userId !== (int) $actor->id
+            && !in_array($actor->role ?? '', ['admin', 'supervisor'], true)) {
+            return response()->json(['error' => 'No puedes registrar retardos de otro usuario.'], 403);
         }
 
         $id = DB::table('audit_logs')->insertGetId([
@@ -880,41 +1017,6 @@ class ClockController extends Controller
         }
     }
 
-    public function updateJobRole(Request $request, $id)
-    {
-        $role = JobRole::findOrFail($id);
-
-        $reports_to_role_ids = $request->reports_to_role_ids;
-        $reports_to_role_id = $request->reports_to_role_id;
-        
-        if (is_array($reports_to_role_ids) && count($reports_to_role_ids) > 0) {
-            $reports_to_role_ids = array_map('intval', $reports_to_role_ids);
-            $reports_to_role_id = $reports_to_role_ids[0];
-            $reports_to_role_ids_json = json_encode($reports_to_role_ids);
-        } else {
-            $reports_to_role_ids_json = $reports_to_role_id ? json_encode([(int)$reports_to_role_id]) : null;
-        }
-
-        $role->update([
-            'name' => $request->name,
-            'area' => $request->area,
-            'description' => $request->description,
-            'responsibilities' => $request->responsibilities,
-            'reports_to_role_id' => $reports_to_role_id,
-            'reports_to_role_ids' => $reports_to_role_ids,
-            'late_penalty_multiplier' => $request->late_penalty_multiplier ?? 1,
-            'required_equipment' => $request->required_equipment,
-            'tiempoTolerancia' => $request->tiempoTolerancia ?? 10,
-            'portadorLlaves' => $request->portadorLlaves ?? 'ninguno',
-            'requiereJustificante' => $request->requiereJustificante ?? true,
-            'puedeEmitirAvisos' => $request->puedeEmitirAvisos ?? false,
-            'aplicaLeySilla' => $request->aplicaLeySilla ?? false,
-            'evaluacion360Activa' => $request->evaluacion360Activa ?? false,
-        ]);
-
-        return response()->json(['message' => 'Role updated']);
-    }
-
     public function deleteUser($id)
     {
         $user = User::findOrFail($id);
@@ -922,6 +1024,16 @@ class ClockController extends Controller
             'is_active' => false
         ]);
         return response()->json(['message' => 'User archived successfully.']);
+    }
+
+    public function updateJobRole(Request $request, $id)
+    {
+        // Endpoint legacy /sync/roles/{id}: delega en el CRUD canónico (JobRoleController::update).
+        // Antes escribía campos crudos del request sin validar y con `??` a defaults, así que un
+        // payload parcial (p.ej. solo un toggle del reloj checador) pisaba name/area con null
+        // (dato corrupto o violación NOT NULL → 500). El canónico valida entradas, respeta
+        // `sometimes` (no toca lo ausente), acota los superiores por tenant y previene ciclos.
+        return app(JobRoleController::class)->update($request, $id);
     }
 
     public function syncRbac(Request $request)
@@ -985,32 +1097,38 @@ class ClockController extends Controller
 
         $role = JobRole::findOrFail($id);
 
-        $policy = DB::table('role_clock_policies')
-            ->where('job_role_id', $id)
-            ->where('tenant_id', $tenantId)
-            ->first();
-
-        if ($policy) {
-            DB::table('role_clock_policies')
-                ->where('job_role_id', $id)
-                ->where('tenant_id', $tenantId)
-                ->update(['config' => json_encode($request->all()), 'updated_at' => now()]);
-        } else {
-            DB::table('role_clock_policies')->insert([
+        // Upsert atómico (unique job_role_id+tenant_id): en conflicto actualiza SOLO config y
+        // updated_at, PRESERVANDO el policy_name (personalizado por seeders/plantillas).
+        DB::table('role_clock_policies')->upsert(
+            [[
                 'job_role_id' => $id,
                 'tenant_id' => $tenantId,
                 'policy_name' => 'Perfil Personalizado',
                 'config' => json_encode($request->all()),
                 'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
+                'updated_at' => now(),
+            ]],
+            ['job_role_id', 'tenant_id'],
+            ['config', 'updated_at']
+        );
+
         return response()->json(['message' => 'Política actualizada']);
     }
 
     public function generateSupervisorQR(Request $request)
     {
-        $supervisorId = $request->input('supervisor_id') ?? (auth()->id() ?? 1);
+        // R81 (seguridad): el emisor DEBE ser admin/supervisor y el token se acuña SIEMPRE a su
+        // propio nombre — nunca un `supervisor_id` del payload. Sin el chequeo de rol, un empleado
+        // raso podía acuñar un QR "de su admin" y auto-autorizarse labor en feriado (bypass R75/R81).
+        $actor = auth()->user();
+        if (!$actor || !in_array($actor->role, ['admin', 'supervisor', 'platform_admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sólo un supervisor o administrador puede generar un código de autorización.',
+            ], 403);
+        }
+
+        $supervisorId = $actor->id;
         $token = 'qr_' . bin2hex(random_bytes(16));
         $expiresAt = now()->addSeconds(60);
 

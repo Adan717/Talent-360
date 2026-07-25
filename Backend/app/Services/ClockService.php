@@ -1185,10 +1185,16 @@ class ClockService
             ->all();
     }
 
+    /**
+     * BUG CAZADO EN EL SMOKE DEL MERGE: el valor de `system_settings.timezone` se guarda
+     * json-encoded, así que la barra viene ESCAPADA (`"America\/Mexico_City"`). El `trim($tz,'"')`
+     * de antes sólo quitaba las comillas y dejaba `America\/Mexico_City`, una zona INVÁLIDA →
+     * "Unknown or bad timezone" (500) en declareContingency/createSillaRequest. Se delega en el
+     * resolver compartido, que hace json_decode y valida contra DateTimeZone.
+     */
     private function resolveTenantTimezone(int $tenantId): string
     {
-        $tz = DB::table('system_settings')->where('tenant_id', $tenantId)->where('key', 'timezone')->value('value');
-        return $tz ? trim($tz, '"') : 'America/Mexico_City';
+        return TenantTimezone::for($tenantId);
     }
 
     /**

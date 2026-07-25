@@ -123,6 +123,8 @@ interface TaskStoreState {
     
     // Acciones Operativas
     triggerCheckInRoutines: (userId: number, roleId: number, currentSimTime: number) => void;
+    /** Rutinas de HORARIO FIJO (trigger='scheduled' + triggerTime). Ver nota en la implementación. */
+    triggerScheduledRoutines: (currentSimTime: number, user: any) => void;
     grabTaskFromPool: (assignmentId: string, userId: number, currentSimTime: number) => void;
     reserveTaskFromPool: (assignmentId: string, userId: number, currentSimTime: number) => void;
     releaseTask: (assignmentId: string) => void;
@@ -237,6 +239,77 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                 '🔄 Tareas Asignadas',
                 `Se dispararon ${newAssignments.length} tareas automáticas para el usuario al hacer check-in.`,
                 'success'
+            );
+        }
+    },
+
+    /**
+     * Rutinas de HORARIO FIJO (merge FE). El panel de admin ya ofrecía "Horario Fijo / Programado"
+     * y el backend guardaba `routines.trigger_time`, pero NADA las disparaba: el admin configuraba
+     * "a las 14:00 asignar estas tareas", se guardaba bien... y no se asignaba nunca, en silencio.
+     *
+     * `user` es el usuario de ESTA instancia del reloj (overrideUser en el simulador, el usuario
+     * global en producción) — NO se lee currentUser del store, para que en el simulador
+     * multi-instancia cada empleado dispare su propio checklist.
+     */
+    triggerScheduledRoutines: (currentSimTime, user) => {
+        if (!user) return;
+        const { routines, assignments } = get();
+        const clockStates = useAppStore.getState().globalClockStates || {};
+        const iAmOnShift = ['active', 'meal'].includes(clockStates[user.id]);
+        const dateKey = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+
+        const parseTimeToMins = (t: any): number | null => {
+            if (!t || typeof t !== 'string') return null;
+            const parts = t.split(':');
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (isNaN(h) || isNaN(m)) return null;
+            return h * 60 + m;
+        };
+
+        const newAssignments: TaskAssignment[] = [];
+
+        routines.filter(r => r.trigger === 'scheduled').forEach(routine => {
+            const triggerMins = parseTimeToMins((routine as any).triggerTime);
+            if (triggerMins === null) return;         // sin hora válida → no dispara
+            if (currentSimTime < triggerMins) return; // aún no es la hora
+
+            if (routine.assignMode === 'checklist') {
+                // Cada usuario en turno del rol crea SUS PROPIAS tareas.
+                if (!iAmOnShift || Number(user.job_role_id) !== Number(routine.targetRoleId)) return;
+                routine.taskIds.forEach(tId => {
+                    // El id lleva la FECHA (no Date.now()): así la rutina dispara UNA vez al día
+                    // por usuario y tarea, aunque el reloj re-evalúe cada minuto.
+                    const schId = `sch_${routine.id}_${user.id}_${tId}_${dateKey}`;
+                    if (assignments.some(a => a.id === schId)) return; // ya disparó hoy
+                    newAssignments.push({
+                        id: schId, taskId: tId, userId: user.id, status: 'pending',
+                        startedAtMins: null, completedAtMins: null,
+                        assignedFromRoutineId: routine.id, origin: 'routine'
+                    } as TaskAssignment);
+                });
+            } else {
+                // bolsa_trabajo y equitativo → a la Bolsa (una por tarea, id sin usuario).
+                routine.taskIds.forEach(tId => {
+                    const schId = `sch_${routine.id}_${tId}_${dateKey}`;
+                    if (assignments.some(a => a.id === schId)) return; // ya en la bolsa hoy
+                    newAssignments.push({
+                        id: schId, taskId: tId, userId: null, status: 'pending',
+                        startedAtMins: null, completedAtMins: null,
+                        assignedFromRoutineId: routine.id, origin: 'routine'
+                    } as TaskAssignment);
+                });
+            }
+        });
+
+        if (newAssignments.length > 0) {
+            set(state => ({ assignments: [...state.assignments, ...newAssignments] }));
+            get().syncToBackend();
+            useAppStore.getState().addMatrixEvent(
+                '⏰ Rutina Programada',
+                `Se dispararon ${newAssignments.length} tareas de una rutina de horario fijo.`,
+                'info'
             );
         }
     },

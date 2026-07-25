@@ -261,9 +261,6 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/admin/contingencies', [\App\Http\Controllers\ContingencyController::class, 'pending']);
         Route::post('/admin/contingencies/{id}/resolve', [\App\Http\Controllers\ContingencyController::class, 'resolve']);
 
-        // Monedero Digital y Recompensas (Wallet)
-        Route::get('/wallet/balance', [\App\Http\Controllers\UserWalletController::class, 'getBalance']);
-        Route::get('/wallet/transactions', [\App\Http\Controllers\UserWalletController::class, 'getTransactions']);
 
         // Respaldos (Exclusivos Pro/Empresas en controlador)
         Route::get('/tenant/backup/export', [BackupController::class, 'export']);
@@ -368,6 +365,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware('throttle:5,1')->post('/store-opening/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
         Route::post('/clock/meal-photo', [TimeEntryController::class, 'uploadMealPhoto']);
+
+        // Monedero Digital y Recompensas (Wallet) — merge: estaba en el grupo ADMIN, así que el
+        // EMPLEADO recibía 403 al abrir su propio monedero en TaskRunner (el catch lo silenciaba y
+        // siempre mostraba 0 monedas / nivel 1, aunque el sistema sí le estuviera pagando). Ambos
+        // endpoints devuelven EXCLUSIVAMENTE los datos del usuario autenticado (auth()->user()),
+        // nunca los de otro, así que exponerlos al colaborador no abre nada.
+        Route::get('/wallet/balance', [\App\Http\Controllers\UserWalletController::class, 'getBalance']);
+        Route::get('/wallet/transactions', [\App\Http\Controllers\UserWalletController::class, 'getTransactions']);
 
         // Kiosko: ponche por PIN desde la tableta compartida. La sesión (cualquier usuario del
         // tenant) sólo ancla el TENANT; el PIN identifica al empleado y el enforcement es server-side

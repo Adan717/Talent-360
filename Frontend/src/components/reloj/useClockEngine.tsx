@@ -582,6 +582,15 @@ export function useClockEngine(overrideUser?: any) {
   // Hora para alertas y logs
   const formattedTime = `${displayHours.toString()}:${simMins.toString().padStart(2, '0')} ${ampm}`;
 
+  // Rutinas "Horario Fijo" (merge FE): al avanzar el reloj de esta instancia (currentSimTime =
+  // realTimeMins en producción, globalSimTime en el simulador), dispara las rutinas `scheduled`
+  // cuya hora ya se alcanzó, para el usuario de ESTA instancia. Es idempotente (el store dedupea
+  // por un id determinista que lleva la fecha), así que puede correr cada minuto sin duplicar.
+  // Sin esto, las rutinas de horario fijo se configuraban y guardaban pero NUNCA se asignaban.
+  useEffect(() => {
+    useTaskStore.getState().triggerScheduledRoutines(currentSimTime, currentUser);
+  }, [currentSimTime, currentUser?.id]);
+
   // NUEVO (estado #16 de docs/Logica Dial.md — "Jornada Activa"): en turno activo, el centro del dial
   // debe mostrar un cronómetro VIVO de tiempo trabajado (HH:MM:SS) en vez de la hora actual. Se calcula
   // aquí y se pasa a <DialPrincipal> como workedElapsedLabel; el componente decide mostrarlo solo cuando

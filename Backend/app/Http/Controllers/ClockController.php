@@ -226,19 +226,35 @@ class ClockController extends Controller
             ];
         });
 
-        $permissions = $staticConfig['permissions'];
-        $rolePermissions = $staticConfig['role_permissions'];
-        $permissionsByRole = $staticConfig['permissions_by_role'];
-        $jobRoles = $staticConfig['job_roles'];
-        $uiRbacRules = $staticConfig['ui_rbac_rules'];
-        $roleClockPolicies = $staticConfig['role_clock_policies'];
+        $permissions = $staticConfig['permissions'] ?? collect([]);
+        $rolePermissions = $staticConfig['role_permissions'] ?? collect([]);
+        $permissionsByRole = $staticConfig['permissions_by_role'] ?? collect([]);
+        $jobRoles = $staticConfig['job_roles'] ?? collect([]);
+        $uiRbacRules = $staticConfig['ui_rbac_rules'] ?? collect([]);
+        $roleClockPolicies = $staticConfig['role_clock_policies'] ?? collect([]);
+
+        // Si la caché se corrompió o devolvió un __PHP_Incomplete_Class tras un despliegue, la limpiamos y recalculamos
+        if (!($permissionsByRole instanceof \Illuminate\Support\Collection)) {
+            \App\Support\TenantConfigCache::forget($tenantId);
+            $permissionNameById = collect($permissions)->pluck('name', 'id');
+            $permissionsByRole = collect($rolePermissions)
+                ->groupBy('job_role_id')
+                ->map(function ($rows) use ($permissionNameById) {
+                    return collect($rows)
+                        ->map(fn ($rp) => $permissionNameById->get(is_object($rp) ? $rp->permission_id : ($rp['permission_id'] ?? null)))
+                        ->filter()
+                        ->values();
+                });
+        }
 
         // $userPermissions depende de $employees (dato vivo, NO cacheado) cruzado con la
         // config cacheada, así que se arma fuera del caché.
         $userPermissions = [];
         foreach ($employees as $e) {
             $key = $e->user_id ?? $e->id;
-            $userPermissions[$key] = $permissionsByRole->get($e->job_role_id, collect([]));
+            $userPermissions[$key] = ($permissionsByRole instanceof \Illuminate\Support\Collection)
+                ? $permissionsByRole->get($e->job_role_id, collect([]))
+                : collect([]);
         }
 
         $rawSettings = DB::table('system_settings')

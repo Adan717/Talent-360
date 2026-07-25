@@ -93,6 +93,10 @@ const RootRoute = () => {
     return <LoadingScreen message="Cargando..." fullScreen={true} />;
   }
 
+  if (currentUser && currentUser.tenant_id === null && currentUser.system_role !== 'platform_admin' && currentUser.system_role !== 'support_agent') {
+    return <SaaSLandingPage />;
+  }
+
   if (currentUser?.system_role === 'platform_admin') {
     return <Navigate to="/superadmin" replace />;
   }

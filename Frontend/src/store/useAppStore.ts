@@ -361,6 +361,9 @@ export const useAppStore = create<AppState>((set, get) => ({
                 set({ currentTier: tenant.plan.toLowerCase() as any });
               }
             }
+            if (meUser.tenant_id === null && meUser.role !== 'platform_admin' && meUser.role !== 'support_agent') {
+              return;
+            }
             if (meUser.role === 'platform_admin') {
               try {
                 const alertsRes = await axiosInstance.get('/platform/alerts');
@@ -375,6 +378,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         } catch (e) {
           console.error("Error fetching me:", e);
         }
+      }
+
+      const currentUser = get().currentUser;
+      if (currentUser && currentUser.tenant_id === null && currentUser.system_role !== 'platform_admin' && currentUser.system_role !== 'support_agent') {
+        return;
       }
 
       const activeSimSession = explicitSimSessionId || localStorage.getItem('matrix_active_sim_session_id');

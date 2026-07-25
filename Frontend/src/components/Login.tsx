@@ -153,6 +153,11 @@ export const Login = () => {
       
       // Save Token
       localStorage.setItem('talent_auth_token', token);
+
+      if (user.tenant_id === null && user.role !== 'platform_admin' && user.role !== 'support_agent') {
+        navigate('/', { state: { resumeRegistration: true, user, token } });
+        return;
+      }
       
       // Update Global State
       setCurrentUser({ ...user, system_role: user.role });
@@ -196,6 +201,14 @@ export const Login = () => {
       };
 
       localStorage.setItem('talent_auth_token', token);
+      
+      if (user.tenant_id === null && user.role !== 'platform_admin' && user.role !== 'support_agent') {
+        navigate('/', { state: { resumeRegistration: true, user, token } });
+        setIsLoading(false);
+        setIs2FAStage(false);
+        return;
+      }
+
       setCurrentUser({ ...user, system_role: user.role });
       setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
 

@@ -1025,6 +1025,10 @@ class ClockController extends Controller
             }
         }
 
+        // §46: escrituras por query builder (permisos/RBAC) no disparan los observers
+        // de modelo — se invalida el caché de config del tenant explícitamente.
+        \App\Support\TenantConfigCache::forget($tenantId);
+
         return response()->json(['message' => 'RBAC synchronized successfully']);
     }
 
@@ -1054,6 +1058,8 @@ class ClockController extends Controller
                 'updated_at' => now()
             ]);
         }
+        // §46: escritura por query builder — invalidar el caché de config del tenant.
+        \App\Support\TenantConfigCache::forget($tenantId);
         return response()->json(['message' => 'Política actualizada']);
     }
 

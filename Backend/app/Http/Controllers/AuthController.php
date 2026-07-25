@@ -73,13 +73,42 @@ class AuthController extends Controller
 
         SecurityLogger::log('auth_success', "Inicio de sesión exitoso de: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
 
+        // §43: además del JSON (para compatibilidad con el frontend actual mientras
+        // migra), el token viaja en una cookie httpOnly que JavaScript no puede leer.
         return response()->json([
             'message' => 'Login exitoso',
             'user' => $user,
             'tenant' => $isPlatformUser ? null : $user->tenant,
             'token' => $token,
             'requires_2fa' => $requires2fa
-        ]);
+        ])->cookie($this->makeAuthCookie($token));
+    }
+
+    /**
+     * §43: cookie httpOnly del token de auth. `$minutes = null` → un año (login normal);
+     * para el kiosco se pasan 15 minutos, para que la cookie caduque junto con el token.
+     */
+    private function makeAuthCookie(string $token, ?int $minutes = null)
+    {
+        $minutes = $minutes ?? 60 * 24 * 365; // "indefinido" para login normal
+        $secure = app()->isProduction();
+
+        return cookie(
+            \App\Http\Middleware\AuthTokenFromCookie::COOKIE_NAME,
+            $token,
+            $minutes,
+            '/',
+            null,
+            $secure,   // secure: solo HTTPS en producción
+            true,      // httpOnly: JS no puede leerla
+            false,
+            'Lax'
+        );
+    }
+
+    private function forgetAuthCookie()
+    {
+        return \Illuminate\Support\Facades\Cookie::forget(\App\Http\Middleware\AuthTokenFromCookie::COOKIE_NAME);
     }
 
     public function logout(Request $request)
@@ -90,7 +119,9 @@ class AuthController extends Controller
             SecurityLogger::log('auth_logout', "Sesión cerrada por: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
         }
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Sesión cerrada exitosamente']);
+        // §43: además de borrar el token en BD, expirar la cookie httpOnly.
+        return response()->json(['message' => 'Sesión cerrada exitosamente'])
+            ->withCookie($this->forgetAuthCookie());
     }
 
     /**
@@ -132,13 +163,14 @@ class AuthController extends Controller
             'user' => $user,
             'tenant' => $user->tenant,
             'expires_at' => $expiresAt->toIso8601String(),
-        ]);
+        ])->cookie($this->makeAuthCookie($token, 15)); // §43: cookie que caduca con el token (15 min)
     }
 
     public function kioskLogout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['success' => true, 'message' => 'Sesión de kiosco cerrada.']);
+        return response()->json(['success' => true, 'message' => 'Sesión de kiosco cerrada.'])
+            ->withCookie($this->forgetAuthCookie());
     }
 
     public function me(Request $request)
@@ -169,6 +201,70 @@ class AuthController extends Controller
             ]);
 
         return response()->json(['message' => 'FCM token actualizado exitosamente.']);
+    }
+
+    /**
+     * §52: flujo estándar "olvidé mi contraseña" (para empleados que ya activaron su
+     * cuenta con su propia contraseña; NO es el PIN de invitación). Siempre responde
+     * éxito para no revelar si el correo existe. El envío es best-effort: si el correo
+     * falla (sin dominio/servicio configurado aún), no rompe la petición.
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first();
+
+        if ($user) {
+            $token = \Illuminate\Support\Str::random(64);
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $request->email],
+                ['token' => Hash::make($token), 'created_at' => now()]
+            );
+
+            $base = rtrim(config('app.frontend_url') ?? config('app.url') ?? '', '/');
+            $resetUrl = $base . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+
+            try {
+                \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\PasswordResetMail($resetUrl));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo enviar el correo de reset de contraseña: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $row = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->first();
+
+        if (!$row || !Hash::check($request->token, $row->token)) {
+            return response()->json(['success' => false, 'message' => 'El enlace de restablecimiento es inválido.'], 422);
+        }
+
+        if (\Carbon\Carbon::parse($row->created_at)->addMinutes(60)->isPast()) {
+            return response()->json(['success' => false, 'message' => 'El enlace de restablecimiento venció. Solicita uno nuevo.'], 422);
+        }
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Cuenta no encontrada.'], 404);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Contraseña restablecida. Ya puedes iniciar sesión.']);
     }
 
     public function loginSocial(Request $request)

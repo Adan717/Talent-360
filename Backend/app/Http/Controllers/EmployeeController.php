@@ -186,10 +186,72 @@ class EmployeeController extends Controller
 
             DB::commit();
 
+            // §52: si el colaborador tiene correo, mandarle la invitación de bienvenida
+            // con su PIN de activación. Best-effort: si el correo no está configurado
+            // todavía, no rompe la creación del empleado.
+            if (!empty($data['email'])) {
+                $this->sendEmployeeInvitation($employee->fresh(), $tenantId);
+            }
+
             return response()->json($employee->load('user'), 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => 'Error al registrar colaborador: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * §52: reenviar la invitación de bienvenida a un colaborador (botón "Reenviar
+     * invitación" en RRHH). Regenera el PIN de activación y manda el correo.
+     */
+    public function resendInvitation(Request $request, $id)
+    {
+        $tenantId = auth()->user()->tenant_id ?? 1;
+        $employee = Employee::withoutGlobalScopes()->where('tenant_id', $tenantId)->findOrFail($id);
+
+        if (empty($employee->email)) {
+            return response()->json(['success' => false, 'message' => 'Este colaborador no tiene un correo registrado.'], 422);
+        }
+
+        $sent = $this->sendEmployeeInvitation($employee, $tenantId);
+
+        return response()->json([
+            'success' => true,
+            'message' => $sent
+                ? 'Invitación reenviada.'
+                : 'Invitación registrada, pero el correo no pudo enviarse (¿falta configurar el dominio/servicio de correo?).',
+        ]);
+    }
+
+    /**
+     * Genera el PIN de activación y envía el correo de invitación. Best-effort:
+     * devuelve false (sin lanzar) si el correo no se pudo enviar.
+     */
+    private function sendEmployeeInvitation(Employee $employee, int $tenantId): bool
+    {
+        $pin = sprintf('%06d', mt_rand(1, 999999));
+        $inviteToken = \Illuminate\Support\Str::random(32);
+        $employee->update(['pin_code' => $pin, 'invite_token' => $inviteToken]);
+
+        $companyName = \Illuminate\Support\Facades\DB::table('tenants')->where('id', $tenantId)->value('name') ?: 'tu empresa';
+        $base = rtrim(config('app.frontend_url') ?? config('app.url') ?? '', '/');
+        $inviteUrl = $base . '/invite?pin=' . $pin;
+
+        $mailSettings = app(\App\Services\MailSettingsService::class);
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($employee->email)->send(new \App\Mail\EmployeeInvitation(
+                $employee->name ?? 'Colaborador',
+                $companyName,
+                $inviteUrl,
+                $pin,
+                $mailSettings->tenantFromAddress($tenantId),
+                $mailSettings->tenantReplyTo($tenantId),
+            ));
+            return true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('No se pudo enviar la invitación a ' . $employee->email . ': ' . $e->getMessage());
+            return false;
         }
     }
 

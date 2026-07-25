@@ -44,6 +44,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
     // §37: Modo Kiosco — throttle agresivo porque el PIN es corto (4-6 dígitos).
     Route::middleware('throttle:5,1')->post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
+    // §52: "olvidé mi contraseña" — públicos y con throttle (no revelan si el correo existe).
+    Route::middleware('throttle:5,1')->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::middleware('throttle:5,1')->post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login/social', [AuthController::class, 'loginSocial']);
     Route::post('/tenants', [TenantController::class, 'store']); // Checkout / Compra directa
@@ -85,6 +88,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // 1. platform_admin (Super Admin del Sistema)
     // =========================================================================
     Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
+        // §53: cumplimiento freemium — revisión desde Plataforma Talent360.
+        Route::get('/platform/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'platformIndex']);
+        Route::post('/platform/freemium-compliance/{id}/review', [\App\Http\Controllers\FreemiumComplianceController::class, 'review']);
+
+        // §52: configuración de correo a nivel plataforma (remitente real + bienvenida).
+        Route::get('/platform/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'getPlatformConfig']);
+        Route::put('/platform/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'savePlatformConfig']);
+
         // Platform Stats & Management
         Route::get('/platform/stats', [PlatformAdminController::class, 'getStats']);
         Route::get('/platform/tenants', [PlatformAdminController::class, 'getTenants']);
@@ -146,6 +157,16 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // 2. admin/supervisor (Administración y Supervisión de la Empresa/Tenant)
     // =========================================================================
     Route::middleware(['auth:sanctum', 'role:admin,supervisor', 'tenant.active'])->group(function () {
+        // §53: cumplimiento freemium — el admin del tenant sube su comprobante del mes.
+        Route::post('/me/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'submit']);
+        Route::get('/me/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'mine']);
+
+        // §52: configuración de correo del tenant (nombre para mostrar + Reply-To) y
+        // reenvío de invitación a un colaborador.
+        Route::get('/company/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'getTenantConfig']);
+        Route::put('/company/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'saveTenantConfig']);
+        Route::post('/employees/{id}/resend-invitation', [EmployeeController::class, 'resendInvitation']);
+
         // Módulos HR & Empleados (Escritura y Lectura/Deportes)
         Route::post('/employees', [EmployeeController::class, 'store']);
         Route::put('/employees/{id}', [EmployeeController::class, 'update']);

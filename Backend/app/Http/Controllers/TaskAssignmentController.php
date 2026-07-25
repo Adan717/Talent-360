@@ -450,4 +450,85 @@ class TaskAssignmentController extends Controller
 
         return response()->json(['success' => true, 'status' => $assignment->status]);
     }
+
+    /**
+     * Sección 2 #2: resuelve una tarea que quedó inconclusa (marcada por el proceso
+     * nocturno como flagged_incomplete). Los 3 botones del gerente:
+     *   - approve    🟢 Aprobar y proteger bono → completa y paga.
+     *   - reschedule 🟡 Reprogramar para hoy    → vuelve a la cola de hoy (origin=carried_over).
+     *   - reject     🔴 Rechazar                → se marca omitida (sin pago).
+     */
+    public function resolveIncomplete(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        $tenantId = $user->tenant_id ?? 1;
+
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reschedule,reject',
+            'feedback' => 'nullable|string',
+        ]);
+
+        $assignment = TaskAssignment::where('tenant_id', $tenantId)->findOrFail($id);
+        $task = $assignment->task_id ? Task::find($assignment->task_id) : null;
+
+        if ($validated['action'] === 'approve') {
+            // Aprobar y proteger bono: completa y paga (mismo cálculo que §33), a menos
+            // que ya estuviera completada (no se paga dos veces).
+            if ($assignment->status !== 'completed') {
+                $assignmentUser = $assignment->user_id ? User::find($assignment->user_id) : null;
+                $baseSalary = ($assignmentUser && $assignmentUser->employee && $assignmentUser->employee->base_salary > 0)
+                    ? (float) $assignmentUser->employee->base_salary
+                    : 300.00;
+                $accumulatedMins = (float) ($assignment->accumulated_mins ?? 15);
+                $basePoints = $task?->points ?? 10;
+                $coinsEarned = round($basePoints * 0.10, 2);
+
+                $assignment->update([
+                    'status' => 'completed',
+                    'flagged_incomplete' => false,
+                    'validation_feedback' => $validated['feedback'] ?? null,
+                    'validated_by' => $user->id,
+                    'task_cost' => round(($baseSalary / 480) * $accumulatedMins, 2),
+                    'points_awarded' => $basePoints,
+                    'coins_awarded' => $coinsEarned,
+                ]);
+
+                if ($assignment->user_id) {
+                    $wallet = \App\Models\UserWallet::getOrCreateForUser($assignment->user_id, $tenantId);
+                    $wallet->deposit(
+                        $coinsEarned,
+                        $basePoints,
+                        'earned_task',
+                        "Tarea aprobada por gerencia (inconclusa protegida): " . ($task?->title ?? 'Tarea Operativa'),
+                        'TaskAssignment',
+                        $assignment->id
+                    );
+                }
+            }
+        } elseif ($validated['action'] === 'reschedule') {
+            // Reprogramar para hoy: vuelve a la cola operativa de hoy como arrastrada.
+            $assignment->update([
+                'status' => 'pending',
+                'flagged_incomplete' => false,
+                'origin' => 'carried_over',
+                'date' => \Carbon\Carbon::today()->toDateString(),
+                'validation_feedback' => $validated['feedback'] ?? null,
+                'validated_by' => $user->id,
+                'completed_at_mins' => null,
+            ]);
+        } else { // reject
+            $assignment->update([
+                'status' => 'omitted',
+                'flagged_incomplete' => false,
+                'validation_feedback' => $validated['feedback'] ?? null,
+                'validated_by' => $user->id,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'status' => $assignment->status]);
+    }
 }

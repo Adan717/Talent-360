@@ -62,6 +62,10 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §51 | Credenciales de las cuentas de prueba (Francisco las pidió directamente): rotar las 3 hardcodeadas del seeder (§47) a contraseñas fuertes concretas, y renombrar/crear cuentas de DecorArte 360 y de plataforma con el convenio `nombre@decorarte360.com` / `nombre@talent360.mx` que confirmó. Ver detalle abajo — incluye las contraseñas propuestas para que las apliquen tal cual o las ajusten. | ✅ Aplicado en Hetzner (2026-07-25) — Francisco lo corrió directo vía tinker con el script que le dimos; tabla final de accesos ya entregada en el chat |
 | §52 | Correo remitente configurable — dos niveles: (1) plataforma, dirección real/autenticada única desde la que sale todo + copy de bienvenida/reglas freemium; (2) por tenant, nombre para mostrar + Reply-To (NO un remitente real distinto, por SPF/DKIM/DMARC — ver detalle). También: flujo de invitación automática por correo a empleados nuevos (reutilizando el PIN de activación que ya existe) y el flujo estándar de "olvidé mi contraseña" (tabla `password_reset_tokens` ya existe, sin usar). Ver detalle abajo. | ✅ Implementado (2026-07-25) — código listo con envío best-effort; **se activa solo con configurar dominio+servicio de correo (driver `log`/Mailtrap mientras tanto). Ver nota** |
 | §53 | Checklist de cumplimiento del plan freemium (ej. compartir publicaciones mensuales) — sin verificación automática por API de redes sociales en v1, auto-reporte + revisión manual. Ver detalle abajo. | ✅ Implementado (2026-07-25) — v1 auto-reporte + revisión manual, sin suspensión automática |
+| §54 | Nómina y semana laboral configurable por empresa (conforme a LFT): día de inicio de semana, día de pago, hora del cálculo automático; el Reloj y `payroll:calculate-weekly` respetan el corte de cada empresa. Ver detalle abajo. | ✅ Implementado (2026-07-25) — DecorArte (tenant 1) por default: semana domingo→sábado, pago sábado (decisión de Francisco) |
+| §55 | Tareas inconclusas por apagón: proceso nocturno que las pasa a "Pendiente de Validación Gerencial" + 3 botones (aprobar/reprogramar/rechazar). Ver detalle abajo. | ✅ Implementado (2026-07-25) |
+| §56 | Índices en PostgreSQL para el módulo de Rutinas/Tareas Diarias (Sección 2 #4). | ✅ Implementado (2026-07-25) — índices compuestos en `task_assignments` + `routine_task` |
+| §57 | Compresión automática de fotos de evidencia antes de subir. | ⏳ Frontend (Cowork) — el backend ya recibe base64; el grueso es comprimir en el navegador |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -2149,3 +2153,47 @@ Tabla `freemium_compliance_checks` (`tenant_id`, `period` "YYYY-MM", `status`, `
 **Sobre el `proof_url`:** por ahora se acepta una URL o data-URI que el frontend mande. Si prefieren subida de archivo real al servidor (como `meal-photo`), avísenme y lo agrego — lo dejé como string para no atarlo a una decisión de almacenamiento todavía.
 
 Test: `FreemiumComplianceTest.php` (6 casos: enviar, rechazo si no es freemium, requiere nota/url, reenvío actualiza la misma fila, plataforma lista+revisa, aislamiento por tenant). Suite completa: **205/205 tests**, sin regresiones.
+
+---
+
+## §54. Nómina y semana laboral configurable por empresa (LFT) — ✅ Implementado (2026-07-25)
+
+**Decisión de Francisco:** conforme a LFT (pago al menos semanal) pero configurable por cada empresa. **DecorArte (tenant 1) por default: semana domingo→sábado, pago sábado.**
+
+- **`App\Services\PayrollWeekService`:** resuelve la semana de cada tenant según su config. `weekRangeFor($tenantId, $date)` devuelve `[inicio, fin]` retrocediendo hasta el día de inicio configurado. Defaults globales: inicio **lunes (1)**, pago **viernes (5)**, cálculo **23:00**; DecorArte: inicio **domingo (0)**, pago **sábado (6)** (sembrado por migración `2026_07_25_000004`, solo si no existe ya, para no pisar ajustes del admin).
+- **Config (`GET/PUT /company/payroll-settings`, admin/supervisor):** `week_start_day` (0=domingo..6=sábado), `pay_day`, `calc_time` ("HH:MM"), guardados en `system_settings` por tenant.
+- **`payroll:calculate-weekly` ahora respeta la semana de cada empresa:** antes usaba `Carbon::startOfWeek()` fijo (lunes); ahora, dentro del loop de tenants, calcula el rango con `PayrollWeekService` según el día de inicio de ese tenant. Programado en el scheduler diario a las 23:00 (recalcula la semana en curso; al cerrar queda el draft final).
+- **Reloj (Cowork):** `week_start_day` se expone en `GET /company/payroll-settings` (y puede leerse de `system_settings` en `/sync/state`) para que las tarjetas semanales del Reloj se ordenen dinámicamente según el día de inicio de la empresa.
+
+**Nota sobre el día de cálculo vs. día de pago:** el cálculo automático corre al cierre de la semana (produce siempre una pre-nómina completa y correcta de la semana recién terminada); `pay_day` es la etiqueta de cuándo se dispersa el dinero (acción operativa), no algo que haga el scheduler. Si Francisco quiere que la pre-nómina se congele/consolide en un día/hora específico distinto, es un ajuste chico sobre esta base.
+
+Test: `PayrollWeekConfigTest.php` (5 casos: defaults de DecorArte domingo/sábado, rango de semana con inicio domingo y con inicio lunes, get/save de config, rechazo de día inválido). Suite completa: **214/214 tests**.
+
+---
+
+## §55. Tareas inconclusas por apagón → validación gerencial — ✅ Implementado (2026-07-25)
+
+Si un colaborador deja una tarea a la mitad (se le apagó el celular / no cerró la jornada), no se reprueba ni se pierde:
+
+- **Proceso nocturno `tasks:flag-unfinished`** (scheduler diario 00:30): toma las asignaciones en `in_progress`/`paused` de un día **anterior** a hoy y las pasa a `awaiting_validation` con `flagged_incomplete = true` (columna nueva, migración `2026_07_25_000003`). No toca las de hoy que siguen legítimamente abiertas. El bono queda **congelado** (ni pagado ni perdido).
+- **Los 3 botones** (`POST /task-assignments/{id}/resolve-incomplete` con `action`):
+  - `approve` 🟢 → completa y **paga** (mismo cálculo/wallet de §33; no paga dos veces).
+  - `reschedule` 🟡 → vuelve a la cola de **hoy** como `origin: carried_over` (§40), status `pending`.
+  - `reject` 🔴 → `omitted`, sin pago.
+- Los 3 reutilizan piezas ya construidas (§33 pago, §40 origen arrastrado, §34 omitir), así que el único componente genuinamente nuevo es el comando nocturno.
+
+**Lo que le toca a Cowork:** en la vista del gerente, mostrar los 3 botones para las asignaciones con `flagged_incomplete = true` / `status = awaiting_validation`, y llamar al endpoint con la acción elegida.
+
+Test: `UnfinishedTaskFlowTest.php` (4 casos: el comando marca las de ayer y respeta las de hoy; aprobar paga y protege bono; reprogramar mueve a hoy como arrastrada; rechazar omite sin pagar). Suite completa: **214/214 tests**.
+
+---
+
+## §56. Índices para el módulo de Tareas/Rutinas — ✅ Implementado (2026-07-25)
+
+Migración `2026_07_25_000002`: índices compuestos `(tenant_id, date)` y `(tenant_id, user_id)` en `task_assignments`, e índice de `routine_id` en el pivote `routine_task`. No se duplicó el índice simple de `tasks.tenant_id` (ya lo trae el `foreignId`). Mismo criterio de §45.
+
+---
+
+## §57. Compresión de fotos de evidencia — ⏳ Frontend (Cowork)
+
+El grueso es comprimir/redimensionar en el navegador antes de subir (zona de Cowork). El backend ya recibe `base64` en los endpoints de evidencia (`/clock/meal-photo`, `/task-assignments/{id}/ai-validate`) y no requiere cambios para esto; si en algún momento quieren un límite/validación de tamaño server-side como segunda capa, avisen y lo agrego.

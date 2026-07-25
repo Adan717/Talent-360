@@ -165,6 +165,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // reenvío de invitación a un colaborador.
         Route::get('/company/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'getTenantConfig']);
         Route::put('/company/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'saveTenantConfig']);
+
+        // Sección 2 #1: configuración de nómina y semana laboral por empresa.
+        Route::get('/company/payroll-settings', [\App\Http\Controllers\PayrollSettingsController::class, 'get']);
+        Route::put('/company/payroll-settings', [\App\Http\Controllers\PayrollSettingsController::class, 'save']);
         Route::post('/employees/{id}/resend-invitation', [EmployeeController::class, 'resendInvitation']);
 
         // Módulos HR & Empleados (Escritura y Lectura/Deportes)
@@ -380,6 +384,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/task-assignments/{id}/omit', [TaskAssignmentController::class, 'omit']);
         Route::post('/task-assignments/{id}/ai-validate', [TaskAssignmentController::class, 'aiValidate']);
         Route::post('/task-assignments/{id}/validate-with-pin', [TaskAssignmentController::class, 'validateWithPin']);
+        // Sección 2 #2: los 3 botones del gerente para tareas inconclusas por apagón.
+        Route::post('/task-assignments/{id}/resolve-incomplete', [TaskAssignmentController::class, 'resolveIncomplete']);
 
         // §39: cadena de pedidos (compras→producción→ventas) — operativa abierta a
         // cualquier rol autenticado, ya que los puestos operativos son quienes avanzan

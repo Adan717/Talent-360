@@ -26,21 +26,17 @@ class CalculateWeeklyPayrollCommand extends Command
 
     protected $description = 'Calcula la nómina semanal LFT para todos los empleados activos';
 
-    public function __construct(protected ClockService $clockService)
+    public function __construct(protected ClockService $clockService, protected \App\Services\PayrollWeekService $weekService)
     {
         parent::__construct();
     }
 
     public function handle(): int
     {
-        $weekStart  = $this->option('week')
-            ? Carbon::parse($this->option('week'))->startOfWeek()
-            : Carbon::now()->startOfWeek();
-
-        $weekEnd   = $weekStart->copy()->endOfWeek();
-        $tenantId  = $this->option('tenant_id');
-
-        $this->info("🧮 Calculando nómina semana: {$weekStart->toDateString()} → {$weekEnd->toDateString()}");
+        // Fecha de referencia (default: hoy). La semana concreta se resuelve POR TENANT
+        // según su día de inicio configurado (Sección 2 #1).
+        $refDate  = $this->option('week') ? Carbon::parse($this->option('week')) : Carbon::now();
+        $tenantId = $this->option('tenant_id');
 
         // Obtener tenants activos
         $tenantsQuery = DB::table('tenants')->where('is_active', true);
@@ -53,6 +49,10 @@ class CalculateWeeklyPayrollCommand extends Command
         $errors         = 0;
 
         foreach ($tenants as $tenant) {
+            // Semana laboral de ESTE tenant (domingo→sábado, lunes→domingo, etc.).
+            [$weekStart, $weekEnd] = $this->weekService->weekRangeFor($tenant->id, $refDate->copy());
+            $this->info("🧮 Tenant #{$tenant->id}: semana {$weekStart->toDateString()} → {$weekEnd->toDateString()}");
+
             $employees = Employee::where('is_active_employee', true)
                 ->whereHas('user', fn($q) => $q->where('tenant_id', $tenant->id))
                 ->with('user')
@@ -132,7 +132,7 @@ class CalculateWeeklyPayrollCommand extends Command
         $this->info("\n📊 Resultado: {$totalEmployees} nóminas calculadas, {$errors} errores.");
 
         Log::info('CalculateWeeklyPayrollCommand completado', [
-            'week_start'      => $weekStart->toDateString(),
+            'ref_date'        => $refDate->toDateString(),
             'total_employees' => $totalEmployees,
             'errors'          => $errors,
         ]);

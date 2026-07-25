@@ -7,6 +7,8 @@ use App\Models\StoreOpeningAssignment;
 use App\Models\StoreOpeningEvent;
 use App\Models\StoreLog;
 use App\Models\User;
+use App\Helpers\TenantStore;
+use App\Helpers\TenantTimezone;
 use App\Models\TimeEntry;
 use App\Services\ClockService;
 use App\Services\NotificationService;
@@ -579,5 +581,112 @@ class StoreOpeningService
         }
 
         return Carbon::now()->format('H:i:s');
+    }
+
+    /**
+     * Apertura de EMERGENCIA con 2 testigos por PIN DE KIOSKO (R86, línea del Reloj). Los testigos
+     * ya vienen RESUELTOS y validados por el controller (blind index + bcrypt + rate-limit R54).
+     * Coexiste con emergencyOpenWithWitnesses (§1–§42, testigos por id + security_pin): el
+     * controller despacha por protocolo del payload.
+     */
+    public function emergencyOpenStore($actorUserId, array $witnessUserIds, array $witnessNames, $storeId = null, $simTime = null)
+    {
+        $actor = User::withoutGlobalScopes()->findOrFail($actorUserId);
+        $tenantId = $actor->tenant_id ?? 1;
+        $storeId = $storeId ?? 1;
+
+        return DB::transaction(function () use ($actor, $storeId, $simTime, $tenantId, $witnessUserIds, $witnessNames) {
+            $status = $this->getTodayOpeningStatus($tenantId, $storeId, $simTime);
+
+            if ($status->status === 'opened') {
+                throw new \Exception("La tienda ya se encuentra abierta.");
+            }
+
+            $nowTimeStr = $this->getCurrentTimeStr($simTime, $tenantId);
+
+            // Guard de "apertura vencida" (review R86): break-glass para cuando el titular NO llegó
+            // a la hora — no una vía para abrir ANTES de horario.
+            $now = Carbon::createFromFormat('H:i:s', $nowTimeStr);
+            $openTime = Carbon::createFromFormat('H:i:s', $status->scheduled_opening_time);
+            if ($now->lessThan($openTime)) {
+                throw new \Exception("Aún no es la hora de apertura oficial; la apertura de emergencia sólo aplica si el encargado no llegó a tiempo.");
+            }
+
+            // 1. Abrir la tienda PRIMERO (para que el check_in del suplente no lo frene R76).
+            $status->status = 'opened';
+            $status->opened_by_employee_id = $actor->id;
+            $status->opened_at = Carbon::now();
+            $status->save();
+
+            // 2. Fichar al actor — BEST-EFFORT en su propio SAVEPOINT (review R86): si el ponche
+            //    falla por una regla propia, la tienda se abre igual (lección R51/R84).
+            try {
+                $punchResult = DB::transaction(function () use ($actor, $nowTimeStr) {
+                    return $this->clockService->processPunch($actor, 'check_in', $nowTimeStr, ['supervisor_override' => true]);
+                });
+            } catch (\Throwable $e) {
+                $punchResult = ['success' => false, 'skipped' => true, 'message' => $e->getMessage()];
+            }
+
+            $testigosStr = implode(' y ', $witnessNames);
+
+            // 3. Bitácora del evento con los testigos.
+            StoreOpeningEvent::create([
+                'tenant_id' => $tenantId,
+                'company_id' => 1,
+                'store_id' => $storeId,
+                'employee_id' => $actor->id,
+                'event_type' => 'emergency_open',
+                'event_status' => 'success',
+                'scheduled_opening_time' => $status->scheduled_opening_time,
+                'event_time' => Carbon::now(),
+                'notes' => "Apertura de EMERGENCIA por {$actor->name}, co-validada por 2 testigos presenciales: {$testigosStr}.",
+            ]);
+
+            // 4. StoreLog (aviso de apertura).
+            StoreLog::create([
+                'tenant_id' => $tenantId,
+                'user_id' => $actor->id,
+                'date' => Carbon::now($this->tenantTimezone($tenantId))->format('Y-m-d'),
+                'type' => 'open',
+                'time' => $nowTimeStr,
+                'notes' => "Apertura de emergencia (2 testigos: {$testigosStr}).",
+            ]);
+
+            // 5. Rastro de auditoría PERSISTENTE (append-only).
+            DB::table('audit_logs')->insert([
+                'tenant_id' => $tenantId,
+                'user_id' => $actor->id,
+                'date' => Carbon::now($this->tenantTimezone($tenantId))->format('Y-m-d'),
+                'type' => 'emergency_store_open',
+                'timestamp_str' => $nowTimeStr,
+                'reason' => "Apertura de emergencia por {$actor->name}, testigos: {$testigosStr}.",
+                'details' => json_encode(['witness_user_ids' => $witnessUserIds]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // 6. Checklist de apertura + broadcast (mismo patrón que la apertura normal).
+            $this->triggerOpeningChecklist($tenantId, $actor);
+            event(new \App\Events\MonitorUpdated($tenantId));
+            $tenantUserIds = DB::table('users')->where('tenant_id', $tenantId)->pluck('id')->toArray();
+            event(new \App\Events\StoreOpened($tenantId, $tenantUserIds));
+
+            return [
+                'success' => true,
+                'message' => 'Apertura de emergencia registrada. La tienda quedó abierta.',
+                'status' => $status,
+                'punch' => $punchResult,
+            ];
+        });
+    }
+
+    /**
+     * Zona horaria del tenant (system_settings.timezone), default America/Mexico_City.
+     * Delega en el resolver compartido App\Helpers\TenantTimezone.
+     */
+    public function tenantTimezone($tenantId): string
+    {
+        return TenantTimezone::for($tenantId);
     }
 }

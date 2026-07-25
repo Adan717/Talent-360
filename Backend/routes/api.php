@@ -41,7 +41,10 @@ use App\Http\Controllers\MealReservationController;
 
 Route::prefix('v1')->middleware('device.security')->group(function () {
     // Auth & SaaS Onboarding (Públicas)
-    Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+    // Merge F3: el anti-fuerza-bruta del login vive EN el controller (R-throttle por cuenta:
+    // cuenta sólo intentos FALLIDOS, con backstop de enumeración por IP) — el throttle de ruta
+    // estrangulaba también los logins EXITOSOS (el chorro legítimo de la mañana).
+    Route::post('/login', [AuthController::class, 'login']);
     // §37: Modo Kiosco — throttle agresivo porque el PIN es corto (4-6 dígitos).
     Route::middleware('throttle:5,1')->post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
     Route::post('/register', [AuthController::class, 'register']);
@@ -336,6 +339,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/me/fcm-token', [AuthController::class, 'updateFcmToken']);
         Route::post('/me/update-security', [AuthController::class, 'updateSecurity']);
         Route::put('/me/pre-shift-alarm', [AuthController::class, 'updatePreShiftAlarm']);
+        // R87 (línea Reloj): variante canónica — persiste en el EXPEDIENTE y devuelve toAuthPayload.
+        Route::post('/me/pre-shift-alarm', [AuthController::class, 'preShiftAlarm']);
+        // R102: la Academia re-estampa el marcador al aprobar Puntualidad (desbloquea el dial).
+        Route::post('/me/punctuality-course-reset', [AuthController::class, 'punctualityCourseReset']);
         Route::put('/me/security-pin', [AuthController::class, 'updateSecurityPin']);
         Route::get('/me/punctuality-status', [AuthController::class, 'punctualityStatus']);
         Route::get('/user', function (Request $request) {
@@ -352,6 +359,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/clock/offline-secret', [TimeEntryController::class, 'offlineSecret']);
         // Protege contra fuerza bruta del PIN de testigos — mismo límite que /login.
         Route::middleware('throttle:5,1')->post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
+        // Alias de la línea del Reloj (R86) — mismo dispatcher de doble protocolo.
+        Route::middleware('throttle:5,1')->post('/store-opening/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
         Route::post('/clock/meal-photo', [TimeEntryController::class, 'uploadMealPhoto']);
 

@@ -62,7 +62,11 @@ class DashboardVoiceTaskTest extends TestCase
             'data' => [
                 'title' => 'Limpiar los cristales de la entrada con prioridad alta',
                 'estimated_mins' => 45,
-                'priority' => 'high',
+                // ENMIENDA merge F4: el enum canónico de prioridad es `normal|bloqueante` (lo que
+                // el FE ofrece y lo que consumen nómina/monitor). 'alta' se NORMALIZA a 'normal';
+                // antes producía 'high', un valor que ninguna otra capa entendía y que rompía el
+                // filtro de tareas bloqueantes. Sólo "urgente"/"bloqueante" escalan.
+                'priority' => 'normal',
                 'category' => 'limpieza',
                 'target_type' => 'user',
                 'target_id' => $employee->id,

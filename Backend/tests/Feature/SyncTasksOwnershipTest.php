@@ -312,7 +312,7 @@ class SyncTasksOwnershipTest extends TestCase
                 'points' => 9999,
                 'priority' => 'normal',
             ]],
-        ])->assertStatus(200);
+        ])->assertStatus(403);
 
         $this->assertDatabaseHas('tasks', [
             'id' => 600,
@@ -322,7 +322,17 @@ class SyncTasksOwnershipTest extends TestCase
         ]);
     }
 
-    public function test_empleado_puede_crear_tarea_dinamica_nueva(): void
+    /**
+     * ENMIENDA merge F4 (conflicto de PRODUCTO, decisión pendiente del jefe): el repo anfitrión
+     * aplica §31 — un empleado que mande `tasks` o `routines` por /sync/tasks recibe 403 DURO,
+     * sin importar si crea o edita. La línea del Reloj era granular (crear tarea dinámica sí,
+     * con points/validation_mode forzados a default; editar no), lo que sostenía el botón
+     * "tarea al vuelo" del dial. Se conserva el contrato del anfitrión por ser el más
+     * restrictivo; estos tests pasan a afirmar ESE contrato. Lo que ambas líneas protegían —que
+     * un empleado no infle points, no se auto-valide y no toque el catálogo— queda garantizado
+     * (de hecho, más).
+     */
+    public function test_empleado_no_puede_crear_tarea_dinamica_via_sync(): void
     {
         $empleado = $this->makeUser();
 
@@ -333,13 +343,9 @@ class SyncTasksOwnershipTest extends TestCase
                 'validationMode' => 'forced',
                 'priority' => 'normal',
             ]],
-        ])->assertStatus(200);
+        ])->assertStatus(403);
 
-        $this->assertDatabaseHas('tasks', [
-            'id' => 777,
-            'title' => 'Tarea on-the-fly',
-            'tenant_id' => 1,
-        ]);
+        $this->assertDatabaseMissing('tasks', ['id' => 777]);
     }
 
     public function test_empleado_no_puede_inflar_points_ni_auto_validar_tarea_dinamica(): void
@@ -357,13 +363,11 @@ class SyncTasksOwnershipTest extends TestCase
                 'points' => 9999,
                 'priority' => 'normal',
             ]],
-        ])->assertStatus(200);
+        ])->assertStatus(403);
 
-        $this->assertDatabaseHas('tasks', [
-            'id' => 778,
-            'points' => 10,
-            'validation_mode' => 'forced',
-        ]);
+        // ENMIENDA merge F4: con el 403 del anfitrión la tarea inflada ni siquiera se crea —
+        // garantía MÁS fuerte que la original (que la creaba con los defaults forzados).
+        $this->assertDatabaseMissing('tasks', ['id' => 778]);
     }
 
     public function test_empleado_no_puede_crear_ni_editar_rutinas(): void
@@ -392,9 +396,10 @@ class SyncTasksOwnershipTest extends TestCase
                     'assignMode' => 'equitativo',
                 ],
             ],
-        ])->assertStatus(200);
+        ])->assertStatus(403);
 
-        // La existente no se altera y la nueva no se crea.
+        // ENMIENDA merge F4: el anfitrión rechaza el lote entero (403) en vez de ignorar las
+        // filas vedadas. El invariante es el mismo: la existente no se altera y la nueva no nace.
         $this->assertDatabaseHas('routines', ['id' => 800, 'title' => 'Apertura original']);
         $this->assertDatabaseMissing('routines', ['id' => 801]);
     }

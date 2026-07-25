@@ -39,9 +39,9 @@ class SyncTasksInputValidationTest extends TestCase
         ]);
     }
 
-    private function makeUser(): User
+    private function makeUser(string $role = 'empleado'): User
     {
-        $user = User::factory()->create(['role' => 'empleado']);
+        $user = User::factory()->create(['role' => $role]);
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
         return $user->fresh();
     }
@@ -141,9 +141,13 @@ class SyncTasksInputValidationTest extends TestCase
 
     public function test_crear_tarea_y_asignarla_en_el_mismo_payload_no_rompe(): void
     {
-        // Regresión: createDynamicTask crea la Task y su assignment en un solo sync.
+        // Regresión: crear la Task y su assignment en un solo sync.
         // task_id NO debe llevar `exists` o esto fallaría (la tarea aún no existe).
-        $empleado = $this->makeUser();
+        //
+        // ENMIENDA merge F4: el payload lo manda un ADMIN — el anfitrión aplica §31 y un empleado
+        // raso ya no puede mandar `tasks` (403). Lo que este test protege (que el par
+        // tarea+assignment del mismo payload no se rechace por validación) no cambia.
+        $empleado = $this->makeUser('admin');
 
         $this->actingAs($empleado)->postJson('/api/v1/sync/tasks', [
             'tasks' => [[

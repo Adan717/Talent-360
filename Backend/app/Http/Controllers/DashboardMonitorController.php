@@ -407,6 +407,20 @@ class DashboardMonitorController extends Controller
             $targetType = $request->target_type ?? 'role';
             $targetId = $request->target_id;
 
+            // F4 (seguridad): aislamiento de tenant en la asignación DIRECTA. El target_id se usa
+            // como user_id de la assignment, así que debe ser un colaborador del PROPIO tenant
+            // (mismo criterio que assignTask). Se valida ANTES de crear la tarea para no dejar una
+            // tarea huérfana si el target es inválido.
+            if ($targetType === 'user') {
+                $assignee = $targetId ? User::find($targetId) : null;
+                if (!$assignee || (int) $assignee->tenant_id !== (int) $tenantId) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Operación entre empresas no autorizada.'
+                    ], 403);
+                }
+            }
+
             $task = Task::create([
                 'title' => $request->title,
                 'estimated_mins' => $request->estimated_mins,

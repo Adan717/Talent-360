@@ -55,19 +55,23 @@ class SubscriptionController extends Controller
         } elseif ($isInitialRegistration) {
             // Google authenticated registration flow: only company data is required
             $request->validate([
-                'subdomain' => 'required|string',
+                'subdomain' => ['required', 'string', 'alpha_dash', 'max:50', \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->whereNull('deleted_at')],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
                 'employees' => 'nullable|integer',
                 'billing_cycle' => 'nullable|string',
+            ], [
+                'subdomain.unique' => 'El subdominio ya está registrado por otra empresa. Por favor elige uno diferente.',
+                'subdomain.alpha_dash' => 'El subdominio solo puede contener letras, números y guiones sin espacios.',
+                'subdomain.max' => 'El subdominio no puede tener más de 50 caracteres.',
             ]);
             $payload = [
                 'action' => 'register_initial',
-                'subdomain' => $request->subdomain,
+                'subdomain' => strtolower($request->subdomain),
                 'plan' => $request->plan,
                 'company_name' => $request->company_name,
-                'admin_name' => $user->name,
-                'admin_email' => $user->email,
+                'admin_name' => $user->name ?? $request->input('admin_name', 'Admin'),
+                'admin_email' => $user->email ?? $request->input('admin_email'),
                 'employees' => $request->input('employees'),
                 'billing_cycle' => $request->input('billing_cycle', 'monthly'),
             ];
@@ -79,7 +83,7 @@ class SubscriptionController extends Controller
                 ]);
             }
             $request->validate([
-                'subdomain' => 'required|string',
+                'subdomain' => ['required', 'string', 'alpha_dash', 'max:50', \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->whereNull('deleted_at')],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
                 'admin_name' => 'required|string',
@@ -87,8 +91,13 @@ class SubscriptionController extends Controller
                 'admin_password' => 'required|min:6',
                 'employees' => 'nullable|integer',
                 'billing_cycle' => 'nullable|string',
+            ], [
+                'subdomain.unique' => 'El subdominio ya está registrado por otra empresa. Por favor elige uno diferente.',
+                'subdomain.alpha_dash' => 'El subdominio solo puede contener letras, números y guiones sin espacios.',
+                'subdomain.max' => 'El subdominio no puede tener más de 50 caracteres.',
             ]);
             $payload = $request->all();
+            $payload['subdomain'] = strtolower($request->subdomain);
             $payload['employees'] = $request->input('employees');
             $payload['billing_cycle'] = $request->input('billing_cycle', 'monthly');
         }
@@ -121,15 +130,29 @@ class SubscriptionController extends Controller
 
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
         if (!$isUpgrade && (strtolower($payload['plan']) === 'freemium' || $price <= 0)) {
-            $tenant = $this->provisionTenant($payload);
-            $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
-            return response()->json([
-                'status' => 'success',
-                'provisioned' => true,
-                'tenant' => $tenant['tenant'],
-                'user' => $tenant['admin'],
-                'token' => $token
-            ]);
+            try {
+                $tenant = $this->provisionTenant($payload);
+                $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
+                return response()->json([
+                    'status' => 'success',
+                    'provisioned' => true,
+                    'tenant' => $tenant['tenant'],
+                    'user' => $tenant['admin'],
+                    'token' => $token
+                ]);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                throw $e;
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+                throw $e;
+            } catch (\Exception $e) {
+                \Log::error("Error al aprovisionar empresa: " . $e->getMessage(), [
+                    'payload' => $payload,
+                    'exception' => $e
+                ]);
+                return response()->json([
+                    'error' => $e->getMessage() ?: 'Error al crear la empresa. Por favor intenta con otro subdominio.'
+                ], 400);
+            }
         }
 
         // Try using MercadoPago SDK if configured

@@ -327,7 +327,11 @@ export const SaaSLandingPage = () => {
         subdomain: formData.subdomain,
         plan: selectedPlan.toLowerCase(),
         employees: selectedPlan.toLowerCase() === 'pro' ? proEmployeesCount : null,
-        billing_cycle: billingCycle
+        billing_cycle: billingCycle,
+        ...(googleUser ? {
+          admin_name: googleUser.name,
+          admin_email: googleUser.email
+        } : {})
       });
 
       if (response.data.provisioned) {
@@ -348,7 +352,9 @@ export const SaaSLandingPage = () => {
       }
 
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Hubo un problema al procesar el registro.');
+      const firstValidationError = err.response?.data?.errors ? (Object.values(err.response.data.errors).flat()[0] as string) : null;
+      const errorMsg = firstValidationError || err.response?.data?.error || err.response?.data?.message || err.message || 'Hubo un problema al procesar el registro.';
+      setError(errorMsg);
       setIsProcessing(false);
     }
   };

@@ -16,6 +16,15 @@ use Illuminate\Support\Str;
 class SubscriptionController extends Controller
 {
     /**
+     * Merge F3: el simulador de cobro SOLO existe en local/testing — en producción estos
+     * endpoints deben ser 404 (antes provisionaban tenants con un pago fingido).
+     */
+    private function simulatorAllowed(): bool
+    {
+        return app()->environment('local', 'testing');
+    }
+
+    /**
      * Create MercadoPago Preference or Fallback to Simulator
      */
     public function createPreference(Request $request)
@@ -183,6 +192,8 @@ class SubscriptionController extends Controller
      */
     public function simulatedCheckout(Request $request)
     {
+        abort_unless($this->simulatorAllowed(), 404);
+
         $prefId = $request->query('pref_id');
         $reg = PendingRegistration::findOrFail($prefId);
         $payload = json_decode($reg->payload, true);
@@ -390,6 +401,8 @@ class SubscriptionController extends Controller
      */
     public function simulatedConfirm(Request $request)
     {
+        abort_unless($this->simulatorAllowed(), 404);
+
         $prefId = $request->query('pref_id');
         $reg = PendingRegistration::findOrFail($prefId);
         $payload = json_decode($reg->payload, true);

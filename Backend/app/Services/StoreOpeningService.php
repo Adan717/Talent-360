@@ -34,8 +34,11 @@ class StoreOpeningService
     /**
      * Get or initialize today's daily opening record.
      */
-    public function getTodayOpeningStatus($tenantId, $storeId = 1, $simTime = null, $simDay = null)
+    public function getTodayOpeningStatus($tenantId, $storeId = null, $simTime = null, $simDay = null)
     {
+        // R52 (merge F3): la sucursal por defecto es la DEL TENANT — con la entidad `stores` los
+        // ids son globales, así que un `1` hardcodeado apuntaba a la sucursal del tenant 1.
+        $storeId = $storeId ?? TenantStore::defaultIdFor($tenantId);
         // Merge F3 (fix de frontera de tz, clase StoreOpeningTimezone del Reloj): la FECHA de
         // negocio del status sale de la MISMA zona del tenant que usa processPunch — con la fecha
         // del servidor (UTC), entre 00:00 y 06:00 UTC el status se creaba en "mañana" y el gate de

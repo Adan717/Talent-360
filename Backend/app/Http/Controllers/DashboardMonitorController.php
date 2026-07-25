@@ -384,7 +384,7 @@ class DashboardMonitorController extends Controller
             'title' => 'required|string|max:255',
             'estimated_mins' => 'required|integer|min:1',
             'points' => 'required|integer|min:1',
-            'priority' => 'required|string|in:low,medium,high,bloqueante,normal',
+            'priority' => 'required|string|in:normal,bloqueante',
             'category' => 'nullable|string',
             'target_type' => 'nullable|string|in:role,user,pool,department',
             'target_id' => 'nullable|integer',
@@ -512,13 +512,13 @@ class DashboardMonitorController extends Controller
         }
 
         // 2. Detect Priority
+        // Merge F3 (T12): el enum canónico de prioridad es sólo `normal|bloqueante` — es lo que
+        // el FE ofrece y lo que consume la nómina/monitor. 'alta'/'media' se NORMALIZAN a
+        // 'normal' (antes producían 'high'/'medium', valores que ninguna otra capa entendía y
+        // que rompían el filtro de tareas bloqueantes).
         $priority = 'normal';
         if (stripos($text, 'urgente') !== false || stripos($text, 'bloqueante') !== false) {
             $priority = 'bloqueante';
-        } elseif (stripos($text, 'alta') !== false) {
-            $priority = 'high';
-        } elseif (stripos($text, 'media') !== false) {
-            $priority = 'medium';
         }
 
         // 3. Detect Estimated Time (Mins)

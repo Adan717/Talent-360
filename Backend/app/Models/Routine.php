@@ -12,7 +12,7 @@ class Routine extends Model
     use Tenantable, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'id', 'title', 'target_role_id', 'trigger', 'assign_mode'
+        'id', 'title', 'target_role_id', 'trigger', 'trigger_time', 'assign_mode'
     ];
 
     public function tasks()

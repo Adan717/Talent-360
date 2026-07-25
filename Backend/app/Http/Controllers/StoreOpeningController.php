@@ -14,6 +14,7 @@ use App\Services\StoreOpeningHandoffService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Helpers\TenantStore;
 
 class StoreOpeningController extends Controller
 {
@@ -246,7 +247,11 @@ class StoreOpeningController extends Controller
     {
         $user = Auth::user();
         $tenantId = $user->tenant_id ?? 1;
-        $storeId = $request->input('store_id', 1);
+        // R52 (merge F3): el `store_id` que mandara el CLIENTE se IGNORA — con la entidad
+        // `stores` los ids son GLOBALES, así que aceptarlo era una superficie de lectura
+        // cross-sucursal y un `1` hardcodeado apuntaba a la sucursal del tenant 1 desde
+        // cualquier empresa. La sucursal se resuelve del tenant.
+        $storeId = TenantStore::defaultIdFor($tenantId);
         $simTime = $request->input('simTime');
         $simDay = $request->input('simDay');
 

@@ -95,6 +95,9 @@ class TaskSyncController extends Controller
                         'title' => $routine['title'],
                         'target_role_id' => $routine['targetRoleId'] ?? $routine['target_role_id'] ?? null,
                         'trigger' => $routine['trigger'],
+                        // Merge F3: hora programada de la rutina (una sola verdad; el FE la manda
+                        // como triggerTime y el motor del reloj la lee de aquí).
+                        'trigger_time' => $routine['triggerTime'] ?? $routine['trigger_time'] ?? null,
                         'assign_mode' => $routine['assignMode'] ?? $routine['assign_mode'],
                         'tenant_id' => $tenantId,
                     ];

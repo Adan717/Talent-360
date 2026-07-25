@@ -189,8 +189,12 @@ class RoleMiddlewareTest extends TestCase
         $supervisor = User::factory()->create(['role' => 'supervisor']);
         $this->actingAs($supervisor)->postJson('/api/v1/sync/reset')->assertStatus(200);
 
+        // ENMIENDA merge F3 (fixture): la resolución de tenant es ahora ESTRICTA (sin fallback
+        // `?? 1`) — un admin sin tenant debe indicarlo. El contrato del test no cambia: un admin
+        // DE SU EMPRESA puede purgar. Se le fija el tenant explícito que en la app real tiene.
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->actingAs($admin)->postJson('/api/v1/sync/reset')->assertStatus(200);
+        \DB::table('users')->where('id', $admin->id)->update(['tenant_id' => 1]);
+        $this->actingAs($admin->fresh())->postJson('/api/v1/sync/reset')->assertStatus(200);
     }
 
     public function test_empleado_routes_are_correctly_protected(): void
@@ -287,9 +291,11 @@ class RoleMiddlewareTest extends TestCase
         // producción (Francisco lo necesita corriendo en su propio tenant real).
         $this->app['env'] = 'production';
 
+        // ENMIENDA merge F3 (fixture): tenant explícito — la resolución estricta ya no cae a 1.
         $admin = User::factory()->create(['role' => 'admin']);
+        \DB::table('users')->where('id', $admin->id)->update(['tenant_id' => 1]);
 
-        $response = $this->actingAs($admin)->postJson('/api/v1/sync/reset');
+        $response = $this->actingAs($admin->fresh())->postJson('/api/v1/sync/reset');
 
         $response->assertStatus(200);
     }

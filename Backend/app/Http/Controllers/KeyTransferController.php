@@ -6,29 +6,47 @@ use Illuminate\Http\Request;
 
 use App\Models\KeyTransfer;
 use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class KeyTransferController extends Controller
 {
     // Crear transferencia
     public function store(Request $request)
     {
+        $user = Auth::user();
+
         $request->validate([
-            'receiver_id' => 'required|exists:users,id',
+            // El receptor debe existir Y pertenecer al mismo tenant del emisor.
+            // (La regla 'exists' plana usa SQL crudo e ignora el TenantScope, por eso
+            // se acota explícitamente por tenant_id para evitar fuga cross-tenant.)
+            'receiver_id' => [
+                'required',
+                Rule::exists('users', 'id')->where('tenant_id', $user->tenant_id),
+            ],
             'notes' => 'nullable|string|max:1000',
         ]);
-
-        $user = Auth::user();
 
         if ($user->id == $request->input('receiver_id')) {
             return response()->json(['error' => 'No puedes transferirte las llaves a ti mismo.'], 422);
         }
 
-        // portadorLlaves vive en `employees`, no en `users` (migrate_existing_users_to_employees_table).
-        $senderPortadorLlaves = $user->employee?->portadorLlaves;
-        if (!$senderPortadorLlaves || strtolower($senderPortadorLlaves) === 'ninguno') {
+        // La custodia de llaves vive en employees.portadorLlaves (users.portadorLlaves
+        // fue eliminada). Se lee vía el employee vinculado del emisor.
+        $holder = $user->employee?->portadorLlaves;
+        if (!$holder || strtolower($holder) === 'ninguno') {
             return response()->json(['error' => 'No posees permisos de portador de llaves en este momento.'], 403);
+        }
+
+        // El receptor debe tener expediente de empleado para poder recibir la custodia;
+        // si no, la transferencia quedaría atascada en 'pending' (nadie puede aceptarla).
+        $receiverHasEmployee = Employee::where('user_id', $request->input('receiver_id'))
+            ->where('tenant_id', $user->tenant_id)
+            ->exists();
+        if (!$receiverHasEmployee) {
+            return response()->json(['error' => 'El receptor no puede recibir llaves (sin expediente de empleado).'], 422);
         }
 
         // Cancelamos transferencias previas pendientes de este emisor
@@ -55,7 +73,8 @@ class KeyTransferController extends Controller
     {
         $user = Auth::user();
 
-        $transfers = KeyTransfer::with(['sender:id,name,role', 'sender.employee:user_id,portadorLlaves'])
+        // sender:id,name,role — NO se selecciona portadorLlaves (columna eliminada de users).
+        $transfers = KeyTransfer::with('sender:id,name,role')
             ->where('receiver_id', $user->id)
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
@@ -79,27 +98,46 @@ class KeyTransferController extends Controller
         $status = $request->input('status');
 
         if ($status === 'accepted') {
-            try {
-                DB::transaction(function () use ($transfer, $user) {
-                // Obtener el emisor
-                $sender = User::findOrFail($transfer->sender_id);
+            $sender = User::findOrFail($transfer->sender_id);
 
-                // portadorLlaves vive en `employees`, no en `users`.
-                $senderEmployee = $sender->employee;
-                $receiverEmployee = $user->employee;
+            // La custodia se guarda en employees.portadorLlaves; el receptor necesita un
+            // expediente de empleado para poder recibirla. Si no lo tiene, se rechaza la
+            // transferencia (para no dejarla atascada en 'pending').
+            if (!$user->employee()->exists()) {
+                $transfer->status = 'rejected';
+                $transfer->save();
+                return response()->json(['error' => 'No tienes expediente de empleado para recibir las llaves.'], 422);
+            }
 
-                if (!$senderEmployee || !$receiverEmployee) {
-                    throw new \Exception('No se encontró el perfil de empleado del emisor o del receptor.');
+            DB::transaction(function () use (&$transfer, $user, $sender) {
+                // Lock + re-check para evitar doble-accept concurrente.
+                $locked = KeyTransfer::where('id', $transfer->id)
+                    ->where('status', 'pending')
+                    ->lockForUpdate()
+                    ->first();
+                if (!$locked) {
+                    return; // otra petición ya la procesó
                 }
+                $transfer = $locked;
 
-                // Traspaso de roles de llaves
-                $llavesType = $senderEmployee->portadorLlaves ?? 'Principal';
+                // Se re-leen frescos y con lock dentro de la transacción para evitar
+                // lost-updates (guardar snapshots viejos) y races.
+                $senderEmployee = $sender->employee()->lockForUpdate()->first();
+                $receiverEmployee = $user->employee()->lockForUpdate()->first();
 
-                $receiverEmployee->portadorLlaves = $llavesType;
-                $receiverEmployee->save();
+                // Fail-safe: si no se puede verificar la custodia del emisor (p.ej. su
+                // expediente fue eliminado tras crear la solicitud), NO otorgar el valor
+                // máximo — dejar 'ninguno', consistente con el guard de store().
+                $llavesType = $senderEmployee?->portadorLlaves ?? 'ninguno';
 
-                $senderEmployee->portadorLlaves = 'Ninguno';
-                $senderEmployee->save();
+                if ($receiverEmployee) {
+                    $receiverEmployee->portadorLlaves = $llavesType;
+                    $receiverEmployee->save();
+                }
+                if ($senderEmployee) {
+                    $senderEmployee->portadorLlaves = 'ninguno';
+                    $senderEmployee->save();
+                }
 
                 $transfer->status = 'accepted';
                 $transfer->save();
@@ -114,10 +152,7 @@ class KeyTransferController extends Controller
                     })
                     ->where('status', 'pending')
                     ->update(['status' => 'rejected']);
-                });
-            } catch (\Exception $e) {
-                return response()->json(['error' => $e->getMessage()], 422);
-            }
+            });
 
             return response()->json([
                 'message' => 'Transferencia aceptada. Ahora eres portador de llaves.',

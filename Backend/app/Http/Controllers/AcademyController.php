@@ -94,6 +94,15 @@ class AcademyController extends Controller
             'score' => 'nullable|integer'
         ]);
 
+        // Merge F3: el curso debe existir ANTES de escribir el progreso —
+        // user_course_progress.course_id tiene FK a academy_courses, así que un id fantasma
+        // (p.ej. el curso SINTÉTICO de Puntualidad, id 999, que el FE inyecta como fallback)
+        // provocaba una violación de FK → 500. Se responde 404 limpio.
+        $course = \App\Models\AcademyCourse::find($id);
+        if (!$course) {
+            return response()->json(['status' => 'error', 'message' => 'Curso no encontrado.'], 404);
+        }
+
         $userId = auth()->id();
         $tenantId = auth()->user()->tenant_id ?? 1;
 

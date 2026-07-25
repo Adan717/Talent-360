@@ -15,19 +15,60 @@ class TaskSyncController extends Controller
 {
     public function sync(Request $request)
     {
+        // F4: validacion de input REAL. `task_id` de un assignment NO lleva `exists` a proposito
+        // - el mismo payload puede crear una Task nueva y referenciarla (createDynamicTask), y la
+        // validacion corre antes de persistir las tasks. El FE manda camelCase y el mapping acepta
+        // ambas grafias, por eso cada campo se valida en las dos.
         $request->validate([
             'tasks' => 'nullable|array',
             'tasks.*.id' => 'required|integer',
             'tasks.*.title' => 'required|string|max:255',
+
             'routines' => 'nullable|array',
-            'assignments' => 'nullable|array'
+            'routines.*.id' => 'required|integer',
+            'routines.*.title' => 'required|string|max:255',
+            'routines.*.trigger' => 'required|string|max:50',
+
+            'assignments' => 'nullable|array',
+            'assignments.*.id' => 'required|string|max:255',
+            'assignments.*.task_id' => 'nullable|integer',
+            'assignments.*.taskId' => 'nullable|integer',
+            'assignments.*.user_id' => 'nullable|integer',
+            'assignments.*.userId' => 'nullable|integer',
+            // status: solo TIPO aqui. La membresia del enum se valida POR FILA en el loop (skip),
+            // NO como rechazo del lote: el sync es full-state y re-emite filas hidratadas del DB;
+            // una sola fila legacy con status raro no debe tumbar el sync entero del usuario.
+            'assignments.*.status' => 'nullable|string',
+            'assignments.*.accumulated_mins' => 'nullable|integer',
+            'assignments.*.accumulatedMins' => 'nullable|integer',
+            'assignments.*.started_at_mins' => 'nullable|integer',
+            'assignments.*.startedAtMins' => 'nullable|integer',
+            'assignments.*.expected_end_time_mins' => 'nullable|integer',
+            'assignments.*.expectedEndTimeMins' => 'nullable|integer',
+            'assignments.*.completed_at_mins' => 'nullable|integer',
+            'assignments.*.completedAtMins' => 'nullable|integer',
+            'assignments.*.reserved_at_mins' => 'nullable|integer',
+            'assignments.*.reservedAtMins' => 'nullable|integer',
         ]);
 
-        $tenantId = auth()->user()->tenant_id ?? 1;
+        $actor = auth()->user();
+        $tenantId = $actor->tenant_id ?? 1;
+        // Roles con manejo de equipo: pueden escribir assignments de CUALQUIER usuario del tenant.
+        // El resto (empleado/employee) solo las propias o las del pool.
+        $isPrivileged = in_array($actor->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
 
-        // §31: crear/editar el catálogo de tasks/routines es una acción administrativa
-        // — la porción de assignments (tomar/pausar/completar tu propia tarea) sigue
-        // abierta a cualquier rol autenticado, ese flujo no se toca.
+        // §31: crear/editar el catálogo de tasks/routines es una acción administrativa — la
+        // porción de assignments (tomar/pausar/completar TU propia tarea) sigue abierta a
+        // cualquier rol autenticado, ese flujo no se toca.
+        //
+        // ARBITRAJE F4 (decisión de PRODUCTO pendiente del jefe): se conserva el 403 DURO de esta
+        // línea, que es la postura más restrictiva. La línea del Reloj era más granular — un
+        // empleado podía CREAR una tarea dinámica nueva (el botón "tarea al vuelo" del dial) con
+        // los campos sensibles forzados a sus defaults (points=10, validation_mode='forced'), y
+        // sólo se le impedía EDITAR tareas/rutinas existentes. Con el 403 duro ese botón del dial
+        // deja de funcionar para empleados rasos. Si se quiere recuperar, basta sustituir este
+        // bloque por el guard granular: rechazar `routines` siempre, y en `tasks` permitir sólo
+        // la rama de creación forzando $taskData['points']=10 y ['validation_mode']='forced'.
         if ($request->has('tasks') || $request->has('routines')) {
             if (!in_array(auth()->user()->role, ['admin', 'supervisor', 'platform_admin'])) {
                 return response()->json(['message' => 'No autorizado para crear o editar tareas/rutinas.'], 403);
@@ -95,6 +136,9 @@ class TaskSyncController extends Controller
                         'title' => $routine['title'],
                         'target_role_id' => $routine['targetRoleId'] ?? $routine['target_role_id'] ?? null,
                         'trigger' => $routine['trigger'],
+                        // Merge F3: hora programada de la rutina (una sola verdad; el FE la manda
+                        // como triggerTime y el motor del reloj la lee de aquí).
+                        'trigger_time' => $routine['triggerTime'] ?? $routine['trigger_time'] ?? null,
                         'assign_mode' => $routine['assignMode'] ?? $routine['assign_mode'],
                         'tenant_id' => $tenantId,
                     ];
@@ -143,14 +187,22 @@ class TaskSyncController extends Controller
                     ->value('value');
                 $tasksConfig = $tasksConfigRaw ? json_decode($tasksConfigRaw, true) : null;
 
+                $validStatuses = ['pending', 'in_progress', 'paused', 'completed', 'awaiting_validation', 'omitted', 'spilled'];
+
                 foreach ($request->input('assignments') as $assignment) {
+                    // F4: enum de status por fila (skip, no rechazo del lote): protege contra
+                    // basura del cliente sin tumbar el sync full-state por una fila legacy.
+                    if (!in_array($assignment['status'] ?? null, $validStatuses, true)) {
+                        continue;
+                    }
+
                     $assistantData = $assignment['assistantData'] ?? $assignment['assistant_data'] ?? null;
                     if (is_array($assistantData)) {
                         $assistantData = json_encode($assistantData);
                     }
 
                     $mappedData = [
-                        'task_id' => $assignment['taskId'] ?? $assignment['task_id'],
+                        'task_id' => $assignment['taskId'] ?? $assignment['task_id'] ?? null,
                         'user_id' => $assignment['userId'] ?? $assignment['user_id'] ?? null,
                         'status' => $assignment['status'],
                         'started_at_mins' => $assignment['startedAtMins'] ?? $assignment['started_at_mins'] ?? null,
@@ -166,66 +218,62 @@ class TaskSyncController extends Controller
                         'origin' => $assignment['origin'] ?? null,
                     ];
 
-                    // Check if supervisor validation is required
-                    $user = User::find($mappedData['user_id']);
-                    $reportsTo = false;
-                    if ($user && $user->employee && $user->employee->job_role_id) {
-                        $role = JobRole::find($user->employee->job_role_id);
-                        if ($role && $role->reports_to_role_id) {
-                            $reportsTo = true;
-                        }
-                    }
-
-                    $task = Task::find($mappedData['task_id']);
-                    $isBlocker = $task && $task->priority === 'bloqueante';
-
-                    $requiresValidation = false;
-                    $tenant = \App\Models\Tenant::find($tenantId);
-                    $supervisorUnlocked = $tenant ? $tenant->isFeatureUnlocked('supervisor_validation') : false;
-
-                    if ($supervisorUnlocked && $reportsTo && $task) {
-                        $mode = $task->validation_mode ?? 'forced';
-                        if ($mode === 'auto') {
-                            $requiresValidation = false;
-                        } elseif ($mode === 'forced') {
-                            if ($tasksConfig && !empty($tasksConfig['requireSupervisorValidation'])) {
-                                $threshold = $tasksConfig['validationThreshold'] ?? 'all_tasks';
-                                if ($threshold === 'all_tasks') {
-                                    $requiresValidation = true;
-                                } elseif ($threshold === 'blockers_only' && $isBlocker) {
-                                    $requiresValidation = true;
-                                }
-                            } else {
-                                $requiresValidation = true;
-                            }
-                        } elseif ($mode === 'dynamic') {
-                            if ($user && $user->employee && $user->employee->hire_date) {
-                                try {
-                                    $hireDate = \Carbon\Carbon::parse($user->employee->hire_date);
-                                    $days = abs(now()->diffInDays($hireDate));
-                                } catch (\Exception $ex) {
-                                    $days = 0;
-                                }
-                            } else {
-                                $days = 0;
-                            }
-
-                            if ($days < 30) {
-                                $requiresValidation = true;
-                            } elseif ($days < 90) {
-                                $requiresValidation = (mt_rand(1, 100) <= 50);
-                            } else {
-                                $requiresValidation = (mt_rand(1, 100) <= 15);
-                            }
-                        }
-                    }
-
                     $existing = TaskAssignment::withoutGlobalScopes()
                         ->where('id', $assignment['id'])
                         ->where('tenant_id', $tenantId)
                         ->first();
 
-                    if ($existing && $existing->status === 'completed') {
+                    // F4 (seguridad) - OWNERSHIP. El sync es full-state: las filas vedadas se
+                    // OMITEN, no se rechaza la peticion (el cliente re-emite tambien filas ajenas
+                    // sin cambios). Sin esto, cualquier empleado podia mover, robar o COMPLETAR
+                    // (cobrando monedas) la tarea de un companero.
+                    if (!$isPrivileged) {
+                        // No tocar assignments cuyo dueno actual sea otro usuario.
+                        if ($existing && $existing->user_id !== null && (int) $existing->user_id !== (int) $actor->id) {
+                            continue;
+                        }
+                        // No crear ni reasignar a nombre de otro usuario.
+                        if ($mappedData['user_id'] !== null && (int) $mappedData['user_id'] !== (int) $actor->id) {
+                            continue;
+                        }
+                        // Una completacion en el POOL (user_id null) evade la validacion
+                        // jerarquica, que keyea sobre el usuario de la assignment. Completar exige
+                        // haber tomado la tarea antes (grab -> user_id = actor).
+                        if ($mappedData['user_id'] === null
+                            && in_array($mappedData['status'], ['completed', 'awaiting_validation'], true)) {
+                            continue;
+                        }
+                    }
+
+                    // F4: el task_id debe existir EN EL TENANT. Una assignment que apunta a una
+                    // tarea inexistente (la "sentado" virtual 9999 de Ley Silla, o basura del
+                    // cliente) revienta el FK y, al ser 500, tumbaba TODO el batch full-state.
+                    // Se OMITE la fila (misma filosofia skip-no-rechazo).
+                    if (!Task::find($mappedData['task_id'])) {
+                        continue;
+                    }
+
+                    // F4: la regla de validación jerárquica vive en UNA sola clase
+                    // (TaskValidationPolicy) compartida con PUT /task-assignments/{id} — antes
+                    // estaba duplicada inline en ambas puertas, así que cualquier divergencia
+                    // futura dejaba un hueco por donde saltarse al supervisor.
+                    $user = User::find($mappedData['user_id']);
+                    $task = Task::find($mappedData['task_id']);
+
+                    $requiresValidation = \App\Services\TaskValidationPolicy::requiresValidation(
+                        $tenantId,
+                        $mappedData['user_id'],
+                        $task,
+                        $tasksConfig
+                    );
+
+                    // ARBITRAJE F4 - `awaiting_validation` PEGAJOSO: solo /admin/assignments/{id}
+                    // /validate (jerarquico y auditado) puede sacarla de ahi. Evita el bypass por
+                    // reintento en modo dynamic (re-rolear mt_rand) y que un cliente con estado
+                    // stale la regrese a in_progress.
+                    if ($existing && $existing->status === 'awaiting_validation') {
+                        $mappedData['status'] = 'awaiting_validation';
+                    } elseif ($existing && $existing->status === 'completed') {
                         $mappedData['status'] = 'completed';
                     } elseif ($mappedData['status'] === 'completed' && $requiresValidation) {
                         $mappedData['status'] = 'awaiting_validation';

@@ -43,11 +43,16 @@ class NotificationService
     }
 
     /**
-     * Send notification to all users with a specific role.
+     * Send notification to all users with a specific role WITHIN a tenant.
+     *
+     * Merge F3 (seguridad, R69): el `tenant_id` es OBLIGATORIO — sin él, la consulta seleccionaba
+     * destinatarios sólo por `role` y difundía el push a los admin/supervisor de TODOS los tenants
+     * (fuga cross-tenant de estado operativo + PII).
      */
-    public function sendToRole(string $role, string $title, string $body, array $data = []): bool
+    public function sendToRole(int $tenantId, string $role, string $title, string $body, array $data = []): bool
     {
         $tokens = DB::table('users')
+            ->where('tenant_id', $tenantId)
             ->where('role', $role)
             ->whereNotNull('fcm_token')
             ->pluck('fcm_token')
@@ -97,6 +102,23 @@ class NotificationService
         }
 
         return $success;
+    }
+
+    /**
+     * Notifica a los mandos (admin/supervisor) DE UN TENANT. Helper compartido (R80): antes cada
+     * módulo duplicaba este loop. Se usa sendToUser por id (y no sendToRole) para conservar el log
+     * por-destinatario aun sin fcm_token — en este entorno FCM se simula y ese log es la evidencia.
+     */
+    public function sendToTenantAdmins(int $tenantId, string $title, string $body, array $data = []): void
+    {
+        $adminIds = DB::table('users')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('role', ['admin', 'supervisor'])
+            ->pluck('id');
+
+        foreach ($adminIds as $adminId) {
+            $this->sendToUser((int) $adminId, $title, $body, $data);
+        }
     }
 
     /**

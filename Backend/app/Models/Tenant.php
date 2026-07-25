@@ -22,6 +22,14 @@ class Tenant extends Model
         'facturapi_organization_id'
     ];
 
+    // Secretos que NUNCA deben salir en un toArray()/JSON (merge F3): los passcodes hasheados de
+    // la Wiki pública (R-passcodes) y el certificado/llave del CSD de facturación.
+    protected $hidden = [
+        'org_vault_admin_passcode_hash',
+        'org_vault_viewer_passcode_hash',
+        'csd_certificate', 'csd_private_key', 'csd_password',
+    ];
+
     protected $casts = [
         'public_portal_enabled' => 'boolean',
         'allowed_modules_json' => 'array',

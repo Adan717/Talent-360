@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Helpers\TenantStore;
 use App\Models\StoreDailyOpeningStatus;
 use App\Models\StoreOpeningAssignment;
 use App\Models\StoreOpeningEvent;
 use App\Models\User;
+use App\Models\Employee;
 use App\Services\NotificationService;
 use App\Services\StoreOpeningSettingsService;
 use Carbon\Carbon;
@@ -25,10 +27,13 @@ class StoreOpeningHandoffService
     /**
      * Report manager absence during opening window.
      */
-    public function reportOpeningAbsence($userId, $storeId = 1, $simTime = null)
+    public function reportOpeningAbsence($userId, $storeId = null, $simTime = null)
     {
         $user = User::withoutGlobalScopes()->findOrFail($userId);
         $tenantId = $user->tenant_id ?? 1;
+        // R52: el default era `1` = la sucursal del tenant 1 (los ids de `stores` son globales).
+        // Se resuelve aquí porque el método escribe `store_id` (~51).
+        $storeId = $storeId ?? TenantStore::defaultIdFor($tenantId);
 
         return DB::transaction(function () use ($user, $storeId, $simTime, $tenantId) {
             $storeOpeningService = app(StoreOpeningService::class);
@@ -38,7 +43,8 @@ class StoreOpeningHandoffService
                 throw new \Exception("La tienda ya se encuentra abierta.");
             }
 
-            if ($status->current_responsible_employee_id !== $user->id) {
+            // Ambos lados son users.id; intval evita falsos negativos int-vs-string.
+            if ((int) $status->current_responsible_employee_id !== (int) $user->id) {
                 throw new \Exception("No eres el encargado responsable activo en este momento.");
             }
 
@@ -72,10 +78,15 @@ class StoreOpeningHandoffService
     /**
      * Report manager late arrival during opening window.
      */
-    public function reportOpeningLate($userId, $storeId = 1, $estimatedArrivalTime, $simTime = null)
+    public function reportOpeningLate($userId, $storeId, $estimatedArrivalTime, $simTime = null)
     {
         $user = User::withoutGlobalScopes()->findOrFail($userId);
         $tenantId = $user->tenant_id ?? 1;
+        // R52: el default era `1` = la sucursal del tenant 1 (los ids de `stores` son globales).
+        // Se resuelve aquí porque el método escribe `store_id` (~108). El default se retira del todo:
+        // `$estimatedArrivalTime` es obligatorio y va DESPUÉS, así que un opcional aquí sólo era
+        // decorativo (PHP lo deprecó en 8.0) y nadie podía omitirlo.
+        $storeId = $storeId ?? TenantStore::defaultIdFor($tenantId);
 
         return DB::transaction(function () use ($user, $storeId, $estimatedArrivalTime, $simTime, $tenantId) {
             $storeOpeningService = app(StoreOpeningService::class);
@@ -85,7 +96,8 @@ class StoreOpeningHandoffService
                 throw new \Exception("La tienda ya se encuentra abierta.");
             }
 
-            if ($status->current_responsible_employee_id !== $user->id) {
+            // Ambos lados son users.id; intval evita falsos negativos int-vs-string.
+            if ((int) $status->current_responsible_employee_id !== (int) $user->id) {
                 throw new \Exception("No eres el encargado responsable activo en este momento.");
             }
 
@@ -113,12 +125,19 @@ class StoreOpeningHandoffService
             ]);
 
             $handoffResult = null;
-            if ($mustHandoff || $willBeLate) {
-                // If it affects official opening, we transfer keys/opening responsibility
+            // R70: se cede la apertura SÓLO si `$mustHandoff` (llega tarde Y el tenant NO permite
+            // conservarla). El `|| $willBeLate` anterior hacía la condición ≡ `$willBeLate` (porque
+            // `$mustHandoff ⊆ $willBeLate`), así que `allow_late_if_before_opening` era LETRA MUERTA y
+            // TODO reporte de retardo cedía la apertura, aunque el ajuste (default TRUE) dijera lo
+            // contrario. Ahora el ajuste manda.
+            if ($mustHandoff) {
                 $handoffResult = $this->handoffToNextResponsible($storeId, $user->id, 'report_late', $simTime, $tenantId);
                 $msg = 'Retardo reportado. Debido al horario estimado, se ha cedido la apertura al suplente.';
             } else {
-                $msg = 'Retardo registrado. Conservas la responsabilidad por estar dentro del margen.';
+                // No hay cesión: o no llega tarde, o el tenant permite conservar la apertura pese al retardo.
+                $msg = $willBeLate
+                    ? 'Retardo registrado. Conservas la responsabilidad de la apertura (el horario configurado lo permite).'
+                    : 'Retardo registrado. Conservas la responsabilidad por estar dentro del margen.';
             }
 
             // Broadcast change
@@ -140,7 +159,10 @@ class StoreOpeningHandoffService
         $status = StoreDailyOpeningStatus::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
-            ->whereDate('date', Carbon::now()->format('Y-m-d'))
+            // whereDate: 'date' se persiste como datetime; sin esto la re-lectura del
+            // status no matcheaba y el handoff retornaba null (nunca cedía la apertura).
+            // Fecha en la tz del tenant para que coincida con la que usó getTodayOpeningStatus.
+            ->whereDate('date', Carbon::now(app(StoreOpeningService::class)->tenantTimezone($tenantId))->format('Y-m-d'))
             ->first();
 
         if (!$status) {
@@ -149,12 +171,9 @@ class StoreOpeningHandoffService
 
         $settings = $this->settingsService->getOpeningSettings($tenantId, $storeId);
 
-        // store_opening_assignments.employee_id es employees.id, no users.id
-        // (migración 2026_07_07_192928_fix_store_opening_assignments_foreign_key) —
-        // $currentUserId (users.id) hay que traducirlo antes de buscar la asignación.
-        $currentEmployeeId = DB::table('employees')->where('user_id', $currentUserId)->value('id');
-
-        // Find current assignment to get order
+        // Find current assignment to get order. $currentUserId es un users.id;
+        // assignments.employee_id es un employees.id, así que se traduce primero.
+        $currentEmployeeId = $this->employeeIdForUserId($currentUserId, $tenantId);
         $currentAssignment = StoreOpeningAssignment::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
@@ -163,28 +182,35 @@ class StoreOpeningHandoffService
 
         $currentOrder = $currentAssignment ? $currentAssignment->priority_order : 0;
 
-        // Find next active manager
+        // Siguiente responsable AUTORIZADO: `can_open_store` es obligatorio, si no el handoff le
+        // pasaba la bolita a alguien a quien el admin le quitó explícitamente el permiso de abrir.
         $nextAssignment = StoreOpeningAssignment::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('store_id', $storeId)
             ->where('is_active', true)
+            ->where('can_open_store', true)
             ->where('priority_order', '>', $currentOrder)
             ->orderBy('priority_order', 'asc')
             ->first();
 
-        if ($nextAssignment) {
-            // $nextAssignment->employee_id también es employees.id — traducir a
-            // users.id antes de guardarlo en current_responsible_employee_id o de
-            // usarlo para notificar/buscar al usuario.
-            $nextUserId = DB::table('employees')->where('id', $nextAssignment->employee_id)->value('user_id');
-            $nextUser = $nextUserId ? User::withoutGlobalScopes()->find($nextUserId) : null;
+        // El siguiente responsable: traducir su employee_id a users.id, que es lo
+        // que esperan la columna current_responsible_employee_id (FK users),
+        // User::find, el evento y la notificación.
+        $nextUserId = $nextAssignment ? $this->userIdForEmployeeId($nextAssignment->employee_id) : null;
+
+        // Sólo es una cesión válida si hay un siguiente responsable CON usuario
+        // vinculado (un empleado sin user_id no puede iniciar sesión ni abrir). Si el
+        // siguiente no tiene usuario, se trata como "sin suplentes" (rama de fallo con
+        // alerta crítica) en vez de dejar el responsable en null silenciosamente.
+        if ($nextAssignment && $nextUserId !== null) {
+            $nextUser = User::withoutGlobalScopes()->find($nextUserId);
 
             // Update status responsible
             $status->current_responsible_employee_id = $nextUserId;
             $status->status = 'transferred';
             
             // Re-calculate deadline starting from current time
-            $nowTimeStr = app(StoreOpeningService::class)->getCurrentTimeStr($simTime);
+            $nowTimeStr = app(StoreOpeningService::class)->getCurrentTimeStr($simTime, $status->tenant_id);
             $now = Carbon::createFromFormat('H:i:s', $nowTimeStr);
             $status->report_deadline = $now->copy()->addMinutes($settings->absence_late_report_window_minutes)->format('H:i:s');
             $status->save();
@@ -213,10 +239,10 @@ class StoreOpeningHandoffService
 
             // Notify Admin / Supervisors if enabled
             if ($settings->notify_admin_on_handoff) {
-                $this->notificationService->sendToRole('admin', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
+                $this->notificationService->sendToRole($tenantId, 'admin', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
             }
             if ($settings->notify_supervisor_on_handoff) {
-                $this->notificationService->sendToRole('supervisor', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
+                $this->notificationService->sendToRole($tenantId, 'supervisor', '⚠️ Cesión de Apertura', 'La apertura de la tienda fue cedida a ' . ($nextUser ? $nextUser->name : 'suplente'));
             }
 
             return [
@@ -242,14 +268,46 @@ class StoreOpeningHandoffService
                 'notes' => 'Alerta crítica: Todos los responsables asignados fallaron en abrir la tienda y no hay más suplentes.',
             ]);
 
-            // Broadcast critical alerts to all admins and supervisors
-            $this->notificationService->sendToRole('admin', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
-            $this->notificationService->sendToRole('supervisor', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
+            // Alerta crítica SÓLO a los admin/supervisor DE ESTE TENANT (sendToRole ahora exige
+            // tenant_id — antes difundía a los admins de todas las empresas).
+            $this->notificationService->sendToRole($tenantId, 'admin', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
+            $this->notificationService->sendToRole($tenantId, 'supervisor', '🚨 ALERTA CRÍTICA: Apertura Fallida', 'Ninguno de los encargados asignados abrió la sucursal a tiempo.');
 
             return [
                 'type' => 'failed',
                 'message' => 'Alerta crítica enviada: Todos los responsables fallaron en responder.'
             ];
         }
+    }
+
+    /**
+     * Traduce un users.id al employees.id del empleado vinculado dentro del tenant.
+     * (Para buscar la asignación de apertura de un usuario, cuyo employee_id es FK
+     * a employees.) Devuelve null si no hay empleado vinculado.
+     */
+    private function employeeIdForUserId($userId, $tenantId): ?int
+    {
+        // Guard: si $userId es null, `where('user_id', null)` se convierte en
+        // whereNull y matchearía cualquier empleado huérfano (user_id null).
+        if ($userId === null) {
+            return null;
+        }
+        $employeeId = Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->value('id');
+        return $employeeId !== null ? (int) $employeeId : null;
+    }
+
+    /**
+     * Traduce un employees.id (assignments.employee_id) al users.id del empleado.
+     * Las columnas runtime de status/evento son FK a users, por eso se guarda users.id.
+     */
+    private function userIdForEmployeeId($employeeId): ?int
+    {
+        $userId = Employee::withoutGlobalScopes()
+            ->where('id', $employeeId)
+            ->value('user_id');
+        return $userId !== null ? (int) $userId : null;
     }
 }

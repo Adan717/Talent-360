@@ -10,6 +10,12 @@ import {
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { HeaderStats } from './HeaderStats';
+// merge FE: paneles de resolución del Reloj. Autocontenidos (sondean solos y se ocultan si no hay
+// pendientes) y con la ruta gateada a admin/supervisor en el backend, que es quien está aquí.
+import { LateAuthorizationsPanel } from './reloj/LateAuthorizationsPanel';
+import { PanicIncidentsPanel } from './reloj/PanicIncidentsPanel';
+import { LateJustificationsPanel } from './reloj/LateJustificationsPanel';
+import { ContingenciesPanel } from './reloj/ContingenciesPanel';
 
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
@@ -796,6 +802,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               </div>
             </div>
           )}
+
+          {/* merge FE — sin estos paneles, lo que los empleados declaran desde el dial (entrada
+              tardía R56/R57, pánico R80, justificante R82, contingencia R83) se queda en la BD sin
+              que nadie pueda aprobarlo ni rechazarlo. */}
+          <LateAuthorizationsPanel />
+          <PanicIncidentsPanel />
+          <LateJustificationsPanel />
+          <ContingenciesPanel />
 
           {/* Banner de Progreso de Configuración (Wizard Stepper Banner) */}
           {(() => {

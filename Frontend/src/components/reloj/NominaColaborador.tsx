@@ -5,6 +5,7 @@ import {
   Trophy, AlertTriangle, Check
 } from 'lucide-react';
 import axiosInstance from '../../lib/axios';
+import QuienEstaEnTienda from './QuienEstaEnTienda';
 
 interface NominaColaboradorProps {
   isDark?: boolean;
@@ -271,6 +272,9 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           </div>
         </div>
       </div>
+
+      {/* R95 (merge FE): widget "¿Quién está en tienda?" — presencia en vivo del equipo. */}
+      <QuienEstaEnTienda isDark={isDark} />
 
       {/* Historial diario con firmas */}
       <div className={`p-4 rounded-2xl border ${

@@ -8,6 +8,7 @@ import Academia from './Academia';
 import Evaluacion360 from './Evaluacion360';
 import NominaColaborador from './NominaColaborador';
 import axiosInstance from '../../lib/axios';
+import SolicitarAutorizacionButton from './SolicitarAutorizacionButton';
 import { clearClockLocalCache } from '../../lib/clockCache';
 import { TaskRunner } from '../tareas_rutinas/TaskRunner';
 import type { TaskRunnerHandle } from '../tareas_rutinas/TaskRunner';
@@ -4904,11 +4905,24 @@ export default function RelojVisual({
                   </div>
                   
                   <button 
-                     onClick={() => {
+                     onClick={async () => {
                         if(justificanteText.trim().length > 10){
+                           // R82 (merge FE): el justificante se PERSISTE server-side. Antes este
+                           // modal era teatro — sólo escribía en el log local, así que el admin
+                           // nunca lo veía y la nómina deducía el retardo igual. Ahora crea la
+                           // solicitud que el panel de Justificantes aprueba/rechaza; aprobada,
+                           // el retardo de ese día no se deduce.
+                           try {
+                              await axiosInstance.post('/clock/request-late-justification', {
+                                 reason: justificanteText.trim(),
+                              });
+                           } catch (e: any) {
+                              showCustomAlert(`⚠️ ${e?.response?.data?.message || 'No se pudo enviar el justificante.'}`);
+                              return;
+                           }
                            updateClockState(currentUser.id, 'active');
                            setContingencyLogs((prev: any) => [{ id: Date.now(), userId: currentUser.id, userName: currentUser.name, type: 'late', reason: `JUSTIFICANTE: ${justificanteText}`, time: formattedTime }, ...prev]);
-                           showCustomAlert(`✅ Fichaje manual registrado a las ${formattedTime} con justificante.`);
+                           showCustomAlert(`✅ Justificante enviado. Un administrador lo revisará; si lo aprueba, el retardo no se te descontará.`);
                            setShowJustificanteModal(false);
                            setJustificanteText("");
                         } else {
@@ -5379,6 +5393,21 @@ export default function RelojVisual({
                       ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
                     </p>
                   </div>
+                )}
+
+                {/* R56/R57 (merge FE): si el bloqueo es por RETARDO EXTREMO, el colaborador puede
+                    pedir autorización REMOTA a un admin en vez de necesitar al supervisor presente
+                    con su PIN. Aprobada, su siguiente check_in ya no se bloquea (la decisión vive
+                    en BD, no en el cliente). */}
+                {isLateEntryValidation && (
+                  <>
+                    <div className="flex items-center gap-2 my-3">
+                      <div className="h-px bg-slate-200 flex-1" />
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">o</span>
+                      <div className="h-px bg-slate-200 flex-1" />
+                    </div>
+                    <SolicitarAutorizacionButton />
+                  </>
                 )}
 
                 <div className="flex gap-2">

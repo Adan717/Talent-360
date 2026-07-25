@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\TenantTimezone;
 
 class DashboardController extends Controller
 {
@@ -37,7 +38,7 @@ class DashboardController extends Controller
                 ->where('tenant_id', $tenantId)
                 ->count();
 
-            $today = \Carbon\Carbon::today()->toDateString();
+            $today = \Carbon\Carbon::now(TenantTimezone::for($tenantId))->toDateString();
 
             // Retardos del Día (Check-ins de hoy donde is_late es verdadero)
             // whereNull('simulation_session_id'): nunca mezclar datos del Simulador Matrix

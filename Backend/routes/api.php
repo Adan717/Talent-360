@@ -41,7 +41,10 @@ use App\Http\Controllers\MealReservationController;
 
 Route::prefix('v1')->middleware('device.security')->group(function () {
     // Auth & SaaS Onboarding (Públicas)
-    Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+    // Merge F3: el anti-fuerza-bruta del login vive EN el controller (R-throttle por cuenta:
+    // cuenta sólo intentos FALLIDOS, con backstop de enumeración por IP) — el throttle de ruta
+    // estrangulaba también los logins EXITOSOS (el chorro legítimo de la mañana).
+    Route::post('/login', [AuthController::class, 'login']);
     // §37: Modo Kiosco — throttle agresivo porque el PIN es corto (4-6 dígitos).
     Route::middleware('throttle:5,1')->post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
     Route::post('/register', [AuthController::class, 'register']);
@@ -200,6 +203,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/admin/dashboard/stats', [DashboardController::class, 'getStats']);
         Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
         Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
+        // Kill-Switch (línea del Reloj): el mando cierra remotamente un turno abierto.
+        Route::post('/admin/dashboard/force-close-shift', [DashboardMonitorController::class, 'forceCloseShift']);
         Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
         Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
         Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
@@ -235,6 +240,27 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Validación de Tareas (Aprobación/Rechazo)
         Route::post('/admin/assignments/{id}/validate', [TaskValidationController::class, 'validateAssignment']);
 
+        // Kiosko: asignar/resetear el PIN de un empleado (admin/supervisor). R54.
+        Route::post('/admin/employees/{id}/kiosk-pin', [\App\Http\Controllers\KioskController::class, 'setPin']);
+
+        // Salida Doble Llave (spec:53-55): el supervisor autoriza una salida 'pending_approval'. R75.
+        Route::post('/clock/check-out/{id}/authorize', [TimeEntryController::class, 'authorizeCheckout']);
+
+        // Tolerancia con autorización: el admin ve y resuelve las solicitudes de entrada. R56.
+        Route::get('/admin/late-authorizations', [\App\Http\Controllers\LateAuthorizationController::class, 'pending']);
+        Route::post('/admin/late-authorizations/{id}/resolve', [\App\Http\Controllers\LateAuthorizationController::class, 'resolve']);
+
+        // Botón de Pánico: el mando ve los incidentes ACTIVOS de su tenant. R80.
+        Route::get('/admin/panic-incidents', [\App\Http\Controllers\PanicController::class, 'active']);
+
+        // Justificantes de retardo: el admin ve y resuelve las solicitudes. R82.
+        Route::get('/admin/late-justifications', [\App\Http\Controllers\LateJustificationController::class, 'pending']);
+        Route::post('/admin/late-justifications/{id}/resolve', [\App\Http\Controllers\LateJustificationController::class, 'resolve']);
+
+        // Contingencias (fuerza mayor): el admin ve y resuelve las declaraciones. R83.
+        Route::get('/admin/contingencies', [\App\Http\Controllers\ContingencyController::class, 'pending']);
+        Route::post('/admin/contingencies/{id}/resolve', [\App\Http\Controllers\ContingencyController::class, 'resolve']);
+
         // Monedero Digital y Recompensas (Wallet)
         Route::get('/wallet/balance', [\App\Http\Controllers\UserWalletController::class, 'getBalance']);
         Route::get('/wallet/transactions', [\App\Http\Controllers\UserWalletController::class, 'getTransactions']);
@@ -264,6 +290,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::prefix('org-vault')->group(function () {
             Route::get('/settings', [ObsidianController::class, 'getSettings']);
             Route::post('/settings', [ObsidianController::class, 'saveSettings']);
+            // Fijar/resetear los passcodes de la Wiki pública del tenant (seguridad, R-passcodes:
+            // antes estaban hardcodeados y eran globales a toda la plataforma).
+            Route::post('/passcodes', [ObsidianController::class, 'setVaultPasscodes']);
             Route::post('/sync-local', [ObsidianController::class, 'syncLocal']);
             Route::post('/sync-zip', [ObsidianController::class, 'syncZip']);
             Route::post('/purge', [ObsidianController::class, 'purgeVault']);
@@ -315,6 +344,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/me/fcm-token', [AuthController::class, 'updateFcmToken']);
         Route::post('/me/update-security', [AuthController::class, 'updateSecurity']);
         Route::put('/me/pre-shift-alarm', [AuthController::class, 'updatePreShiftAlarm']);
+        // R87 (línea Reloj): variante canónica — persiste en el EXPEDIENTE y devuelve toAuthPayload.
+        Route::post('/me/pre-shift-alarm', [AuthController::class, 'preShiftAlarm']);
+        // R102: la Academia re-estampa el marcador al aprobar Puntualidad (desbloquea el dial).
+        Route::post('/me/punctuality-course-reset', [AuthController::class, 'punctualityCourseReset']);
         Route::put('/me/security-pin', [AuthController::class, 'updateSecurityPin']);
         Route::get('/me/punctuality-status', [AuthController::class, 'punctualityStatus']);
         Route::get('/user', function (Request $request) {
@@ -325,12 +358,41 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // §16: throttle por usuario autenticado — antes ningún endpoint de fichaje tenía
         // límite de tasa (el único ejemplo en todo el archivo era /login).
         Route::middleware('throttle:20,1')->post('/clock/punch', [TimeEntryController::class, 'punch']);
-        Route::middleware('throttle:20,1')->post('/clock/punch-batch', [TimeEntryController::class, 'punchBatch']);
+        // Merge F3: batch offline UNIFICADO (client_stamp/occurred_at del Reloj + HMAC offline_stamp
+        // del §16) — vive en PunchBatchController; throttle por USUARIO (Sanctum → key = user id).
+        Route::middleware('throttle:30,1')->post('/clock/punch-batch', [\App\Http\Controllers\PunchBatchController::class, 'batch']);
         Route::get('/clock/offline-secret', [TimeEntryController::class, 'offlineSecret']);
         // Protege contra fuerza bruta del PIN de testigos — mismo límite que /login.
         Route::middleware('throttle:5,1')->post('/clock/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
+        // Alias de la línea del Reloj (R86) — mismo dispatcher de doble protocolo.
+        Route::middleware('throttle:5,1')->post('/store-opening/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
         Route::post('/clock/meal-photo', [TimeEntryController::class, 'uploadMealPhoto']);
+
+        // Kiosko: ponche por PIN desde la tableta compartida. La sesión (cualquier usuario del
+        // tenant) sólo ancla el TENANT; el PIN identifica al empleado y el enforcement es server-side
+        // (can_clock_in + rate-limit). R54.
+        Route::post('/kiosk/punch', [\App\Http\Controllers\KioskController::class, 'punch']);
+
+        // Tolerancia con autorización: el empleado solicita autorización cuando el Retardo Extremo
+        // le bloquea la entrada (R14). Una aprobación levanta el bloqueo server-side. R56.
+        Route::post('/clock/request-late-authorization', [\App\Http\Controllers\LateAuthorizationController::class, 'request']);
+
+        // Botón de Pánico (R80): el empleado declara una emergencia (categoría + geo) → se persiste y
+        // alerta a los mandos del tenant.
+        Route::post('/clock/panic', [\App\Http\Controllers\PanicController::class, 'report']);
+        Route::get('/clock/panic/mine', [\App\Http\Controllers\PanicController::class, 'mine']);
+        Route::post('/clock/panic/resolve-mine', [\App\Http\Controllers\PanicController::class, 'resolveMine']);
+        Route::post('/clock/panic/{id}/resolve', [\App\Http\Controllers\PanicController::class, 'resolve']);
+
+        // Laborar Horas Extras / Feriado (R81): autorización del supervisor server-side.
+        Route::post('/clock/authorize-overtime', [\App\Http\Controllers\OvertimeAuthorizationController::class, 'grant']);
+        Route::get('/clock/overtime/today', [\App\Http\Controllers\OvertimeAuthorizationController::class, 'today']);
+        // R92: salida anticipada — espejo del patrón R81.
+        Route::post('/clock/authorize-early-departure', [\App\Http\Controllers\EarlyDepartureAuthorizationController::class, 'grant']);
+
+        // Justificante de retardo (R82): el empleado justifica el retardo de HOY.
+        Route::post('/clock/request-late-justification', [\App\Http\Controllers\LateJustificationController::class, 'request']);
 
         // Apertura de tienda (Operativa del Reloj Checador)
         Route::get('/features/company', [StoreOpeningController::class, 'getCompanyFeatures']);

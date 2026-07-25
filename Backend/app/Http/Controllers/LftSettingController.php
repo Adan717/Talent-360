@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\LftSetting;
 use App\Models\LftHoliday;
+use Carbon\Carbon;
 
 class LftSettingController extends Controller
 {
@@ -29,6 +30,9 @@ class LftSettingController extends Controller
                 'rest_tolerance_minutes' => 10,
                 'late_action_mode' => 'deduct',
                 'paid_rest_day' => true,
+                'late_penalty_per_minute' => 2.00,
+                'max_late_block_minutes' => 0,
+                'require_checkout_approval' => false,
             ]
         );
 
@@ -56,6 +60,20 @@ class LftSettingController extends Controller
             'rest_tolerance_minutes' => 'required|integer|min:0',
             'late_action_mode' => 'required|string|in:deduct,extend_shift',
             'paid_rest_day' => 'required|boolean',
+            // sometimes: el frontend actual no lo envía; al omitirlo, updateOrCreate
+            // conserva el valor existente y no rompe el guardado.
+            'late_penalty_per_minute' => 'sometimes|numeric|min:0',
+            // Retardo Extremo (spec:46): 0 = deshabilitado. sometimes = el frontend actual
+            // no lo envía; al omitirlo, updateOrCreate conserva el valor existente.
+            'max_late_block_minutes' => 'sometimes|integer|min:0',
+            // Salida Doble Llave (spec:53-55): 0/false = deshabilitado.
+            'require_checkout_approval' => 'sometimes|boolean',
+            // R96 (Fase 6, config sin UI): knobs opt-in de Fases 3-5 que hasta ahora sólo se podían
+            // fijar por SQL crudo. `sometimes` = si el FE no los envía, updateOrCreate conserva el valor.
+            'require_closing_checklist' => 'sometimes|boolean',      // Checklist de Cierre (R88)
+            'punctuality_bonus_amount' => 'sometimes|numeric|min:0', // Bono de puntualidad (R94)
+            'punctuality_bonus_max_lates' => 'sometimes|integer|min:0|max:65535', // columna unsignedSmallInteger
+            'opening_bonus_per_open' => 'sometimes|numeric|min:0',   // Bono de apertura (R94)
         ]);
 
         $settings = LftSetting::updateOrCreate(
@@ -72,7 +90,7 @@ class LftSettingController extends Controller
 
     /**
      * Obtiene los días festivos de la LFT.
-     * Si no hay ninguno, precarga los festivos oficiales de México para 2026.
+     * Si no hay ninguno, precarga los festivos oficiales de México para el año actual.
      */
     public function getHolidays(Request $request)
     {
@@ -83,16 +101,11 @@ class LftSettingController extends Controller
             ->get();
 
         if ($holidays->isEmpty()) {
-            // Precargar días festivos oficiales de México (Año 2026)
-            $defaultHolidays = [
-                ['date' => '2026-01-01', 'name' => 'Año Nuevo', 'block_app' => false],
-                ['date' => '2026-02-02', 'name' => 'Aniversario de la Constitución (recorrido)', 'block_app' => false],
-                ['date' => '2026-03-16', 'name' => 'Natalicio de Benito Juárez (recorrido)', 'block_app' => false],
-                ['date' => '2026-05-01', 'name' => 'Día del Trabajo', 'block_app' => false],
-                ['date' => '2026-09-16', 'name' => 'Día de la Independencia', 'block_app' => false],
-                ['date' => '2026-11-16', 'name' => 'Día de la Revolución (recorrido)', 'block_app' => false],
-                ['date' => '2026-12-25', 'name' => 'Navidad', 'block_app' => false],
-            ];
+            // Precargar días festivos oficiales de México para el AÑO ACTUAL (no un año
+            // hardcodeado): los "recorrido" (a lunes) cambian de fecha cada año. El año se
+            // toma en hora de México (no UTC) para no sembrar el año siguiente por unas
+            // horas la noche del 31-dic; son festivos mexicanos, así que la tz aplica.
+            $defaultHolidays = self::defaultHolidaysForYear(Carbon::now('America/Mexico_City')->year);
 
             foreach ($defaultHolidays as $dh) {
                 LftHoliday::create([
@@ -112,6 +125,26 @@ class LftSettingController extends Controller
             'success' => true,
             'data' => $holidays
         ]);
+    }
+
+    /**
+     * Días festivos oficiales de México para un año dado. Las fechas fijas usan el año
+     * directo; las "recorrido" (LFT art. 74: se recorren al lunes) se computan por año:
+     * Constitución = 1er lunes de febrero, Benito Juárez = 3er lunes de marzo,
+     * Revolución = 3er lunes de noviembre. (El día se toma vía format('Y-m-d'); la hora
+     * del Carbon es irrelevante.)
+     */
+    public static function defaultHolidaysForYear(int $year): array
+    {
+        return [
+            ['date' => "{$year}-01-01", 'name' => 'Año Nuevo', 'block_app' => false],
+            ['date' => Carbon::create($year, 2, 1)->firstOfMonth(Carbon::MONDAY)->format('Y-m-d'), 'name' => 'Aniversario de la Constitución (recorrido)', 'block_app' => false],
+            ['date' => Carbon::create($year, 3, 1)->nthOfMonth(3, Carbon::MONDAY)->format('Y-m-d'), 'name' => 'Natalicio de Benito Juárez (recorrido)', 'block_app' => false],
+            ['date' => "{$year}-05-01", 'name' => 'Día del Trabajo', 'block_app' => false],
+            ['date' => "{$year}-09-16", 'name' => 'Día de la Independencia', 'block_app' => false],
+            ['date' => Carbon::create($year, 11, 1)->nthOfMonth(3, Carbon::MONDAY)->format('Y-m-d'), 'name' => 'Día de la Revolución (recorrido)', 'block_app' => false],
+            ['date' => "{$year}-12-25", 'name' => 'Navidad', 'block_app' => false],
+        ];
     }
 
     /**

@@ -8,6 +8,7 @@ import {
   Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale
 } from 'lucide-react';
 import { useAppStore } from './store/useAppStore';
+import { usePreShiftAlarm } from './hooks/usePreShiftAlarm';
 import axiosInstance from './lib/axios';
 import { clearClockLocalCache } from './lib/clockCache';
 
@@ -34,6 +35,7 @@ const getIndicatorColor = (modId: string, systemSettings: any) => {
 
 // Mega-Módulos Cargados de Forma Dinámica (Lazy Loading)
 const RelojChecador = lazy(() => import('./components/RelojChecador'));
+const KioskScreen = lazy(() => import('./components/KioskScreen'));
 const RecursosHumanos = lazy(() => import('./components/RecursosHumanos'));
 const DashboardTalent360 = lazy(() => import('./components/DashboardTalent360'));
 const PanelSimulador = lazy(() => import('./components/reloj/PanelSimulador'));
@@ -756,6 +758,11 @@ function App() {
   const navigate = useNavigate();
   const [banReason, setBanReason] = useState<string | null>(null);
 
+  // R87 (merge FE): alarma de traslado (aviso local N min antes del turno). Montada aquí —una
+  // sola vez, sobre el currentUser real— y NO en el motor del reloj, que el PanelSimulador
+  // multiplica por cada teléfono simulado.
+  usePreShiftAlarm();
+
   useEffect(() => {
     const handleBan = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -847,6 +854,15 @@ function App() {
               <RelojChecador />
             </Suspense>
           </div>
+        </ProtectedRoute>
+      } />
+      {/* R54 (merge FE): kiosko de tablet compartida — la sesión sólo ancla el TENANT y cada
+          empleado se identifica con su PIN (enforcement server-side en KioskController). */}
+      <Route path="/kiosko" element={
+        <ProtectedRoute>
+          <Suspense fallback={<LoadingScreen message="Iniciando Kiosko..." />}>
+            <KioskScreen />
+          </Suspense>
         </ProtectedRoute>
       } />
       <Route path="/invite" element={

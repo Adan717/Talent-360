@@ -13,6 +13,8 @@ use App\Services\StoreOpeningService;
 use App\Services\StoreOpeningHandoffService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use App\Helpers\TenantStore;
 
 class StoreOpeningController extends Controller
 {
@@ -125,10 +127,17 @@ class StoreOpeningController extends Controller
 
         // §30: el endpoint recibe user_id (lo único que el frontend puede conocer con
         // certeza de un colaborador) y resuelve internamente al employees.id real que
-        // store_opening_assignments.employee_id exige como FK — simétrico al accessor
-        // resolved_user_id agregado en §29 para la lectura.
+        // store_opening_assignments.employee_id exige como FK.
+        // ARBITRAJE F3 — acepta AMBOS protocolos: `user_id` (§30, lo único que el FE conoce con
+        // certeza) o `employee_id` (línea del Reloj, el id real de la FK). Cualquiera resuelve al
+        // mismo expediente, SIEMPRE acotado al tenant del emisor (la regla `exists` plana ignora
+        // el TenantScope, así que el filtro por tenant es lo que evita asignar gente de otra empresa).
         $validated = $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
+            'user_id' => 'required_without:employee_id|integer|exists:users,id',
+            'employee_id' => [
+                'required_without:user_id',
+                Rule::exists('employees', 'id')->where('tenant_id', $tenantId),
+            ],
             'priority_order' => 'integer|min:1',
             'can_open_store' => 'boolean',
             'can_close_store' => 'boolean',
@@ -138,7 +147,9 @@ class StoreOpeningController extends Controller
 
         $employee = \App\Models\Employee::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->where('user_id', $validated['user_id'])
+            ->when(isset($validated['user_id']),
+                fn ($q) => $q->where('user_id', $validated['user_id']),
+                fn ($q) => $q->where('id', $validated['employee_id']))
             ->first();
 
         if (!$employee) {
@@ -236,15 +247,50 @@ class StoreOpeningController extends Controller
     {
         $user = Auth::user();
         $tenantId = $user->tenant_id ?? 1;
-        $storeId = $request->input('store_id', 1);
+        // R52 (merge F3): el `store_id` que mandara el CLIENTE se IGNORA — con la entidad
+        // `stores` los ids son GLOBALES, así que aceptarlo era una superficie de lectura
+        // cross-sucursal y un `1` hardcodeado apuntaba a la sucursal del tenant 1 desde
+        // cualquier empresa. La sucursal se resuelve del tenant.
+        $storeId = TenantStore::defaultIdFor($tenantId);
         $simTime = $request->input('simTime');
         $simDay = $request->input('simDay');
 
         $status = $this->openingService->getTodayOpeningStatus($tenantId, $storeId, $simTime, $simDay);
 
+        // R100 (spec §3/§5 "Llamar a Encargado de Llaves"): el teléfono del responsable de apertura
+        // viaja SÓLO a portadores de llaves (asignación ACTIVA con can_open_store). El gate es
+        // server-side a propósito: a un empleado común el dato NO le llega.
+        $responsiblePhone = null;
+        $myEmployeeId = \Illuminate\Support\Facades\DB::table('employees')
+            ->where('tenant_id', $tenantId)->where('user_id', $user->id)->value('id');
+        $esPortador = $myEmployeeId && \Illuminate\Support\Facades\DB::table('store_opening_assignments')
+            ->where('tenant_id', $tenantId)
+            ->where('employee_id', $myEmployeeId)
+            ->where('is_active', true)
+            ->where('can_open_store', true)
+            ->exists();
+        if ($esPortador && $status && $status->current_responsible_employee_id
+            && (int) $status->current_responsible_employee_id !== (int) $user->id) {
+            // (si el responsable eres TÚ, no hay a quién llamar — el FE no muestra el botón)
+            $responsiblePhone = \Illuminate\Support\Facades\DB::table('employees')
+                ->where('tenant_id', $tenantId)
+                ->where('user_id', $status->current_responsible_employee_id)
+                ->value('phone');
+        }
+
         return response()->json([
             'success' => true,
             'status' => $status,
+            'responsible_phone' => $responsiblePhone,
+            // R47: los ajustes viajan aquí a propósito — el motor del reloj (useClockEngine) YA
+            // consulta este endpoint cada 5s y es accesible al empleado, mientras que
+            // `GET /store-opening/settings` es admin-only. Sin esto el motor usaba eternamente sus
+            // defaults hardcodeados y apagar "requiere checklist" desde el panel no apagaba nada.
+            'settings' => $this->settingsService->getOpeningSettings($tenantId, $storeId),
+            // R50: ídem con las asignaciones — `GET /store-opening/assignments` es admin-only, así
+            // que el empleado recibía 403 y el reloj se quedaba sin saber quién abre (nombre falso
+            // "Encargado" + lista de llaves hardcodeada). Van scrubbeadas (sin email ni relación).
+            'assignments' => $this->openingService->getAssignmentsForClock($tenantId, $storeId),
             'is_premium_active' => FeatureAccessService::tenantHasFeature($tenantId, 'store_opening')
         ]);
     }
@@ -285,6 +331,17 @@ class StoreOpeningController extends Controller
         $user = Auth::user();
         $storeId = $request->input('store_id', 1);
         $simTime = $request->input('simTime');
+        $tenantId = $user->tenant_id ?? 1;
+
+        // R93 (D2, merge F3): este flujo es específico del ENCARGADO de apertura (dispara la
+        // cascada de delegación de llaves) → lo gatea su switch. Antes apagar el toggle sólo
+        // escondía el botón y una petición cruda disparaba la cascada igual.
+        if (!\App\Services\ClockService::dialerFeatureEnabled($tenantId, 'allow_manager_incidences')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El reporte de incidencias del encargado está deshabilitado para esta sucursal.',
+            ], 403);
+        }
 
         // Permitir suplantación de usuario para el simulador Matrix QA si tiene permisos
         $userId = $user->id;
@@ -478,8 +535,20 @@ class StoreOpeningController extends Controller
     /**
      * Apertura de Emergencia con co-validación de 2 testigos presenciales (PIN).
      */
+    /**
+     * ARBITRAJE F3 — Apertura de EMERGENCIA, endpoint de DOBLE protocolo:
+     *  a) `pin1`+`pin2` (línea del Reloj, R86): testigos ANÓNIMOS resueltos por su PIN de kiosko
+     *     (blind index + bcrypt + rate-limit R54); el actor autenticado abre y ficha.
+     *  b) `requester_id`+`witness_*_id`+`witness_*_pin` (línea §1–§42, §37): testigos por id con
+     *     su security_pin (co-validación presencial).
+     * Ambos exigen 2 personas DISTINTAS del tenant y dejan bitácora/auditoría.
+     */
     public function emergencyOpen(Request $request)
     {
+        if ($request->filled('pin1') || $request->filled('pin2')) {
+            return $this->emergencyOpenByKioskPins($request);
+        }
+
         $validated = $request->validate([
             'requester_id' => 'required|integer|exists:users,id',
             'witness_1_id' => 'required|integer|exists:users,id',
@@ -513,6 +582,118 @@ class StoreOpeningController extends Controller
                 'message' => $e->getMessage()
             ], 400);
         }
+    }
+
+    /**
+     * Protocolo (a) del emergencyOpen: 2 PINs de kiosko (R86). El suplente presente teclea los
+     * PINs de 2 compañeros; se validan server-side (R54) y, si ambos son de empleados DISTINTOS,
+     * activos, del tenant y distintos del actor, se abre la tienda con alerta a los mandos.
+     */
+    private function emergencyOpenByKioskPins(Request $request)
+    {
+        $request->validate([
+            'pin1' => ['required', 'string', 'regex:/\A\d{6}\z/'],
+            'pin2' => ['required', 'string', 'regex:/\A\d{6}\z/'],
+        ]);
+
+        $actor = Auth::user();
+        $tenantId = $actor->tenant_id;
+        if ($tenantId === null) {
+            return response()->json(['success' => false, 'message' => 'Sin tenant.'], 403);
+        }
+
+        // El actor debe poder FICHAR (expediente con puesto): abre la tienda Y registra su entrada.
+        $actorEmp = \App\Models\Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)->where('user_id', $actor->id)->first();
+        if (!$actorEmp || !$actorEmp->canClockIn()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes un expediente con puesto asignado; no puedes abrir la tienda.',
+            ], 403);
+        }
+
+        // Rate-limit de PINs fallidos (patrón R54/R81): sólo cuentan los FALLOS, key por (tenant, actor).
+        $rateKey = 'emergency-open-fail:' . $tenantId . ':' . $actor->id;
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rateKey, 5)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Demasiados intentos fallidos. Espera un momento e inténtalo de nuevo.',
+            ], 429);
+        }
+
+        // Dos PINs distintos de entrada (si son iguales, jamás serían 2 testigos).
+        if ($request->pin1 === $request->pin2) {
+            \Illuminate\Support\Facades\RateLimiter::hit($rateKey, 60);
+            return response()->json([
+                'success' => false,
+                'message' => 'Los 2 testigos deben ser personas distintas.',
+            ], 422);
+        }
+
+        $w1 = $this->resolveWitness($request->pin1, $tenantId, $actor->id);
+        $w2 = $this->resolveWitness($request->pin2, $tenantId, $actor->id);
+
+        // Mensaje genérico ante cualquier fallo (anti-oráculo, R81).
+        if (!$w1 || !$w2 || (int) $w1->user_id === (int) $w2->user_id) {
+            \Illuminate\Support\Facades\RateLimiter::hit($rateKey, 60);
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo validar a los 2 testigos. Verifica que sean 2 compañeros distintos y presentes.',
+            ], 422);
+        }
+
+        try {
+            $result = $this->openingService->emergencyOpenStore(
+                $actor->id,
+                [(int) $w1->user_id, (int) $w2->user_id],
+                [$w1->name, $w2->name],
+                $request->input('store_id') ? (int) $request->input('store_id') : 1,
+                $request->input('simTime')
+            );
+
+            // Alerta PRIORITARIA a los mandos del tenant (patrón R80, tenant-scoped).
+            app(\App\Services\NotificationService::class)->sendToTenantAdmins(
+                $tenantId,
+                '🚨 Apertura de EMERGENCIA de la tienda',
+                "{$actor->name} abrió la tienda en emergencia, con 2 testigos ({$w1->name} y {$w2->name}).",
+                ['type' => 'emergency_store_open']
+            );
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * Resuelve un testigo por su PIN de kiosko: empleado ACTIVO del tenant, con el PIN correcto, y
+     * DISTINTO del actor. Devuelve el Employee o null (mensaje genérico arriba). Espeja KioskController.
+     */
+    private function resolveWitness(string $pin, int $tenantId, int $actorUserId)
+    {
+        $lookup = \App\Models\Employee::kioskPinLookup($pin);
+        $emp = \App\Models\Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('kiosk_pin_lookup', $lookup)
+            ->first();
+
+        if (!$emp || !$emp->kiosk_pin_hash || !\Illuminate\Support\Facades\Hash::check($pin, $emp->kiosk_pin_hash)) {
+            return null;
+        }
+        // El testigo no puede ser el propio actor (co-validación = OTRAS personas).
+        if ((int) $emp->user_id === (int) $actorUserId) {
+            return null;
+        }
+        // Expediente ACTIVO (review R86) + usuario ACTIVO del tenant.
+        if (!$emp->is_active_employee) {
+            return null;
+        }
+        $u = \App\Models\User::withoutGlobalScopes()->find($emp->user_id);
+        if (!$u || (int) $u->tenant_id !== (int) $tenantId || !$u->is_active) {
+            return null;
+        }
+
+        return $emp;
     }
 
     /**

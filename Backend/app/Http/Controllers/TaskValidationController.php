@@ -18,11 +18,27 @@ class TaskValidationController extends Controller
             'score_percentage' => 'nullable|integer|min:0|max:100'
         ]);
 
-        $assignment = TaskAssignment::findOrFail($id);
-        $employee = User::findOrFail($assignment->user_id);
         $validator = auth()->user();
         $userId = $validator->id;
-        $tenantId = $validator->tenant_id ?? 1;
+
+        // F4 (seguridad): tenant EXPLÍCITO, sin fallback `?? 1` — un validador sin empresa
+        // (p.ej. platform_admin) caía al tenant 1 REAL y podía validar (y PAGAR monedas de) las
+        // tareas de esa empresa. Y el assignment se resuelve acotado al tenant del validador:
+        // `findOrFail` a secas confiaba sólo en el TenantScope global, que se apaga en consola y
+        // para platform_admin → un admin del tenant A validaba tareas del tenant B.
+        $tenantId = $validator->tenant_id;
+        if ($tenantId === null) {
+            return response()->json(['error' => 'Tu cuenta no pertenece a ninguna empresa.'], 403);
+        }
+
+        $assignment = TaskAssignment::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->find($id);
+        if (!$assignment) {
+            return response()->json(['error' => 'Asignación no encontrada en tu empresa.'], 404);
+        }
+
+        $employee = User::withoutGlobalScopes()->findOrFail($assignment->user_id);
         $scorePct = $request->input('score_percentage', 100);
 
         // 1. Prevent self-validation

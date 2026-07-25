@@ -28,7 +28,12 @@ class TaskAssignmentController extends Controller
         $query = TaskAssignment::where('tenant_id', $tenantId)
             ->where('date', $date);
 
-        if ($request->has('user_id')) {
+        // F4 (seguridad): sólo admin/supervisor pueden consultar las assignments de OTRO usuario.
+        // Un no privilegiado queda siempre scopeado a las propias (su `?user_id=` se ignora):
+        // antes era un IDOR de lectura de la agenda/tiempos/feedback ajenos. Ningún flujo del FE
+        // pasa ?user_id= (RelojVisual siempre pide las propias).
+        $isPrivileged = in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
+        if ($isPrivileged && $request->has('user_id')) {
             $query->where('user_id', $request->input('user_id'));
         } else {
             $query->where('user_id', $user->id);
@@ -51,14 +56,24 @@ class TaskAssignmentController extends Controller
         $assignment = TaskAssignment::where('tenant_id', $tenantId)
             ->findOrFail($id);
 
+        // F4 (seguridad): ownership — un no privilegiado sólo edita SUS propias assignments.
+        // Antes cualquier empleado del tenant podía mover la tarea de un compañero (incluido
+        // completarla). El checklist de apertura de RelojVisual actúa sobre las propias.
+        $isPrivileged = in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
+        if (!$isPrivileged && (int) $assignment->user_id !== (int) $user->id) {
+            return response()->json(['error' => 'No puedes modificar tareas de otro colaborador.'], 403);
+        }
+
+        // F4 (seguridad): `validated_by` y `validation_feedback` NO son asignables por este
+        // endpoint — son campos del SUPERVISOR, que vive en POST /admin/assignments/{id}/validate
+        // (jerárquico y auditado). Dejarlos aquí permitía a un empleado forjarse su propia
+        // validación o borrar el motivo de rechazo que le dejó su supervisor.
         $validated = $request->validate([
             'status' => 'required|string|in:pending,in_progress,paused,completed,awaiting_validation,omitted,spilled',
             'assistant_data' => 'nullable',
             'accumulated_mins' => 'nullable|integer',
             'started_at_mins' => 'nullable|integer',
             'completed_at_mins' => 'nullable|integer',
-            'validation_feedback' => 'nullable|string',
-            'validated_by' => 'nullable|integer',
             'origin' => 'nullable|string|in:planned,carried_over,extra,routine',
         ]);
 
@@ -70,71 +85,34 @@ class TaskAssignmentController extends Controller
         // TaskSyncController::sync() (líneas ~151-245) — validación de supervisor
         // según validation_mode, costo financiero y puntos/monedas al completar. Se
         // porta aquí tal cual, con el mismo guard de no pagar dos veces.
+        // ARBITRAJE F4 — `awaiting_validation` es PEGAJOSO: sólo /validate lo saca. Sin esto, el
+        // PUT se saltaba al supervisor (re-roleaba la validación dynamic o degradaba a completed
+        // sin firma).
+        if ($assignment->status === 'awaiting_validation') {
+            $validated['status'] = 'awaiting_validation';
+        }
+
+        // ARBITRAJE F4 — el guard §33 "una completada no se recalcula ni se repaga" se conserva,
+        // pero ya NO congela el status: DESHACER una completada (desmarcar el checkbox del
+        // checklist → pending/in_progress) es un flujo legítimo del Reloj. La garantía de no pagar
+        // dos veces pasa a anclarse en `coins_awarded` (abajo), que es la marca real del pago.
         $wasCompleted = $assignment->status === 'completed';
 
-        if ($wasCompleted) {
-            // Una asignación ya completada no vuelve a recalcularse ni a repagarse.
-            $validated['status'] = 'completed';
+        if ($wasCompleted && $validated['status'] === 'completed') {
+            // Sigue completada: no se recalcula nada ni se vuelve a pagar.
+        } elseif ($assignment->status === 'awaiting_validation') {
+            // Pegajosa: no se recalcula ni se paga hasta que el supervisor valide.
         } else {
             $assignmentUser = $assignment->user_id ? User::find($assignment->user_id) : null;
-
-            $reportsTo = false;
-            if ($assignmentUser && $assignmentUser->employee && $assignmentUser->employee->job_role_id) {
-                $role = JobRole::find($assignmentUser->employee->job_role_id);
-                if ($role && $role->reports_to_role_id) {
-                    $reportsTo = true;
-                }
-            }
-
             $task = $assignment->task_id ? Task::find($assignment->task_id) : null;
-            $isBlocker = $task && $task->priority === 'bloqueante';
 
-            $tasksConfigRaw = DB::table('system_settings')
-                ->where('tenant_id', $tenantId)
-                ->where('key', 'tasksConfig')
-                ->value('value');
-            $tasksConfig = $tasksConfigRaw ? json_decode($tasksConfigRaw, true) : null;
-
-            $tenant = \App\Models\Tenant::find($tenantId);
-            $supervisorUnlocked = $tenant ? $tenant->isFeatureUnlocked('supervisor_validation') : false;
-
-            $requiresValidation = false;
-            if ($supervisorUnlocked && $reportsTo && $task) {
-                $mode = $task->validation_mode ?? 'forced';
-                if ($mode === 'auto') {
-                    $requiresValidation = false;
-                } elseif ($mode === 'forced') {
-                    if ($tasksConfig && !empty($tasksConfig['requireSupervisorValidation'])) {
-                        $threshold = $tasksConfig['validationThreshold'] ?? 'all_tasks';
-                        if ($threshold === 'all_tasks') {
-                            $requiresValidation = true;
-                        } elseif ($threshold === 'blockers_only' && $isBlocker) {
-                            $requiresValidation = true;
-                        }
-                    } else {
-                        $requiresValidation = true;
-                    }
-                } elseif ($mode === 'dynamic') {
-                    if ($assignmentUser && $assignmentUser->employee && $assignmentUser->employee->hire_date) {
-                        try {
-                            $hireDate = Carbon::parse($assignmentUser->employee->hire_date);
-                            $days = abs(now()->diffInDays($hireDate));
-                        } catch (\Exception $ex) {
-                            $days = 0;
-                        }
-                    } else {
-                        $days = 0;
-                    }
-
-                    if ($days < 30) {
-                        $requiresValidation = true;
-                    } elseif ($days < 90) {
-                        $requiresValidation = (mt_rand(1, 100) <= 50);
-                    } else {
-                        $requiresValidation = (mt_rand(1, 100) <= 15);
-                    }
-                }
-            }
+            // F4: misma regla ÚNICA que /sync/tasks (TaskValidationPolicy). Antes cada puerta
+            // llevaba su propia copia de la lógica de validation_mode/threshold/antigüedad.
+            $requiresValidation = \App\Services\TaskValidationPolicy::requiresValidation(
+                $tenantId,
+                $assignment->user_id,
+                $task
+            );
 
             if ($validated['status'] === 'completed' && $requiresValidation) {
                 $validated['status'] = 'awaiting_validation';
@@ -146,7 +124,9 @@ class TaskAssignmentController extends Controller
             $accumulatedMins = (float) ($validated['accumulated_mins'] ?? $assignment->accumulated_mins ?? 15);
             $validated['task_cost'] = round(($baseSalary / 480) * $accumulatedMins, 2);
 
-            if ($validated['status'] === 'completed') {
+            // El pago sólo ocurre si esta assignment NUNCA se pagó (ancla anti-doble-pago del
+            // §33, ahora explícita: `coins_awarded` es la marca del pago, no el status).
+            if ($validated['status'] === 'completed' && !((float) ($assignment->coins_awarded ?? 0) > 0)) {
                 $basePoints = $task?->points ?? 10;
                 $validated['points_awarded'] = $basePoints;
                 $coinsEarned = round($basePoints * 0.10, 2);
@@ -233,8 +213,8 @@ class TaskAssignmentController extends Controller
             }
         } else {
             // Sin supervisor directo resoluble: aviso amplio a admin/platform_admin.
-            $notificationService->sendToRole('admin', $title, $body);
-            $notificationService->sendToRole('platform_admin', $title, $body);
+            $notificationService->sendToRole($tenantId, 'admin', $title, $body);
+            $notificationService->sendToRole($tenantId, 'platform_admin', $title, $body);
         }
 
         return response()->json(['success' => true]);

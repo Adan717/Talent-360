@@ -61,6 +61,10 @@ export function useStoreOpening({
   const [closingChecklistCompleted, setClosingChecklistCompleted] = useState(() => {
     return localStorage.getItem('closing_checklist_completed') === 'true';
   });
+  // R100 (merge FE, spec §3/§5 "Llamar a Encargado de Llaves"): teléfono del responsable de
+  // apertura. El backend lo manda SÓLO si quien pregunta es portador de llaves (gate server-side);
+  // si llega null, el botón simplemente no se muestra.
+  const [responsiblePhone, setResponsiblePhone] = useState<string | null>(null);
   const [showClosingChecklistModal, setShowClosingChecklistModal] = useState(false);
   const [closingChecklistSubmitting, setClosingChecklistSubmitting] = useState(false);
 
@@ -199,6 +203,8 @@ export function useStoreOpening({
             params: { simTime: getSimTimeStr(currentSimTimeNow) }
           });
           setOpeningStatus(res.data.status);
+          // R100: sólo llega a portadores de llaves (gate server-side).
+          setResponsiblePhone(res.data.responsible_phone ?? null);
         } catch (e) {
           console.error(e);
         }
@@ -572,6 +578,7 @@ export function useStoreOpening({
   return {
     openingSettings, setOpeningSettings,
     openingStatus, setOpeningStatus,
+    responsiblePhone,
     openingChecklistCompleted, setOpeningChecklistCompleted,
     openingRollCallCompleted, setOpeningRollCallCompleted,
     closingChecklistCompleted, setClosingChecklistCompleted,

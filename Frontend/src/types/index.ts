@@ -6,6 +6,16 @@ export interface User {
   system_role: string;
   tenant_id: number;
   job_role_id?: number;
+  /**
+   * R53 (merge FE): ¿tiene expediente con puesto? Lo calcula el servidor (`User::canClockIn`) y
+   * viaja en el payload de auth (`/login`, `/me`). Gatea la ruta `/empleado`: fichar depende del
+   * PUESTO, no del rol de acceso (los dos ejes son independientes).
+   */
+  can_clock_in?: boolean;
+  /** R87: minutos antes del turno para la alarma de traslado (0/null = desactivada). */
+  pre_shift_alarm_minutes?: number | null;
+  /** R102: entradas tardías autorizadas desde el último curso de Puntualidad (bloqueo del dial). */
+  punctuality_lockout_count?: number;
   avatar?: string;
   salary?: number;
   base_salary?: number;

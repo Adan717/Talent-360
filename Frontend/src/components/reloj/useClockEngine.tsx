@@ -1019,11 +1019,17 @@ export function useClockEngine(overrideUser?: any) {
       setReservedMeals(newReservedMeals);
       
       const todayStr = new Date().toLocaleDateString('sv-SE');
+      // R103 (merge FE): `swap_with` ESTRUCTURADO — el backend valida server-side el pareo, que
+      // ambos tengan el MISMO job_role_id de expediente y que el actor sea parte del swap
+      // (spec §5.3). Antes la regla "sólo compañeros de tu mismo puesto" vivía únicamente en el
+      // filtro del modal, así que un cliente hostil intercambiaba a cualquier par del tenant.
+      // El texto de `details` queda sólo como nota humana.
       await axiosInstance.post('/sync/clock', {
         user_id: userAId,
         date: todayStr,
         type: 'meal_swap',
         time: '00:00',
+        swap_with: userBId,
         details: `Swapped meal slots with user ${userBId}`
       });
       await axiosInstance.post('/sync/clock', {
@@ -1031,6 +1037,7 @@ export function useClockEngine(overrideUser?: any) {
         date: todayStr,
         type: 'meal_swap',
         time: '00:00',
+        swap_with: userAId,
         details: `Swapped meal slots with user ${userAId}`
       });
       window.dispatchEvent(new Event('db_sync_updated'));

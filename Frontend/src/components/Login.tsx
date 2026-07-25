@@ -154,14 +154,14 @@ export const Login = () => {
       // Save Token
       localStorage.setItem('talent_auth_token', token);
 
+      // Update Global State
+      setCurrentUser({ ...user, system_role: user.role });
+      setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium'); // 'freemium', 'pro', 'enterprise'
+
       if (user.tenant_id === null && user.role !== 'platform_admin' && user.role !== 'support_agent') {
         navigate('/', { state: { resumeRegistration: true, user, token } });
         return;
       }
-      
-      // Update Global State
-      setCurrentUser({ ...user, system_role: user.role });
-      setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium'); // 'freemium', 'pro', 'enterprise'
       
       // Redirect to main platform based on user role
       if (user.role === 'platform_admin') {
@@ -201,6 +201,8 @@ export const Login = () => {
       };
 
       localStorage.setItem('talent_auth_token', token);
+      setCurrentUser({ ...user, system_role: user.role });
+      setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
       
       if (user.tenant_id === null && user.role !== 'platform_admin' && user.role !== 'support_agent') {
         navigate('/', { state: { resumeRegistration: true, user, token } });

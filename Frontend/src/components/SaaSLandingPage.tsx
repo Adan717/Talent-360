@@ -82,23 +82,29 @@ export const SaaSLandingPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const { setCurrentUser, setCurrentTier } = useAppStore();
+  const { currentUser, setCurrentUser, setCurrentTier } = useAppStore();
 
   useEffect(() => {
-    if (location.state && location.state.resumeRegistration) {
-      const { user } = location.state;
-      setGoogleUser({
-        name: user.name,
-        email: user.email,
-        google_id: user.google_id || user.email
-      });
+    const isResume = location.state && location.state.resumeRegistration;
+    const isUserWithoutTenant = currentUser && currentUser.tenant_id === null && currentUser.role !== 'Loading' && currentUser.system_role !== 'platform_admin' && currentUser.system_role !== 'support_agent';
+
+    if (isResume || isUserWithoutTenant) {
+      const targetUser = (location.state && location.state.user) || currentUser;
+      if (targetUser && targetUser.email) {
+        setGoogleUser({
+          name: targetUser.name || targetUser.email.split('@')[0],
+          email: targetUser.email,
+          google_id: targetUser.google_id || targetUser.email
+        });
+      }
       setSelectedPlan('Freemium');
       setRegistrationStep(2);
       setShowCheckout(true);
-      // Clean history state
-      navigate(location.pathname, { replace: true });
+      if (isResume) {
+        navigate(location.pathname, { replace: true });
+      }
     }
-  }, [location, navigate]);
+  }, [location, currentUser, navigate]);
 
   const handleBuy = (plan: string) => {
     setSelectedPlan(plan);

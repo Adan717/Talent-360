@@ -70,25 +70,41 @@ class TaskValidationController extends Controller
             $awardedPoints = round(($basePoints * $scorePct) / 100);
             $coinsEarned = round($awardedPoints * 0.10, 2);
 
+            // ANTI-DOBLE-PAGO (bug de dinero cazado en la auditoría pre-producción): una
+            // asignación que YA cobró no vuelve a cobrar al validarse. El flujo cotidiano
+            // —el colaborador completa la tarea (y el update le paga) y después el supervisor
+            // la valida desde su panel— depositaba DOS VECES la misma recompensa, inflando el
+            // monedero con monedas y XP que nadie ganó. `coins_awarded` es la marca del pago,
+            // el mismo ancla que usa TaskAssignmentController::update.
+            //
+            // El flujo con validación obligatoria NO se ve afectado: ahí la asignación llega a
+            // `awaiting_validation` sin haber cobrado (coins_awarded = 0), así que este pago
+            // —el único— sí se realiza.
+            $yaPagada = (float) ($assignment->coins_awarded ?? 0) > 0;
+
             $assignment->update([
                 'status' => 'completed',
                 'validation_feedback' => $request->feedback,
                 'validated_by' => $userId,
                 'score_percentage' => $scorePct,
-                'points_awarded' => $awardedPoints,
-                'coins_awarded' => $coinsEarned,
+                // Si ya cobró, se conserva lo que se le pagó realmente (no se re-escribe con el
+                // monto del score, que dejaría el registro descuadrado frente al monedero).
+                'points_awarded' => $yaPagada ? $assignment->points_awarded : $awardedPoints,
+                'coins_awarded' => $yaPagada ? $assignment->coins_awarded : $coinsEarned,
             ]);
 
             // Depositar recompensa aprobada por el supervisor en el Monedero Digital
-            $wallet = \App\Models\UserWallet::getOrCreateForUser($employee->id, $tenantId);
-            $wallet->deposit(
-                $coinsEarned,
-                $awardedPoints,
-                'earned_task',
-                "Recompensa validada por supervisor ({$scorePct}%): " . ($task->title ?? 'Tarea Operativa'),
-                'TaskAssignment',
-                $assignment->id
-            );
+            if (!$yaPagada) {
+                $wallet = \App\Models\UserWallet::getOrCreateForUser($employee->id, $tenantId);
+                $wallet->deposit(
+                    $coinsEarned,
+                    $awardedPoints,
+                    'earned_task',
+                    "Recompensa validada por supervisor ({$scorePct}%): " . ($task->title ?? 'Tarea Operativa'),
+                    'TaskAssignment',
+                    $assignment->id
+                );
+            }
 
             // Dispatch background Job for logging and WebSockets
             LogTaskValidationJob::dispatch(

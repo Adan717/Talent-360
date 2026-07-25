@@ -383,7 +383,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         syncParams.simulation_session_id = activeSimSession;
       }
 
-      const res = await axiosInstance.get('/sync/state', { params: syncParams, timeout: 5000 });
+      const res = await axiosInstance.get('/sync/state', { params: syncParams, timeout: 15000 });
 
       if (res.status === 200) {
         const data = res.data;

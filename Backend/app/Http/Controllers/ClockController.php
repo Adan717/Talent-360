@@ -162,7 +162,7 @@ class ClockController extends Controller
             DB::table('store_logs')
                 ->where('tenant_id', $tenantId)
                 ->whereDate('date', '>=', $oneWeekAgo)
-        )->orderBy('id', 'desc')->get();
+        )->orderBy('id', 'desc')->limit(50)->get();
 
         $contingencies = $applySimFilter(
             DB::table('contingencies')

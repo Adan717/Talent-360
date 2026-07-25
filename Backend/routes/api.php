@@ -203,6 +203,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/admin/dashboard/stats', [DashboardController::class, 'getStats']);
         Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
         Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
+        // Kill-Switch (línea del Reloj): el mando cierra remotamente un turno abierto.
+        Route::post('/admin/dashboard/force-close-shift', [DashboardMonitorController::class, 'forceCloseShift']);
         Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
         Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
         Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);

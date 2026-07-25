@@ -93,6 +93,21 @@ class EarlyDepartureTest extends TestCase
         return json_decode($entry->details, true)['early_departure'] ?? null;
     }
 
+    /**
+     * ENMIENDA merge F3: la secuencia §15 reconciliada exige un turno ABIERTO para el check_out.
+     * Se abre con un check_in directo en BD — lo que estos tests prueban es el ESTAMPADO de
+     * `early_departure`, no la apertura del turno.
+     */
+    private function abrirTurno(User $user, string $time = '09:00:00'): void
+    {
+        DB::table('time_entries')->insert([
+            'tenant_id' => $user->tenant_id, 'user_id' => $user->id,
+            'date' => Carbon::now(\App\Helpers\TenantTimezone::for($user->tenant_id))->format('Y-m-d'),
+            'type' => 'check_in', 'time' => $time,
+            'is_late' => false, 'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
     // ---- El endpoint de autorización (espejo R81) ------------------------------------
 
     public function test_grant_con_pin_crea_autorizacion(): void
@@ -149,6 +164,7 @@ class EarlyDepartureTest extends TestCase
     public function test_checkout_temprano_sin_autorizacion(): void
     {
         [, $user] = $this->makeSetup(); // shiftEnd 18:00, now 15:00
+        $this->abrirTurno($user);
         app(ClockService::class)->processPunch($user, 'check_out');
 
         $entry = TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->first();
@@ -166,6 +182,7 @@ class EarlyDepartureTest extends TestCase
             'authorized_by' => 999, 'method' => 'pin', 'created_at' => now(), 'updated_at' => now(),
         ]);
 
+        $this->abrirTurno($user);
         app(ClockService::class)->processPunch($user, 'check_out');
 
         $ed = $this->earlyDeparture(TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->first());
@@ -177,6 +194,7 @@ class EarlyDepartureTest extends TestCase
         [, $user] = $this->makeSetup();
         Carbon::setTestNow(Carbon::parse('2026-07-15 18:05:00')); // después del shiftEnd
 
+        $this->abrirTurno($user);
         app(ClockService::class)->processPunch($user, 'check_out');
 
         $ed = $this->earlyDeparture(TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->first());
@@ -187,6 +205,7 @@ class EarlyDepartureTest extends TestCase
     {
         [, $user] = $this->makeSetup(null); // sin shiftEnd → no hay concepto de "temprano"
 
+        $this->abrirTurno($user);
         app(ClockService::class)->processPunch($user, 'check_out');
 
         $ed = $this->earlyDeparture(TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->first());
@@ -199,6 +218,7 @@ class EarlyDepartureTest extends TestCase
         // estructurado authorized (computado por el servidor) sigue en false.
         [, $user] = $this->makeSetup();
 
+        $this->abrirTurno($user);
         $res = $this->actingAs($user)->postJson('/api/v1/clock/punch', [
             'user_id' => $user->id, 'type' => 'check_out',
             'details' => ['note' => '{"note":"Salida Anticipada Autorizada por Supervisor: Enfermedad"}'],
@@ -217,6 +237,7 @@ class EarlyDepartureTest extends TestCase
         // OTRA persona con autoridad) cuenta, como el consumer R81 del feriado.
         [, $user] = $this->makeSetup();
 
+        $this->abrirTurno($user);
         app(ClockService::class)->processPunch($user, 'check_out', null, ['supervisor_override' => true]);
 
         $ed = $this->earlyDeparture(TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->first());
@@ -230,6 +251,7 @@ class EarlyDepartureTest extends TestCase
         [, $user] = $this->makeSetup();
         Carbon::setTestNow(Carbon::parse('2026-07-15 18:05:00')); // después del shiftEnd
 
+        $this->abrirTurno($user);
         $res = $this->actingAs($user)->postJson('/api/v1/clock/punch', [
             'user_id' => $user->id, 'type' => 'check_out',
             'details' => ['early_departure' => ['minutes_early' => 300, 'authorized' => true]],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Helpers\TenantTimezone;
 use App\Models\User;
 use App\Models\Task;
 use App\Models\TaskAssignment;
@@ -373,6 +374,13 @@ class DashboardMonitorController extends Controller
 
         try {
             $user = auth()->user() ?? auth('sanctum')->user();
+            $tenantId = $user ? $user->tenant_id : null;
+            if (!$tenantId) {
+                // Merge F3 (guard de tenant nulo): un admin/platform_admin SIN empresa no puede
+                // crear datos — el fallback `?? 1` los inyectaba al tenant 1 REAL.
+                return response()->json(['status' => 'error', 'message' => 'Usuario sin empresa asignada.'], 403);
+            }
+            $user = auth()->user() ?? auth('sanctum')->user();
             $tenantId = $user ? $user->tenant_id : 1;
 
             $targetType = $request->target_type ?? 'role';
@@ -424,6 +432,13 @@ class DashboardMonitorController extends Controller
 
     public function parseVoiceTask(Request $request)
     {
+        $user = auth()->user() ?? auth('sanctum')->user();
+        $tenantId = $user ? $user->tenant_id : null;
+        if (!$tenantId) {
+            // Merge F3 (guard de tenant nulo): un admin/platform_admin SIN empresa no puede
+            // crear datos — el fallback `?? 1` los inyectaba al tenant 1 REAL.
+            return response()->json(['status' => 'error', 'message' => 'Usuario sin empresa asignada.'], 403);
+        }
         $request->validate([
             'text' => 'required|string',
         ]);
@@ -590,6 +605,13 @@ class DashboardMonitorController extends Controller
 
         try {
             $user = auth()->user() ?? auth('sanctum')->user();
+            $tenantId = $user ? $user->tenant_id : null;
+            if (!$tenantId) {
+                // Merge F3 (guard de tenant nulo): un admin/platform_admin SIN empresa no puede
+                // crear datos — el fallback `?? 1` los inyectaba al tenant 1 REAL.
+                return response()->json(['status' => 'error', 'message' => 'Usuario sin empresa asignada.'], 403);
+            }
+            $user = auth()->user() ?? auth('sanctum')->user();
             $tenantId = $user ? $user->tenant_id : 1;
 
             $messageId = DB::table('internal_messages')->insertGetId([
@@ -730,5 +752,103 @@ class DashboardMonitorController extends Controller
         );
 
         return response()->json(array_merge(['success' => true], $result));
+    }
+
+    public function forceCloseShift(Request $request)
+    {
+        // Sin `exists:users,id`: así un id inexistente y uno de otro tenant devuelven ambos
+        // 403 (mismo mensaje), sin oráculo de enumeración cross-tenant.
+        $request->validate(['user_id' => 'required']);
+
+        $actor = auth()->user() ?? auth('sanctum')->user();
+        $tenantId = $actor ? $actor->tenant_id : null;
+
+        // Scope de tenant explícito (no hay TenantScope global sobre User): rechazar un
+        // objetivo de otra empresa. Mismo patrón que assignTask / TimeEntryController::punch.
+        $target = User::find($request->user_id);
+        if ($tenantId === null || !$target || (int) $target->tenant_id !== (int) $tenantId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Operación entre empresas no autorizada.'
+            ], 403);
+        }
+
+        // Fecha y hora en la ZONA HORARIA del tenant (los ponches se fechan así; mismo
+        // criterio que CloseOrphanShifts/processPunch), NO en UTC del servidor: si no, cerca
+        // del anochecer local el `where('date')` erraba de día → 409 espurio y el CRON de
+        // huérfanos (que sí usa tz del tenant) podía insertar un segundo check_out.
+        $tz = TenantTimezone::for($tenantId);
+        $localNow = Carbon::now($tz);
+        $today = $localNow->toDateString();
+        $stamp = now(); // instante absoluto para created_at/updated_at
+
+        // Transacción + lock: dos requests concurrentes (doble clic / dos supervisores) no
+        // deben insertar dos check_out. El segundo espera el lock y ve el check_out → 409.
+        $closed = DB::transaction(function () use ($tenantId, $target, $today, $localNow, $stamp, $actor) {
+            $entries = DB::table('time_entries')
+                ->where('tenant_id', $tenantId)
+                ->where('user_id', $target->id)
+                ->where('date', $today)
+                ->whereNotIn('type', \App\Services\ClockService::AUXILIARY_ENTRY_TYPES)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get(['type']);
+
+            // Turno ACTIVO: último registro no-auxiliar del día no es check_out y hubo
+            // check_in (misma detección que CloseOrphanShifts; maneja turnos re-abiertos).
+            $latest = $entries->last();
+            $hasCheckIn = $entries->contains(fn ($e) => $e->type === 'check_in');
+            if (!$hasCheckIn || !$latest || $latest->type === 'check_out') {
+                return false;
+            }
+
+            DB::table('time_entries')->insert([
+                'tenant_id' => $tenantId,
+                'user_id' => $target->id,
+                'date' => $today,
+                'type' => 'check_out',
+                'time' => $localNow->format('H:i:s'),
+                'is_late' => false,
+                'late_minutes' => 0,
+                'details' => json_encode([
+                    'force_closed' => true,
+                    'kill_switch' => true,
+                    'reason' => 'kill_switch',
+                    'closed_by' => $actor->id,
+                    'note' => 'Cierre forzado por gerencia (Remote Kill-Switch).',
+                ]),
+                'created_at' => $stamp,
+                'updated_at' => $stamp,
+            ]);
+
+            DB::table('audit_logs')->insert([
+                'tenant_id' => $tenantId,
+                'user_id' => $target->id,
+                'date' => $today,
+                'type' => 'kill_switch',
+                'timestamp_str' => $localNow->format('Y-m-d H:i:s'),
+                'reason' => "🔴 Cierre forzado remoto (kill-switch) por {$actor->name} tras reporte de infractor.",
+                'punishment_amount' => 0,
+                'details' => json_encode(['force_closed' => true, 'closed_by' => $actor->id]),
+                'created_at' => $stamp,
+                'updated_at' => $stamp,
+            ]);
+
+            return true;
+        });
+
+        if (!$closed) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'El colaborador no tiene un turno activo.'
+            ], 409);
+        }
+
+        event(new MonitorUpdated($tenantId));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Turno cerrado de forma remota.'
+        ]);
     }
 }

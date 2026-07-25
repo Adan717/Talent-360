@@ -1166,7 +1166,7 @@ export default function RelojVisual({
     const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
     const needsRollCall = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted;
 
-    const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+    const myRole = (Array.isArray(globalRoles) ? globalRoles : []).find((r: any) => r.id === currentUser?.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
     const isSupervisor = currentUser?.role?.toLowerCase()?.includes('sup') || 
                           currentUser?.role?.toLowerCase()?.includes('admin') || 
@@ -1475,8 +1475,9 @@ export default function RelojVisual({
         return 'Abrir tienda';
       }
       const savedAss = localStorage.getItem('store_opening_assignments');
-      const ass = savedAss ? JSON.parse(savedAss) : [];
-      const respAss = ass.find((a: any) => a.employee_id === Number(responsibleId));
+      const parsedAss = savedAss ? JSON.parse(savedAss) : [];
+      const ass = Array.isArray(parsedAss) ? parsedAss : (parsedAss && typeof parsedAss === 'object' ? Object.values(parsedAss) : []);
+      const respAss = ass.find((a: any) => a && a.employee_id === Number(responsibleId));
       const respName = respAss ? respAss.name || 'Encargado' : 'Encargado';
       const firstName = respName.split(' ')[0];
       return `Apertura por: ${firstName}`;
@@ -1615,7 +1616,7 @@ export default function RelojVisual({
   };
 
   const renderBreakApprovalBanner = () => {
-    const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+    const myRole = (Array.isArray(globalRoles) ? globalRoles : []).find((r: any) => r.id === currentUser?.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
     const isSupervisor = currentUser?.role?.toLowerCase()?.includes('sup') || 
                           currentUser?.role?.toLowerCase()?.includes('admin') || 
@@ -1676,7 +1677,8 @@ export default function RelojVisual({
     try {
       const isSandbox = useAppStore.getState().isSandboxMode;
       const savedAss = localStorage.getItem('store_opening_assignments');
-      const assignments = savedAss ? JSON.parse(savedAss) : (
+      const parsedAss = savedAss ? JSON.parse(savedAss) : null;
+      const rawAssignments = parsedAss || (
         isSandbox ? [
           { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
           { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
@@ -1687,8 +1689,9 @@ export default function RelojVisual({
           { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
         ]
       );
+      const assignments = Array.isArray(rawAssignments) ? rawAssignments : (rawAssignments && typeof rawAssignments === 'object' ? Object.values(rawAssignments) : []);
       // §29: preferir resolved_user_id (users.id) sobre el employee_id crudo (employees.id).
-      const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
+      const match = assignments.find((a: any) => a && Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
       }
@@ -1773,7 +1776,7 @@ export default function RelojVisual({
   }, []);
 
   // Resolve user official job title from globalRoles based on job_role_id
-  const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+  const myRole = (Array.isArray(globalRoles) ? globalRoles : []).find((r: any) => r.id === currentUser?.job_role_id);
   const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
 
   useEffect(() => {

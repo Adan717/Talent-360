@@ -4,7 +4,8 @@ import {
   GraduationCap, Settings, MapPin, Camera, Lock, Check,
   AlertTriangle, Star, ShieldCheck, HeartHandshake, Award, 
   Send, Sparkles, CheckSquare, ClipboardList, Network, Bot, 
-  Play, MessageSquare, AlertOctagon, HelpCircle, X, ChevronRight, User
+  Play, MessageSquare, AlertOctagon, HelpCircle, X, ChevronRight, User,
+  DollarSign, FileText, CheckCircle2
 } from 'lucide-react';
 import DialPrincipal from './reloj/DialPrincipal';
 import { MobileBottomNav } from './reloj/MobileBottomNav';
@@ -417,6 +418,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         icon = <GraduationCap className="text-violet-500 animate-bounce-twice" />;
         badgeText = 'Cursos';
         badgeColorClass = 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
+        break;
+      case 'nomina':
+      case 'cuenta':
+        title = 'Nómina y Mi Perfil';
+        desc = 'Recibos y Asistencia';
+        icon = <DollarSign className="text-rose-500 animate-pulse" />;
+        badgeText = 'Nómina';
+        badgeColorClass = 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30';
         break;
       case 'herramientas':
         title = 'Herramientas';
@@ -939,28 +948,42 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow">
-                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Cursos de Inducción</h5>
+              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
+                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-3 rounded-2xl shadow-sm space-y-1">
+                  <p className="text-[8px] font-bold text-violet-200 uppercase tracking-widest">Capacitación Operativa</p>
+                  <h4 className="text-[11px] font-black">Cursos Asignados para Tu Puesto</h4>
+                  <p className="text-[8px] text-violet-100 font-medium">¡Completa lecciones para ganar insignias y aumentos!</p>
+                </div>
+
+                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Plan de Aprendizaje</h5>
                 
                 {/* Curso 1 */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
-                    <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                    <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Inducción Básica 360</span>
+                    <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200/40">75%</span>
                   </div>
-                  <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                  <div className="flex justify-between items-center text-[8px] text-slate-500 pt-0.5">
+                    <span>3 de 4 lecciones completadas</span>
+                    <button className="text-violet-600 dark:text-violet-400 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Continuar →</button>
                   </div>
                 </div>
 
                 {/* Curso 2 */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
-                    <span className="text-[8px] font-bold text-blue-600">10%</span>
+                    <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Atención & Caja Registradora</span>
+                    <span className="text-[8px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded-md border border-blue-200/40">20%</span>
                   </div>
-                  <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '20%' }}></div>
+                  </div>
+                  <div className="flex justify-between items-center text-[8px] text-slate-500 pt-0.5">
+                    <span>1 de 5 lecciones completadas</span>
+                    <button className="text-blue-600 dark:text-blue-400 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Iniciar →</button>
                   </div>
                 </div>
               </div>
@@ -968,8 +991,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           </div>
         )}
 
-        {phoneTab === 'herramientas' && (
-          <div className="flex-grow text-left py-2">
+        {(phoneTab === 'nomina' || phoneTab === 'cuenta') && (
+          <div className="flex-1 flex flex-col justify-between py-2 text-left">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
                 <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
@@ -979,7 +1002,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
                   <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
-                    La gestión de Herramientas requiere la Versión Pro del Reloj Checador.
+                    La gestión de Nómina requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
                 <button
@@ -993,32 +1016,51 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200">
-                {[
-                  { label: 'Chat de Sucursal', icon: Send, pro: true },
-                  { label: 'Ley Silla', icon: Star, pro: false },
-                  { label: 'Incidencias', icon: AlertTriangle, pro: false },
-                  { label: 'Control de Llaves', icon: ShieldCheck, pro: true }
-                ].map((tool, idx) => {
-                  const ToolIcon = tool.icon;
-                  const isLocked = tool.pro && tier !== 'pro';
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`p-3 rounded-xl border flex flex-col justify-between aspect-square transition-all ${
-                        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-                      } ${isLocked ? 'opacity-65' : 'hover:scale-[1.02] cursor-pointer'}`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'} text-indigo-500`}>
-                          <ToolIcon size={14} />
-                        </div>
-                        {isLocked && <Lock size={12} className="text-slate-400" />}
-                      </div>
-                      <span className="text-[9px] font-black leading-tight uppercase mt-2">{tool.label}</span>
+              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3 rounded-2xl shadow-sm space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[8px] font-bold text-emerald-200 uppercase tracking-widest">Nómina Quincenal Calculada</p>
+                      <h4 className="text-sm font-black mt-0.5">$4,800.00 MXN</h4>
                     </div>
-                  );
-                })}
+                    <span className="px-2 py-0.5 bg-emerald-500/30 text-white text-[8px] font-bold rounded-full border border-emerald-300/30">
+                      ✓ Pago Estimado
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[8.5px] pt-1 border-t border-emerald-500/40 text-emerald-100 font-medium">
+                    <span>Horas laboradas: <strong>44 hrs</strong></span>
+                    <span>Puntualidad: <strong>98%</strong></span>
+                  </div>
+                </div>
+
+                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider pt-1">Desglose de Pago</h5>
+                
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 text-[9px]">
+                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                    <span>Sueldo Base (15 días)</span>
+                    <span className="font-bold text-slate-900 dark:text-white">$4,500.00</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                    <span>Bono Puntualidad & Tareas</span>
+                    <span className="font-bold">+$350.00</span>
+                  </div>
+                  <div className="flex justify-between items-center text-rose-500">
+                    <span>Retardo (1 incidencia 5m)</span>
+                    <span className="font-bold">-$50.00</span>
+                  </div>
+                  <div className="border-t border-slate-200 dark:border-slate-800 pt-1.5 flex justify-between items-center font-black text-slate-900 dark:text-white text-[9.5px]">
+                    <span>Total Neto</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">$4,800.00</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => alert("Simulación: Descargando Recibo Digital PDF de Francisco Vega")}
+                  className="w-full py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer border-none"
+                >
+                  <FileText size={12} />
+                  Descargar Recibo Digital (PDF)
+                </button>
               </div>
             )}
           </div>
@@ -1113,7 +1155,37 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center">
                     <Play size={16} />
                   </div>
-                  <span className="font-bold text-[10px]">Crear Tarea</span>
+                  <span className="font-bold text-[10px]">Ver Tareas</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('nomina');
+                  }}
+                  className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center">
+                    <DollarSign size={16} />
+                  </div>
+                  <span className="font-bold text-[10px]">Recibo Nómina</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('academia');
+                  }}
+                  className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center">
+                    <GraduationCap size={16} />
+                  </div>
+                  <span className="font-bold text-[10px]">Capacitación</span>
                 </button>
               </div>
             </div>

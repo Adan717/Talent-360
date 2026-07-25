@@ -21,8 +21,10 @@ export const ProtectedRoute = ({ allowedRoles, children }: ProtectedRouteProps) 
 
     if (!isLoadingDB && currentUser?.role !== 'Loading') {
       if (allowedRoles && !allowedRoles.includes(currentUser?.system_role || '')) {
-        if (currentUser?.system_role === 'platform_admin' || currentUser?.system_role === 'support_agent') {
+        if (currentUser?.system_role === 'platform_admin') {
           navigate('/superadmin', { replace: true });
+        } else if (currentUser?.system_role === 'support_agent') {
+          navigate('/soporte', { replace: true });
         } else if (currentUser?.system_role === 'empleado') {
           navigate('/empleado', { replace: true });
         } else {

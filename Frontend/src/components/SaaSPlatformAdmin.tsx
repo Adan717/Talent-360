@@ -878,8 +878,8 @@ export const SaaSPlatformAdmin = () => {
             <span className="text-white font-black text-xl">T</span>
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-800 leading-tight">Talent360 SaaS</h2>
-            <p className="text-xs text-slate-500 font-medium">Consola de Administración Global</p>
+            <h2 className="text-lg font-black text-slate-800 leading-tight">{isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}</h2>
+            <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}</p>
           </div>
         </div>
         

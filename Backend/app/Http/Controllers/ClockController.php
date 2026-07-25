@@ -192,25 +192,54 @@ class ClockController extends Controller
             return $e;
         });
 
-        $rolePermissions = DB::table('role_permissions')
-            ->where('role_permissions.tenant_id', $tenantId)
-            ->join('permissions', 'role_permissions.permission_id', '=', 'permissions.id')
-            ->select('role_permissions.job_role_id', 'permissions.name')
-            ->get()
-            ->groupBy('job_role_id');
+        // §46: datos de configuración casi-estáticos (puestos, permisos, reglas RBAC,
+        // políticas de reloj) — cambian solo cuando un admin edita configuración, no en
+        // cada ciclo de 60s de cada usuario. Se cachean por tenant con TTL de 5 min como
+        // red de seguridad; la invalidación instantánea al editar la hace
+        // TenantConfigCache (observers de modelo + llamadas explícitas en los endpoints
+        // que escriben por query builder). Ver App\Support\TenantConfigCache.
+        //
+        // §46 (bis): antes role_permissions se consultaba dos veces — una con JOIN a
+        // permissions (agrupado por puesto con el NOMBRE del permiso) y otra cruda para
+        // la respuesta. Ahora se leen ambas tablas una vez y se arman las dos formas.
+        $staticConfig = \App\Support\TenantConfigCache::remember($tenantId, function () use ($tenantId) {
+            $permissions = DB::table('permissions')->where('tenant_id', $tenantId)->get();
+            $rolePermissions = DB::table('role_permissions')->where('tenant_id', $tenantId)->get();
 
+            $permissionNameById = $permissions->pluck('name', 'id');
+            $permissionsByRole = $rolePermissions
+                ->groupBy('job_role_id')
+                ->map(function ($rows) use ($permissionNameById) {
+                    return $rows
+                        ->map(fn ($rp) => $permissionNameById->get($rp->permission_id))
+                        ->filter()
+                        ->values();
+                });
+
+            return [
+                'permissions' => $permissions,
+                'role_permissions' => $rolePermissions,
+                'permissions_by_role' => $permissionsByRole,
+                'job_roles' => JobRole::where('tenant_id', $tenantId)->get(),
+                'ui_rbac_rules' => DB::table('ui_rbac_rules')->where('tenant_id', $tenantId)->get(),
+                'role_clock_policies' => RoleClockPolicy::where('tenant_id', $tenantId)->get(),
+            ];
+        });
+
+        $permissions = $staticConfig['permissions'];
+        $rolePermissions = $staticConfig['role_permissions'];
+        $permissionsByRole = $staticConfig['permissions_by_role'];
+        $jobRoles = $staticConfig['job_roles'];
+        $uiRbacRules = $staticConfig['ui_rbac_rules'];
+        $roleClockPolicies = $staticConfig['role_clock_policies'];
+
+        // $userPermissions depende de $employees (dato vivo, NO cacheado) cruzado con la
+        // config cacheada, así que se arma fuera del caché.
         $userPermissions = [];
         foreach ($employees as $e) {
             $key = $e->user_id ?? $e->id;
-            $userPermissions[$key] = $rolePermissions->has($e->job_role_id)
-                ? $rolePermissions->get($e->job_role_id)->pluck('name')
-                : collect([]);
+            $userPermissions[$key] = $permissionsByRole->get($e->job_role_id, collect([]));
         }
-        $jobRoles = JobRole::where('tenant_id', $tenantId)->get();
-        $uiRbacRules = DB::table('ui_rbac_rules')->where('tenant_id', $tenantId)->get();
-        $roleClockPolicies = RoleClockPolicy::where('tenant_id', $tenantId)->get();
-        $permissions = DB::table('permissions')->where('tenant_id', $tenantId)->get();
-        $rolePermissions = DB::table('role_permissions')->where('tenant_id', $tenantId)->get();
 
         $rawSettings = DB::table('system_settings')
             ->where(function($query) use ($tenantId) {
@@ -259,17 +288,21 @@ class ClockController extends Controller
             ->where('tasks.tenant_id', $tenantId)
             ->select('tasks.*', 'academy_courses.video_url as academy_lesson_video_url')
             ->get();
-        $routines = DB::table('routines')
-            ->where('tenant_id', $tenantId)
-            ->get()
-            ->map(function ($r) {
-                $taskIds = DB::table('routine_task')
-                    ->where('routine_id', $r->id)
-                    ->pluck('task_id')
-                    ->toArray();
-                $r->task_ids = json_encode($taskIds);
-                return $r;
-            });
+        // §46: antes esto era un N+1 (una consulta a routine_task por cada rutina).
+        // Ahora se traen todas las relaciones de una sola vez y se agrupan en memoria.
+        $routines = DB::table('routines')->where('tenant_id', $tenantId)->get();
+        $routineIds = $routines->pluck('id')->all();
+        $taskIdsByRoutine = empty($routineIds)
+            ? collect()
+            : DB::table('routine_task')
+                ->whereIn('routine_id', $routineIds)
+                ->get()
+                ->groupBy('routine_id')
+                ->map(fn ($rows) => $rows->pluck('task_id')->values()->all());
+        $routines = $routines->map(function ($r) use ($taskIdsByRoutine) {
+            $r->task_ids = json_encode($taskIdsByRoutine->get($r->id, []));
+            return $r;
+        });
         $assignments = DB::table('task_assignments')->where('tenant_id', $tenantId)->get();
  
         // 1. Resolve tenant plan and permissions dynamically

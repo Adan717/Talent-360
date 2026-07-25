@@ -410,6 +410,12 @@ class ObsidianController extends Controller
             // Convertir markdown básico a HTML para rendering visual fluido
             $htmlContent = $this->markdownToHtml($parsedContent);
 
+            // §44: sanitizar en el servidor antes de persistir el HTML renderizado.
+            // `content` se muestra en la página pública del vault SIN sesión, así que
+            // esta es la capa que de verdad cierra el XSS (la del cliente se la salta
+            // una petición directa a la API o un cliente modificado).
+            $htmlContent = \App\Support\HtmlSanitizer::clean($htmlContent);
+
             $doc->update(['content' => $htmlContent]);
         }
     }

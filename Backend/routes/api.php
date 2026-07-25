@@ -103,6 +103,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/platform/bank-config', [PlatformAdminController::class, 'saveBankConfig']);
         Route::get('/platform/landing-simulator-settings', [PlatformAdminController::class, 'getSimulatorConfig']);
         Route::post('/platform/landing-simulator-settings', [PlatformAdminController::class, 'saveSimulatorConfig']);
+        // §49: botón de pánico — revocar todas las sesiones de plataforma.
+        Route::post('/platform/security/revoke-all-sessions', [PlatformAdminController::class, 'revokeAllPlatformSessions']);
         Route::get('/platform/security/devices', [PlatformAdminController::class, 'getSuspiciousDevices']);
         Route::post('/platform/security/devices/{id}/ban', [PlatformAdminController::class, 'banDevice']);
         Route::post('/platform/security/devices/{id}/unban', [PlatformAdminController::class, 'unbanDevice']);

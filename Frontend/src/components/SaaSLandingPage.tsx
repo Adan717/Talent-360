@@ -4,10 +4,14 @@ import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Loc
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
+import { LegalModal, type LegalDocType } from './LegalModal';
 
 export const SaaSLandingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalDocType>('privacy');
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [proEmployeesCount, setProEmployeesCount] = useState<number>(20); // Professional default
@@ -1540,12 +1544,43 @@ export const SaaSLandingPage = () => {
                         <span>Tus empleados ingresarán a registrar asistencia desde: <strong className="font-black text-blue-800">{formData.subdomain || 'mi-empresa'}.talent360.com</strong></span>
                       </p>
                     </div>
+
+                    {/* Aceptación de Términos y Privacidad */}
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-start gap-2 text-left">
+                      <input 
+                        type="checkbox" 
+                        id="accept_terms"
+                        checked={acceptedTerms}
+                        onChange={e => setAcceptedTerms(e.target.checked)}
+                        className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        required
+                      />
+                      <label htmlFor="accept_terms" className="text-[10.5px] text-slate-600 leading-tight font-medium cursor-pointer">
+                        Acepto los{' '}
+                        <button 
+                          type="button" 
+                          onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
+                          className="text-blue-600 font-bold hover:underline"
+                        >
+                          Términos del Servicio (SLA)
+                        </button>{' '}
+                        y el{' '}
+                        <button 
+                          type="button" 
+                          onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
+                          className="text-blue-600 font-bold hover:underline"
+                        >
+                          Aviso de Privacidad
+                        </button>{' '}
+                        conforme a la LFPDPPP.
+                      </label>
+                    </div>
                   </div>
 
                   <button 
                     type="submit" 
-                    disabled={isProcessing}
-                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    disabled={isProcessing || !acceptedTerms}
+                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing || !acceptedTerms ? 'bg-slate-400 cursor-not-allowed opacity-60' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >
                     {isProcessing ? (
                       <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Creando Instancia...</>
@@ -1559,6 +1594,53 @@ export const SaaSLandingPage = () => {
           </div>
         </div>
       )}
+
+      {/* FOOTER GLOBAL CON ENLACES LEGALES */}
+      <footer className="bg-slate-950 text-slate-400 py-12 px-6 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-3 text-left">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xs">360</div>
+            <div>
+              <span className="text-sm font-black text-white tracking-tight">Talent360</span>
+              <p className="text-[10px] text-slate-500 font-semibold">Plataforma SaaS de Asistencia, RRHH y Operaciones</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center items-center gap-6 text-xs font-bold text-slate-400">
+            <button 
+              onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }} 
+              className="hover:text-white transition cursor-pointer"
+            >
+              Aviso de Privacidad
+            </button>
+            <span className="text-slate-800">•</span>
+            <button 
+              onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }} 
+              className="hover:text-white transition cursor-pointer"
+            >
+              Términos del Servicio (SLA)
+            </button>
+            <span className="text-slate-800">•</span>
+            <button 
+              onClick={() => { setLegalModalTab('arco'); setIsLegalModalOpen(true); }} 
+              className="hover:text-white transition cursor-pointer"
+            >
+              Derechos ARCO & Biométricos
+            </button>
+          </div>
+
+          <div className="text-[10px] text-slate-600 font-medium text-center md:text-right">
+            © {new Date().getFullYear()} Talent360. Todos los derechos reservados.
+          </div>
+        </div>
+      </footer>
+
+      {/* MODAL LEGAL */}
+      <LegalModal 
+        isOpen={isLegalModalOpen} 
+        onClose={() => setIsLegalModalOpen(false)} 
+        defaultTab={legalModalTab} 
+      />
 
     </div>
   );

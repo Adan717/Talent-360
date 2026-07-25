@@ -507,6 +507,15 @@ class SubscriptionController extends Controller
                     ->where('email', $payload['admin_email'])
                     ->first();
                 if ($admin) {
+                    // §50: regla "1 cuenta = 1 empresa". Si esta cuenta YA pertenece a
+                    // otra empresa, reasignarle el tenant_id la robaría de su empresa
+                    // original (dejándola huérfana) y este flujo NO está autenticado
+                    // como esa persona — cualquiera que conozca su correo podría dispararlo.
+                    // Se rechaza en vez de reasignar. La transacción hace rollback, así
+                    // que el tenant recién creado tampoco queda a medias.
+                    if ($admin->tenant_id !== null) {
+                        abort(409, 'Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto.');
+                    }
                     $admin->update([
                         'tenant_id' => $tenant->id,
                         'role' => UserRole::ADMIN->value,

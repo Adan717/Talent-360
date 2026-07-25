@@ -82,7 +82,9 @@ class EmployeeController extends Controller
             $data = $request->validate([
                 'name' => 'required|string',
                 'email' => 'required|email',
-                'role' => 'required|string',
+                // §49: solo roles de empresa. platform_admin/support_agent son
+                // exclusivos de la tabla platform_users, nunca de users.
+                'role' => 'required|string|in:admin,supervisor,empleado',
                 'job_role_id' => 'nullable|integer|exists:job_roles,id',
                 'contract_type' => 'nullable|string',
                 'salary' => 'nullable|numeric',
@@ -137,7 +139,8 @@ class EmployeeController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email',
-            'role' => 'required|string',
+            // §49: solo roles de empresa (ver nota arriba).
+            'role' => 'required|string|in:admin,supervisor,empleado',
             'job_role_id' => 'nullable|integer|exists:job_roles,id',
             'contract_type' => 'nullable|string',
             'salary' => 'nullable|numeric',
@@ -225,7 +228,8 @@ class EmployeeController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|string',
             'email' => 'sometimes|email',
-            'role' => 'sometimes|string',
+            // §49: solo roles de empresa (ver nota arriba).
+            'role' => 'sometimes|string|in:admin,supervisor,empleado',
             'job_role_id' => 'sometimes|nullable|integer|exists:job_roles,id',
             'contract_type' => 'sometimes|nullable|string',
             'is_active' => 'sometimes|boolean',

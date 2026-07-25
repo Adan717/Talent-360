@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff, Fingerprint, KeyRound } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
+import { LegalModal, type LegalDocType } from './LegalModal';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ export const Login = () => {
   const [socialEmail, setSocialEmail] = useState(emailParam || '');
   const [showPassword, setShowPassword] = useState(false);
   const { setCurrentUser, setCurrentTier } = useAppStore();
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalDocType>('privacy');
 
   // Estados de simulación de seguridad avanzada (2FA y Biometría)
   const [is2FAStage, setIs2FAStage] = useState(false);
@@ -158,6 +161,8 @@ export const Login = () => {
       // Redirect to main platform based on user role
       if (user.role === 'platform_admin') {
         navigate('/superadmin');
+      } else if (user.role === 'support_agent') {
+        navigate('/soporte');
       } else if (user.role === 'empleado') {
         navigate('/empleado');
       } else {
@@ -199,6 +204,8 @@ export const Login = () => {
 
       if (user.role === 'platform_admin') {
         navigate('/superadmin');
+      } else if (user.role === 'support_agent') {
+        navigate('/soporte');
       } else if (user.role === 'empleado') {
         navigate('/empleado');
       } else {
@@ -575,6 +582,8 @@ export const Login = () => {
                 
                 if (user.role === 'platform_admin') {
                   navigate('/superadmin');
+                } else if (user.role === 'support_agent') {
+                  navigate('/soporte');
                 } else if (user.role === 'empleado') {
                   navigate('/empleado');
                 } else {
@@ -701,6 +710,39 @@ export const Login = () => {
           </div>
         </div>
       )}
+
+      {/* FOOTER LEGAL DE LOGIN */}
+      <div className="py-4 text-center text-[11px] text-slate-400 bg-slate-900/60 border-t border-slate-800/80 mt-auto flex justify-center gap-4">
+        <button 
+          type="button" 
+          onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
+          className="hover:text-indigo-400 transition cursor-pointer"
+        >
+          Aviso de Privacidad
+        </button>
+        <span>•</span>
+        <button 
+          type="button" 
+          onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
+          className="hover:text-indigo-400 transition cursor-pointer"
+        >
+          Términos de Servicio (SLA)
+        </button>
+        <span>•</span>
+        <button 
+          type="button" 
+          onClick={() => { setLegalModalTab('arco'); setIsLegalModalOpen(true); }}
+          className="hover:text-indigo-400 transition cursor-pointer"
+        >
+          Derechos ARCO
+        </button>
+      </div>
+
+      <LegalModal 
+        isOpen={isLegalModalOpen} 
+        onClose={() => setIsLegalModalOpen(false)} 
+        defaultTab={legalModalTab} 
+      />
     </div>
   );
 };

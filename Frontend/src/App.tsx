@@ -93,8 +93,11 @@ const RootRoute = () => {
     return <LoadingScreen message="Cargando..." fullScreen={true} />;
   }
 
-  if (currentUser?.system_role === 'platform_admin' || currentUser?.system_role === 'support_agent') {
+  if (currentUser?.system_role === 'platform_admin') {
     return <Navigate to="/superadmin" replace />;
+  }
+  if (currentUser?.system_role === 'support_agent') {
+    return <Navigate to="/soporte" replace />;
   }
   if (currentUser?.system_role === 'empleado') {
     return <Navigate to="/empleado" replace />;
@@ -834,7 +837,19 @@ function App() {
         </Suspense>
       } />
       <Route path="/superadmin" element={
-        <ProtectedRoute allowedRoles={['platform_admin', 'support_agent']}>
+        <ProtectedRoute allowedRoles={['platform_admin']}>
+          <div className="min-h-[100dvh] bg-slate-50 p-4 md:p-8 overflow-y-auto">
+            <SaaSPlatformAdmin />
+          </div>
+        </ProtectedRoute>
+      } />
+      {/* 2026-07-25 (a petición de Francisco): Página de Soporte con su propia URL, separada
+          de Plataforma Talent360 (/superadmin) — antes ambos roles compartían la misma ruta.
+          Reutiliza el mismo componente (ya restringe internamente qué pestañas ve cada rol vía
+          `isAdmin`, un support_agent solo ve "Soporte Técnico / Tickets"), pero ahora vive en su
+          propia URL para que sea, en los hechos, una superficie de acceso distinta. */}
+      <Route path="/soporte" element={
+        <ProtectedRoute allowedRoles={['support_agent', 'platform_admin']}>
           <div className="min-h-[100dvh] bg-slate-50 p-4 md:p-8 overflow-y-auto">
             <SaaSPlatformAdmin />
           </div>

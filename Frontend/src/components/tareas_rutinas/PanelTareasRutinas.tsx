@@ -407,7 +407,7 @@ export function PanelTareasRutinas() {
                           onClick={() => setActiveTab('tareas')} 
                           className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
                               activeTab === 'tareas' 
-                                  ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
+                                  ? 'bg-white text-blue-700 shadow-sm border border-slate-100' 
                                   : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                           }`}
                       >
@@ -426,7 +426,7 @@ export function PanelTareasRutinas() {
                           onClick={() => setActiveTab('rutinas')} 
                           className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
                               activeTab === 'rutinas' 
-                                  ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
+                                  ? 'bg-white text-blue-700 shadow-sm border border-slate-100' 
                                   : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                           }`}
                       >
@@ -882,14 +882,14 @@ export function PanelTareasRutinas() {
                                         {/* Modos (Autocaptura y Ley Silla) */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <label className="flex items-center gap-3 p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-colors">
-                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-350" />
+                                                <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
                                                 <div>
                                                     <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Modo Autocaptura (IA)</span>
                                                     <span className="text-[10px] text-blue-700">Aprenderá tiempos reales.</span>
                                                 </div>
                                             </label>
                                             <label className="flex items-center gap-3 p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-colors">
-                                                <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-purple-600 rounded border-slate-355" />
+                                                <input type="checkbox" checked={newTaskCanBeDoneSitting} onChange={e => setNewTaskCanBeDoneSitting(e.target.checked)} className="w-5 h-5 text-purple-600 rounded border-slate-400" />
                                                 <div>
                                                     <span className="font-bold text-purple-900 block text-xs flex items-center gap-1"><Armchair size={14}/> Tarea Sentada (Ley Silla)</span>
                                                     <span className="text-[10px] text-purple-700">Apta para tomar sentado.</span>
@@ -1071,7 +1071,7 @@ export function PanelTareasRutinas() {
                                                                         setNewTaskProcedureSteps(updated);
                                                                     }}
                                                                     type="text"
-                                                                    className="w-full px-2.5 py-1 text-xs border border-slate-205 rounded-lg font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                                                    className="w-full px-2.5 py-1 text-xs border border-slate-200 rounded-lg font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                                                     placeholder="Título del paso"
                                                                 />
                                                                 <button
@@ -1093,7 +1093,7 @@ export function PanelTareasRutinas() {
                                                                     updated[idx].detailed_instruction = e.target.value;
                                                                     setNewTaskProcedureSteps(updated);
                                                                 }}
-                                                                className="w-full p-2 text-xs border border-slate-205 rounded-lg focus:ring-1 focus:ring-blue-500 focus:outline-none min-h-[50px]"
+                                                                className="w-full p-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:outline-none min-h-[50px]"
                                                                 placeholder="Descripción detallada de la instrucción..."
                                                             />
                                                         </div>
@@ -1132,7 +1132,7 @@ export function PanelTareasRutinas() {
                                                                     setNewTaskValidationCriteria(updated);
                                                                 }}
                                                                 type="text"
-                                                                className="w-full px-2.5 py-1.5 text-xs border border-slate-205 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                                                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                                                                 placeholder="Ej. La selladora está apagada y limpia."
                                                             />
                                                             <button

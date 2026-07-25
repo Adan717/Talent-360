@@ -269,6 +269,37 @@ class PlatformAdminController extends Controller
     }
 
     /**
+     * §49: "botón de pánico" — revoca TODAS las sesiones activas de cuentas de
+     * plataforma (platform_users) de golpe, borrando sus personal_access_tokens.
+     * Fuerza a todo super-admin/soporte (incluido un posible atacante que ya haya
+     * entrado) a volver a autenticar. La sesión del propio solicitante también se
+     * revoca — es intencional: es un botón de emergencia, se vuelve a entrar después.
+     */
+    public function revokeAllPlatformSessions(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $deleted = \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+            ->where('tokenable_type', \App\Models\PlatformUser::class)
+            ->delete();
+
+        \App\Helpers\SecurityLogger::log(
+            'security_revoke_all_platform_sessions',
+            "Revocación masiva de sesiones de plataforma ({$deleted} tokens) por: " . auth()->user()->email,
+            null,
+            auth()->user()->id
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Se revocaron {$deleted} sesiones de plataforma. Todas las cuentas de plataforma deben volver a iniciar sesión.",
+            'revoked_count' => $deleted,
+        ]);
+    }
+
+    /**
      * Update tenant and admin details
      */
     public function updateTenantDetails($id, Request $request)

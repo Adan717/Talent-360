@@ -926,16 +926,71 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
     /**
      * Check if a passcode is valid.
      */
+    /**
+     * ¿El passcode es válido para ESTE tenant? (Seguridad, R-passcodes — merge F3.)
+     *
+     * ANTES: los passcodes estaban HARDCODEADOS en el código y eran GLOBALES ('Guru28',
+     * 'Chivas2017', '251302', '55') — quien los conociera entraba a la Wiki de CUALQUIER empresa,
+     * y rotarlos exigía un despliegue. Ahora son POR TENANT, hasheados (bcrypt) y FAIL-CLOSED: si
+     * el tenant no configuró el passcode del tier requerido, nadie pasa. El passcode ADMIN también
+     * habilita las operaciones VIEWER (jerarquía admin ⊇ viewer, igual que el array_merge viejo).
+     */
+    private function passcodeValid($tenant, ?string $passcode, bool $requireAdmin = false): bool
+    {
+        if (!$tenant || !is_string($passcode) || $passcode === '') {
+            return false;
+        }
+
+        $adminHash = $tenant->org_vault_admin_passcode_hash;
+        // El passcode admin siempre desbloquea (admin ⊇ viewer).
+        if (!empty($adminHash) && Hash::check($passcode, $adminHash)) {
+            return true;
+        }
+        if ($requireAdmin) {
+            return false; // sólo el admin passcode sirve para operaciones admin
+        }
+
+        $viewerHash = $tenant->org_vault_viewer_passcode_hash;
+        return !empty($viewerHash) && Hash::check($passcode, $viewerHash);
+    }
+
+    /** Compat: los callers internos resuelven el tenant del usuario autenticado. */
     private function validatePasscode($passcode, $requireAdmin = false)
     {
-        $adminPasscodes = ['Guru28'];
-        $employeePasscodes = ['Chivas2017', '251302', '55'];
-        $allPasscodes = array_merge($adminPasscodes, $employeePasscodes);
+        $tenantId = auth()->user()->tenant_id ?? null;
+        $tenant = $tenantId ? \App\Models\Tenant::withoutGlobalScopes()->find($tenantId) : null;
+        return $this->passcodeValid($tenant, $passcode, $requireAdmin);
+    }
 
-        if ($requireAdmin) {
-            return in_array($passcode, $adminPasscodes);
+    /**
+     * El admin fija/resetea los passcodes de la Wiki pública de SU tenant (ruta autenticada).
+     * Se pueden enviar uno o ambos; enviar cadena vacía DESHABILITA ese tier (fail-closed).
+     * NUNCA se devuelve el passcode, sólo si cada tier está configurado.
+     */
+    public function setVaultPasscodes(Request $request)
+    {
+        $request->validate([
+            'admin_passcode' => 'nullable|string|min:6|max:64',
+            'viewer_passcode' => 'nullable|string|min:6|max:64',
+        ]);
+
+        $tenant = \App\Models\Tenant::withoutGlobalScopes()->findOrFail(auth()->user()->tenant_id);
+
+        if ($request->has('admin_passcode')) {
+            $v = $request->input('admin_passcode');
+            $tenant->org_vault_admin_passcode_hash = ($v === null || $v === '') ? null : Hash::make($v);
         }
-        return in_array($passcode, $allPasscodes);
+        if ($request->has('viewer_passcode')) {
+            $v = $request->input('viewer_passcode');
+            $tenant->org_vault_viewer_passcode_hash = ($v === null || $v === '') ? null : Hash::make($v);
+        }
+        $tenant->save();
+
+        return response()->json([
+            'success' => true,
+            'admin_passcode_set' => !empty($tenant->org_vault_admin_passcode_hash),
+            'viewer_passcode_set' => !empty($tenant->org_vault_viewer_passcode_hash),
+        ]);
     }
 
     /**
@@ -947,18 +1002,27 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
             'passcode' => 'required|string'
         ]);
 
-        $passcode = $request->passcode;
-        $isValid = $this->validatePasscode($passcode);
+        // R-passcodes (merge F3): el passcode se valida contra ESTE tenant (hash bcrypt), no
+        // contra una lista global hardcodeada. Viewer basta para entrar; el rol se deriva de si
+        // además es el passcode ADMIN (jerarquía admin ⊇ viewer).
+        $tenantSlug = $request->route('tenantSlug');
+        $tenant = $tenantSlug
+            ? Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+                $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+            })->firstOrFail()
+            : Tenant::withoutGlobalScopes()->find(auth()->user()->tenant_id ?? null);
 
-        if (!$isValid) {
+        $passcode = $request->passcode;
+
+        if (!$this->passcodeValid($tenant, $passcode, false)) {
             return response()->json(['error' => 'Contraseña incorrecta.'], 403);
         }
 
-        $role = in_array($passcode, ['Guru28']) ? 'auditor' : 'colaborador';
+        $isAdmin = $this->passcodeValid($tenant, $passcode, true);
 
         return response()->json([
             'valid' => true,
-            'role' => $role
+            'role' => $isAdmin ? 'auditor' : 'colaborador'
         ]);
     }
 
@@ -1004,14 +1068,23 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
      */
     public function approvePublicSuggestion(Request $request, $tenantSlug, $id)
     {
-        $user = $this->resolvePublicUser($request);
-        if (!$user || $user->role !== 'admin') {
-            return response()->json(['error' => 'No autorizado.'], 403);
-        }
-
         $tenant = Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
             $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
         })->firstOrFail();
+
+        // ARBITRAJE F3 — doble credencial para aprobar: (a) usuario Obsidian con rol admin
+        // (línea §1–§42, login propio de la Wiki) o (b) el PASSCODE ADMIN DEL TENANT
+        // (R-passcodes: hasheado y por-empresa; antes era global y hardcodeado en el código).
+        $user = $this->resolvePublicUser($request);
+        $esAdminObsidian = $user && $user->role === 'admin';
+
+        if (!$esAdminObsidian) {
+            // Sin usuario admin, el passcode es OBLIGATORIO (ausente/vacío → 422, no 403).
+            $request->validate(['passcode' => 'required|string']);
+            if (!$this->passcodeValid($tenant, $request->input('passcode'), true)) {
+                return response()->json(['error' => 'No autorizado.'], 403);
+            }
+        }
 
         $suggestion = ObsidianSuggestion::withoutGlobalScopes()
             ->where('tenant_id', $tenant->id)

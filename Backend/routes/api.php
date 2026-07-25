@@ -290,6 +290,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::prefix('org-vault')->group(function () {
             Route::get('/settings', [ObsidianController::class, 'getSettings']);
             Route::post('/settings', [ObsidianController::class, 'saveSettings']);
+            // Fijar/resetear los passcodes de la Wiki pública del tenant (seguridad, R-passcodes:
+            // antes estaban hardcodeados y eran globales a toda la plataforma).
+            Route::post('/passcodes', [ObsidianController::class, 'setVaultPasscodes']);
             Route::post('/sync-local', [ObsidianController::class, 'syncLocal']);
             Route::post('/sync-zip', [ObsidianController::class, 'syncZip']);
             Route::post('/purge', [ObsidianController::class, 'purgeVault']);

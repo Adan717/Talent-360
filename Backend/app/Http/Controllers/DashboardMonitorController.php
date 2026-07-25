@@ -20,10 +20,18 @@ class DashboardMonitorController extends Controller
     {
         try {
             $user = auth()->user() ?? auth('sanctum')->user();
-            $userTenantId = $user ? $user->tenant_id : 1;
+            $userTenantId = $user ? $user->tenant_id : null;
 
-            // Fetch active users belonging to the tenant
-            $users = \App\Models\Employee::where('is_active_employee', '!=', false)
+            // Merge F3 — rechazo de tenant null: NO caer a tenant 1 (evita que un admin sin
+            // empresa vea el monitor de la empresa demo REAL).
+            if (!$userTenantId) {
+                return response()->json(['status' => 'error', 'message' => 'Usuario sin empresa asignada.'], 403);
+            }
+
+            // Fetch active users belonging to the tenant. where('tenant_id') EXPLÍCITO: el
+            // TenantScope global se apaga en consola y para platform_admin.
+            $users = \App\Models\Employee::where('tenant_id', $userTenantId)
+                ->where('is_active_employee', '!=', false)
                 ->with(['jobRole'])
                 ->get()
                 ->map(function ($emp) {
@@ -31,15 +39,22 @@ class DashboardMonitorController extends Controller
                     return $emp;
                 });
 
-            $today = Carbon::today()->toDateString();
+            // Merge F3 — "hoy" en la ZONA HORARIA del tenant (los ponches se fechan así), no en
+            // UTC: sin esto, cerca del anochecer local el monitor no encontraba los ponches del
+            // día y mostraba a colaboradores activos como "offline". El mismo $tz se reusa para
+            // el "ahora" del tiempo restante de jornada más abajo.
+            $tz = TenantTimezone::for($userTenantId);
+            $today = Carbon::now($tz)->toDateString();
 
-            // Fetch time entries for today to determine shift status
-            // whereNull('simulation_session_id'): nunca mezclar fichajes del Simulador
-            // Matrix en el monitor de actividad en tiempo real.
+            // Fetch time entries for today to determine shift status.
+            // whereNull('simulation_session_id'): nunca mezclar fichajes del Simulador Matrix.
+            // whereNotIn(AUXILIARY): si una reserva de comida fuera el registro de mayor id, el
+            // estado "actual" caería a offline y el usuario desaparecería del monitor.
             $timeEntries = DB::table('time_entries')
                 ->where('tenant_id', $userTenantId)
                 ->where('date', $today)
                 ->whereNull('simulation_session_id')
+                ->whereNotIn('type', \App\Services\ClockService::AUXILIARY_ENTRY_TYPES)
                 ->get()
                 ->groupBy('user_id');
 
@@ -73,7 +88,7 @@ class DashboardMonitorController extends Controller
                 ->get()
                 ->keyBy('user_id');
 
-            $formattedUsers = $users->map(function ($u) use ($timeEntries, $activeAssignments, $completedStats) {
+            $formattedUsers = $users->map(function ($u) use ($timeEntries, $activeAssignments, $completedStats, $tz) {
                 $entries = $timeEntries->get($u->id) ?? collect();
                 $userAssignments = $activeAssignments->get($u->id) ?? collect();
                 $activeTask = $userAssignments->firstWhere('status', 'in_progress');
@@ -105,8 +120,9 @@ class DashboardMonitorController extends Controller
                 // Calculate remaining shift time
                 $timeRemaining = 'Jornada terminada';
                 if ($status !== 'offline' && $u->shiftEnd) {
-                    $now = Carbon::now();
-                    $shiftEnd = Carbon::parse($u->shiftEnd);
+                    // Merge F3: "ahora" y el fin de jornada en la tz del TENANT (no UTC).
+                    $now = Carbon::now($tz);
+                    $shiftEnd = Carbon::parse($u->shiftEnd, $tz);
                     if ($now->lt($shiftEnd)) {
                         $diff = $now->diff($shiftEnd);
                         $timeRemaining = $diff->format('%hh %im');
@@ -178,7 +194,7 @@ class DashboardMonitorController extends Controller
             })->values()->all();
 
             // Fetch available tasks for quick assignment modal
-            $availableTasks = Task::select('id', 'title', 'estimated_mins', 'priority')->get();
+            $availableTasks = Task::where('tenant_id', $userTenantId)->select('id', 'title', 'estimated_mins', 'priority')->get();
 
             // Fetch live database events
             $timeEntriesFeed = DB::table('time_entries')
@@ -331,14 +347,19 @@ class DashboardMonitorController extends Controller
                 ], 403);
             }
 
+            $localNow = Carbon::now(TenantTimezone::for($userTenantId));
+            $startedAtMins = $localNow->hour * 60 + $localNow->minute;
+
             $assignment = TaskAssignment::create([
                 'id' => (string) \Illuminate\Support\Str::uuid(),
                 'task_id' => $request->task_id,
                 'user_id' => $request->user_id,
                 'status' => 'in_progress',
-                'started_at_mins' => Carbon::now()->hour * 60 + Carbon::now()->minute,
-                'expected_end_time_mins' => Carbon::now()->hour * 60 + Carbon::now()->minute + $task->estimated_mins,
-                'date' => Carbon::today()->toDateString(),
+                // Merge F3: minutos-del-día en la TZ DEL TENANT (el monitor los muestra como hora
+                // local de inicio/fin de tarea); con la del servidor (UTC) salían corridos horas.
+                'started_at_mins' => $startedAtMins,
+                'expected_end_time_mins' => $startedAtMins + $task->estimated_mins,
+                'date' => $localNow->toDateString(),
             ]);
 
             event(new MonitorUpdated($userTenantId));

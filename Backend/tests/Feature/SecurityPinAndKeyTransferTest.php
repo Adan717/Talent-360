@@ -113,9 +113,12 @@ class SecurityPinAndKeyTransferTest extends TestCase
             'user_id' => $receiver->id,
             'portadorLlaves' => 'Principal',
         ]);
+        // ENMIENDA merge F3: el valor canónico de "sin llaves" es 'ninguno' en minúsculas — es lo
+        // que escriben los seeders y lo que comparan los guards (siempre vía strtolower, así que el
+        // comportamiento es idéntico); el reconciliado unifica la escritura en esa forma.
         $this->assertDatabaseHas('employees', [
             'user_id' => $sender->id,
-            'portadorLlaves' => 'Ninguno',
+            'portadorLlaves' => 'ninguno',
         ]);
     }
 

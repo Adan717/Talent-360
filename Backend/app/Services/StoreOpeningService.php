@@ -6,6 +6,7 @@ use App\Models\StoreDailyOpeningStatus;
 use App\Models\StoreOpeningAssignment;
 use App\Models\StoreOpeningEvent;
 use App\Models\StoreLog;
+use App\Models\Employee;
 use App\Models\User;
 use App\Helpers\TenantStore;
 use App\Helpers\TenantTimezone;
@@ -35,10 +36,14 @@ class StoreOpeningService
      */
     public function getTodayOpeningStatus($tenantId, $storeId = 1, $simTime = null, $simDay = null)
     {
-        $settings = DB::table('system_settings')->pluck('value', 'key')->toArray();
+        // Merge F3 (fix de frontera de tz, clase StoreOpeningTimezone del Reloj): la FECHA de
+        // negocio del status sale de la MISMA zona del tenant que usa processPunch — con la fecha
+        // del servidor (UTC), entre 00:00 y 06:00 UTC el status se creaba en "mañana" y el gate de
+        // tienda-cerrada (R76) nunca lo veía. El pluck de settings también se acota al tenant.
+        $settings = DB::table('system_settings')->where('tenant_id', $tenantId)->pluck('value', 'key')->toArray();
         $isSimulated = isset($settings['time_mode']) ? json_decode($settings['time_mode'], true) === 'simulated' : false;
 
-        $date = Carbon::now()->format('Y-m-d');
+        $date = Carbon::now($this->tenantTimezone($tenantId))->format('Y-m-d');
         
         $todayStatus = StoreDailyOpeningStatus::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
@@ -73,10 +78,15 @@ class StoreOpeningService
             $deadline = $openTime->copy()->subMinutes($preMinutes)->addMinutes($reportMinutes)->format('H:i:s');
 
             // Find current responsible manager (Priority 1)
+            // R46 (merge F3): `can_open_store` es el permiso REAL — sin este filtro la columna no
+            // gateaba ningun lookup, asi que apagarla desde el panel del admin era decorativo y a
+            // esa persona le seguian entregando la apertura del dia. Si nadie esta autorizado, el
+            // status queda SIN responsable (no se elige a un no-autorizado por defecto).
             $firstResponsible = StoreOpeningAssignment::withoutGlobalScopes()
                 ->where('tenant_id', $tenantId)
                 ->where('store_id', $storeId)
                 ->where('is_active', true)
+                ->where('can_open_store', true)
                 ->orderBy('priority_order', 'asc')
                 ->first();
 
@@ -86,9 +96,7 @@ class StoreOpeningService
             // users.id (esa migración no tocó esta tabla) — hay que traducir por
             // employees.user_id o la comparación en openStoreAndClockIn/reportAbsence
             // (que sí usa users.id) nunca cuadra con el responsable real.
-            $responsibleUserId = $firstResponsible
-                ? DB::table('employees')->where('id', $firstResponsible->employee_id)->value('user_id')
-                : null;
+            $responsibleUserId = $this->responsibleUserId($firstResponsible);
 
             $todayStatus = StoreDailyOpeningStatus::create([
                 'tenant_id' => $tenantId,
@@ -118,7 +126,7 @@ class StoreOpeningService
             return;
         }
 
-        $nowTimeStr = $this->getCurrentTimeStr($simTime);
+        $nowTimeStr = $this->getCurrentTimeStr($simTime, $status->tenant_id);
         $now = Carbon::createFromFormat('H:i:s', $nowTimeStr);
 
         $windowStart = Carbon::createFromFormat('H:i:s', $status->pre_opening_window_start);
@@ -175,7 +183,7 @@ class StoreOpeningService
                 }
             }
 
-            $nowTimeStr = $this->getCurrentTimeStr($simTime);
+            $nowTimeStr = $this->getCurrentTimeStr($simTime, $tenantId);
 
             $simSessionId = null;
             if ($isSimulator) {
@@ -187,15 +195,25 @@ class StoreOpeningService
                 $simSessionId = $simSession?->id;
             }
 
-            // 1. Clock in the employee (con is_simulator si aplica)
-            $details = $isSimulator ? ['is_simulator' => true] : [];
-            $punchResult = $this->clockService->processPunch($user, 'check_in', $nowTimeStr, $details);
-
-            // 2. Register store opening
+            // Merge F3 (reorden, patrón R86): se abre la tienda PRIMERO y el ponche va después en
+            // BEST-EFFORT — con el gate de tienda-cerrada de TODOS los planes (R76), fichar antes de
+            // abrir bloqueaba el override legítimo de un mando que no es el responsable asignado; y
+            // si el ponche falla por una regla propia, la apertura (el objetivo primario) no se cae.
+            // 1. Register store opening
             $status->status = 'opened';
             $status->opened_by_employee_id = $user->id;
             $status->opened_at = Carbon::now();
             $status->save();
+
+            // 2. Clock in the employee (con is_simulator si aplica) — SAVEPOINT propio (R51/R84).
+            $details = $isSimulator ? ['is_simulator' => true] : [];
+            try {
+                $punchResult = DB::transaction(function () use ($user, $nowTimeStr, $details) {
+                    return $this->clockService->processPunch($user, 'check_in', $nowTimeStr, $details);
+                });
+            } catch (\Throwable $e) {
+                $punchResult = ['success' => false, 'skipped' => true, 'message' => $e->getMessage()];
+            }
 
             // 3. Log event in bitacora
             StoreOpeningEvent::create([
@@ -224,8 +242,11 @@ class StoreOpeningService
             // 5. Iniciar checklist de apertura automáticamente
             $this->triggerOpeningChecklist($tenantId, $user);
 
-            // Broadcast change via MonitorUpdated event
+            // Broadcast: MonitorUpdated + StoreOpened (merge F3 — el segundo faltaba en este
+            // camino; el Reloj lo escucha para levantar el gate de tienda-cerrada en vivo).
             event(new \App\Events\MonitorUpdated($tenantId));
+            $tenantUserIds = DB::table('users')->where('tenant_id', $tenantId)->pluck('id')->toArray();
+            event(new \App\Events\StoreOpened($tenantId, $tenantUserIds));
 
             return [
                 'success' => true,
@@ -294,8 +315,14 @@ class StoreOpeningService
                 throw new \Exception('La tienda ya se encuentra abierta.');
             }
 
-            $nowTimeStr = $this->getCurrentTimeStr();
-            $punchResult = $this->clockService->processPunch($requester, 'check_in', $nowTimeStr);
+            $nowTimeStr = $this->getCurrentTimeStr(null, $tenantId);
+            try {
+                $punchResult = DB::transaction(function () use ($requester, $nowTimeStr) {
+                    return $this->clockService->processPunch($requester, 'check_in', $nowTimeStr, ['supervisor_override' => true]);
+                });
+            } catch (\Throwable $e) {
+                $punchResult = ['success' => false, 'skipped' => true, 'message' => $e->getMessage()];
+            }
 
             $status->status = 'opened';
             $status->opened_by_employee_id = $requesterId;
@@ -453,44 +480,61 @@ class StoreOpeningService
     protected function triggerOpeningChecklist($tenantId, User $user)
     {
         try {
-            // Find the opening checklist routine
-            $routine = DB::table('routines')
+            // TODAS las rutinas de apertura del tenant (no solo la primera): una
+            // sucursal puede tener varias (ej. "Apertura Piso" + "Apertura Caja").
+            $routines = DB::table('routines')
                 ->where('tenant_id', $tenantId)
                 ->where('trigger', 'apertura')
-                ->first();
+                ->get();
 
-            if ($routine) {
-                // Find all tasks related to this routine
+            if ($routines->isEmpty()) {
+                return;
+            }
+
+            $date = Carbon::now($this->tenantTimezone($tenantId))->format('Y-m-d');
+            $now = Carbon::now();
+
+            foreach ($routines as $routine) {
+                // Join con tasks + filtro por tenant: la rutina ya es del tenant, pero
+                // el pivot podría (en teoría) referenciar una tarea de otro tenant;
+                // no crear assignments apuntando a tareas ajenas (defensa en profundidad).
                 $tasks = DB::table('routine_task')
-                    ->where('routine_id', $routine->id)
-                    ->pluck('task_id');
-
-                $date = Carbon::now()->format('Y-m-d');
+                    ->join('tasks', 'tasks.id', '=', 'routine_task.task_id')
+                    ->where('routine_task.routine_id', $routine->id)
+                    ->where('tasks.tenant_id', $tenantId)
+                    ->pluck('routine_task.task_id');
 
                 foreach ($tasks as $taskId) {
-                    // Assign to user if not already assigned today
-                    $exists = DB::table('task_assignments')
-                        ->where('task_id', $taskId)
-                        ->where('user_id', $user->id)
-                        ->where('date', $date)
-                        ->exists();
+                    // id determinista sobre (task_id,user_id,date) + insertOrIgnore:
+                    // idempotente y race-safe sin un unique global (que rompería
+                    // asignaciones legítimas del mismo task/user/día desde otras
+                    // fuentes). No incluye routine_id a propósito: una tarea que esté
+                    // en varias rutinas de apertura se asigna UNA vez (mismo criterio
+                    // de dedup del código original). Dos aperturas concurrentes → una
+                    // inserta, la otra es no-op por conflicto de PK.
+                    $assignmentId = "open_{$taskId}_{$user->id}_{$date}";
 
-                    if (!$exists) {
-                        DB::table('task_assignments')->insert([
-                            'task_id' => $taskId,
-                            'user_id' => $user->id,
-                            'tenant_id' => $tenantId,
-                            'date' => $date,
-                            'status' => 'pending',
-                            'points_awarded' => 0,
-                            'created_at' => Carbon::now(),
-                            'updated_at' => Carbon::now(),
-                        ]);
-                    }
+                    DB::table('task_assignments')->insertOrIgnore([
+                        'id' => $assignmentId,
+                        'task_id' => $taskId,
+                        'user_id' => $user->id,
+                        'assigned_from_routine_id' => $routine->id,
+                        'tenant_id' => $tenantId,
+                        'date' => $date,
+                        'status' => 'pending',
+                        'points_awarded' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
                 }
             }
         } catch (\Exception $e) {
-            // Fail-safe
+            // Fail-safe: no bloquear la apertura si el checklist falla, pero dejar
+            // rastro (antes se tragaba en silencio y ocultaba fallos reales).
+            \Illuminate\Support\Facades\Log::error(
+                "triggerOpeningChecklist falló para tenant {$tenantId}, user {$user->id}: " . $e->getMessage(),
+                ['exception' => $e]
+            );
         }
     }
 
@@ -580,7 +624,9 @@ class StoreOpeningService
             return $simTime;
         }
 
-        return Carbon::now()->format('H:i:s');
+        // Hora real en la TZ DEL TENANT (no UTC): las ventanas / report_deadline del state
+        // machine se comparan contra esta hora local (clase StoreOpeningTimezone del Reloj).
+        return Carbon::now($tenantId !== null ? $this->tenantTimezone($tenantId) : config('app.timezone'))->format('H:i:s');
     }
 
     /**
@@ -688,5 +734,62 @@ class StoreOpeningService
     public function tenantTimezone($tenantId): string
     {
         return TenantTimezone::for($tenantId);
+    }
+
+    /**
+     * Traduce el `employee_id` (employees.id) de una asignación al users.id que espera
+     * `store_daily_opening_statuses.current_responsible_employee_id` (FK a users pese al nombre).
+     * null si la asignación no existe o el expediente no tiene usuario vinculado (huérfano R40).
+     */
+    protected function responsibleUserId($assignment): ?int
+    {
+        if (!$assignment) {
+            return null;
+        }
+        $userId = Employee::withoutGlobalScopes()
+            ->where('id', $assignment->employee_id)
+            ->value('user_id');
+        return $userId !== null ? (int) $userId : null;
+    }
+
+    /**
+     * Asignaciones de apertura tal como las consume el RELOJ (R46/R50): incluye el `user_id` del
+     * expediente para que el cliente pueda casar al responsable del día sin adivinar espacios de id.
+     */
+    public function getAssignmentsForClock(int $tenantId, ?int $storeId = null): array
+    {
+        $storeId = $storeId ?? 1;
+
+        return StoreOpeningAssignment::withoutGlobalScopes()
+            ->where('store_opening_assignments.tenant_id', $tenantId)
+            ->where('store_opening_assignments.store_id', $storeId)
+            ->leftJoin('employees', 'employees.id', '=', 'store_opening_assignments.employee_id')
+            ->orderBy('store_opening_assignments.priority_order', 'asc')
+            ->get([
+                'store_opening_assignments.employee_id',
+                'store_opening_assignments.priority_order',
+                'store_opening_assignments.can_open_store',
+                'store_opening_assignments.is_active',
+                'employees.user_id',
+                'employees.name',
+            ])
+            ->map(fn ($a) => [
+                'employee_id' => (int) $a->employee_id,
+                // null si el expediente no tiene usuario vinculado (empleado huérfano, R40). El
+                // front DEBE distinguir este null de "la llave no viene" (ver lib/apertura.ts).
+                'user_id' => $a->user_id !== null ? (int) $a->user_id : null,
+                'name' => $a->name,
+                'priority_order' => (int) $a->priority_order,
+                'can_open_store' => (bool) $a->can_open_store,
+                'is_active' => (bool) $a->is_active,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** Resuelve la tz a partir de un arreglo de system_settings ya consultado. */
+    private function timezoneFromSettings(array $settings): string
+    {
+        return TenantTimezone::fromSettings($settings);
     }
 }

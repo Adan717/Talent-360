@@ -1206,8 +1206,12 @@ class ClockService
 
         $user = User::withoutGlobalScopes()->findOrFail($userId);
         $tenantId = $user->tenant_id ?? 1;
+        // Merge F3 (fix de frontera de tz): la FECHA de la contingencia debe salir de la MISMA zona
+        // que usa processPunch para $date (la del tenant) — con la fecha del servidor (UTC), entre
+        // las 00:00 y las 06:00 UTC la declaración caía en "mañana" y la protección no aplicaba.
+        $timezone = $this->resolveTenantTimezone($tenantId);
         $declaredAtCarbon = $declaredAt ? Carbon::parse($declaredAt) : Carbon::now();
-        $date = $declaredAtCarbon->format('Y-m-d');
+        $date = $declaredAtCarbon->copy()->setTimezone($timezone)->format('Y-m-d');
 
         $existing = ContingencyDeclaration::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)

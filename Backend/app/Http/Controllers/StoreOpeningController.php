@@ -13,6 +13,7 @@ use App\Services\StoreOpeningService;
 use App\Services\StoreOpeningHandoffService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreOpeningController extends Controller
 {
@@ -125,10 +126,17 @@ class StoreOpeningController extends Controller
 
         // §30: el endpoint recibe user_id (lo único que el frontend puede conocer con
         // certeza de un colaborador) y resuelve internamente al employees.id real que
-        // store_opening_assignments.employee_id exige como FK — simétrico al accessor
-        // resolved_user_id agregado en §29 para la lectura.
+        // store_opening_assignments.employee_id exige como FK.
+        // ARBITRAJE F3 — acepta AMBOS protocolos: `user_id` (§30, lo único que el FE conoce con
+        // certeza) o `employee_id` (línea del Reloj, el id real de la FK). Cualquiera resuelve al
+        // mismo expediente, SIEMPRE acotado al tenant del emisor (la regla `exists` plana ignora
+        // el TenantScope, así que el filtro por tenant es lo que evita asignar gente de otra empresa).
         $validated = $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
+            'user_id' => 'required_without:employee_id|integer|exists:users,id',
+            'employee_id' => [
+                'required_without:user_id',
+                Rule::exists('employees', 'id')->where('tenant_id', $tenantId),
+            ],
             'priority_order' => 'integer|min:1',
             'can_open_store' => 'boolean',
             'can_close_store' => 'boolean',
@@ -138,7 +146,9 @@ class StoreOpeningController extends Controller
 
         $employee = \App\Models\Employee::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->where('user_id', $validated['user_id'])
+            ->when(isset($validated['user_id']),
+                fn ($q) => $q->where('user_id', $validated['user_id']),
+                fn ($q) => $q->where('id', $validated['employee_id']))
             ->first();
 
         if (!$employee) {
@@ -242,9 +252,40 @@ class StoreOpeningController extends Controller
 
         $status = $this->openingService->getTodayOpeningStatus($tenantId, $storeId, $simTime, $simDay);
 
+        // R100 (spec §3/§5 "Llamar a Encargado de Llaves"): el teléfono del responsable de apertura
+        // viaja SÓLO a portadores de llaves (asignación ACTIVA con can_open_store). El gate es
+        // server-side a propósito: a un empleado común el dato NO le llega.
+        $responsiblePhone = null;
+        $myEmployeeId = \Illuminate\Support\Facades\DB::table('employees')
+            ->where('tenant_id', $tenantId)->where('user_id', $user->id)->value('id');
+        $esPortador = $myEmployeeId && \Illuminate\Support\Facades\DB::table('store_opening_assignments')
+            ->where('tenant_id', $tenantId)
+            ->where('employee_id', $myEmployeeId)
+            ->where('is_active', true)
+            ->where('can_open_store', true)
+            ->exists();
+        if ($esPortador && $status && $status->current_responsible_employee_id
+            && (int) $status->current_responsible_employee_id !== (int) $user->id) {
+            // (si el responsable eres TÚ, no hay a quién llamar — el FE no muestra el botón)
+            $responsiblePhone = \Illuminate\Support\Facades\DB::table('employees')
+                ->where('tenant_id', $tenantId)
+                ->where('user_id', $status->current_responsible_employee_id)
+                ->value('phone');
+        }
+
         return response()->json([
             'success' => true,
             'status' => $status,
+            'responsible_phone' => $responsiblePhone,
+            // R47: los ajustes viajan aquí a propósito — el motor del reloj (useClockEngine) YA
+            // consulta este endpoint cada 5s y es accesible al empleado, mientras que
+            // `GET /store-opening/settings` es admin-only. Sin esto el motor usaba eternamente sus
+            // defaults hardcodeados y apagar "requiere checklist" desde el panel no apagaba nada.
+            'settings' => $this->settingsService->getOpeningSettings($tenantId, $storeId),
+            // R50: ídem con las asignaciones — `GET /store-opening/assignments` es admin-only, así
+            // que el empleado recibía 403 y el reloj se quedaba sin saber quién abre (nombre falso
+            // "Encargado" + lista de llaves hardcodeada). Van scrubbeadas (sin email ni relación).
+            'assignments' => $this->openingService->getAssignmentsForClock($tenantId, $storeId),
             'is_premium_active' => FeatureAccessService::tenantHasFeature($tenantId, 'store_opening')
         ]);
     }

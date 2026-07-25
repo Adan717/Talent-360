@@ -324,7 +324,10 @@ class ClockSyncTest extends TestCase
         // un check_in directo en BD (lo que este test prueba es la TOLERANCIA DE FORMATO de hora).
         \DB::table('time_entries')->insert([
             'tenant_id' => $tenant->id, 'user_id' => $user->id,
-            'date' => now()->format('Y-m-d'), 'type' => 'check_in', 'time' => '08:00:00',
+            // La fecha en la TZ DEL TENANT (la misma que usa processPunch): con now() del servidor
+            // (UTC), entre 00:00 y 06:00 UTC el check_in caía en "mañana" y la secuencia no lo veía.
+            'date' => now(\App\Helpers\TenantTimezone::for($tenant->id))->format('Y-m-d'),
+            'type' => 'check_in', 'time' => '08:00:00',
             'is_late' => false, 'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]);
 

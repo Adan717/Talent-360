@@ -403,6 +403,7 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'avatar' => 'nullable|string',
+            'academy_assistant_enabled' => 'nullable|boolean',
         ]);
 
         $updates = [
@@ -431,20 +432,40 @@ class AuthController extends Controller
                 ]);
         }
 
+        // §38 (línea §1–§42): academy_assistant_enabled vive dentro de employees.clock_preferences —
+        // se mergea en vez de sobreescribir para no perder otras preferencias futuras.
+        if (!($user instanceof \App\Models\PlatformUser) && $request->has('academy_assistant_enabled')) {
+            $employeeRow = \Illuminate\Support\Facades\DB::table('employees')->where('user_id', $user->id)->first();
+            if ($employeeRow) {
+                $preferences = $employeeRow->clock_preferences ? json_decode($employeeRow->clock_preferences, true) : [];
+                $preferences['academy_assistant_enabled'] = (bool) $request->boolean('academy_assistant_enabled');
+                \Illuminate\Support\Facades\DB::table('employees')
+                    ->where('user_id', $user->id)
+                    ->update(['clock_preferences' => json_encode($preferences)]);
+            }
+        }
+
         if ($user instanceof \App\Models\PlatformUser) {
             $updatedUser = \App\Models\PlatformUser::find($user->id);
         } else {
             $updatedUser = \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)->with('tenant')->find($user->id);
         }
 
+        $academyAssistantEnabled = null;
+        if (!($user instanceof \App\Models\PlatformUser)) {
+            $rawPreferences = \Illuminate\Support\Facades\DB::table('employees')->where('user_id', $user->id)->value('clock_preferences');
+            $academyAssistantEnabled = $rawPreferences
+                ? (json_decode($rawPreferences, true)['academy_assistant_enabled'] ?? false)
+                : false;
+        }
+
         return response()->json([
             // toAuthPayload, no el modelo crudo: `MyAccountModal:133` y `OnboardingWizard:221,348`
             // hacen `setCurrentUser(res.data.user)` — REEMPLAZO TOTAL, no spread. Con el modelo crudo
-            // la sesión perdía `can_clock_in` (R53), y también el `job_role_id` del expediente y la
-            // jornada (R41/R45): un admin que editaba su perfil dejaba de poder entrar al checador
-            // hasta recargar, porque el gate de `/empleado` lee ese flag de `currentUser`.
+            // la sesión perdía `can_clock_in` (R53), el `job_role_id` del expediente y la jornada.
             'message' => 'Perfil actualizado exitosamente',
             'user' => $updatedUser instanceof \App\Models\User ? $updatedUser->toAuthPayload() : $updatedUser,
+            'academy_assistant_enabled' => $academyAssistantEnabled,
         ]);
     }
 

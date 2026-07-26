@@ -702,7 +702,7 @@ class ClockService
      * siguiente semana. Solo se reinicia cuando el empleado completa (o vuelve a
      * completar) el curso de puntualidad que el tenant haya configurado.
      */
-    public function getPunctualityStatus(User $user): array
+    public function getPunctualityStatus($user): array
     {
         $tenantId = $user->tenant_id ?? 1;
 

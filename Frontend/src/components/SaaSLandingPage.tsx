@@ -11,7 +11,12 @@ export const SaaSLandingPage = () => {
   const location = useLocation();
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalDocType>('privacy');
-  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  // 2026-07-26 (auditoría en vivo): arrancaba en `true`, es decir la casilla de aceptar el SLA y
+  // el Aviso de Privacidad venía pre-marcada. La LFPDPPP exige consentimiento afirmativo del
+  // titular; una casilla ya marcada no acredita que la persona haya consentido, y debilita el
+  // valor probatorio del propio aviso. Arranca desmarcada — el botón ya estaba condicionado a
+  // ella (`disabled={!acceptedTerms}`), así que el flujo sigue funcionando igual.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [proEmployeesCount, setProEmployeesCount] = useState<number>(20); // Professional default
@@ -1548,8 +1553,16 @@ export const SaaSLandingPage = () => {
                       <p className="text-xs font-black text-slate-800">{googleUser.name}</p>
                       <p className="text-[10px] text-slate-400 font-semibold">{googleUser.email}</p>
                     </div>
-                    <div className="ml-auto bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-100">
-                      Google OK
+                    {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Google OK",
+                        incluso cuando el alta se hizo con correo y contraseña — afirmaba una
+                        validación con Google que no había ocurrido. Ahora refleja el método real:
+                        el registro por correo deja `google_id` vacío, el de Google lo llena. */}
+                    <div className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                      googleUser.google_id
+                        ? 'bg-blue-50 text-blue-600 border-blue-100'
+                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}>
+                      {googleUser.google_id ? 'Google OK' : 'Correo'}
                     </div>
                   </div>
 

@@ -36,7 +36,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   // Step 1: Branch Settings
-  const [companyName, setCompanyName] = useState('Mi Sucursal Talent360');
+  // 2026-07-26 (auditoría en vivo): antes esto arrancaba con el literal 'Mi Sucursal Talent360'
+  // aunque el usuario ACABA de escribir el nombre real de su empresa dos pantallas antes, en el
+  // alta de la Landing Page. El nombre correcto ya viene hidratado en currentUser.tenant.name,
+  // así que se usa ese y el genérico queda solo como último recurso.
+  const [companyName, setCompanyName] = useState(currentUser?.tenant?.name || 'Mi Sucursal Talent360');
+  const [isCompanyNameEdited, setIsCompanyNameEdited] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState('¡Hola! Registra tu asistencia diaria aquí.');
   const [adminPhone, setAdminPhone] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
@@ -143,6 +148,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       setSelectedRoleId(globalRoles[0].id);
     }
   }, [globalRoles, selectedRoleId]);
+
+  // 2026-07-26 (auditoría en vivo): `currentUser` llega de forma asíncrona, así que en el primer
+  // render puede ser null y el useState de arriba caería en el genérico. Cuando el tenant termina
+  // de hidratarse, se rellena el nombre real — salvo que el usuario ya lo haya editado a mano.
+  useEffect(() => {
+    const tenantName = currentUser?.tenant?.name;
+    if (tenantName && !isCompanyNameEdited && companyName === 'Mi Sucursal Talent360') {
+      setCompanyName(tenantName);
+    }
+  }, [currentUser, isCompanyNameEdited, companyName]);
 
   const [waSentStatus, setWaSentStatus] = useState<{
     sending: boolean;
@@ -526,7 +541,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     type="text" 
                     id="companyName"
                     value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
+                    onChange={(e) => { setIsCompanyNameEdited(true); setCompanyName(e.target.value); }}
                     className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
                     placeholder="Nombre Comercial"
                   />

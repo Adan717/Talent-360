@@ -416,19 +416,14 @@ export const SaaSLandingPage = () => {
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex md:hidden items-center gap-2.5">
-            <button 
-              onClick={() => navigate('/login')} 
-              className="text-xs font-black text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl hover:bg-blue-100 transition-all active:scale-95"
-            >
-              Entrar
-            </button>
+          <div className="flex md:hidden items-center gap-2">
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-all active:scale-95"
+              className="p-2.5 text-slate-700 bg-slate-100/80 hover:bg-slate-200/80 rounded-2xl transition-all active:scale-95 border border-slate-200/50 flex items-center gap-2 font-bold text-xs"
               aria-label="Abrir menú"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              <span className="text-slate-600 font-extrabold text-[11px] uppercase tracking-wider pl-1">Menú</span>
+              {isMobileMenuOpen ? <X size={20} className="text-blue-600" /> : <Menu size={20} className="text-slate-700" />}
             </button>
           </div>
         </div>
@@ -439,80 +434,99 @@ export const SaaSLandingPage = () => {
         <>
           {/* Dark Backdrop Overlay */}
           <div 
-            className="md:hidden fixed inset-0 top-[80px] bg-slate-950/70 backdrop-blur-md z-40 animate-in fade-in duration-200"
+            className="md:hidden fixed inset-0 top-[80px] bg-slate-950/75 backdrop-blur-md z-40 animate-in fade-in duration-200"
             onClick={() => setIsMobileMenuOpen(false)}
           />
 
-          {/* Solid Opaque Mobile Menu Drawer */}
-          <div className="md:hidden fixed top-[80px] left-0 right-0 bottom-0 bg-white z-50 flex flex-col p-6 animate-in slide-in-from-top-4 duration-200 border-t border-slate-200/90 shadow-2xl overflow-y-auto">
+          {/* Premium Mobile Menu Drawer */}
+          <div className="md:hidden fixed top-[80px] left-0 right-0 bottom-0 bg-slate-900 text-white z-50 flex flex-col p-6 animate-in slide-in-from-top-4 duration-200 border-t border-slate-800 shadow-2xl overflow-y-auto">
             <div className="flex flex-col h-full justify-between max-w-sm mx-auto w-full py-2">
-              <div className="space-y-5">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
-                  Navegación Principal
+              <div className="space-y-6">
+                <div className="flex items-center justify-between px-1 pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-black text-xs text-white">T</div>
+                    <span className="font-extrabold text-sm text-slate-200">Menú de Navegación</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    SaaS Online
+                  </span>
                 </div>
-                <nav className="flex flex-col gap-2.5">
+
+                <nav className="flex flex-col gap-3">
                   <a 
                     href="#features" 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 hover:text-blue-600 font-extrabold text-slate-800 transition-all flex items-center justify-between group text-sm border border-slate-100 shadow-sm"
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-blue-600/20 hover:border-blue-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
-                        <Zap size={18} />
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                        <Zap size={20} />
                       </div>
-                      <span>Plataforma 360</span>
+                      <div className="text-left">
+                        <div className="font-extrabold text-sm text-white group-hover:text-blue-400 transition-colors">Plataforma 360</div>
+                        <div className="text-[11px] text-slate-400 font-medium">Módulos de RRHH & Asistencia</div>
+                      </div>
                     </div>
-                    <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                   </a>
 
                   <a 
                     href="#pricing" 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 hover:text-blue-600 font-extrabold text-slate-800 transition-all flex items-center justify-between group text-sm border border-slate-100 shadow-sm"
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-emerald-600/20 hover:border-emerald-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-105 transition-transform">
-                        <Tag size={18} />
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                        <Tag size={20} />
                       </div>
-                      <span>Precios y Planes</span>
+                      <div className="text-left">
+                        <div className="font-extrabold text-sm text-white group-hover:text-emerald-400 transition-colors">Precios y Planes</div>
+                        <div className="text-[11px] text-slate-400 font-medium">Freemium, Pro & Enterprise</div>
+                      </div>
                     </div>
-                    <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                   </a>
 
                   <a 
                     href="#simulador" 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 hover:text-blue-600 font-extrabold text-slate-800 transition-all flex items-center justify-between group text-sm border border-slate-100 shadow-sm"
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-purple-600/20 hover:border-purple-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-purple-600 shadow-sm group-hover:scale-105 transition-transform">
-                        <Sparkles size={18} />
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                        <Sparkles size={20} />
                       </div>
-                      <span>Simulador de Nómina</span>
+                      <div className="text-left">
+                        <div className="font-extrabold text-sm text-white group-hover:text-purple-400 transition-colors">Simulador de Nómina</div>
+                        <div className="text-[11px] text-slate-400 font-medium">Calculadora de Ley LFT</div>
+                      </div>
                     </div>
-                    <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight size={18} className="text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
                   </a>
                 </nav>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-3 shrink-0">
+              <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col gap-3.5 shrink-0">
+                {/* Single Auth Entry Point inside Drawer */}
                 <button 
                   onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
-                  className="w-full py-3.5 rounded-2xl font-extrabold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all text-center text-sm border border-slate-200/80 active:scale-98"
+                  className="w-full py-4 rounded-2xl font-black text-slate-100 bg-slate-800 hover:bg-slate-750 border border-slate-700/80 transition-all text-center text-sm flex items-center justify-center gap-2.5 active:scale-98 shadow-md"
                 >
-                  Iniciar Sesión
+                  <Lock size={16} className="text-blue-400" />
+                  <span>Iniciar Sesión en tu Cuenta</span>
                 </button>
+
                 <button 
                   onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
-                  className="w-full py-3.5 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/25 active:scale-98 transition-all text-center text-sm flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-600/30 active:scale-98 transition-all text-center text-sm flex items-center justify-center gap-2"
                 >
                   <span>Crear Cuenta Gratis</span>
                   <ArrowRight size={16} />
                 </button>
 
-                <div className="mt-2 text-center text-[11px] font-bold text-slate-400 flex items-center justify-center gap-1.5">
-                  <ShieldCheck size={14} className="text-emerald-500" />
-                  <span>Talent 360 SaaS Platform</span>
+                <div className="mt-2 text-center text-[11px] font-semibold text-slate-500 flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <span>Conexión Segura SSL 256-Bit</span>
                 </div>
               </div>
             </div>

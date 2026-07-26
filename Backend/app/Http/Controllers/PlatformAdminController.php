@@ -376,13 +376,27 @@ class PlatformAdminController extends Controller
         
         $admin->save();
 
+        // También actualizar datos en la tabla de empleados si existe un perfil para este usuario
+        $employee = Employee::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->where('user_id', $admin->id)
+            ->first();
+
+        if ($employee) {
+            $employee->name = $admin->name;
+            $employee->email = $admin->email;
+            if ($request->has('admin_phone')) {
+                $employee->phone = $request->admin_phone;
+            }
+            $employee->save();
+        }
+
         return response()->json([
             'message' => 'Datos de la empresa y del administrador actualizados con éxito.',
             'tenant' => $tenant,
             'admin' => [
                 'name' => $admin->name,
                 'email' => $admin->email,
-                'phone' => $admin->phone
+                'phone' => $admin->phone ?? $employee?->phone
             ]
         ]);
     }

@@ -1315,16 +1315,11 @@ export const SaaSLandingPage = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-slate-100 py-12 px-6 text-center text-sm text-slate-400 font-bold">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">T</div>
-            <span className="text-slate-800 font-black">Talent 360</span>
-          </div>
-          <p>© 2026 Talent 360. Todos los derechos reservados. Infraestructura SaaS Dedicada.</p>
-        </div>
-      </footer>
+      {/* 2026-07-26 (auditoría de plataforma): se eliminó un segundo <footer> claro que vivía
+          aquí y se renderizaba apilado justo encima del footer oscuro real (el de más abajo,
+          con los enlaces legales de Aviso de Privacidad / SLA / Derechos ARCO). Eran dos pies
+          de página visibles uno tras otro con el mismo aviso de copyright duplicado. Se conserva
+          el oscuro por ser el que lleva los enlaces legales obligatorios. */}
 
       {/* REGISTRATION STEP WIZARD MODAL */}
       {showCheckout && (

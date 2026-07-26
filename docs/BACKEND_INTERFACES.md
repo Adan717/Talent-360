@@ -66,6 +66,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §55 | Tareas inconclusas por apagón: proceso nocturno que las pasa a "Pendiente de Validación Gerencial" + 3 botones (aprobar/reprogramar/rechazar). Ver detalle abajo. | ✅ Implementado (2026-07-25) |
 | §56 | Índices en PostgreSQL para el módulo de Rutinas/Tareas Diarias (Sección 2 #4). | ✅ Implementado (2026-07-25) — índices compuestos en `task_assignments` + `routine_task` |
 | §57 | Compresión automática de fotos de evidencia antes de subir. | ⏳ Frontend (Cowork) — el backend ya recibe base64; el grueso es comprimir en el navegador |
+| §58 | **Bug de negocio:** el límite de colaboradores del plan freemium es inconsistente según por cuál de los dos caminos de registro pase el cliente (`TenantController::store` pone 10, `SubscriptionController::provisionTenant` pone 5), y la Landing Page anuncia públicamente 5. Además la rama de upgrade no contempla freemium y lo dejaría en 9999. Ver detalle abajo. | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -2213,3 +2214,30 @@ Migración `2026_07_25_000002`: índices compuestos `(tenant_id, date)` y `(tena
 ## §57. Compresión de fotos de evidencia — ⏳ Frontend (Cowork)
 
 El grueso es comprimir/redimensionar en el navegador antes de subir (zona de Cowork). El backend ya recibe `base64` en los endpoints de evidencia (`/clock/meal-photo`, `/task-assignments/{id}/ai-validate`) y no requiere cambios para esto; si en algún momento quieren un límite/validación de tamaño server-side como segunda capa, avisen y lo agrego.
+
+---
+
+## §58. Límite de colaboradores del plan freemium: inconsistente entre los dos caminos de registro
+
+**Contexto (auditoría en vivo sobre producción, 2026-07-26):** recorriendo la Landing Page con Francisco encontré que el plan gratuito anuncia públicamente **"Hasta 5 Colaboradores Activos"**, pero el valor que realmente se guarda en `tenants.max_users` depende de por cuál de los dos caminos de registro haya pasado el cliente:
+
+```php
+// TenantController::store() línea ~66  → freemium obtiene 10
+'max_users' => $plan === 'freemium' ? 10 : ($plan === 'pro' ? 50 : 9999),
+
+// SubscriptionController::provisionTenant() línea ~507  → freemium obtiene 5
+'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (...),
+
+// SubscriptionController::provisionTenant() línea ~485 (rama upgrade) → freemium ni se contempla, cae en 9999
+'max_users' => strtolower($payload['plan']) === 'pro' ? (...) : 9999,
+```
+
+**Impacto:** un cliente que se registre por un camino obtiene el doble de lo que se le vendió (10 en vez de 5), y en el caso de la rama de upgrade podría quedar prácticamente ilimitado. Es una fuga de ingresos directa, no solo una inconsistencia cosmética: el límite del plan gratuito es justamente lo que empuja a pagar.
+
+**Pedimos:**
+
+1. Unificar el límite en **un solo lugar** (una constante, config, o mejor: leerlo de `system_settings` junto a `freemium_allowed_modules`/`freemium_allowed_features`, que ya existen y ya son editables desde Plataforma Talent360) para que no haya dos números que mantener sincronizados a mano.
+2. Que los tres puntos citados lean de esa única fuente.
+3. Cubrir el caso freemium en la rama de upgrade (hoy cae en el `else` de 9999).
+4. Confirmar con Francisco cuál es el número correcto — la Landing dice 5, así que asumimos 5 salvo que él diga otra cosa. Si lo hacen configurable (punto 1), el valor de la Landing debería salir también de ahí para que nunca vuelvan a divergir; hoy está escrito a mano en `SaaSLandingPage.tsx`.
+5. Revisar si hay tenants ya creados con el valor incorrecto: `SELECT id, name, plan, max_users FROM tenants WHERE plan = 'freemium';` — si los hay con 10 o 9999, decidir con Francisco si se corrigen retroactivamente o se respetan por buena fe.

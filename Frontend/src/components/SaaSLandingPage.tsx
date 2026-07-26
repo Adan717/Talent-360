@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
@@ -27,6 +27,18 @@ export const SaaSLandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isEmailDuplicated, setIsEmailDuplicated] = useState(false);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -404,69 +416,109 @@ export const SaaSLandingPage = () => {
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex md:hidden items-center gap-3">
+          <div className="flex md:hidden items-center gap-2.5">
             <button 
               onClick={() => navigate('/login')} 
-              className="text-xs font-black text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl hover:bg-blue-100 transition-all"
+              className="text-xs font-black text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl hover:bg-blue-100 transition-all active:scale-95"
             >
               Entrar
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+              className="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-all active:scale-95"
               aria-label="Abrir menú"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Navigation Drawer */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden fixed top-20 left-0 right-0 bottom-0 bg-white/95 backdrop-blur-lg z-30 flex flex-col p-6 animate-in slide-in-from-top-5 duration-200 border-t border-slate-100">
-            <nav className="flex flex-col gap-6 text-base font-extrabold text-slate-700 mb-8">
-              <a 
-                href="#features" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
-              >
-                <span>Plataforma</span>
-                <ChevronRight size={16} className="text-slate-400" />
-              </a>
-              <a 
-                href="#pricing" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
-              >
-                <span>Precios y Planes</span>
-                <ChevronRight size={16} className="text-slate-400" />
-              </a>
-              <a 
-                href="#simulador" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
-              >
-                <span>Simulador</span>
-                <ChevronRight size={16} className="text-slate-400" />
-              </a>
-            </nav>
-            <div className="mt-auto flex flex-col gap-3.5">
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
-                className="w-full py-4 rounded-2xl font-black text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors text-center text-sm"
-              >
-                Iniciar Sesión
-              </button>
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
-                className="w-full py-4 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-98 transition-all text-center text-sm"
-              >
-                Crear Cuenta Gratis
-              </button>
+      {/* Mobile Navigation Backdrop & Drawer */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Dark Backdrop Overlay */}
+          <div 
+            className="md:hidden fixed inset-0 top-[80px] bg-slate-950/70 backdrop-blur-md z-40 animate-in fade-in duration-200"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* Solid Opaque Mobile Menu Drawer */}
+          <div className="md:hidden fixed top-[80px] left-0 right-0 bottom-0 bg-white z-50 flex flex-col p-6 animate-in slide-in-from-top-4 duration-200 border-t border-slate-200/90 shadow-2xl overflow-y-auto">
+            <div className="flex flex-col h-full justify-between max-w-sm mx-auto w-full py-2">
+              <div className="space-y-5">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+                  Navegación Principal
+                </div>
+                <nav className="flex flex-col gap-2.5">
+                  <a 
+                    href="#features" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 hover:text-blue-600 font-extrabold text-slate-800 transition-all flex items-center justify-between group text-sm border border-slate-100 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
+                        <Zap size={18} />
+                      </div>
+                      <span>Plataforma 360</span>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  </a>
+
+                  <a 
+                    href="#pricing" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 hover:text-blue-600 font-extrabold text-slate-800 transition-all flex items-center justify-between group text-sm border border-slate-100 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-105 transition-transform">
+                        <Tag size={18} />
+                      </div>
+                      <span>Precios y Planes</span>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  </a>
+
+                  <a 
+                    href="#simulador" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 hover:text-blue-600 font-extrabold text-slate-800 transition-all flex items-center justify-between group text-sm border border-slate-100 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-purple-600 shadow-sm group-hover:scale-105 transition-transform">
+                        <Sparkles size={18} />
+                      </div>
+                      <span>Simulador de Nómina</span>
+                    </div>
+                    <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  </a>
+                </nav>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-3 shrink-0">
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
+                  className="w-full py-3.5 rounded-2xl font-extrabold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all text-center text-sm border border-slate-200/80 active:scale-98"
+                >
+                  Iniciar Sesión
+                </button>
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
+                  className="w-full py-3.5 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/25 active:scale-98 transition-all text-center text-sm flex items-center justify-center gap-2"
+                >
+                  <span>Crear Cuenta Gratis</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                <div className="mt-2 text-center text-[11px] font-bold text-slate-400 flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={14} className="text-emerald-500" />
+                  <span>Talent 360 SaaS Platform</span>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-      </header>
+        </>
+      )}
 
       {/* HERO SECTION */}
       <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50">

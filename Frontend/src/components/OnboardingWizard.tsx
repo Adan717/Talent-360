@@ -94,7 +94,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // Step 3: Employee
   const [empName, setEmpName] = useState('Carlos Mendoza');
   const [empEmail, setEmpEmail] = useState('');
-  const [empPassword, setEmpPassword] = useState('password123');
+  // 2026-07-26 (auditoría en vivo): antes esto venía fijo como 'password123'. Como el correo del
+  // colaborador también se autogenera de forma predecible (nombre.apellido@subdominio), cualquiera
+  // que supiera que una empresa acaba de darse de alta podía adivinar las credenciales del primer
+  // empleado — y la mayoría de los administradores no cambian un valor que ya viene lleno. Ahora
+  // se genera una contraseña aleatoria por sesión; el admin la ve en pantalla y puede cambiarla.
+  const [empPassword, setEmpPassword] = useState(() => {
+    const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint32Array(10);
+    crypto.getRandomValues(bytes);
+    return 'T360-' + Array.from(bytes, (b) => chars[b % chars.length]).join('');
+  });
   const [empPhone, setEmpPhone] = useState('');
   const [createdEmpId, setCreatedEmpId] = useState<number | null>(null);
   const [createdEmpPin, setCreatedEmpPin] = useState<string | null>(null);
@@ -585,12 +595,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       htmlFor="adminPhone"
                       className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
                     >
-                      WhatsApp del Administrador (10 dígitos)
+                      WhatsApp del Administrador (10 dígitos) *
                     </label>
                   </div>
-                  <p className="text-[9px] text-slate-400 mt-1 pl-1">
-                    Solo ingresa los 10 dígitos. El prefijo de México (+52) se agrega automáticamente.
-                  </p>
+                  {/* 2026-07-26 (auditoría en vivo): este campo es OBLIGATORIO — el botón
+                      "Guardar y Continuar" está condicionado a isAdminPhoneValid() — pero nada
+                      se lo decía al usuario: no había asterisco ni mensaje, así que el botón
+                      simplemente no respondía al hacer clic y la persona quedaba atorada en el
+                      paso 1 de 4 sin saber por qué. Se marca como requerido y se explica en vivo. */}
+                  {adminPhone.replace(/\D/g, '').length > 0 && !isAdminPhoneValid() ? (
+                    <p className="text-[10px] text-rose-600 font-bold mt-1 pl-1">
+                      Faltan dígitos: el WhatsApp debe tener 10 dígitos para poder continuar.
+                    </p>
+                  ) : !isAdminPhoneValid() ? (
+                    <p className="text-[10px] text-amber-600 font-bold mt-1 pl-1">
+                      Campo obligatorio — es el número al que llegarán los avisos de tu sucursal.
+                    </p>
+                  ) : (
+                    <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                      Solo ingresa los 10 dígitos. El prefijo de México (+52) se agrega automáticamente.
+                    </p>
+                  )}
                 </div>
 
                 {/* Dirección de la Tienda */}

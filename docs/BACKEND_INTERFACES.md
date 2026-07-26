@@ -1363,6 +1363,22 @@ Los dos fixes, resguardo Y raíz:
 
 **⚠️ Hallazgo colateral, no lo toqué — para que quede on the record:** `system_settings.key` es la **primary key** de la tabla (`2026_06_09_090049_create_system_settings_table.php` línea 15, nunca se migró a una PK compuesta cuando se agregó `tenant_id` en `2026_06_19_062150`). Eso significa que dos tenants **no pueden tener cada uno su propia fila** para la misma `key` — `tasksConfig`, `punctuality_course_id` y cualquier otro setting "por tenant" que ya exista hoy en `system_settings` en realidad solo puede tener un valor global a la vez en todo el sistema; el segundo tenant que intente guardar esa misma `key` (vía `updateOrInsert(['key' => ..., 'tenant_id' => ...], ...)`, que sí filtra por ambas columnas al buscar pero no al insertar) se encontraría con una violación de PK cruda. Es la razón real por la que decidí NO usar `system_settings` para exponer el id de la tarea de Ley Silla — habría sido agregar un caso más al mismo bug en vez de evitarlo. Esto es una migración de esquema real (agregar `tenant_id` a una PK compuesta, con los datos existentes ya mezclados) — no la até a este fix porque es un cambio de forma distinta y con su propio riesgo, pero avisen si quieren que lo aborde aparte.
 
+## 🔴 → ✅ CORREGIDO (2026-07-26) — este "hallazgo colateral" se volvió un bloqueador de registro
+
+El bug del PK de arriba **dejó de ser teórico**: Francisco vio, al intentar crear una empresa nueva (DecorArte S.A.S. de C.V., correo de Marisol), el error `SQLSTATE[25P02]: current transaction is aborted ... SQL: update "users" set "tenant_id" = 14 where "id" = 17`. Rastreado a la causa exacta:
+
+1. `SubscriptionController::provisionTenant()` crea el tenant dentro de un `DB::transaction`.
+2. `Tenant::created` (hook del modelo) llama a `TenantInitializationService::initializeSettingsForTenant()`, que **inserta los settings por defecto** del tenant nuevo (`storeSchedule`, `leySillaConfig`, etc.).
+3. Como esas llaves **ya existen para el tenant 1**, el INSERT viola el PK sobre `key` sola → Postgres **aborta la transacción**.
+4. El hook **se tragaba la excepción** (`try/catch` que solo hacía `Log::error`), dejando la transacción envenenada.
+5. La siguiente instrucción (`update users set tenant_id=14`) reventaba con `25P02`. **Ninguna empresa nueva podía registrarse.**
+
+**Fix (migración `2026_07_25_000005_fix_system_settings_primary_key.php`):** se quita el PK sobre `key` sola y se pone unicidad correcta por **`(tenant_id, key)`** (en Postgres, con un índice único parcial extra `(key) WHERE tenant_id IS NULL` para que las llaves de plataforma sigan siendo únicas; en SQLite se reconstruye la tabla). No hubo datos que deduplicar (con el PK viejo cada `key` aparecía una sola vez). Además, el hook `Tenant::created` ahora envuelve la inicialización en una **transacción anidada (SAVEPOINT)**: si algo falla ahí, el rollback llega solo hasta el savepoint y **no envenena la transacción padre** — defensa en profundidad para que un fallo de settings nunca vuelva a tumbar un registro completo.
+
+**⚠️ Para Francisco/ops:** este fix requiere **correr `php artisan migrate` en Hetzner** para que el cambio de esquema se aplique a la BD viva. Hasta que se corra la migración allá, el registro de empresas nuevas seguirá fallando en producción. El intento fallido de Marisol hizo rollback (no quedó empresa a medias), solo se "quemó" el id 14 de la secuencia (cosmético).
+
+Test nuevo: `SystemSettingsMultiTenantTest.php` — dos empresas obtienen cada una sus propios settings con la misma llave, y el registro de una empresa nueva por el flujo público funciona aunque otra empresa ya tenga settings. Suite completa: **218/218 tests, 807 assertions**, sin regresiones.
+
 Test nuevo: `TaskSyncSecurityTest.php` — completar una asignación cuyo `task_id` apunta a una tarea de OTRO tenant (mismo id numérico, FK satisfecha porque la fila existe físicamente, pero `Task::find()` con tenant-scope da `null` — el escenario real detrás de "inofensivo hasta completed") ya no truena; y verificación de que la migración sembró la tarea real. Suite completa: **130/130 tests, 558 assertions**, sin regresiones.
 
 ---

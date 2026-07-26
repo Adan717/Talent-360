@@ -33,9 +33,16 @@ class Tenant extends Model
     protected static function booted()
     {
         static::created(function ($tenant) {
+            // Se envuelve en una transacción anidada (SAVEPOINT): si la inicialización
+            // falla estando dentro de la transacción de registro de empresa, el rollback
+            // llega solo hasta el savepoint y NO envenena la transacción padre (evita el
+            // SQLSTATE[25P02] que antes bloqueaba todo el registro). El error se registra
+            // pero no tumba la creación del tenant.
             try {
-                app(\App\Services\TenantInitializationService::class)->initializeSettingsForTenant($tenant->id);
-            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($tenant) {
+                    app(\App\Services\TenantInitializationService::class)->initializeSettingsForTenant($tenant->id);
+                });
+            } catch (\Throwable $e) {
                 \Log::error("Error al inicializar configuraciones para tenant {$tenant->id}: " . $e->getMessage());
             }
         });

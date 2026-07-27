@@ -71,7 +71,7 @@ def main():
         print("Connected successfully.")
         
         print("\n--- STEP 3: Updating repository on server ---")
-        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git pull origin main --rebase"):
+        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git checkout . && git pull origin main --rebase"):
             print("Failed to update repository on remote server.")
             return
             

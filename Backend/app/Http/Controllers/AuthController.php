@@ -389,18 +389,44 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:6'
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin',
-            'tenant_id' => null,
-            'is_active' => true
-        ]);
+        $email = strtolower(trim($request->email));
+        $existingUser = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->where('email', $email)
+            ->first();
+
+        if ($existingUser) {
+            if ($existingUser->tenant_id !== null) {
+                $tenant = \App\Models\Tenant::find($existingUser->tenant_id);
+                $companyName = $tenant ? $tenant->name : 'otra empresa';
+                return response()->json([
+                    'error' => "El correo {$email} ya está registrado en la plataforma y pertenece a la empresa '{$companyName}'. Inicia sesión o utiliza un correo distinto para tu nueva empresa.",
+                    'is_duplicated' => true,
+                    'company_name' => $companyName
+                ], 409);
+            }
+
+            // Si tenant_id es NULL, es una cuenta de pre-registro pendiente: actualizar contraseña/nombre y permitir avanzar
+            $existingUser->update([
+                'name' => $request->name,
+                'password' => Hash::make($request->password),
+                'role' => 'admin',
+                'is_active' => true
+            ]);
+            $user = $existingUser;
+        } else {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $email,
+                'password' => Hash::make($request->password),
+                'role' => 'admin',
+                'tenant_id' => null,
+                'is_active' => true
+            ]);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

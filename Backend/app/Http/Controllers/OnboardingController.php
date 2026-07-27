@@ -647,18 +647,17 @@ class OnboardingController extends Controller
 
             foreach ($vacanciesData as $vac) {
                 $roleId = isset($roleIdsMap[$vac['title']]) ? $roleIdsMap[$vac['title']] : $firstGerenteRole;
+                $salaryRange = '$' . number_format($vac['salary_min']) . ' - $' . number_format($vac['salary_max']) . ' MXN';
                 \DB::table('vacancies')->insert([
                     'tenant_id' => $tenantId,
+                    'job_role_id' => $roleId,
                     'title' => $vac['title'],
-                    'department' => $vac['department'],
-                    'location' => 'Sucursal Principal',
-                    'salary_min' => $vac['salary_min'],
-                    'salary_max' => $vac['salary_max'],
-                    'employment_type' => $vac['employment_type'],
                     'description' => $vac['description'],
                     'requirements' => 'Secundaria o Bachillerato concluido. Proactividad y compromiso.',
-                    'status' => 'open',
-                    'job_role_id' => $roleId,
+                    'work_type' => $vac['employment_type'] ?? 'Tiempo Completo',
+                    'salary_range' => $salaryRange,
+                    'is_active' => true,
+                    'is_hidden' => false,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);

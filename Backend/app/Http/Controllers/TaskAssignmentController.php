@@ -541,11 +541,14 @@ class TaskAssignmentController extends Controller
             }
         } elseif ($validated['action'] === 'reschedule') {
             // Reprogramar para hoy: vuelve a la cola operativa de hoy como arrastrada.
+            // M5 (auditoría 2026-07-27): "hoy" es el del TENANT, no el del servidor (UTC) —
+            // después de las 18:00 CDMX, today() UTC ya es mañana y la tarea reprogramada
+            // caía un día adelante del día operativo.
             $assignment->update([
                 'status' => 'pending',
                 'flagged_incomplete' => false,
                 'origin' => 'carried_over',
-                'date' => \Carbon\Carbon::today()->toDateString(),
+                'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString(),
                 'validation_feedback' => $validated['feedback'] ?? null,
                 'validated_by' => $user->id,
                 'completed_at_mins' => null,

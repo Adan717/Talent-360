@@ -26,21 +26,38 @@ class FlagUnfinishedTasksCommand extends Command
 
     public function handle(): int
     {
-        $today = $this->option('date') ? Carbon::parse($this->option('date'))->toDateString() : Carbon::today()->toDateString();
+        $override = $this->option('date') ? Carbon::parse($this->option('date'))->toDateString() : null;
 
-        // Asignaciones aún abiertas (en progreso o en pausa) de un día ANTERIOR a hoy.
-        $count = TaskAssignment::withoutGlobalScopes()
-            ->whereIn('status', ['in_progress', 'paused'])
-            ->whereNotNull('date')
-            ->whereDate('date', '<', $today)
-            ->update([
-                'status' => 'awaiting_validation',
-                'flagged_incomplete' => true,
-                'updated_at' => now(),
-            ]);
+        // A5 (auditoría 2026-07-27): el corte era `date < today()` del SERVIDOR (UTC en
+        // Hetzner). A las 00:30 UTC del día D+1 en México todavía es D a las 18:30 con
+        // turnos ABIERTOS — el barrido global flaggeaba el turno EN CURSO a media jornada.
+        // El corte ahora es POR TENANT con su zona horaria de negocio (TenantTimezone,
+        // el mismo criterio que ya usa el Reloj para todo lo fechado). El --date manual
+        // sigue mandando parejo para todos (uso de reproceso).
+        $tenantIds = \Illuminate\Support\Facades\DB::table('tenants')
+            ->where('is_active', true)
+            ->pluck('id');
+
+        $count = 0;
+        foreach ($tenantIds as $tenantId) {
+            $today = $override ?? Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString();
+
+            // Asignaciones aún abiertas (en progreso o en pausa) de un día ANTERIOR al hoy
+            // operativo de SU tenant.
+            $count += TaskAssignment::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('status', ['in_progress', 'paused'])
+                ->whereNotNull('date')
+                ->whereDate('date', '<', $today)
+                ->update([
+                    'status' => 'awaiting_validation',
+                    'flagged_incomplete' => true,
+                    'updated_at' => now(),
+                ]);
+        }
 
         $this->info("Tareas inconclusas marcadas para validación gerencial: {$count}");
-        Log::info('FlagUnfinishedTasksCommand', ['flagged' => $count, 'before_date' => $today]);
+        Log::info('FlagUnfinishedTasksCommand', ['flagged' => $count, 'override_date' => $override]);
 
         return self::SUCCESS;
     }

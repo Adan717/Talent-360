@@ -47,6 +47,11 @@ class UnfinishedTaskFlowTest extends TestCase
 
     public function test_nightly_command_flags_yesterday_unfinished_tasks(): void
     {
+        // A5: el corte ahora es con la tz del TENANT (default CDMX). Se congela el reloj a
+        // mediodía UTC para que "ayer"/"hoy" coincidan en ambas zonas — sin esto, un run de
+        // CI entre 00:00-06:00 UTC haría que el ayer-UTC fuera el hoy-CDMX y flakearía.
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse(now()->toDateString() . ' 12:00:00', 'UTC'));
+
         $employee = $this->makeUser();
         // Ayer, quedó en progreso (nunca se cerró).
         $stale = $this->makeAssignment($employee, 'in_progress', now()->subDay()->toDateString(), 'stale-1');

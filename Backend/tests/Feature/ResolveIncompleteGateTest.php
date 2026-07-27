@@ -220,4 +220,29 @@ class ResolveIncompleteGateTest extends TestCase
         // Reprogramar/rechazar jamás pagan.
         $this->assertDatabaseMissing('wallet_transactions', ['user_id' => $empleado->id]);
     }
+
+    /**
+     * M5 (auditoría 2026-07-27): reschedule re-fechaba con Carbon::today() del SERVIDOR
+     * (UTC). Después de las 18:00 CDMX, "hoy" UTC ya es mañana → la tarea reprogramada
+     * aparecía fechada un día ADELANTE del día operativo del tenant (y el comando
+     * nocturno la re-flaggeaba o el tablero del día no la mostraba).
+     */
+    public function test_reschedule_refecha_con_el_dia_del_tenant_no_utc(): void
+    {
+        // 00:30 UTC del 28 = 18:30 del 27 en CDMX (default del tenant).
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse('2026-07-28 00:30:00', 'UTC'));
+
+        $admin = $this->makeUser('admin');
+        $empleado = $this->makeUser();
+        $task = $this->makeTask(707);
+        $assignment = $this->makeAssignment($task, $empleado->id);
+
+        $this->resolve($admin, $assignment, 'reschedule')->assertStatus(200);
+
+        $this->assertDatabaseHas('task_assignments', [
+            'id' => $assignment->id,
+            'status' => 'pending',
+            'date' => '2026-07-27', // el HOY del tenant, no el de UTC
+        ]);
+    }
 }

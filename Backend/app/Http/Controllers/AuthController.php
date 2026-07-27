@@ -178,6 +178,10 @@ class AuthController extends Controller
         $user = $request->user();
         if ($user instanceof \App\Models\User) {
             $user->load('tenant');
+        } elseif ($user instanceof \App\Models\PlatformUser) {
+            if ($user->role !== \App\Enums\UserRole::SUPPORT_AGENT->value) {
+                $user->role = \App\Enums\UserRole::PLATFORM_ADMIN->value;
+            }
         }
         return response()->json([
             'user' => $user,

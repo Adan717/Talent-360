@@ -499,18 +499,32 @@ class SubscriptionController extends Controller
             }
 
             // Standard creation flow
-            // 1. Create Tenant
-            $tenant = Tenant::create([
-                'name' => $payload['company_name'],
-                'subdomain' => $payload['subdomain'],
-                'plan' => strtolower($payload['plan']),
-                'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
-                'public_slug' => Str::slug($payload['subdomain']),
-                'mp_subscription_id' => $prefId,
-                'subscription_status' => 'active',
-                'trial_ends_at' => now()->addDays(14),
-                'current_period_end' => now()->addMonth(),
-            ]);
+            // 1. Create or Reuse Tenant
+            $tenant = Tenant::where('subdomain', $payload['subdomain'])->first();
+            if ($tenant && $tenant->users()->count() === 0) {
+                $tenant->update([
+                    'name' => $payload['company_name'],
+                    'plan' => strtolower($payload['plan']),
+                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
+                    'public_slug' => Str::slug($payload['subdomain']),
+                    'mp_subscription_id' => $prefId,
+                    'subscription_status' => 'active',
+                    'trial_ends_at' => now()->addDays(14),
+                    'current_period_end' => now()->addMonth(),
+                ]);
+            } else {
+                $tenant = Tenant::create([
+                    'name' => $payload['company_name'],
+                    'subdomain' => $payload['subdomain'],
+                    'plan' => strtolower($payload['plan']),
+                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
+                    'public_slug' => Str::slug($payload['subdomain']),
+                    'mp_subscription_id' => $prefId,
+                    'subscription_status' => 'active',
+                    'trial_ends_at' => now()->addDays(14),
+                    'current_period_end' => now()->addMonth(),
+                ]);
+            }
 
             // Set context for traits
             session(['tenant_id' => $tenant->id]);

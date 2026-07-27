@@ -23,7 +23,10 @@ class PlatformAdminController extends Controller
         $tenants = Tenant::all();
         $activeTenants = $tenants->where('is_active', true)->count();
         
-        $totalUsers = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->count();
+        $totalUsers = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->whereHas('tenant', function($q) {
+                $q->where('is_active', true);
+            })->count();
 
         // Calculate simulated MRR (Monthly Recurring Revenue)
         $mrr = 0;

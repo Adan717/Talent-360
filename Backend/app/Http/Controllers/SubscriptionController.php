@@ -561,21 +561,27 @@ class SubscriptionController extends Controller
             } else {
                 // Fallback: check if user already exists globally
                 $admin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                    ->withTrashed()
                     ->where('email', $payload['admin_email'])
                     ->first();
                 if ($admin) {
                     // §50: regla "1 cuenta = 1 empresa". Si esta cuenta YA pertenece a
-                    // otra empresa, reasignarle el tenant_id la robaría de su empresa
-                    // original (dejándola huérfana) y este flujo NO está autenticado
-                    // como esa persona — cualquiera que conozca su correo podría dispararlo.
-                    // Se rechaza en vez de reasignar. La transacción hace rollback, así
-                    // que el tenant recién creado tampoco queda a medias.
+                    // otra empresa ACTIVA, reasignarle el tenant_id la robaría.
+                    // Pero si la empresa previa fue eliminada (o el usuario fue borrado lógicamente),
+                    // el correo se considera huérfano y se reasigna a la nueva empresa.
                     if ($admin->tenant_id !== null) {
-                        abort(409, 'Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto.');
+                        $existingTenant = Tenant::find($admin->tenant_id);
+                        if ($existingTenant && !$existingTenant->trashed()) {
+                            abort(409, 'Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto.');
+                        }
+                    }
+                    if ($admin->trashed()) {
+                        $admin->restore();
                     }
                     $admin->update([
                         'tenant_id' => $tenant->id,
                         'role' => UserRole::ADMIN->value,
+                        'is_active' => true
                     ]);
                 } else {
                     $admin = User::create([

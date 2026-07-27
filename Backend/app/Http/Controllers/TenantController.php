@@ -15,7 +15,7 @@ class TenantController extends Controller
 {
     public function store(Request $request)
     {
-        if ($request->has('subdomain')) {
+        if ($request->has('subdomain') && !$request->has('admin_email')) {
             $request->merge([
                 'admin_email' => 'admin@' . $request->subdomain . '.com'
             ]);
@@ -30,7 +30,7 @@ class TenantController extends Controller
             'plan' => 'required|string',
             'company_name' => 'required|string',
             'admin_name' => 'required|string',
-            'admin_email' => 'required|email|unique:users,email',
+            'admin_email' => 'required|email',
             'admin_password' => 'required|min:6'
         ]);
 
@@ -95,14 +95,43 @@ class TenantController extends Controller
                 'updated_at' => now()
             ]);
 
-            // 2. Create Admin User
-            $admin = User::create([
-                'name' => $request->admin_name,
-                'email' => $request->admin_email,
-                'password' => Hash::make($request->admin_password),
-                'role' => UserRole::ADMIN->value,
-                'tenant_id' => $tenant->id,
-            ]);
+            // 2. Associate or Create Admin User
+            $adminEmail = strtolower(trim($request->admin_email));
+            $existingAdmin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->withTrashed()
+                ->where('email', $adminEmail)
+                ->first();
+
+            if ($existingAdmin) {
+                if ($existingAdmin->tenant_id !== null) {
+                    $existingTenant = Tenant::find($existingAdmin->tenant_id);
+                    if ($existingTenant && !$existingTenant->trashed()) {
+                        return response()->json([
+                            'error' => "El correo {$adminEmail} ya está registrado y pertenece a la empresa '{$existingTenant->name}'."
+                        ], 409);
+                    }
+                }
+                if ($existingAdmin->trashed()) {
+                    $existingAdmin->restore();
+                }
+                $existingAdmin->update([
+                    'name' => $request->admin_name,
+                    'password' => Hash::make($request->admin_password),
+                    'role' => UserRole::ADMIN->value,
+                    'tenant_id' => $tenant->id,
+                    'is_active' => true
+                ]);
+                $admin = $existingAdmin;
+            } else {
+                $admin = User::create([
+                    'name' => $request->admin_name,
+                    'email' => $adminEmail,
+                    'password' => Hash::make($request->admin_password),
+                    'role' => UserRole::ADMIN->value,
+                    'tenant_id' => $tenant->id,
+                    'is_active' => true
+                ]);
+            }
 
             // 3. Register Device
             DB::table('device_registrations')->insert([

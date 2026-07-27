@@ -420,7 +420,13 @@ class PlatformAdminController extends Controller
             return response()->json(['error' => 'No se puede eliminar el inquilino principal por defecto.'], 400);
         }
 
-        $tenant->delete();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($tenant) {
+            \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->where('tenant_id', $tenant->id)
+                ->delete();
+
+            $tenant->delete();
+        });
 
         return response()->json(['message' => 'Empresa eliminada con éxito']);
     }

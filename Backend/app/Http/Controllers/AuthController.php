@@ -319,6 +319,7 @@ class AuthController extends Controller
 
         // 1. Try to find user by the social ID
         $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->withTrashed()
             ->where($column, $providerId)
             ->with('tenant')
             ->first();
@@ -326,6 +327,7 @@ class AuthController extends Controller
         // 2. If not found by social ID, try to find by email and automatically link
         if (!$user && $email) {
             $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->withTrashed()
                 ->where('email', $email)
                 ->with('tenant')
                 ->first();
@@ -334,6 +336,11 @@ class AuthController extends Controller
                 // Link the social ID
                 $user->update([$column => $providerId]);
             }
+        }
+
+        // Si el usuario estaba en borrado lógico, restaurarlo
+        if ($user && $user->trashed()) {
+            $user->restore();
         }
 
         // 3. If still not found, check platform users
@@ -361,6 +368,15 @@ class AuthController extends Controller
                 ]);
             } else {
                 return response()->json(['error' => 'No se encontró ninguna cuenta vinculada con estas credenciales.'], 404);
+            }
+        }
+
+        // Si el usuario pertenece a una empresa que ya fue eliminada, liberar el tenant_id (correo huérfano)
+        if (!$isPlatformUser && $user->tenant_id !== null) {
+            $tenant = \App\Models\Tenant::find($user->tenant_id);
+            if (!$tenant || $tenant->trashed()) {
+                $user->update(['tenant_id' => null]);
+                $user->refresh();
             }
         }
 
@@ -399,13 +415,15 @@ class AuthController extends Controller
 
         $email = strtolower(trim($request->email));
         $existingUser = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->withTrashed()
             ->where('email', $email)
             ->first();
 
         if ($existingUser) {
-            if ($existingUser->tenant_id !== null) {
-                $tenant = \App\Models\Tenant::find($existingUser->tenant_id);
-                $companyName = $tenant ? $tenant->name : 'otra empresa';
+            $tenant = $existingUser->tenant_id ? \App\Models\Tenant::find($existingUser->tenant_id) : null;
+
+            if ($tenant && !$tenant->trashed()) {
+                $companyName = $tenant->name;
                 return response()->json([
                     'error' => "El correo {$email} ya está registrado en la plataforma y pertenece a la empresa '{$companyName}'. Inicia sesión o utiliza un correo distinto para tu nueva empresa.",
                     'is_duplicated' => true,
@@ -413,11 +431,16 @@ class AuthController extends Controller
                 ], 409);
             }
 
-            // Si tenant_id es NULL, es una cuenta de pre-registro pendiente: actualizar contraseña/nombre y permitir avanzar
+            // Si la empresa fue eliminada (o tenant_id es NULL) o el usuario está borrado lógicamente:
+            // Es un correo huérfano o cuenta libre. Restaurar y resetear para pre-registro.
+            if ($existingUser->trashed()) {
+                $existingUser->restore();
+            }
             $existingUser->update([
                 'name' => $request->name,
                 'password' => Hash::make($request->password),
                 'role' => 'admin',
+                'tenant_id' => null,
                 'is_active' => true
             ]);
             $user = $existingUser;

@@ -178,9 +178,15 @@ function MainLayout() {
       const isDecorarte = currentUser.tenant_id === 1 || 
                           currentUser.tenant?.subdomain === 'decorarte360' ||
                           currentUser.tenant?.id === 1;
-      const completed = systemSettings?.onboarding_completed === true;
+      const completedFlag = systemSettings?.onboarding_completed === true || 
+                            systemSettings?.onboarding_completed === 'true' || 
+                            systemSettings?.onboarding_completed === 1 || 
+                            systemSettings?.onboarding_completed === '1';
       
-      if (isDecorarte || completed) {
+      const hasCompanyData = (systemSettings?.company_name && systemSettings.company_name !== 'Mi Sucursal Talent360') ||
+                             (currentUser.tenant?.name && currentUser.tenant.name.trim() !== '');
+
+      if (isDecorarte || completedFlag || hasCompanyData) {
         setShowOnboarding(false);
       } else {
         setShowOnboarding(true);

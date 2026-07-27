@@ -235,7 +235,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         updateSetting('welcome_text', welcomeMessage),
         updateSetting('company_address', companyAddress),
         updateSetting('company_phone', companyPhone),
-        updateSetting('storeSchedule', { openTime: storeOpenTime, closeTime: storeCloseTime })
+        updateSetting('storeSchedule', { openTime: storeOpenTime, closeTime: storeCloseTime }),
+        updateSetting('onboarding_completed', true)
       ]);
 
       // 3. Guardar el teléfono del administrador en su perfil si fue provisto
@@ -427,6 +428,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleFinishOnboarding = async () => {
+    try {
+      await updateSetting('onboarding_completed', true);
+    } catch (e) {
+      console.error("Error setting onboarding completed:", e);
+    }
     if (loadDemoRoles || loadDemoEmployees) {
       setLoadingDemo(true);
       try {

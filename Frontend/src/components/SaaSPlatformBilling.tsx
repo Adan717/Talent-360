@@ -81,6 +81,18 @@ export const SaaSPlatformBilling = () => {
     }
   };
 
+  const handleDeleteInvoice = async (id: string, legalName: string) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar o cancelar el registro de factura de "${legalName}"?`)) return;
+
+    try {
+      const res = await axiosInstance.delete(`/platform/billing/invoices/${id}`);
+      setSuccessMsg(res.data.message || 'Registro de factura eliminado con éxito.');
+      fetchInvoices();
+    } catch (e: any) {
+      setErrorMsg(e.response?.data?.message || 'Error al eliminar el registro de factura.');
+    }
+  };
+
   const totalEarnings = invoices.reduce((acc, curr) => curr.status === 'valid' ? acc + curr.total : acc, 0);
 
   return (
@@ -237,6 +249,13 @@ export const SaaSPlatformBilling = () => {
                           className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
                         >
                           <FileCode size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvoice(inv.id, inv.legal_name || 'Empresa')}
+                          title="Eliminar Registro de Factura"
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-all border-none cursor-pointer"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>

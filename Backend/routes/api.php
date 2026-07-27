@@ -128,6 +128,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Facturación Global (SaaS Admin)
         Route::get('/platform/billing/invoices', [PlatformAdminController::class, 'getSaaSInvoices']);
         Route::post('/platform/billing/invoice/manual', [PlatformAdminController::class, 'createManualSaaSInvoice']);
+        Route::delete('/platform/billing/invoices/{id}', [PlatformAdminController::class, 'deleteSaaSInvoice']);
 
         // Registros Inconclusos / Pre-registros
         Route::get('/platform/pending-registrations', [PlatformAdminController::class, 'getPendingRegistrations']);

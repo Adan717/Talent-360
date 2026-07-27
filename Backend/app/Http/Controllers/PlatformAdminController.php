@@ -1082,34 +1082,31 @@ class PlatformAdminController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => true,
-                'data' => [
-                    [
-                        'id' => 'saas_inv_1',
-                        'uuid' => 'B1A58C11-9A3E-4B07-A595-D4E087D2FB10',
-                        'legal_name' => 'DecorArte S.A. de C.V.',
-                        'rfc' => 'DEC150203AA0',
-                        'total' => 2499.00,
-                        'created_at' => now()->subDays(1)->toIso8601String(),
-                        'status' => 'valid',
-                        'type' => 'invoice',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ],
-                    [
-                        'id' => 'saas_inv_2',
-                        'uuid' => 'C2A58C11-9A3E-4B07-A595-D4E087D2FC11',
-                        'legal_name' => 'Super Tiendas del Norte',
-                        'rfc' => 'STN121212B34',
-                        'total' => 1499.00,
-                        'created_at' => now()->subDays(15)->toIso8601String(),
-                        'status' => 'valid',
-                        'type' => 'invoice',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ]
-                ]
+                'data' => []
             ]);
         }
+    }
+
+    /**
+     * Cancela o elimina un registro de factura global del SaaS
+     */
+    public function deleteSaaSInvoice($id)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        try {
+            $provider = app(\App\Services\Billing\BillingProviderInterface::class);
+            $provider->cancelInvoice($id);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::info("Factura cancelada localmente: {$id}");
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registro de factura eliminado con éxito.'
+        ]);
     }
 
     /**

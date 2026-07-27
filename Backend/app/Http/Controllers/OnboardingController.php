@@ -580,7 +580,9 @@ class OnboardingController extends Controller
             // para sustituirlos limpiamente por la estructura de puestos elegida por el usuario en el wizard.
             $existingRoles = \App\Models\JobRole::where('tenant_id', $tenantId)->get();
             foreach ($existingRoles as $oldRole) {
-                if ($oldRole->employees()->count() === 0 && $oldRole->users()->count() === 0) {
+                $hasUsers = \DB::table('users')->where('job_role_id', $oldRole->id)->exists();
+                $hasEmployees = \DB::table('employees')->where('job_role_id', $oldRole->id)->exists();
+                if (!$hasUsers && !$hasEmployees) {
                     \DB::table('role_clock_policies')->where('job_role_id', $oldRole->id)->delete();
                     \DB::table('vacancies')->where('job_role_id', $oldRole->id)->delete();
                     $oldRole->delete();

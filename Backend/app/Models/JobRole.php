@@ -33,6 +33,11 @@ class JobRole extends Model
         return $this->hasMany(User::class, 'job_role_id');
     }
 
+    public function employees()
+    {
+        return $this->hasMany(Employee::class, 'job_role_id');
+    }
+
     public function vacancies()
     {
         return $this->hasMany(Vacancy::class, 'job_role_id');

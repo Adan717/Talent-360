@@ -20,12 +20,9 @@ Artisan::command('inspire', function () {
  */
 Schedule::job(new PurgeChatJob())->dailyAt('03:00')->name('purge-chat-messages');
 
-/**
- * Cálculo automático de nómina semanal — ejecuta cada sábado a las 23:59
- * para preparar los recibos de la semana para firma de los empleados.
- */
-Schedule::command('payroll:calculate-weekly')
-    ->weeklyOn(6, '23:59')
-    ->name('weekly-payroll-calculation')
-    ->withoutOverlapping();
+// A4 (auditoría 2026-07-27): payroll:calculate-weekly estaba agendado DOS veces — aquí
+// (sábado fijo 23:59, diseño previo a la semana fiscal por tenant) y en bootstrap/app.php
+// (diario 23:00, fiscal-week-aware: recalcula la semana EN CURSO de cada tenant según su
+// día de inicio configurado). Se conserva sólo la variante diaria de bootstrap; un sábado
+// fijo global contradice la semana configurable (Sección 2 #1).
 

@@ -60,59 +60,55 @@ class CalculateWeeklyPayrollCommand extends Command
 
             foreach ($employees as $employee) {
                 try {
-                    DB::transaction(function () use ($employee, $weekStart, $weekEnd) {
-                        // Verificar si ya existe un cálculo para esta semana
-                        $existing = WeeklyPayroll::where('employee_id', $employee->id)
-                            ->where('week_start', $weekStart->toDateString())
-                            ->where('status', 'draft')
+                    DB::transaction(function () use ($tenant, $employee, $weekStart, $weekEnd) {
+                        // A4 (auditoría 2026-07-27): el comando estaba escrito contra un esquema
+                        // IMAGINARIO (week_start/gross_salary/metrics… no existen en la tabla, y
+                        // calculatePayrollForEmployee no devuelve gross_total/net_total) — cada
+                        // corrida tronaba por-empleado y jamás persistió una pre-nómina. Se
+                        // reescribe con el esquema y el contrato REALES (los mismos del flujo de
+                        // firma en EmployeePayrollController::signPayroll).
+                        //
+                        // El lookup va por semana SIN filtrar status: antes, con una fila ya
+                        // firmada de la misma semana, el `where status=draft` no la veía y se
+                        // creaba una fila DUPLICADA de nómina.
+                        $existing = WeeklyPayroll::where('tenant_id', $tenant->id)
+                            ->where('employee_id', $employee->id)
+                            ->where('start_date', $weekStart->toDateString())
+                            ->where('end_date', $weekEnd->toDateString())
                             ->first();
 
-                        if ($existing) {
-                            // Recalcular si está en draft
-                            $payroll = $this->clockService->calculatePayrollForEmployee(
-                                $employee,
-                                $weekStart->toDateString(),
-                                $weekEnd->toDateString()
-                            );
-
-                            $existing->update([
-                                'gross_salary'     => $payroll['gross_total']   ?? 0,
-                                'deductions'       => $payroll['total_deductions'] ?? 0,
-                                'net_salary'       => $payroll['net_total']     ?? 0,
-                                'worked_days'      => $payroll['worked_days']   ?? 0,
-                                'late_count'       => $payroll['late_count']    ?? 0,
-                                'absence_count'    => $payroll['absence_count'] ?? 0,
-                                'productivity_bonus' => $payroll['bonus_total'] ?? 0,
-                                'metrics'          => json_encode($payroll),
-                                'updated_at'       => now(),
-                            ]);
-                        } else {
-                            // Crear nuevo registro de nómina
-                            $payroll = $this->clockService->calculatePayrollForEmployee(
-                                $employee,
-                                $weekStart->toDateString(),
-                                $weekEnd->toDateString()
-                            );
-
-                            WeeklyPayroll::create([
-                                'employee_id'       => $employee->id,
-                                'week_start'        => $weekStart->toDateString(),
-                                'week_end'          => $weekEnd->toDateString(),
-                                'gross_salary'      => $payroll['gross_total']    ?? 0,
-                                'deductions'        => $payroll['total_deductions'] ?? 0,
-                                'net_salary'        => $payroll['net_total']      ?? 0,
-                                'worked_days'       => $payroll['worked_days']    ?? 0,
-                                'late_count'        => $payroll['late_count']     ?? 0,
-                                'absence_count'     => $payroll['absence_count']  ?? 0,
-                                'productivity_bonus'=> $payroll['bonus_total']    ?? 0,
-                                'status'            => 'draft',
-                                'metrics'           => json_encode($payroll),
-                                // Snapshot inmutable (Directiva 2: Inmutabilidad Histórica)
-                                'salary_at_time'          => $employee->daily_salary ?? 0,
-                                'job_role_title_at_time'  => $employee->jobRole?->name ?? 'N/A',
-                                'employee_name_at_time'   => $employee->user?->name    ?? 'N/A',
-                            ]);
+                        // Lo firmado por el empleado es INMUTABLE para el batch nocturno.
+                        if ($existing && $existing->status !== 'draft') {
+                            return;
                         }
+
+                        $payroll = $this->clockService->calculatePayrollForEmployee(
+                            $employee,
+                            $weekStart->toDateString(),
+                            $weekEnd->toDateString()
+                        );
+
+                        WeeklyPayroll::updateOrCreate(
+                            [
+                                'tenant_id'   => $tenant->id,
+                                'employee_id' => $employee->id,
+                                'start_date'  => $weekStart->toDateString(),
+                                'end_date'    => $weekEnd->toDateString(),
+                            ],
+                            [
+                                'base_salary_paid'    => $payroll['salary']['base'] ?? 0,
+                                'lates_count'         => $payroll['incidents']['lates'] ?? 0,
+                                'absences_count'      => $payroll['incidents']['total_absences'] ?? 0,
+                                'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'] ?? 0,
+                                'deductions'          => $payroll['deductions_breakdown']['total'] ?? 0,
+                                'net_pay'             => $payroll['salary']['net'] ?? 0,
+                                'meal_overtime_mins'  => $payroll['performance']['meal_overtime_mins'] ?? 0,
+                                'break_overtime_mins' => $payroll['performance']['break_overtime_mins'] ?? 0,
+                                'task_performance_pct' => $payroll['performance']['task_performance_pct'] ?? 0,
+                                'performance_score'   => $payroll['performance']['performance_score'] ?? 0,
+                                'status'              => 'draft',
+                            ]
+                        );
                     });
 
                     $totalEmployees++;

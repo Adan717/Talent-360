@@ -175,9 +175,20 @@ class TaskAssignmentController extends Controller
 
         $assignment = TaskAssignment::where('tenant_id', $tenantId)->findOrFail($id);
 
+        // M1 (auditoría 2026-07-27): ownership — un no privilegiado sólo omite SUS propias
+        // asignaciones. Sin esto, cualquier empleado omitía la tarea de cualquier compañero
+        // del tenant (sabotaje silencioso). Mismo isPrivileged del módulo.
+        $isPrivileged = in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
+        if (!$isPrivileged && (int) $assignment->user_id !== (int) $user->id) {
+            return response()->json(['error' => 'No puedes omitir tareas de otro colaborador.'], 403);
+        }
+
         $assignment->update([
             'status' => 'omitted',
             'validation_feedback' => $validated['reason'] ?? null,
+            // M1: rastro del ACTOR — quién omitió, no sólo de quién era la tarea (mismo uso
+            // de validated_by que en reject de resolve-incomplete).
+            'validated_by' => $user->id,
         ]);
 
         $employee = $assignment->user_id ? User::find($assignment->user_id) : null;
@@ -187,7 +198,14 @@ class TaskAssignmentController extends Controller
         $taskTitle = $assignment->task->title ?? 'una tarea';
         $reasonText = $validated['reason'] ?? 'sin motivo especificado';
         $title = '⚠️ Tarea omitida';
-        $body = ($employee->name ?? 'Un colaborador') . " omitió la tarea \"{$taskTitle}\". Motivo: {$reasonText}.";
+        // M1: el aviso nombra al ACTOR cuando no es el dueño (antes atribuía la omisión
+        // siempre al dueño de la tarea, sin rastro de quién la omitió en realidad).
+        if ($employee && (int) $employee->id === (int) $user->id) {
+            $body = $employee->name . " omitió la tarea \"{$taskTitle}\". Motivo: {$reasonText}.";
+        } else {
+            $ownerName = $employee?->name ?? 'la bolsa de trabajo';
+            $body = $user->name . " omitió la tarea \"{$taskTitle}\" asignada a {$ownerName}. Motivo: {$reasonText}.";
+        }
 
         $supervisorUserIds = [];
         if ($employeeJobRole) {

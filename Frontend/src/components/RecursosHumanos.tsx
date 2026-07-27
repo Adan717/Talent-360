@@ -1949,13 +1949,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto">
                 <button 
                   type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding-wizard'))} 
-                  className="w-full sm:w-auto justify-center bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2 transition-all active:scale-95"
-                >
-                   <Sparkles size={16} className="text-purple-600 animate-pulse"/> Wizard Giro y Puestos
-                </button>
-                <button 
-                  type="button"
                   onClick={() => {
                     setShowTemplateModal(true);
                     setSelectedTemplate(null);

@@ -393,7 +393,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         }
       }
 
-      setStep(2);
+      setStep(3);
     } catch (e: any) {
       console.error(e);
       setErrorMsg(e.response?.data?.message || 'Error al guardar los ajustes de sucursal.');
@@ -425,7 +425,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // Refrescar el estado para traer los puestos recién inyectados en Postgres
       await fetchState();
       
-      setStep(3);
+      setStep(2);
     } catch (e: any) {
       console.error(e);
       setErrorMsg(e.response?.data?.message || 'Error al configurar el giro de negocio.');
@@ -708,178 +708,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           )}
 
           {step === 1 && (
-            <div className="animate-in fade-in">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-                  <Building2 size={24} />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">Paso 1 de 4</span>
-                  <h3 className="text-xl font-black text-slate-800">Ajustes de Sucursal</h3>
-                </div>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    id="companyName"
-                    value={companyName}
-                    onChange={(e) => { setIsCompanyNameEdited(true); setCompanyName(e.target.value); }}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
-                    placeholder="Nombre Comercial"
-                  />
-                  <label 
-                    htmlFor="companyName"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
-                  >
-                    Nombre Comercial de la Empresa
-                  </label>
-                </div>
-                <div className="relative">
-                  <textarea 
-                    id="welcomeMessage"
-                    value={welcomeMessage}
-                    onChange={(e) => setWelcomeMessage(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium h-20 resize-none placeholder-transparent"
-                    placeholder="Mensaje de Bienvenida"
-                  />
-                  <label 
-                    htmlFor="welcomeMessage"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
-                  >
-                    Mensaje de Bienvenida del Reloj Kiosco
-                  </label>
-                </div>
-                <div className="relative">
-                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
-                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
-                      <span>🇲🇽</span>
-                      <span>+52</span>
-                    </div>
-                    <input 
-                      type="text" 
-                      id="adminPhone"
-                      value={formatPhoneVisual(adminPhone)}
-                      onChange={(e) => setAdminPhone(getCleanDbPhone(e.target.value))}
-                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
-                      placeholder="WhatsApp del Dueño/Administrador"
-                    />
-                    <label 
-                      htmlFor="adminPhone"
-                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
-                    >
-                      WhatsApp del Administrador (10 dígitos) *
-                    </label>
-                  </div>
-                  {/* 2026-07-26 (auditoría en vivo): este campo es OBLIGATORIO — el botón
-                      "Guardar y Continuar" está condicionado a isAdminPhoneValid() — pero nada
-                      se lo decía al usuario: no había asterisco ni mensaje, así que el botón
-                      simplemente no respondía al hacer clic y la persona quedaba atorada en el
-                      paso 1 de 4 sin saber por qué. Se marca como requerido y se explica en vivo. */}
-                  {adminPhone.replace(/\D/g, '').length > 0 && !isAdminPhoneValid() ? (
-                    <p className="text-[10px] text-rose-600 font-bold mt-1 pl-1">
-                      Faltan dígitos: el WhatsApp debe tener 10 dígitos para poder continuar.
-                    </p>
-                  ) : !isAdminPhoneValid() ? (
-                    <p className="text-[10px] text-amber-600 font-bold mt-1 pl-1">
-                      Campo obligatorio — es el número al que llegarán los avisos de tu sucursal.
-                    </p>
-                  ) : (
-                    <p className="text-[9px] text-slate-400 mt-1 pl-1">
-                      Solo ingresa los 10 dígitos. El prefijo de México (+52) se agrega automáticamente.
-                    </p>
-                  )}
-                </div>
-
-                {/* Dirección de la Tienda */}
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    id="companyAddress"
-                    value={companyAddress}
-                    onChange={(e) => setCompanyAddress(e.target.value)}
-                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
-                    placeholder="Dirección de la Tienda"
-                  />
-                  <label 
-                    htmlFor="companyAddress"
-                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
-                  >
-                    Dirección de la Tienda / Sucursal
-                  </label>
-                </div>
-
-                {/* Teléfono de la Tienda */}
-                <div className="relative">
-                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
-                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
-                      <span>🇲🇽</span>
-                      <span>+52</span>
-                    </div>
-                    <input 
-                      type="text" 
-                      id="companyPhone"
-                      value={formatPhoneVisual(companyPhone)}
-                      onChange={(e) => setCompanyPhone(getCleanDbPhone(e.target.value))}
-                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
-                      placeholder="Teléfono de la Tienda"
-                    />
-                    <label 
-                      htmlFor="companyPhone"
-                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
-                    >
-                      Teléfono Fijo o Móvil de la Tienda (10 dígitos)
-                    </label>
-                  </div>
-                </div>
-
-                {/* Horario de la Tienda */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block mb-3">Horario de Operación (Tienda)</span>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Apertura</label>
-                      <input 
-                        type="time" 
-                        value={storeOpenTime}
-                        onChange={(e) => setStoreOpenTime(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-600"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Cierre</label>
-                      <input 
-                        type="time" 
-                        value={storeCloseTime}
-                        onChange={(e) => setStoreCloseTime(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-600"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <button 
-                  onClick={handleSaveSettings}
-                  disabled={loading || !companyName.trim() || !isAdminPhoneValid()}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
-                >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <>Guardar y Continuar <ChevronRight size={18}/></>}
-                </button>
-              </div>
-            </div>
-          )}
- 
-          {step === 2 && (
             <div className="animate-in fade-in space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
                   <Sparkles size={24} className="text-purple-600" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-purple-600 tracking-wider uppercase">Paso 2 de 4</span>
+                  <span className="text-xs font-bold text-purple-600 tracking-wider uppercase">Paso 1 de 4</span>
                   <h3 className="text-xl font-black text-slate-800">Giro Comercial y Estructura</h3>
                 </div>
               </div>
@@ -1105,11 +940,161 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <>Cargar Estructura Seleccionada <ChevronRight size={18} /></>}
                 </button>
                 <button 
-                  onClick={() => setStep(5)}
+                  onClick={() => setStep(2)}
                   disabled={loading}
                   className="py-3.5 px-5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 active:scale-98"
                 >
-                  Omitir (Iniciar vacío)
+                  Omitir Paso
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="animate-in fade-in">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                  <Building2 size={24} />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">Paso 2 de 4</span>
+                  <h3 className="text-xl font-black text-slate-800">Ajustes de Sucursal</h3>
+                </div>
+              </div>
+              
+              <div className="space-y-4 mb-6">
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    id="companyName"
+                    value={companyName}
+                    onChange={(e) => { setIsCompanyNameEdited(true); setCompanyName(e.target.value); }}
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    placeholder="Nombre Comercial"
+                  />
+                  <label 
+                    htmlFor="companyName"
+                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                  >
+                    Nombre Comercial de la Empresa
+                  </label>
+                </div>
+                <div className="relative">
+                  <textarea 
+                    id="welcomeMessage"
+                    value={welcomeMessage}
+                    onChange={(e) => setWelcomeMessage(e.target.value)}
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium h-20 resize-none placeholder-transparent"
+                    placeholder="Mensaje de Bienvenida"
+                  />
+                  <label 
+                    htmlFor="welcomeMessage"
+                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                  >
+                    Mensaje de Bienvenida del Reloj Kiosco
+                  </label>
+                </div>
+                <div className="relative">
+                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
+                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
+                      <span>🇲🇽</span>
+                      <span>+52</span>
+                    </div>
+                    <input 
+                      type="text" 
+                      id="adminPhone"
+                      value={formatPhoneVisual(adminPhone)}
+                      onChange={(e) => setAdminPhone(getCleanDbPhone(e.target.value))}
+                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
+                      placeholder="WhatsApp del Dueño/Administrador"
+                    />
+                    <label 
+                      htmlFor="adminPhone"
+                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    >
+                      WhatsApp del Administrador (opcional)
+                    </label>
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                    Ingresa los 10 dígitos si deseas recibir alertas y resúmenes de tu sucursal por WhatsApp.
+                  </p>
+                </div>
+
+                {/* Dirección de la Tienda */}
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    id="companyAddress"
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    className="peer w-full px-4 pt-5 pb-1.5 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl outline-none text-slate-800 text-sm font-medium placeholder-transparent"
+                    placeholder="Dirección de la Tienda"
+                  />
+                  <label 
+                    htmlFor="companyAddress"
+                    className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                  >
+                    Dirección de la Tienda / Sucursal
+                  </label>
+                </div>
+
+                {/* Teléfono de la Tienda */}
+                <div className="relative">
+                  <div className="flex border border-slate-200 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl overflow-hidden bg-white">
+                    <div className="bg-slate-50 px-3 py-3 text-xs text-slate-500 font-bold border-r border-slate-200 flex items-center gap-1 select-none">
+                      <span>🇲🇽</span>
+                      <span>+52</span>
+                    </div>
+                    <input 
+                      type="text" 
+                      id="companyPhone"
+                      value={formatPhoneVisual(companyPhone)}
+                      onChange={(e) => setCompanyPhone(getCleanDbPhone(e.target.value))}
+                      className="peer w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium font-mono placeholder-transparent"
+                      placeholder="Teléfono de la Tienda"
+                    />
+                    <label 
+                      htmlFor="companyPhone"
+                      className="absolute left-16 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
+                    >
+                      Teléfono Fijo o Móvil de la Tienda (10 dígitos)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Horario de la Tienda */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block mb-3">Horario de Operación (Tienda)</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Apertura</label>
+                      <input 
+                        type="time" 
+                        value={storeOpenTime}
+                        onChange={(e) => setStoreOpenTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Hora de Cierre</label>
+                      <input 
+                        type="time" 
+                        value={storeCloseTime}
+                        onChange={(e) => setStoreCloseTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleSaveSettings}
+                  disabled={loading || !companyName.trim()}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
+                >
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <>Guardar y Continuar <ChevronRight size={18}/></>}
                 </button>
               </div>
             </div>

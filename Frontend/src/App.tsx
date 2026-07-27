@@ -647,16 +647,6 @@ function MainLayout() {
                 </div>
               )}
 
-              {/* Botón directo de Wizard Configuración de Giro */}
-              <button
-                onClick={() => setShowOnboarding(true)}
-                title="Ejecutar Asistente de Configuración Inicial (Giro, Puestos y Checklists)"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
-              >
-                <Sparkles size={14} className="text-purple-600 animate-pulse" />
-                <span>Wizard Configuración</span>
-              </button>
-
               <div className="relative" ref={profileMenuRef}>
                 <button 
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -702,16 +692,6 @@ function MainLayout() {
                       >
                         <Users size={14} className="text-slate-400" />
                         Mi Cuenta
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setShowOnboarding(true);
-                          setIsProfileMenuOpen(false);
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold text-purple-700 bg-purple-50/60 hover:bg-purple-100 transition-colors flex items-center gap-2"
-                      >
-                        <Sparkles size={14} className="text-purple-600" />
-                        Wizard Giro y Puestos
                       </button>
                       <button 
                         onClick={() => {

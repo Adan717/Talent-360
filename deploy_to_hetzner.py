@@ -71,8 +71,8 @@ def main():
         print("Connected successfully.")
         
         print("\n--- STEP 3: Updating repository on server ---")
-        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git pull"):
-            print("Failed to pull latest changes on remote server.")
+        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git fetch --all --prune && git reset --hard origin/main"):
+            print("Failed to update repository on remote server.")
             return
             
         print("\n--- STEP 4: Running migrations and clearing cache (non-destructive) ---")

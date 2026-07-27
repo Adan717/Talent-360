@@ -678,6 +678,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       }
       const res = await axiosInstance.delete('/job-roles/' + id);
       if (res.status !== 200) throw new Error("Failed to delete job role");
+      setJobRoles(prev => prev.filter(r => r.id !== id));
       alert(res.data.message || "Puesto de trabajo eliminado correctamente.");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));

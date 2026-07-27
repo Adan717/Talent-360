@@ -8,6 +8,7 @@ import {
   Clock, Trophy, ClipboardList, Settings, Paperclip, Hourglass
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
 
 const QuillInkwellIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
   <svg 
@@ -986,7 +987,7 @@ export function WebPublicaOrganizacion() {
             </style>
           </head>
           <body>
-            ${scribeResultHtml}
+            ${sanitizeHtml(scribeResultHtml)}
           </body>
         </html>
       `);
@@ -1648,7 +1649,7 @@ export function WebPublicaOrganizacion() {
                             /* Scribe Document Result & Printer Workspace */
                             <div className="flex-1 flex flex-col justify-between min-h-0">
                               <div className="flex-1 overflow-y-auto border border-[#d2c7ac] bg-[#faf6eb] p-4 rounded-2xl custom-markdown shadow-inner scrollbar-none">
-                                <div dangerouslySetInnerHTML={{ __html: scribeResultHtml }} />
+                                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(scribeResultHtml) }} />
                               </div>
 
                               <div className="flex gap-2.5 mt-4">
@@ -2310,7 +2311,7 @@ export function WebPublicaOrganizacion() {
                                 ref={contentRef}
                                 className="flex-grow lg:flex-1 text-[#2b251f] pr-1 custom-markdown lg:overflow-y-auto scrollbar-none lg:min-h-0 pb-4"
                               >
-                                <div dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }} />
+                                <div dangerouslySetInnerHTML={{ __html: activeDoc.content ? sanitizeHtml(activeDoc.content) : '<p class="text-slate-400 italic">Esta sección está vacía.</p>' }} />
 
                                 {/* Muted Related Chapters Footnote (inside scrollable area) */}
                                 {(links.length > 0 || backlinks.length > 0) && (

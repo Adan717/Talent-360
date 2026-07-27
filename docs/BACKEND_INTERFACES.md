@@ -51,6 +51,33 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §40 | Plan de trabajo diario: campo `origin` en `task_assignments` (planned/carried_over/extra/routine) para poder armar el reporte de cierre del día. Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §41 | Nuevo endpoint `POST /task-assignments/{id}/validate-with-pin` — validar una tarea con el PIN de un supervisor sin que ese supervisor tenga que iniciar sesión en el dispositivo (reutiliza `employees.security_pin`, ya existe). Ver detalle abajo. | ✅ Implementado (2026-07-22) |
 | §42 | Nuevo endpoint de IA que sugiere el plan de trabajo del día ("Armar Plan de Hoy") usando quién asistió + tareas pendientes + el vault Obsidian (organigrama/manual operativo) como contexto. Ver detalle abajo. | ✅ Implementado (2026-07-23) |
+| §43 | Migrar autenticación de Bearer token en `localStorage` a cookie de sesión `httpOnly` vía Sanctum SPA (Hallazgo 3 de seguridad, no urgente hoy pero conviene resolver la causa raíz). Ver detalle abajo. | ✅ Implementado (2026-07-24) — **versión chica: login+kiosco emiten cookie httpOnly + middleware que la lee; impersonación sigue en su modelo actual (2ª vuelta). Falta el switch del frontend (Cowork), ver nota** |
+| §44 | **Urgente (seguridad):** sanitizar `ObsidianDocument.content` (y el HTML del asistente de contratos) al guardar en el servidor — hoy se renderiza sin sanitizar en una página **pública sin sesión** (`/organizacion/:tenantSlug/:docSlug`). Cowork ya mitigó del lado del cliente, esto es la segunda capa. Ver detalle abajo. | ✅ Implementado (2026-07-24) — sanitizador nativo en el servidor |
+| §45 | Rendimiento: agregar índices compuestos `(tenant_id, date)` / `(tenant_id, created_at)` en `time_entries`, `store_logs`, `contingencies`, `internal_messages`, `audit_logs` — hoy solo tienen el índice simple de `tenant_id` que trae el `foreignId()`, pero `ClockController::getState()` filtra siempre por los dos campos juntos. Ver detalle abajo. | ✅ Implementado (2026-07-24) |
+| §46 | Rendimiento: optimizar `ClockController::getState()` (el endpoint `/sync/state`, llamado cada 60s por cada sesión activa) — cachear datos casi estáticos (`job_roles`, `permissions`, `role_permissions`, `ui_rbac_rules`, `role_clock_policies`), corregir el N+1 de `routines`→`routine_task`, y quitar la consulta duplicada de `role_permissions`. Ver detalle abajo. | ✅ Implementado (2026-07-24) — N+1 + consulta duplicada + **caché con invalidación por evento y red de seguridad por TTL** |
+| §47 | **Urgente (seguridad):** `DatabaseSeeder.php` inserta 3 cuentas de `platform_users` con contraseñas hardcodeadas en texto plano en el repo (`Master`, `Master`, `Support123`), una de ellas con el correo real de Francisco. Ver detalle abajo. | ✅ Implementado (2026-07-24) — contraseñas fuera del repo (env) + cuenta genérica eliminada |
+| §48 | Completar el flujo de 2FA (existe el campo `two_factor_enabled`/`two_factor_secret` y el flag `requires_2fa` en la respuesta de login, pero no hay endpoint que valide el código — y hoy excluye explícitamente a `platform_users`). Ver detalle abajo. | ⏳ Preparado (2026-07-24): columnas 2FA ya migradas a `platform_users`. **Falta un solo paso: instalar `pragmarx/google2fa` (un comando con internet) y armo todo el flujo.** Ver instrucciones en la nota |
+| §49 | Separar estrictamente `platform_admin`/`support_agent` de la tabla `users` (hoy el enum `UserRole` y `TenantScope` todavía contemplan que una fila de `users` tenga esos roles) + endpoint de revocación masiva de sesiones de `platform_users` ("botón de pánico"). Ver detalle abajo. | ✅ Implementado (2026-07-24) — botón de pánico + validación de rol (users nunca platform_admin) + `TenantScope` compatible hacia atrás con log de deprecación (sin necesidad de auditar prod primero) |
+| §50 | **Urgente (seguridad/integridad):** `SubscriptionController::provisionTenant()` (rama "Standard creation flow", sin autenticación) puede reasignar el `tenant_id` de un usuario YA existente (dueño de otra empresa) a una empresa nueva si alguien manda su `admin_email` en el checkout — le "roba" el admin a su empresa original sin que esa persona haya iniciado sesión. Confirma la regla de negocio "1 cuenta Google = 1 empresa" que pidió Francisco, pero expone un hueco real. Ver detalle abajo. | ✅ Implementado (2026-07-24) — rechaza con 409 en vez de reasignar |
+| §51 | Credenciales de las cuentas de prueba (Francisco las pidió directamente): rotar las 3 hardcodeadas del seeder (§47) a contraseñas fuertes concretas, y renombrar/crear cuentas de DecorArte 360 y de plataforma con el convenio `nombre@decorarte360.com` / `nombre@talent360.mx` que confirmó. Ver detalle abajo — incluye las contraseñas propuestas para que las apliquen tal cual o las ajusten. | ✅ Aplicado en Hetzner (2026-07-25) — Francisco lo corrió directo vía tinker con el script que le dimos; tabla final de accesos ya entregada en el chat |
+| §52 | Correo remitente configurable — dos niveles: (1) plataforma, dirección real/autenticada única desde la que sale todo + copy de bienvenida/reglas freemium; (2) por tenant, nombre para mostrar + Reply-To (NO un remitente real distinto, por SPF/DKIM/DMARC — ver detalle). También: flujo de invitación automática por correo a empleados nuevos (reutilizando el PIN de activación que ya existe) y el flujo estándar de "olvidé mi contraseña" (tabla `password_reset_tokens` ya existe, sin usar). Ver detalle abajo. | ✅ Implementado (2026-07-25) — código listo con envío best-effort; **se activa solo con configurar dominio+servicio de correo (driver `log`/Mailtrap mientras tanto). Ver nota** |
+| §53 | Checklist de cumplimiento del plan freemium (ej. compartir publicaciones mensuales) — sin verificación automática por API de redes sociales en v1, auto-reporte + revisión manual. Ver detalle abajo. | ✅ Implementado (2026-07-25) — v1 auto-reporte + revisión manual, sin suspensión automática |
+| §54 | Nómina y semana laboral configurable por empresa (conforme a LFT): día de inicio de semana, día de pago, hora del cálculo automático; el Reloj y `payroll:calculate-weekly` respetan el corte de cada empresa. Ver detalle abajo. | ✅ Implementado (2026-07-25) — DecorArte (tenant 1) por default: semana domingo→sábado, pago sábado (decisión de Francisco) |
+| §55 | Tareas inconclusas por apagón: proceso nocturno que las pasa a "Pendiente de Validación Gerencial" + 3 botones (aprobar/reprogramar/rechazar). Ver detalle abajo. | ✅ Implementado (2026-07-25) |
+| §56 | Índices en PostgreSQL para el módulo de Rutinas/Tareas Diarias (Sección 2 #4). | ✅ Implementado (2026-07-25) — índices compuestos en `task_assignments` + `routine_task` |
+| §57 | Compresión automática de fotos de evidencia antes de subir. | ⏳ Frontend (Cowork) — el backend ya recibe base64; el grueso es comprimir en el navegador |
+| §58 | **Bug de negocio:** el límite de colaboradores del plan freemium es inconsistente según por cuál de los dos caminos de registro pase el cliente (`TenantController::store` pone 10, `SubscriptionController::provisionTenant` pone 5), y la Landing Page anuncia públicamente 5. Además la rama de upgrade no contempla freemium y lo dejaría en 9999. Ver detalle abajo. | ✅ Implementado (2026-07-26) — fuente única `Tenant::maxUsersForPlan()` (freemium=5) |
+
+| §59 | 🔴 **CRÍTICO (aislamiento entre empresas):** `POST /clock/punch` acepta cualquier `user_id` sin verificar que pertenezca al tenant del usuario autenticado. Reproducido en producción: una empresa recién creada registró un fichaje a nombre de un empleado de DecorArte (tenant 1). Ver detalle abajo. | ✅ Implementado (2026-07-26) — blindados punch, punch-batch y /sync/clock |
+| §60 | 🔴 **Producción con `APP_DEBUG=true`:** un error de base de datos se mostró íntegro en pantalla al usuario final, exponiendo motor, host, puerto, nombre de la BD y el esquema completo de la tabla. Ver detalle abajo. | ⏳ Pendiente |
+| §61 | **Bug de cálculo:** `late_minutes` se calcula negativo cuando el empleado llega ANTES de su hora (−296.84 en la prueba), se guarda como decimal en una columna entera (revienta el insert) y genera un incidente LFT que penaliza al empleado por llegar temprano. Ver detalle abajo. | ✅ Implementado (2026-07-26) — raíz: desfase de zona horaria en `expectedTime` |
+
+| §62 | 🔴 **CRÍTICO (pérdida de datos):** al iniciar UNA tarea desde la vista de colaborador, se borraron las CINCO asignaciones del día del empleado, de forma permanente (persistió tras recargar). Es el riesgo de §33 (sincronización "reenviar todo el estado") materializado. Ver detalle abajo. | ✅ Implementado (2026-07-26) — backend blindado: `/sync/tasks` nunca anula un `user_id` ya establecido |
+| §63 | Falta endpoint de "racha de puntualidad" del colaborador. El Reloj mostraba "14 Días Puntual" escrito a mano; se ocultó en vez de inventar el dato. Ver detalle abajo. | ✅ Implementado (2026-07-26) — `GET /me/punctuality-streak` |
+
+| §64 | 🔴 **Permisos excesivos:** las rutas de `billing` (datos fiscales, subida del **sello digital CSD del SAT** con su llave privada, y timbrado de nómina) están bajo `role:admin,supervisor`. Un supervisor de tienda puede reemplazar la identidad fiscal de la empresa y emitir comprobantes ante el SAT. Ver detalle abajo. | ✅ Punto 1 implementado (2026-07-26) — `billing` ahora es solo `admin`; punto 2 requiere decisión de Francisco |
+
+| §65 | **Modelo de permisos delegables (decisión de producto de Francisco, 2026-07-26):** toda la configuración nace en el administrador y se delega **por puesto**, usando las tablas `permissions`/`role_permissions` que YA existen pero que hoy nadie consulta (el gating está escrito a mano como `role:admin,supervisor`). Incluye un conjunto explícitamente **indelegable**. Reemplaza el parche puntual de §64. Ver detalle abajo. | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -1348,6 +1375,22 @@ Los dos fixes, resguardo Y raíz:
 
 **⚠️ Hallazgo colateral, no lo toqué — para que quede on the record:** `system_settings.key` es la **primary key** de la tabla (`2026_06_09_090049_create_system_settings_table.php` línea 15, nunca se migró a una PK compuesta cuando se agregó `tenant_id` en `2026_06_19_062150`). Eso significa que dos tenants **no pueden tener cada uno su propia fila** para la misma `key` — `tasksConfig`, `punctuality_course_id` y cualquier otro setting "por tenant" que ya exista hoy en `system_settings` en realidad solo puede tener un valor global a la vez en todo el sistema; el segundo tenant que intente guardar esa misma `key` (vía `updateOrInsert(['key' => ..., 'tenant_id' => ...], ...)`, que sí filtra por ambas columnas al buscar pero no al insertar) se encontraría con una violación de PK cruda. Es la razón real por la que decidí NO usar `system_settings` para exponer el id de la tarea de Ley Silla — habría sido agregar un caso más al mismo bug en vez de evitarlo. Esto es una migración de esquema real (agregar `tenant_id` a una PK compuesta, con los datos existentes ya mezclados) — no la até a este fix porque es un cambio de forma distinta y con su propio riesgo, pero avisen si quieren que lo aborde aparte.
 
+## 🔴 → ✅ CORREGIDO (2026-07-26) — este "hallazgo colateral" se volvió un bloqueador de registro
+
+El bug del PK de arriba **dejó de ser teórico**: Francisco vio, al intentar crear una empresa nueva (DecorArte S.A.S. de C.V., correo de Marisol), el error `SQLSTATE[25P02]: current transaction is aborted ... SQL: update "users" set "tenant_id" = 14 where "id" = 17`. Rastreado a la causa exacta:
+
+1. `SubscriptionController::provisionTenant()` crea el tenant dentro de un `DB::transaction`.
+2. `Tenant::created` (hook del modelo) llama a `TenantInitializationService::initializeSettingsForTenant()`, que **inserta los settings por defecto** del tenant nuevo (`storeSchedule`, `leySillaConfig`, etc.).
+3. Como esas llaves **ya existen para el tenant 1**, el INSERT viola el PK sobre `key` sola → Postgres **aborta la transacción**.
+4. El hook **se tragaba la excepción** (`try/catch` que solo hacía `Log::error`), dejando la transacción envenenada.
+5. La siguiente instrucción (`update users set tenant_id=14`) reventaba con `25P02`. **Ninguna empresa nueva podía registrarse.**
+
+**Fix (migración `2026_07_25_000005_fix_system_settings_primary_key.php`):** se quita el PK sobre `key` sola y se pone unicidad correcta por **`(tenant_id, key)`** (en Postgres, con un índice único parcial extra `(key) WHERE tenant_id IS NULL` para que las llaves de plataforma sigan siendo únicas; en SQLite se reconstruye la tabla). No hubo datos que deduplicar (con el PK viejo cada `key` aparecía una sola vez). Además, el hook `Tenant::created` ahora envuelve la inicialización en una **transacción anidada (SAVEPOINT)**: si algo falla ahí, el rollback llega solo hasta el savepoint y **no envenena la transacción padre** — defensa en profundidad para que un fallo de settings nunca vuelva a tumbar un registro completo.
+
+**⚠️ Para Francisco/ops:** este fix requiere **correr `php artisan migrate` en Hetzner** para que el cambio de esquema se aplique a la BD viva. Hasta que se corra la migración allá, el registro de empresas nuevas seguirá fallando en producción. El intento fallido de Marisol hizo rollback (no quedó empresa a medias), solo se "quemó" el id 14 de la secuencia (cosmético).
+
+Test nuevo: `SystemSettingsMultiTenantTest.php` — dos empresas obtienen cada una sus propios settings con la misma llave, y el registro de una empresa nueva por el flujo público funciona aunque otra empresa ya tenga settings. Suite completa: **218/218 tests, 807 assertions**, sin regresiones.
+
 Test nuevo: `TaskSyncSecurityTest.php` — completar una asignación cuyo `task_id` apunta a una tarea de OTRO tenant (mismo id numérico, FK satisfecha porque la fila existe físicamente, pero `Task::find()` con tenant-scope da `null` — el escenario real detrás de "inofensivo hasta completed") ya no truena; y verificación de que la migración sembró la tarea real. Suite completa: **130/130 tests, 558 assertions**, sin regresiones.
 
 ---
@@ -1740,3 +1783,725 @@ Nuevo método `GeminiAIService::suggestWorkPlan()` (mismo patrón de texto→JSO
 Usé la estructura de salida que propusieron tal cual (`task_assignment_id`/`suggested_new_task_title`/`suggested_target_type`/`suggested_target_id`/`estimated_mins`/`reason` por sugerencia) — si al conectarlo del lado de Cowork necesitan otro campo para que los botones "Aplicar" (`carryOverAssignment`/`createDynamicTask`) tengan todo lo que requieren, avisen y lo agrego al prompt.
 
 Test nuevo: `SuggestWorkPlanTest.php` — reúne y pasa el contexto correcto a Gemini (presentes/ausentes/pendientes/puestos/vault, verificado con `withArgs`), degrada con gracia a `ai_available: false`, y exige rol admin/supervisor (403 para empleado). Suite completa: **161/161 tests, 652 assertions**, sin regresiones.
+
+---
+
+## §43. Migrar token de auth de `localStorage` a cookie `httpOnly` (Hallazgo 3 de seguridad, no urgente)
+
+**Contexto (`docs/AUDITORIA_RELOJ_CHECADOR_2026-07-22.md`, Hallazgo 3):** hoy `axios.ts` guarda el token de Sanctum (`talent_auth_token`) en `localStorage` y lo manda como `Authorization: Bearer` en cada petición. Cualquier XSS futuro (hoy no hay ninguno conocido — 0 usos de `dangerouslySetInnerHTML` en el módulo del reloj) podría robar el token completo con una línea de JS, porque `localStorage` es legible por cualquier script que corra en la página. La causa raíz es que el token vive en un sitio que JS puede leer. `axiosInstance` ya manda `withCredentials: true`, así que la infraestructura de cookies de Sanctum ya está contemplada del lado del cliente.
+
+**No es urgente** — no hay XSS conocido hoy — pero conviene cerrar la causa raíz. Francisco pidió programarlo.
+
+**Recomendación: NO migrar a Sanctum SPA (cookie+sesión) completo.** Es más invasivo de lo necesario y esta app depende fuertemente del modelo actual de "personal access tokens" de Sanctum (`$user->createToken(...)->plainTextToken`) en varios flujos que no son un login simple:
+
+- `AuthController::login()` / `loginSocial()` — login normal y con Google.
+- `AuthController::kioskLogin()` — token con expiración corta propia (`now()->addMinutes(15)`, vía `createToken('kiosk_session', ['*'], $expiresAt)`), para tablets compartidas de tienda (§37).
+- `PlatformAdminController` — `POST /platform/tenants/{id}/impersonate`: emite un token nuevo para que un `platform_admin` entre temporalmente como el admin de un tenant. El frontend hoy guarda el token original en `localStorage['platform_admin_token']` y lo restaura al hacer clic en "Regresar a SuperAdmin" (`App.tsx` línea ~587-603, `SaaSPlatformAdmin.tsx` línea ~750-769) — un swap de dos tokens en crudo, manejado 100% en el cliente.
+
+Migrar a Sanctum SPA tiraría todo esto para reconstruirlo sobre sesiones de servidor. **En vez de eso, propongo mantener exactamente la misma lógica de emisión de tokens que ya existe (ningún cambio en `login`, `loginSocial`, `kioskLogin`, `impersonate`) y cambiar solo el transporte**: que el token viaje en una cookie `httpOnly` en vez de en el cuerpo JSON + `localStorage`.
+
+**Lo que pedimos (backend):**
+
+1. **Cookie en vez de/además de JSON.** En cada respuesta que hoy incluye `'token' => $token`, además poner esa misma cadena en una cookie (`Cookie::make('talent_auth_token', $token, ...)` o el helper que usen): `httpOnly: true`, `secure: true` en producción, `sameSite: 'Lax'` (o `'None'` si el dominio del frontend termina siendo distinto al del backend — avisen cuál es el caso real). El `Max-Age` de la cookie debe igualar la vida del token (indefinido para login normal, 15 minutos exactos para `kioskLogin`, para que la cookie expire sola junto con el token).
+2. **Middleware de lectura.** Sanctum autentica hoy leyendo el header `Authorization: Bearer`. Necesitamos un middleware (antes de `auth:sanctum` en el grupo de rutas, o extendiendo `EnsureFrontendRequestsAreStateful`) que, si no viene ese header, lo copie desde la cookie `talent_auth_token` a `Authorization` antes de que Sanctum evalúe el token — así el resto del stack de autenticación no cambia.
+3. **Logout limpia la cookie.** `logout()` y `kioskLogout()` ya borran el token de la tabla (`currentAccessToken()->delete()`); agregar que también expiren la cookie (`Cookie::forget(...)`) en la respuesta.
+4. **Impersonación — 2 ajustes puntuales** para no depender de que el frontend guarde tokens en crudo:
+   - `POST /platform/tenants/{id}/impersonate`: al emitir el token de impersonación, guardar en algún lado del lado servidor una referencia al token ORIGINAL del `platform_admin` que impersona (ej. una columna `impersonated_from_token_id` en `personal_access_tokens`, o el id del token original como `name`/metadata del nuevo token) — para poder revertir sin que el navegador haya tenido que recordar el token viejo.
+   - Nuevo endpoint `POST /platform/stop-impersonating`: borra el token de impersonación activo, busca el token original por la referencia guardada en el punto anterior, y vuelve a poner ESA cadena en la cookie `talent_auth_token` (respondiendo igual que `login`, con el `user` del super-admin). El frontend solo necesita llamar este endpoint y redirigir — ya no necesita `localStorage['platform_admin_token']`.
+5. **El JSON de login puede seguir mandando `user` (como hoy) pero ya no necesita mandar `token` en el cuerpo** una vez que el frontend deje de leerlo — aunque si prefieren mandarlo igual por transición (y que el frontend simplemente lo ignore) no hay problema, solo la cookie es la que de verdad importa para la seguridad.
+
+**Lo que hará Cowork (frontend) una vez el backend esté listo:**
+
+- Quitar el interceptor de `axios.ts` que lee `localStorage.getItem('talent_auth_token')` y arma el header `Authorization` a mano — con la cookie `httpOnly` + `withCredentials: true` (ya activo), el navegador la manda solo.
+- Quitar los ~15 sitios que hacen `localStorage.setItem/getItem/removeItem('talent_auth_token', ...)` (`Login.tsx`, `SaaSLandingPage.tsx`, `SaaSPlatformAdmin.tsx`, `App.tsx`, `ProtectedRoute.tsx`, `useAppStore.ts`, `DashboardTalent360.tsx`, `HeaderStats.tsx`) — el patrón `hasToken = !!localStorage.getItem(...)` para saber "¿hay sesión?" deja de ser confiable (JS ya no puede leer la cookie) y hay que reemplazarlo por una llamada real a `GET /me` (que ya existe) al montar la app, apoyándonos en el interceptor 401 que ya existe en `axios.ts` para detectar sesión vencida/cerrada.
+- Cambiar `handleImpersonate` (`SaaSPlatformAdmin.tsx`) para que ya no guarde/lea tokens en crudo, y el botón "Regresar a SuperAdmin" (`App.tsx`) para que llame `POST /platform/stop-impersonating` en vez de restaurar `localStorage['platform_admin_token']`.
+- `clearClockLocalCache()` (Hallazgo 4, ya resuelto) no necesita cambios — nunca tocó el token, solo caché operativo del reloj.
+
+Como en `§39`/`§42`: no urgente, sin decisión de producto irreversible de por medio — si prefieren una versión más chica para empezar (por ejemplo, sin tocar impersonación todavía, dejándola en su modelo actual mientras el resto migra), avisen y ajusto el frontend a lo que sea más rápido de tener funcionando primero.
+
+## ✅ Implementado (2026-07-25) — versión chica (Francisco eligió esta primera vuelta)
+
+Francisco dio luz verde a la versión chica: **login y kiosco migran a cookie httpOnly; la impersonación se queda en su modelo actual** (swap de tokens en cliente) para una segunda vuelta. Backend:
+
+1. **Middleware `AuthTokenFromCookie`** (`app/Http/Middleware/AuthTokenFromCookie.php`), antepuesto al grupo `api` en `bootstrap/app.php`: si la petición no trae header `Authorization: Bearer`, copia el token desde la cookie `talent_auth_token` al header antes de que Sanctum evalúe. Así el resto del stack de auth por tokens no cambia — solo cambia el transporte. No pisa un header Bearer explícito si viene (tiene prioridad).
+2. **`login()` y `kioskLogin()`** además del JSON (que sigue mandando `token` para que el frontend migre sin romperse) ahora setean la cookie `httpOnly`: `secure` en producción, `SameSite=Lax`, y `Max-Age` = vida del token (un año para login normal, **15 min exactos para kiosco**, para que la cookie caduque junto con el token de §37).
+3. **`logout()` y `kioskLogout()`** expiran la cookie además de borrar el token en BD.
+4. La cookie está **exceptuada del cifrado** (`encryptCookies(except: [...])` en `bootstrap/app.php`) porque su valor ya es un token opaco aleatorio de Sanctum; la protección real es el flag `httpOnly` (JS no la puede leer). Esto evita conflictos entre el grupo `api` (sin EncryptCookies) y `web`.
+5. **Impersonación: sin cambios** (versión chica). Sigue funcionando con el swap de tokens en cliente que ya existe. Cuando quieran cerrar esa parte, es la 2ª vuelta (endpoint `POST /platform/stop-impersonating` + referencia al token original).
+
+**Lo que le toca a Cowork (frontend), cuando quieran activarlo:** con `withCredentials: true` (ya activo) el navegador manda la cookie sola. Pueden quitar el interceptor que lee `localStorage.getItem('talent_auth_token')` y arma el header a mano, y reemplazar el patrón `hasToken = !!localStorage.getItem(...)` por una llamada real a `GET /me` al montar la app (apoyándose en el interceptor 401 que ya existe). **No es obligatorio hacerlo ya** — mientras el frontend siga mandando el Bearer header, todo funciona igual; la cookie es aditiva y no rompe nada. El beneficio de seguridad (token fuera del alcance de JS) llega cuando el frontend deje de leer el token de `localStorage`.
+
+Tests: `AuthCookieTest.php` — login setea la cookie httpOnly con el mismo token del cuerpo; el middleware copia la cookie al header y no pisa un Bearer explícito; logout expira la cookie. (La autenticación cookie→header extremo-a-extremo se prueba a nivel de middleware porque el harness HTTP de este entorno no adjunta cookies al request saliente — limitación del harness, no del código.) Suite completa: **190/190 tests**, sin regresiones.
+
+---
+
+## §44. Sanitizar contenido del vault al guardar (Hallazgo 1 de seguridad, urgente — XSS público)
+
+**Contexto (`docs/AUDITORIA_GENERAL_PLATAFORMA_2026-07-24.md`, Hallazgo 1):** `WebPublicaOrganizacion.tsx` sirve `/organizacion/:tenantSlug` y `/organizacion/:tenantSlug/:docSlug` **sin autenticación** (no están dentro de `<ProtectedRoute>`, confirmado en `App.tsx`). Esa pantalla —y el editor interno `OrgVaultManager.tsx`— renderizan `ObsidianDocument.content` (y el HTML que arma el asistente de IA de contratos) directamente como HTML. Nunca se sanitiza ese contenido en ningún punto del sistema: ni al guardarlo, ni al mostrarlo. Cualquier cuenta con permiso de edición del vault puede inyectar HTML/JS que se ejecuta en el navegador de **cualquier visitante anónimo de internet** que abra el enlace público de esa empresa.
+
+**Ya mitigado hoy del lado de Cowork:** nuevo `Frontend/src/lib/sanitizeHtml.ts` (sanitizador con lista blanca de etiquetas/atributos, basado en `DOMParser` nativo — no se pudo usar DOMPurify porque este entorno no tiene acceso de red a npm), aplicado en los 4 sitios de renderizado. **Pero esto es solo la capa de cliente** — un cliente modificado o una llamada directa a la API se la salta.
+
+**Lo que pedimos (backend, cierra la causa raíz):**
+
+1. Sanitizar `content` en el momento de guardar, tanto en el endpoint que crea/edita documentos del vault (`ObsidianController`, el método que recibe el contenido editado — probablemente algo como `updateDocument`/`store`) como en cualquier otro punto donde `ObsidianDocument.content` se escriba.
+2. Recomendación: paquete `mews/purifier` (wrapper de Composer para HTMLPurifier, el estándar de facto en PHP) o el purificador nativo si ya tienen uno agregado. Lista blanca sugerida (igual que la que ya aplicamos en el frontend, para que ambas capas sean consistentes): `p, br, hr, h1-h6, strong, b, em, i, u, s, mark, small, sub, sup, ul, ol, li, blockquote, pre, code, a, img, table, thead, tbody, tr, th, td, div, span` — con `href`/`src` restringidos a `http(s):`, `mailto:`, `tel:` o rutas relativas (nada de `javascript:`/`data:text/html`), y sin ningún atributo `on*`.
+3. Si el HTML del asistente de contratos (`scribeResultHtml`, generado por `GeminiAIService` u otro servicio de IA) se guarda en algún lado antes de mostrarse, aplicar la misma sanitización ahí también — si solo viaja de IA→frontend sin persistirse, con la mitigación de cliente ya aplicada es suficiente por ahora.
+4. No hace falta migrar documentos existentes de forma retroactiva salvo que quieran hacer una pasada de limpieza — con sanitizar en el punto de guardado futuro ya se cierra el vector de ataque hacia adelante. Si prefieren sí limpiar el histórico, aviso si hace falta algo del lado de Cowork para eso.
+
+## ✅ Implementado (2026-07-24) — resumen
+
+**Sanitizador nativo, sin paquete.** No pude usar `mews/purifier`/HTMLPurifier — este entorno no tiene red para agregar dependencias de Composer (mismo motivo por el que Cowork usó `DOMParser` nativo en vez de DOMPurify). Escribí `Backend/app/Support/HtmlSanitizer.php`, un sanitizador de lista blanca basado en `DOMDocument`, con **la misma lista de etiquetas/atributos** que el `sanitizeHtml.ts` de Cowork para que ambas capas coincidan: quita `<script>`/`<iframe>`/`<style>`/`<form>` etc. con todo su contenido, desenvuelve etiquetas desconocidas pero inofensivas conservando su texto, elimina cualquier atributo `on*` (onclick/onerror/…), y restringe `href`/`src` a `http(s)`/`mailto`/`tel`/relativas/`#` (bloquea `javascript:` y `data:text/html`). Preserva a propósito `class`/`data-target-slug`/`href="#"` porque los wiki-links que el propio `ObsidianController` genera los usan.
+
+**Punto de aplicación:** el único lugar donde se escribe el HTML renderizado (`content`) es `ObsidianController::rebuildVaultLinks()` (línea ~413, `$doc->update(['content' => ...])`) — ahí se sanitiza antes de persistir. Como `content` es exactamente lo que la página pública renderiza, ese único chokepoint cierra el vector para todos los caminos de escritura (sync de vault, edición, sugerencias aprobadas). `raw_content` (markdown fuente) no se renderiza como HTML crudo al navegador, así que no necesita sanitizarse ahí.
+
+**HTML del asistente de contratos (`scribeResultHtml`):** confirmé que viaja IA→frontend sin persistirse en `content`, así que —como el propio §44 dice— con la mitigación de cliente ya aplicada es suficiente por ahora; si algún día se persiste, pasa por el mismo `HtmlSanitizer::clean()`.
+
+Test nuevo: `tests/Unit/HtmlSanitizerTest.php` (10 casos: script/iframe eliminados, `on*` y `javascript:`/`data:text/html` removidos, etiquetas de formato conservadas, wiki-links preservados, enlaces/imágenes seguros conservados, etiqueta desconocida desenvuelta). Suite completa: **183/183 tests, 714 assertions**, sin regresiones.
+
+**No migré el histórico** (punto 4) — con sanitizar al guardar el vector queda cerrado hacia adelante. Si quieren limpiar documentos ya guardados, es un comando aparte (`ObsidianDocument::each(fn($d) => $d->update(['content' => HtmlSanitizer::clean($d->content)]))`); avisen y lo agrego.
+
+## §45. Índices compuestos para las tablas que alimentan `/sync/state` (rendimiento)
+
+**Contexto (`docs/AUDITORIA_GENERAL_PLATAFORMA_2026-07-24.md`, sección 2):** `time_entries`, `store_logs`, `contingencies`, `internal_messages` y `audit_logs` obtuvieron su columna `tenant_id` vía `database/migrations/2026_06_19_062150_add_tenant_id_to_all_tables.php`, que solo agrega `foreignId('tenant_id')->nullable()->constrained('tenants')` — eso indexa `tenant_id` solo. Pero `ClockController::getState()` (el endpoint `/sync/state`, el más llamado de toda la app) siempre filtra por **`tenant_id` + fecha** a la vez:
+
+```php
+DB::table('time_entries')->where('tenant_id', $tenantId)->whereDate('date', '>=', $oneWeekAgo)
+DB::table('store_logs')->where('tenant_id', $tenantId)->whereDate('date', '>=', $oneWeekAgo)
+DB::table('contingencies')->where('tenant_id', $tenantId)->whereDate('created_at', '>=', $oneWeekAgo)
+DB::table('internal_messages')->where('tenant_id', $tenantId)->whereDate('created_at', '>=', $oneWeekAgo)
+DB::table('audit_logs')->where('tenant_id', $tenantId)->whereDate('date', '>=', $oneWeekAgo)
+```
+
+Sin un índice compuesto, la base de datos filtra por `tenant_id` y luego escanea secuencialmente para aplicar el filtro de fecha — cada vez más lento conforme crecen justamente las tablas que más crecen con el uso diario del reloj.
+
+**Pedimos:** una migración que agregue, para cada tabla:
+
+```php
+Schema::table('time_entries', fn (Blueprint $t) => $t->index(['tenant_id', 'date']));
+Schema::table('store_logs', fn (Blueprint $t) => $t->index(['tenant_id', 'date']));
+Schema::table('contingencies', fn (Blueprint $t) => $t->index(['tenant_id', 'created_at']));
+Schema::table('internal_messages', fn (Blueprint $t) => $t->index(['tenant_id', 'created_at']));
+Schema::table('audit_logs', fn (Blueprint $t) => $t->index(['tenant_id', 'date']));
+```
+
+(ajusten los nombres de columna exactos si alguno difiere — los cité tal como aparecen en `getState()`). No es un cambio riesgoso ni requiere downtime en la mayoría de motores.
+
+## ✅ Implementado (2026-07-24) — resumen
+
+Migración `2026_07_24_000001_add_composite_indexes_for_sync_state.php` — índices compuestos tal cual: `(tenant_id, date)` en `time_entries`/`store_logs`/`audit_logs`, `(tenant_id, created_at)` en `contingencies`/`internal_messages`. Nombres de índice explícitos (`{tabla}_{cols}_idx`) para poder revertirlos con certeza, y guards con `hasTable`/`hasColumn` por si alguna columna difiere o la migración corre sobre una BD parcial. Sin cambio de comportamiento, solo rendimiento.
+
+## §46. Optimizar `ClockController::getState()` — caché de datos casi estáticos + N+1 de rutinas (rendimiento)
+
+**Contexto:** mismo endpoint que §45, es el que se llama cada 60 segundos por cada sesión activa (cada 5s durante el Simulador Matrix). Dos problemas concretos dentro de la función, además de los índices:
+
+1. **N+1 confirmado en `routines`:**
+
+```php
+$routines = DB::table('routines')->where('tenant_id', $tenantId)->get()->map(function ($r) {
+    $taskIds = DB::table('routine_task')->where('routine_id', $r->id)->pluck('task_id')->toArray();
+    $r->task_ids = json_encode($taskIds);
+    return $r;
+});
+```
+
+Con N rutinas son N+1 consultas. Se puede resolver con una sola consulta agrupada:
+
+```php
+$routineIds = /* ids de $routines */;
+$taskIdsByRoutine = DB::table('routine_task')
+    ->whereIn('routine_id', $routineIds)
+    ->get()
+    ->groupBy('routine_id')
+    ->map(fn($rows) => $rows->pluck('task_id')->toArray());
+// luego, por cada $r: $r->task_ids = json_encode($taskIdsByRoutine->get($r->id, []));
+```
+
+2. **`role_permissions` se consulta dos veces** (una vez para armar `$userPermissions` con join a `permissions`, otra vez sin join un poco más abajo para mandarla cruda en la respuesta) — se puede calcular ambas formas a partir de una sola consulta.
+
+3. **Caché para datos casi estáticos:** `job_roles`, `permissions`, `role_permissions`, `ui_rbac_rules`, `role_clock_policies` cambian solo cuando un admin edita configuración de puestos/permisos — no hace falta leerlos de la base de datos en cada ciclo de 60s de cada usuario. Sugerencia: `Cache::remember("tenant.{$tenantId}.static_config", 300, fn() => [...])` (5 min de TTL es razonable, o invalidar explícitamente el cache key cuando `JobRoleController`/`PermissionController`/etc. modifiquen algo — lo que les resulte más simple de mantener).
+
+No urgente en el sentido de "está roto", pero sí es la explicación real y verificable del reporte de Francisco de que "tarda mucho en cargar la base de datos" — mientras más crecen `time_entries`/`audit_logs`/etc. y más usuarios concurrentes tenga un tenant, peor se pone sin estos cambios. Si prefieren priorizar solo los índices (§45, cambio pequeño y de bajo riesgo) y dejar el caché/N+1 para después, también es una buena primera mejora incremental.
+
+## ✅ Implementado (2026-07-25) — incluye el caché con invalidación (Francisco pidió "lo mejor hecho")
+
+Los tres cambios completos:
+
+1. **N+1 de rutinas corregido:** se lee `routine_task` una sola vez con `whereIn($routineIds)` y se agrupa en memoria. N+1 → 1.
+2. **Consulta duplicada de `role_permissions` eliminada:** se lee `permissions` y `role_permissions` una vez cada una y se arman en memoria las dos formas (mapa `permission_id → name` + agrupado por puesto).
+3. **Caché de config casi-estática, con invalidación robusta** (el enfoque "bien hecho", no solo TTL): las 6 lecturas estáticas (`permissions`, `role_permissions`, `permissions_by_role`, `job_roles`, `ui_rbac_rules`, `role_clock_policies`) se envuelven en `App\Support\TenantConfigCache` (clave/TTL/invalidación centralizados en un solo lugar). La invalidación es de dos capas:
+   - **Instantánea por evento de modelo:** observers `saved`/`deleted` en `JobRole` y `RoleClockPolicy` (registrados en `AppServiceProvider::boot`) llaman a `TenantConfigCache::forget($tenantId)` en cuanto se edita — sin desfase.
+   - **Explícita en escrituras por query builder:** `ClockController::syncRbac()` (permisos/RBAC) y `updateRolePolicy()` (que escriben con `DB::table`, así que no disparan observers) llaman `forget()` a mano.
+   - **Red de seguridad por TTL de 5 min:** si algún punto de escritura futuro se olvida de invalidar, el caché caduca solo — el peor caso es 5 min de desfase, nunca datos permanentemente rancios.
+
+   Los datos que cambian constantemente (`time_entries`, `tasks`, `routines`, `assignments`, etc.) **NO** se cachean — siguen leyéndose en vivo en cada llamada. Solo se cachea lo que cambia cuando un admin edita configuración.
+
+`$userPermissions` (que cruza la config cacheada con `employees`, dato vivo) se arma fuera del caché.
+
+Tests: `SyncStateCacheTest.php` — verifica que `/sync/state` cachea la config y que crear un puesto vía Eloquent invalida el caché al instante (el puesto nuevo aparece en la siguiente llamada, no queda servido del caché viejo). El `TestCase` base ahora hace `Cache::flush()` en `setUp` para que el caché no contamine entre pruebas. Suite completa: **190/190 tests**, sin regresiones.
+
+---
+
+## §47. Quitar credenciales hardcodeadas de `DatabaseSeeder.php` (urgente, seguridad)
+
+**Contexto (`docs/AUDITORIA_GENERAL_PLATAFORMA_2026-07-24.md`, sección 3):** `database/seeders/DatabaseSeeder.php` (líneas 16-51) inserta, cada vez que corre el seeder, 3 cuentas de `platform_users` con contraseñas en texto plano dentro del código fuente del repositorio:
+
+```php
+'email' => 'master@talent360.com',       'password' => Hash::make('Master'),       'role' => 'platform_admin',
+'email' => 'pcmasterirapuato@gmail.com',  'password' => Hash::make('Master'),       'role' => 'platform_admin', // correo real de Francisco
+'email' => 'support@talent360.com',       'password' => Hash::make('Support123'),   'role' => 'support_agent',
+```
+
+Contraseñas de diccionario, sin forzar cambio, con acceso de super-admin completo, y una de ellas atada al correo personal real de Francisco. Cualquiera con acceso de lectura al repo (incluyendo el propio Git, si alguna vez el repo deja de ser 100% privado) tiene credenciales de plataforma válidas.
+
+**Pedimos:**
+
+1. Quitar las contraseñas literales del seeder. Opción A (recomendada para desarrollo/QA): generar una contraseña aleatoria en cada corrida (`Str::random(24)`) y hacer `Log::info` o `dump()` de la contraseña generada solo en entornos no productivos (`app()->environment('local', 'testing')`), para que quien corre el seeder localmente la vea una vez y no quede en el código. Opción B (para producción): no seedear cuentas de plataforma en absoluto — crearlas a mano una sola vez vía `php artisan tinker` o un comando Artisan interactivo que pida la contraseña por input, y documentar ese paso como parte del runbook de despliegue en vez de dejarlo en un seeder que corre automático.
+2. Si `master@talent360.com` no se usa activamente, mejor eliminarla del seeder por completo en vez de solo cambiarle la contraseña — es una cuenta genérica sin dueño claro, y menos cuentas de plataforma = menos superficie de ataque.
+3. Si esas 3 cuentas ya existen en la base de datos de producción actual (Hetzner, según nos comentó Francisco), esto no se arregla solo con cambiar el seeder — hay que rotar la contraseña real de esas cuentas en la base de datos viva también. Avisen cuando esté listo el cambio de código para coordinar ese paso con Francisco (no es algo que nosotros podamos hacer sin acceso al servidor).
+
+## ✅ Implementado (2026-07-24) — resumen
+
+`DatabaseSeeder.php` reescrito:
+
+- **Sin contraseñas en el repo.** Las cuentas de plataforma toman su contraseña de variables de entorno (`SEED_SUPERADMIN_PASSWORD`, `SEED_SUPPORT_PASSWORD`), que viven en `.env` (no versionado). Si la env var no está: en `local`/`testing` se genera una aleatoria (`Str::random(24)`) y se registra en el log para que quien seedea la vea una vez; en **producción NO se crea la cuenta** con contraseña por defecto (se registra un warning apuntando a crearla por runbook). Así el seeder ya no filtra credenciales válidas por el solo hecho de leer el código.
+- **Cuenta genérica `master@talent360.com` eliminada** por completo (punto 2): sin dueño claro, menos superficie.
+- Se conservan la limpieza de `users` con el correo de Francisco y la sincronización de secuencias de PostgreSQL.
+
+**Punto 3 (rotar en la BD viva de Hetzner): no lo puedo hacer yo** — no tengo acceso al servidor de producción. Queda como paso de coordinación con Francisco; ver §51 para las contraseñas concretas propuestas y el mecanismo de aplicación.
+
+## §48. Completar el flujo de 2FA real (hoy es solo un flag informativo, y excluye a `platform_users`)
+
+**Contexto:** `users` tiene `two_factor_enabled`/`two_factor_secret` (migración `2026_06_26_083600_add_2fa_and_biometric_fields_to_users_table.php`), y `AuthController::login()` calcula `$requires2fa = !$isPlatformUser && $user->two_factor_enabled` para incluirlo en la respuesta — pero:
+
+1. **No existe ningún endpoint que reciba y valide un código de 6 dígitos.** El `token` que regresa `login()` ya es válido y funcional en la MISMA respuesta que trae `requires_2fa: true` — es decir, hoy el 2FA no es una barrera de autenticación real, es solo un dato que el frontend podría usar para decidir si mostrar una pantalla adicional (que ni siquiera existe todavía del lado de Cowork).
+2. **`platform_users` está explícitamente excluido** de la posibilidad de requerir 2FA (`!$isPlatformUser`) — justo las cuentas que Francisco pidió reforzar son las únicas que el código exime hoy.
+
+**Pedimos (versión completa):**
+
+1. Agregar `two_factor_enabled`/`two_factor_secret` también a `platform_users` (hoy solo existen en `users`).
+2. Nuevo flujo de login en dos pasos para cuentas con 2FA activo: `login()`/`loginSocial()` NO deben emitir el token de Sanctum todavía si `two_factor_enabled` es verdadero — en vez de eso, regresar un token temporal de "login parcial" (corta vida, sin abilities de API real) y `requires_2fa: true`. Nuevo endpoint `POST /verify-2fa` que reciba ese token temporal + el código TOTP de 6 dígitos (librería sugerida: `pragmarx/google2fa` + `bacon/bacon-qr-code` para el QR de activación, es el estándar de facto en Laravel), y solo ahí emitir el token real de Sanctum.
+3. Para `platform_users` específicamente: si Francisco quiere, se puede hacer 2FA **obligatorio** (no opcional) para todo `role = platform_admin`/`support_agent`, en vez de depender de que cada quien lo active — más simple de razonar y es justo la cuenta que él mismo identificó como la que más lo necesita.
+4. No es un cambio chico — si prefieren, se puede hacer en dos entregas: primero el endpoint de verificación + 2FA opcional (reutilizable para `users` y `platform_users`), y en una segunda pasada forzarlo obligatorio solo para `platform_users`.
+
+## ⏳ Preparado (2026-07-25) — falta un solo comando y armo todo el flujo
+
+**Aclaración importante (Francisco lo preguntó):** el 2FA por app de autenticación (Google Authenticator / Authy / Microsoft Authenticator — cualquiera, es un estándar abierto) **NO requiere conectarse a la plataforma de Google ni a ningún servicio de paga.** El servidor muestra un QR una vez, la persona lo escanea con su app, y de ahí genera un código de 6 dígitos que cambia cada 30 seg. Servidor y app comparten un secreto y calculan el mismo número. Es gratis y autocontenido. (Las alternativas — SMS con Twilio de paga, o correo con un dominio real que aún no existe — son peores para este caso; la app de autenticación es la recomendada.)
+
+**Lo que ya dejé preparado (2026-07-24):** migración `2026_07_24_000002_add_two_factor_to_platform_users.php` — las columnas `two_factor_enabled`/`two_factor_secret` ya existen en `platform_users` (antes solo estaban en `users`), que son justo las cuentas que Francisco quiere reforzar. Las columnas están inertes hasta que exista el flujo.
+
+**El único paso que falta (un minuto, con internet):** correr una vez, en una máquina o servidor con red:
+
+```bash
+composer require pragmarx/google2fa bacon/bacon-qr-code
+```
+
+Es la librería estándar y auditada que hace los cálculos TOTP (RFC 6238). No la puedo bajar desde aquí (este entorno no tiene red) y **no conviene que yo reescriba criptografía de 2FA a mano** — es justo donde se cometen errores graves.
+
+**En cuanto el paquete esté presente**, implemento el flujo completo tal como está especificado arriba: pantalla de activación con QR, endpoint `POST /verify-2fa`, login en dos pasos (token temporal → código → token real), 2FA reutilizable para `users` y `platform_users`, y la opción de **forzarlo obligatorio** para las cuentas de plataforma (recomendado — son las más sensibles). Mientras tanto, el "botón de pánico" de §49 (ya hecho) cubre parte del escenario de refuerzo que motivó esto.
+
+## §49. Separar `platform_admin`/`support_agent` de la tabla `users` + revocación masiva de sesiones de plataforma
+
+**Contexto:** el enum `App\Enums\UserRole` incluye `PLATFORM_ADMIN` y `SUPPORT_AGENT` junto con los roles de empresa (`ADMIN`, `SUPERVISOR`, `EMPLOYEE`), y `TenantScope::apply()` desactiva el aislamiento por tenant por completo si `$user->role === 'platform_admin'` — sin importar si ese `$user` viene de `users` o de `platform_users`. Esto significa que el código todavía contempla, como caso válido, que una fila de la tabla de empresas (`users`) tenga permisos de plataforma completos. El propio `DatabaseSeeder` tiene que borrar manualmente cualquier fila de `users` con el correo de Francisco "para que no colisione con `platform_users` al iniciar sesión con Google" (línea 54-57) — un parche puntual para un riesgo que el esquema no previene por sí solo.
+
+**Pedimos:**
+
+1. Restringir los valores válidos de `role` en `users` (a nivel de validación de los endpoints que lo escriben, ya que es un `string` sin `enum` a nivel de base de datos) a solo `admin`, `supervisor`, `empleado` — nunca `platform_admin`/`support_agent`. Esos dos valores deberían ser exclusivos de `platform_users.role`.
+2. Auditar si hoy existe en la base de datos real alguna fila de `users` con `role = 'platform_admin'` o `'support_agent'` — si las hay, migrarlas a `platform_users` (o confirmar que son residuales de antes de que existiera esa tabla y ya no se usan) y limpiar.
+3. Simplificar `TenantScope::apply()` una vez hecho el punto 1: ya no necesitaría el `if ($user->role === 'platform_admin') return;` porque un usuario de `users` nunca tendría ese rol — el bypass de aislamiento total solo debería poder ocurrir para instancias reales de `PlatformUser`, nunca por un valor de string en una columna de `users`.
+4. Nuevo endpoint `POST /platform/security/revoke-all-sessions` (bajo `role:platform_admin`, solo el propio super-admin o quien tenga ese rol) que borre todos los `personal_access_tokens` cuyo `tokenable_type` sea `PlatformUser` — el "botón de pánico" que pidió Francisco: fuerza a todas las sesiones de plataforma (incluida la de un posible atacante que ya haya entrado) a volver a autenticar. Combinado con 2FA obligatorio (§48) para esas cuentas, cubre el escenario que describió sin necesidad de borrar/recrear tablas completas (eso rompería integridad referencial y trazabilidad de auditoría sin necesidad).
+5. Cuenta de respaldo: sugerimos una segunda cuenta `platform_admin` real (no compartir credenciales con la principal), con su propio 2FA, guardada aparte (gestor de contraseñas, no en el repo) — es una práctica operativa más que un cambio de código, pero si quieren que el sistema la distinga de alguna forma (ej. no permitir desactivar/borrar la última cuenta `platform_admin` activa, para no quedar sin ninguna por accidente), lo agregamos como regla de negocio en `PlatformAdminController`.
+
+## ✅ Implementado (2026-07-25) — completo, con enfoque compatible hacia atrás (sin necesidad de auditar prod primero)
+
+Encontré la forma de cerrar §49 **sin** depender de correr un `SELECT` en la BD de producción: en vez de cambiar `TenantScope` de golpe (lo que habría podido dejar fuera a alguien si en Hetzner existiera una fila de `users` con rol de plataforma), lo hice **compatible hacia atrás con telemetría**.
+
+**Punto 4 (botón de pánico) — hecho:** `POST /platform/security/revoke-all-sessions` (bajo `role:platform_admin`) en `PlatformAdminController::revokeAllPlatformSessions()`. Borra todos los `personal_access_tokens` de `tokenable_type = PlatformUser`, deja intactos los de empresa, y registra en `SecurityLogger`. La sesión del propio solicitante también se revoca (es un botón de emergencia).
+
+**Punto 3 (`TenantScope`) — hecho, compatible hacia atrás:** el bypass total de aislamiento ahora es exclusivo de **instancias reales de `PlatformUser`**. El camino viejo (una fila de `users` con `role='platform_admin'`) **sigue funcionando** para no romper nada en producción, pero registra un `Log::warning('[§49] Bypass ... camino deprecado')` con el id/email — así, si en Hetzner todavía hay alguna cuenta así, no se rompe y además queda en el log para migrarla con calma. Cuando el log confirme que ese camino ya no ocurre, se quita la segunda rama en una línea. Esto convierte la "auditoría de prod" de un prerequisito bloqueante a algo que se resuelve solo con el tiempo, mirando los logs.
+
+**Punto 1 (restringir el rol) — hecho:** los 3 puntos de `EmployeeController` (crear/editar empleado, que escriben `users.role`) ahora validan `role` con `in:admin,supervisor,empleado`. Ya no se puede crear/promover una fila de `users` a `platform_admin`/`support_agent` desde la API — esos roles quedan exclusivos de `platform_users`. (`createUser` de `ClockController` ya fijaba `'empleado'` hardcodeado, sin riesgo.)
+
+**Punto 5 (cuenta de respaldo / no borrar la última platform_admin):** es una regla de negocio menor; la dejo para cuando se conecte el 2FA de §48 (van juntas conceptualmente). Avisen si la quieren antes.
+
+Tests: `PlatformRevokeSessionsTest.php` (revoca solo tokens de plataforma; no-`platform_admin` → 403) y `UserRoleRestrictionTest.php` (crear un usuario con `role=platform_admin` → 422; con rol de empresa normal sigue funcionando). Suite completa: **190/190 tests**, sin regresiones. Los tests existentes de plataforma que crean `User` con rol `platform_admin` siguen pasando gracias a la compatibilidad hacia atrás.
+
+---
+
+## §50. Cerrar el hueco de reasignación de `tenant_id` en el registro sin sesión (regla de negocio: 1 cuenta = 1 empresa)
+
+**Contexto (a petición de Francisco, 2026-07-24):** confirmó explícitamente la regla de negocio — la Landing Page da de alta con Google, y **cada cuenta de Google solo puede crear una empresa**. Revisando el flujo de creación de tenant para verificar que esto ya se cumple, encontré que **en el camino normal (usuario autenticado con Google) sí se cumple** — `SubscriptionController::createPreference()` detecta `$isUpgrade` cuando el usuario autenticado ya tiene `tenant_id` y lo manda por la rama de "actualizar plan de mi empresa actual", nunca crea una empresa nueva para una sesión que ya tiene una. Hasta ahí, bien.
+
+**Pero hay un hueco real en la rama sin sesión** (`SubscriptionController::provisionTenant()`, "Standard creation flow", líneas ~495-523) que se usa cuando NO hay un usuario autenticado en el navegador que hace el checkout (el registro clásico por formulario, sin pasar por Google primero):
+
+```php
+$currentUser = auth('sanctum')->user();
+if ($currentUser && $currentUser->tenant_id === null) {
+    // ... (esta rama está bien, ya la cubre el chequeo de $isUpgrade de más arriba)
+} else {
+    // Fallback: check if user already exists globally
+    $admin = User::withoutGlobalScope(TenantScope::class)->where('email', $payload['admin_email'])->first();
+    if ($admin) {
+        $admin->update([
+            'tenant_id' => $tenant->id,   // ← si $admin YA tenía una empresa, aquí se la quita
+            'role' => UserRole::ADMIN->value,
+        ]);
+    } else {
+        $admin = User::create([...]);
+    }
+}
+```
+
+**Impacto real:** si alguien manda por el checkout (sin haber iniciado sesión) el `admin_email` de una persona que YA es dueña de otra empresa en Talent360 — algo tan simple como conocer su correo de trabajo, que suele ser semi-público —, al completarse el pago ese `$admin->update(['tenant_id' => $tenant->id, ...])` se ejecuta igual, **moviendo la cuenta de esa persona de su empresa original a la empresa nueva**. La empresa original se queda sin admin (huérfana) y la persona dueña legítima pierde acceso a su propia empresa la próxima vez que inicie sesión — sin que el atacante necesariamente gane acceso él mismo (no cambia la contraseña), pero sí causa un daño real de integridad de datos. No hace falta que el atacante esté autenticado como esa persona para disparar esto.
+
+**Pedimos:** antes de reasignar, comprobar `$admin->tenant_id !== null` — si ya tiene empresa, **rechazar** con un error claro (`"Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto."`, 409) en vez de reasignar. Aplica igual en `TenantController::store()` (el endpoint público equivalente, aunque ahí la validación `unique:users,email` ya lo bloquea de forma indirecta con un error de validación — solo confirmar que da un mensaje entendible, no un 422 genérico). Esto es exactamente lo que hace falta para que la regla "1 cuenta = 1 empresa" que confirmó Francisco quede garantizada por el sistema y no solo por el camino feliz de la UI.
+
+## ✅ Implementado (2026-07-24) — resumen
+
+En `SubscriptionController::provisionTenant()`, rama fallback sin sesión: antes de `$admin->update(['tenant_id' => ...])` se comprueba `$admin->tenant_id !== null` y, si ya pertenece a una empresa, se hace `abort(409, "Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto.")` en vez de reasignar. Como el check vive dentro del `DB::transaction()` de `provisionTenant`, el `abort` hace rollback: el tenant recién creado tampoco queda a medias. El path del webhook de MercadoPago ya envolvía `provisionTenant` en try/catch (registra el error sin corromper datos), y el path síncrono (freemium) renderiza el 409 tal cual.
+
+`TenantController::store()` ya bloquea el caso vía `unique:users,email` (error de validación entendible), así que no necesitó cambio — el hueco real estaba solo en la rama sin sesión de `provisionTenant`.
+
+Test nuevo: `TenantProvisionHijackTest.php` — un registro sin sesión con el correo de un dueño existente devuelve 409 y NO le mueve el `tenant_id` (su empresa no queda huérfana); un registro con correo nuevo sigue funcionando (200). Suite completa: **183/183 tests**, sin regresiones.
+
+---
+
+## §51. Credenciales de prueba: rotar las hardcodeadas + convenio de dominio confirmado por Francisco
+
+**Contexto:** Francisco pidió directamente el usuario/contraseña de: la Plataforma de Empresa de DecorArte 360 (tenant de prueba) y sus empleados, la Plataforma Talent 360, y Soporte. Aclaración importante que le respondimos: **las contraseñas se guardan hasheadas (`Hash::make`, bcrypt)** — eso significa que nadie, ni nosotros ni con acceso directo a la base de datos, puede "leer" la contraseña actual de una cuenta ya existente; solo se puede fijar una nueva. Por eso lo que pedimos aquí es que Backend **fije** estas contraseñas concretas (o equivalentes igual de fuertes) en vez de intentar recuperar las actuales.
+
+Francisco también confirmó el convenio de nombres: `nombre@decorarte360.com` para las cuentas de la empresa de prueba, y `nombre@talent360.mx` para las cuentas de plataforma (súper-admin y soporte) — **aclaración para que quede documentada:** estos dominios NO están registrados/configurados con correo real todavía (Francisco solo tiene la IP de Hetzner, sin dominio propio aún — ver conversación sobre el APK). Sirven perfecto como identificador único de usuario dentro del sistema (el login no depende de que el correo exista de verdad), pero **cualquier flujo que de verdad mande un correo (recuperar contraseña, verificación, notificaciones) va a fallar/rebotar con estas direcciones hasta que haya un dominio real configurado con DNS/SMTP.** No es un problema para las pruebas de hoy, solo que no hay que sorprenderse si "recuperar contraseña" no llega a ningún lado todavía.
+
+**Pedimos (rotar/crear, en el entorno de desarrollo primero — coordinar aparte cuándo replicar en Hetzner):**
+
+**Plataforma Talent 360** (tabla `platform_users`):
+
+| Correo actual | Nuevo correo | Nueva contraseña | Rol |
+|---|---|---|---|
+| `master@talent360.com` | eliminar esta cuenta genérica (§47) — o si prefieren conservarla, `admin@talent360.mx` | `7w65w@aTavHqOxBw` | `platform_admin` |
+| `pcmasterirapuato@gmail.com` | conservar este correo tal cual (es el que Francisco realmente usa para entrar) | `s6Ubi8%%zT7rbr9s` | `platform_admin` |
+| `support@talent360.com` | `soporte@talent360.mx` | `MUWZHWH#u5zst@#L` | `support_agent` |
+
+**DecorArte 360** (tenant de prueba, tabla `users`, `tenant_id` = el ID real de DecorArte en su base — confirmar cuál es antes de aplicar, no asumir que sigue siendo `1`):
+
+| Correo | Nueva contraseña | Rol | Notas |
+|---|---|---|---|
+| `admin@decorarte360.com` | `H!Q1Ztkg06v**W@f` | `admin` | Dueño/admin de la empresa de prueba |
+| `supervisor@decorarte360.com` | `un*rYLX@K-L-cF1O` | `supervisor` | Un supervisor de ejemplo |
+| `empleado@decorarte360.com` | `E8xBc%egT2Pw3wu_` | `empleado` | Un colaborador de ejemplo |
+
+Si ya existen cuentas reales de DecorArte con otros correos que Francisco usa activamente para probar, mejor conservar esos correos y solo aplicarles estas contraseñas nuevas (avisar cuáles son antes de tocar nada, para no romper pruebas en curso).
+
+**Sobre los empleados de DecorArte (PIN del reloj checador):** Francisco confirmó que los empleados normales siguen entrando por PIN corto (como ya funciona hoy — Ley Silla, testigos, kiosco §37 usan el mismo mecanismo `employees.security_pin`), no con usuario/contraseña completos. Si quieren, de una vez fijen también un PIN conocido (ej. `1234` para el supervisor de ejemplo, `5678` para el empleado de ejemplo — o los que les resulte más simple) para que Francisco pueda probar el flujo de kiosco/reloj sin tener que primero ir a buscar cuál PIN quedó en cada cuenta.
+
+**Entrega:** cuando esté aplicado, avisen en el chat de Francisco (o marquen esta fila hecha) y le paso yo la tabla final de accesos — no hace falta que ustedes le escriban directo, ya quedamos en que yo se los entrego organizados junto con los links de `Frontend/public/hub.html` (página de accesos rápidos que ya armé, ver nota abajo).
+
+## ⏳ Mecanismo listo (2026-07-24) — aplicar las contraseñas concretas es paso de ops
+
+Hay una **tensión directa entre §51 y §47** que hay que resolver bien: §47 pide sacar las contraseñas del repo, y §51 pide fijar contraseñas concretas conocidas. Meter estas 3 contraseñas literales en el seeder versionado recrearía exactamente el agujero de §47 (cualquiera que lea el repo las tendría). Así que no las hardcodeé.
+
+**Lo que sí dejé listo (el mecanismo):** el seeder de §47 ya toma las contraseñas de plataforma de env vars. Para fijar **estas** contraseñas concretas, Francisco (o quien tenga acceso al `.env`, que NO se versiona) solo pone en `Backend/.env`:
+
+```
+SEED_SUPERADMIN_PASSWORD=s6Ubi8%%zT7rbr9s
+SEED_SUPPORT_PASSWORD=MUWZHWH#u5zst@#L
+```
+
+y corre `php artisan db:seed`. Con eso, la cuenta de Francisco (`pcmasterirapuato@gmail.com`) y la de soporte (`soporte@talent360.mx`, ya con el dominio `.mx` que confirmó) quedan con esas contraseñas exactas, sin que ninguna toque el repo. (La cuenta genérica `master@`/`admin@talent360.mx` la eliminé por §47.2; si la quieren de vuelta, avisen.)
+
+**Lo que NO puedo hacer yo:**
+- **Aplicarlas en la BD viva de Hetzner** — no tengo acceso al servidor. Es el mismo paso de coordinación de §47.3.
+- **Las cuentas de DecorArte 360 (tabla `users`)** — necesito el **`tenant_id` real de DecorArte** en la base (el propio §51 dice "no asumir que sigue siendo 1"), y confirmar si ya existen esas 3 cuentas o hay que crearlas. Eso no lo puedo verificar sin la BD real (aquí Postgres no está accesible). En cuanto me confirmen el `tenant_id` y si existen/hay que crearlas, dejo un seeder dev-only (`DevTestAccountsSeeder`, guardado a `local`/`testing`, leyendo también de env) para las 3 cuentas de DecorArte + sus PIN de ejemplo (`1234`/`5678`), y coordinamos la aplicación en Hetzner.
+
+En resumen: **el "cómo" ya está construido y es seguro; el "aplicar los valores concretos" depende de datos/acceso que solo Francisco tiene.** Díganme el `tenant_id` de DecorArte y si prefieren que ponga yo las env vars propuestas en un `.env.example` comentado (sin valores reales) como recordatorio, y cierro lo que quede de mi lado.
+
+## ✅ Cerrado (2026-07-25) — Francisco lo aplicó directo en Hetzner
+
+Confirmó el `tenant_id` real de DecorArte (**1**, coincide con lo asumido) y la lista completa de las 12 cuentas reales ya existentes (1 admin, 3 supervisores, 8 empleados, todas ya con el convenio `@decorarte360.com` de forma natural — no hizo falta crear ninguna). En vez de esperar un seeder, Francisco corrió él mismo — vía su agente con acceso a Hetzner — un script de `tinker` equivalente al mecanismo de arriba: reseteó las 3 cuentas de `platform_users` (su cuenta, soporte renombrada a `soporte@talent360.mx`, y desactivó `master@talent360.com` en vez de borrarla) y las 12 de DecorArte (un password por nivel de rol: admin/supervisores/empleados). No se tocó ningún dato de negocio, solo contraseñas. §51 cerrado en ambos lados — no falta nada de Backend aquí.
+
+---
+
+## §52. Correo remitente configurable (plataforma + por tenant) + invitación automática de empleados + "olvidé mi contraseña"
+
+**Contexto (a petición de Francisco, 2026-07-25):** dos necesidades de correo saliente distintas:
+
+1. Cuando una empresa nueva se registra (Landing Page, alta con Google), Talent360 le manda un correo de agradecimiento/bienvenida — y si su plan es freemium, le explica las condiciones para mantenerlo (ver §53).
+2. Cuando una empresa da de alta a sus empleados (con su correo real, no el `@decorarte360.com` de prueba), cada empleado debe recibir un correo de bienvenida a Talent360 con su link de activación — pero ese correo debe "sentirse" como que viene de SU empresa, no directamente de Talent360.
+
+**Aclaración técnica importante que le explicamos a Francisco (y que hay que respetar en la implementación):** no es viable ni entregable que el "From:" sea literalmente una dirección arbitraria que cada tenant escriba (ni siquiera un Gmail cualquiera) — SPF/DKIM/DMARC de los proveedores de correo rechazan o mandan a spam los correos que dicen venir de un dominio que el servidor emisor no tiene autorizado para mandar en su nombre. El patrón correcto (el que usa cualquier SaaS: Slack, Notion, etc.) es:
+
+- **Un solo remitente real y autenticado** para todo el sistema (ej. `notificaciones@talent360.mx`, requiere el dominio real + un servicio de envío transaccional: Mailgun, SendGrid, Amazon SES o Postmark — recomendado sobre SMTP de Gmail, que tiene límites de volumen bajos y no está pensado para esto).
+- El **nombre para mostrar** (display name) sí cambia según contexto: `"Talent360"` para correos de bienvenida a empresas nuevas, `"{Nombre del Tenant} vía Talent360"` para correos a empleados de esa empresa.
+- El **Reply-To** sí puede ser el correo real de contacto del tenant, para que si el empleado responde, le llegue a su empresa.
+
+**Pedimos:**
+
+1. **Config a nivel plataforma** (`system_settings`, `tenant_id` null, mismo patrón que `freemium_allowed_modules` etc.): nuevas llaves `platform_sender_email` (el remitente real autenticado), `platform_welcome_email_subject`/`platform_welcome_email_body` (texto del correo de bienvenida a empresas nuevas, con placeholders tipo `{company_name}`/`{plan}`), editable desde un panel nuevo o existente de Plataforma Talent360 (`SaaSPlatformAdmin.tsx` ya tiene `getFreemiumConfig`/`saveFreemiumConfig` como referencia de patrón — se puede extender ahí mismo o en una sección nueva).
+2. **Config a nivel tenant** (`system_settings` con `tenant_id` del tenant, o un campo nuevo en `tenants`): `sender_display_name` (default: nombre de la empresa) y `sender_reply_to` (correo de contacto real del tenant) — editable desde los ajustes de la empresa (`CompanySettingsPanel.tsx`/`SaaSAccountSettings.tsx`).
+3. **Envío automático al dar de alta un empleado con correo:** cuando `POST /employees` (o el endpoint que corresponda) crea un empleado con `email` no vacío, generar el PIN de activación (ya existe, `generate-pin`) y disparar un correo usando el remitente de plataforma + nombre para mostrar/Reply-To del tenant, con el link `https://{dominio}/invite?pin={pin}`. Sugerido: un `Mailable`/`Notification` de Laravel (`EmployeeInvitation`), para que sea fácil de tener también una plantilla en pantalla (preview) y un botón "Reenviar invitación" en RRHH.
+4. **Flujo estándar de "olvidé mi contraseña"** (aplica a empleados que ya activaron su cuenta y pusieron su propia contraseña, no al PIN de invitación): `POST /forgot-password` (recibe email, genera token en `password_reset_tokens` —ya existe la tabla, sin usar—, manda correo con link) + `POST /reset-password` (recibe token + nueva contraseña, la actualiza). Mismo remitente/patrón que el punto 1-2. El enlace muerto `¿Olvidaste tu contraseña?` en `Login.tsx` se conecta a esto una vez que exista.
+5. **Nota de secuencia:** todo esto (excepto quizás una versión de prueba con Mailtrap/logs) depende de tener un dominio real + servicio de envío configurado — no urgente hasta que Francisco tenga el dominio, pero se puede dejar todo el código listo desde ahora (igual que se hizo con Hallazgo 3/cookies) para activar en cuanto el dominio exista. Si quieren, para probar mientras tanto pueden usar el driver `log` de Laravel Mail (los correos se escriben en el log en vez de enviarse de verdad) sin bloquear el desarrollo del resto.
+
+## ✅ Implementado (2026-07-25) — resumen
+
+Todo el código queda listo, respetando el patrón de un solo remitente autenticado. **Nada se envía "de verdad" hasta que se configure el dominio + servicio de correo** en `.env` (`MAIL_MAILER`, credenciales de Mailgun/SES/Postmark); mientras tanto, poner `MAIL_MAILER=log` escribe los correos al log para probar sin bloquear nada. **Además, todos los envíos son best-effort (`try/catch`): si el correo falla porque aún no hay servicio configurado, la petición NO se rompe** (crear un empleado sigue funcionando aunque el correo de invitación no salga).
+
+- **Remitente (`MailSettingsService`):** un solo `platform_sender_email` real para todo; lo que cambia es el nombre para mostrar (`"{Empresa} vía Talent360"` para correos a empleados, `"Talent360"` para bienvenida a empresas) y el Reply-To (correo real del tenant). Respeta SPF/DKIM/DMARC como se acordó.
+- **Config plataforma** (`GET/PUT /platform/email-settings`, `role:platform_admin`): `platform_sender_email`, `platform_welcome_email_subject`, `platform_welcome_email_body` (con placeholders `{company_name}`/`{plan}`) — en `system_settings` con `tenant_id` null, mismo patrón que `getFreemiumConfig`.
+- **Config tenant** (`GET/PUT /company/email-settings`, `role:admin,supervisor`): `sender_display_name` (default nombre de la empresa) y `sender_reply_to`.
+- **Invitación automática:** al crear un empleado con `email` (`POST /employees`), se genera el PIN de activación (reutiliza `pin_code`/`invite_token`) y se envía `App\Mail\EmployeeInvitation` con el link `/invite?pin=...`. **`POST /employees/{id}/resend-invitation`** para el botón "Reenviar invitación" en RRHH.
+- **Olvidé mi contraseña:** `POST /forgot-password` (público, throttled — responde éxito genérico sin revelar si el correo existe; genera token en `password_reset_tokens` y manda `App\Mail\PasswordResetMail`) + `POST /reset-password` (valida token, vence a los 60 min, actualiza la contraseña y borra el token). El enlace muerto de `Login.tsx` se conecta a esto.
+
+**Lo que le toca a Francisco/ops (cuando tenga dominio):** configurar `MAIL_MAILER` + credenciales del servicio en `.env`, y poner el remitente real en `platform_sender_email` desde el panel. Nada de código.
+
+**Lo que le toca a Cowork:** los paneles para editar la config (plataforma en `SaaSPlatformAdmin.tsx`, tenant en `CompanySettingsPanel.tsx`), el botón "Reenviar invitación" en RRHH, y conectar el `¿Olvidaste tu contraseña?` de `Login.tsx` a `/forgot-password` + una pantalla `/reset-password`.
+
+Tests: `EmailFlowTest.php` (9 casos con `Mail::fake()`) — invitación al crear empleado con correo, reenvío, rechazo sin correo, forgot-password genérico (existe/no existe), reset con token válido/ inválido, y config plataforma/tenant get-set. Suite completa: **205/205 tests**, sin regresiones.
+
+## §53. Checklist de cumplimiento del plan freemium (ej. compartir publicaciones mensuales)
+
+**Contexto:** Francisco quiere que las cuentas freemium tengan una condición para mantenerse activas — por ejemplo, compartir mensualmente contenido/publicaciones de Talent360 en sus redes. Aclaración que le dimos: no hay forma automática y confiable de verificar "compartió una publicación" sin integrarse a la API de cada red social (limitado incluso ahí) — para una v1 recomendamos auto-reporte + revisión manual, no algo 100% automático.
+
+**Pedimos (v1, simple):**
+
+1. Nueva tabla `freemium_compliance_checks` (o similar): `tenant_id`, `period` (ej. `"2026-08"`), `status` (`pending`/`submitted`/`approved`/`rejected`), `proof_url` (captura de pantalla subida) o `proof_note` (texto libre), `reviewed_by` (platform_user), `reviewed_at`.
+2. Endpoint para que el tenant admin suba su comprobante del mes (`POST /me/freemium-compliance`, sube imagen + nota opcional) — visible en su panel si su plan es freemium.
+3. Endpoint para que Plataforma Talent360 revise y apruebe/rechace (`GET /platform/freemium-compliance?status=pending`, `POST /platform/freemium-compliance/{id}/review`).
+4. Regla de negocio (a decidir con Francisco cuando se implemente): qué pasa si un mes no se cumple — ¿se suspende el tenant automáticamente (como ya existe para `tenant.is_active`) o solo se manda un recordatorio? Sugerimos empezar solo con recordatorio + bandera visible en Plataforma Talent360, sin suspensión automática, hasta ver cómo se comporta en la práctica.
+5. No urgente — depende de que primero exista el texto exacto de las reglas freemium que Francisco quiera comunicar (parte del correo de bienvenida de §52).
+
+## ✅ Implementado (2026-07-25) — v1: auto-reporte + revisión manual, sin suspensión automática
+
+Tabla `freemium_compliance_checks` (`tenant_id`, `period` "YYYY-MM", `status`, `proof_note`, `proof_url`, `reviewed_by`, `review_note`, `reviewed_at`; único por `tenant_id`+`period`). Endpoints:
+
+- **Tenant (admin/supervisor):** `POST /me/freemium-compliance` (sube comprobante del mes — nota y/o URL de captura; solo aplica a planes freemium; reenviar el mismo periodo actualiza la misma fila) y `GET /me/freemium-compliance` (su historial).
+- **Plataforma (`role:platform_admin`):** `GET /platform/freemium-compliance?status=pending` (lista) y `POST /platform/freemium-compliance/{id}/review` (aprobar/rechazar con nota).
+
+**Punto 4 (qué pasa si no se cumple) — decisión tomada tal como recomendó la propia nota:** v1 **sin suspensión automática**. El endpoint de revisión solo marca el resultado (`approved`/`rejected`); no toca `tenant.is_active`. Queda como recordatorio + bandera visible en Plataforma, hasta que Francisco defina la política de suspensión. Cuando la defina, es un cambio chico (conectar el `rejected` a `toggle-status`).
+
+**Sobre el `proof_url`:** por ahora se acepta una URL o data-URI que el frontend mande. Si prefieren subida de archivo real al servidor (como `meal-photo`), avísenme y lo agrego — lo dejé como string para no atarlo a una decisión de almacenamiento todavía.
+
+Test: `FreemiumComplianceTest.php` (6 casos: enviar, rechazo si no es freemium, requiere nota/url, reenvío actualiza la misma fila, plataforma lista+revisa, aislamiento por tenant). Suite completa: **205/205 tests**, sin regresiones.
+
+---
+
+## §54. Nómina y semana laboral configurable por empresa (LFT) — ✅ Implementado (2026-07-25)
+
+**Decisión de Francisco:** conforme a LFT (pago al menos semanal) pero configurable por cada empresa. **DecorArte (tenant 1) por default: semana domingo→sábado, pago sábado.**
+
+- **`App\Services\PayrollWeekService`:** resuelve la semana de cada tenant según su config. `weekRangeFor($tenantId, $date)` devuelve `[inicio, fin]` retrocediendo hasta el día de inicio configurado. Defaults globales: inicio **lunes (1)**, pago **viernes (5)**, cálculo **23:00**; DecorArte: inicio **domingo (0)**, pago **sábado (6)** (sembrado por migración `2026_07_25_000004`, solo si no existe ya, para no pisar ajustes del admin).
+- **Config (`GET/PUT /company/payroll-settings`, admin/supervisor):** `week_start_day` (0=domingo..6=sábado), `pay_day`, `calc_time` ("HH:MM"), guardados en `system_settings` por tenant.
+- **`payroll:calculate-weekly` ahora respeta la semana de cada empresa:** antes usaba `Carbon::startOfWeek()` fijo (lunes); ahora, dentro del loop de tenants, calcula el rango con `PayrollWeekService` según el día de inicio de ese tenant. Programado en el scheduler diario a las 23:00 (recalcula la semana en curso; al cerrar queda el draft final).
+- **Reloj (Cowork):** `week_start_day` se expone en `GET /company/payroll-settings` (y puede leerse de `system_settings` en `/sync/state`) para que las tarjetas semanales del Reloj se ordenen dinámicamente según el día de inicio de la empresa.
+
+**Nota sobre el día de cálculo vs. día de pago:** el cálculo automático corre al cierre de la semana (produce siempre una pre-nómina completa y correcta de la semana recién terminada); `pay_day` es la etiqueta de cuándo se dispersa el dinero (acción operativa), no algo que haga el scheduler. Si Francisco quiere que la pre-nómina se congele/consolide en un día/hora específico distinto, es un ajuste chico sobre esta base.
+
+Test: `PayrollWeekConfigTest.php` (5 casos: defaults de DecorArte domingo/sábado, rango de semana con inicio domingo y con inicio lunes, get/save de config, rechazo de día inválido). Suite completa: **214/214 tests**.
+
+---
+
+## §55. Tareas inconclusas por apagón → validación gerencial — ✅ Implementado (2026-07-25)
+
+Si un colaborador deja una tarea a la mitad (se le apagó el celular / no cerró la jornada), no se reprueba ni se pierde:
+
+- **Proceso nocturno `tasks:flag-unfinished`** (scheduler diario 00:30): toma las asignaciones en `in_progress`/`paused` de un día **anterior** a hoy y las pasa a `awaiting_validation` con `flagged_incomplete = true` (columna nueva, migración `2026_07_25_000003`). No toca las de hoy que siguen legítimamente abiertas. El bono queda **congelado** (ni pagado ni perdido).
+- **Los 3 botones** (`POST /task-assignments/{id}/resolve-incomplete` con `action`):
+  - `approve` 🟢 → completa y **paga** (mismo cálculo/wallet de §33; no paga dos veces).
+  - `reschedule` 🟡 → vuelve a la cola de **hoy** como `origin: carried_over` (§40), status `pending`.
+  - `reject` 🔴 → `omitted`, sin pago.
+- Los 3 reutilizan piezas ya construidas (§33 pago, §40 origen arrastrado, §34 omitir), así que el único componente genuinamente nuevo es el comando nocturno.
+
+**Lo que le toca a Cowork:** en la vista del gerente, mostrar los 3 botones para las asignaciones con `flagged_incomplete = true` / `status = awaiting_validation`, y llamar al endpoint con la acción elegida.
+
+Test: `UnfinishedTaskFlowTest.php` (4 casos: el comando marca las de ayer y respeta las de hoy; aprobar paga y protege bono; reprogramar mueve a hoy como arrastrada; rechazar omite sin pagar). Suite completa: **214/214 tests**.
+
+---
+
+## §56. Índices para el módulo de Tareas/Rutinas — ✅ Implementado (2026-07-25)
+
+Migración `2026_07_25_000002`: índices compuestos `(tenant_id, date)` y `(tenant_id, user_id)` en `task_assignments`, e índice de `routine_id` en el pivote `routine_task`. No se duplicó el índice simple de `tasks.tenant_id` (ya lo trae el `foreignId`). Mismo criterio de §45.
+
+---
+
+## §57. Compresión de fotos de evidencia — ⏳ Frontend (Cowork)
+
+El grueso es comprimir/redimensionar en el navegador antes de subir (zona de Cowork). El backend ya recibe `base64` en los endpoints de evidencia (`/clock/meal-photo`, `/task-assignments/{id}/ai-validate`) y no requiere cambios para esto; si en algún momento quieren un límite/validación de tamaño server-side como segunda capa, avisen y lo agrego.
+
+---
+
+## §58. Límite de colaboradores del plan freemium: inconsistente entre los dos caminos de registro
+
+**Contexto (auditoría en vivo sobre producción, 2026-07-26):** recorriendo la Landing Page con Francisco encontré que el plan gratuito anuncia públicamente **"Hasta 5 Colaboradores Activos"**, pero el valor que realmente se guarda en `tenants.max_users` depende de por cuál de los dos caminos de registro haya pasado el cliente:
+
+```php
+// TenantController::store() línea ~66  → freemium obtiene 10
+'max_users' => $plan === 'freemium' ? 10 : ($plan === 'pro' ? 50 : 9999),
+
+// SubscriptionController::provisionTenant() línea ~507  → freemium obtiene 5
+'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (...),
+
+// SubscriptionController::provisionTenant() línea ~485 (rama upgrade) → freemium ni se contempla, cae en 9999
+'max_users' => strtolower($payload['plan']) === 'pro' ? (...) : 9999,
+```
+
+**Impacto:** un cliente que se registre por un camino obtiene el doble de lo que se le vendió (10 en vez de 5), y en el caso de la rama de upgrade podría quedar prácticamente ilimitado. Es una fuga de ingresos directa, no solo una inconsistencia cosmética: el límite del plan gratuito es justamente lo que empuja a pagar.
+
+**Pedimos:**
+
+1. Unificar el límite en **un solo lugar** (una constante, config, o mejor: leerlo de `system_settings` junto a `freemium_allowed_modules`/`freemium_allowed_features`, que ya existen y ya son editables desde Plataforma Talent360) para que no haya dos números que mantener sincronizados a mano.
+2. Que los tres puntos citados lean de esa única fuente.
+3. Cubrir el caso freemium en la rama de upgrade (hoy cae en el `else` de 9999).
+4. Confirmar con Francisco cuál es el número correcto — la Landing dice 5, así que asumimos 5 salvo que él diga otra cosa. Si lo hacen configurable (punto 1), el valor de la Landing debería salir también de ahí para que nunca vuelvan a divergir; hoy está escrito a mano en `SaaSLandingPage.tsx`.
+5. Revisar si hay tenants ya creados con el valor incorrecto: `SELECT id, name, plan, max_users FROM tenants WHERE plan = 'freemium';` — si los hay con 10 o 9999, decidir con Francisco si se corrigen retroactivamente o se respetan por buena fe.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+- **Fuente única de verdad:** nuevo método estático `Tenant::maxUsersForPlan(?string $plan, ?int $employees = null): int`. `freemium` → lee `system_settings.freemium_max_users` (fila global, `tenant_id` NULL, mismo patrón que `freemium_allowed_modules`/`freemium_allowed_features`); si la clave no existe cae a **5** (lo que anuncia la Landing). `pro` → `$employees` si viene, si no 50. Cualquier otro (enterprise) → 9999.
+- **Los tres call sites ahora leen de ahí:** `TenantController::store` (antes 10), `SubscriptionController::provisionTenant` en la creación estándar y **también en la rama de upgrade** (antes caía en el `else` 9999, ahora `maxUsersForPlan` devuelve 5 para freemium). Ya no hay números sueltos que sincronizar a mano.
+- **Configurable sin deploy:** para cambiar el cupo del freemium basta insertar/editar `system_settings` con `tenant_id NULL`, `key = 'freemium_max_users'`. Si en el futuro Plataforma Talent360 expone esa clave en su UI (como ya hace con `freemium_allowed_modules`), queda editable desde ahí.
+- **Pendiente de Francisco (ops):** puntos 4 (que la Landing `SaaSLandingPage.tsx` lea el mismo número — es zona de Cowork) y 5 (revisar/corregir tenants freemium existentes con `max_users` 10 o 9999 en producción). El backend ya no los generará mal de aquí en adelante.
+- **Tests:** `CrossTenantPunchAndLateTest::test_max_users_for_plan_defaults` y `test_max_users_for_freemium_reads_platform_setting`.
+
+---
+
+## §59. 🔴 CRÍTICO — `POST /clock/punch` no valida que el `user_id` pertenezca al tenant que llama
+
+**Contexto (auditoría en vivo sobre producción, 2026-07-26):** reproducido de forma accidental y completa mientras se probaba el alta de una empresa nueva. Pasos exactos:
+
+1. Se creó desde la Landing una empresa nueva (`ZZZ Prueba Auditoria`), con su propio admin.
+2. Con esa sesión (admin de la empresa nueva, NO de DecorArte) se recorrió el asistente de configuración.
+3. En el paso 4, "Fichar Entrada Piloto", el backend intentó insertar en `time_entries`:
+
+```
+values (14, 1, 2026-07-26, check_in, 07:56:50, 1, -296.8416722, {...},
+        Crithel, Ayudante Integral, ...)
+         ↑user_id ↑tenant_id                              ↑nombre y puesto
+```
+
+`user_id = 14` y `tenant_id = 1` son de **DecorArte**, y el snapshot de nombre/puesto quedó como **"Crithel / Ayudante Integral"** — un empleado real de DecorArte. Es decir: **la sesión de una empresa escribió un registro de asistencia sobre un empleado de otra empresa.**
+
+**Causa raíz (dos capas, ambas hay que cerrar):**
+
+- *Lado Cowork (ya corregido):* `POST /employees` responde `$employee->load('user')`, así que el `id` de la respuesta es el **`employees.id`**, no el `users.id`. El asistente guardaba ese valor y luego lo mandaba como `user_id` a `/clock/punch`. Como los dos contadores van por su cuenta, el `employees.id` de la empresa nueva coincidió con el `users.id` 14 de DecorArte. Ya se corrigió del lado del frontend (se usa `user_id`/`user.id` de la respuesta, y si no viene se aborta con mensaje claro en vez de fichar a ciegas).
+- *Lado Backend (pendiente, y es el importante):* **`/clock/punch` aceptó el `user_id` sin comprobar que ese usuario pertenezca al tenant autenticado.** Aunque el frontend ya no mande el id equivocado, el endpoint sigue permitiendo que cualquiera con sesión válida escriba fichajes sobre usuarios de otras empresas simplemente cambiando el `user_id` del cuerpo de la petición. Eso es escalada horizontal entre tenants.
+
+**Pedimos:**
+
+1. En `/clock/punch` (y revisar `/clock/punch-batch` y cualquier otro endpoint que reciba `user_id` en el cuerpo): validar que `User::find($request->user_id)->tenant_id === auth()->user()->tenant_id` antes de procesar. Si no coincide → 403, y registrar el intento en `SecurityLogger` como posible abuso.
+2. Barrido de los demás endpoints que aceptan un id de entidad en el cuerpo o en la ruta: confirmar que todos verifican pertenencia al tenant y no confían en que el frontend mande el id correcto. Es la misma familia de §29/§30 (`employees.id` vs `users.id`), que se creía cerrada pero seguía viva en este camino.
+3. Limpieza de datos: revisar si en producción quedaron `time_entries` escritos por el tenant equivocado durante estas pruebas (buscar entradas de hoy sobre `user_id = 14` que no correspondan) y borrarlas.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+Se blindaron **los tres puntos de entrada de fichaje** que aceptan un `user_id` en el cuerpo. En todos se aplica el mismo patrón robusto:
+
+- **Se resuelve el usuario SIN el scope global** (`User::withoutGlobalScopes()->find(...)`). Importante: `User` usa `Tenantable`/`TenantScope`, así que un `User::find()` normal ya viene filtrado por el tenant del que llama y un `user_id` ajeno devolvería `null` — pero eso hace que la validación dependa del scope. Resolviéndolo sin scope obtenemos el usuario real (aunque sea de otro tenant) y comparamos su `tenant_id` de forma **explícita y casteada** (`(int) $user->tenant_id !== (int) $authTenantId`). Así la barrera no depende de que el scope esté activo (que se puede bypassear con `platform_admin` o `withoutGlobalScopes` en otro punto del stack).
+- Si no coincide (o el usuario no existe) → **403** y se registra el intento en `SecurityLogger` con evento `tenant_isolation_violation`, incluyendo el `user_id` objetivo, su tenant real y el tenant que llamó.
+
+Puntos cubiertos:
+1. `TimeEntryController::punch` → `POST /clock/punch`.
+2. `TimeEntryController::punchBatch` → `POST /clock/punch-batch` (valida cada `user_id` distinto del lote **antes** de abrir la transacción; un solo id ajeno rechaza el lote completo con 403).
+3. `ClockController::sync` → `POST /sync/clock` (usaba `User::find($userId)` confiando en el scope; ahora resuelve sin scope + comparación casteada + `SecurityLogger`).
+
+- **Barrido (punto 2 del pedido):** `declareContingency` en el mismo controlador ya comparaba `tenant_id` (aunque con `User::find` scopeado y `!==` estricto — es defensa en profundidad, no un hueco). Los endpoints de §29/§30 (store-opening assignments) ya resuelven contra `employees`/`users` del tenant. No encontré otro endpoint de fichaje que acepte `user_id` crudo sin verificación.
+- **Pendiente de Francisco (ops):** punto 3, limpiar en producción los `time_entries` que quedaron escritos sobre `user_id = 14` (DecorArte) durante las pruebas del alta de la empresa nueva. El backend ya no permite generarlos.
+- **Tests:** `CrossTenantPunchAndLateTest::test_punch_rejects_user_id_from_another_tenant`, `test_punch_batch_rejects_user_id_from_another_tenant`, `test_punch_accepts_user_id_from_same_tenant`.
+
+## §60. 🔴 Producción está corriendo con `APP_DEBUG=true` — se filtró el esquema de la base de datos al usuario
+
+**Contexto:** el error de §59 no se mostró como un mensaje amable, sino como el volcado completo de Laravel en pantalla, visible para el usuario final:
+
+```
+SQLSTATE[22P02]: Invalid text representation: 7 ERROR: invalid input syntax for type integer: "-296.8416722"
+(Connection: pgsql, Host: db, Port: 5432, Database: talent360_saas,
+ SQL: insert into "time_entries" ("user_id", "tenant_id", "date", "type", "time", "is_late",
+ "late_minutes", "details", "employee_name_at_time", ...) values (...))
+```
+
+Eso expone: motor de base de datos, host interno (`db`), puerto (5432), nombre de la base (`talent360_saas`), el esquema completo de la tabla con todos sus campos, y datos reales de un empleado de otro tenant. Es información que le sirve directamente a alguien que quiera atacar la plataforma, y además da una impresión pésima a un cliente.
+
+**Pedimos:** poner `APP_DEBUG=false` en el `.env` de producción y confirmar `APP_ENV=production`. Con eso Laravel muestra una página de error genérica y manda el detalle al log. Verificar también que el frontend no esté imprimiendo `e.response.data.message` crudo del backend en pantalla para errores 500 — para esos conviene un texto genérico ("Ocurrió un problema, inténtalo de nuevo") y el detalle solo en consola/log.
+
+## §61. `late_minutes` sale negativo cuando el empleado llega temprano, y se guarda como decimal en columna entera
+
+**Contexto:** en el mismo insert de §59:
+
+```
+"is_late" => 1,  "late_minutes" => -296.8416722,
+"details" => {"lft_incident":{"type":"late","minutes":-296.8416722,"action_mode":"deduct",
+              "notes":"Retardo de -296.8416722 min. Descuento de salario o penalización acumulada."}}
+```
+
+Tres problemas en un solo campo:
+
+1. **El valor es negativo** porque el empleado fichó ANTES de su hora de entrada. El sistema lo interpretó como retardo, marcó `is_late = 1` y generó un incidente LFT con `action_mode: "deduct"` — es decir, **iba a descontarle salario a alguien por llegar temprano**. Si esto ocurre en un tenant real con nómina activa, son descuentos indebidos a trabajadores, con la implicación laboral que eso tiene.
+2. **Es decimal** (`-296.8416722`) y la columna `late_minutes` es entera, así que el insert revienta con `SQLSTATE[22P02]`. Falta redondear.
+3. **El texto del incidente** se arma concatenando el número crudo, sin formato: "Retardo de -296.8416722 min".
+
+**Pedimos:** en el cálculo de retardo (`ClockService`, donde se arma el `lft_incident`), aplicar `max(0, round($lateMinutes))` — si el resultado es 0 o negativo, el empleado llegó a tiempo o antes: `is_late = false`, `late_minutes = 0` y **no** generar incidente LFT. Redondear siempre a entero antes de guardar, y formatear el número en el texto del incidente.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+Se aplicó el clamp pedido **y** se corrigió la causa raíz, que resultó ser más profunda que solo el redondeo:
+
+- **Causa raíz (el porqué del −296.84):** `expectedTime` se construía con `Carbon::createFromFormat('H:i:s', $shiftStart)`, que fija la hora en la fecha de hoy pero en la **zona horaria por defecto de la app (UTC)**. En cambio `$now` se calcula en la zona del tenant (`America/Mexico_City` por defecto). Con ese desfase de 6 h, `expectedTime` (p.ej. 09:00 UTC) quedaba muy por detrás de `$now` (mismo instante pero en tz local), así que **la condición de "llegó tarde" se cumplía siempre** y `$now->diffInMinutes($expectedTime)` daba un negativo grande con decimales (−296.84). Es decir: no era solo que faltara redondear; es que la comparación misma estaba mal por mezclar zonas horarias. Ahora `expectedTime` se construye con la **misma fecha (`$date`) y zona (`$timezone`)** que `$now`.
+- **Clamp defensivo:** `$lateMinutes = (int) max(0, round($expectedTime->diffInMinutes($now)))`. Se mide de `expectedTime → now` (positivo cuando el fichaje es posterior a la hora esperada) y se castea a entero ≥ 0. Nunca más se escribe un decimal ni un negativo en la columna entera `late_minutes` (fin del `22P02`).
+- **`is_late` solo si hay retardo real:** ahora `is_late` se marca únicamente cuando `$lateMinutes > 0`. Si es 0, no se marca retardo y **no se genera el bloque `lft_incident`** (que solo se arma dentro de `if ($isLate)`). Se acabaron los descuentos por llegar temprano.
+- **Nota Carbon 3:** el bug latente adicional era que en Carbon 3 `diffInMinutes` devuelve un valor **con signo**; con las operandas al derecho (`expectedTime->diffInMinutes($now)`) el signo ya es el correcto y el `max(0, …)` es solo cinturón de seguridad.
+- **Desbloquea §63:** con `is_late` ya confiable, el endpoint de racha de puntualidad (`GET /me/punctuality-streak`) ya se puede calcular sin que todos salgan con racha 0.
+- **Tests:** `CrossTenantPunchAndLateTest::test_early_check_in_is_not_marked_late_and_stores_zero_minutes` (llega 2 h antes → `is_late=false`, `late_minutes=0`) y `test_genuine_late_check_in_stores_positive_integer_minutes` (llega 30 min tarde con tolerancia 10 → `is_late=true`, `late_minutes=30` entero).
+
+---
+
+## §62. 🔴 CRÍTICO — Iniciar una tarea borra TODAS las asignaciones del día del colaborador
+
+**Contexto (auditoría en vivo sobre producción, 2026-07-26).** Reproducido de punta a punta con una cuenta real de colaborador:
+
+1. Sesión como `agnela@decorarte360.com` (DecorArte, tenant 1, puesto "Atención Al Cliente").
+2. Fichó entrada. El sistema disparó correctamente las rutinas y le asignó **5 tareas** (09:00 Limpieza fina de mostrador, 10:00 Revisión general de productos, 11:30 Rellenar góndolas, 15:00 Verificar pedidos especiales, 16:30 Limpieza fina de estanterías). Contador "0/5".
+3. Se pulsó el botón de iniciar (▶) de **la primera** tarea.
+4. **Las cinco desaparecieron.** El tablero quedó en "¡Tablero limpio!", contador "0/0", en ambas pestañas ("Todas" y "Mis Tareas").
+5. **Se recargó la página completa: no volvieron.** Es decir, no es un fallo de pintado — las asignaciones se perdieron del lado del servidor.
+
+Dato adicional que puede ser la pista: en el momento en que desaparecieron, la etiqueta de puesto del usuario en el encabezado cambió de **"Atención Al Cliente"** a **"Colaborador"**, y tras recargar volvió a "Atención Al Cliente" (pero las tareas ya no). Sugiere que en ese instante el cliente tenía un `currentUser` incompleto —sin `job_role`— y con ese estado degradado hizo la escritura.
+
+**⚠️ CORRECCIÓN IMPORTANTE (2026-07-26, más tarde): la causa que dispara esto probablemente NO es la que se escribió abajo.** Francisco confirmó que en ese momento él tenía abierta **otra pestaña del mismo navegador con la sesión de otro usuario**. Como el token de sesión vive en `localStorage`, que es **compartido entre todas las pestañas del mismo sitio**, su login sobrescribió el token de la sesión con la que se estaba probando. Es decir: la pestaña seguía mostrando y operando como la colaboradora, pero las peticiones ya salían firmadas como otro usuario, de otra empresa. Eso explica de forma mucho más directa el síntoma que se observó (el puesto cambiando a "Colaborador" y luego volviendo) y la escritura degradada. **Antes de invertir esfuerzo, conviene intentar reproducirlo en una sola pestaña, sin sesiones paralelas.**
+
+Esto **no invalida el problema de fondo**: que una petición incompleta pueda borrar el día entero de un empleado sigue siendo un defecto real del contrato de `/sync/tasks`, y el punto 1 de "Pedimos" sigue siendo válido y necesario pase lo que pase. Lo que cambia es la prioridad del punto 2 y qué se investiga primero.
+
+**Hipótesis original (probablemente incorrecta, se conserva por trazabilidad):** el módulo de Tareas sincroniza **reenviando el estado completo** en cada acción en vez de actualizar por fila. Si en el momento de iniciar la tarea el estado local del cliente estaba incompleto (por el `currentUser` a medio hidratar, o porque `/sync/state` venía de uno de los 502 intermitentes de §45/§46), lo que se reenvió fue una lista vacía o filtrada — y el backend la tomó como la verdad y borró el resto. Exactamente el escenario de carrera de datos que §33 advertía.
+
+**Pedimos:**
+
+1. **Que `POST /sync/tasks` (o el endpoint que reciba el estado de asignaciones) NUNCA interprete una lista vacía o parcial como "borra lo que no venga".** Un borrado debe ser explícito (`DELETE /task-assignments/{id}`), nunca implícito por omisión. Esta sola regla evita la clase entera de bug.
+2. Terminar la migración de §33 punto 3 (actualizar por fila con `PUT /task-assignments/{id}` en vez de reenviar todo). Este incidente es justificación suficiente para priorizarlo.
+3. Revisar en producción si quedaron asignaciones huérfanas/borradas de hoy para DecorArte y, si el histórico importa, restaurarlas.
+4. Del lado de Cowork revisaremos que no se dispare ninguna sincronización de escritura mientras `currentUser` no esté completamente hidratado, pero **la protección de fondo tiene que estar en el servidor**: ningún cliente debería poder borrar el día entero de un empleado por mandar una petición incompleta.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+**Diagnóstico primero:** `POST /sync/tasks` (`TaskSyncController::sync`) es un **upsert puro** — no tiene ningún `delete`, `whereNotIn` ni "borra lo que no venga". Revisé además todas las rutas de asignaciones (`/task-assignments`, `/task-assignments/{id}` PUT/omit/validate/resolve-incomplete) y no existe ningún endpoint de borrado masivo ni un `DELETE /task-assignments/{id}` que un colaborador pueda disparar. O sea: el punto 1 del pedido (que una lista vacía/parcial nunca borre por omisión) **ya se cumplía**; el borrado NO venía por ahí.
+
+**La causa real (y por qué "no volvían al recargar"):** `GET /task-assignments` filtra por `user_id = auth()->id()`. En el upsert, `user_id` se tomaba de `$assignment['userId'] ?? $assignment['user_id'] ?? null`. Con el `currentUser` a medio hidratar (el mismo instante en que el puesto se degradó a "Colaborador"), el cliente reenvió las 5 asignaciones con **`user_id` vacío**, y `$existing->update($mappedData)` las guardó con **`user_id = NULL`**. No se borraron: quedaron huérfanas y **el filtro por `user_id` del listado dejó de encontrarlas** → "desaparecieron" y siguieron desaparecidas tras recargar. Coincide exacto con el síntoma (las 5, permanente, correlacionado con el puesto degradado).
+
+**Fix (backend, `TaskSyncController::sync`):**
+- Se resuelve la fila `$existing` **antes** de procesar y se agrega un guard: si el `user_id` entrante viene vacío, **se conserva el dueño previo** (`$existing->user_id`) en vez de anularlo. Un `user_id` ya establecido **nunca** puede sobrescribirse con NULL.
+- Si es una asignación **nueva** sin dueño válido, no se crea (evita huérfanos invisibles) y se registra un `Log::warning`; el resto del lote se procesa normal.
+- `date` ya estaba protegido con `?? $existing->date ?? today` desde §14.1.
+
+**Sigue pendiente (fuera de mi zona):** punto 2 (migrar a actualización por fila con `PUT /task-assignments/{id}` en lugar de reenviar todo el estado — Cowork/§33 punto 3), punto 3 (restaurar en producción las asignaciones que hoy quedaron con `user_id` NULL para DecorArte — se pueden recuperar con un `UPDATE task_assignments SET user_id = <id> WHERE ...`, Francisco) y punto 4 (guard de hidratación en el cliente — Cowork). La protección de fondo ya está en el servidor.
+
+**Tests:** `TaskSyncAssignmentGuardTest::test_sync_does_not_null_out_existing_user_id` y `test_sync_skips_new_orphan_assignment_but_processes_rest`.
+
+## §63. Falta endpoint de "racha de puntualidad" del colaborador
+
+**Contexto:** la cinta de bienvenida del Reloj mostraba tres métricas de gamificación escritas a mano — "14 Días Puntual", "$25.00 Coins" y "Nivel 3 / 1,250 XP" — idénticas para todos los empleados de todas las empresas. Se detectó porque la misma persona veía `$25.00` en el Reloj y `$0.00` en Tareas (que sí consulta `/wallet/balance`).
+
+Ya corregido del lado de Cowork: el monedero y el nivel ahora salen de `/wallet/balance`, igual que en Tareas. **La racha se ocultó** porque no existe endpoint que la calcule y preferimos no mostrar nada antes que mostrar un número inventado.
+
+**Pedimos (no urgente):** un endpoint tipo `GET /me/punctuality-streak` que devuelva `{ streak_days, last_late_date }`, calculado sobre `time_entries` (días consecutivos con `check_in` y `is_late = false`, respetando descansos y festivos para no romper la racha injustamente). Con eso lo volvemos a mostrar. Ojo: depende de que §61 esté corregido, porque hoy `is_late` se marca en 1 aunque el empleado llegue temprano, lo que haría que nadie tuviera racha jamás.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+- **Endpoint:** `GET /api/v1/me/punctuality-streak` → `{ "success": true, "streak_days": <int>, "last_late_date": <YYYY-MM-DD|null> }`. Autenticado, para el usuario en sesión. Lógica en `ClockService::getPunctualityStreak()` (junto a `getPunctualityStatus`).
+- **Cómo cuenta la racha:** recorre los `check_in` del empleado del más reciente al más antiguo y cuenta cuántos seguidos fueron puntuales (`is_late = false`), cortando en el primer retardo. **Solo mira días en que efectivamente fichó entrada**, así que descansos y festivos no rompen la racha por sí mismos (simplemente no hay fila esos días) — que era justo la preocupación del pedido, resuelta sin tener que consultar el calendario de turnos.
+- **Contingencias:** un retardo en una fecha con `ContingencyDeclaration` activa (sin luz/sin internet) **no** rompe la racha, mismo criterio que `getPunctualityStatus` y la nómina.
+- **`last_late_date`:** la fecha del retardo más reciente (aunque sea anterior a la racha actual); `null` si el empleado nunca ha llegado tarde.
+- **Dependía de §61**, ya corregido: con `is_late` confiable la racha ya no sale 0 para todos.
+- **Tests:** `PunctualityStreakTest` (racha de 3 puntuales; retardo reciente que corta y reporta fecha; retardo viejo que no corta pero sí se reporta).
+
+---
+
+## §64. 🔴 Un supervisor puede reemplazar el sello digital del SAT y timbrar nómina
+
+**Contexto (auditoría en vivo, 2026-07-26):** con una sesión de **supervisor** (`liz@decorarte360.com`, rol `supervisor` de DecorArte) se entró al módulo "Nómina CFDI 4.0" y se llegó, sin ninguna restricción, a la pantalla que permite:
+
+- Editar la **Cédula de Identificación Fiscal** de la empresa (Razón Social, RFC, Régimen Fiscal, Código Postal fiscal).
+- Subir el **Certificado de Sello Digital** (`.cer`), la **llave privada** (`.key`) y escribir la **contraseña de la llave**.
+- Pulsar "Sincronizar y Subir al SAT".
+
+Confirmado en `routes/api.php`: el grupo `billing` vive dentro de `Route::middleware(['auth:sanctum', 'role:admin,supervisor', 'tenant.active'])`, así que **el backend lo permite a propósito**, no es solo que el frontend no oculte el módulo:
+
+```php
+Route::prefix('billing')->group(function () {
+    Route::post('/tax-data', [BillingController::class, 'updateTaxData']);
+    Route::post('/csd',      [BillingController::class, 'uploadCsd']);
+    Route::get('/invoices',  [BillingController::class, 'getInvoices']);
+    Route::post('/payroll/timbrar', [BillingController::class, 'timbrarNomina']);
+});
+```
+
+**Impacto:** el CSD es la firma fiscal de la empresa ante el SAT — con él se emiten comprobantes con validez legal. Que un supervisor de tienda pueda reemplazarlo, cambiar el RFC/razón social, o timbrar nómina, es una separación de funciones que no se sostiene: no es un permiso operativo, es el equivalente a la firma de la empresa. Además abre la puerta a que un supervisor timbre recibos de nómina sin que el administrador se entere.
+
+**Pedimos:**
+
+1. Sacar el grupo `billing` del middleware `role:admin,supervisor` y ponerlo en uno **solo de `admin`** (o incluso un permiso dedicado tipo `manage_billing`, si prefieren granularidad — ya existe la infraestructura de `permissions`/`role_permissions`).
+2. Revisar con el mismo criterio los otros módulos sensibles que hoy comparten ese grupo de `admin,supervisor`, sobre todo los que exponen datos personales o salariales: `Directorio Digital` (contratos), `Archivo Digital` (expedientes) y los reportes de nómina. Decidir con Francisco cuáles son realmente operativos para un supervisor y cuáles son exclusivos del administrador.
+3. Del lado de Cowork ocultaremos el módulo del menú para roles no autorizados en cuanto confirmen la nueva regla — pero **la restricción de fondo tiene que estar en las rutas**, porque ocultar el menú no impide llamar al endpoint directamente.
+
+### ✅ Punto 1 implementado (2026-07-26) — resumen
+
+- **`routes/api.php`:** el grupo `Route::prefix('billing')` ahora lleva `->middleware('role:admin')`. Como está anidado dentro del grupo padre `role:admin,supervisor`, los middlewares se **apilan**: un supervisor pasa el primer filtro pero el segundo lo rechaza con **403**; solo un `admin` pasa ambos. Cubre las cuatro rutas: `POST /billing/tax-data`, `POST /billing/csd`, `GET /billing/invoices`, `POST /billing/payroll/timbrar`. (Se optó por apilar `role:admin` en vez de un permiso dedicado `manage_billing` para no introducir una entrada nueva en `permissions`/`role_permissions` sin pedírtelo; si prefieres la granularidad, se cambia en una línea.)
+- **`platform_admin`** nunca tuvo acceso a este grupo (el padre no lo incluye), así que no cambia nada para ese rol.
+- **Tests:** `BillingPermissionsTest::test_supervisor_is_denied_billing_routes` (403 en las cuatro) y `test_admin_passes_the_role_gate` (admin no recibe 403).
+
+**Punto 2 — requiere tu decisión, Francisco:** revisar qué otros módulos que hoy comparten `role:admin,supervisor` deberían ser solo-admin. Los candidatos que exponen datos personales/salariales o identidad de la empresa son: **Directorio Digital** (contratos), **Archivo Digital** (expedientes), **reportes de nómina** (`/admin/payroll`, `/admin/reports/export`, `/admin/payroll/approve`) y **payroll-settings** de la empresa. Dime cuáles consideras operativos para un supervisor y cuáles exclusivos del administrador y lo aplico igual (una línea por grupo). El punto 3 (ocultar del menú) es de Cowork.
+
+---
+
+## §65. Modelo de permisos delegables por puesto (sustituye el parche de §64)
+
+**Contexto (decisión de producto de Francisco, 2026-07-26).** Tras encontrar en la auditoría que un supervisor podía reemplazar el sello fiscal (§64), Francisco definió el criterio de fondo: **toda la configuración nace en el administrador, y él decide qué funciones delega a otros puestos.** Esto reemplaza el arreglo puntual de §64 — en vez de mover `billing` a `role:admin`, se cambia el mecanismo entero.
+
+**Punto de partida importante: la maquinaria ya existe y no se está usando.** El sistema ya tiene las tablas `permissions`, `role_permissions` (con `job_role_id`, es decir ya está pensada por puesto) y `ui_rbac_rules`, y `ClockController::getState()` ya devuelve un mapa `user_permissions` por usuario. Lo que falta es que las rutas **consulten eso** en vez del rol escrito a mano.
+
+### Capacidades propuestas (pocas y gruesas, a propósito)
+
+Deliberadamente ~12 capacidades y no una por endpoint: si son demasiado finas nadie las configura bien y se vuelven inmantenibles.
+
+**Delegables — operación:**
+
+| Capacidad | Cubre |
+|---|---|
+| `manage_employees` | Alta, baja y edición de colaboradores; generar PIN/invitaciones |
+| `manage_schedules` | Horarios, turnos, tolerancias, días de descanso |
+| `manage_tasks` | Tareas, rutinas, asignaciones, plan del día |
+| `manage_store_opening` | Aperturas, control de llaves, transferencia de cierre |
+| `approve_operations` | Aprobar Ley Silla, eventualidades, permisos, horas extra, validar tareas |
+| `manage_academy` | Cursos y contenido de Academia |
+| `manage_recruitment` | Vacantes, candidatos, ATS |
+| `manage_documents` | Archivo Digital / expedientes (documentos, **no** datos salariales) |
+| `manage_org_chart` | Organigrama, SOP y vault |
+| `view_reports` | Reportes y analítica operativa |
+
+**Delegables — datos sensibles (separados a propósito):**
+
+| Capacidad | Cubre |
+|---|---|
+| `view_salaries` | Ver salarios y contratos del personal |
+| `manage_payroll` | Calcular y cerrar nómina (**sin** timbrar ante el SAT) |
+
+Se separan de lo operativo porque son cosas distintas: un supervisor puede necesitar aprobar horas extra sin tener por qué ver cuánto gana cada quien.
+
+### Indelegables — exclusivas del administrador dueño
+
+Ningún permiso debe poder otorgar esto, ni siquiera si el admin quiere:
+
+1. **Identidad fiscal y sello digital** — `POST /billing/tax-data`, `POST /billing/csd`, `POST /billing/payroll/timbrar`. Es la firma de la empresa ante el SAT (razón del §64).
+2. **Plan y suscripción** — cambiar de plan, datos de pago, cancelar.
+3. **Eliminar la empresa.**
+4. **Otorgar permisos** (`manage_permissions`). **Este es el crítico y el que más se olvida:** si se puede delegar, cualquier delegado se auto-asigna todo lo demás y el modelo entero deja de servir. La llave se queda con el dueño.
+
+### Lo que pedimos a Backend
+
+1. **Middleware `permission:` nuevo**, en paralelo al `role:` existente (no romper lo actual de golpe). Ej. `Route::middleware(['auth:sanctum','permission:manage_payroll'])`. Debe resolver: el usuario es `admin` del tenant → pasa siempre; si no, buscar en `role_permissions` por su `job_role_id`.
+2. **Migrar las rutas por bloques**, empezando por las sensibles: `billing` (a indelegable/solo admin), luego nómina, expedientes y directorio. El resto puede migrar después sin prisa.
+3. **Sembrar el catálogo** de las 12 capacidades en `permissions` para cada tenant nuevo (extender `TenantSeeder`), y para los tenants existentes una migración que las cree y asigne por defecto: `admin` = todas; `supervisor` = `manage_tasks`, `approve_operations`, `manage_store_opening`, `view_reports` (conservador — hoy tiene de más, no de menos).
+4. **Endpoints de administración:** `GET /admin/permissions/matrix` (catálogo + qué tiene cada puesto) y `PUT /admin/permissions/matrix` (guardar). Ambos **solo admin**, nunca delegables.
+5. **Bitácora obligatoria:** cada cambio de permisos se registra en `SecurityLogger`/`audit_logs` con quién otorgó qué, a qué puesto y cuándo. Es el respaldo el día que algo pase.
+6. **Rechazar en el servidor, no solo ocultar en el menú.** Ocultar el módulo no impide llamar al endpoint directo — la verificación tiene que estar en la ruta.
+
+### Lo que hace Cowork
+
+La pantalla donde el administrador asigna capacidades por puesto (matriz puestos × capacidades), consumiendo los dos endpoints del punto 4, con las indelegables mostradas pero bloqueadas y explicadas. Además ocultar del menú los módulos sin capacidad, apoyándonos en el `user_permissions` que `/sync/state` ya devuelve.
+
+**No incluir en v1:** delegaciones temporales con fecha de vencimiento (ej. "mientras estoy de vacaciones"). Suena bien, complica bastante, y se puede agregar después sin rehacer nada de lo anterior.

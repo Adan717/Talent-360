@@ -14,10 +14,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 // `avatar` y `has_completed_induction` faltaban aquí, y su ausencia era SILENCIOSA: Eloquent
 // descarta lo no-fillable sin lanzar nada (AcademyController cerraba la inducción y nunca
-// persistía). `job_role_id`/`pre_shift_alarm_minutes` en users son legacy de la línea §1–§42
-// (la fuente canónica es el EXPEDIENTE; ver expediente()/R73) — se conservan fillable mientras
-// las columnas existan (drop diferido de F2).
-#[Fillable(['name', 'email', 'password', 'tenant_id', 'role', 'is_active', 'google_id', 'apple_id', 'samsung_id', 'avatar', 'has_completed_induction', 'job_role_id', 'pre_shift_alarm_minutes'])]
+// persistía). `phone` viene de la línea del jefe (migración add-phone). `job_role_id`/
+// `pre_shift_alarm_minutes` en users son legacy de la línea §1–§42 (la fuente canónica es el
+// EXPEDIENTE; ver expediente()/R73) — se conservan fillable mientras las columnas existan
+// (drop diferido de F2).
+#[Fillable(['name', 'email', 'phone', 'password', 'tenant_id', 'role', 'is_active', 'google_id', 'apple_id', 'samsung_id', 'avatar', 'has_completed_induction', 'job_role_id', 'pre_shift_alarm_minutes'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {

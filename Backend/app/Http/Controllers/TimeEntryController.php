@@ -36,14 +36,24 @@ class TimeEntryController extends Controller
             'details' => 'nullable|array'
         ]);
 
-        $user = User::find($request->user_id);
+        // §59: se resuelve SIN el scope global y se compara el tenant de forma
+        // explícita y casteada — no se depende del TenantScope (que puede dar null y
+        // reventar, o ser bypasseado por platform_admin/withoutGlobalScopes en otro punto).
+        $user = User::withoutGlobalScopes()->find($request->user_id);
+        $authTenantId = auth()->user()->tenant_id;
 
         // El destino debe pertenecer al tenant del emisor autenticado; si no, es una
         // inyección de ponche cross-tenant. Más estricto que el patrón de sync (R4): un emisor
         // con tenant_id null (p.ej. un platform_admin) NO puede fichar por nadie — el fallback
         // `?? 1` lo trataría como tenant 1 y podría inyectar ponches a ese tenant real.
-        $tenantId = auth()->user()->tenant_id;
-        if ($tenantId === null || !$user || (int) $user->tenant_id !== (int) $tenantId) {
+        // (Converge con §59 del jefe, que además loggea el intento.)
+        if ($authTenantId === null || !$user || (int) $user->tenant_id !== (int) $authTenantId) {
+            \App\Helpers\SecurityLogger::log(
+                'tenant_isolation_violation',
+                "Intento de fichaje sobre user_id={$request->user_id} (tenant " . ($user->tenant_id ?? 'null') . ") desde tenant " . ($authTenantId ?? 'null'),
+                $authTenantId,
+                auth()->id()
+            );
             return response()->json([
                 'success' => false,
                 'message' => 'Usuario no encontrado o no pertenece a su empresa.'

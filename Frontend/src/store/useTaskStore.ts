@@ -101,6 +101,10 @@ export interface TaskAssignment {
     // §35: resultado guardado por POST /task-assignments/{id}/ai-validate, para que el
     // supervisor pueda auditar después por qué la IA aprobó/rechazó una entrega.
     aiValidationResult?: { match: boolean; confidence?: number; reasoning?: string } | null;
+    // §62 + resync: marca de INTENCIÓN EXPLÍCITA de que userId sea null (bolsa de trabajo:
+    // release, rebote, rutina fija, tarea dinámica). Sin este flag, el backend interpreta el
+    // null como estado a medio hidratar y conserva al dueño previo (candado anti-pérdida).
+    ownerCleared?: boolean;
 }
 
 interface TaskStoreState {
@@ -160,9 +164,43 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
     // pasan en true; las acciones operativas siguen mandando `assignments` como siempre.
     syncToBackend: async (includeCatalog: boolean = false) => {
         try {
-            if (useAppStore.getState().isSandboxMode) return; // Guardado en memoria RAM solamente
+            const appState = useAppStore.getState();
+            if (appState.isSandboxMode) return; // Guardado en memoria RAM solamente
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // §62 (auditoría en vivo 2026-07-26) — CANDADOS CONTRA PÉRDIDA DE DATOS.
+            // Este método manda `assignments` COMPLETO y el backend lo interpreta como la
+            // verdad absoluta: lo que no venga en el arreglo, lo borra. En producción eso ya
+            // destruyó las 5 asignaciones del día de una colaboradora al iniciar UNA tarea,
+            // porque en ese instante el estado local estaba a medio hidratar (se vio que su
+            // puesto aparecía como "Colaborador" en vez de "Atención Al Cliente") — muy
+            // probablemente tras uno de los 502 intermitentes de /sync/state (§45/§46).
+            //
+            // OJO: estos candados reducen la probabilidad, NO cierran el agujero. La
+            // protección de fondo va en el servidor (§62 punto 1: una lista vacía o parcial
+            // nunca debe significar "borra lo que no venga"; un borrado debe ser explícito).
+            // ─────────────────────────────────────────────────────────────────────────────
+
+            // Candado 1: sesión a medio cargar. Si aún no sabemos con certeza quién es el
+            // usuario, cualquier estado derivado (incluido el filtrado de asignaciones por
+            // puesto) es poco confiable y no debe escribirse.
+            const user = appState.currentUser;
+            if (!user || user.role === 'Loading' || appState.isLoadingDB) {
+                console.warn('[§62] Sincronización de tareas abortada: la sesión todavía no está hidratada.');
+                return;
+            }
 
             const state = get();
+
+            // Candado 2: nunca mandar un arreglo vacío. Un vacío legítimo no existe en este
+            // flujo — si de verdad hay que borrar algo, va por su endpoint explícito. Enviarlo
+            // solo puede significar "todavía no cargué", y es exactamente lo que borra el día
+            // entero de un empleado.
+            if (state.assignments.length === 0) {
+                console.warn('[§62] Sincronización de tareas abortada: el arreglo de asignaciones está vacío (estado sin cargar).');
+                return;
+            }
+
             const payload: any = { assignments: state.assignments };
             if (includeCatalog) {
                 payload.tasks = state.tasks;
@@ -181,7 +219,15 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
     // de recálculo de puntos/validación que antes solo vivía en POST /sync/tasks (§33 punto 1).
     syncAssignmentRow: async (assignmentId) => {
         try {
-            if (useAppStore.getState().isSandboxMode) return;
+            const appState = useAppStore.getState();
+            if (appState.isSandboxMode) return;
+            // §62: mismo criterio que en syncToBackend — no escribir con la sesión a medias.
+            // Aquí el riesgo es menor (se manda UNA fila, no puede borrar las demás), pero una
+            // fila armada sobre estado incompleto igual puede guardar datos equivocados.
+            if (!appState.currentUser || appState.currentUser.role === 'Loading' || appState.isLoadingDB) {
+                console.warn('[§62] Escritura de asignación abortada: la sesión todavía no está hidratada.');
+                return;
+            }
             const assignment = get().assignments.find(a => a.id === assignmentId);
             if (!assignment) return;
             await axiosInstance.put(`/task-assignments/${assignmentId}`, assignment);
@@ -295,7 +341,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
                     const schId = `sch_${routine.id}_${tId}_${dateKey}`;
                     if (assignments.some(a => a.id === schId)) return; // ya en la bolsa hoy
                     newAssignments.push({
-                        id: schId, taskId: tId, userId: null, status: 'pending',
+                        id: schId, taskId: tId, userId: null, ownerCleared: true, status: 'pending',
                         startedAtMins: null, completedAtMins: null,
                         assignedFromRoutineId: routine.id, origin: 'routine'
                     } as TaskAssignment);
@@ -349,7 +395,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
     releaseTask: (assignmentId) => {
         set(state => ({
             assignments: state.assignments.map(a =>
-                a.id === assignmentId ? { ...a, userId: null, status: 'pending', reservedAtMins: null } : a
+                a.id === assignmentId ? { ...a, userId: null, ownerCleared: true, status: 'pending', reservedAtMins: null } : a
             )
         }));
         get().syncAssignmentRow(assignmentId);
@@ -533,11 +579,11 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             if (isManagementRole && task.priority === 'bloqueante') {
                 // Tareas críticas de jefes NO se van a la bolsa. Se transfieren (Simulado aquí como 'spilled' para que las rescate el suplente)
                 transferredCount++;
-                return { ...a, status: 'spilled', userId: null } as TaskAssignment; // Requires specific rescue logic
+                return { ...a, status: 'spilled', userId: null, ownerCleared: true } as TaskAssignment; // Requires specific rescue logic
             } else {
                 // Tareas normales o de ayudantes caen a la Bolsa de Trabajo (userId: null)
                 spiltCount++;
-                return { ...a, userId: null, status: 'pending' } as TaskAssignment; // Rebotan a la bolsa
+                return { ...a, userId: null, ownerCleared: true, status: 'pending' } as TaskAssignment; // Rebotan a la bolsa
             }
         });
 
@@ -574,7 +620,7 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             assignments: [...state.assignments, {
                 id: `dyn_${newTask.id}`,
                 taskId: newTask.id,
-                userId: null, // Cae directo a la bolsa
+                userId: null, ownerCleared: true, // Cae directo a la bolsa
                 status: 'pending',
                 startedAtMins: null,
                 completedAtMins: null,

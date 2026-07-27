@@ -15,18 +15,22 @@ class TenantController extends Controller
 {
     public function store(Request $request)
     {
-        if ($request->has('subdomain')) {
+        if ($request->has('subdomain') && !$request->has('admin_email')) {
             $request->merge([
                 'admin_email' => 'admin@' . $request->subdomain . '.com'
             ]);
         }
 
         $request->validate([
-            'subdomain' => 'required|string|unique:tenants,subdomain',
+            'subdomain' => [
+                'required', 'string',
+                \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
+                \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+            ],
             'plan' => 'required|string',
             'company_name' => 'required|string',
             'admin_name' => 'required|string',
-            'admin_email' => 'required|email|unique:users,email',
+            'admin_email' => 'required|email',
             'admin_password' => 'required|min:6'
         ]);
 
@@ -58,13 +62,20 @@ class TenantController extends Controller
                 ->first();
             $trialDays = $trialConfig ? (int)$trialConfig->value : 30;
 
+            $baseSlug = \Illuminate\Support\Str::slug($request->subdomain);
+            $publicSlug = $baseSlug;
+            $slugIndex = 1;
+            while (Tenant::withTrashed()->where('public_slug', $publicSlug)->exists()) {
+                $publicSlug = $baseSlug . '-' . $slugIndex++;
+            }
+
             // 1. Create Tenant with Dynamic Free Trial
             $tenant = Tenant::create([
                 'name' => $request->company_name,
                 'subdomain' => $request->subdomain,
                 'plan' => $plan,
-                'max_users' => $plan === 'freemium' ? 10 : ($plan === 'pro' ? 50 : 9999),
-                'public_slug' => \Illuminate\Support\Str::slug($request->subdomain),
+                'max_users' => Tenant::maxUsersForPlan($plan),
+                'public_slug' => $publicSlug,
                 'subscription_status' => 'trial',
                 'trial_ends_at' => now()->addDays($trialDays)
             ]);
@@ -84,14 +95,43 @@ class TenantController extends Controller
                 'updated_at' => now()
             ]);
 
-            // 2. Create Admin User
-            $admin = User::create([
-                'name' => $request->admin_name,
-                'email' => $request->admin_email,
-                'password' => Hash::make($request->admin_password),
-                'role' => UserRole::ADMIN->value,
-                'tenant_id' => $tenant->id,
-            ]);
+            // 2. Associate or Create Admin User
+            $adminEmail = strtolower(trim($request->admin_email));
+            $existingAdmin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->withTrashed()
+                ->where('email', $adminEmail)
+                ->first();
+
+            if ($existingAdmin) {
+                if ($existingAdmin->tenant_id !== null) {
+                    $existingTenant = Tenant::find($existingAdmin->tenant_id);
+                    if ($existingTenant && !$existingTenant->trashed()) {
+                        return response()->json([
+                            'error' => "El correo {$adminEmail} ya está registrado y pertenece a la empresa '{$existingTenant->name}'."
+                        ], 409);
+                    }
+                }
+                if ($existingAdmin->trashed()) {
+                    $existingAdmin->restore();
+                }
+                $existingAdmin->update([
+                    'name' => $request->admin_name,
+                    'password' => Hash::make($request->admin_password),
+                    'role' => UserRole::ADMIN->value,
+                    'tenant_id' => $tenant->id,
+                    'is_active' => true
+                ]);
+                $admin = $existingAdmin;
+            } else {
+                $admin = User::create([
+                    'name' => $request->admin_name,
+                    'email' => $adminEmail,
+                    'password' => Hash::make($request->admin_password),
+                    'role' => UserRole::ADMIN->value,
+                    'tenant_id' => $tenant->id,
+                    'is_active' => true
+                ]);
+            }
 
             // 3. Register Device
             DB::table('device_registrations')->insert([

@@ -157,7 +157,9 @@ class SyncTasksInputValidationTest extends TestCase
             'assignments' => [[
                 'id' => 'dyn-4040',
                 'task_id' => 4040,
+                // Resync §62: la tarea dinámica cae a la bolsa con null INTENCIONAL (ownerCleared).
                 'user_id' => null,
+                'ownerCleared' => true,
                 'status' => 'pending',
             ]],
         ])->assertStatus(200);

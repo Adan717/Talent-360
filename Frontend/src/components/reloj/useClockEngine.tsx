@@ -337,11 +337,14 @@ export function useClockEngine(overrideUser?: any) {
   }, [currentUser?.tenant_id]);
   
   useEffect(() => {
-    if (!currentUser || globalRoles.length === 0 || dbPermissions.length === 0) return;
-    const myRole = globalRoles.find(r => r.id === currentUser.job_role_id);
+    const roles = Array.isArray(globalRoles) ? globalRoles : [];
+    const perms = Array.isArray(dbPermissions) ? dbPermissions : [];
+    const rolePerms = Array.isArray(dbRolePermissions) ? dbRolePermissions : [];
+    if (!currentUser || roles.length === 0 || perms.length === 0) return;
+    const myRole = roles.find(r => r && r.id === currentUser.job_role_id);
     if (myRole) {
-       const myPermIds = dbRolePermissions.filter(rp => rp.job_role_id === myRole.id).map(rp => rp.permission_id);
-       const myPermNames = dbPermissions.filter(p => myPermIds.includes(p.id)).map(p => p.name);
+       const myPermIds = rolePerms.filter(rp => rp && rp.job_role_id === myRole.id).map(rp => rp.permission_id);
+       const myPermNames = perms.filter(p => p && myPermIds.includes(p.id)).map(p => p.name);
        setGlobalPermissions(myPermNames);
     }
   }, [currentUser, globalRoles, dbPermissions, dbRolePermissions]);
@@ -1592,7 +1595,7 @@ export function useClockEngine(overrideUser?: any) {
             `La tarea de la Bolsa "${task.title}" superó el tiempo límite de inicio y se liberó automáticamente.`,
             'warning'
           );
-          return { ...a, userId: null, reservedAtMins: null };
+          return { ...a, userId: null, ownerCleared: true, reservedAtMins: null };
         }
       }
       return a;

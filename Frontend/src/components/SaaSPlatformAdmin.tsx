@@ -162,6 +162,35 @@ export const SaaSPlatformAdmin = () => {
     }
   };
 
+  // Pending Registrations (Registros Inconclusos) State
+  const [pendingRegistrations, setPendingRegistrations] = useState<any[]>([]);
+  const [isPendingLoading, setIsPendingLoading] = useState(false);
+
+  const fetchPendingRegistrations = async () => {
+    setIsPendingLoading(true);
+    try {
+      const res = await axiosInstance.get('/platform/pending-registrations');
+      setPendingRegistrations(res.data);
+    } catch (error) {
+      console.error("Error fetching pending registrations:", error);
+    } finally {
+      setIsPendingLoading(false);
+    }
+  };
+
+  const handleDeletePendingRegistration = async (id: number, email: string) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el registro inconcluso de "${email}"? Esta acción liberará la dirección de correo para futuros registros.`)) return;
+
+    try {
+      const res = await axiosInstance.delete(`/platform/pending-registrations/${id}`);
+      alert(res.data.message || "Registro inconcluso eliminado con éxito.");
+      fetchPendingRegistrations();
+    } catch (error: any) {
+      console.error("Error deleting pending registration:", error);
+      alert(error.response?.data?.error || "Error al eliminar el registro.");
+    }
+  };
+
   // New ticket modal
   const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false);
   const [newTicketTitle, setNewTicketTitle] = useState('');
@@ -343,6 +372,9 @@ export const SaaSPlatformAdmin = () => {
   useEffect(() => {
     if (activeTab === 'security_logs') {
       fetchSecurityLogs();
+    }
+    if (activeTab === 'pending_registrations' || activeTab === 'dashboard') {
+      fetchPendingRegistrations();
     }
   }, [activeTab, logsTenantFilter, logsEventFilter]);
 
@@ -878,8 +910,8 @@ export const SaaSPlatformAdmin = () => {
             <span className="text-white font-black text-xl">T</span>
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-800 leading-tight">Talent360 SaaS</h2>
-            <p className="text-xs text-slate-500 font-medium">Consola de Administración Global</p>
+            <h2 className="text-lg font-black text-slate-800 leading-tight">{isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}</h2>
+            <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}</p>
           </div>
         </div>
         
@@ -947,6 +979,24 @@ export const SaaSPlatformAdmin = () => {
             }`}
           >
             📊 Dashboard Global
+          </button>
+        )}
+        {isAdmin && (
+          <button 
+            type="button"
+            onClick={() => setActiveTab('pending_registrations')}
+            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
+              activeTab === 'pending_registrations' 
+                ? 'border-indigo-600 text-indigo-600' 
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            ⏳ Registros Inconclusos
+            {pendingRegistrations.length > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full ml-1 animate-pulse">
+                {pendingRegistrations.length}
+              </span>
+            )}
           </button>
         )}
         <button 
@@ -1402,6 +1452,109 @@ export const SaaSPlatformAdmin = () => {
         </div>
       </div>
         </>
+      )}
+
+      {activeTab === 'pending_registrations' && (
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-in fade-in duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-amber-200/50">
+                  Pre-registros Huérfanos
+                </span>
+                <h2 className="text-xl font-black text-slate-800">Registros Inconclusos de Plataforma</h2>
+              </div>
+              <p className="text-sm text-slate-500">
+                Usuarios que iniciaron el registro en Talent360 pero no completaron la creación de su empresa. Puedes contactarles para dar seguimiento comercial o eliminar el registro para liberar el correo.
+              </p>
+            </div>
+            <button 
+              onClick={fetchPendingRegistrations}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shrink-0 border-none cursor-pointer"
+            >
+              <RefreshCw size={14} className={isPendingLoading ? 'animate-spin' : ''} />
+              Actualizar Lista
+            </button>
+          </div>
+
+          {isPendingLoading ? (
+            <div className="py-16 text-center text-slate-400">
+              <Loader2 className="animate-spin mx-auto mb-2 text-indigo-600" size={28} />
+              <p className="text-xs font-bold">Cargando registros inconclusos...</p>
+            </div>
+          ) : pendingRegistrations.length === 0 ? (
+            <div className="text-center py-12 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={40} />
+              <h4 className="font-bold text-slate-700 text-sm">Sin registros inconclusos</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                No hay usuarios pendientes sin empresa en la plataforma. Todos los pre-registros han completado la creación de su organización.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
+                    <th className="p-4 rounded-l-xl">Solicitante</th>
+                    <th className="p-4">Correo Electrónico</th>
+                    <th className="p-4">Proveedor Auth</th>
+                    <th className="p-4">Registro</th>
+                    <th className="p-4 text-right rounded-r-xl">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {pendingRegistrations.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4 font-black text-slate-800 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200">
+                          {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-slate-900">{u.name || 'Sin Nombre'}</p>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 font-bold text-indigo-600">
+                        {u.email}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}>
+                          {u.provider}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-500 font-medium">
+                        {u.created_at_human}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(u.email);
+                              alert(`Correo ${u.email} copiado al portapapeles.`);
+                            }}
+                            className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                            title="Copiar Correo"
+                          >
+                            <MessageSquare size={14} /> Contactar
+                          </button>
+                          <button
+                            onClick={() => handleDeletePendingRegistration(u.id, u.email)}
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                            title="Eliminar Registro Inconcluso"
+                          >
+                            <Trash2 size={14} /> Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === 'tickets' && (

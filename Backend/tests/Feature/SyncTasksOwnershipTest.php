@@ -174,11 +174,13 @@ class SyncTasksOwnershipTest extends TestCase
             'status' => 'in_progress',
         ]);
 
-        // Liberar de vuelta al pool (releaseTask)
+        // Liberar de vuelta al pool (releaseTask). Resync §62: el null intencional lleva
+        // `ownerCleared` — sin el flag el backend conservaría al dueño (candado anti-pérdida).
         $this->syncAssignments($empleado, [[
             'id' => 'pool-1',
             'task_id' => $task->id,
             'user_id' => null,
+            'ownerCleared' => true,
             'status' => 'pending',
         ]])->assertStatus(200);
 
@@ -231,9 +233,12 @@ class SyncTasksOwnershipTest extends TestCase
                 'status' => 'pending',
             ],
             [
+                // Resync §62: crear directo en la bolsa exige `ownerCleared` (intención
+                // explícita); sin el flag la fila sin dueño se omite como huérfana.
                 'id' => 'nueva-pool-1',
                 'task_id' => $task->id,
                 'user_id' => null,
+                'ownerCleared' => true,
                 'status' => 'pending',
             ],
         ])->assertStatus(200);

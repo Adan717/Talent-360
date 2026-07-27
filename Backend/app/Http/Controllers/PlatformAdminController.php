@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Employee;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\Hash;
 
@@ -22,7 +23,10 @@ class PlatformAdminController extends Controller
         $tenants = Tenant::all();
         $activeTenants = $tenants->where('is_active', true)->count();
         
-        $totalUsers = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->count();
+        $totalUsers = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->whereHas('tenant', function($q) {
+                $q->where('is_active', true);
+            })->count();
 
         // Calculate simulated MRR (Monthly Recurring Revenue)
         $mrr = 0;
@@ -269,6 +273,37 @@ class PlatformAdminController extends Controller
     }
 
     /**
+     * §49: "botón de pánico" — revoca TODAS las sesiones activas de cuentas de
+     * plataforma (platform_users) de golpe, borrando sus personal_access_tokens.
+     * Fuerza a todo super-admin/soporte (incluido un posible atacante que ya haya
+     * entrado) a volver a autenticar. La sesión del propio solicitante también se
+     * revoca — es intencional: es un botón de emergencia, se vuelve a entrar después.
+     */
+    public function revokeAllPlatformSessions(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $deleted = \Illuminate\Support\Facades\DB::table('personal_access_tokens')
+            ->where('tokenable_type', \App\Models\PlatformUser::class)
+            ->delete();
+
+        \App\Helpers\SecurityLogger::log(
+            'security_revoke_all_platform_sessions',
+            "Revocación masiva de sesiones de plataforma ({$deleted} tokens) por: " . auth()->user()->email,
+            null,
+            auth()->user()->id
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Se revocaron {$deleted} sesiones de plataforma. Todas las cuentas de plataforma deben volver a iniciar sesión.",
+            'revoked_count' => $deleted,
+        ]);
+    }
+
+    /**
      * Update tenant and admin details
      */
     public function updateTenantDetails($id, Request $request)
@@ -345,13 +380,27 @@ class PlatformAdminController extends Controller
         
         $admin->save();
 
+        // También actualizar datos en la tabla de empleados si existe un perfil para este usuario
+        $employee = Employee::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->where('user_id', $admin->id)
+            ->first();
+
+        if ($employee) {
+            $employee->name = $admin->name;
+            $employee->email = $admin->email;
+            if ($request->has('admin_phone')) {
+                $employee->phone = $request->admin_phone;
+            }
+            $employee->save();
+        }
+
         return response()->json([
             'message' => 'Datos de la empresa y del administrador actualizados con éxito.',
             'tenant' => $tenant,
             'admin' => [
                 'name' => $admin->name,
                 'email' => $admin->email,
-                'phone' => $admin->phone
+                'phone' => $admin->phone ?? $employee?->phone
             ]
         ]);
     }
@@ -371,7 +420,13 @@ class PlatformAdminController extends Controller
             return response()->json(['error' => 'No se puede eliminar el inquilino principal por defecto.'], 400);
         }
 
-        $tenant->delete();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($tenant) {
+            \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->where('tenant_id', $tenant->id)
+                ->delete();
+
+            $tenant->delete();
+        });
 
         return response()->json(['message' => 'Empresa eliminada con éxito']);
     }
@@ -1036,34 +1091,31 @@ class PlatformAdminController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => true,
-                'data' => [
-                    [
-                        'id' => 'saas_inv_1',
-                        'uuid' => 'B1A58C11-9A3E-4B07-A595-D4E087D2FB10',
-                        'legal_name' => 'DecorArte S.A. de C.V.',
-                        'rfc' => 'DEC150203AA0',
-                        'total' => 2499.00,
-                        'created_at' => now()->subDays(1)->toIso8601String(),
-                        'status' => 'valid',
-                        'type' => 'invoice',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ],
-                    [
-                        'id' => 'saas_inv_2',
-                        'uuid' => 'C2A58C11-9A3E-4B07-A595-D4E087D2FC11',
-                        'legal_name' => 'Super Tiendas del Norte',
-                        'rfc' => 'STN121212B34',
-                        'total' => 1499.00,
-                        'created_at' => now()->subDays(15)->toIso8601String(),
-                        'status' => 'valid',
-                        'type' => 'invoice',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ]
-                ]
+                'data' => []
             ]);
         }
+    }
+
+    /**
+     * Cancela o elimina un registro de factura global del SaaS
+     */
+    public function deleteSaaSInvoice($id)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        try {
+            $provider = app(\App\Services\Billing\BillingProviderInterface::class);
+            $provider->cancelInvoice($id);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::info("Factura cancelada localmente: {$id}");
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registro de factura eliminado con éxito.'
+        ]);
     }
 
     /**
@@ -1138,5 +1190,64 @@ class PlatformAdminController extends Controller
                 ]
             ]);
         }
+    }
+
+    /**
+     * Obtiene la lista de usuarios pre-registrados inconclusos (tenant_id es NULL)
+     */
+    public function getPendingRegistrations()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $pendingUsers = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->whereNull('tenant_id')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($u) {
+                $provider = 'Email';
+                if (!empty($u->google_id)) $provider = 'Google';
+                elseif (!empty($u->apple_id)) $provider = 'Apple';
+
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'role' => $u->role,
+                    'phone' => $u->phone,
+                    'provider' => $provider,
+                    'created_at' => $u->created_at->toIso8601String(),
+                    'created_at_human' => $u->created_at->diffForHumans()
+                ];
+            });
+
+        return response()->json($pendingUsers);
+    }
+
+    /**
+     * Elimina un usuario pre-registrado inconcluso (tenant_id NULL) para liberar el correo
+     */
+    public function deletePendingRegistration($id)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->whereNull('tenant_id')
+            ->where('id', $id)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'Registro inconcluso no encontrado o ya fue asignado a una empresa.'], 404);
+        }
+
+        $user->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Registro inconcluso ({$user->email}) eliminado con éxito. El correo ha sido liberado."
+        ]);
     }
 }

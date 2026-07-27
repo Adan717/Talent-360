@@ -15,6 +15,19 @@ class TaskSyncController extends Controller
 {
     public function sync(Request $request)
     {
+        // Resync 2026-07-27: el FE del anfitrión también emite ids de assignment NUMÉRICOS
+        // (Date.now() en PanelTareasRutinas/createDynamicTask). Se normalizan a string ANTES
+        // de validar — exigir string a secas convertía el lote entero en píldora venenosa (422).
+        $rawAssignments = $request->input('assignments');
+        if (is_array($rawAssignments)) {
+            foreach ($rawAssignments as $k => $a) {
+                if (is_array($a) && isset($a['id']) && is_numeric($a['id'])) {
+                    $rawAssignments[$k]['id'] = (string) $a['id'];
+                }
+            }
+            $request->merge(['assignments' => $rawAssignments]);
+        }
+
         // F4: validacion de input REAL. `task_id` de un assignment NO lleva `exists` a proposito
         // - el mismo payload puede crear una Task nueva y referenciarla (createDynamicTask), y la
         // validacion corre antes de persistir las tasks. El FE manda camelCase y el mapping acepta
@@ -218,10 +231,38 @@ class TaskSyncController extends Controller
                         'origin' => $assignment['origin'] ?? null,
                     ];
 
+                    // Se resuelve la fila existente ANTES de nada para poder blindar el guard de §62.
                     $existing = TaskAssignment::withoutGlobalScopes()
                         ->where('id', $assignment['id'])
                         ->where('tenant_id', $tenantId)
                         ->first();
+
+                    // §62 (🔴 pérdida de datos): NUNCA sobrescribir con null un user_id ya
+                    // establecido. Un cliente con el currentUser a medio hidratar (sin
+                    // job_role, rol mostrado como "Colaborador") puede reenviar la asignación
+                    // con user_id vacío. Si lo guardáramos, GET /task-assignments —que filtra
+                    // por user_id— dejaría de encontrarlas y "desaparecerían" del tablero
+                    // aunque siguieran en la BD (exactamente el incidente reproducido en prod:
+                    // 5 tareas se esfumaron y no volvieron al recargar). Se conserva el dueño
+                    // previo; si es una asignación nueva sin dueño válido, no se crea huérfano.
+                    //
+                    // RESYNC 2026-07-27 — `owner_cleared`: el null SÍ es intencional en los flujos
+                    // de BOLSA (releaseTask, rebote de no-concluidas, rutina de horario fijo,
+                    // createDynamicTask); aplicar §62 a ciegas los rompía. Esos flujos ahora marcan
+                    // la fila con `ownerCleared: true` (intención explícita) y el null se respeta.
+                    // Un cliente a medio hidratar nunca manda ese flag → sigue protegido.
+                    $ownerCleared = ($assignment['ownerCleared'] ?? $assignment['owner_cleared'] ?? false) === true;
+                    if (empty($mappedData['user_id']) && !$ownerCleared) {
+                        if ($existing && $existing->user_id) {
+                            $mappedData['user_id'] = $existing->user_id;
+                        } else {
+                            \Illuminate\Support\Facades\Log::warning(
+                                "sync/tasks: asignación id={$assignment['id']} llegó sin user_id, sin dueño previo y sin owner_cleared; se omite para no crear un huérfano.",
+                                ['tenant_id' => $tenantId, 'caller' => auth()->id()]
+                            );
+                            continue;
+                        }
+                    }
 
                     // F4 (seguridad) - OWNERSHIP. El sync es full-state: las filas vedadas se
                     // OMITEN, no se rechaza la peticion (el cliente re-emite tambien filas ajenas
@@ -236,9 +277,9 @@ class TaskSyncController extends Controller
                         if ($mappedData['user_id'] !== null && (int) $mappedData['user_id'] !== (int) $actor->id) {
                             continue;
                         }
-                        // Una completacion en el POOL (user_id null) evade la validacion
-                        // jerarquica, que keyea sobre el usuario de la assignment. Completar exige
-                        // haber tomado la tarea antes (grab -> user_id = actor).
+                        // Una completacion en el POOL (user_id null, posible via owner_cleared)
+                        // evade la validacion jerarquica, que keyea sobre el usuario de la
+                        // assignment. Completar exige haber tomado la tarea antes (grab -> user_id).
                         if ($mappedData['user_id'] === null
                             && in_array($mappedData['status'], ['completed', 'awaiting_validation'], true)) {
                             continue;

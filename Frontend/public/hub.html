@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Talent360 — Accesos Rápidos</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-hover: #263449;
+    --border: #334155;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --violet: #8a2be2;
+    --violet-hover: #7b1fa2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px 20px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 {
+    font-size: 22px;
+    font-weight: 900;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h1 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 12px var(--violet); }
+  p.sub { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    text-decoration: none;
+    color: var(--text);
+    margin-bottom: 10px;
+    transition: background .15s, transform .1s;
+  }
+  .card:hover { background: var(--card-hover); transform: translateY(-1px); }
+  .card .icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .card .body { flex: 1; min-width: 0; }
+  .card .title { font-weight: 800; font-size: 14px; }
+  .card .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card .arrow { color: var(--muted); font-size: 16px; }
+
+  .icon.landing { background: rgba(59,130,246,.15); }
+  .icon.login { background: rgba(138,43,226,.18); }
+  .icon.app { background: rgba(16,185,129,.15); }
+  .icon.talent { background: rgba(245,158,11,.15); }
+  .icon.org { background: rgba(244,63,94,.15); }
+
+  .section-label {
+    font-size: 10px; font-weight: 900; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); margin: 26px 0 10px;
+  }
+  .note {
+    margin-top: 30px; padding: 14px 16px; border-radius: 12px;
+    background: rgba(138,43,226,.08); border: 1px solid rgba(138,43,226,.25);
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+  }
+  .note strong { color: var(--text); }
+  input#orgSlug {
+    background: #0f172a; border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; font-size: 12px; width: 140px;
+    margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1><span class="dot"></span> Talent360 — Accesos Rápidos</h1>
+    <p class="sub">Página interna de navegación para pruebas. No contiene credenciales — cada enlace lleva a su pantalla de inicio de sesión normal. Pensada para anclarse en el navegador.</p>
+
+    <div class="section-label">Público</div>
+    <a class="card" href="/inicio">
+      <div class="icon landing">🏠</div>
+      <div class="body">
+        <div class="title">Landing Page</div>
+        <div class="desc">Marketing, demo del reloj checador, alta de nueva empresa</div>
+      </div>
+      <div class="arrow">→</div>
+    </a>
+
+    <div class="section-label">Acceso</div>
+    <a class="card" href="/login">
+      <div class="icon login">🔑</div>
+      <div class="body">
+        <div class="title">Iniciar sesión</div>
+        <div class="desc">Empresa, Plataforma Talent y Soporte usan esta misma pantalla — el sistema te redirige según tu rol</div>
+      </div>
+      <div class="arrow">→</div>
+    </a>
+
+    <div class="section-label">Después de iniciar sesión</div>
+    <a class="card" href="/app">
+      <div class="icon app">🏢</div>
+      <div class="body">
+        <div class="title">Plataforma de Empresa</div>
+        <div class="desc">Panel administrativo, reloj checador, tareas, nómina (cuentas de tenant)</div>
+      </div>
+      <div class="arrow">→</div>
+    </a>
+    <a class="card" href="/superadmin">
+      <div class="icon talent">🛡️</div>
+      <div class="body">
+        <div class="title">Plataforma Talent360</div>
+        <div class="desc">Solo cuentas platform_admin — control global de todas las empresas</div>
+      </div>
+      <div class="arrow">→</div>
+    </a>
+    <a class="card" href="/soporte">
+      <div class="icon talent">🎧</div>
+      <div class="body">
+        <div class="title">Página de Soporte</div>
+        <div class="desc">Cuentas support_agent — tickets y atención a empresas, URL propia</div>
+      </div>
+      <div class="arrow">→</div>
+    </a>
+
+    <div class="section-label">Organigrama público de una empresa</div>
+    <a class="card" id="orgLink" href="/organizacion/decorarte360">
+      <div class="icon org">🌐</div>
+      <div class="body">
+        <div class="title">Organigrama / vacantes públicas</div>
+        <div class="desc">Subdominio: <input type="text" id="orgSlug" value="decorarte360" /></div>
+      </div>
+      <div class="arrow">→</div>
+    </a>
+
+    <div class="note">
+      <strong>Nota de seguridad:</strong> esta página no guarda ni muestra contraseñas — solo son atajos de navegación. Cada destino sigue pidiendo login normal. Si algún día este servidor queda expuesto públicamente sin control, lo más simple es borrar este archivo (<code>hub.html</code>) o restringirlo por IP en el proxy — no expone nada sensible por sí sola, pero tampoco tiene razón de estar accesible para cualquiera.
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('orgSlug');
+    const link = document.getElementById('orgLink');
+    function updateOrgLink() {
+      const slug = (input.value || '').trim();
+      link.href = '/organizacion/' + encodeURIComponent(slug);
+    }
+    input.addEventListener('input', updateOrgLink);
+    input.addEventListener('click', (e) => e.stopPropagation());
+    updateOrgLink();
+  </script>
+</body>
+</html>

@@ -17,6 +17,7 @@ const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
 import DialPrincipal from './DialPrincipal';
 import MealPhotoCapture from './MealPhotoCapture';
 import MealQueue from './MealQueue';
+import { SillaRequestsPanel } from './SillaRequestsPanel';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -1167,7 +1168,7 @@ export default function RelojVisual({
     const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
     const needsRollCall = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted;
 
-    const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+    const myRole = (Array.isArray(globalRoles) ? globalRoles : []).find((r: any) => r.id === currentUser?.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
     const isSupervisor = currentUser?.role?.toLowerCase()?.includes('sup') || 
                           currentUser?.role?.toLowerCase()?.includes('admin') || 
@@ -1476,8 +1477,9 @@ export default function RelojVisual({
         return 'Abrir tienda';
       }
       const savedAss = localStorage.getItem('store_opening_assignments');
-      const ass = savedAss ? JSON.parse(savedAss) : [];
-      const respAss = ass.find((a: any) => a.employee_id === Number(responsibleId));
+      const parsedAss = savedAss ? JSON.parse(savedAss) : [];
+      const ass = Array.isArray(parsedAss) ? parsedAss : (parsedAss && typeof parsedAss === 'object' ? Object.values(parsedAss) : []);
+      const respAss = ass.find((a: any) => a && a.employee_id === Number(responsibleId));
       const respName = respAss ? respAss.name || 'Encargado' : 'Encargado';
       const firstName = respName.split(' ')[0];
       return `Apertura por: ${firstName}`;
@@ -1616,7 +1618,7 @@ export default function RelojVisual({
   };
 
   const renderBreakApprovalBanner = () => {
-    const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+    const myRole = (Array.isArray(globalRoles) ? globalRoles : []).find((r: any) => r.id === currentUser?.job_role_id);
     const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
     const isSupervisor = currentUser?.role?.toLowerCase()?.includes('sup') || 
                           currentUser?.role?.toLowerCase()?.includes('admin') || 
@@ -1677,7 +1679,8 @@ export default function RelojVisual({
     try {
       const isSandbox = useAppStore.getState().isSandboxMode;
       const savedAss = localStorage.getItem('store_opening_assignments');
-      const assignments = savedAss ? JSON.parse(savedAss) : (
+      const parsedAss = savedAss ? JSON.parse(savedAss) : null;
+      const rawAssignments = parsedAss || (
         isSandbox ? [
           { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
           { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
@@ -1688,8 +1691,9 @@ export default function RelojVisual({
           { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
         ]
       );
+      const assignments = Array.isArray(rawAssignments) ? rawAssignments : (rawAssignments && typeof rawAssignments === 'object' ? Object.values(rawAssignments) : []);
       // §29: preferir resolved_user_id (users.id) sobre el employee_id crudo (employees.id).
-      const match = assignments.find((a: any) => Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
+      const match = assignments.find((a: any) => a && Number(a.resolved_user_id ?? a.employee_id) === Number(userId) && a.is_active && a.can_open_store);
       if (match) {
         return match.priority_order === 1 ? ' 🔑' : ' 🔑🔑';
       }
@@ -1774,7 +1778,7 @@ export default function RelojVisual({
   }, []);
 
   // Resolve user official job title from globalRoles based on job_role_id
-  const myRole = (globalRoles || []).find((r: any) => r.id === currentUser?.job_role_id);
+  const myRole = (Array.isArray(globalRoles) ? globalRoles : []).find((r: any) => r.id === currentUser?.job_role_id);
   const userPositionName = myRole ? myRole.name : (currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'supervisor' ? 'Supervisor' : 'Colaborador');
 
   useEffect(() => {
@@ -2266,6 +2270,34 @@ export default function RelojVisual({
   const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
   const [isTaskCreatorOpen, setIsTaskCreatorOpen] = useState(false);
   const [isCopilotChatOpen, setIsCopilotChatOpen] = useState(false);
+
+  // 2026-07-26 (auditoría en vivo): la cinta de bienvenida del colaborador mostraba racha,
+  // monedero y nivel ESCRITOS A MANO ("14 Días Puntual", "$25.00 Coins", "Nivel 3 / 1,250 XP"),
+  // idénticos para todos los empleados de todas las empresas. Se notó porque la misma persona
+  // veía $25.00 aquí y $0.00 en el módulo de Tareas, que sí consulta el saldo real. Se conecta
+  // al mismo endpoint que ya usa TaskRunner (`/wallet/balance`). La racha no tiene endpoint
+  // propio todavía, así que se oculta en vez de inventar un número (ver §62 del contrato).
+  const [walletData, setWalletData] = useState<{ balance_coins: number; xp_points: number; level: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchWallet = async () => {
+      try {
+        const res = await axiosInstance.get('/wallet/balance');
+        if (!cancelled && res.data && res.data.success) {
+          setWalletData({
+            balance_coins: res.data.balance_coins,
+            xp_points: res.data.xp_points,
+            level: res.data.level,
+          });
+        }
+      } catch (e) {
+        if (!cancelled) setWalletData(null);
+      }
+    };
+    fetchWallet();
+    return () => { cancelled = true; };
+  }, [currentUser?.id]);
   // Botón flotante único (2026-07-23, a petición de Francisco): antes TaskRunner.tsx tenía
   // su propio FAB que chocaba visualmente con este. Ahora sus acciones (Crear Tarea, Crear
   // con IA, Historial, Plan del Día) se disparan desde la hoja de este FAB único, vía ref.
@@ -2579,7 +2611,7 @@ export default function RelojVisual({
     `w-full text-left px-3 py-2 rounded-xl text-xs font-black border-none bg-transparent cursor-pointer flex items-center gap-2.5 ${
       danger
         ? 'text-rose-600 hover:bg-rose-50'
-        : isDark ? 'text-slate-200 hover:bg-slate-800' : 'text-slate-655 hover:bg-slate-50'
+        : isDark ? 'text-slate-200 hover:bg-slate-800' : 'text-slate-700 hover:bg-slate-50'
     }`;
 
   const renderFloatingActionButton = () => {
@@ -2653,6 +2685,12 @@ export default function RelojVisual({
 
             {/* Caja de Herramientas */}
             <p className={fabSectionDivider(isDark, false)}>Caja de Herramientas</p>
+            {/* §25b: primero en la lista para quien aprueba — es acción pendiente, no consulta. */}
+            {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+              <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('silla_requests'); })} className={fabItemClass(isDark)}>
+                <Armchair size={14} className="text-violet-400 shrink-0" /> Solicitudes de Ley Silla 🪑
+              </button>
+            )}
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('chat'); fetchChatMessages(); })} className={fabItemClass(isDark)}>
               <MessageSquare size={14} className="text-indigo-400 shrink-0" /> Chat de Equipo 💬
             </button>
@@ -3666,6 +3704,7 @@ export default function RelojVisual({
                           {innerTool === 'buzon' && renderToolBuzon()}
                           {innerTool === 'transfer' && renderToolTransfer()}
                           {innerTool === 'huida' && renderToolHuida()}
+                          {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
                         </div>
                       )}
                     </div>
@@ -3736,31 +3775,27 @@ export default function RelojVisual({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                      <span className="text-base">🔥</span>
-                      <div className="text-left">
-                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Racha</span>
-                        <span className="text-xs font-black text-white">14 Días Puntual</span>
+                  {/* Solo se pintan si hay saldo real del servidor — antes eran valores fijos
+                      inventados, iguales para todo el mundo (ver comentario en walletData). */}
+                  {walletData && (
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                        <span className="text-base">🪙</span>
+                        <div className="text-left">
+                          <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Monedero</span>
+                          <span className="text-xs font-black text-white">${walletData.balance_coins.toFixed(2)} Coins</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                      <span className="text-base">🪙</span>
-                      <div className="text-left">
-                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Monedero</span>
-                        <span className="text-xs font-black text-white">$25.00 Coins</span>
+                      <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                        <span className="text-base">🌟</span>
+                        <div className="text-left">
+                          <span className="text-[9px] font-black text-indigo-300 uppercase tracking-wider block leading-none">Nivel {walletData.level}</span>
+                          <span className="text-xs font-black text-white">{walletData.xp_points.toLocaleString('es-MX')} XP</span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                      <span className="text-base">🌟</span>
-                      <div className="text-left">
-                        <span className="text-[9px] font-black text-indigo-300 uppercase tracking-wider block leading-none">Nivel 3</span>
-                        <span className="text-xs font-black text-white">1,250 XP</span>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-12 gap-8 items-start">
@@ -4247,8 +4282,30 @@ export default function RelojVisual({
                       </div>
                     </button>
 
-                    <button 
-                      onClick={() => setInnerTool('soplon')} 
+                    {/* §25b (cableado 2026-07-26): bandeja de aprobación de Ley Silla. El endpoint
+                        `GET /clock/silla/requests` existía desde el 21-jul pero ningún usuario podía
+                        alcanzarlo: la única forma de aprobar era atender la notificación push en el
+                        momento exacto, y si se perdía, la solicitud quedaba atorada para siempre.
+                        Solo se muestra a quien el backend deja consultarla (admin/supervisor). */}
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+                      <button
+                        onClick={() => setInnerTool('silla_requests')}
+                        className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                          isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-full bg-slate-800 text-violet-400 flex items-center justify-center shrink-0">
+                          <Armchair size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Solicitudes de Ley Silla 🪑</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Aprobar o rechazar las solicitudes pendientes de tu equipo</p>
+                        </div>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setInnerTool('soplon')}
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
                         isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
@@ -4350,6 +4407,7 @@ export default function RelojVisual({
                   {innerTool === 'buzon' && renderToolBuzon()}
                   {innerTool === 'transfer' && renderToolTransfer()}
                   {innerTool === 'huida' && renderToolHuida()}
+                          {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
                 </div>
               )}
             </div>

@@ -121,6 +121,8 @@ class AuthController extends Controller
 
         SecurityLogger::log('auth_success', "Inicio de sesión exitoso de: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
 
+        // §43: además del JSON (para compatibilidad con el frontend actual mientras
+        // migra), el token viaja en una cookie httpOnly que JavaScript no puede leer.
         return response()->json([
             'message' => 'Login exitoso',
             // toAuthPayload: el puesto sale del expediente, no del duplicado stale users.job_role_id.
@@ -128,7 +130,34 @@ class AuthController extends Controller
             'tenant' => $isPlatformUser ? null : $user->tenant,
             'token' => $token,
             'requires_2fa' => $requires2fa
-        ]);
+        ])->cookie($this->makeAuthCookie($token));
+    }
+
+    /**
+     * §43: cookie httpOnly del token de auth. `$minutes = null` → un año (login normal);
+     * para el kiosco se pasan 15 minutos, para que la cookie caduque junto con el token.
+     */
+    private function makeAuthCookie(string $token, ?int $minutes = null)
+    {
+        $minutes = $minutes ?? 60 * 24 * 365; // "indefinido" para login normal
+        $secure = app()->isProduction();
+
+        return cookie(
+            \App\Http\Middleware\AuthTokenFromCookie::COOKIE_NAME,
+            $token,
+            $minutes,
+            '/',
+            null,
+            $secure,   // secure: solo HTTPS en producción
+            true,      // httpOnly: JS no puede leerla
+            false,
+            'Lax'
+        );
+    }
+
+    private function forgetAuthCookie()
+    {
+        return \Illuminate\Support\Facades\Cookie::forget(\App\Http\Middleware\AuthTokenFromCookie::COOKIE_NAME);
     }
 
     public function logout(Request $request)
@@ -139,7 +168,58 @@ class AuthController extends Controller
             SecurityLogger::log('auth_logout', "Sesión cerrada por: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
         }
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Sesión cerrada exitosamente']);
+        // §43: además de borrar el token en BD, expirar la cookie httpOnly.
+        return response()->json(['message' => 'Sesión cerrada exitosamente'])
+            ->withCookie($this->forgetAuthCookie());
+    }
+
+    /**
+     * §37: Modo Kiosco — login por PIN en tablet compartida. Reutiliza
+     * employees.security_pin (mismo mecanismo que testigos de Apertura de Emergencia
+     * y aprobación de Ley Silla), no crea un secreto paralelo.
+     *
+     * No hace falta un mecanismo de "tenant del dispositivo": employee_id ya identifica
+     * una fila única en employees, y esa fila ya trae su propio tenant_id — se resuelve
+     * el tenant a partir del empleado, no al revés.
+     */
+    public function kioskLogin(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|integer',
+            'pin' => 'required|string',
+        ]);
+
+        $genericError = ['success' => false, 'message' => 'PIN incorrecto o colaborador no válido.'];
+
+        $employee = \App\Models\Employee::withoutGlobalScopes()->find($request->employee_id);
+        if (!$employee || !$employee->security_pin || !Hash::check($request->pin, $employee->security_pin)) {
+            return response()->json($genericError, 422);
+        }
+
+        $user = $employee->user_id ? User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find($employee->user_id) : null;
+        if (!$user) {
+            return response()->json($genericError, 422);
+        }
+
+        $expiresAt = now()->addMinutes(15);
+        $token = $user->createToken('kiosk_session', ['*'], $expiresAt)->plainTextToken;
+
+        SecurityLogger::log('auth_success', "Inicio de sesión de kiosco: {$user->email}", $user->tenant_id, $user->id);
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'user' => $user,
+            'tenant' => $user->tenant,
+            'expires_at' => $expiresAt->toIso8601String(),
+        ])->cookie($this->makeAuthCookie($token, 15)); // §43: cookie que caduca con el token (15 min)
+    }
+
+    public function kioskLogout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['success' => true, 'message' => 'Sesión de kiosco cerrada.'])
+            ->withCookie($this->forgetAuthCookie());
     }
 
     public function me(Request $request)
@@ -147,6 +227,10 @@ class AuthController extends Controller
         $user = $request->user();
         if ($user instanceof \App\Models\User) {
             $user->load('tenant');
+        } elseif ($user instanceof \App\Models\PlatformUser) {
+            if ($user->role !== \App\Enums\UserRole::SUPPORT_AGENT->value) {
+                $user->role = \App\Enums\UserRole::PLATFORM_ADMIN->value;
+            }
         }
         return response()->json([
             // toAuthPayload: el puesto sale del expediente, no del duplicado stale users.job_role_id.
@@ -171,6 +255,70 @@ class AuthController extends Controller
             ]);
 
         return response()->json(['message' => 'FCM token actualizado exitosamente.']);
+    }
+
+    /**
+     * §52: flujo estándar "olvidé mi contraseña" (para empleados que ya activaron su
+     * cuenta con su propia contraseña; NO es el PIN de invitación). Siempre responde
+     * éxito para no revelar si el correo existe. El envío es best-effort: si el correo
+     * falla (sin dominio/servicio configurado aún), no rompe la petición.
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first();
+
+        if ($user) {
+            $token = \Illuminate\Support\Str::random(64);
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $request->email],
+                ['token' => Hash::make($token), 'created_at' => now()]
+            );
+
+            $base = rtrim(config('app.frontend_url') ?? config('app.url') ?? '', '/');
+            $resetUrl = $base . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+
+            try {
+                \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\PasswordResetMail($resetUrl));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('No se pudo enviar el correo de reset de contraseña: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $row = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->first();
+
+        if (!$row || !Hash::check($request->token, $row->token)) {
+            return response()->json(['success' => false, 'message' => 'El enlace de restablecimiento es inválido.'], 422);
+        }
+
+        if (\Carbon\Carbon::parse($row->created_at)->addMinutes(60)->isPast()) {
+            return response()->json(['success' => false, 'message' => 'El enlace de restablecimiento venció. Solicita uno nuevo.'], 422);
+        }
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Cuenta no encontrada.'], 404);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Contraseña restablecida. Ya puedes iniciar sesión.']);
     }
 
     public function loginSocial(Request $request)
@@ -221,6 +369,7 @@ class AuthController extends Controller
 
         // 1. Try to find user by the social ID
         $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->withTrashed()
             ->where($column, $providerId)
             ->with('tenant')
             ->first();
@@ -228,6 +377,7 @@ class AuthController extends Controller
         // 2. If not found by social ID, try to find by email and automatically link
         if (!$user && $email) {
             $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->withTrashed()
                 ->where('email', $email)
                 ->with('tenant')
                 ->first();
@@ -236,6 +386,11 @@ class AuthController extends Controller
                 // Link the social ID
                 $user->update([$column => $providerId]);
             }
+        }
+
+        // Si el usuario estaba en borrado lógico, restaurarlo
+        if ($user && $user->trashed()) {
+            $user->restore();
         }
 
         // 3. If still not found, check platform users
@@ -263,6 +418,15 @@ class AuthController extends Controller
                 ]);
             } else {
                 return response()->json(['error' => 'No se encontró ninguna cuenta vinculada con estas credenciales.'], 404);
+            }
+        }
+
+        // Si el usuario pertenece a una empresa que ya fue eliminada, liberar el tenant_id (correo huérfano)
+        if (!$isPlatformUser && $user->tenant_id !== null) {
+            $tenant = \App\Models\Tenant::find($user->tenant_id);
+            if (!$tenant || $tenant->trashed()) {
+                $user->update(['tenant_id' => null]);
+                $user->refresh();
             }
         }
 
@@ -296,18 +460,51 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:6'
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin',
-            'tenant_id' => null,
-            'is_active' => true
-        ]);
+        $email = strtolower(trim($request->email));
+        $existingUser = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->withTrashed()
+            ->where('email', $email)
+            ->first();
+
+        if ($existingUser) {
+            $tenant = $existingUser->tenant_id ? \App\Models\Tenant::find($existingUser->tenant_id) : null;
+
+            if ($tenant && !$tenant->trashed()) {
+                $companyName = $tenant->name;
+                return response()->json([
+                    'error' => "El correo {$email} ya está registrado en la plataforma y pertenece a la empresa '{$companyName}'. Inicia sesión o utiliza un correo distinto para tu nueva empresa.",
+                    'is_duplicated' => true,
+                    'company_name' => $companyName
+                ], 409);
+            }
+
+            // Si la empresa fue eliminada (o tenant_id es NULL) o el usuario está borrado lógicamente:
+            // Es un correo huérfano o cuenta libre. Restaurar y resetear para pre-registro.
+            if ($existingUser->trashed()) {
+                $existingUser->restore();
+            }
+            $existingUser->update([
+                'name' => $request->name,
+                'password' => Hash::make($request->password),
+                'role' => 'admin',
+                'tenant_id' => null,
+                'is_active' => true
+            ]);
+            $user = $existingUser;
+        } else {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $email,
+                'password' => Hash::make($request->password),
+                'role' => 'admin',
+                'tenant_id' => null,
+                'is_active' => true
+            ]);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -544,6 +741,97 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Estado #1 del dialer (Fichaje Bloqueado por 3 retardos). Ver ClockService::getPunctualityStatus
+     * para la regla de negocio completa (no se reinicia por periodo de nómina).
+     */
+    public function punctualityStatus(Request $request)
+    {
+        $status = $this->clockService->getPunctualityStatus($request->user());
+
+        return response()->json($status);
+    }
+
+    /**
+     * §63: racha de puntualidad del colaborador para la cinta de bienvenida del Reloj.
+     * Devuelve { streak_days, last_late_date } calculado sobre time_entries reales.
+     */
+    public function punctualityStreak(Request $request)
+    {
+        $streak = $this->clockService->getPunctualityStreak($request->user());
+
+        return response()->json($streak);
+    }
+
+    /**
+     * Configura el PIN de seguridad del empleado (distinto del pin_code de invitación
+     * de onboarding). Se usa para autorizar acciones sensibles como la co-validación
+     * de testigos en "Apertura de Emergencia". Requiere la contraseña actual, igual
+     * que changePassword, por tratarse de un secreto que habilita acciones con peso
+     * legal/de nómina.
+     */
+    public function updateSecurityPin(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'pin' => ['required', 'string', 'regex:/^\d{4,6}$/'],
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La contraseña actual es incorrecta.'
+            ], 422);
+        }
+
+        $employee = $user->employee;
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tu cuenta no tiene un perfil de empleado asociado.'
+            ], 422);
+        }
+
+        $employee->security_pin = Hash::make($request->pin);
+        $employee->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'PIN de seguridad actualizado.'
+        ]);
+    }
+
+    /**
+     * Variante §1–§42 de la alarma de traslado (PUT /me/pre-shift-alarm): persiste en
+     * users.pre_shift_alarm_minutes (columna legacy conservada — drop diferido de F2). La
+     * variante canónica de la línea del Reloj (POST, preShiftAlarm) escribe en el EXPEDIENTE,
+     * que es lo que lee toAuthPayload; conciliar el FE hacia una sola en F3-FE.
+     */
+    public function updatePreShiftAlarm(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'minutes' => ['nullable', 'integer', \Illuminate\Validation\Rule::in([15, 30, 45, 60])],
+        ]);
+
+        $minutes = $validated['minutes'] ?? null;
+
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('id', $user->id)
+            ->update([
+                'pre_shift_alarm_minutes' => $minutes,
+                'updated_at' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'pre_shift_alarm_minutes' => $minutes,
+        ]);
+    }
+
     public function requestRestDay(Request $request)
     {
         $user = $request->user();
@@ -617,123 +905,4 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * §37: Modo Kiosco — login por PIN en tablet compartida. Reutiliza
-     * employees.security_pin (mismo mecanismo que testigos de Apertura de Emergencia
-     * y aprobación de Ley Silla), no crea un secreto paralelo. El tenant se resuelve
-     * a partir del empleado (employee_id → employees.tenant_id), no al revés.
-     */
-    public function kioskLogin(Request $request)
-    {
-        $request->validate([
-            'employee_id' => 'required|integer',
-            'pin' => 'required|string',
-        ]);
-
-        $genericError = ['success' => false, 'message' => 'PIN incorrecto o colaborador no válido.'];
-
-        $employee = \App\Models\Employee::withoutGlobalScopes()->find($request->employee_id);
-        if (!$employee || !$employee->security_pin || !Hash::check($request->pin, $employee->security_pin)) {
-            return response()->json($genericError, 422);
-        }
-
-        $user = $employee->user_id ? User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find($employee->user_id) : null;
-        if (!$user) {
-            return response()->json($genericError, 422);
-        }
-
-        $expiresAt = now()->addMinutes(15);
-        $token = $user->createToken('kiosk_session', ['*'], $expiresAt)->plainTextToken;
-
-        SecurityLogger::log('auth_success', "Inicio de sesión de kiosco: {$user->email}", $user->tenant_id, $user->id);
-
-        return response()->json([
-            'success' => true,
-            'token' => $token,
-            'user' => $user,
-            'tenant' => $user->tenant,
-            'expires_at' => $expiresAt->toIso8601String(),
-        ]);
-    }
-
-    public function kioskLogout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['success' => true, 'message' => 'Sesión de kiosco cerrada.']);
-    }
-
-    /** Estado #1 de la matriz (bloqueo por 3 retardos) — §1–§42; ver ClockService::getPunctualityStatus. */
-    public function punctualityStatus(Request $request)
-    {
-        $status = $this->clockService->getPunctualityStatus($request->user());
-
-        return response()->json($status);
-    }
-
-    /**
-     * Configura el PIN de seguridad del empleado (distinto del pin_code de invitación de
-     * onboarding). Autoriza acciones sensibles (testigos de Apertura de Emergencia, Ley Silla).
-     * Requiere la contraseña actual, por tratarse de un secreto con peso legal/de nómina.
-     */
-    public function updateSecurityPin(Request $request)
-    {
-        $user = $request->user();
-
-        $request->validate([
-            'current_password' => 'required|string',
-            'pin' => ['required', 'string', 'regex:/^\d{4,6}$/'],
-        ]);
-
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'La contraseña actual es incorrecta.'
-            ], 422);
-        }
-
-        $employee = $user->employee;
-        if (!$employee) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tu cuenta no tiene un perfil de empleado asociado.'
-            ], 422);
-        }
-
-        $employee->security_pin = Hash::make($request->pin);
-        $employee->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'PIN de seguridad actualizado.'
-        ]);
-    }
-
-    /**
-     * Variante §1–§42 de la alarma de traslado (PUT /me/pre-shift-alarm): persiste en
-     * users.pre_shift_alarm_minutes (columna legacy conservada — drop diferido de F2). La
-     * variante canónica de la línea del Reloj (POST, preShiftAlarm) escribe en el EXPEDIENTE,
-     * que es lo que lee toAuthPayload; conciliar el FE hacia una sola en F3-FE.
-     */
-    public function updatePreShiftAlarm(Request $request)
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'minutes' => ['nullable', 'integer', \Illuminate\Validation\Rule::in([15, 30, 45, 60])],
-        ]);
-
-        $minutes = $validated['minutes'] ?? null;
-
-        \Illuminate\Support\Facades\DB::table('users')
-            ->where('id', $user->id)
-            ->update([
-                'pre_shift_alarm_minutes' => $minutes,
-                'updated_at' => now(),
-            ]);
-
-        return response()->json([
-            'success' => true,
-            'pre_shift_alarm_minutes' => $minutes,
-        ]);
-    }
 }

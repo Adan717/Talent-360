@@ -398,32 +398,35 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     }
   };
 
-  const handleBuyPlan = async (plan: string) => {
+  const activeEmployeesCount = Math.max(1, employees.length);
+  const [selectedCycle, setSelectedCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<'pro' | 'enterprise'>(currentTier === 'pro' ? 'enterprise' : 'pro');
+
+  const handleBuyPlan = async (plan: string, cycle: 'monthly' | 'yearly' = selectedCycle) => {
     try {
       const response = await axiosInstance.post('/subscriptions/create-preference', {
-        plan: plan
+        plan: plan,
+        employees: activeEmployeesCount,
+        billing_cycle: cycle
       });
       if (response.data.init_point) {
         window.location.href = response.data.init_point;
       } else {
         alert('Error al generar la preferencia de pago.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Error al conectar con la pasarela de pagos.');
+      alert(e.response?.data?.error || 'Error al conectar con la pasarela de pagos.');
     }
   };
 
   const planDetails = {
-    freemium: { name: 'Freemium', maxUsers: 10, price: 0, color: 'text-slate-600', bg: 'bg-slate-100' },
-    pro: { name: 'PRO', maxUsers: 'Ilimitados', price: 5, color: 'text-blue-600', bg: 'bg-blue-100' },
-    enterprise: { name: 'Enterprise', maxUsers: 'Ilimitados', price: 12, color: 'text-purple-600', bg: 'bg-purple-100' },
+    freemium: { name: 'Freemium', maxUsers: systemSettings?.freemium_max_users || 10, price: 0, color: 'text-slate-600', bg: 'bg-slate-100' },
+    pro: { name: 'PRO', maxUsers: 'Ilimitados', price: 12, color: 'text-blue-600', bg: 'bg-blue-100' },
+    enterprise: { name: 'Enterprise', maxUsers: 'Ilimitados', price: 499, color: 'text-purple-600', bg: 'bg-purple-100' },
   };
 
   const tierInfo = planDetails[currentTier as keyof typeof planDetails] || planDetails.freemium;
-
-  // Empleados ficticios activos para dar realismo a la barra de progreso
-  const activeEmployeesCount = 8; 
 
   // Check if trial is active
   const tenant = currentUser?.tenant;
@@ -631,22 +634,36 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
             
             {/* Tarjeta del Plan Actual */}
             <div className="lg:col-span-1 space-y-6">
-              <div className={`bg-white rounded-3xl p-8 border-2 ${currentTier === 'enterprise' ? 'border-purple-200' : currentTier === 'pro' ? 'border-blue-200' : 'border-slate-200'} shadow-sm relative overflow-hidden`}>
+              <div className={`bg-white rounded-3xl p-8 border-2 ${currentTier === 'enterprise' ? 'border-purple-300 bg-gradient-to-b from-purple-50/20 to-white' : currentTier === 'pro' ? 'border-blue-300 bg-gradient-to-b from-blue-50/20 to-white' : 'border-slate-200'} shadow-sm relative overflow-hidden`}>
                 <div className="flex justify-between items-start mb-6">
-                  <div className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest ${tierInfo.bg} ${tierInfo.color}`}>
+                  <div className={`px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-widest ${tierInfo.bg} ${tierInfo.color} border border-current/20`}>
                     Plan Actual
                   </div>
                 </div>
                 
                 <h3 className="text-4xl font-black text-slate-900 mb-2">{tierInfo.name}</h3>
                 
-                {currentTier !== 'freemium' && (
-                  <div className="mb-6">
-                    <span className="text-3xl font-black text-slate-900">${tierInfo.price * activeEmployeesCount}</span>
-                    <span className="text-slate-500 font-bold"> /mes</span>
-                    <p className="text-xs text-slate-400 mt-1">Estimado en base a {activeEmployeesCount} empleados</p>
-                  </div>
-                )}
+                <div className="mb-6">
+                  {currentTier === 'freemium' ? (
+                    <div>
+                      <span className="text-3xl font-black text-slate-900">$0</span>
+                      <span className="text-slate-500 font-bold"> /mes</span>
+                      <p className="text-xs text-slate-400 mt-1">Plan Gratuito Permanente</p>
+                    </div>
+                  ) : currentTier === 'pro' ? (
+                    <div>
+                      <span className="text-3xl font-black text-slate-900">${tierInfo.price * activeEmployeesCount}</span>
+                      <span className="text-slate-500 font-bold"> MXN /mes</span>
+                      <p className="text-xs text-slate-400 mt-1">Estimado para {activeEmployeesCount} colaborador(es) ($12/emp/mes)</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-3xl font-black text-slate-900">${tierInfo.price}</span>
+                      <span className="text-slate-500 font-bold"> MXN /mes</span>
+                      <p className="text-xs text-slate-400 mt-1">Suite Enterprise Completa para {activeEmployeesCount} colaboradores</p>
+                    </div>
+                  )}
+                </div>
 
                 <div className="space-y-4 mb-8">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -656,19 +673,40 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     </div>
                     {currentTier === 'freemium' && (
                       <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div className="bg-slate-800 h-full rounded-full" style={{ width: `${(activeEmployeesCount/10)*100}%` }}></div>
+                        <div className="bg-slate-800 h-full rounded-full" style={{ width: `${Math.min(100, (activeEmployeesCount / (systemSettings?.freemium_max_users || 10)) * 100)}%` }}></div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {currentTier !== 'enterprise' && (
+                {currentTier === 'freemium' && (
                   <button 
-                    onClick={() => setShowCheckout(true)}
-                    className="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                    onClick={() => {
+                      setSelectedUpgradePlan('pro');
+                      setShowCheckout(true);
+                    }}
+                    className="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 cursor-pointer"
                   >
                     Mejorar Plan <ChevronRight size={18}/>
                   </button>
+                )}
+
+                {currentTier === 'pro' && (
+                  <button 
+                    onClick={() => {
+                      setSelectedUpgradePlan('enterprise');
+                      setShowCheckout(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20 cursor-pointer"
+                  >
+                    Mejorar a Enterprise <ChevronRight size={18}/>
+                  </button>
+                )}
+
+                {currentTier === 'enterprise' && (
+                  <div className="w-full bg-purple-50 border border-purple-200 text-purple-700 font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                    <ShieldCheck size={18} /> Plan Máximo Enterprise Activo
+                  </div>
                 )}
               </div>
             </div>
@@ -676,19 +714,33 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
             {/* Historial de Facturación y Método de Pago */}
             <div className="lg:col-span-2 space-y-6">
               
-              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex items-center justify-between">
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-12 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200">
-                    <span className="font-black text-blue-900 italic tracking-tighter text-xl">VISA</span>
+                  <div className="w-14 h-12 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 text-slate-400 shrink-0">
+                    <CreditCard size={24} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-800">Termina en •••• 4242</h4>
-                    <p className="text-sm text-slate-500">Expira en 12/2028</p>
+                    <h4 className="font-bold text-slate-800">
+                      {currentTier === 'freemium' ? 'Plan Gratuito Sin Tarjeta' : 'Método de Pago Registrado'}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {currentTier === 'freemium' 
+                        ? 'Tu empresa está operando bajo la versión gratuita Talent360.'
+                        : 'Gestionado de forma segura vía pasarela de pagos (MercadoPago / Stripe).'}
+                    </p>
                   </div>
                 </div>
-                <button className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-4 py-2 rounded-lg">
-                  Actualizar Tarjeta
-                </button>
+                {currentTier !== 'enterprise' && (
+                  <button 
+                    onClick={() => {
+                      setSelectedUpgradePlan(currentTier === 'pro' ? 'enterprise' : 'pro');
+                      setShowCheckout(true);
+                    }}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl border border-blue-100 shrink-0"
+                  >
+                    {currentTier === 'freemium' ? 'Agregar Tarjeta y Mejorar' : 'Actualizar Suscripción'}
+                  </button>
+                )}
               </div>
 
               <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
@@ -696,25 +748,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   <Receipt className="text-slate-400"/> Historial de Facturación
                 </h3>
                 
-                <div className="space-y-4">
-                  {[
-                    { date: '19 de Junio, 2026', amount: tierInfo.price * activeEmployeesCount, status: 'Pagado', invoice: 'INV-2026-06' },
-                    { date: '19 de Mayo, 2026', amount: tierInfo.price * 6, status: 'Pagado', invoice: 'INV-2026-05' },
-                    { date: '19 de Abril, 2026', amount: tierInfo.price * 5, status: 'Pagado', invoice: 'INV-2026-04' },
-                  ].map((inv, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors">
-                      <div>
-                        <p className="font-bold text-slate-800">{inv.date}</p>
-                        <p className="text-xs text-slate-500 font-medium">Factura {inv.invoice}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-slate-900">${inv.amount}.00</p>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-100 px-2 py-0.5 rounded-full mt-1">
-                          <CheckCircle2 size={10}/> {inv.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-center py-10 px-4 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
+                  <Receipt className="mx-auto text-slate-300 mb-3" size={40} />
+                  <h4 className="font-bold text-slate-700 text-sm">Sin historial de facturación</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                    Esta empresa aún no cuenta con recibos o comprobantes de pago registrados. Las facturas de tu suscripción aparecerán aquí automáticamente al realizar la adquisición o renovación de tu plan.
+                  </p>
                 </div>
               </div>
 
@@ -1575,6 +1614,121 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Actualización / Mejorar Plan */}
+      {showCheckout && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 border border-slate-100 max-w-xl w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => setShowCheckout(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">
+                <Zap size={20} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900">Mejorar Plan de Suscripción</h3>
+                <p className="text-xs text-slate-500 font-medium">Selecciona el plan y periodo para desbloquear las herramientas avanzadas.</p>
+              </div>
+            </div>
+
+            {/* Selector de Ciclo de Facturación */}
+            <div className="my-6 p-1 bg-slate-100 rounded-2xl flex items-center gap-1">
+              <button 
+                type="button"
+                onClick={() => setSelectedCycle('monthly')}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${selectedCycle === 'monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Mensual
+              </button>
+              <button 
+                type="button"
+                onClick={() => setSelectedCycle('yearly')}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${selectedCycle === 'yearly' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Anual
+                <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  20% OFF
+                </span>
+              </button>
+            </div>
+
+            {/* Selector de Planes disponibles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Opción Plan PRO */}
+              {currentTier === 'freemium' && (
+                <div 
+                  onClick={() => setSelectedUpgradePlan('pro')}
+                  className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${selectedUpgradePlan === 'pro' ? 'border-blue-600 bg-blue-50/30 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-black text-slate-900 text-lg">PRO</span>
+                    {selectedUpgradePlan === 'pro' && <CheckCircle2 className="text-blue-600" size={18} />}
+                  </div>
+                  <div className="mb-3">
+                    <span className="text-2xl font-black text-slate-900">
+                      ${selectedCycle === 'yearly' ? Math.round(12 * activeEmployeesCount * 12 * 0.8) : 12 * activeEmployeesCount}
+                    </span>
+                    <span className="text-xs text-slate-500 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs font-semibold text-slate-600">
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-emerald-500"/> Reloj Checador & LFT</li>
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-emerald-500"/> Reportes Avanzados IA</li>
+                    <li className="flex items-center gap-1.5"><Check size={12} className="text-emerald-500"/> Timbrado Nómina CFDI 4.0</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Opción Plan Enterprise */}
+              <div 
+                onClick={() => setSelectedUpgradePlan('enterprise')}
+                className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${currentTier === 'freemium' ? '' : 'col-span-2'} ${selectedUpgradePlan === 'enterprise' ? 'border-purple-600 bg-purple-50/30 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-black text-purple-900 text-lg">ENTERPRISE</span>
+                  {selectedUpgradePlan === 'enterprise' && <CheckCircle2 className="text-purple-600" size={18} />}
+                </div>
+                <div className="mb-3">
+                  <span className="text-2xl font-black text-slate-900">
+                    ${selectedCycle === 'yearly' ? Math.round(499 * 12 * 0.8) : 499}
+                  </span>
+                  <span className="text-xs text-slate-500 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
+                </div>
+                <ul className="space-y-1.5 text-xs font-semibold text-slate-600">
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Todo lo del Plan PRO</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Academia 360 & LMS Ilimitado</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Portal Web de Empleo Corporativo</li>
+                  <li className="flex items-center gap-1.5"><Check size={12} className="text-purple-500"/> Expedientes Digitales Avanzados</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Resumen y Botón de Pago */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase">Total a Pagar</p>
+                <p className="text-xl font-black text-slate-900">
+                  ${selectedUpgradePlan === 'enterprise' 
+                    ? (selectedCycle === 'yearly' ? Math.round(499 * 12 * 0.8) : 499)
+                    : (selectedCycle === 'yearly' ? Math.round(12 * activeEmployeesCount * 12 * 0.8) : 12 * activeEmployeesCount)
+                  } MXN
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleBuyPlan(selectedUpgradePlan, selectedCycle)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black px-6 py-3.5 rounded-xl shadow-lg hover:shadow-slate-900/20 transition-all flex items-center gap-2 text-sm cursor-pointer"
+              >
+                Proceder al Pago <ChevronRight size={18}/>
+              </button>
             </div>
           </div>
         </div>

@@ -4,7 +4,8 @@ import {
   GraduationCap, Settings, MapPin, Camera, Lock, Check,
   AlertTriangle, Star, ShieldCheck, HeartHandshake, Award, 
   Send, Sparkles, CheckSquare, ClipboardList, Network, Bot, 
-  Play, MessageSquare, AlertOctagon, HelpCircle, X, ChevronRight, User
+  Play, MessageSquare, AlertOctagon, HelpCircle, X, ChevronRight, User,
+  DollarSign, FileText, CheckCircle2
 } from 'lucide-react';
 import DialPrincipal from './reloj/DialPrincipal';
 import { MobileBottomNav } from './reloj/MobileBottomNav';
@@ -409,14 +410,22 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         desc = 'Gestión operativa';
         icon = <CheckSquare className="text-blue-600 animate-wiggle-once" />;
         badgeText = 'Tareas';
-        badgeColorClass = 'bg-blue-50 dark:bg-blue-955/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
+        badgeColorClass = 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30';
         break;
       case 'academia':
         title = 'Academia';
         desc = 'Desarrollo de personal';
         icon = <GraduationCap className="text-violet-500 animate-bounce-twice" />;
         badgeText = 'Cursos';
-        badgeColorClass = 'bg-violet-50 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
+        badgeColorClass = 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/30';
+        break;
+      case 'nomina':
+      case 'cuenta':
+        title = 'Nómina y Mi Perfil';
+        desc = 'Recibos y Asistencia';
+        icon = <DollarSign className="text-rose-500 animate-pulse" />;
+        badgeText = 'Nómina';
+        badgeColorClass = 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30';
         break;
       case 'herramientas':
         title = 'Herramientas';
@@ -497,7 +506,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         <div className="py-2 px-1 text-left w-full select-none shrink-0 border-b border-slate-100 dark:border-slate-800 pb-3 mb-2">
           <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] px-1">
             <div className="flex items-center select-none">
-              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+              <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
                 <span>🏪 Sucursal Abierta</span>
               </span>
@@ -505,17 +514,17 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             <div className="flex items-center select-none">
               {hasCheckedOut ? (
-                <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5">
+                <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5">
                   <span>Turno Finalizado ✓</span>
                 </span>
               ) : hasCheckedIn ? (
-                <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5 animate-pulse">
+                <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   <span>Turno Activo ✓</span>
                 </span>
               ) : (
-                <span className="text-slate-400 dark:text-slate-550 font-black flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-600"></span>
+                <span className="text-slate-400 dark:text-slate-500 font-black flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                   <span>Turno Inactivo</span>
                 </span>
               )}
@@ -569,7 +578,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       <div className="py-1 px-1 text-left w-full select-none shrink-0">
         <div className="flex justify-between items-center w-full font-bold uppercase tracking-wider text-[9px] mb-1.5 px-1">
           <div className="flex items-center select-none">
-            <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+            <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
               <span>🏪 Sucursal Abierta</span>
             </span>
@@ -577,17 +586,17 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
           <div className="flex items-center select-none">
             {hasCheckedOut ? (
-              <span className="text-emerald-600 dark:text-emerald-450 font-black flex items-center gap-1.5">
+              <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span>Turno Finalizado ✓</span>
               </span>
             ) : hasCheckedIn ? (
-              <span className="text-emerald-600 dark:text-emerald-455 font-black flex items-center gap-1.5 animate-pulse">
+              <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>Turno Activo ✓</span>
               </span>
             ) : (
-              <span className="text-slate-400 dark:text-slate-550 font-black flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-350 dark:bg-slate-600"></span>
+              <span className="text-slate-400 dark:text-slate-500 font-black flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                 <span>Turno Inactivo</span>
               </span>
             )}
@@ -601,7 +610,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             onClick={() => setActiveModal('entry')}
             className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
-            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-indigo-650 dark:text-indigo-400">Entrada</span>
+            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-indigo-600 dark:text-indigo-400">Entrada</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
               hasCheckedIn 
                 ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold shadow-indigo-500/20' 
@@ -621,7 +630,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 onClick={() => setActiveModal('break')}
                 className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
-                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-purple-650 dark:text-purple-400">Descanso</span>
+                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-purple-600 dark:text-purple-400">Descanso</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
                   isDone || isActive
                     ? 'border-purple-500 bg-purple-500 text-white font-extrabold shadow-purple-500/20' 
@@ -643,7 +652,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 onClick={() => setActiveModal('meal')}
                 className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
               >
-                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-amber-650 dark:text-amber-400">Comida</span>
+                <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-amber-600 dark:text-amber-400">Comida</span>
                 <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
                   isDone || isActive
                     ? 'border-amber-500 bg-amber-500 text-white font-extrabold shadow-amber-500/20' 
@@ -661,7 +670,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             onClick={() => setActiveModal('exit')}
             className="w-1/4 flex flex-col items-center relative cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 transform"
           >
-            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-emerald-650 dark:text-emerald-400">Salida</span>
+            <span className="text-[8.5px] font-black uppercase tracking-wider mb-0.5 text-emerald-600 dark:text-emerald-400">Salida</span>
             <div className={`rounded-full flex items-center justify-center border-2 relative shadow-md w-11 h-11 transition-all ${
               hasCheckedOut 
                 ? 'border-emerald-500 bg-emerald-500 text-white font-extrabold shadow-emerald-500/20' 
@@ -675,14 +684,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
         {/* Barra cronológica proporcional */}
         <div className="relative w-full z-0 px-1 mb-2 mt-2">
-          <div className="relative w-full h-4 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-350/20 shadow-inner overflow-hidden">
+          <div className="relative w-full h-4 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-300/20 shadow-inner overflow-hidden">
             {hasCheckedIn && elapsedTotal > 0 && (
               <div 
                 className="absolute top-0 left-0 h-full rounded-2xl overflow-hidden flex transition-all duration-750 ease-out"
                 style={{ width: `${progressPercent}%` }}
               >
                 {segmentsList.map((seg, sIdx) => {
-                  let segBg = 'bg-gradient-to-r from-emerald-450 to-teal-500';
+                  let segBg = 'bg-gradient-to-r from-emerald-400 to-teal-500';
                   if (seg.type === 'break') segBg = 'bg-gradient-to-r from-purple-500 to-indigo-600';
                   if (seg.type === 'meal') segBg = 'bg-gradient-to-r from-amber-500 to-orange-500';
                   return (
@@ -731,7 +740,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
   };
 
   return (
-    <div className={`w-full h-full flex flex-col justify-between overflow-hidden relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-850'}`}>
+    <div className={`w-full h-full flex flex-col justify-between overflow-hidden relative ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       
       {/* RENDER UNIFIED MOBILE HEADER */}
       {renderUnifiedMobileHeader()}
@@ -786,14 +795,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Entrada Registrada */}
                   {hasCheckedIn && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-emerald-955/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/60 border-emerald-100 text-emerald-900'
+                      isDark ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-300' : 'bg-emerald-50/60 border-emerald-100 text-emerald-900'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-650 dark:text-emerald-400 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 text-sm animate-pulse">
                         ✅
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-450 leading-none">Fichaje Registrado</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 leading-none">Fichaje Registrado</p>
+                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Entrada: {formatMinsToTimeClean(checkInTimes[99] || 545)} (Retardo de 5 min)
                         </p>
                       </div>
@@ -803,14 +812,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Descanso Registrado */}
                   {breaksTaken[99] !== undefined && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-purple-955/20 border-purple-900/40 text-purple-300' : 'bg-purple-50/60 border-purple-100 text-purple-900'
+                      isDark ? 'bg-purple-950/20 border-purple-900/40 text-purple-300' : 'bg-purple-50/60 border-purple-100 text-purple-900'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-650 dark:text-purple-400 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 text-sm animate-pulse">
                         ☕
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-450 leading-none">Descanso Tomado</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 leading-none">Descanso Tomado</p>
+                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Salida: {formatMinsToTimeClean(breakStartTimes[99] || 720)} | Regreso: {formatMinsToTimeClean(breakEndTimes[99] || 735)}
                         </p>
                       </div>
@@ -820,14 +829,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Comida Registrada */}
                   {mealEndTimes[99] !== undefined && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-amber-955/20 border-amber-900/40 text-amber-300' : 'bg-amber-50/60 border-amber-100 text-amber-900'
+                      isDark ? 'bg-amber-950/20 border-amber-900/40 text-amber-300' : 'bg-amber-50/60 border-amber-100 text-amber-900'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-650 dark:text-amber-400 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 text-sm animate-pulse">
                         🍱
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-450 leading-none">Comida Completada</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-205">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 leading-none">Comida Completada</p>
+                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Salida: {formatMinsToTimeClean(mealStartTimes[99] || 840)} | Regreso: {formatMinsToTimeClean(mealEndTimes[99] || 885)}
                         </p>
                       </div>
@@ -837,14 +846,14 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   {/* Alerta de Salida Registrada */}
                   {hasCheckedOut && (
                     <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all animate-in slide-in-from-bottom-2 duration-300 ${
-                      isDark ? 'bg-rose-955/20 border-rose-900/40 text-rose-350' : 'bg-rose-50/60 border-rose-100 text-rose-900'
+                      isDark ? 'bg-rose-950/20 border-rose-900/40 text-rose-300' : 'bg-rose-50/60 border-rose-100 text-rose-900'
                     }`}>
-                      <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-650 dark:text-rose-455 shrink-0 text-sm animate-pulse">
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center text-rose-600 dark:text-rose-500 shrink-0 text-sm animate-pulse">
                         🚪
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-455 leading-none">Jornada Finalizada</p>
-                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-250">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-500 leading-none">Jornada Finalizada</p>
+                        <p className="text-[10px] font-extrabold mt-0.5 dark:text-slate-200">
                           Salida registrada a las {formatMinsToTimeClean(checkOutTimes[99] || 1080)}
                         </p>
                       </div>
@@ -852,9 +861,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   )}
 
                   <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
-                    isDark ? 'bg-indigo-955/20 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50/60 border-indigo-100 text-indigo-900'
+                    isDark ? 'bg-indigo-950/20 border-indigo-900/40 text-indigo-300' : 'bg-indigo-50/60 border-indigo-100 text-indigo-900'
                   }`}>
-                    <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-650 dark:text-indigo-400 shrink-0 text-sm">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 text-sm">
                       📋
                     </div>
                     <div className="min-w-0">
@@ -864,9 +873,9 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   </div>
 
                   <div className={`p-2.5 border rounded-2xl flex items-center gap-2.5 text-left transition-all ${
-                    isDark ? 'bg-violet-955/20 border-violet-900/40 text-violet-300' : 'bg-violet-50/60 border-violet-100 text-violet-900'
+                    isDark ? 'bg-violet-950/20 border-violet-900/40 text-violet-300' : 'bg-violet-50/60 border-violet-100 text-violet-900'
                   }`}>
-                    <div className="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-650 dark:text-violet-400 shrink-0 text-sm animate-pulse">
+                    <div className="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-600 dark:text-violet-400 shrink-0 text-sm animate-pulse">
                       🎓
                     </div>
                     <div className="min-w-0">
@@ -886,11 +895,11 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div className="flex-1 flex flex-col justify-between py-2 text-left overflow-y-auto scrollbar-none">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
-                  <Lock size={22} className="text-rose-505" />
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                  <Lock size={22} className="text-rose-500" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-850 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
                   <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Tareas requiere la Versión Pro del Reloj Checador.
@@ -918,11 +927,11 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div className="flex-1 flex flex-col justify-between py-2 text-left">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
                   <Lock size={22} className="text-rose-500" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
                   <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
                     La gestión de Academia requiere la Versión Pro del Reloj Checador.
@@ -939,28 +948,42 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow">
-                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Cursos de Inducción</h5>
+              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
+                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-3 rounded-2xl shadow-sm space-y-1">
+                  <p className="text-[8px] font-bold text-violet-200 uppercase tracking-widest">Capacitación Operativa</p>
+                  <h4 className="text-[11px] font-black">Cursos Asignados para Tu Puesto</h4>
+                  <p className="text-[8px] text-violet-100 font-medium">¡Completa lecciones para ganar insignias y aumentos!</p>
+                </div>
+
+                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Plan de Aprendizaje</h5>
                 
                 {/* Curso 1 */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Inducción Básica 360</span>
-                    <span className="text-[8px] font-bold text-emerald-600">75%</span>
+                    <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Inducción Básica 360</span>
+                    <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200/40">75%</span>
                   </div>
-                  <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                  <div className="flex justify-between items-center text-[8px] text-slate-500 pt-0.5">
+                    <span>3 de 4 lecciones completadas</span>
+                    <button className="text-violet-600 dark:text-violet-400 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Continuar →</button>
                   </div>
                 </div>
 
                 {/* Curso 2 */}
-                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5">
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[8.5px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[120px]">Políticas y Valores</span>
-                    <span className="text-[8px] font-bold text-blue-600">10%</span>
+                    <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide truncate max-w-[140px]">Atención & Caja Registradora</span>
+                    <span className="text-[8px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded-md border border-blue-200/40">20%</span>
                   </div>
-                  <div className="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '10%' }}></div>
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '20%' }}></div>
+                  </div>
+                  <div className="flex justify-between items-center text-[8px] text-slate-500 pt-0.5">
+                    <span>1 de 5 lecciones completadas</span>
+                    <button className="text-blue-600 dark:text-blue-400 font-bold hover:underline bg-transparent border-none p-0 cursor-pointer">Iniciar →</button>
                   </div>
                 </div>
               </div>
@@ -968,18 +991,18 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           </div>
         )}
 
-        {phoneTab === 'herramientas' && (
-          <div className="flex-grow text-left py-2">
+        {(phoneTab === 'nomina' || phoneTab === 'cuenta') && (
+          <div className="flex-1 flex flex-col justify-between py-2 text-left">
             {tier === 'free' ? (
               <div className="flex-grow flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200 my-auto">
-                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-955/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-505 shadow-sm shrink-0">
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">
                   <Lock size={22} className="text-rose-500" />
                 </div>
                 <div className="space-y-1">
-                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-455 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
+                  <h5 className="text-[9px] font-black text-rose-800 dark:text-rose-500 uppercase tracking-widest leading-none">Exclusivo Plan Pro</h5>
                   <h4 className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-tight">Módulo Bloqueado</h4>
                   <p className="text-[8.5px] text-slate-500 font-semibold leading-relaxed max-w-[170px] mx-auto">
-                    La gestión de Herramientas requiere la Versión Pro del Reloj Checador.
+                    La gestión de Nómina requiere la Versión Pro del Reloj Checador.
                   </p>
                 </div>
                 <button
@@ -993,32 +1016,51 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 animate-in fade-in duration-200">
-                {[
-                  { label: 'Chat de Sucursal', icon: Send, pro: true },
-                  { label: 'Ley Silla', icon: Star, pro: false },
-                  { label: 'Incidencias', icon: AlertTriangle, pro: false },
-                  { label: 'Control de Llaves', icon: ShieldCheck, pro: true }
-                ].map((tool, idx) => {
-                  const ToolIcon = tool.icon;
-                  const isLocked = tool.pro && tier !== 'pro';
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`p-3 rounded-xl border flex flex-col justify-between aspect-square transition-all ${
-                        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-                      } ${isLocked ? 'opacity-65' : 'hover:scale-[1.02] cursor-pointer'}`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className={`p-1.5 rounded-lg ${isDark ? 'bg-slate-850' : 'bg-slate-100'} text-indigo-500`}>
-                          <ToolIcon size={14} />
-                        </div>
-                        {isLocked && <Lock size={12} className="text-slate-400" />}
-                      </div>
-                      <span className="text-[9px] font-black leading-tight uppercase mt-2">{tool.label}</span>
+              <div className="p-1 text-left animate-in fade-in duration-200 space-y-3 flex-grow overflow-y-auto scrollbar-none">
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3 rounded-2xl shadow-sm space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[8px] font-bold text-emerald-200 uppercase tracking-widest">Nómina Quincenal Calculada</p>
+                      <h4 className="text-sm font-black mt-0.5">$4,800.00 MXN</h4>
                     </div>
-                  );
-                })}
+                    <span className="px-2 py-0.5 bg-emerald-500/30 text-white text-[8px] font-bold rounded-full border border-emerald-300/30">
+                      ✓ Pago Estimado
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[8.5px] pt-1 border-t border-emerald-500/40 text-emerald-100 font-medium">
+                    <span>Horas laboradas: <strong>44 hrs</strong></span>
+                    <span>Puntualidad: <strong>98%</strong></span>
+                  </div>
+                </div>
+
+                <h5 className="text-[9.5px] font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider pt-1">Desglose de Pago</h5>
+                
+                <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl space-y-1.5 text-[9px]">
+                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                    <span>Sueldo Base (15 días)</span>
+                    <span className="font-bold text-slate-900 dark:text-white">$4,500.00</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                    <span>Bono Puntualidad & Tareas</span>
+                    <span className="font-bold">+$350.00</span>
+                  </div>
+                  <div className="flex justify-between items-center text-rose-500">
+                    <span>Retardo (1 incidencia 5m)</span>
+                    <span className="font-bold">-$50.00</span>
+                  </div>
+                  <div className="border-t border-slate-200 dark:border-slate-800 pt-1.5 flex justify-between items-center font-black text-slate-900 dark:text-white text-[9.5px]">
+                    <span>Total Neto</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">$4,800.00</span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => alert("Simulación: Descargando Recibo Digital PDF de Francisco Vega")}
+                  className="w-full py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer border-none"
+                >
+                  <FileText size={12} />
+                  Descargar Recibo Digital (PDF)
+                </button>
               </div>
             )}
           </div>
@@ -1067,7 +1109,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           ></div>
 
           <div className={`relative w-full rounded-t-3xl border-t shadow-2xl z-10 flex flex-col pb-6 max-h-[80%] animate-slide-up backdrop-blur-md ${
-            isDark ? 'bg-slate-900/70 border-slate-800 text-white' : 'bg-white/70 border-slate-100 text-slate-850'
+            isDark ? 'bg-slate-900/70 border-slate-800 text-white' : 'bg-white/70 border-slate-100 text-slate-800'
           }`}>
             <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 shrink-0"></div>
 
@@ -1092,7 +1134,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setIsCopilotOpen(true);
                   }}
                   className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
-                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-850'
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
                   }`}
                 >
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center">
@@ -1107,13 +1149,43 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setPhoneTab('tareas');
                   }}
                   className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
-                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-850'
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
                   }`}
                 >
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center">
                     <Play size={16} />
                   </div>
-                  <span className="font-bold text-[10px]">Crear Tarea</span>
+                  <span className="font-bold text-[10px]">Ver Tareas</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('nomina');
+                  }}
+                  className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center">
+                    <DollarSign size={16} />
+                  </div>
+                  <span className="font-bold text-[10px]">Recibo Nómina</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsFabSheetOpen(false);
+                    setPhoneTab('academia');
+                  }}
+                  className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 text-center cursor-pointer border-none ${
+                    isDark ? 'bg-slate-950/40 text-white' : 'bg-slate-50 text-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center">
+                    <GraduationCap size={16} />
+                  </div>
+                  <span className="font-bold text-[10px]">Capacitación</span>
                 </button>
               </div>
             </div>
@@ -1127,7 +1199,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div onClick={() => setIsCopilotOpen(false)} className="absolute inset-0 bg-black/40 backdrop-blur-xs"></div>
           
           <div className={`relative w-full h-[75%] rounded-t-3xl border-t shadow-2xl z-10 flex flex-col pb-4 ${
-            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-850'
+            isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-800'
           }`}>
             <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 shrink-0"></div>
             
@@ -1163,7 +1235,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 onKeyDown={e => e.key === 'Enter' && handleSendMsg()}
                 placeholder="Escribe al asistente..."
                 className={`flex-1 px-3 py-1.5 text-xs rounded-xl border outline-none ${
-                  isDark ? 'bg-slate-800 border-slate-750 text-white' : 'bg-slate-50 border-slate-200'
+                  isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'
                 }`}
               />
               <button 
@@ -1186,7 +1258,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           
           <div 
             className={`relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up ${
-              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-850'
+              isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
             }`}
             style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
           >
@@ -1201,25 +1273,25 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               <div className="space-y-4 text-left">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <LogIn className="w-5 h-5 text-indigo-650 shrink-0" />
+                    <LogIn className="w-5 h-5 text-indigo-600 shrink-0" />
                     <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
                       Registro de Entrada
                     </h3>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                    hasCheckedIn ? 'bg-rose-50 border-rose-100 text-rose-650 dark:bg-rose-955/20 dark:border-rose-900/30 dark:text-rose-450' : 'bg-slate-100 border-slate-200 text-slate-500'
+                    hasCheckedIn ? 'bg-rose-50 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400' : 'bg-slate-100 border-slate-200 text-slate-500'
                   }`}>
                     {hasCheckedIn ? '⚠️ Retardo' : '📅 Pendiente'}
                   </span>
                 </div>
 
                 <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
-                  hasCheckedIn ? 'bg-rose-50/40 border-rose-100/60 text-rose-900 dark:bg-slate-900/40 dark:border-slate-800' : 'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                  hasCheckedIn ? 'bg-rose-50/40 border-rose-100/60 text-rose-900 dark:bg-slate-900/40 dark:border-slate-800' : 'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
                 }`}>
                   {hasCheckedIn ? (
-                    <>Entrada registrada a las <strong className="text-rose-600 dark:text-rose-455 font-bold">09:05 AM</strong> (Retardo de 5 minutos).</>
+                    <>Entrada registrada a las <strong className="text-rose-600 dark:text-rose-500 font-bold">09:05 AM</strong> (Retardo de 5 minutos).</>
                   ) : (
-                    <>Entrada pendiente de registrar. Tu horario de ingreso es a las <strong className="text-slate-850 dark:text-white font-bold">09:00 AM</strong>.</>
+                    <>Entrada pendiente de registrar. Tu horario de ingreso es a las <strong className="text-slate-800 dark:text-white font-bold">09:00 AM</strong>.</>
                   )}
                 </div>
               </div>
@@ -1238,8 +1310,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                       </h3>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                      isActive ? 'bg-purple-50 border-purple-100 text-purple-650' :
-                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-900/30' :
+                      isActive ? 'bg-purple-50 border-purple-100 text-purple-600' :
+                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30' :
                       'bg-slate-100 border-slate-200 text-slate-500'
                     }`}>
                       {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
@@ -1249,12 +1321,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
                     isActive ? 'bg-purple-50/40 border-purple-100/60 text-purple-900 dark:bg-slate-900/40 dark:border-slate-800' :
                     isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' :
-                    'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                    'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
                   }`}>
                     {isActive ? (
-                      <>Descanso iniciado a las <strong className="text-purple-650 font-bold">12:00 PM</strong> (Tolerancia: 15 min).</>
+                      <>Descanso iniciado a las <strong className="text-purple-600 font-bold">12:00 PM</strong> (Tolerancia: 15 min).</>
                     ) : isDone ? (
-                      <>Descanso completado: <strong className="text-emerald-650 dark:text-emerald-455 font-bold">12:00 PM - 12:15 PM</strong> (15 minutos).</>
+                      <>Descanso completado: <strong className="text-emerald-600 dark:text-emerald-500 font-bold">12:00 PM - 12:15 PM</strong> (15 minutos).</>
                     ) : (
                       <>Descanso de Ley Silla pendiente (Tolerancia regular: 15 minutos).</>
                     )}
@@ -1276,8 +1348,8 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                       </h3>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                      isActive ? 'bg-amber-50 border-amber-100 text-amber-650' :
-                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-900/30' :
+                      isActive ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                      isDone ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30' :
                       'bg-slate-100 border-slate-200 text-slate-500'
                     }`}>
                       {isActive ? '⏳ En curso' : isDone ? '✓ Cumplido' : '📅 Pendiente'}
@@ -1287,12 +1359,12 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                   <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
                     isActive ? 'bg-amber-50/40 border-amber-100/60 text-amber-900 dark:bg-slate-900/40' :
                     isDone ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' :
-                    'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                    'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
                   }`}>
                     {isActive ? (
-                      <>Almuerzo iniciado a las <strong className="text-amber-650 font-bold">02:00 PM</strong> (Tolerancia: 45 min).</>
+                      <>Almuerzo iniciado a las <strong className="text-amber-600 font-bold">02:00 PM</strong> (Tolerancia: 45 min).</>
                     ) : isDone ? (
-                      <>Almuerzo completado: <strong className="text-emerald-650 dark:text-emerald-455 font-bold">02:00 PM - 02:45 PM</strong> (45 minutos).</>
+                      <>Almuerzo completado: <strong className="text-emerald-600 dark:text-emerald-500 font-bold">02:00 PM - 02:45 PM</strong> (45 minutos).</>
                     ) : (
                       <>Almuerzo pendiente de tomar (Tolerancia regular: 45 minutos).</>
                     )}
@@ -1305,25 +1377,25 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
               <div className="space-y-4 text-left">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <LogOut className="w-5 h-5 text-teal-650 shrink-0" />
+                    <LogOut className="w-5 h-5 text-teal-600 shrink-0" />
                     <h3 className="font-black text-slate-800 dark:text-slate-200 text-sm">
                       Resumen de Turno
                     </h3>
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
-                    hasCheckedOut ? 'bg-emerald-50 border-emerald-100 text-emerald-650 dark:bg-emerald-955/20 dark:border-emerald-900/30' : 'bg-slate-100 border-slate-200 text-slate-500'
+                    hasCheckedOut ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30' : 'bg-slate-100 border-slate-200 text-slate-500'
                   }`}>
                     {hasCheckedOut ? '✓ Cumplido' : '📅 Pendiente'}
                   </span>
                 </div>
 
                 <div className={`p-4 rounded-2xl border leading-relaxed text-xs font-semibold ${
-                  hasCheckedOut ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' : 'bg-slate-50 border-slate-150 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
+                  hasCheckedOut ? 'bg-emerald-50/40 border-emerald-100/60 text-emerald-900 dark:bg-slate-900/40' : 'bg-slate-50 border-slate-100 text-slate-700 dark:bg-slate-900/40 dark:border-slate-800'
                 }`}>
                   {hasCheckedOut ? (
-                    <>Jornada finalizada: <strong className="text-emerald-650 dark:text-emerald-455 font-bold">06:00 PM</strong> (8h 55m laborados sin desvíos).</>
+                    <>Jornada finalizada: <strong className="text-emerald-600 dark:text-emerald-500 font-bold">06:00 PM</strong> (8h 55m laborados sin desvíos).</>
                   ) : (
-                    <>Salida pendiente de registrar. Tu horario regular de salida es a las <strong className="text-slate-850 dark:text-white font-bold">06:00 PM</strong>.</>
+                    <>Salida pendiente de registrar. Tu horario regular de salida es a las <strong className="text-slate-800 dark:text-white font-bold">06:00 PM</strong>.</>
                   )}
                 </div>
               </div>
@@ -1331,7 +1403,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             <button 
               onClick={() => setActiveModal(null)}
-              className="mt-4 w-full py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+              className="mt-4 w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
             >
               Entendido
             </button>
@@ -1342,7 +1414,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
       {/* GANCHO COMERCIAL DE MARKETING (PROMO AL FINAL DE LA SIMULACIÓN) */}
       {showPromoGancho && (
         <div className="absolute inset-0 z-[120] flex items-center justify-center p-4">
-          <div onClick={() => setShowPromoGancho(false)} className="absolute inset-0 bg-slate-955/80 backdrop-blur-xs"></div>
+          <div onClick={() => setShowPromoGancho(false)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs"></div>
           
           <div 
             className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10"
@@ -1357,7 +1429,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
 
             <div className="flex flex-col items-center gap-3">
               {/* Icono de Escudo de Seguridad / Validación */}
-              <div className="w-12 h-12 rounded-full bg-violet-955 border border-violet-850 flex items-center justify-center text-violet-400 relative">
+              <div className="w-12 h-12 rounded-full bg-violet-950 border border-violet-800 flex items-center justify-center text-violet-400 relative">
                 <ShieldCheck size={26} className="text-violet-400 animate-[pulse_2s_infinite]" />
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
               </div>
@@ -1366,27 +1438,27 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                 <h3 className="text-xs font-black uppercase tracking-wider text-violet-300">
                   ¡Fichaje Seguro Activo!
                 </h3>
-                <p className="text-[9.5px] font-bold text-slate-450 mt-1 leading-normal">
+                <p className="text-[9.5px] font-bold text-slate-400 mt-1 leading-normal">
                   Has probado la validación del Reloj Checador PRO de Talent 360.
                 </p>
               </div>
 
               <div className="w-full text-left space-y-2 border-y border-slate-800/80 py-3 my-1">
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-emerald-450 shrink-0">✓</span>
-                  <span className="text-[8.5px] font-semibold text-slate-350 leading-normal">
+                  <span className="text-[10px] text-emerald-400 shrink-0">✓</span>
+                  <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
                     <strong>Reconocimiento Facial (Selfie):</strong> Previene que un compañero cheque por otro.
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-emerald-450 shrink-0">✓</span>
-                  <span className="text-[8.5px] font-semibold text-slate-350 leading-normal">
+                  <span className="text-[10px] text-emerald-400 shrink-0">✓</span>
+                  <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
                     <strong>Geolocalización GPS:</strong> Bloquea registros fuera del perímetro permitido.
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-[10px] text-emerald-450 shrink-0">✓</span>
-                  <span className="text-[8.5px] font-semibold text-slate-350 leading-normal">
+                  <span className="text-[10px] text-emerald-400 shrink-0">✓</span>
+                  <span className="text-[8.5px] font-semibold text-slate-300 leading-normal">
                     <strong>Reportes Automatizados:</strong> Calcula retardos y horas extras al instante.
                   </span>
                 </div>
@@ -1398,7 +1470,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setShowPromoGancho(false);
                     if (onActionClick) onActionClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-650 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-violet-500/10 cursor-pointer border-none"
+                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-violet-500/10 cursor-pointer border-none"
                 >
                   Probar 14 días Gratis
                 </button>
@@ -1421,7 +1493,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           <div onClick={() => setShowBlockProModal(null)} className="absolute inset-0 bg-black/60 backdrop-blur-xs"></div>
           
           <div 
-            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-850 text-white shadow-violet-500/10"
+            className="relative w-full max-w-[280px] rounded-3xl p-5 border text-center shadow-2xl animate-scale-up bg-slate-900 border-violet-800 text-white shadow-violet-500/10"
             style={{ transform: 'scale(0.85)', transformOrigin: 'center' }}
           >
             <button 
@@ -1432,7 +1504,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             </button>
 
             <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-violet-955 border border-violet-850 flex items-center justify-center text-violet-400">
+              <div className="w-12 h-12 rounded-full bg-violet-950 border border-violet-800 flex items-center justify-center text-violet-400">
                 <Lock size={22} className="text-violet-400" />
               </div>
 
@@ -1451,7 +1523,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
                     setShowBlockProModal(null);
                     if (onActionClick) onActionClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-650 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
+                  className="w-full py-2 bg-gradient-to-tr from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer border-none"
                 >
                   Mejorar a PRO (14 días gratis)
                 </button>

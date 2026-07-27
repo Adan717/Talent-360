@@ -3,6 +3,7 @@ import { useSearchParams, useParams } from 'react-router-dom';
 import { Briefcase, CalendarDays, CircleDollarSign, CheckCircle2, Building2, ArrowRight, X, Share2, Copy, Check, Send, ChevronDown, Mail, Phone } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
+import { LegalModal, type LegalDocType } from './LegalModal';
 
 const Facebook = ({ size = 16 }: { size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -63,6 +64,8 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
 
   const [selectedVacancy, setSelectedVacancy] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalDocType>('privacy');
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInduction, setShowInduction] = useState(false);
@@ -453,9 +456,33 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
         {/* Línea inferior de copyright */}
         <div className="max-w-6xl mx-auto border-t border-slate-800/80 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-slate-500">
           <span>{customSettings.footer_text || `© ${new Date().getFullYear()} ${tenant.name}. Todos los derechos reservados.`}</span>
+          <div className="flex items-center gap-3">
+            <button 
+              type="button" 
+              onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
+              className="hover:text-slate-300 transition underline cursor-pointer"
+            >
+              Aviso de Privacidad
+            </button>
+            <span>•</span>
+            <button 
+              type="button" 
+              onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
+              className="hover:text-slate-300 transition underline cursor-pointer"
+            >
+              Términos
+            </button>
+          </div>
           <span className="flex items-center gap-1 font-semibold">Desarrollado con <span className="text-rose-500">♥</span> por <span className="text-white">Talent360</span></span>
         </div>
       </footer>
+
+      {/* Modal Legal */}
+      <LegalModal 
+        isOpen={isLegalModalOpen} 
+        onClose={() => setIsLegalModalOpen(false)} 
+        defaultTab={legalModalTab} 
+      />
 
       {/* Modal de Detalles de Vacante */}
       {showDetailModal && selectedVacancy && (() => {

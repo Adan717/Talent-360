@@ -64,19 +64,27 @@ class SubscriptionController extends Controller
         } elseif ($isInitialRegistration) {
             // Google authenticated registration flow: only company data is required
             $request->validate([
-                'subdomain' => 'required|string',
+                'subdomain' => [
+                    'required', 'string', 'alpha_dash', 'max:50',
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
                 'employees' => 'nullable|integer',
                 'billing_cycle' => 'nullable|string',
+            ], [
+                'subdomain.unique' => 'El subdominio ya está registrado por otra empresa. Por favor elige uno diferente.',
+                'subdomain.alpha_dash' => 'El subdominio solo puede contener letras, números y guiones sin espacios.',
+                'subdomain.max' => 'El subdominio no puede tener más de 50 caracteres.',
             ]);
             $payload = [
                 'action' => 'register_initial',
-                'subdomain' => $request->subdomain,
+                'subdomain' => strtolower($request->subdomain),
                 'plan' => $request->plan,
                 'company_name' => $request->company_name,
-                'admin_name' => $user->name,
-                'admin_email' => $user->email,
+                'admin_name' => $user->name ?? $request->input('admin_name', 'Admin'),
+                'admin_email' => $user->email ?? $request->input('admin_email'),
                 'employees' => $request->input('employees'),
                 'billing_cycle' => $request->input('billing_cycle', 'monthly'),
             ];
@@ -88,7 +96,11 @@ class SubscriptionController extends Controller
                 ]);
             }
             $request->validate([
-                'subdomain' => 'required|string',
+                'subdomain' => [
+                    'required', 'string', 'alpha_dash', 'max:50',
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
                 'admin_name' => 'required|string',
@@ -96,8 +108,13 @@ class SubscriptionController extends Controller
                 'admin_password' => 'required|min:6',
                 'employees' => 'nullable|integer',
                 'billing_cycle' => 'nullable|string',
+            ], [
+                'subdomain.unique' => 'El subdominio ya está registrado por otra empresa. Por favor elige uno diferente.',
+                'subdomain.alpha_dash' => 'El subdominio solo puede contener letras, números y guiones sin espacios.',
+                'subdomain.max' => 'El subdominio no puede tener más de 50 caracteres.',
             ]);
             $payload = $request->all();
+            $payload['subdomain'] = strtolower($request->subdomain);
             $payload['employees'] = $request->input('employees');
             $payload['billing_cycle'] = $request->input('billing_cycle', 'monthly');
         }
@@ -130,15 +147,29 @@ class SubscriptionController extends Controller
 
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
         if (!$isUpgrade && (strtolower($payload['plan']) === 'freemium' || $price <= 0)) {
-            $tenant = $this->provisionTenant($payload);
-            $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
-            return response()->json([
-                'status' => 'success',
-                'provisioned' => true,
-                'tenant' => $tenant['tenant'],
-                'user' => $tenant['admin'],
-                'token' => $token
-            ]);
+            try {
+                $tenant = $this->provisionTenant($payload);
+                $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
+                return response()->json([
+                    'status' => 'success',
+                    'provisioned' => true,
+                    'tenant' => $tenant['tenant'],
+                    'user' => $tenant['admin'],
+                    'token' => $token
+                ]);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                throw $e;
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+                throw $e;
+            } catch (\Exception $e) {
+                \Log::error("Error al aprovisionar empresa: " . $e->getMessage(), [
+                    'payload' => $payload,
+                    'exception' => $e
+                ]);
+                return response()->json([
+                    'error' => $e->getMessage() ?: 'Error al crear la empresa. Por favor intenta con otro subdominio.'
+                ], 400);
+            }
         }
 
         // Try using MercadoPago SDK if configured
@@ -179,7 +210,7 @@ class SubscriptionController extends Controller
         }
 
         // Fallback to simulated checkout URL
-        $simulatedUrl = url('/api/subscriptions/simulated-checkout?pref_id=' . $regId);
+        $simulatedUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -217,7 +248,7 @@ class SubscriptionController extends Controller
         }
         $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
-        $confirmUrl = url('/api/subscriptions/simulated-confirm?pref_id=' . $prefId);
+        $confirmUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;
 
         // Fetch platform bank config
         $bankConfigRow = \DB::table('system_settings')
@@ -227,10 +258,9 @@ class SubscriptionController extends Controller
         $bank = $bankConfigRow ? json_decode($bankConfigRow->value, true) : null;
         $bankActive = $bank && ($bank['is_active'] ?? false);
 
-        return response()->stream(function() use ($payload, $plan, $price, $priceUnit, $confirmUrl, $bank, $bankActive) {
-            $bankJson = json_encode($bank);
-            $hasBankStr = $bankActive ? 'true' : 'false';
-            echo "
+        $bankJson = json_encode($bank);
+        $hasBankStr = $bankActive ? 'true' : 'false';
+        $html = "
             <!DOCTYPE html>
             <html lang='es'>
             <head>
@@ -393,7 +423,11 @@ class SubscriptionController extends Controller
             </body>
             </html>
             ";
-        }, 200, ['Content-Type' => 'text/html']);
+        $origin = $request->header('Origin') ?: $request->header('Referer');
+        $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
+        $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
+
+        return response($html, 200, ['Content-Type' => 'text/html']);
     }
 
     /**
@@ -415,7 +449,9 @@ class SubscriptionController extends Controller
             // Mark registration as processed
             $reg->delete();
 
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            $origin = $request->header('Origin') ?: $request->header('Referer');
+            $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
+            $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
             if ($isUpgrade) {
                 return redirect("$frontendUrl/app?payment=success&action=upgrade");
             }
@@ -472,7 +508,7 @@ class SubscriptionController extends Controller
                 $tenant = Tenant::findOrFail($payload['tenant_id']);
                 $tenant->update([
                     'plan' => strtolower($payload['plan']),
-                    'max_users' => strtolower($payload['plan']) === 'pro' ? (isset($payload['employees']) ? intval($payload['employees']) : 50) : 9999,
+                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
                     'mp_subscription_id' => $prefId,
                     'subscription_status' => 'active',
                     'current_period_end' => now()->addMonth(),
@@ -489,18 +525,39 @@ class SubscriptionController extends Controller
             }
 
             // Standard creation flow
-            // 1. Create Tenant
-            $tenant = Tenant::create([
-                'name' => $payload['company_name'],
-                'subdomain' => $payload['subdomain'],
-                'plan' => strtolower($payload['plan']),
-                'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (strtolower($payload['plan']) === 'pro' ? (isset($payload['employees']) ? intval($payload['employees']) : 50) : 9999),
-                'public_slug' => Str::slug($payload['subdomain']),
-                'mp_subscription_id' => $prefId,
-                'subscription_status' => 'active',
-                'trial_ends_at' => now()->addDays(14),
-                'current_period_end' => now()->addMonth(),
-            ]);
+            // 1. Create or Reuse Tenant
+            $tenant = Tenant::where('subdomain', $payload['subdomain'])->first();
+            $baseSlug = Str::slug($payload['subdomain']);
+            $publicSlug = $baseSlug;
+            $slugIndex = 1;
+            while (Tenant::withTrashed()->where('public_slug', $publicSlug)->where('id', '!=', $tenant->id ?? 0)->exists()) {
+                $publicSlug = $baseSlug . '-' . $slugIndex++;
+            }
+
+            if ($tenant && $tenant->users()->count() === 0) {
+                $tenant->update([
+                    'name' => $payload['company_name'],
+                    'plan' => strtolower($payload['plan']),
+                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
+                    'public_slug' => $publicSlug,
+                    'mp_subscription_id' => $prefId,
+                    'subscription_status' => 'active',
+                    'trial_ends_at' => now()->addDays(14),
+                    'current_period_end' => now()->addMonth(),
+                ]);
+            } else {
+                $tenant = Tenant::create([
+                    'name' => $payload['company_name'],
+                    'subdomain' => $payload['subdomain'],
+                    'plan' => strtolower($payload['plan']),
+                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
+                    'public_slug' => $publicSlug,
+                    'mp_subscription_id' => $prefId,
+                    'subscription_status' => 'active',
+                    'trial_ends_at' => now()->addDays(14),
+                    'current_period_end' => now()->addMonth(),
+                ]);
+            }
 
             // Set context for traits
             session(['tenant_id' => $tenant->id]);
@@ -517,12 +574,27 @@ class SubscriptionController extends Controller
             } else {
                 // Fallback: check if user already exists globally
                 $admin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                    ->withTrashed()
                     ->where('email', $payload['admin_email'])
                     ->first();
                 if ($admin) {
+                    // §50: regla "1 cuenta = 1 empresa". Si esta cuenta YA pertenece a
+                    // otra empresa ACTIVA, reasignarle el tenant_id la robaría.
+                    // Pero si la empresa previa fue eliminada (o el usuario fue borrado lógicamente),
+                    // el correo se considera huérfano y se reasigna a la nueva empresa.
+                    if ($admin->tenant_id !== null) {
+                        $existingTenant = Tenant::find($admin->tenant_id);
+                        if ($existingTenant && !$existingTenant->trashed()) {
+                            abort(409, 'Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto.');
+                        }
+                    }
+                    if ($admin->trashed()) {
+                        $admin->restore();
+                    }
                     $admin->update([
                         'tenant_id' => $tenant->id,
                         'role' => UserRole::ADMIN->value,
+                        'is_active' => true
                     ]);
                 } else {
                     $admin = User::create([

@@ -5,41 +5,44 @@ import io
 import subprocess
 
 def run_local_cmd(cmd):
-    print(f"\n[Local] Running: {cmd}")
+    print(f"\n[Local] Running: {cmd}", flush=True)
     result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
     if result.returncode != 0:
-        print(f"[Local] Error executing command: {cmd}")
-        print(f"Stdout:\n{result.stdout}")
-        print(f"Stderr:\n{result.stderr}")
+        print(f"[Local] Error executing command: {cmd}", flush=True)
+        print(f"Stdout:\n{result.stdout}", flush=True)
+        print(f"Stderr:\n{result.stderr}", flush=True)
         return False
-    print("[Local] Success.")
+    print("[Local] Success.", flush=True)
     return True
 
 def run_remote_cmd(ssh, cmd):
-    print(f"\n[Remote] Running: {cmd}")
+    print(f"\n[Remote] Running: {cmd}", flush=True)
     stdin, stdout, stderr = ssh.exec_command(cmd)
     exit_status = stdout.channel.recv_exit_status()
-    print(f"[Remote] Exit Status: {exit_status}")
+    print(f"[Remote] Exit Status: {exit_status}", flush=True)
     out = stdout.read().decode('utf-8', errors='replace').strip()
     err = stderr.read().decode('utf-8', errors='replace').strip()
     if out:
-        print(f"Stdout:\n{out}")
+        print(f"Stdout:\n{out}", flush=True)
     if err:
-        print(f"Stderr:\n{err}")
+        print(f"Stderr:\n{err}", flush=True)
     return exit_status == 0
 
 def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
     
-    try:
-        commit_msg = input("Enter commit message (default: 'Auto-deploy updates'): ").strip()
-    except EOFError:
-        commit_msg = "Auto-deploy updates"
-    if not commit_msg:
-        commit_msg = "Auto-deploy updates"
+    commit_msg = "Auto-deploy updates"
+    if sys.stdin and sys.stdin.isatty():
+        try:
+            user_input = input("Enter commit message (default: 'Auto-deploy updates'): ").strip()
+            if user_input:
+                commit_msg = user_input
+        except Exception:
+            pass
         
-    print("\n--- STEP 1: Pushing changes to GitHub ---")
+    print(f"Using commit message: {commit_msg}", flush=True)
+    print("\n--- STEP 1: Pushing changes to GitHub ---", flush=True)
     if not run_local_cmd("git add ."):
         return
     # We allow git commit to fail if there are no changes to commit
@@ -68,8 +71,8 @@ def main():
         print("Connected successfully.")
         
         print("\n--- STEP 3: Updating repository on server ---")
-        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git pull"):
-            print("Failed to pull latest changes on remote server.")
+        if not run_remote_cmd(ssh, "cd /var/www/talent360 && git checkout . && git pull origin main --rebase"):
+            print("Failed to update repository on remote server.")
             return
             
         print("\n--- STEP 4: Running migrations and clearing cache (non-destructive) ---")
@@ -90,7 +93,7 @@ def main():
         # Restart backend services to refresh mounts and reload code changes
         run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose restart backend backend-web reverb")
         # Rebuild frontend image and recreate container to apply new assets
-        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose up -d --build frontend")
+        run_remote_cmd(ssh, "cd /var/www/talent360 && docker compose up -d --build --force-recreate --remove-orphans frontend")
         
         print("\nDeployment completed successfully!")
         

@@ -20,7 +20,7 @@ class TaskAssignment extends Model
         // agregaron aquí — tanto TaskSyncController::sync() como
         // TaskAssignmentController::update() los calculan y los pasan a update()/create(),
         // pero sin estar en $fillable el mass-assignment los descartaba en silencio.
-        'task_cost', 'coins_awarded', 'origin', 'ai_validation_result',
+        'task_cost', 'coins_awarded', 'origin', 'ai_validation_result', 'flagged_incomplete',
     ];
 
     protected $keyType = 'string';
@@ -29,6 +29,7 @@ class TaskAssignment extends Model
     protected $casts = [
         'assistant_data' => 'array',
         'ai_validation_result' => 'array',
+        'flagged_incomplete' => 'boolean',
     ];
 
     public function task()

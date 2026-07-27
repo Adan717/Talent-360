@@ -124,7 +124,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   allowedFeatures: (typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium') 
     ? [] 
     : ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'],
-  simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'pro',
+  // 2026-07-26 (auditoría en vivo, hallazgo grave): esto tenía `|| 'pro'` como valor por defecto.
+  // `simulatedTierOverride` es una herramienta de QA (Matrix) y `activeTier` se resuelve como
+  // `simulatedTierOverride || currentTier` — es decir, con el default en 'pro' la simulación estaba
+  // ENCENDIDA para todos, siempre, y el plan real del tenant nunca se usaba: una empresa Enterprise
+  // que paga quedaba degradada a las funciones de Pro, y una freemium quedaba ascendida a Pro.
+  // El valor correcto en ausencia de simulación es `null` (= "sin override, usa el plan real").
+  simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || null,
   punctualityStatus: null,
 
   // Initial SaaS State
@@ -361,6 +367,9 @@ export const useAppStore = create<AppState>((set, get) => ({
                 set({ currentTier: tenant.plan.toLowerCase() as any });
               }
             }
+            if (meUser.tenant_id === null && meUser.role !== 'platform_admin' && meUser.role !== 'support_agent') {
+              return;
+            }
             if (meUser.role === 'platform_admin') {
               try {
                 const alertsRes = await axiosInstance.get('/platform/alerts');
@@ -377,27 +386,34 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       }
 
+      const currentUser = get().currentUser;
+      if (currentUser && currentUser.tenant_id === null && currentUser.system_role !== 'platform_admin' && currentUser.system_role !== 'support_agent') {
+        return;
+      }
+
       const activeSimSession = explicitSimSessionId || localStorage.getItem('matrix_active_sim_session_id');
       const syncParams: any = {};
       if (activeSimSession) {
         syncParams.simulation_session_id = activeSimSession;
       }
 
-      const res = await axiosInstance.get('/sync/state', { params: syncParams, timeout: 5000 });
+      const res = await axiosInstance.get('/sync/state', { params: syncParams, timeout: 15000 });
 
       if (res.status === 200) {
         const data = res.data;
         const state = get();
         
-        if (data.users && data.users.length > 0) {
-            const activeUsers = data.users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0 && u.is_active_employee !== '0');
+        const toArr = (val: any) => Array.isArray(val) ? val : (val && typeof val === 'object' ? Object.values(val) : []);
+        const rawUsers = toArr(data.users);
+        if (rawUsers.length > 0) {
+            const activeUsers = rawUsers.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0 && u.is_active_employee !== '0');
             const mappedUsers = activeUsers.map((u: any) => {
               // Buscar el nombre del puesto usando job_role_id
               let roleName = 'Empleado';
               let esAperturador = false;
               let jerarquiaLlaves = 0;
-              const rolesList = data.job_roles || data.jobRoles;
-              if (rolesList && rolesList.length > 0) {
+              const rolesList = toArr(data.job_roles || data.jobRoles);
+              if (rolesList.length > 0) {
                 const foundRole = rolesList.find((r: any) => r.id === u.job_role_id);
                 if (foundRole) {
                   roleName = foundRole.name;
@@ -410,6 +426,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                 id: u.id,
                 employee_id: u.employee_id,
                 name: u.name,
+                email: u.email || '',
+                tenant_id: u.tenant_id ?? 1,
                 role: roleName,
                 system_role: u.role,
                 avatar: u.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + u.name,
@@ -469,7 +487,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
 
         if (data.role_clock_policies) {
-           set({ roleClockPolicies: data.role_clock_policies });
+           set({ roleClockPolicies: toArr(data.role_clock_policies) });
         }
 
         if (data.active_encargado_id) {
@@ -477,13 +495,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
 
         if (data.job_roles) {
-           set({ globalRoles: data.job_roles });
+           set({ globalRoles: toArr(data.job_roles) });
         }
         if (data.permissions) {
-           set({ dbPermissions: data.permissions });
+           set({ dbPermissions: toArr(data.permissions) });
         }
         if (data.role_permissions) {
-           set({ dbRolePermissions: data.role_permissions });
+           set({ dbRolePermissions: toArr(data.role_permissions) });
         }
 
         if (!state.isSandboxMode) {

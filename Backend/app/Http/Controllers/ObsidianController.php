@@ -410,6 +410,12 @@ class ObsidianController extends Controller
             // Convertir markdown básico a HTML para rendering visual fluido
             $htmlContent = $this->markdownToHtml($parsedContent);
 
+            // §44: sanitizar en el servidor antes de persistir el HTML renderizado.
+            // `content` se muestra en la página pública del vault SIN sesión, así que
+            // esta es la capa que de verdad cierra el XSS (la del cliente se la salta
+            // una petición directa a la API o un cliente modificado).
+            $htmlContent = \App\Support\HtmlSanitizer::clean($htmlContent);
+
             $doc->update(['content' => $htmlContent]);
         }
     }
@@ -786,6 +792,7 @@ class ObsidianController extends Controller
         $jobRoles = DB::table('job_roles')
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();
@@ -1701,6 +1708,7 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
         $jobRoles = DB::table('job_roles')
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();

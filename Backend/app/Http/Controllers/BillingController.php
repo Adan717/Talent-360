@@ -38,11 +38,13 @@ class BillingController extends Controller
 
         $tenant->update($validated);
 
-        // Disparar sincronización de organización en Facturapi de forma pasiva
-        try {
-            $this->billingProvider->forTenant($tenant)->listInvoices(['limit' => 1]);
-        } catch (\Exception $e) {
-            // Ignorar fallos de red en modo sandbox/offline
+        // Disparar sincronización de organización en Facturapi de forma pasiva si tiene RFC configurado
+        if (!empty($tenant->rfc)) {
+            try {
+                $this->billingProvider->forTenant($tenant)->listInvoices(['limit' => 1]);
+            } catch (\Exception $e) {
+                // Ignorar fallos de red en modo sandbox/offline
+            }
         }
 
         return response()->json([

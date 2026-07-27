@@ -47,6 +47,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     // §37: Modo Kiosco — throttle agresivo porque el PIN es corto (4-6 dígitos).
     Route::middleware('throttle:5,1')->post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
+    // §52: "olvidé mi contraseña" — públicos y con throttle (no revelan si el correo existe).
+    Route::middleware('throttle:5,1')->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::middleware('throttle:5,1')->post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login/social', [AuthController::class, 'loginSocial']);
     Route::post('/tenants', [TenantController::class, 'store']); // Checkout / Compra directa
@@ -88,6 +91,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // 1. platform_admin (Super Admin del Sistema)
     // =========================================================================
     Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
+        // §53: cumplimiento freemium — revisión desde Plataforma Talent360.
+        Route::get('/platform/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'platformIndex']);
+        Route::post('/platform/freemium-compliance/{id}/review', [\App\Http\Controllers\FreemiumComplianceController::class, 'review']);
+
+        // §52: configuración de correo a nivel plataforma (remitente real + bienvenida).
+        Route::get('/platform/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'getPlatformConfig']);
+        Route::put('/platform/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'savePlatformConfig']);
+
         // Platform Stats & Management
         Route::get('/platform/stats', [PlatformAdminController::class, 'getStats']);
         Route::get('/platform/tenants', [PlatformAdminController::class, 'getTenants']);
@@ -106,6 +117,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/platform/bank-config', [PlatformAdminController::class, 'saveBankConfig']);
         Route::get('/platform/landing-simulator-settings', [PlatformAdminController::class, 'getSimulatorConfig']);
         Route::post('/platform/landing-simulator-settings', [PlatformAdminController::class, 'saveSimulatorConfig']);
+        // §49: botón de pánico — revocar todas las sesiones de plataforma.
+        Route::post('/platform/security/revoke-all-sessions', [PlatformAdminController::class, 'revokeAllPlatformSessions']);
         Route::get('/platform/security/devices', [PlatformAdminController::class, 'getSuspiciousDevices']);
         Route::post('/platform/security/devices/{id}/ban', [PlatformAdminController::class, 'banDevice']);
         Route::post('/platform/security/devices/{id}/unban', [PlatformAdminController::class, 'unbanDevice']);
@@ -118,6 +131,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Facturación Global (SaaS Admin)
         Route::get('/platform/billing/invoices', [PlatformAdminController::class, 'getSaaSInvoices']);
         Route::post('/platform/billing/invoice/manual', [PlatformAdminController::class, 'createManualSaaSInvoice']);
+        Route::delete('/platform/billing/invoices/{id}', [PlatformAdminController::class, 'deleteSaaSInvoice']);
+
+        // Registros Inconclusos / Pre-registros
+        Route::get('/platform/pending-registrations', [PlatformAdminController::class, 'getPendingRegistrations']);
+        Route::delete('/platform/pending-registrations/{id}', [PlatformAdminController::class, 'deletePendingRegistration']);
     });
 
     // DB Initialization (QA Simulator helper)
@@ -147,6 +165,20 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // 2. admin/supervisor (Administración y Supervisión de la Empresa/Tenant)
     // =========================================================================
     Route::middleware(['auth:sanctum', 'role:admin,supervisor', 'tenant.active'])->group(function () {
+        // §53: cumplimiento freemium — el admin del tenant sube su comprobante del mes.
+        Route::post('/me/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'submit']);
+        Route::get('/me/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'mine']);
+
+        // §52: configuración de correo del tenant (nombre para mostrar + Reply-To) y
+        // reenvío de invitación a un colaborador.
+        Route::get('/company/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'getTenantConfig']);
+        Route::put('/company/email-settings', [\App\Http\Controllers\EmailSettingsController::class, 'saveTenantConfig']);
+
+        // Sección 2 #1: configuración de nómina y semana laboral por empresa.
+        Route::get('/company/payroll-settings', [\App\Http\Controllers\PayrollSettingsController::class, 'get']);
+        Route::put('/company/payroll-settings', [\App\Http\Controllers\PayrollSettingsController::class, 'save']);
+        Route::post('/employees/{id}/resend-invitation', [EmployeeController::class, 'resendInvitation']);
+
         // Módulos HR & Empleados (Escritura y Lectura/Deportes)
         Route::post('/employees', [EmployeeController::class, 'store']);
         Route::put('/employees/{id}', [EmployeeController::class, 'update']);
@@ -276,7 +308,12 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::delete('/store-opening/assignments/{id}', [StoreOpeningController::class, 'deleteAssignment']);
 
         // Facturación Electrónica (Tenants)
-        Route::prefix('billing')->group(function () {
+        // §64: SOLO admin. El grupo padre es role:admin,supervisor, pero el CSD del SAT
+        // (sello + llave privada), el RFC/razón social y el timbrado de nómina son la
+        // firma fiscal de la empresa — no es un permiso operativo de un supervisor de
+        // tienda. Al apilar role:admin sobre el grupo padre, un supervisor pasa el
+        // primer filtro pero es rechazado (403) por este; solo admin pasa ambos.
+        Route::prefix('billing')->middleware('role:admin')->group(function () {
             Route::post('/tax-data', [BillingController::class, 'updateTaxData']);
             Route::post('/csd', [BillingController::class, 'uploadCsd']);
             Route::get('/invoices', [BillingController::class, 'getInvoices']);
@@ -347,6 +384,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/me/punctuality-course-reset', [AuthController::class, 'punctualityCourseReset']);
         Route::put('/me/security-pin', [AuthController::class, 'updateSecurityPin']);
         Route::get('/me/punctuality-status', [AuthController::class, 'punctualityStatus']);
+        Route::get('/me/punctuality-streak', [AuthController::class, 'punctualityStreak']);
         Route::get('/user', function (Request $request) {
             return $request->user();
         });
@@ -424,6 +462,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/task-assignments/{id}/omit', [TaskAssignmentController::class, 'omit']);
         Route::post('/task-assignments/{id}/ai-validate', [TaskAssignmentController::class, 'aiValidate']);
         Route::post('/task-assignments/{id}/validate-with-pin', [TaskAssignmentController::class, 'validateWithPin']);
+        // Sección 2 #2: los 3 botones del gerente para tareas inconclusas por apagón.
+        Route::post('/task-assignments/{id}/resolve-incomplete', [TaskAssignmentController::class, 'resolveIncomplete']);
 
         // §39: cadena de pedidos (compras→producción→ventas) — operativa abierta a
         // cualquier rol autenticado, ya que los puestos operativos son quienes avanzan

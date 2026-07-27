@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
 
 interface DocIndexItem {
   id: number;
@@ -922,7 +923,7 @@ export function OrgVaultManager() {
                   <div 
                     ref={contentRef}
                     className="flex-1 text-slate-800 leading-relaxed pr-1 custom-markdown"
-                    dangerouslySetInnerHTML={{ __html: activeDoc.content || '<p class="text-slate-400 italic">Este documento no tiene contenido redactado.</p>' }}
+                    dangerouslySetInnerHTML={{ __html: activeDoc.content ? sanitizeHtml(activeDoc.content) : '<p class="text-slate-400 italic">Este documento no tiene contenido redactado.</p>' }}
                   />
 
                   {/* Info alert / Help */}

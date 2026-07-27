@@ -61,14 +61,25 @@ class FacturapiBillingProvider implements BillingProviderInterface
             return $this->tenant->facturapi_organization_id;
         }
 
+        // Only create an organization if the tenant has explicitly configured an RFC
+        if (empty($this->tenant->rfc)) {
+            return null;
+        }
+
+        // Avoid making HTTP calls if API key is empty or default sandbox placeholder
+        if (empty($this->apiKey) || $this->apiKey === 'sk_test_default_facturapi_key_talent360') {
+            return null;
+        }
+
         // If no organization ID exists, we register it on Facturapi
         try {
             $taxRegimen = $this->tenant->tax_regimen ?? '601'; // Default: General de Ley Personas Morales
-            $rfc = $this->tenant->rfc ?? 'EKU9003173C9'; // Default: SAT test RFC
+            $rfc = $this->tenant->rfc;
 
             Log::info("Creating Facturapi Organization for Tenant: {$this->tenant->name} (RFC: {$rfc})");
 
-            $response = Http::withBasicAuth($this->apiKey, '')
+            $response = Http::timeout(5)
+                ->withBasicAuth($this->apiKey, '')
                 ->post("{$this->baseUrl}/organizations", [
                     'name' => $this->tenant->name,
                     'legal_name' => $this->tenant->tax_name ?? $this->tenant->name,
@@ -92,10 +103,10 @@ class FacturapiBillingProvider implements BillingProviderInterface
 
                 return $orgId;
             } else {
-                Log::error("Failed to create Facturapi Organization: " . $response->body());
+                Log::warning("Failed to create Facturapi Organization: " . $response->body());
             }
         } catch (\Exception $e) {
-            Log::error("Exception in getOrCreateOrganization: " . $e->getMessage());
+            Log::warning("Could not reach Facturapi service in getOrCreateOrganization: " . $e->getMessage());
         }
 
         return null;

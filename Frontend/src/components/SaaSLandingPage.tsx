@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw } from 'lucide-react';
+import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
+import { LegalModal, type LegalDocType } from './LegalModal';
 
 export const SaaSLandingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalDocType>('privacy');
+  // 2026-07-26 (auditoría en vivo): arrancaba en `true`, es decir la casilla de aceptar el SLA y
+  // el Aviso de Privacidad venía pre-marcada. La LFPDPPP exige consentimiento afirmativo del
+  // titular; una casilla ya marcada no acredita que la persona haya consentido, y debilita el
+  // valor probatorio del propio aviso. Arranca desmarcada — el botón ya estaba condicionado a
+  // ella (`disabled={!acceptedTerms}`), así que el flujo sigue funcionando igual.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [proEmployeesCount, setProEmployeesCount] = useState<number>(20); // Professional default
@@ -23,6 +32,18 @@ export const SaaSLandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isEmailDuplicated, setIsEmailDuplicated] = useState(false);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -78,23 +99,29 @@ export const SaaSLandingPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const { setCurrentUser, setCurrentTier } = useAppStore();
+  const { currentUser, setCurrentUser, setCurrentTier } = useAppStore();
 
   useEffect(() => {
-    if (location.state && location.state.resumeRegistration) {
-      const { user } = location.state;
-      setGoogleUser({
-        name: user.name,
-        email: user.email,
-        google_id: user.google_id || user.email
-      });
+    const isResume = location.state && location.state.resumeRegistration;
+    const isUserWithoutTenant = currentUser && currentUser.tenant_id === null && currentUser.role !== 'Loading' && currentUser.system_role !== 'platform_admin' && currentUser.system_role !== 'support_agent';
+
+    if (isResume || isUserWithoutTenant) {
+      const targetUser = (location.state && location.state.user) || currentUser;
+      if (targetUser && targetUser.email) {
+        setGoogleUser({
+          name: targetUser.name || targetUser.email.split('@')[0],
+          email: targetUser.email,
+          google_id: targetUser.google_id || targetUser.email
+        });
+      }
       setSelectedPlan('Freemium');
       setRegistrationStep(2);
       setShowCheckout(true);
-      // Clean history state
-      navigate(location.pathname, { replace: true });
+      if (isResume) {
+        navigate(location.pathname, { replace: true });
+      }
     }
-  }, [location, navigate]);
+  }, [location, currentUser, navigate]);
 
   const handleBuy = (plan: string) => {
     setSelectedPlan(plan);
@@ -323,7 +350,11 @@ export const SaaSLandingPage = () => {
         subdomain: formData.subdomain,
         plan: selectedPlan.toLowerCase(),
         employees: selectedPlan.toLowerCase() === 'pro' ? proEmployeesCount : null,
-        billing_cycle: billingCycle
+        billing_cycle: billingCycle,
+        ...(googleUser ? {
+          admin_name: googleUser.name,
+          admin_email: googleUser.email
+        } : {})
       });
 
       if (response.data.provisioned) {
@@ -344,7 +375,9 @@ export const SaaSLandingPage = () => {
       }
 
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Hubo un problema al procesar el registro.');
+      const firstValidationError = err.response?.data?.errors ? (Object.values(err.response.data.errors).flat()[0] as string) : null;
+      const errorMsg = firstValidationError || err.response?.data?.error || err.response?.data?.message || err.message || 'Hubo un problema al procesar el registro.';
+      setError(errorMsg);
       setIsProcessing(false);
     }
   };
@@ -388,69 +421,123 @@ export const SaaSLandingPage = () => {
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex md:hidden items-center gap-3">
-            <button 
-              onClick={() => navigate('/login')} 
-              className="text-xs font-black text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl hover:bg-blue-100 transition-all"
-            >
-              Entrar
-            </button>
+          <div className="flex md:hidden items-center gap-2">
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+              className="p-2.5 text-slate-700 bg-slate-100/80 hover:bg-slate-200/80 rounded-2xl transition-all active:scale-95 border border-slate-200/50 flex items-center gap-2 font-bold text-xs"
               aria-label="Abrir menú"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              <span className="text-slate-600 font-extrabold text-[11px] uppercase tracking-wider pl-1">Menú</span>
+              {isMobileMenuOpen ? <X size={20} className="text-blue-600" /> : <Menu size={20} className="text-slate-700" />}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Navigation Drawer */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden fixed top-20 left-0 right-0 bottom-0 bg-white/95 backdrop-blur-lg z-30 flex flex-col p-6 animate-in slide-in-from-top-5 duration-200 border-t border-slate-100">
-            <nav className="flex flex-col gap-6 text-base font-extrabold text-slate-700 mb-8">
-              <a 
-                href="#features" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
-              >
-                <span>Plataforma</span>
-                <ChevronRight size={16} className="text-slate-400" />
-              </a>
-              <a 
-                href="#pricing" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
-              >
-                <span>Precios y Planes</span>
-                <ChevronRight size={16} className="text-slate-400" />
-              </a>
-              <a 
-                href="#simulador" 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 rounded-2xl hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center justify-between"
-              >
-                <span>Simulador</span>
-                <ChevronRight size={16} className="text-slate-400" />
-              </a>
-            </nav>
-            <div className="mt-auto flex flex-col gap-3.5">
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
-                className="w-full py-4 rounded-2xl font-black text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors text-center text-sm"
-              >
-                Iniciar Sesión
-              </button>
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
-                className="w-full py-4 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-98 transition-all text-center text-sm"
-              >
-                Crear Cuenta Gratis
-              </button>
+      {/* Mobile Navigation Backdrop & Drawer */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Dark Backdrop Overlay */}
+          <div 
+            className="md:hidden fixed inset-0 top-[80px] bg-slate-950/75 backdrop-blur-md z-40 animate-in fade-in duration-200"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* Premium Mobile Menu Drawer */}
+          <div className="md:hidden fixed top-[80px] left-0 right-0 bottom-0 bg-slate-900 text-white z-50 flex flex-col p-6 animate-in slide-in-from-top-4 duration-200 border-t border-slate-800 shadow-2xl overflow-y-auto">
+            <div className="flex flex-col h-full justify-between max-w-sm mx-auto w-full py-2">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between px-1 pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-black text-xs text-white">T</div>
+                    <span className="font-extrabold text-sm text-slate-200">Menú de Navegación</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    SaaS Online
+                  </span>
+                </div>
+
+                <nav className="flex flex-col gap-3">
+                  <a 
+                    href="#features" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-blue-600/20 hover:border-blue-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                        <Zap size={20} />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-extrabold text-sm text-white group-hover:text-blue-400 transition-colors">Plataforma 360</div>
+                        <div className="text-[11px] text-slate-400 font-medium">Módulos de RRHH & Asistencia</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-slate-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                  </a>
+
+                  <a 
+                    href="#pricing" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-emerald-600/20 hover:border-emerald-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                        <Tag size={20} />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-extrabold text-sm text-white group-hover:text-emerald-400 transition-colors">Precios y Planes</div>
+                        <div className="text-[11px] text-slate-400 font-medium">Freemium, Pro & Enterprise</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                  </a>
+
+                  <a 
+                    href="#simulador" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-4 rounded-2xl bg-slate-800/70 hover:bg-purple-600/20 hover:border-purple-500/40 border border-slate-800 transition-all flex items-center justify-between group active:scale-98"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                        <Sparkles size={20} />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-extrabold text-sm text-white group-hover:text-purple-400 transition-colors">Simulador de Nómina</div>
+                        <div className="text-[11px] text-slate-400 font-medium">Calculadora de Ley LFT</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+                  </a>
+                </nav>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col gap-3.5 shrink-0">
+                {/* Single Auth Entry Point inside Drawer */}
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }} 
+                  className="w-full py-4 rounded-2xl font-black text-slate-100 bg-slate-800 hover:bg-slate-750 border border-slate-700/80 transition-all text-center text-sm flex items-center justify-center gap-2.5 active:scale-98 shadow-md"
+                >
+                  <Lock size={16} className="text-blue-400" />
+                  <span>Iniciar Sesión en tu Cuenta</span>
+                </button>
+
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); handleBuy('Freemium'); }} 
+                  className="w-full py-4 rounded-2xl font-black text-white bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-600/30 active:scale-98 transition-all text-center text-sm flex items-center justify-center gap-2"
+                >
+                  <span>Crear Cuenta Gratis</span>
+                  <ArrowRight size={16} />
+                </button>
+
+                <div className="mt-2 text-center text-[11px] font-semibold text-slate-500 flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <span>Conexión Segura SSL 256-Bit</span>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-      </header>
+        </>
+      )}
 
       {/* HERO SECTION */}
       <section className="relative pt-36 pb-24 px-6 overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-slate-50">
@@ -1233,16 +1320,11 @@ export const SaaSLandingPage = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-slate-100 py-12 px-6 text-center text-sm text-slate-400 font-bold">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">T</div>
-            <span className="text-slate-800 font-black">Talent 360</span>
-          </div>
-          <p>© 2026 Talent 360. Todos los derechos reservados. Infraestructura SaaS Dedicada.</p>
-        </div>
-      </footer>
+      {/* 2026-07-26 (auditoría de plataforma): se eliminó un segundo <footer> claro que vivía
+          aquí y se renderizaba apilado justo encima del footer oscuro real (el de más abajo,
+          con los enlaces legales de Aviso de Privacidad / SLA / Derechos ARCO). Eran dos pies
+          de página visibles uno tras otro con el mismo aviso de copyright duplicado. Se conserva
+          el oscuro por ser el que lleva los enlaces legales obligatorios. */}
 
       {/* REGISTRATION STEP WIZARD MODAL */}
       {showCheckout && (
@@ -1471,8 +1553,16 @@ export const SaaSLandingPage = () => {
                       <p className="text-xs font-black text-slate-800">{googleUser.name}</p>
                       <p className="text-[10px] text-slate-400 font-semibold">{googleUser.email}</p>
                     </div>
-                    <div className="ml-auto bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-blue-100">
-                      Google OK
+                    {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Google OK",
+                        incluso cuando el alta se hizo con correo y contraseña — afirmaba una
+                        validación con Google que no había ocurrido. Ahora refleja el método real:
+                        el registro por correo deja `google_id` vacío, el de Google lo llena. */}
+                    <div className={`ml-auto text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                      googleUser.google_id
+                        ? 'bg-blue-50 text-blue-600 border-blue-100'
+                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}>
+                      {googleUser.google_id ? 'Google OK' : 'Correo'}
                     </div>
                   </div>
 
@@ -1540,12 +1630,43 @@ export const SaaSLandingPage = () => {
                         <span>Tus empleados ingresarán a registrar asistencia desde: <strong className="font-black text-blue-800">{formData.subdomain || 'mi-empresa'}.talent360.com</strong></span>
                       </p>
                     </div>
+
+                    {/* Aceptación de Términos y Privacidad */}
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex items-start gap-2 text-left">
+                      <input 
+                        type="checkbox" 
+                        id="accept_terms"
+                        checked={acceptedTerms}
+                        onChange={e => setAcceptedTerms(e.target.checked)}
+                        className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        required
+                      />
+                      <label htmlFor="accept_terms" className="text-[10.5px] text-slate-600 leading-tight font-medium cursor-pointer">
+                        Acepto los{' '}
+                        <button 
+                          type="button" 
+                          onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
+                          className="text-blue-600 font-bold hover:underline"
+                        >
+                          Términos del Servicio (SLA)
+                        </button>{' '}
+                        y el{' '}
+                        <button 
+                          type="button" 
+                          onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
+                          className="text-blue-600 font-bold hover:underline"
+                        >
+                          Aviso de Privacidad
+                        </button>{' '}
+                        conforme a la LFPDPPP.
+                      </label>
+                    </div>
                   </div>
 
                   <button 
                     type="submit" 
-                    disabled={isProcessing}
-                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    disabled={isProcessing || !acceptedTerms}
+                    className={`w-full text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex justify-center items-center gap-2 text-sm ${isProcessing || !acceptedTerms ? 'bg-slate-400 cursor-not-allowed opacity-60' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >
                     {isProcessing ? (
                       <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Creando Instancia...</>
@@ -1559,6 +1680,53 @@ export const SaaSLandingPage = () => {
           </div>
         </div>
       )}
+
+      {/* FOOTER GLOBAL CON ENLACES LEGALES */}
+      <footer className="bg-slate-950 text-slate-400 py-12 px-6 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-3 text-left">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xs">360</div>
+            <div>
+              <span className="text-sm font-black text-white tracking-tight">Talent360</span>
+              <p className="text-[10px] text-slate-500 font-semibold">Plataforma SaaS de Asistencia, RRHH y Operaciones</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center items-center gap-6 text-xs font-bold text-slate-400">
+            <button 
+              onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }} 
+              className="hover:text-white transition cursor-pointer"
+            >
+              Aviso de Privacidad
+            </button>
+            <span className="text-slate-800">•</span>
+            <button 
+              onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }} 
+              className="hover:text-white transition cursor-pointer"
+            >
+              Términos del Servicio (SLA)
+            </button>
+            <span className="text-slate-800">•</span>
+            <button 
+              onClick={() => { setLegalModalTab('arco'); setIsLegalModalOpen(true); }} 
+              className="hover:text-white transition cursor-pointer"
+            >
+              Derechos ARCO & Biométricos
+            </button>
+          </div>
+
+          <div className="text-[10px] text-slate-600 font-medium text-center md:text-right">
+            © {new Date().getFullYear()} Talent360. Todos los derechos reservados.
+          </div>
+        </div>
+      </footer>
+
+      {/* MODAL LEGAL */}
+      <LegalModal 
+        isOpen={isLegalModalOpen} 
+        onClose={() => setIsLegalModalOpen(false)} 
+        defaultTab={legalModalTab} 
+      />
 
     </div>
   );

@@ -25,6 +25,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // §46: invalidación instantánea del caché de config de /sync/state cuando se
+        // editan puestos o políticas de reloj vía Eloquent. Es la vía rápida; el TTL de
+        // 5 min de TenantConfigCache es la red de seguridad para cualquier escritura que
+        // no pase por estos modelos (ej. syncRbac, que usa query builder e invalida
+        // explícitamente en el propio controlador).
+        $invalidate = function ($model) {
+            if (!empty($model->tenant_id)) {
+                \App\Support\TenantConfigCache::forget((int) $model->tenant_id);
+            }
+        };
+
+        foreach ([\App\Models\JobRole::class, \App\Models\RoleClockPolicy::class] as $modelClass) {
+            $modelClass::saved($invalidate);
+            $modelClass::deleted($invalidate);
+        }
     }
 }

@@ -41,12 +41,48 @@ class Tenant extends Model
     protected static function booted()
     {
         static::created(function ($tenant) {
+            // Se envuelve en una transacción anidada (SAVEPOINT): si la inicialización
+            // falla estando dentro de la transacción de registro de empresa, el rollback
+            // llega solo hasta el savepoint y NO envenena la transacción padre (evita el
+            // SQLSTATE[25P02] que antes bloqueaba todo el registro). El error se registra
+            // pero no tumba la creación del tenant.
             try {
-                app(\App\Services\TenantInitializationService::class)->initializeSettingsForTenant($tenant->id);
-            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($tenant) {
+                    app(\App\Services\TenantInitializationService::class)->initializeSettingsForTenant($tenant->id);
+                });
+            } catch (\Throwable $e) {
                 \Log::error("Error al inicializar configuraciones para tenant {$tenant->id}: " . $e->getMessage());
             }
         });
+    }
+
+    /**
+     * Cupo de usuarios por defecto según el plan (§58). Fuente única de verdad para
+     * evitar que cada controlador invente su propio número (antes había 5, 10 y 9999
+     * dispersos). El límite del freemium se lee de la configuración global de la
+     * plataforma (system_settings.freemium_max_users, tenant_id NULL) igual que
+     * freemium_allowed_modules/features; si no está definida, cae a 5 (lo que anuncia
+     * la landing).
+     */
+    public static function maxUsersForPlan(?string $plan, ?int $employees = null): int
+    {
+        $plan = strtolower((string) $plan);
+
+        if ($plan === 'freemium') {
+            $config = \DB::table('system_settings')
+                ->whereNull('tenant_id')
+                ->where('key', 'freemium_max_users')
+                ->first();
+            $value = $config ? (int) $config->value : 0;
+            return $value > 0 ? $value : 5;
+        }
+
+        if ($plan === 'pro') {
+            return ($employees && $employees > 0) ? $employees : 50;
+        }
+
+        // enterprise / cualquier otro: sin límite práctico.
+        return 9999;
     }
 
     public function users()

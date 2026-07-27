@@ -797,58 +797,27 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             </div>
           )}
 
-          {/* Banner de Progreso de Configuración (Wizard Stepper Banner) */}
-          {(() => {
-            const hasCompanyConfigured = systemSettings?.company_name && systemSettings.company_name !== 'Mi Sucursal Talent360';
-            const hasJobRoleCreated = monitorData?.job_roles && monitorData.job_roles.length > 0;
-            const hasEmployeeCreated = globalUsers.length > 1;
-            const hasClockedIn = monitorData?.users && monitorData.users.some(u => u.status !== 'offline');
-
-            const stepsCompleted = [hasCompanyConfigured, hasJobRoleCreated, hasEmployeeCreated, hasClockedIn].filter(Boolean).length;
-            const progressPercent = stepsCompleted * 25;
-
-            // El usuario ya completó el Onboarding Wizard y prefiere no ver esta barra de progreso
-            return null;
-
-            return (
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-6 shadow-lg border border-blue-500/20 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden animate-in slide-in-from-top-4 duration-300">
-                <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="text-amber-300" size={20} />
-                    <h3 className="text-lg font-black tracking-tight text-white">🚀 Configuración Inicial en Progreso ({progressPercent}%)</h3>
-                  </div>
-                  <p className="text-xs text-blue-100 max-w-lg font-medium leading-relaxed">
-                    Completa la guía de inicio rápido para activar el funcionamiento automático de tu sucursal.
-                  </p>
-                  
-                  {/* Stepper Steps badges */}
-                  <div className="flex flex-wrap gap-2 pt-1.5">
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${hasCompanyConfigured ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-200' : 'bg-white/5 border-white/10 text-blue-200'}`}>
-                      {hasCompanyConfigured ? '✓' : '1.'} Sucursal
-                    </span>
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${hasJobRoleCreated ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-200' : 'bg-white/5 border-white/10 text-blue-200'}`}>
-                      {hasJobRoleCreated ? '✓' : '2.'} Puesto
-                    </span>
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${hasEmployeeCreated ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-200' : 'bg-white/5 border-white/10 text-blue-200'}`}>
-                      {hasEmployeeCreated ? '✓' : '3.'} Colaborador
-                    </span>
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${hasClockedIn ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-200' : 'bg-white/5 border-white/10 text-blue-200'}`}>
-                      {hasClockedIn ? '✓' : '4.'} Primer Fichaje
-                    </span>
-                  </div>
+          {/* Banner de Bienvenida y Configuración de Giro (Wizard Banner) */}
+          {!systemSettings?.onboarding_completed && (
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-2xl p-4 sm:p-5 shadow-lg mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-amber-300 font-bold shrink-0">
+                  <Sparkles size={22} className="animate-pulse" />
                 </div>
-
-                <button 
-                  onClick={() => setShowSetupWizard(true)}
-                  className="bg-white hover:bg-slate-50 text-blue-700 px-5 py-3 rounded-xl font-black text-xs shadow-md transition-all self-start md:self-auto shrink-0 flex items-center gap-1.5"
-                >
-                  <Sparkles size={14} className="text-blue-600 fill-current" />
-                  Abrir Asistente
-                </button>
+                <div>
+                  <h4 className="text-sm sm:text-base font-black text-white">Configuración Inicial de Empresa (Wizard)</h4>
+                  <p className="text-xs text-purple-100 font-medium">Selecciona el giro de tu empresa para precargar puestos, tareas, vacantes y cursos recomendados.</p>
+                </div>
               </div>
-            );
-          })()}
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding-wizard'))}
+                className="px-4 py-2.5 bg-white hover:bg-slate-50 text-purple-700 rounded-xl font-bold text-xs shadow-md transition-all shrink-0 active:scale-95 flex items-center gap-2"
+              >
+                <Sparkles size={14} className="text-purple-600" />
+                <span>Iniciar Wizard de Giro</span>
+              </button>
+            </div>
+          )}
 
       {/* Métricas complementarias (lo que no repite ya las píldoras de arriba) */}
       <div className="grid grid-cols-2 gap-4">

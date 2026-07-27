@@ -201,7 +201,7 @@ class SubscriptionController extends Controller
         }
 
         // Fallback to simulated checkout URL
-        $simulatedUrl = url('/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId);
+        $simulatedUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -237,7 +237,7 @@ class SubscriptionController extends Controller
         }
         $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
-        $confirmUrl = url('/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId);
+        $confirmUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;
 
         // Fetch platform bank config
         $bankConfigRow = \DB::table('system_settings')
@@ -412,6 +412,10 @@ class SubscriptionController extends Controller
             </body>
             </html>
             ";
+        $origin = $request->header('Origin') ?: $request->header('Referer');
+        $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
+        $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
+
         return response($html, 200, ['Content-Type' => 'text/html']);
     }
 
@@ -432,7 +436,9 @@ class SubscriptionController extends Controller
             // Mark registration as processed
             $reg->delete();
 
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            $origin = $request->header('Origin') ?: $request->header('Referer');
+            $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
+            $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
             if ($isUpgrade) {
                 return redirect("$frontendUrl/app?payment=success&action=upgrade");
             }

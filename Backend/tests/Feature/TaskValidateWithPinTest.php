@@ -180,4 +180,122 @@ class TaskValidateWithPinTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    /**
+     * A1 (auditoría 2026-07-27): el pago de la validación por PIN debe anclar en
+     * `coins_awarded` (misma marca que update/validate). Flujo cotidiano: el colaborador
+     * completa (update le paga) y el supervisor valida por PIN después — antes eso
+     * depositaba una SEGUNDA vez.
+     */
+    public function test_pin_validation_does_not_repay_an_already_paid_assignment(): void
+    {
+        Queue::fake();
+        [$supervisor, $employee] = $this->setupHierarchy();
+
+        $task = Task::create(['title' => 'Tarea ya cobrada', 'tenant_id' => 1, 'validation_mode' => 'forced', 'points' => 10]);
+        // Ya cobró vía update: coins_awarded es la marca del pago.
+        $assignment = TaskAssignment::create([
+            'id' => 'pin-6', 'task_id' => $task->id, 'user_id' => $employee->id,
+            'status' => 'awaiting_validation', 'tenant_id' => 1, 'date' => now()->toDateString(),
+            'points_awarded' => 10, 'coins_awarded' => 1.00,
+        ]);
+
+        $response = $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/validate-with-pin", [
+            'supervisor_user_id' => $supervisor->id,
+            'pin' => '4821',
+            'status' => 'completed',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('task_assignments', [
+            'id' => 'pin-6', 'status' => 'completed', 'validated_by' => $supervisor->id,
+        ]);
+        // Ni una transacción nueva: ya había cobrado.
+        $this->assertSame(0, DB::table('wallet_transactions')->where('user_id', $employee->id)->count());
+    }
+
+    public function test_pin_validation_called_twice_pays_only_once(): void
+    {
+        Queue::fake();
+        [$supervisor, $employee] = $this->setupHierarchy();
+
+        $task = Task::create(['title' => 'Tarea doble click', 'tenant_id' => 1, 'validation_mode' => 'forced', 'points' => 10]);
+        $assignment = TaskAssignment::create([
+            'id' => 'pin-7', 'task_id' => $task->id, 'user_id' => $employee->id,
+            'status' => 'awaiting_validation', 'tenant_id' => 1, 'date' => now()->toDateString(),
+        ]);
+
+        $payload = [
+            'supervisor_user_id' => $supervisor->id,
+            'pin' => '4821',
+            'status' => 'completed',
+        ];
+
+        $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/validate-with-pin", $payload)->assertStatus(200);
+        $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/validate-with-pin", $payload)->assertStatus(200);
+
+        $this->assertSame(1, DB::table('wallet_transactions')->where('user_id', $employee->id)->count());
+        $wallet = DB::table('user_wallets')->where('user_id', $employee->id)->first();
+        $this->assertEquals(1.0, (float) $wallet->balance_coins);
+    }
+
+    public function test_reject_then_revalidate_cycle_does_not_repay(): void
+    {
+        Queue::fake();
+        [$supervisor, $employee] = $this->setupHierarchy();
+
+        $task = Task::create(['title' => 'Tarea ciclo', 'tenant_id' => 1, 'validation_mode' => 'forced', 'points' => 10]);
+        $assignment = TaskAssignment::create([
+            'id' => 'pin-8', 'task_id' => $task->id, 'user_id' => $employee->id,
+            'status' => 'awaiting_validation', 'tenant_id' => 1, 'date' => now()->toDateString(),
+        ]);
+
+        $url = "/api/v1/task-assignments/{$assignment->id}/validate-with-pin";
+
+        // Aprueba (paga) → rechaza → vuelve a aprobar: un solo pago en total.
+        $this->actingAs($employee)->postJson($url, [
+            'supervisor_user_id' => $supervisor->id, 'pin' => '4821', 'status' => 'completed',
+        ])->assertStatus(200);
+        $this->actingAs($employee)->postJson($url, [
+            'supervisor_user_id' => $supervisor->id, 'pin' => '4821', 'status' => 'in_progress', 'feedback' => 'Rehacer',
+        ])->assertStatus(200);
+        $this->actingAs($employee)->postJson($url, [
+            'supervisor_user_id' => $supervisor->id, 'pin' => '4821', 'status' => 'completed',
+        ])->assertStatus(200);
+
+        $this->assertSame(1, DB::table('wallet_transactions')->where('user_id', $employee->id)->count());
+    }
+
+    /**
+     * A2 (auditoría 2026-07-27): la ruta debe llevar throttle — el PIN es de 4-6 dígitos
+     * y sin límite un empleado podía iterar supervisor_user_id+PIN hasta acertar y
+     * auto-validarse tareas con pago (mismo criterio que emergency-open y login).
+     */
+    public function test_validate_with_pin_is_throttled_after_10_requests_per_minute(): void
+    {
+        [$supervisor, $employee] = $this->setupHierarchy();
+        $task = Task::create(['title' => 'Tarea throttle', 'tenant_id' => 1, 'validation_mode' => 'forced']);
+        $assignment = TaskAssignment::create([
+            'id' => 'pin-9', 'task_id' => $task->id, 'user_id' => $employee->id,
+            'status' => 'awaiting_validation', 'tenant_id' => 1, 'date' => now()->toDateString(),
+        ]);
+
+        for ($i = 1; $i <= 10; $i++) {
+            $response = $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/validate-with-pin", [
+                'supervisor_user_id' => $supervisor->id,
+                'pin' => '0000', // siempre incorrecto: fuerza bruta simulada
+                'status' => 'completed',
+            ]);
+            $this->assertNotEquals(429, $response->status(), "La petición #$i no debería estar limitada todavía.");
+        }
+
+        $response = $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/validate-with-pin", [
+            'supervisor_user_id' => $supervisor->id,
+            'pin' => '0000',
+            'status' => 'completed',
+        ]);
+
+        $response->assertStatus(429);
+        $this->assertDatabaseMissing('task_assignments', ['id' => 'pin-9', 'status' => 'completed']);
+    }
 }

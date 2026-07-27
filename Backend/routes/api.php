@@ -461,7 +461,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::put('/task-assignments/{id}', [TaskAssignmentController::class, 'update']);
         Route::post('/task-assignments/{id}/omit', [TaskAssignmentController::class, 'omit']);
         Route::post('/task-assignments/{id}/ai-validate', [TaskAssignmentController::class, 'aiValidate']);
-        Route::post('/task-assignments/{id}/validate-with-pin', [TaskAssignmentController::class, 'validateWithPin']);
+        // A2 (auditoría 2026-07-27): el PIN es de 4-6 dígitos — sin throttle un empleado podía
+        // iterar supervisor_user_id+PIN hasta acertar y auto-validarse tareas con pago. 10/min
+        // deja validar una cola de tareas en revisión, pero vuelve impráctica la fuerza bruta
+        // (~17 h continuas para barrer 10^4 combinaciones, con lockout por minuto).
+        Route::middleware('throttle:10,1')->post('/task-assignments/{id}/validate-with-pin', [TaskAssignmentController::class, 'validateWithPin']);
         // Sección 2 #2: los 3 botones del gerente para tareas inconclusas por apagón.
         Route::post('/task-assignments/{id}/resolve-incomplete', [TaskAssignmentController::class, 'resolveIncomplete']);
 

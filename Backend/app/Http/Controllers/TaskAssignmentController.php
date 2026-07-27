@@ -397,24 +397,33 @@ class TaskAssignmentController extends Controller
             $basePoints = $task->points ?? 10;
             $coinsEarned = round($basePoints * 0.10, 2);
 
+            // A1 (auditoría 2026-07-27): ancla anti-doble-pago — `coins_awarded` es la marca
+            // del pago (la misma que update/validate/resolve-incomplete). Sin ella, el flujo
+            // cotidiano (el colaborador completa y cobra vía update; el supervisor valida por
+            // PIN después) depositaba una segunda vez, igual que el doble click o el ciclo
+            // rechazo→re-validación.
+            $yaPagada = (float) ($assignment->coins_awarded ?? 0) > 0;
+
             $assignment->update([
                 'status' => 'completed',
                 'validation_feedback' => $validated['feedback'] ?? null,
                 'validated_by' => $supervisor->id,
                 'score_percentage' => 100,
-                'points_awarded' => $basePoints,
-                'coins_awarded' => $coinsEarned,
+                'points_awarded' => $yaPagada ? $assignment->points_awarded : $basePoints,
+                'coins_awarded' => $yaPagada ? $assignment->coins_awarded : $coinsEarned,
             ]);
 
-            $wallet = \App\Models\UserWallet::getOrCreateForUser($employee->id, $tenantId);
-            $wallet->deposit(
-                $coinsEarned,
-                $basePoints,
-                'earned_task',
-                "Recompensa validada por supervisor vía PIN: " . ($task->title ?? 'Tarea Operativa'),
-                'TaskAssignment',
-                $assignment->id
-            );
+            if (!$yaPagada) {
+                $wallet = \App\Models\UserWallet::getOrCreateForUser($employee->id, $tenantId);
+                $wallet->deposit(
+                    $coinsEarned,
+                    $basePoints,
+                    'earned_task',
+                    "Recompensa validada por supervisor vía PIN: " . ($task->title ?? 'Tarea Operativa'),
+                    'TaskAssignment',
+                    $assignment->id
+                );
+            }
 
             LogTaskValidationJob::dispatch($assignment->user_id, $assignment->task_id, $supervisor->id, $tenantId, 'completed');
         } else {

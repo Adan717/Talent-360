@@ -2,6 +2,15 @@
 
 **Fecha:** 2026-07-27 · **Base:** `main` @ `8f463fb` (merge Reloj + 46 commits del jefe) · **Suite:** 787 passed / 0 failed
 
+> **✅ CIERRE (2026-07-27, mismo día): 10/10 hallazgos remediados.** Suite final: **820 passed
+> / 0 failed** (+33 tests característicos, todos rojo→verde). Commits:
+> C1 `d25e6bc` · A1+A2 `cc71b28` · A3+M2 `3de0c90` · A4 `a027cbe` (resultó PEOR: el comando
+> estaba escrito contra un esquema inexistente y jamás persistió una pre-nómina) ·
+> A5+M5 `d9db1a1` · M1+M4 `e0c9eeb` · M3 `391db7f` (panel verificado end-to-end en navegador).
+> Las 6 puertas de depósito comparten el ancla única `coins_awarded`; todo lo fechado corta
+> con la timezone del tenant. Quedan solo las 2 decisiones de producto del jefe (§31 tarea al
+> vuelo, ProductivityBonusService muerto) — documentadas abajo, sin cambio a propósito.
+
 Alcance: `TaskSyncController`, `TaskAssignmentController`, `TaskValidationController`,
 `UserWalletController`, `TaskValidationPolicy`, `ProductivityBonusService`, `PayrollWeekService`,
 `FlagUnfinishedTasksCommand`, `CalculateWeeklyPayrollCommand`, modelos (`Task`, `Routine`,

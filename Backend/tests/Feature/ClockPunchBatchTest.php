@@ -60,8 +60,9 @@ class ClockPunchBatchTest extends TestCase
         $secretResponse = $this->actingAs($user)->getJson('/api/v1/clock/offline-secret');
         $secret = $secretResponse->json('secret');
 
+        // Fecha relativa (ayer) para no caer en la ventana anti-backdating de MAX_AGE_DAYS.
         $checkInTime = '08:05:00';
-        $checkInTimestamp = '2026-07-20T08:05:00-06:00';
+        $checkInTimestamp = now('-06:00')->subDay()->format('Y-m-d') . 'T08:05:00-06:00';
         $checkInStamp = hash_hmac('sha256', "{$user->id}|check_in|{$checkInTime}|{$checkInTimestamp}", $secret);
 
         DB::table('system_settings')->insertOrIgnore([
@@ -106,8 +107,9 @@ class ClockPunchBatchTest extends TestCase
             'value' => json_encode('simulated'),
         ]);
 
+        // Fecha relativa (ayer) para no caer en la ventana anti-backdating de MAX_AGE_DAYS.
         $validTime = '08:05:00';
-        $validTimestamp = '2026-07-20T08:05:00-06:00';
+        $validTimestamp = now('-06:00')->subDay()->format('Y-m-d') . 'T08:05:00-06:00';
         $validStamp = hash_hmac('sha256', "{$user->id}|check_in|{$validTime}|{$validTimestamp}", $secret);
 
         $response = $this->actingAs($user)->postJson('/api/v1/clock/punch-batch', [

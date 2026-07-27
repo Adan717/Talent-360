@@ -425,6 +425,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // Refrescar el estado para traer los puestos recién inyectados en Postgres
       await fetchState();
       
+      const updatedRoles = useAppStore.getState().globalRoles;
+      if (updatedRoles && updatedRoles.length > 0) {
+        setSelectedRoleId(updatedRoles[0].id);
+      }
+
       setStep(2);
     } catch (e: any) {
       console.error(e);

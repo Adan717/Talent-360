@@ -576,6 +576,21 @@ class OnboardingController extends Controller
                 }
             }
 
+            // Limpiar los puestos por defecto de la plantilla inicial que NO tengan empleados ni usuarios asignados,
+            // para sustituirlos limpiamente por la estructura de puestos elegida por el usuario en el wizard.
+            $existingRoles = \App\Models\JobRole::where('tenant_id', $tenantId)->get();
+            foreach ($existingRoles as $oldRole) {
+                if ($oldRole->employees()->count() === 0 && $oldRole->users()->count() === 0) {
+                    \DB::table('role_clock_policies')->where('job_role_id', $oldRole->id)->delete();
+                    \DB::table('vacancies')->where('job_role_id', $oldRole->id)->delete();
+                    $oldRole->delete();
+                }
+            }
+
+            // Limpiar tareas y vacantes de la plantilla previa del tenant para cargar las del giro seleccionado
+            \DB::table('tasks')->where('tenant_id', $tenantId)->delete();
+            \DB::table('vacancies')->where('tenant_id', $tenantId)->delete();
+
             // 1. Inyectar Puestos en base de datos (`job_roles`)
             $roleIdsMap = [];
             $firstGerenteRole = null;

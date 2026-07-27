@@ -3,7 +3,7 @@ import {
     Coffee, Play, Check, Clock, Lock, Brain, Camera, Bot, 
     Pause, Trash2, Plus, X, AlertCircle, ChevronRight, User, HelpCircle,
     Search, RefreshCw, CheckCircle, XCircle, ShieldAlert, Sparkles, ClipboardList,
-    Briefcase, FileCheck
+    Briefcase, FileCheck, ShieldCheck
 } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, TaskAssignment } from '../../store/useTaskStore';
@@ -11,6 +11,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import axiosInstance from '../../lib/axios';
 import TaskEvidenceCapture from './TaskEvidenceCapture';
+import SupervisorPinValidation from './SupervisorPinValidation';
 
 // Componente para tarjeta de tarea unificada (Ficha de Tarea)
 export interface FichaTareaProps {
@@ -257,6 +258,8 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
     // §35: captura real de cámara para evidencia_foto (reemplaza el stub anterior). Guarda
     // el id de la asignación que está capturando en este momento (null = modal cerrado).
     const [capturingEvidenceFor, setCapturingEvidenceFor] = useState<string | null>(null);
+    // §41: id de la asignación para la que se está pidiendo el PIN del supervisor.
+    const [pinValidationFor, setPinValidationFor] = useState<string | null>(null);
     const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
     
     // Modal de creación de tareas
@@ -1743,6 +1746,23 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                 {/* Caso: Tarea esperando validación (Solo para Supervisor) */}
                                 {a.status === 'awaiting_validation' && (
                                     <div className="space-y-3 pt-2 border-t border-slate-100">
+                                        {/* §41 (cableado 2026-07-26): validación con PIN del supervisor en ESTE
+                                            dispositivo. Antes, una tarea en "Por Validar" solo se destrababa si el
+                                            supervisor abría su propia sesión — cosa que en piso no ocurre, así que
+                                            las tareas se quedaban esperando. Se muestra al colaborador dueño de la
+                                            tarea (el que tiene el aparato en la mano); el supervisor que ya entró
+                                            con su cuenta usa los botones de aprobar/rechazar de abajo. */}
+                                        {!isSupervisor && a.userId === currentUser.id && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setPinValidationFor(a.id)}
+                                                className="w-full py-2.5 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-black text-xs flex items-center justify-center gap-2 hover:bg-violet-100 transition-colors"
+                                            >
+                                                <ShieldCheck size={14} />
+                                                Validar con PIN del supervisor
+                                            </button>
+                                        )}
+
                                         {a.assistantData && (
                                             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                                                 <p className="font-extrabold text-blue-700 flex items-center gap-1.5 mb-1.5">
@@ -2141,6 +2161,29 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                     }}
                 />
             )}
+
+            {/* §41: validación con PIN del supervisor sobre el dispositivo del colaborador. */}
+            {pinValidationFor && (() => {
+                const target = assignments.find(a => a.id === pinValidationFor);
+                const targetTask = target ? tasks.find(t => t.id === target.taskId) : null;
+                return (
+                    <SupervisorPinValidation
+                        assignmentId={pinValidationFor}
+                        employeeUserId={target?.userId ?? null}
+                        taskTitle={targetTask?.title}
+                        onClose={() => setPinValidationFor(null)}
+                        onValidated={() => {
+                            // El backend ya dejó la asignación en 'completed'; se refleja localmente
+                            // para no dejar la tarjeta en "Por Validar" hasta el siguiente sync.
+                            useTaskStore.setState(state => ({
+                                assignments: state.assignments.map(a =>
+                                    a.id === pinValidationFor ? { ...a, status: 'completed' } : a
+                                )
+                            }));
+                        }}
+                    />
+                );
+            })()}
         </div>
     );
 });

@@ -16,6 +16,7 @@ const RecursosHumanos = React.lazy(() => import('../RecursosHumanos'));
 import DialPrincipal from './DialPrincipal';
 import MealPhotoCapture from './MealPhotoCapture';
 import MealQueue from './MealQueue';
+import { SillaRequestsPanel } from './SillaRequestsPanel';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -2683,6 +2684,12 @@ export default function RelojVisual({
 
             {/* Caja de Herramientas */}
             <p className={fabSectionDivider(isDark, false)}>Caja de Herramientas</p>
+            {/* §25b: primero en la lista para quien aprueba — es acción pendiente, no consulta. */}
+            {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+              <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('silla_requests'); })} className={fabItemClass(isDark)}>
+                <Armchair size={14} className="text-violet-400 shrink-0" /> Solicitudes de Ley Silla 🪑
+              </button>
+            )}
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('chat'); fetchChatMessages(); })} className={fabItemClass(isDark)}>
               <MessageSquare size={14} className="text-indigo-400 shrink-0" /> Chat de Equipo 💬
             </button>
@@ -3696,6 +3703,7 @@ export default function RelojVisual({
                           {innerTool === 'buzon' && renderToolBuzon()}
                           {innerTool === 'transfer' && renderToolTransfer()}
                           {innerTool === 'huida' && renderToolHuida()}
+                          {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
                         </div>
                       )}
                     </div>
@@ -4273,8 +4281,30 @@ export default function RelojVisual({
                       </div>
                     </button>
 
-                    <button 
-                      onClick={() => setInnerTool('soplon')} 
+                    {/* §25b (cableado 2026-07-26): bandeja de aprobación de Ley Silla. El endpoint
+                        `GET /clock/silla/requests` existía desde el 21-jul pero ningún usuario podía
+                        alcanzarlo: la única forma de aprobar era atender la notificación push en el
+                        momento exacto, y si se perdía, la solicitud quedaba atorada para siempre.
+                        Solo se muestra a quien el backend deja consultarla (admin/supervisor). */}
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+                      <button
+                        onClick={() => setInnerTool('silla_requests')}
+                        className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
+                          isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-full bg-slate-800 text-violet-400 flex items-center justify-center shrink-0">
+                          <Armchair size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-100">Solicitudes de Ley Silla 🪑</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Aprobar o rechazar las solicitudes pendientes de tu equipo</p>
+                        </div>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setInnerTool('soplon')}
                       className={`p-5 rounded-2xl border shadow-sm flex items-center gap-4 transition-all text-left group ${
                         isDark ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-900/40' : 'border-slate-200 bg-white hover:bg-slate-50'
                       }`}
@@ -4376,6 +4406,7 @@ export default function RelojVisual({
                   {innerTool === 'buzon' && renderToolBuzon()}
                   {innerTool === 'transfer' && renderToolTransfer()}
                   {innerTool === 'huida' && renderToolHuida()}
+                          {innerTool === 'silla_requests' && <SillaRequestsPanel isDark={isDark} />}
                 </div>
               )}
             </div>

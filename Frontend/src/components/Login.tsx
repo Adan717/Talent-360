@@ -4,6 +4,7 @@ import { Lock, Mail, ArrowRight, ArrowLeft, ShieldCheck, Eye, EyeOff, Fingerprin
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { LegalModal, type LegalDocType } from './LegalModal';
+import { clearClockLocalCache } from '../lib/clockCache';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Hay una sesión guardada en este dispositivo (ver comentario del efecto de abajo).
+  const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [socialProvider, setSocialProvider] = useState<'google' | 'apple' | 'samsung' | null>(null);
   const [socialEmail, setSocialEmail] = useState(emailParam || '');
@@ -63,9 +66,20 @@ export const Login = () => {
       return;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────────
+    // 2026-07-26 (auditoría en vivo) — ANTES: `if (hasToken) navigate('/app')`.
+    // Si existía CUALQUIER token guardado, esta pantalla redirigía adentro sin mostrar
+    // siquiera el formulario. En un dispositivo compartido —que es justamente el caso de
+    // uso del Reloj Checador en tienda— eso significa que si alguien deja su sesión
+    // abierta, la siguiente persona que entra a "iniciar sesión" cae DENTRO de la cuenta
+    // ajena sin darse cuenta. Reproducido en producción: se navegó a /login con la sesión
+    // de otra usuaria abierta y la app entró como ella, con acceso total a su empresa.
+    // AHORA: no se redirige solo. Se avisa que hay una sesión activa y se deja elegir
+    // entre continuar con ella o entrar con otra cuenta (lo que la cierra primero).
+    // ─────────────────────────────────────────────────────────────────────────────────
     const hasToken = !!localStorage.getItem('talent_auth_token');
     if (hasToken && paymentParam !== 'success') {
-      navigate('/app');
+      setHasActiveSession(true);
     }
   }, [navigate, paymentParam, searchParams, setCurrentUser, setCurrentTier]);
 
@@ -137,6 +151,14 @@ export const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // Si había una sesión previa en este dispositivo, se descarta ANTES de autenticar.
+    // Así, si el login falla, la persona queda fuera —no dentro de la cuenta anterior— y
+    // si tiene éxito, no queda ningún rastro del usuario que estaba antes (mismo criterio
+    // que handleLogout: el caché operativo del reloj también se limpia).
+    localStorage.removeItem('talent_auth_token');
+    localStorage.removeItem('platform_admin_token');
+    clearClockLocalCache();
 
     try {
       const response = await axiosInstance.post('/login', { email, password });
@@ -296,7 +318,28 @@ export const Login = () => {
 
         {/* Form */}
         <div className="p-5 sm:p-8">
-          
+
+          {/* Aviso de sesión abierta en este dispositivo. Antes esto no existía: la app
+              redirigía sola y la persona entraba a la cuenta ajena sin enterarse. */}
+          {hasActiveSession && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold p-3.5 rounded-xl flex items-start gap-2.5 mb-4 shadow-sm">
+              <span className="text-base">⚠️</span>
+              <div className="text-left flex-1">
+                <p className="font-black text-slate-800">Ya hay una sesión abierta en este dispositivo</p>
+                <p className="text-[11px] font-semibold text-amber-700 mt-0.5 leading-relaxed">
+                  Si no eres tú, escribe tus datos abajo — al entrar se cerrará la sesión anterior.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/app')}
+                  className="mt-2 text-[11px] font-black text-amber-900 underline underline-offset-2 hover:text-amber-950"
+                >
+                  Continuar con la sesión actual
+                </button>
+              </div>
+            </div>
+          )}
+
           {paymentParam === 'success' && (
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-bold p-3.5 sm:p-4 rounded-xl flex items-start gap-2.5 mb-4 sm:mb-5 shadow-sm">
               <span className="text-base">✓</span>

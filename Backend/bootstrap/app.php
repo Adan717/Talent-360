@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            // §65: capacidades delegables por puesto, en paralelo a `role:`.
+            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
             'tenant.active' => \App\Http\Middleware\CheckTenantActive::class,
             'tenant.module' => \App\Http\Middleware\TenantModuleMiddleware::class,
             'device.security' => \App\Http\Middleware\DeviceSecurityMiddleware::class,

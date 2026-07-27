@@ -241,6 +241,16 @@ class TaskAssignmentController extends Controller
         ]);
 
         $assignment = TaskAssignment::where('tenant_id', $tenantId)->findOrFail($id);
+
+        // M2 (auditoría 2026-07-27): ownership — un no privilegiado sólo somete evidencia de
+        // SUS propias asignaciones. Sin esto, cualquier empleado empujaba la tarea de un
+        // compañero a completed (con pago al dueño) o la degradaba a awaiting_validation con
+        // fotos basura. Mismo isPrivileged del módulo (update/index/sync).
+        $isPrivileged = in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
+        if (!$isPrivileged && (int) $assignment->user_id !== (int) $user->id) {
+            return response()->json(['error' => 'No puedes someter evidencia por la tarea de otro colaborador.'], 403);
+        }
+
         $task = $assignment->task_id ? Task::find($assignment->task_id) : null;
 
         if (!$task || $task->validation_mode !== 'ai_comparison' || !$task->ai_comparison_enabled) {
@@ -299,15 +309,20 @@ class TaskAssignmentController extends Controller
             $basePoints = $task->points ?? 10;
             $coinsEarned = round($basePoints * 0.10, 2);
 
+            // M2 (auditoría 2026-07-27): ancla anti-doble-pago — `coins_awarded` es la marca
+            // del pago. Un match sobre una asignación ya pagada (completada y luego
+            // desmarcada) depositaba otra vez.
+            $yaPagada = (float) ($assignment->coins_awarded ?? 0) > 0;
+
             $assignment->update([
                 'status' => 'completed',
                 'ai_validation_result' => $result,
                 'task_cost' => round(($baseSalary / 480) * $accumulatedMins, 2),
-                'points_awarded' => $basePoints,
-                'coins_awarded' => $coinsEarned,
+                'points_awarded' => $yaPagada ? $assignment->points_awarded : $basePoints,
+                'coins_awarded' => $yaPagada ? $assignment->coins_awarded : $coinsEarned,
             ]);
 
-            if ($assignment->user_id) {
+            if ($assignment->user_id && !$yaPagada) {
                 $wallet = \App\Models\UserWallet::getOrCreateForUser($assignment->user_id, $tenantId);
                 $wallet->deposit(
                     $coinsEarned,

@@ -336,22 +336,38 @@ class TaskSyncController extends Controller
                         // tronaba con "Attempt to read property 'points' on null" y
                         // hacía rollback de todo el sync.
                         $basePoints = $task?->points ?? 10;
-                        $mappedData['points_awarded'] = $basePoints;
-                        // 1 Pobre de Puntos = 0.10 Monedas Digitales
-                        $coinsEarned = round($basePoints * 0.10, 2);
-                        $mappedData['coins_awarded'] = $coinsEarned;
 
-                        // Depositar en el Monedero Digital del usuario si no se ha depositado ya
-                        if ($mappedData['user_id'] && (!$existing || $existing->status !== 'completed')) {
-                            $wallet = \App\Models\UserWallet::getOrCreateForUser($mappedData['user_id'], $tenantId);
-                            $wallet->deposit(
-                                $coinsEarned,
-                                $basePoints,
-                                'earned_task',
-                                "Recompensa por completar tarea: " . ($task?->title ?? 'Tarea Operativa'),
-                                'TaskAssignment',
-                                $assignment['id']
-                            );
+                        // A3 (auditoría 2026-07-27): ancla anti-doble-pago — `coins_awarded` es
+                        // la marca del pago (la misma que update/validate/validate-with-pin/
+                        // resolve-incomplete). El ancla por STATUS pagaba de nuevo tras el ciclo
+                        // completar (sync) → desmarcar (PUT, legítimo del checklist del Reloj) →
+                        // re-completar (sync). Se conserva ADEMÁS el guard de status: una fila
+                        // legacy completada sin coins_awarded (pre-gamificación) tampoco debe
+                        // cobrar al re-emitirse en el full-state.
+                        $yaPagada = $existing && (float) ($existing->coins_awarded ?? 0) > 0;
+
+                        if ($yaPagada) {
+                            // Conservar lo realmente pagado (no re-escribir con puntos nuevos:
+                            // el registro debe seguir cuadrando contra el monedero).
+                            $mappedData['points_awarded'] = $existing->points_awarded;
+                            $mappedData['coins_awarded'] = $existing->coins_awarded;
+                        } else {
+                            $mappedData['points_awarded'] = $basePoints;
+                            // 1 Pobre de Puntos = 0.10 Monedas Digitales
+                            $coinsEarned = round($basePoints * 0.10, 2);
+                            $mappedData['coins_awarded'] = $coinsEarned;
+
+                            if ($mappedData['user_id'] && (!$existing || $existing->status !== 'completed')) {
+                                $wallet = \App\Models\UserWallet::getOrCreateForUser($mappedData['user_id'], $tenantId);
+                                $wallet->deposit(
+                                    $coinsEarned,
+                                    $basePoints,
+                                    'earned_task',
+                                    "Recompensa por completar tarea: " . ($task?->title ?? 'Tarea Operativa'),
+                                    'TaskAssignment',
+                                    $assignment['id']
+                                );
+                            }
                         }
                     }
 

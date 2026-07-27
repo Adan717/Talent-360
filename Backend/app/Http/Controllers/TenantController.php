@@ -22,7 +22,11 @@ class TenantController extends Controller
         }
 
         $request->validate([
-            'subdomain' => 'required|string|unique:tenants,subdomain',
+            'subdomain' => [
+                'required', 'string',
+                \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
+                \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+            ],
             'plan' => 'required|string',
             'company_name' => 'required|string',
             'admin_name' => 'required|string',
@@ -58,13 +62,20 @@ class TenantController extends Controller
                 ->first();
             $trialDays = $trialConfig ? (int)$trialConfig->value : 30;
 
+            $baseSlug = \Illuminate\Support\Str::slug($request->subdomain);
+            $publicSlug = $baseSlug;
+            $slugIndex = 1;
+            while (Tenant::withTrashed()->where('public_slug', $publicSlug)->exists()) {
+                $publicSlug = $baseSlug . '-' . $slugIndex++;
+            }
+
             // 1. Create Tenant with Dynamic Free Trial
             $tenant = Tenant::create([
                 'name' => $request->company_name,
                 'subdomain' => $request->subdomain,
                 'plan' => $plan,
                 'max_users' => Tenant::maxUsersForPlan($plan),
-                'public_slug' => \Illuminate\Support\Str::slug($request->subdomain),
+                'public_slug' => $publicSlug,
                 'subscription_status' => 'trial',
                 'trial_ends_at' => now()->addDays($trialDays)
             ]);

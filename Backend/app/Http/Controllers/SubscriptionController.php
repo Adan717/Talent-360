@@ -55,7 +55,11 @@ class SubscriptionController extends Controller
         } elseif ($isInitialRegistration) {
             // Google authenticated registration flow: only company data is required
             $request->validate([
-                'subdomain' => ['required', 'string', 'alpha_dash', 'max:50', \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->whereNull('deleted_at')],
+                'subdomain' => [
+                    'required', 'string', 'alpha_dash', 'max:50',
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
                 'employees' => 'nullable|integer',
@@ -83,7 +87,11 @@ class SubscriptionController extends Controller
                 ]);
             }
             $request->validate([
-                'subdomain' => ['required', 'string', 'alpha_dash', 'max:50', \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->whereNull('deleted_at')],
+                'subdomain' => [
+                    'required', 'string', 'alpha_dash', 'max:50',
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
                 'admin_name' => 'required|string',
@@ -193,7 +201,7 @@ class SubscriptionController extends Controller
         }
 
         // Fallback to simulated checkout URL
-        $simulatedUrl = url('/api/subscriptions/simulated-checkout?pref_id=' . $regId);
+        $simulatedUrl = url('/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId);
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -229,7 +237,7 @@ class SubscriptionController extends Controller
         }
         $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
-        $confirmUrl = url('/api/subscriptions/simulated-confirm?pref_id=' . $prefId);
+        $confirmUrl = url('/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId);
 
         // Fetch platform bank config
         $bankConfigRow = \DB::table('system_settings')
@@ -239,10 +247,9 @@ class SubscriptionController extends Controller
         $bank = $bankConfigRow ? json_decode($bankConfigRow->value, true) : null;
         $bankActive = $bank && ($bank['is_active'] ?? false);
 
-        return response()->stream(function() use ($payload, $plan, $price, $priceUnit, $confirmUrl, $bank, $bankActive) {
-            $bankJson = json_encode($bank);
-            $hasBankStr = $bankActive ? 'true' : 'false';
-            echo "
+        $bankJson = json_encode($bank);
+        $hasBankStr = $bankActive ? 'true' : 'false';
+        $html = "
             <!DOCTYPE html>
             <html lang='es'>
             <head>
@@ -405,7 +412,7 @@ class SubscriptionController extends Controller
             </body>
             </html>
             ";
-        }, 200, ['Content-Type' => 'text/html']);
+        return response($html, 200, ['Content-Type' => 'text/html']);
     }
 
     /**
@@ -501,12 +508,19 @@ class SubscriptionController extends Controller
             // Standard creation flow
             // 1. Create or Reuse Tenant
             $tenant = Tenant::where('subdomain', $payload['subdomain'])->first();
+            $baseSlug = Str::slug($payload['subdomain']);
+            $publicSlug = $baseSlug;
+            $slugIndex = 1;
+            while (Tenant::withTrashed()->where('public_slug', $publicSlug)->where('id', '!=', $tenant->id ?? 0)->exists()) {
+                $publicSlug = $baseSlug . '-' . $slugIndex++;
+            }
+
             if ($tenant && $tenant->users()->count() === 0) {
                 $tenant->update([
                     'name' => $payload['company_name'],
                     'plan' => strtolower($payload['plan']),
                     'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
-                    'public_slug' => Str::slug($payload['subdomain']),
+                    'public_slug' => $publicSlug,
                     'mp_subscription_id' => $prefId,
                     'subscription_status' => 'active',
                     'trial_ends_at' => now()->addDays(14),
@@ -518,7 +532,7 @@ class SubscriptionController extends Controller
                     'subdomain' => $payload['subdomain'],
                     'plan' => strtolower($payload['plan']),
                     'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
-                    'public_slug' => Str::slug($payload['subdomain']),
+                    'public_slug' => $publicSlug,
                     'mp_subscription_id' => $prefId,
                     'subscription_status' => 'active',
                     'trial_ends_at' => now()->addDays(14),

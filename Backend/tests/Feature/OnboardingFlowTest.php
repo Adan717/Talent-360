@@ -70,4 +70,50 @@ class OnboardingFlowTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_professional_plan_registration_flow(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Paloma Vega',
+            'email' => 'dashcomputer@gmail.com',
+            'tenant_id' => null,
+            'role' => 'admin',
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // 1. Submit professional plan registration
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/subscriptions/create-preference', [
+                'company_name' => 'DashComputer',
+                'subdomain' => 'dashcomputer',
+                'plan' => 'pro',
+                'employees' => 18,
+                'billing_cycle' => 'monthly',
+            ]);
+
+        $response->assertStatus(200);
+        $initPoint = $response->json('init_point');
+        $this->assertNotNull($initPoint);
+        $this->assertStringContainsString('/api/v1/subscriptions/simulated-checkout', $initPoint);
+
+        // 2. Fetch simulated checkout page
+        $checkoutResponse = $this->get($initPoint);
+        $checkoutResponse->assertStatus(200);
+        $checkoutResponse->assertSee('DashComputer');
+        $checkoutResponse->assertSee('$216');
+
+        // 3. Confirm simulated payment
+        $prefId = explode('pref_id=', $initPoint)[1];
+        $confirmResponse = $this->get('/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId);
+        
+        $confirmResponse->assertRedirect();
+        $this->assertDatabaseHas('tenants', [
+            'subdomain' => 'dashcomputer',
+            'name' => 'DashComputer',
+            'plan' => 'pro',
+            'max_users' => 18,
+        ]);
+    }
 }
+

@@ -534,9 +534,16 @@ class ClockController extends Controller
         $tenantId = auth()->user()->tenant_id ?? 1;
         $userId = $request->input('user_id');
 
-        // Validar que el usuario pertenece al tenant del emisor
-        $targetUser = User::find($userId);
-        if (!$targetUser) {
+        // §59: validar que el usuario pertenece al tenant del emisor, resolviendo SIN
+        // scope global y comparando de forma explícita/casteada (no depender del scope).
+        $targetUser = User::withoutGlobalScopes()->find($userId);
+        if (!$targetUser || (int) $targetUser->tenant_id !== (int) $tenantId) {
+            \App\Helpers\SecurityLogger::log(
+                'tenant_isolation_violation',
+                "Intento de fichaje (/sync/clock) sobre user_id={$userId} (tenant " . ($targetUser->tenant_id ?? 'null') . ") desde tenant {$tenantId}",
+                $tenantId,
+                auth()->id()
+            );
             return response()->json(['error' => 'Usuario no encontrado o no pertenece a su empresa.'], 403);
         }
 

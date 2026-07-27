@@ -66,7 +66,16 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 | §55 | Tareas inconclusas por apagón: proceso nocturno que las pasa a "Pendiente de Validación Gerencial" + 3 botones (aprobar/reprogramar/rechazar). Ver detalle abajo. | ✅ Implementado (2026-07-25) |
 | §56 | Índices en PostgreSQL para el módulo de Rutinas/Tareas Diarias (Sección 2 #4). | ✅ Implementado (2026-07-25) — índices compuestos en `task_assignments` + `routine_task` |
 | §57 | Compresión automática de fotos de evidencia antes de subir. | ⏳ Frontend (Cowork) — el backend ya recibe base64; el grueso es comprimir en el navegador |
-| §58 | **Bug de negocio:** el límite de colaboradores del plan freemium es inconsistente según por cuál de los dos caminos de registro pase el cliente (`TenantController::store` pone 10, `SubscriptionController::provisionTenant` pone 5), y la Landing Page anuncia públicamente 5. Además la rama de upgrade no contempla freemium y lo dejaría en 9999. Ver detalle abajo. | ⏳ Pendiente |
+| §58 | **Bug de negocio:** el límite de colaboradores del plan freemium es inconsistente según por cuál de los dos caminos de registro pase el cliente (`TenantController::store` pone 10, `SubscriptionController::provisionTenant` pone 5), y la Landing Page anuncia públicamente 5. Además la rama de upgrade no contempla freemium y lo dejaría en 9999. Ver detalle abajo. | ✅ Implementado (2026-07-26) — fuente única `Tenant::maxUsersForPlan()` (freemium=5) |
+
+| §59 | 🔴 **CRÍTICO (aislamiento entre empresas):** `POST /clock/punch` acepta cualquier `user_id` sin verificar que pertenezca al tenant del usuario autenticado. Reproducido en producción: una empresa recién creada registró un fichaje a nombre de un empleado de DecorArte (tenant 1). Ver detalle abajo. | ✅ Implementado (2026-07-26) — blindados punch, punch-batch y /sync/clock |
+| §60 | 🔴 **Producción con `APP_DEBUG=true`:** un error de base de datos se mostró íntegro en pantalla al usuario final, exponiendo motor, host, puerto, nombre de la BD y el esquema completo de la tabla. Ver detalle abajo. | ⏳ Pendiente |
+| §61 | **Bug de cálculo:** `late_minutes` se calcula negativo cuando el empleado llega ANTES de su hora (−296.84 en la prueba), se guarda como decimal en una columna entera (revienta el insert) y genera un incidente LFT que penaliza al empleado por llegar temprano. Ver detalle abajo. | ✅ Implementado (2026-07-26) — raíz: desfase de zona horaria en `expectedTime` |
+
+| §62 | 🔴 **CRÍTICO (pérdida de datos):** al iniciar UNA tarea desde la vista de colaborador, se borraron las CINCO asignaciones del día del empleado, de forma permanente (persistió tras recargar). Es el riesgo de §33 (sincronización "reenviar todo el estado") materializado. Ver detalle abajo. | ✅ Implementado (2026-07-26) — backend blindado: `/sync/tasks` nunca anula un `user_id` ya establecido |
+| §63 | Falta endpoint de "racha de puntualidad" del colaborador. El Reloj mostraba "14 Días Puntual" escrito a mano; se ocultó en vez de inventar el dato. Ver detalle abajo. | ✅ Implementado (2026-07-26) — `GET /me/punctuality-streak` |
+
+| §64 | 🔴 **Permisos excesivos:** las rutas de `billing` (datos fiscales, subida del **sello digital CSD del SAT** con su llave privada, y timbrado de nómina) están bajo `role:admin,supervisor`. Un supervisor de tienda puede reemplazar la identidad fiscal de la empresa y emitir comprobantes ante el SAT. Ver detalle abajo. | ✅ Punto 1 implementado (2026-07-26) — `billing` ahora es solo `admin`; punto 2 requiere decisión de Francisco |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -2241,3 +2250,192 @@ El grueso es comprimir/redimensionar en el navegador antes de subir (zona de Cow
 3. Cubrir el caso freemium en la rama de upgrade (hoy cae en el `else` de 9999).
 4. Confirmar con Francisco cuál es el número correcto — la Landing dice 5, así que asumimos 5 salvo que él diga otra cosa. Si lo hacen configurable (punto 1), el valor de la Landing debería salir también de ahí para que nunca vuelvan a divergir; hoy está escrito a mano en `SaaSLandingPage.tsx`.
 5. Revisar si hay tenants ya creados con el valor incorrecto: `SELECT id, name, plan, max_users FROM tenants WHERE plan = 'freemium';` — si los hay con 10 o 9999, decidir con Francisco si se corrigen retroactivamente o se respetan por buena fe.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+- **Fuente única de verdad:** nuevo método estático `Tenant::maxUsersForPlan(?string $plan, ?int $employees = null): int`. `freemium` → lee `system_settings.freemium_max_users` (fila global, `tenant_id` NULL, mismo patrón que `freemium_allowed_modules`/`freemium_allowed_features`); si la clave no existe cae a **5** (lo que anuncia la Landing). `pro` → `$employees` si viene, si no 50. Cualquier otro (enterprise) → 9999.
+- **Los tres call sites ahora leen de ahí:** `TenantController::store` (antes 10), `SubscriptionController::provisionTenant` en la creación estándar y **también en la rama de upgrade** (antes caía en el `else` 9999, ahora `maxUsersForPlan` devuelve 5 para freemium). Ya no hay números sueltos que sincronizar a mano.
+- **Configurable sin deploy:** para cambiar el cupo del freemium basta insertar/editar `system_settings` con `tenant_id NULL`, `key = 'freemium_max_users'`. Si en el futuro Plataforma Talent360 expone esa clave en su UI (como ya hace con `freemium_allowed_modules`), queda editable desde ahí.
+- **Pendiente de Francisco (ops):** puntos 4 (que la Landing `SaaSLandingPage.tsx` lea el mismo número — es zona de Cowork) y 5 (revisar/corregir tenants freemium existentes con `max_users` 10 o 9999 en producción). El backend ya no los generará mal de aquí en adelante.
+- **Tests:** `CrossTenantPunchAndLateTest::test_max_users_for_plan_defaults` y `test_max_users_for_freemium_reads_platform_setting`.
+
+---
+
+## §59. 🔴 CRÍTICO — `POST /clock/punch` no valida que el `user_id` pertenezca al tenant que llama
+
+**Contexto (auditoría en vivo sobre producción, 2026-07-26):** reproducido de forma accidental y completa mientras se probaba el alta de una empresa nueva. Pasos exactos:
+
+1. Se creó desde la Landing una empresa nueva (`ZZZ Prueba Auditoria`), con su propio admin.
+2. Con esa sesión (admin de la empresa nueva, NO de DecorArte) se recorrió el asistente de configuración.
+3. En el paso 4, "Fichar Entrada Piloto", el backend intentó insertar en `time_entries`:
+
+```
+values (14, 1, 2026-07-26, check_in, 07:56:50, 1, -296.8416722, {...},
+        Crithel, Ayudante Integral, ...)
+         ↑user_id ↑tenant_id                              ↑nombre y puesto
+```
+
+`user_id = 14` y `tenant_id = 1` son de **DecorArte**, y el snapshot de nombre/puesto quedó como **"Crithel / Ayudante Integral"** — un empleado real de DecorArte. Es decir: **la sesión de una empresa escribió un registro de asistencia sobre un empleado de otra empresa.**
+
+**Causa raíz (dos capas, ambas hay que cerrar):**
+
+- *Lado Cowork (ya corregido):* `POST /employees` responde `$employee->load('user')`, así que el `id` de la respuesta es el **`employees.id`**, no el `users.id`. El asistente guardaba ese valor y luego lo mandaba como `user_id` a `/clock/punch`. Como los dos contadores van por su cuenta, el `employees.id` de la empresa nueva coincidió con el `users.id` 14 de DecorArte. Ya se corrigió del lado del frontend (se usa `user_id`/`user.id` de la respuesta, y si no viene se aborta con mensaje claro en vez de fichar a ciegas).
+- *Lado Backend (pendiente, y es el importante):* **`/clock/punch` aceptó el `user_id` sin comprobar que ese usuario pertenezca al tenant autenticado.** Aunque el frontend ya no mande el id equivocado, el endpoint sigue permitiendo que cualquiera con sesión válida escriba fichajes sobre usuarios de otras empresas simplemente cambiando el `user_id` del cuerpo de la petición. Eso es escalada horizontal entre tenants.
+
+**Pedimos:**
+
+1. En `/clock/punch` (y revisar `/clock/punch-batch` y cualquier otro endpoint que reciba `user_id` en el cuerpo): validar que `User::find($request->user_id)->tenant_id === auth()->user()->tenant_id` antes de procesar. Si no coincide → 403, y registrar el intento en `SecurityLogger` como posible abuso.
+2. Barrido de los demás endpoints que aceptan un id de entidad en el cuerpo o en la ruta: confirmar que todos verifican pertenencia al tenant y no confían en que el frontend mande el id correcto. Es la misma familia de §29/§30 (`employees.id` vs `users.id`), que se creía cerrada pero seguía viva en este camino.
+3. Limpieza de datos: revisar si en producción quedaron `time_entries` escritos por el tenant equivocado durante estas pruebas (buscar entradas de hoy sobre `user_id = 14` que no correspondan) y borrarlas.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+Se blindaron **los tres puntos de entrada de fichaje** que aceptan un `user_id` en el cuerpo. En todos se aplica el mismo patrón robusto:
+
+- **Se resuelve el usuario SIN el scope global** (`User::withoutGlobalScopes()->find(...)`). Importante: `User` usa `Tenantable`/`TenantScope`, así que un `User::find()` normal ya viene filtrado por el tenant del que llama y un `user_id` ajeno devolvería `null` — pero eso hace que la validación dependa del scope. Resolviéndolo sin scope obtenemos el usuario real (aunque sea de otro tenant) y comparamos su `tenant_id` de forma **explícita y casteada** (`(int) $user->tenant_id !== (int) $authTenantId`). Así la barrera no depende de que el scope esté activo (que se puede bypassear con `platform_admin` o `withoutGlobalScopes` en otro punto del stack).
+- Si no coincide (o el usuario no existe) → **403** y se registra el intento en `SecurityLogger` con evento `tenant_isolation_violation`, incluyendo el `user_id` objetivo, su tenant real y el tenant que llamó.
+
+Puntos cubiertos:
+1. `TimeEntryController::punch` → `POST /clock/punch`.
+2. `TimeEntryController::punchBatch` → `POST /clock/punch-batch` (valida cada `user_id` distinto del lote **antes** de abrir la transacción; un solo id ajeno rechaza el lote completo con 403).
+3. `ClockController::sync` → `POST /sync/clock` (usaba `User::find($userId)` confiando en el scope; ahora resuelve sin scope + comparación casteada + `SecurityLogger`).
+
+- **Barrido (punto 2 del pedido):** `declareContingency` en el mismo controlador ya comparaba `tenant_id` (aunque con `User::find` scopeado y `!==` estricto — es defensa en profundidad, no un hueco). Los endpoints de §29/§30 (store-opening assignments) ya resuelven contra `employees`/`users` del tenant. No encontré otro endpoint de fichaje que acepte `user_id` crudo sin verificación.
+- **Pendiente de Francisco (ops):** punto 3, limpiar en producción los `time_entries` que quedaron escritos sobre `user_id = 14` (DecorArte) durante las pruebas del alta de la empresa nueva. El backend ya no permite generarlos.
+- **Tests:** `CrossTenantPunchAndLateTest::test_punch_rejects_user_id_from_another_tenant`, `test_punch_batch_rejects_user_id_from_another_tenant`, `test_punch_accepts_user_id_from_same_tenant`.
+
+## §60. 🔴 Producción está corriendo con `APP_DEBUG=true` — se filtró el esquema de la base de datos al usuario
+
+**Contexto:** el error de §59 no se mostró como un mensaje amable, sino como el volcado completo de Laravel en pantalla, visible para el usuario final:
+
+```
+SQLSTATE[22P02]: Invalid text representation: 7 ERROR: invalid input syntax for type integer: "-296.8416722"
+(Connection: pgsql, Host: db, Port: 5432, Database: talent360_saas,
+ SQL: insert into "time_entries" ("user_id", "tenant_id", "date", "type", "time", "is_late",
+ "late_minutes", "details", "employee_name_at_time", ...) values (...))
+```
+
+Eso expone: motor de base de datos, host interno (`db`), puerto (5432), nombre de la base (`talent360_saas`), el esquema completo de la tabla con todos sus campos, y datos reales de un empleado de otro tenant. Es información que le sirve directamente a alguien que quiera atacar la plataforma, y además da una impresión pésima a un cliente.
+
+**Pedimos:** poner `APP_DEBUG=false` en el `.env` de producción y confirmar `APP_ENV=production`. Con eso Laravel muestra una página de error genérica y manda el detalle al log. Verificar también que el frontend no esté imprimiendo `e.response.data.message` crudo del backend en pantalla para errores 500 — para esos conviene un texto genérico ("Ocurrió un problema, inténtalo de nuevo") y el detalle solo en consola/log.
+
+## §61. `late_minutes` sale negativo cuando el empleado llega temprano, y se guarda como decimal en columna entera
+
+**Contexto:** en el mismo insert de §59:
+
+```
+"is_late" => 1,  "late_minutes" => -296.8416722,
+"details" => {"lft_incident":{"type":"late","minutes":-296.8416722,"action_mode":"deduct",
+              "notes":"Retardo de -296.8416722 min. Descuento de salario o penalización acumulada."}}
+```
+
+Tres problemas en un solo campo:
+
+1. **El valor es negativo** porque el empleado fichó ANTES de su hora de entrada. El sistema lo interpretó como retardo, marcó `is_late = 1` y generó un incidente LFT con `action_mode: "deduct"` — es decir, **iba a descontarle salario a alguien por llegar temprano**. Si esto ocurre en un tenant real con nómina activa, son descuentos indebidos a trabajadores, con la implicación laboral que eso tiene.
+2. **Es decimal** (`-296.8416722`) y la columna `late_minutes` es entera, así que el insert revienta con `SQLSTATE[22P02]`. Falta redondear.
+3. **El texto del incidente** se arma concatenando el número crudo, sin formato: "Retardo de -296.8416722 min".
+
+**Pedimos:** en el cálculo de retardo (`ClockService`, donde se arma el `lft_incident`), aplicar `max(0, round($lateMinutes))` — si el resultado es 0 o negativo, el empleado llegó a tiempo o antes: `is_late = false`, `late_minutes = 0` y **no** generar incidente LFT. Redondear siempre a entero antes de guardar, y formatear el número en el texto del incidente.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+Se aplicó el clamp pedido **y** se corrigió la causa raíz, que resultó ser más profunda que solo el redondeo:
+
+- **Causa raíz (el porqué del −296.84):** `expectedTime` se construía con `Carbon::createFromFormat('H:i:s', $shiftStart)`, que fija la hora en la fecha de hoy pero en la **zona horaria por defecto de la app (UTC)**. En cambio `$now` se calcula en la zona del tenant (`America/Mexico_City` por defecto). Con ese desfase de 6 h, `expectedTime` (p.ej. 09:00 UTC) quedaba muy por detrás de `$now` (mismo instante pero en tz local), así que **la condición de "llegó tarde" se cumplía siempre** y `$now->diffInMinutes($expectedTime)` daba un negativo grande con decimales (−296.84). Es decir: no era solo que faltara redondear; es que la comparación misma estaba mal por mezclar zonas horarias. Ahora `expectedTime` se construye con la **misma fecha (`$date`) y zona (`$timezone`)** que `$now`.
+- **Clamp defensivo:** `$lateMinutes = (int) max(0, round($expectedTime->diffInMinutes($now)))`. Se mide de `expectedTime → now` (positivo cuando el fichaje es posterior a la hora esperada) y se castea a entero ≥ 0. Nunca más se escribe un decimal ni un negativo en la columna entera `late_minutes` (fin del `22P02`).
+- **`is_late` solo si hay retardo real:** ahora `is_late` se marca únicamente cuando `$lateMinutes > 0`. Si es 0, no se marca retardo y **no se genera el bloque `lft_incident`** (que solo se arma dentro de `if ($isLate)`). Se acabaron los descuentos por llegar temprano.
+- **Nota Carbon 3:** el bug latente adicional era que en Carbon 3 `diffInMinutes` devuelve un valor **con signo**; con las operandas al derecho (`expectedTime->diffInMinutes($now)`) el signo ya es el correcto y el `max(0, …)` es solo cinturón de seguridad.
+- **Desbloquea §63:** con `is_late` ya confiable, el endpoint de racha de puntualidad (`GET /me/punctuality-streak`) ya se puede calcular sin que todos salgan con racha 0.
+- **Tests:** `CrossTenantPunchAndLateTest::test_early_check_in_is_not_marked_late_and_stores_zero_minutes` (llega 2 h antes → `is_late=false`, `late_minutes=0`) y `test_genuine_late_check_in_stores_positive_integer_minutes` (llega 30 min tarde con tolerancia 10 → `is_late=true`, `late_minutes=30` entero).
+
+---
+
+## §62. 🔴 CRÍTICO — Iniciar una tarea borra TODAS las asignaciones del día del colaborador
+
+**Contexto (auditoría en vivo sobre producción, 2026-07-26).** Reproducido de punta a punta con una cuenta real de colaborador:
+
+1. Sesión como `agnela@decorarte360.com` (DecorArte, tenant 1, puesto "Atención Al Cliente").
+2. Fichó entrada. El sistema disparó correctamente las rutinas y le asignó **5 tareas** (09:00 Limpieza fina de mostrador, 10:00 Revisión general de productos, 11:30 Rellenar góndolas, 15:00 Verificar pedidos especiales, 16:30 Limpieza fina de estanterías). Contador "0/5".
+3. Se pulsó el botón de iniciar (▶) de **la primera** tarea.
+4. **Las cinco desaparecieron.** El tablero quedó en "¡Tablero limpio!", contador "0/0", en ambas pestañas ("Todas" y "Mis Tareas").
+5. **Se recargó la página completa: no volvieron.** Es decir, no es un fallo de pintado — las asignaciones se perdieron del lado del servidor.
+
+Dato adicional que puede ser la pista: en el momento en que desaparecieron, la etiqueta de puesto del usuario en el encabezado cambió de **"Atención Al Cliente"** a **"Colaborador"**, y tras recargar volvió a "Atención Al Cliente" (pero las tareas ya no). Sugiere que en ese instante el cliente tenía un `currentUser` incompleto —sin `job_role`— y con ese estado degradado hizo la escritura.
+
+**Hipótesis principal (es el riesgo de §33 materializado):** el módulo de Tareas sincroniza **reenviando el estado completo** en cada acción en vez de actualizar por fila. Si en el momento de iniciar la tarea el estado local del cliente estaba incompleto (por el `currentUser` a medio hidratar, o porque `/sync/state` venía de uno de los 502 intermitentes de §45/§46), lo que se reenvió fue una lista vacía o filtrada — y el backend la tomó como la verdad y borró el resto. Exactamente el escenario de carrera de datos que §33 advertía.
+
+**Pedimos:**
+
+1. **Que `POST /sync/tasks` (o el endpoint que reciba el estado de asignaciones) NUNCA interprete una lista vacía o parcial como "borra lo que no venga".** Un borrado debe ser explícito (`DELETE /task-assignments/{id}`), nunca implícito por omisión. Esta sola regla evita la clase entera de bug.
+2. Terminar la migración de §33 punto 3 (actualizar por fila con `PUT /task-assignments/{id}` en vez de reenviar todo). Este incidente es justificación suficiente para priorizarlo.
+3. Revisar en producción si quedaron asignaciones huérfanas/borradas de hoy para DecorArte y, si el histórico importa, restaurarlas.
+4. Del lado de Cowork revisaremos que no se dispare ninguna sincronización de escritura mientras `currentUser` no esté completamente hidratado, pero **la protección de fondo tiene que estar en el servidor**: ningún cliente debería poder borrar el día entero de un empleado por mandar una petición incompleta.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+**Diagnóstico primero:** `POST /sync/tasks` (`TaskSyncController::sync`) es un **upsert puro** — no tiene ningún `delete`, `whereNotIn` ni "borra lo que no venga". Revisé además todas las rutas de asignaciones (`/task-assignments`, `/task-assignments/{id}` PUT/omit/validate/resolve-incomplete) y no existe ningún endpoint de borrado masivo ni un `DELETE /task-assignments/{id}` que un colaborador pueda disparar. O sea: el punto 1 del pedido (que una lista vacía/parcial nunca borre por omisión) **ya se cumplía**; el borrado NO venía por ahí.
+
+**La causa real (y por qué "no volvían al recargar"):** `GET /task-assignments` filtra por `user_id = auth()->id()`. En el upsert, `user_id` se tomaba de `$assignment['userId'] ?? $assignment['user_id'] ?? null`. Con el `currentUser` a medio hidratar (el mismo instante en que el puesto se degradó a "Colaborador"), el cliente reenvió las 5 asignaciones con **`user_id` vacío**, y `$existing->update($mappedData)` las guardó con **`user_id = NULL`**. No se borraron: quedaron huérfanas y **el filtro por `user_id` del listado dejó de encontrarlas** → "desaparecieron" y siguieron desaparecidas tras recargar. Coincide exacto con el síntoma (las 5, permanente, correlacionado con el puesto degradado).
+
+**Fix (backend, `TaskSyncController::sync`):**
+- Se resuelve la fila `$existing` **antes** de procesar y se agrega un guard: si el `user_id` entrante viene vacío, **se conserva el dueño previo** (`$existing->user_id`) en vez de anularlo. Un `user_id` ya establecido **nunca** puede sobrescribirse con NULL.
+- Si es una asignación **nueva** sin dueño válido, no se crea (evita huérfanos invisibles) y se registra un `Log::warning`; el resto del lote se procesa normal.
+- `date` ya estaba protegido con `?? $existing->date ?? today` desde §14.1.
+
+**Sigue pendiente (fuera de mi zona):** punto 2 (migrar a actualización por fila con `PUT /task-assignments/{id}` en lugar de reenviar todo el estado — Cowork/§33 punto 3), punto 3 (restaurar en producción las asignaciones que hoy quedaron con `user_id` NULL para DecorArte — se pueden recuperar con un `UPDATE task_assignments SET user_id = <id> WHERE ...`, Francisco) y punto 4 (guard de hidratación en el cliente — Cowork). La protección de fondo ya está en el servidor.
+
+**Tests:** `TaskSyncAssignmentGuardTest::test_sync_does_not_null_out_existing_user_id` y `test_sync_skips_new_orphan_assignment_but_processes_rest`.
+
+## §63. Falta endpoint de "racha de puntualidad" del colaborador
+
+**Contexto:** la cinta de bienvenida del Reloj mostraba tres métricas de gamificación escritas a mano — "14 Días Puntual", "$25.00 Coins" y "Nivel 3 / 1,250 XP" — idénticas para todos los empleados de todas las empresas. Se detectó porque la misma persona veía `$25.00` en el Reloj y `$0.00` en Tareas (que sí consulta `/wallet/balance`).
+
+Ya corregido del lado de Cowork: el monedero y el nivel ahora salen de `/wallet/balance`, igual que en Tareas. **La racha se ocultó** porque no existe endpoint que la calcule y preferimos no mostrar nada antes que mostrar un número inventado.
+
+**Pedimos (no urgente):** un endpoint tipo `GET /me/punctuality-streak` que devuelva `{ streak_days, last_late_date }`, calculado sobre `time_entries` (días consecutivos con `check_in` y `is_late = false`, respetando descansos y festivos para no romper la racha injustamente). Con eso lo volvemos a mostrar. Ojo: depende de que §61 esté corregido, porque hoy `is_late` se marca en 1 aunque el empleado llegue temprano, lo que haría que nadie tuviera racha jamás.
+
+### ✅ Implementado (2026-07-26) — resumen
+
+- **Endpoint:** `GET /api/v1/me/punctuality-streak` → `{ "success": true, "streak_days": <int>, "last_late_date": <YYYY-MM-DD|null> }`. Autenticado, para el usuario en sesión. Lógica en `ClockService::getPunctualityStreak()` (junto a `getPunctualityStatus`).
+- **Cómo cuenta la racha:** recorre los `check_in` del empleado del más reciente al más antiguo y cuenta cuántos seguidos fueron puntuales (`is_late = false`), cortando en el primer retardo. **Solo mira días en que efectivamente fichó entrada**, así que descansos y festivos no rompen la racha por sí mismos (simplemente no hay fila esos días) — que era justo la preocupación del pedido, resuelta sin tener que consultar el calendario de turnos.
+- **Contingencias:** un retardo en una fecha con `ContingencyDeclaration` activa (sin luz/sin internet) **no** rompe la racha, mismo criterio que `getPunctualityStatus` y la nómina.
+- **`last_late_date`:** la fecha del retardo más reciente (aunque sea anterior a la racha actual); `null` si el empleado nunca ha llegado tarde.
+- **Dependía de §61**, ya corregido: con `is_late` confiable la racha ya no sale 0 para todos.
+- **Tests:** `PunctualityStreakTest` (racha de 3 puntuales; retardo reciente que corta y reporta fecha; retardo viejo que no corta pero sí se reporta).
+
+---
+
+## §64. 🔴 Un supervisor puede reemplazar el sello digital del SAT y timbrar nómina
+
+**Contexto (auditoría en vivo, 2026-07-26):** con una sesión de **supervisor** (`liz@decorarte360.com`, rol `supervisor` de DecorArte) se entró al módulo "Nómina CFDI 4.0" y se llegó, sin ninguna restricción, a la pantalla que permite:
+
+- Editar la **Cédula de Identificación Fiscal** de la empresa (Razón Social, RFC, Régimen Fiscal, Código Postal fiscal).
+- Subir el **Certificado de Sello Digital** (`.cer`), la **llave privada** (`.key`) y escribir la **contraseña de la llave**.
+- Pulsar "Sincronizar y Subir al SAT".
+
+Confirmado en `routes/api.php`: el grupo `billing` vive dentro de `Route::middleware(['auth:sanctum', 'role:admin,supervisor', 'tenant.active'])`, así que **el backend lo permite a propósito**, no es solo que el frontend no oculte el módulo:
+
+```php
+Route::prefix('billing')->group(function () {
+    Route::post('/tax-data', [BillingController::class, 'updateTaxData']);
+    Route::post('/csd',      [BillingController::class, 'uploadCsd']);
+    Route::get('/invoices',  [BillingController::class, 'getInvoices']);
+    Route::post('/payroll/timbrar', [BillingController::class, 'timbrarNomina']);
+});
+```
+
+**Impacto:** el CSD es la firma fiscal de la empresa ante el SAT — con él se emiten comprobantes con validez legal. Que un supervisor de tienda pueda reemplazarlo, cambiar el RFC/razón social, o timbrar nómina, es una separación de funciones que no se sostiene: no es un permiso operativo, es el equivalente a la firma de la empresa. Además abre la puerta a que un supervisor timbre recibos de nómina sin que el administrador se entere.
+
+**Pedimos:**
+
+1. Sacar el grupo `billing` del middleware `role:admin,supervisor` y ponerlo en uno **solo de `admin`** (o incluso un permiso dedicado tipo `manage_billing`, si prefieren granularidad — ya existe la infraestructura de `permissions`/`role_permissions`).
+2. Revisar con el mismo criterio los otros módulos sensibles que hoy comparten ese grupo de `admin,supervisor`, sobre todo los que exponen datos personales o salariales: `Directorio Digital` (contratos), `Archivo Digital` (expedientes) y los reportes de nómina. Decidir con Francisco cuáles son realmente operativos para un supervisor y cuáles son exclusivos del administrador.
+3. Del lado de Cowork ocultaremos el módulo del menú para roles no autorizados en cuanto confirmen la nueva regla — pero **la restricción de fondo tiene que estar en las rutas**, porque ocultar el menú no impide llamar al endpoint directamente.
+
+### ✅ Punto 1 implementado (2026-07-26) — resumen
+
+- **`routes/api.php`:** el grupo `Route::prefix('billing')` ahora lleva `->middleware('role:admin')`. Como está anidado dentro del grupo padre `role:admin,supervisor`, los middlewares se **apilan**: un supervisor pasa el primer filtro pero el segundo lo rechaza con **403**; solo un `admin` pasa ambos. Cubre las cuatro rutas: `POST /billing/tax-data`, `POST /billing/csd`, `GET /billing/invoices`, `POST /billing/payroll/timbrar`. (Se optó por apilar `role:admin` en vez de un permiso dedicado `manage_billing` para no introducir una entrada nueva en `permissions`/`role_permissions` sin pedírtelo; si prefieres la granularidad, se cambia en una línea.)
+- **`platform_admin`** nunca tuvo acceso a este grupo (el padre no lo incluye), así que no cambia nada para ese rol.
+- **Tests:** `BillingPermissionsTest::test_supervisor_is_denied_billing_routes` (403 en las cuatro) y `test_admin_passes_the_role_gate` (admin no recibe 403).
+
+**Punto 2 — requiere tu decisión, Francisco:** revisar qué otros módulos que hoy comparten `role:admin,supervisor` deberían ser solo-admin. Los candidatos que exponen datos personales/salariales o identidad de la empresa son: **Directorio Digital** (contratos), **Archivo Digital** (expedientes), **reportes de nómina** (`/admin/payroll`, `/admin/reports/export`, `/admin/payroll/approve`) y **payroll-settings** de la empresa. Dime cuáles consideras operativos para un supervisor y cuáles exclusivos del administrador y lo aplico igual (una línea por grupo). El punto 3 (ocultar del menú) es de Cowork.

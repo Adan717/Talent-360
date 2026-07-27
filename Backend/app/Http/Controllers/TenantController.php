@@ -63,7 +63,7 @@ class TenantController extends Controller
                 'name' => $request->company_name,
                 'subdomain' => $request->subdomain,
                 'plan' => $plan,
-                'max_users' => $plan === 'freemium' ? 10 : ($plan === 'pro' ? 50 : 9999),
+                'max_users' => Tenant::maxUsersForPlan($plan),
                 'public_slug' => \Illuminate\Support\Str::slug($request->subdomain),
                 'subscription_status' => 'trial',
                 'trial_ends_at' => now()->addDays($trialDays)

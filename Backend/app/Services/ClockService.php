@@ -341,7 +341,18 @@ class ClockService
         // shiftStart vive en `employees` desde la migración migrate_existing_users_to_employees_table;
         // `users` ya no tiene esa columna, así que hay que leerla vía la relación.
         $expectedTimeStr = $user->employee?->shiftStart ?? '09:00:00';
-        $expectedTime = Carbon::createFromFormat('H:i:s', $expectedTimeStr);
+        // §61: expectedTime DEBE construirse en la MISMA fecha ($date) y zona horaria
+        // ($timezone) que $now. Antes se usaba createFromFormat('H:i:s', ...) que fija la
+        // hora en la fecha de hoy pero en la zona por defecto de la app (UTC). Con un
+        // tenant en America/Mexico_City ese desfase de 6h volvía "tarde" a todo el mundo
+        // y hacía que $now->diffInMinutes($expectedTime) diera negativo con decimales
+        // (p.ej. -296.84), que al escribirse en la columna entera late_minutes reventaba
+        // en Postgres (22P02) y generaba incidentes de descuento falsos.
+        try {
+            $expectedTime = Carbon::createFromFormat('Y-m-d H:i:s', "$date $expectedTimeStr", $timezone);
+        } catch (\Exception $e) {
+            $expectedTime = Carbon::createFromFormat('Y-m-d H:i:s', "$date 09:00:00", $timezone);
+        }
         
         // Obtener las políticas LFT del Tenant
         $lft = \App\Models\LftSetting::where('tenant_id', $user->tenant_id)->first();
@@ -378,8 +389,15 @@ class ClockService
 
         if ($type === 'check_in' && !$hasAmnesty) {
             if ($now->greaterThan($expectedTime->copy()->addMinutes($toleranceMinutes))) {
-                $isLate = true;
-                $lateMinutes = $now->diffInMinutes($expectedTime);
+                // §61: Carbon 3 devuelve un diff con signo y decimales. Se mide de
+                // expectedTime -> now (positivo cuando el fichaje es posterior a la hora
+                // esperada) y se castea a entero >= 0: así una llegada temprana nunca
+                // marca retardo y nunca se escribe un decimal/negativo en la columna
+                // entera late_minutes (causaba 22P02 en Postgres).
+                $lateMinutes = (int) max(0, round($expectedTime->diffInMinutes($now)));
+                if ($lateMinutes > 0) {
+                    $isLate = true;
+                }
             }
         }
 
@@ -765,6 +783,74 @@ class ClockService
             'period_end' => Carbon::now()->format('Y-m-d'),
             'required_course_id' => $requiredCourseId,
             'course_completed' => $courseCompleted,
+        ];
+    }
+
+    /**
+     * §63: racha de puntualidad del colaborador. Cuenta los check_in PUNTUALES
+     * consecutivos desde el más reciente hacia atrás. Solo se consideran días en los
+     * que el empleado realmente fichó entrada, así que los días sin check_in (descansos
+     * y festivos) no rompen la racha por sí mismos — no penalizamos por no trabajar.
+     * Un retardo en una fecha con contingencia activa (sin luz/sin internet) tampoco
+     * rompe la racha, mismo criterio que getPunctualityStatus/nómina.
+     *
+     * Depende de que §61 esté corregido: antes `is_late` se marcaba en true aunque el
+     * empleado llegara temprano (desfase de zona horaria), lo que dejaba a todos con
+     * racha 0.
+     */
+    public function getPunctualityStreak($user): array
+    {
+        $tenantId = $user->tenant_id ?? 1;
+
+        // Fechas con contingencia activa: un retardo en esos días no cuenta.
+        $contingencyDates = ContingencyDeclaration::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereNull('resolved_at')
+            ->pluck('date')
+            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->all();
+
+        // Un check_in por día (el índice único garantiza unicidad), del más reciente al
+        // más antiguo.
+        $checkIns = TimeEntry::where('user_id', $user->id)
+            ->where('type', 'check_in')
+            ->orderBy('date', 'desc')
+            ->get(['date', 'is_late']);
+
+        $streak = 0;
+        $lastLateDate = null;
+
+        foreach ($checkIns as $entry) {
+            $date = Carbon::parse($entry->date)->toDateString();
+            $isLate = (bool) $entry->is_late && !in_array($date, $contingencyDates);
+
+            if ($isLate) {
+                // Primer retardo (el más reciente) corta la racha y marca la última fecha.
+                if ($lastLateDate === null) {
+                    $lastLateDate = $date;
+                }
+                break;
+            }
+
+            $streak++;
+        }
+
+        // Si la racha no se cortó por un retardo reciente, aún puede haber un retardo más
+        // antiguo que quiera reportarse como last_late_date.
+        if ($lastLateDate === null) {
+            $lastLate = TimeEntry::where('user_id', $user->id)
+                ->where('type', 'check_in')
+                ->where('is_late', true)
+                ->whereNotIn('date', $contingencyDates ?: ['1970-01-01'])
+                ->orderBy('date', 'desc')
+                ->value('date');
+            $lastLateDate = $lastLate ? Carbon::parse($lastLate)->toDateString() : null;
+        }
+
+        return [
+            'success' => true,
+            'streak_days' => $streak,
+            'last_late_date' => $lastLateDate,
         ];
     }
 

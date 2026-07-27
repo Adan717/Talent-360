@@ -560,6 +560,17 @@ class AuthController extends Controller
     }
 
     /**
+     * §63: racha de puntualidad del colaborador para la cinta de bienvenida del Reloj.
+     * Devuelve { streak_days, last_late_date } calculado sobre time_entries reales.
+     */
+    public function punctualityStreak(Request $request)
+    {
+        $streak = $this->clockService->getPunctualityStreak($request->user());
+
+        return response()->json($streak);
+    }
+
+    /**
      * Configura el PIN de seguridad del empleado (distinto del pin_code de invitación
      * de onboarding). Se usa para autorizar acciones sensibles como la co-validación
      * de testigos en "Apertura de Emergencia". Requiere la contraseña actual, igual

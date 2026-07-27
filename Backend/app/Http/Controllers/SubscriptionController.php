@@ -482,7 +482,7 @@ class SubscriptionController extends Controller
                 $tenant = Tenant::findOrFail($payload['tenant_id']);
                 $tenant->update([
                     'plan' => strtolower($payload['plan']),
-                    'max_users' => strtolower($payload['plan']) === 'pro' ? (isset($payload['employees']) ? intval($payload['employees']) : 50) : 9999,
+                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
                     'mp_subscription_id' => $prefId,
                     'subscription_status' => 'active',
                     'current_period_end' => now()->addMonth(),
@@ -504,7 +504,7 @@ class SubscriptionController extends Controller
                 'name' => $payload['company_name'],
                 'subdomain' => $payload['subdomain'],
                 'plan' => strtolower($payload['plan']),
-                'max_users' => strtolower($payload['plan']) === 'freemium' ? 5 : (strtolower($payload['plan']) === 'pro' ? (isset($payload['employees']) ? intval($payload['employees']) : 50) : 9999),
+                'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
                 'public_slug' => Str::slug($payload['subdomain']),
                 'mp_subscription_id' => $prefId,
                 'subscription_status' => 'active',

@@ -280,7 +280,12 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::delete('/store-opening/assignments/{id}', [StoreOpeningController::class, 'deleteAssignment']);
 
         // Facturación Electrónica (Tenants)
-        Route::prefix('billing')->group(function () {
+        // §64: SOLO admin. El grupo padre es role:admin,supervisor, pero el CSD del SAT
+        // (sello + llave privada), el RFC/razón social y el timbrado de nómina son la
+        // firma fiscal de la empresa — no es un permiso operativo de un supervisor de
+        // tienda. Al apilar role:admin sobre el grupo padre, un supervisor pasa el
+        // primer filtro pero es rechazado (403) por este; solo admin pasa ambos.
+        Route::prefix('billing')->middleware('role:admin')->group(function () {
             Route::post('/tax-data', [BillingController::class, 'updateTaxData']);
             Route::post('/csd', [BillingController::class, 'uploadCsd']);
             Route::get('/invoices', [BillingController::class, 'getInvoices']);
@@ -344,6 +349,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::put('/me/pre-shift-alarm', [AuthController::class, 'updatePreShiftAlarm']);
         Route::put('/me/security-pin', [AuthController::class, 'updateSecurityPin']);
         Route::get('/me/punctuality-status', [AuthController::class, 'punctualityStatus']);
+        Route::get('/me/punctuality-streak', [AuthController::class, 'punctualityStreak']);
         Route::get('/user', function (Request $request) {
             return $request->user();
         });

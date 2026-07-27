@@ -30,11 +30,19 @@ class TimeEntryController extends Controller
             'details' => 'nullable|array'
         ]);
 
-        $user = User::find($request->user_id);
+        // §59: se resuelve SIN el scope global y se compara el tenant de forma
+        // explícita y casteada — no se depende del TenantScope (que puede dar null y
+        // reventar, o ser bypasseado por platform_admin/withoutGlobalScopes en otro punto).
+        $user = User::withoutGlobalScopes()->find($request->user_id);
+        $authTenantId = auth()->user()->tenant_id;
 
-        // Protección anti-Tenant-Spoofing:
-        // Verificar que el usuario objetivo pertenece al mismo tenant que el Admin autenticado.
-        if ($user->tenant_id !== auth()->user()->tenant_id) {
+        if (!$user || (int) $user->tenant_id !== (int) $authTenantId) {
+            \App\Helpers\SecurityLogger::log(
+                'tenant_isolation_violation',
+                "Intento de fichaje sobre user_id={$request->user_id} (tenant " . ($user->tenant_id ?? 'null') . ") desde tenant {$authTenantId}",
+                $authTenantId,
+                auth()->id()
+            );
             return response()->json([
                 'success' => false,
                 'message' => 'Acceso denegado: el usuario no pertenece a tu empresa.'
@@ -110,11 +118,18 @@ class TimeEntryController extends Controller
         // Protección anti-Tenant-Spoofing: ningún ítem del lote puede referenciar
         // un usuario de otro tenant (mismo criterio que punch()).
         $userIds = array_unique(array_column($punches, 'user_id'));
-        $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+        // §59: resolver sin scope global y comparar tenant con casteo explícito.
+        $users = User::withoutGlobalScopes()->whereIn('id', $userIds)->get()->keyBy('id');
 
         foreach ($userIds as $uid) {
             $user = $users->get($uid);
-            if (!$user || $user->tenant_id !== $authTenantId) {
+            if (!$user || (int) $user->tenant_id !== (int) $authTenantId) {
+                \App\Helpers\SecurityLogger::log(
+                    'tenant_isolation_violation',
+                    "Lote de fichaje con user_id={$uid} de otro tenant, desde tenant {$authTenantId}",
+                    $authTenantId,
+                    auth()->id()
+                );
                 return response()->json([
                     'success' => false,
                     'message' => 'Acceso denegado: el lote incluye un usuario que no pertenece a tu empresa.'

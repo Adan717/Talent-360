@@ -182,11 +182,8 @@ function MainLayout() {
                             systemSettings?.onboarding_completed === 'true' || 
                             systemSettings?.onboarding_completed === 1 || 
                             systemSettings?.onboarding_completed === '1';
-      
-      const hasCompanyData = (systemSettings?.company_name && systemSettings.company_name !== 'Mi Sucursal Talent360') ||
-                             (currentUser.tenant?.name && currentUser.tenant.name.trim() !== '');
 
-      if (isDecorarte || completedFlag || hasCompanyData) {
+      if (isDecorarte || completedFlag) {
         setShowOnboarding(false);
       } else {
         setShowOnboarding(true);

@@ -1185,4 +1185,63 @@ class PlatformAdminController extends Controller
             ]);
         }
     }
+
+    /**
+     * Obtiene la lista de usuarios pre-registrados inconclusos (tenant_id es NULL)
+     */
+    public function getPendingRegistrations()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $pendingUsers = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->whereNull('tenant_id')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($u) {
+                $provider = 'Email';
+                if (!empty($u->google_id)) $provider = 'Google';
+                elseif (!empty($u->apple_id)) $provider = 'Apple';
+
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'role' => $u->role,
+                    'phone' => $u->phone,
+                    'provider' => $provider,
+                    'created_at' => $u->created_at->toIso8601String(),
+                    'created_at_human' => $u->created_at->diffForHumans()
+                ];
+            });
+
+        return response()->json($pendingUsers);
+    }
+
+    /**
+     * Elimina un usuario pre-registrado inconcluso (tenant_id NULL) para liberar el correo
+     */
+    public function deletePendingRegistration($id)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->whereNull('tenant_id')
+            ->where('id', $id)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'Registro inconcluso no encontrado o ya fue asignado a una empresa.'], 404);
+        }
+
+        $user->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Registro inconcluso ({$user->email}) eliminado con éxito. El correo ha sido liberado."
+        ]);
+    }
 }

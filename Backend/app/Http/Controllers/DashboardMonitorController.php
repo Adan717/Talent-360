@@ -286,6 +286,7 @@ class DashboardMonitorController extends Controller
             // Fetch job roles of the tenant
             $jobRoles = DB::table('job_roles')
                 ->where('tenant_id', $userTenantId)
+                ->whereNull('deleted_at')
                 ->select('id', 'name')
                 ->get();
 
@@ -462,6 +463,7 @@ class DashboardMonitorController extends Controller
         if (!$targetId) {
             $roles = DB::table('job_roles')
                 ->where('tenant_id', $tenantId)
+                ->whereNull('deleted_at')
                 ->get();
 
             foreach ($roles as $role) {
@@ -717,6 +719,7 @@ class DashboardMonitorController extends Controller
         // 4. Puestos con descripción/responsabilidades.
         $jobRoles = DB::table('job_roles')
             ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
             ->select('id', 'name', 'description', 'responsibilities')
             ->get()
             ->all();

@@ -792,6 +792,7 @@ class ObsidianController extends Controller
         $jobRoles = DB::table('job_roles')
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();
@@ -1634,6 +1635,7 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
         $jobRoles = DB::table('job_roles')
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
+            ->whereNull('deleted_at')
             ->select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();

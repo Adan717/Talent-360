@@ -81,15 +81,154 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   // Step 2: Giro Comercial / Nicho & Puestos
   const [selectedNicho, setSelectedNicho] = useState<'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom'>('retail');
+  const [selectedSubNicho, setSelectedSubNicho] = useState<string>('decoracion');
   const [customNichoDesc, setCustomNichoDesc] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState<number | string>('');
   const [createdRoleId, setCreatedRoleId] = useState<number | null>(null);
-  
-  // Para compatibilidad
-  const [roleName, setRoleName] = useState('');
-  const [shiftStart, setShiftStart] = useState('09:00');
-  const [shiftEnd, setShiftEnd] = useState('18:00');
-  const [tolerance, setTolerance] = useState(15);
+
+  // Mappings y presets interactivos para la precarga del wizard
+  const SUB_NICHOS: Record<string, { id: string; label: string; icon: string }[]> = {
+    retail: [
+      { id: 'decoracion', label: 'Decoración, Hogar y Regalos', icon: '🎨' },
+      { id: 'boutique', label: 'Boutique / Ropa y Calzado', icon: '👗' },
+      { id: 'minimarket', label: 'Minimarket / Abarrotes', icon: '🛒' },
+      { id: 'ferreteria', label: 'Ferretería / Herramientas', icon: '🔧' },
+      { id: 'farmacia', label: 'Farmacia / Salud', icon: '💊' },
+    ],
+    restaurante: [
+      { id: 'servicio_completo', label: 'Restaurante Servicio Completo', icon: '🍽️' },
+      { id: 'cafeteria', label: 'Cafetería / Panadería y Postres', icon: '☕' },
+      { id: 'comida_rapida', label: 'Comida Rápida / Taquería', icon: '🌮' },
+      { id: 'bar', label: 'Bar / Bar & Grill', icon: '🍹' },
+    ],
+    oficina: [
+      { id: 'despacho', label: 'Despacho Contable / Legal', icon: '⚖️' },
+      { id: 'agencia', label: 'Agencia de Marketing / Software', icon: '💻' },
+      { id: 'consultoria', label: 'Consultoría Corporativa', icon: '📈' },
+      { id: 'inmobiliaria', label: 'Inmobiliaria / Bienes Raíces', icon: '🏠' },
+    ],
+    taller: [
+      { id: 'mecanico', label: 'Taller Mecánico / Automotriz', icon: '🚗' },
+      { id: 'tecnico', label: 'Centro Técnico / Electrónica', icon: '🔌' },
+      { id: 'manufactura', label: 'Taller de Manufactura / Carpintería', icon: '🔨' },
+    ]
+  };
+
+  const PRESET_DATA: Record<string, {
+    puestos: { name: string; area: string; esAperturador: boolean; jerarquiaLlaves: number }[];
+    tareas: { title: string; category: string; priority: string; assistant_type: string; assistant_prompt: string; target_role_name: string }[];
+    vacantes: { title: string; salary: string }[];
+    cursos: { title: string; type: string }[];
+  }> = {
+    retail: {
+      puestos: [
+        { name: 'Gerente de Tienda', area: 'Gerencia', esAperturador: true, jerarquiaLlaves: 1 },
+        { name: 'Supervisor de Cajas', area: 'Cajas', esAperturador: true, jerarquiaLlaves: 2 },
+        { name: 'Asesor de Ventas y Piso', area: 'Piso de Ventas', esAperturador: false, jerarquiaLlaves: 3 },
+        { name: 'Almacenista / Inventarios', area: 'Almacén', esAperturador: false, jerarquiaLlaves: 4 }
+      ],
+      tareas: [
+        { title: 'Conteo y validación de fondo de caja', category: 'operativo', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Ingrese el monto contado.', target_role_name: 'Supervisor de Cajas' },
+        { title: 'Desactivación de alarma y encendido de switch', category: 'seguridad', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de alarma desactivada.', target_role_name: 'Gerente de Tienda' },
+        { title: 'Alineación de precios y frenteo de mercancía', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de exhibidor ordenado.', target_role_name: 'Asesor de Ventas y Piso' },
+        { title: 'Cierre de cortina metálica y candado', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto del candado cerrado.', target_role_name: 'Gerente de Tienda' }
+      ],
+      vacantes: [
+        { title: 'Asesor de Ventas y Piso', salary: '$8,000 - $9,500 MXN' },
+        { title: 'Cajero(a) de Tienda', salary: '$7,800 - $8,800 MXN' }
+      ],
+      cursos: [
+        { title: 'Protocolo de Apertura y Operación Comercial', type: 'Inducción' },
+        { title: 'Excelencia en Servicio al Cliente y Venta Cruzada', type: 'Capacitación' }
+      ]
+    },
+    restaurante: {
+      puestos: [
+        { name: 'Gerente de Restaurante', area: 'Administración', esAperturador: true, jerarquiaLlaves: 1 },
+        { name: 'Chef / Jefe de Cocina', area: 'Cocina', esAperturador: true, jerarquiaLlaves: 2 },
+        { name: 'Mesero / Atención al Cliente', area: 'Servicio', esAperturador: false, jerarquiaLlaves: 3 },
+        { name: 'Ayudante de Cocina', area: 'Cocina', esAperturador: false, jerarquiaLlaves: 4 }
+      ],
+      tareas: [
+        { title: 'Verificación de temperatura de congeladores', category: 'operativo', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Ingrese temperatura °C.', target_role_name: 'Chef / Jefe de Cocina' },
+        { title: 'Montaje y sanitización de mesas de comedor', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de mesas sanitizadas.', target_role_name: 'Mesero / Atención al Cliente' },
+        { title: 'Inspección y cierre de llaves de gas principal', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de válvula cerrada.', target_role_name: 'Chef / Jefe de Cocina' }
+      ],
+      vacantes: [
+        { title: 'Mesero(a) con Experiencia', salary: '$7,500 + Propinas' },
+        { title: 'Ayudante de Cocina', salary: '$8,000 - $8,800 MXN' }
+      ],
+      cursos: [
+        { title: 'Manejo Higiénico de Alimentos (NOM-251)', type: 'Inducción' },
+        { title: 'Seguridad e Inspección de Válvulas de Gas', type: 'Seguridad' }
+      ]
+    },
+    oficina: {
+      puestos: [
+        { name: 'Director General', area: 'Dirección', esAperturador: true, jerarquiaLlaves: 1 },
+        { name: 'Coordinador de Operaciones', area: 'Operaciones', esAperturador: true, jerarquiaLlaves: 2 },
+        { name: 'Consultor / Ejecutivo de Cuenta', area: 'Operaciones', esAperturador: false, jerarquiaLlaves: 3 },
+        { name: 'Recepcionista / Asistente', area: 'Administración', esAperturador: false, jerarquiaLlaves: 4 }
+      ],
+      tareas: [
+        { title: 'Encendido y verificación de servidores locales', category: 'tecnología', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Coordinador de Operaciones' },
+        { title: 'Revisión y distribución de correspondencia', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de bitácora.', target_role_name: 'Recepcionista / Asistente' }
+      ],
+      vacantes: [
+        { title: 'Ejecutivo de Cuenta / Consultor Junior', salary: '$12,000 MXN' },
+        { title: 'Recepcionista y Asistente Administrativo', salary: '$9,000 MXN' }
+      ],
+      cursos: [
+        { title: 'Inducción al Software Corporativo y Gestión del Tiempo', type: 'Inducción' }
+      ]
+    },
+    taller: {
+      puestos: [
+        { name: 'Jefe de Taller', area: 'Administración', esAperturador: true, jerarquiaLlaves: 1 },
+        { name: 'Supervisor de Seguridad', area: 'Calidad', esAperturador: true, jerarquiaLlaves: 2 },
+        { name: 'Técnico Operador / Mecánico', area: 'Producción', esAperturador: false, jerarquiaLlaves: 3 },
+        { name: 'Ayudante de Almacén', area: 'Logística', esAperturador: false, jerarquiaLlaves: 4 }
+      ],
+      tareas: [
+        { title: 'Inspección de equipo de protección personal (EPP)', category: 'seguridad', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto grupal con EPP.', target_role_name: 'Supervisor de Seguridad' },
+        { title: 'Apagado de disyuntores de alta tensión y soldadoras', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de disyuntor apagado.', target_role_name: 'Técnico Operador / Mecánico' }
+      ],
+      vacantes: [
+        { title: 'Técnico Mecánico / Operador de Taller', salary: '$11,000 MXN' },
+        { title: 'Ayudante General de Almacén', salary: '$8,000 MXN' }
+      ],
+      cursos: [
+        { title: 'Protocolo de Seguridad Industrial y Uso de EPP', type: 'Inducción' }
+      ]
+    }
+  };
+
+  const activePreset = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
+  const [selectedPuestos, setSelectedPuestos] = useState<string[]>(() => activePreset.puestos.map(p => p.name));
+  const [selectedTareas, setSelectedTareas] = useState<string[]>(() => activePreset.tareas.map(t => t.title));
+
+  // Al cambiar de giro, resetear selección de puestos y tareas
+  const handleSelectNicho = (nichoKey: 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
+    setSelectedNicho(nichoKey);
+    const preset = PRESET_DATA[nichoKey] || PRESET_DATA.retail;
+    setSelectedPuestos(preset.puestos.map(p => p.name));
+    setSelectedTareas(preset.tareas.map(t => t.title));
+    if (SUB_NICHOS[nichoKey]?.length) {
+      setSelectedSubNicho(SUB_NICHOS[nichoKey][0].id);
+    }
+  };
+
+  const togglePuestoSelection = (name: string) => {
+    setSelectedPuestos(prev => 
+      prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
+    );
+  };
+
+  const toggleTareaSelection = (title: string) => {
+    setSelectedTareas(prev => 
+      prev.includes(title) ? prev.filter(t => t !== title) : [...prev, title]
+    );
+  };
 
   // Step 3: Employee
   const [empName, setEmpName] = useState('Carlos Mendoza');
@@ -267,9 +406,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     setLoading(true);
     setErrorMsg(null);
     try {
+      const preset = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
+      const filteredPuestos = selectedNicho === 'custom' 
+        ? undefined 
+        : preset.puestos.filter(p => selectedPuestos.includes(p.name));
+      const filteredTareas = selectedNicho === 'custom' 
+        ? undefined 
+        : preset.tareas.filter(t => selectedTareas.includes(t.title));
+
       await axiosInstance.post('/admin/onboarding/configure-nicho', {
         nicho: selectedNicho,
-        custom_nicho_description: customNichoDesc
+        sub_nicho: selectedSubNicho,
+        custom_nicho_description: customNichoDesc,
+        selected_puestos: filteredPuestos,
+        selected_tareas: filteredTareas
       });
       
       // Refrescar el estado para traer los puestos recién inyectados en Postgres
@@ -302,8 +452,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         salary: 8000,
         is_active: true,
         is_active_employee: true,
-        shiftStart: shiftStart,
-        shiftEnd: shiftEnd,
+        shiftStart: storeOpenTime,
+        shiftEnd: storeCloseTime,
         phone: empPhone
       });
       if (res.data && res.data.id) {
@@ -723,9 +873,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           )}
  
           {step === 2 && (
-            <div className="animate-in fade-in">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+            <div className="animate-in fade-in space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
                   <Sparkles size={24} className="text-purple-600" />
                 </div>
                 <div>
@@ -733,80 +883,109 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <h3 className="text-xl font-black text-slate-800">Giro Comercial y Estructura</h3>
                 </div>
               </div>
- 
-              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                Selecciona el giro de tu empresa. Cargaremos automáticamente una estructura de puestos, rutinas operativas diarias y cursos de inducción sugeridos para tu negocio.
+
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Selecciona el giro y sub-giro de tu empresa. Te sugeriremos los puestos y tareas operativas iniciales; puedes activar o desactivar con los checkboxes lo que desees incluir.
               </p>
- 
-              <div className="grid grid-cols-2 gap-3 mb-4">
+
+              {/* Botones de Giros Principales */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setSelectedNicho('retail')}
-                  className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-98 ${
+                  onClick={() => handleSelectNicho('retail')}
+                  className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
                     selectedNicho === 'retail' 
-                      ? 'border-purple-600 bg-purple-50/50 shadow-sm' 
+                      ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                   }`}
                 >
-                  <span className="text-2xl">🛍️</span>
+                  <span className="text-xl">🛍️</span>
                   <span className="text-xs font-bold text-slate-700">Retail / Tienda</span>
                 </button>
- 
+
                 <button
                   type="button"
-                  onClick={() => setSelectedNicho('restaurante')}
-                  className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-98 ${
+                  onClick={() => handleSelectNicho('restaurante')}
+                  className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
                     selectedNicho === 'restaurante' 
-                      ? 'border-purple-600 bg-purple-50/50 shadow-sm' 
+                      ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                   }`}
                 >
-                  <span className="text-2xl">🍔</span>
-                  <span className="text-xs font-bold text-slate-700">Restaurante / Café</span>
+                  <span className="text-xl">🍔</span>
+                  <span className="text-xs font-bold text-slate-700">Restaurante</span>
                 </button>
- 
+
                 <button
                   type="button"
-                  onClick={() => setSelectedNicho('oficina')}
-                  className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-98 ${
+                  onClick={() => handleSelectNicho('oficina')}
+                  className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
                     selectedNicho === 'oficina' 
-                      ? 'border-purple-600 bg-purple-50/50 shadow-sm' 
+                      ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                   }`}
                 >
-                  <span className="text-2xl">🏢</span>
-                  <span className="text-xs font-bold text-slate-700">Oficinas / Servicios</span>
+                  <span className="text-xl">🏢</span>
+                  <span className="text-xs font-bold text-slate-700">Oficina / Servicio</span>
                 </button>
- 
+
                 <button
                   type="button"
-                  onClick={() => setSelectedNicho('taller')}
-                  className={`p-4 border rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-98 ${
+                  onClick={() => handleSelectNicho('taller')}
+                  className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
                     selectedNicho === 'taller' 
-                      ? 'border-purple-600 bg-purple-50/50 shadow-sm' 
+                      ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                   }`}
                 >
-                  <span className="text-2xl">⚙️</span>
+                  <span className="text-xl">⚙️</span>
                   <span className="text-xs font-bold text-slate-700">Taller / Fábrica</span>
                 </button>
               </div>
- 
+
+              {/* Opción de Nicho Personalizado por IA */}
               <button
                 type="button"
-                onClick={() => setSelectedNicho('custom')}
-                className={`w-full p-4 border rounded-2xl flex items-center justify-center gap-3 transition-all mb-4 active:scale-98 ${
+                onClick={() => handleSelectNicho('custom')}
+                className={`w-full p-3 border rounded-2xl flex items-center justify-center gap-2.5 transition-all active:scale-98 ${
                   selectedNicho === 'custom'
-                    ? 'border-purple-600 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 shadow-sm'
+                    ? 'border-purple-600 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 shadow-sm ring-1 ring-purple-600/30'
                     : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                 }`}
               >
-                <Sparkles size={18} className="text-purple-600 animate-pulse" />
+                <Sparkles size={16} className="text-purple-600 animate-pulse" />
                 <span className="text-xs font-bold text-slate-700">Personalizado por IA (Gemini Copilot)</span>
               </button>
- 
+
+              {/* Sub-Giros Específicos */}
+              {selectedNicho !== 'custom' && SUB_NICHOS[selectedNicho] && (
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 animate-in fade-in duration-200">
+                  <label className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider block mb-2">
+                    Especialidad / Sub-Giro Recomendado
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SUB_NICHOS[selectedNicho].map((sub) => (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => setSelectedSubNicho(sub.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          selectedSubNicho === sub.id
+                            ? 'bg-purple-600 text-white shadow-sm scale-102'
+                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span>{sub.icon}</span>
+                        <span>{sub.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Textarea para Nicho Personalizado IA */}
               {selectedNicho === 'custom' && (
-                <div className="relative mb-5 animate-in slide-in-from-top-2 duration-200">
+                <div className="relative animate-in slide-in-from-top-2 duration-200">
                   <textarea
                     id="customNichoDesc"
                     value={customNichoDesc}
@@ -819,23 +998,116 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     htmlFor="customNichoDesc"
                     className="absolute left-4 text-[10px] font-bold text-slate-500 transition-all pointer-events-none -top-2 bg-white px-1 peer-placeholder-shown:text-xs peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3 peer-focus:-top-2 peer-focus:text-[10px] peer-focus:text-purple-600"
                   >
-                    Describe tu giro de negocio (ej: Clinica Dental, Escuela de Idiomas)
+                    Describe tu giro de negocio (ej: Clínica Vet, Escuela de Idiomas, Gimnasio)
                   </label>
                 </div>
               )}
- 
-              <div className="flex flex-col sm:flex-row gap-3">
+
+              {/* Previsualización Interactiva de Puestos y Tareas (Checkboxes) */}
+              {selectedNicho !== 'custom' && (
+                <div className="space-y-3 pt-1">
+                  {/* Panel Puestos */}
+                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <span>📋</span> Puestos a Integrar ({selectedPuestos.length}/{activePreset.puestos.length})
+                      </span>
+                      <span className="text-[10px] text-purple-600 font-bold">Selección editable</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {activePreset.puestos.map((puesto) => {
+                        const isChecked = selectedPuestos.includes(puesto.name);
+                        return (
+                          <label
+                            key={puesto.name}
+                            onClick={() => togglePuestoSelection(puesto.name)}
+                            className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer select-none transition-all ${
+                              isChecked 
+                                ? 'border-purple-300 bg-purple-50/40 text-slate-800 font-bold' 
+                                : 'border-slate-200 bg-slate-50/50 text-slate-400 opacity-60'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs truncate">{puesto.name}</p>
+                              <span className="text-[9px] text-slate-500 font-medium">{puesto.area}</span>
+                            </div>
+                            {puesto.esAperturador && (
+                              <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-extrabold shrink-0">Llaves</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Panel Tareas / Checklists */}
+                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <span>✅</span> Checklists Operativas ({selectedTareas.length}/{activePreset.tareas.length})
+                      </span>
+                      <span className="text-[10px] text-purple-600 font-bold">Checklists de apertura/cierre</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {activePreset.tareas.map((tarea) => {
+                        const isChecked = selectedTareas.includes(tarea.title);
+                        return (
+                          <label
+                            key={tarea.title}
+                            onClick={() => toggleTareaSelection(tarea.title)}
+                            className={`p-2 rounded-xl border flex items-center gap-2.5 cursor-pointer select-none transition-all ${
+                              isChecked 
+                                ? 'border-purple-200 bg-purple-50/30 text-slate-800' 
+                                : 'border-slate-100 bg-slate-50/30 text-slate-400 opacity-60'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
+                            />
+                            <span className="text-xs font-medium truncate flex-1">{tarea.title}</span>
+                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold shrink-0">{tarea.target_role_name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Previsualización de Cursos y Vacantes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                    <div className="bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 flex flex-col gap-1">
+                      <span className="font-extrabold text-indigo-700 flex items-center gap-1">🎓 Cursos de Inducción</span>
+                      <span className="text-slate-600 text-[10px] truncate">{activePreset.cursos.map(c => c.title).join(' • ')}</span>
+                    </div>
+                    <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 flex flex-col gap-1">
+                      <span className="font-extrabold text-emerald-700 flex items-center gap-1">💼 Vacantes en Bolsa ATS</span>
+                      <span className="text-slate-600 text-[10px] truncate">{activePreset.vacantes.map(v => v.title).join(' • ')}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones de Acción */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button 
                   onClick={handleConfigureNicho}
-                  disabled={loading || (selectedNicho === 'custom' && !customNichoDesc.trim())}
-                  className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-sm"
+                  disabled={loading || (selectedNicho === 'custom' && !customNichoDesc.trim()) || (selectedNicho !== 'custom' && selectedPuestos.length === 0)}
+                  className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-sm"
                 >
-                  {loading ? <Loader2 size={18} className="animate-spin" /> : <>Cargar Estructura Comercial <ChevronRight size={18} /></>}
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <>Cargar Estructura Seleccionada <ChevronRight size={18} /></>}
                 </button>
                 <button 
                   onClick={() => setStep(5)}
                   disabled={loading}
-                  className="py-3 px-5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 active:scale-98"
+                  className="py-3.5 px-5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 active:scale-98"
                 >
                   Omitir (Iniciar vacío)
                 </button>

@@ -452,7 +452,28 @@ class TaskAssignmentController extends Controller
             'feedback' => 'nullable|string',
         ]);
 
+        // C1 (auditoría 2026-07-27): estos son los botones del GERENTE — la ruta vivía en el
+        // grupo autenticado general sin gate, así que cualquier empleado se auto-aprobaba (y
+        // auto-PAGABA) tareas, o rechazaba las de un compañero. Mismo isPrivileged del módulo.
+        $isPrivileged = in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
+        if (!$isPrivileged) {
+            return response()->json(['error' => 'Sólo un gerente o supervisor puede resolver tareas inconclusas.'], 403);
+        }
+
         $assignment = TaskAssignment::where('tenant_id', $tenantId)->findOrFail($id);
+
+        // C1: anti-auto-validación — nadie resuelve (ni se paga) su propia asignación,
+        // mismo criterio que TaskValidationController::validateAssignment.
+        if ($assignment->user_id !== null && (int) $assignment->user_id === (int) $user->id) {
+            return response()->json(['error' => 'No puedes resolver tus propias tareas inconclusas.'], 403);
+        }
+
+        // C1: sólo lo que el proceso nocturno marcó como inconcluso es resoluble por esta
+        // puerta — para lo demás están /validate (jerárquico) y el flujo normal.
+        if (!$assignment->flagged_incomplete) {
+            return response()->json(['error' => 'Esta asignación no está marcada como inconclusa.'], 422);
+        }
+
         $task = $assignment->task_id ? Task::find($assignment->task_id) : null;
 
         if ($validated['action'] === 'approve') {
@@ -467,17 +488,22 @@ class TaskAssignmentController extends Controller
                 $basePoints = $task?->points ?? 10;
                 $coinsEarned = round($basePoints * 0.10, 2);
 
+                // C1: ancla anti-doble-pago — `coins_awarded` es la marca del pago (la misma
+                // que usan update/validate). Una asignación que ya cobró se completa sin
+                // volver a depositar, conservando lo que se le pagó realmente.
+                $yaPagada = (float) ($assignment->coins_awarded ?? 0) > 0;
+
                 $assignment->update([
                     'status' => 'completed',
                     'flagged_incomplete' => false,
                     'validation_feedback' => $validated['feedback'] ?? null,
                     'validated_by' => $user->id,
                     'task_cost' => round(($baseSalary / 480) * $accumulatedMins, 2),
-                    'points_awarded' => $basePoints,
-                    'coins_awarded' => $coinsEarned,
+                    'points_awarded' => $yaPagada ? $assignment->points_awarded : $basePoints,
+                    'coins_awarded' => $yaPagada ? $assignment->coins_awarded : $coinsEarned,
                 ]);
 
-                if ($assignment->user_id) {
+                if ($assignment->user_id && !$yaPagada) {
                     $wallet = \App\Models\UserWallet::getOrCreateForUser($assignment->user_id, $tenantId);
                     $wallet->deposit(
                         $coinsEarned,

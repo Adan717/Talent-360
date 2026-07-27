@@ -16,6 +16,7 @@ import { LateAuthorizationsPanel } from './reloj/LateAuthorizationsPanel';
 import { PanicIncidentsPanel } from './reloj/PanicIncidentsPanel';
 import { LateJustificationsPanel } from './reloj/LateJustificationsPanel';
 import { ContingenciesPanel } from './reloj/ContingenciesPanel';
+import { IncompleteTasksPanel } from './reloj/IncompleteTasksPanel';
 
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
@@ -810,6 +811,9 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
           <PanicIncidentsPanel />
           <LateJustificationsPanel />
           <ContingenciesPanel />
+          {/* M3: sin este panel, lo que el nocturno flaggea como inconcluso no tenía
+              dónde resolverse con los 3 botones (aprobar/reprogramar/rechazar). */}
+          <IncompleteTasksPanel />
 
           {/* Banner de Bienvenida y Configuración de Giro (Wizard Banner) */}
           {!systemSettings?.onboarding_completed && (

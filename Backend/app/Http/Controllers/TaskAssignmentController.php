@@ -474,6 +474,39 @@ class TaskAssignmentController extends Controller
     }
 
     /**
+     * M3 (auditoría 2026-07-27): listado para el panel del gerente de tareas inconclusas.
+     * El gate de ROL vive en la ruta (grupo /admin, role:admin,supervisor); aquí sólo se
+     * scopea tenant (guard explícito, sin `?? 1`) y se arma la fila con lo que la UI pinta.
+     */
+    public function flaggedIncomplete(Request $request)
+    {
+        $user = auth()->user();
+        $tenantId = $user->tenant_id;
+        if ($tenantId === null) {
+            return response()->json(['success' => false, 'message' => 'Sin tenant.'], 403);
+        }
+
+        $rows = DB::table('task_assignments as a')
+            ->leftJoin('tasks as t', function ($join) use ($tenantId) {
+                $join->on('t.id', '=', 'a.task_id')->where('t.tenant_id', '=', $tenantId);
+            })
+            ->leftJoin('employees as e', function ($join) use ($tenantId) {
+                $join->on('e.user_id', '=', 'a.user_id')->where('e.tenant_id', '=', $tenantId);
+            })
+            ->where('a.tenant_id', $tenantId)
+            ->where('a.flagged_incomplete', true)
+            ->whereNull('a.deleted_at')
+            ->orderBy('a.date', 'asc')
+            ->get([
+                'a.id', 'a.user_id', 'a.date', 'a.status', 'a.accumulated_mins',
+                't.title as task_title',
+                'e.name as employee_name',
+            ]);
+
+        return response()->json($rows);
+    }
+
+    /**
      * Sección 2 #2: resuelve una tarea que quedó inconclusa (marcada por el proceso
      * nocturno como flagged_incomplete). Los 3 botones del gerente:
      *   - approve    🟢 Aprobar y proteger bono → completa y paga.

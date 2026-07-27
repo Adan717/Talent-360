@@ -51,6 +51,11 @@ class ResolveIncompleteGateTest extends TestCase
     {
         $user = User::factory()->create(['role' => $role]);
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
+        // Expediente: el listado M3 resuelve employee_name vía employees (como en prod).
+        DB::table('employees')->insert([
+            'tenant_id' => 1, 'user_id' => $user->id, 'name' => $user->name,
+            'email' => $user->email, 'created_at' => now(), 'updated_at' => now(),
+        ]);
         return $user->fresh();
     }
 
@@ -219,6 +224,49 @@ class ResolveIncompleteGateTest extends TestCase
         ]);
         // Reprogramar/rechazar jamás pagan.
         $this->assertDatabaseMissing('wallet_transactions', ['user_id' => $empleado->id]);
+    }
+
+    /**
+     * M3 (auditoría 2026-07-27): listado para el panel del gerente. Sólo admin/supervisor
+     * (gate de ROL en la ruta, grupo /admin), sólo flaggeadas y sólo del propio tenant,
+     * con nombre del colaborador y título de la tarea para pintar la fila.
+     */
+    public function test_listado_de_inconclusas_gateado_y_scopeado(): void
+    {
+        $admin = $this->makeUser('admin');
+        $empleado = $this->makeUser();
+        $task = $this->makeTask(708);
+
+        $flaggeada = $this->makeAssignment($task, $empleado->id);
+        // Una NO flaggeada del mismo tenant: no debe aparecer.
+        $this->makeAssignment($task, $empleado->id, ['flagged_incomplete' => false, 'status' => 'in_progress']);
+        // Una flaggeada de OTRO tenant: no debe aparecer.
+        DB::table('tenants')->insertOrIgnore([
+            'id' => 2, 'name' => 'Otra', 'subdomain' => 't2', 'plan' => 'pro',
+            'max_users' => 10, 'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('task_assignments')->insert([
+            'id' => 'ajena-t2', 'task_id' => $task->id, 'user_id' => null,
+            'status' => 'awaiting_validation', 'flagged_incomplete' => true,
+            'date' => now()->subDay()->toDateString(), 'tenant_id' => 2,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        // Empleado raso: el gate de rol de la ruta lo rechaza.
+        $this->actingAs($empleado)->getJson('/api/v1/admin/task-assignments/flagged-incomplete')
+            ->assertStatus(403);
+
+        $res = $this->actingAs($admin)->getJson('/api/v1/admin/task-assignments/flagged-incomplete');
+        $res->assertStatus(200);
+
+        $ids = collect($res->json())->pluck('id');
+        $this->assertTrue($ids->contains($flaggeada->id));
+        $this->assertFalse($ids->contains('ajena-t2'));
+        $this->assertCount(1, $ids);
+
+        $fila = collect($res->json())->firstWhere('id', $flaggeada->id);
+        $this->assertSame($empleado->name, $fila['employee_name']);
+        $this->assertSame('Tarea C1', $fila['task_title']);
     }
 
     /**

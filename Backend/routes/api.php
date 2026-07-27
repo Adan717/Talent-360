@@ -289,6 +289,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/admin/late-justifications', [\App\Http\Controllers\LateJustificationController::class, 'pending']);
         Route::post('/admin/late-justifications/{id}/resolve', [\App\Http\Controllers\LateJustificationController::class, 'resolve']);
 
+        // M3: tareas inconclusas flaggeadas por el nocturno — listado para el panel del
+        // gerente (los 3 botones resuelven vía POST /task-assignments/{id}/resolve-incomplete,
+        // que lleva su propio gate C1).
+        Route::get('/admin/task-assignments/flagged-incomplete', [TaskAssignmentController::class, 'flaggedIncomplete']);
+
         // Contingencias (fuerza mayor): el admin ve y resuelve las declaraciones. R83.
         Route::get('/admin/contingencies', [\App\Http\Controllers\ContingencyController::class, 'pending']);
         Route::post('/admin/contingencies/{id}/resolve', [\App\Http\Controllers\ContingencyController::class, 'resolve']);

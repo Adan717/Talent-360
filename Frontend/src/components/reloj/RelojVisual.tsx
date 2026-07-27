@@ -2268,6 +2268,34 @@ export default function RelojVisual({
   const [isFabSheetOpen, setIsFabSheetOpen] = useState(false);
   const [isTaskCreatorOpen, setIsTaskCreatorOpen] = useState(false);
   const [isCopilotChatOpen, setIsCopilotChatOpen] = useState(false);
+
+  // 2026-07-26 (auditoría en vivo): la cinta de bienvenida del colaborador mostraba racha,
+  // monedero y nivel ESCRITOS A MANO ("14 Días Puntual", "$25.00 Coins", "Nivel 3 / 1,250 XP"),
+  // idénticos para todos los empleados de todas las empresas. Se notó porque la misma persona
+  // veía $25.00 aquí y $0.00 en el módulo de Tareas, que sí consulta el saldo real. Se conecta
+  // al mismo endpoint que ya usa TaskRunner (`/wallet/balance`). La racha no tiene endpoint
+  // propio todavía, así que se oculta en vez de inventar un número (ver §62 del contrato).
+  const [walletData, setWalletData] = useState<{ balance_coins: number; xp_points: number; level: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchWallet = async () => {
+      try {
+        const res = await axiosInstance.get('/wallet/balance');
+        if (!cancelled && res.data && res.data.success) {
+          setWalletData({
+            balance_coins: res.data.balance_coins,
+            xp_points: res.data.xp_points,
+            level: res.data.level,
+          });
+        }
+      } catch (e) {
+        if (!cancelled) setWalletData(null);
+      }
+    };
+    fetchWallet();
+    return () => { cancelled = true; };
+  }, [currentUser?.id]);
   // Botón flotante único (2026-07-23, a petición de Francisco): antes TaskRunner.tsx tenía
   // su propio FAB que chocaba visualmente con este. Ahora sus acciones (Crear Tarea, Crear
   // con IA, Historial, Plan del Día) se disparan desde la hoja de este FAB único, vía ref.
@@ -3738,31 +3766,27 @@ export default function RelojVisual({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                      <span className="text-base">🔥</span>
-                      <div className="text-left">
-                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Racha</span>
-                        <span className="text-xs font-black text-white">14 Días Puntual</span>
+                  {/* Solo se pintan si hay saldo real del servidor — antes eran valores fijos
+                      inventados, iguales para todo el mundo (ver comentario en walletData). */}
+                  {walletData && (
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                        <span className="text-base">🪙</span>
+                        <div className="text-left">
+                          <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Monedero</span>
+                          <span className="text-xs font-black text-white">${walletData.balance_coins.toFixed(2)} Coins</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                      <span className="text-base">🪙</span>
-                      <div className="text-left">
-                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block leading-none">Monedero</span>
-                        <span className="text-xs font-black text-white">$25.00 Coins</span>
+                      <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
+                        <span className="text-base">🌟</span>
+                        <div className="text-left">
+                          <span className="text-[9px] font-black text-indigo-300 uppercase tracking-wider block leading-none">Nivel {walletData.level}</span>
+                          <span className="text-xs font-black text-white">{walletData.xp_points.toLocaleString('es-MX')} XP</span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 flex items-center gap-2">
-                      <span className="text-base">🌟</span>
-                      <div className="text-left">
-                        <span className="text-[9px] font-black text-indigo-300 uppercase tracking-wider block leading-none">Nivel 3</span>
-                        <span className="text-xs font-black text-white">1,250 XP</span>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-12 gap-8 items-start">

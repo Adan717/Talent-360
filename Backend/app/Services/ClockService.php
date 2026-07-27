@@ -687,7 +687,19 @@ class ClockService
 
         $user = User::withoutGlobalScopes()->findOrFail($userId);
         $tenantId = $user->tenant_id ?? 1;
-        $declaredAtCarbon = $declaredAt ? Carbon::parse($declaredAt) : Carbon::now();
+
+        $settings = \DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->pluck('value', 'key')
+            ->toArray();
+        $timezone = isset($settings['timezone']) ? trim($settings['timezone'], '"') : 'America/Mexico_City';
+
+        try {
+            $declaredAtCarbon = $declaredAt ? Carbon::parse($declaredAt, $timezone) : Carbon::now($timezone);
+        } catch (\Exception $e) {
+            $declaredAtCarbon = $declaredAt ? Carbon::parse($declaredAt) : Carbon::now('America/Mexico_City');
+        }
+
         $date = $declaredAtCarbon->format('Y-m-d');
 
         $existing = ContingencyDeclaration::withoutGlobalScopes()

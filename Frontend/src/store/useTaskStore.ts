@@ -158,9 +158,43 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
     // pasan en true; las acciones operativas siguen mandando `assignments` como siempre.
     syncToBackend: async (includeCatalog: boolean = false) => {
         try {
-            if (useAppStore.getState().isSandboxMode) return; // Guardado en memoria RAM solamente
+            const appState = useAppStore.getState();
+            if (appState.isSandboxMode) return; // Guardado en memoria RAM solamente
+
+            // ─────────────────────────────────────────────────────────────────────────────
+            // §62 (auditoría en vivo 2026-07-26) — CANDADOS CONTRA PÉRDIDA DE DATOS.
+            // Este método manda `assignments` COMPLETO y el backend lo interpreta como la
+            // verdad absoluta: lo que no venga en el arreglo, lo borra. En producción eso ya
+            // destruyó las 5 asignaciones del día de una colaboradora al iniciar UNA tarea,
+            // porque en ese instante el estado local estaba a medio hidratar (se vio que su
+            // puesto aparecía como "Colaborador" en vez de "Atención Al Cliente") — muy
+            // probablemente tras uno de los 502 intermitentes de /sync/state (§45/§46).
+            //
+            // OJO: estos candados reducen la probabilidad, NO cierran el agujero. La
+            // protección de fondo va en el servidor (§62 punto 1: una lista vacía o parcial
+            // nunca debe significar "borra lo que no venga"; un borrado debe ser explícito).
+            // ─────────────────────────────────────────────────────────────────────────────
+
+            // Candado 1: sesión a medio cargar. Si aún no sabemos con certeza quién es el
+            // usuario, cualquier estado derivado (incluido el filtrado de asignaciones por
+            // puesto) es poco confiable y no debe escribirse.
+            const user = appState.currentUser;
+            if (!user || user.role === 'Loading' || appState.isLoadingDB) {
+                console.warn('[§62] Sincronización de tareas abortada: la sesión todavía no está hidratada.');
+                return;
+            }
 
             const state = get();
+
+            // Candado 2: nunca mandar un arreglo vacío. Un vacío legítimo no existe en este
+            // flujo — si de verdad hay que borrar algo, va por su endpoint explícito. Enviarlo
+            // solo puede significar "todavía no cargué", y es exactamente lo que borra el día
+            // entero de un empleado.
+            if (state.assignments.length === 0) {
+                console.warn('[§62] Sincronización de tareas abortada: el arreglo de asignaciones está vacío (estado sin cargar).');
+                return;
+            }
+
             const payload: any = { assignments: state.assignments };
             if (includeCatalog) {
                 payload.tasks = state.tasks;
@@ -179,7 +213,15 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
     // de recálculo de puntos/validación que antes solo vivía en POST /sync/tasks (§33 punto 1).
     syncAssignmentRow: async (assignmentId) => {
         try {
-            if (useAppStore.getState().isSandboxMode) return;
+            const appState = useAppStore.getState();
+            if (appState.isSandboxMode) return;
+            // §62: mismo criterio que en syncToBackend — no escribir con la sesión a medias.
+            // Aquí el riesgo es menor (se manda UNA fila, no puede borrar las demás), pero una
+            // fila armada sobre estado incompleto igual puede guardar datos equivocados.
+            if (!appState.currentUser || appState.currentUser.role === 'Loading' || appState.isLoadingDB) {
+                console.warn('[§62] Escritura de asignación abortada: la sesión todavía no está hidratada.');
+                return;
+            }
             const assignment = get().assignments.find(a => a.id === assignmentId);
             if (!assignment) return;
             await axiosInstance.put(`/task-assignments/${assignmentId}`, assignment);

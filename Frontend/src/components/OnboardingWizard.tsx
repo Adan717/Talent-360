@@ -107,6 +107,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   });
   const [empPhone, setEmpPhone] = useState('');
   const [createdEmpId, setCreatedEmpId] = useState<number | null>(null);
+  // employees.id y users.id son DISTINTOS: el primero sirve para /admin/employees/{id}/generate-pin,
+  // el segundo es el que espera /clock/punch. Confundirlos ficha a la persona equivocada.
+  const [createdEmpUserId, setCreatedEmpUserId] = useState<number | null>(null);
   const [createdEmpPin, setCreatedEmpPin] = useState<string | null>(null);
 
   // Step 4: Clock-in test
@@ -305,7 +308,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       if (res.data && res.data.id) {
         const empId = res.data.id;
         setCreatedEmpId(empId);
-        
+        // 2026-07-26 (auditoría en vivo, hallazgo grave): `POST /employees` responde
+        // `$employee->load('user')`, así que `res.data.id` es el **employees.id**, NO el users.id.
+        // Ese mismo valor se estaba mandando después como `user_id` al fichar (handleTestClockIn),
+        // y el backend lo interpretaba como users.id — fichando a QUIEN SEA que tuviera ese id,
+        // incluso de OTRA empresa. En la prueba real, la empresa nueva terminó registrando una
+        // entrada a nombre de un empleado de DecorArte (tenant 1). Aquí se guarda aparte el
+        // users.id real para usarlo donde de verdad se pide un usuario. Es la misma familia de
+        // bug que §29/§30 (employees.id vs users.id), en un punto que no se había cubierto.
+        setCreatedEmpUserId(res.data.user_id ?? res.data.user?.id ?? null);
+
         // Generar PIN e invitación móvil
         try {
           const pinRes = await axiosInstance.post(`/admin/employees/${empId}/generate-pin`);
@@ -384,13 +396,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleTestClockIn = async () => {
-    if (!createdEmpId) return;
+    // Se exige el users.id real (no el employees.id): ver comentario en handleCreateEmployee.
+    // Si el backend no lo devolvió, se aborta con un mensaje claro en vez de fichar a ciegas
+    // con un id que podría pertenecer a otra persona (o a otra empresa).
+    if (!createdEmpUserId) {
+      setErrorMsg('No se pudo identificar la cuenta del colaborador recién creado. Omite esta prueba y ficha desde el reloj cuando el colaborador active su cuenta.');
+      return;
+    }
     setLoading(true);
     setErrorMsg(null);
     try {
       // Punch check-in for the created employee
       await axiosInstance.post('/clock/punch', {
-        user_id: createdEmpId,
+        user_id: createdEmpUserId,
         type: 'check_in',
         latitude: 19.4326,
         longitude: -99.1332

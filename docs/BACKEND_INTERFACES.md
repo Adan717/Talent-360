@@ -77,6 +77,8 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 
 | §64 | 🔴 **Permisos excesivos:** las rutas de `billing` (datos fiscales, subida del **sello digital CSD del SAT** con su llave privada, y timbrado de nómina) están bajo `role:admin,supervisor`. Un supervisor de tienda puede reemplazar la identidad fiscal de la empresa y emitir comprobantes ante el SAT. Ver detalle abajo. | ✅ Punto 1 implementado (2026-07-26) — `billing` ahora es solo `admin`; punto 2 requiere decisión de Francisco |
 
+| §65 | **Modelo de permisos delegables (decisión de producto de Francisco, 2026-07-26):** toda la configuración nace en el administrador y se delega **por puesto**, usando las tablas `permissions`/`role_permissions` que YA existen pero que hoy nadie consulta (el gating está escrito a mano como `role:admin,supervisor`). Incluye un conjunto explícitamente **indelegable**. Reemplaza el parche puntual de §64. Ver detalle abajo. | ⏳ Pendiente |
+
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
 ---
@@ -2439,3 +2441,63 @@ Route::prefix('billing')->group(function () {
 - **Tests:** `BillingPermissionsTest::test_supervisor_is_denied_billing_routes` (403 en las cuatro) y `test_admin_passes_the_role_gate` (admin no recibe 403).
 
 **Punto 2 — requiere tu decisión, Francisco:** revisar qué otros módulos que hoy comparten `role:admin,supervisor` deberían ser solo-admin. Los candidatos que exponen datos personales/salariales o identidad de la empresa son: **Directorio Digital** (contratos), **Archivo Digital** (expedientes), **reportes de nómina** (`/admin/payroll`, `/admin/reports/export`, `/admin/payroll/approve`) y **payroll-settings** de la empresa. Dime cuáles consideras operativos para un supervisor y cuáles exclusivos del administrador y lo aplico igual (una línea por grupo). El punto 3 (ocultar del menú) es de Cowork.
+
+---
+
+## §65. Modelo de permisos delegables por puesto (sustituye el parche de §64)
+
+**Contexto (decisión de producto de Francisco, 2026-07-26).** Tras encontrar en la auditoría que un supervisor podía reemplazar el sello fiscal (§64), Francisco definió el criterio de fondo: **toda la configuración nace en el administrador, y él decide qué funciones delega a otros puestos.** Esto reemplaza el arreglo puntual de §64 — en vez de mover `billing` a `role:admin`, se cambia el mecanismo entero.
+
+**Punto de partida importante: la maquinaria ya existe y no se está usando.** El sistema ya tiene las tablas `permissions`, `role_permissions` (con `job_role_id`, es decir ya está pensada por puesto) y `ui_rbac_rules`, y `ClockController::getState()` ya devuelve un mapa `user_permissions` por usuario. Lo que falta es que las rutas **consulten eso** en vez del rol escrito a mano.
+
+### Capacidades propuestas (pocas y gruesas, a propósito)
+
+Deliberadamente ~12 capacidades y no una por endpoint: si son demasiado finas nadie las configura bien y se vuelven inmantenibles.
+
+**Delegables — operación:**
+
+| Capacidad | Cubre |
+|---|---|
+| `manage_employees` | Alta, baja y edición de colaboradores; generar PIN/invitaciones |
+| `manage_schedules` | Horarios, turnos, tolerancias, días de descanso |
+| `manage_tasks` | Tareas, rutinas, asignaciones, plan del día |
+| `manage_store_opening` | Aperturas, control de llaves, transferencia de cierre |
+| `approve_operations` | Aprobar Ley Silla, eventualidades, permisos, horas extra, validar tareas |
+| `manage_academy` | Cursos y contenido de Academia |
+| `manage_recruitment` | Vacantes, candidatos, ATS |
+| `manage_documents` | Archivo Digital / expedientes (documentos, **no** datos salariales) |
+| `manage_org_chart` | Organigrama, SOP y vault |
+| `view_reports` | Reportes y analítica operativa |
+
+**Delegables — datos sensibles (separados a propósito):**
+
+| Capacidad | Cubre |
+|---|---|
+| `view_salaries` | Ver salarios y contratos del personal |
+| `manage_payroll` | Calcular y cerrar nómina (**sin** timbrar ante el SAT) |
+
+Se separan de lo operativo porque son cosas distintas: un supervisor puede necesitar aprobar horas extra sin tener por qué ver cuánto gana cada quien.
+
+### Indelegables — exclusivas del administrador dueño
+
+Ningún permiso debe poder otorgar esto, ni siquiera si el admin quiere:
+
+1. **Identidad fiscal y sello digital** — `POST /billing/tax-data`, `POST /billing/csd`, `POST /billing/payroll/timbrar`. Es la firma de la empresa ante el SAT (razón del §64).
+2. **Plan y suscripción** — cambiar de plan, datos de pago, cancelar.
+3. **Eliminar la empresa.**
+4. **Otorgar permisos** (`manage_permissions`). **Este es el crítico y el que más se olvida:** si se puede delegar, cualquier delegado se auto-asigna todo lo demás y el modelo entero deja de servir. La llave se queda con el dueño.
+
+### Lo que pedimos a Backend
+
+1. **Middleware `permission:` nuevo**, en paralelo al `role:` existente (no romper lo actual de golpe). Ej. `Route::middleware(['auth:sanctum','permission:manage_payroll'])`. Debe resolver: el usuario es `admin` del tenant → pasa siempre; si no, buscar en `role_permissions` por su `job_role_id`.
+2. **Migrar las rutas por bloques**, empezando por las sensibles: `billing` (a indelegable/solo admin), luego nómina, expedientes y directorio. El resto puede migrar después sin prisa.
+3. **Sembrar el catálogo** de las 12 capacidades en `permissions` para cada tenant nuevo (extender `TenantSeeder`), y para los tenants existentes una migración que las cree y asigne por defecto: `admin` = todas; `supervisor` = `manage_tasks`, `approve_operations`, `manage_store_opening`, `view_reports` (conservador — hoy tiene de más, no de menos).
+4. **Endpoints de administración:** `GET /admin/permissions/matrix` (catálogo + qué tiene cada puesto) y `PUT /admin/permissions/matrix` (guardar). Ambos **solo admin**, nunca delegables.
+5. **Bitácora obligatoria:** cada cambio de permisos se registra en `SecurityLogger`/`audit_logs` con quién otorgó qué, a qué puesto y cuándo. Es el respaldo el día que algo pase.
+6. **Rechazar en el servidor, no solo ocultar en el menú.** Ocultar el módulo no impide llamar al endpoint directo — la verificación tiene que estar en la ruta.
+
+### Lo que hace Cowork
+
+La pantalla donde el administrador asigna capacidades por puesto (matriz puestos × capacidades), consumiendo los dos endpoints del punto 4, con las indelegables mostradas pero bloqueadas y explicadas. Además ocultar del menú los módulos sin capacidad, apoyándonos en el `user_permissions` que `/sync/state` ya devuelve.
+
+**No incluir en v1:** delegaciones temporales con fecha de vencimiento (ej. "mientras estoy de vacaciones"). Suena bien, complica bastante, y se puede agregar después sin rehacer nada de lo anterior.

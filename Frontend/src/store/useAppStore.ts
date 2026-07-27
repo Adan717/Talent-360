@@ -124,7 +124,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   allowedFeatures: (typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override') === 'freemium') 
     ? [] 
     : ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands', 'store_opening', 'meal_reservation', 'enable_ley_silla'],
-  simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || 'pro',
+  // 2026-07-26 (auditoría en vivo, hallazgo grave): esto tenía `|| 'pro'` como valor por defecto.
+  // `simulatedTierOverride` es una herramienta de QA (Matrix) y `activeTier` se resuelve como
+  // `simulatedTierOverride || currentTier` — es decir, con el default en 'pro' la simulación estaba
+  // ENCENDIDA para todos, siempre, y el plan real del tenant nunca se usaba: una empresa Enterprise
+  // que paga quedaba degradada a las funciones de Pro, y una freemium quedaba ascendida a Pro.
+  // El valor correcto en ausencia de simulación es `null` (= "sin override, usa el plan real").
+  simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || null,
   punctualityStatus: null,
 
   // Initial SaaS State

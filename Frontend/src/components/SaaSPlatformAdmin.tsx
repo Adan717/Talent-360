@@ -10,6 +10,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { SaaSPlatformBilling } from './SaaSPlatformBilling';
+import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
 
 const moduleAudits = [
   {
@@ -846,6 +847,11 @@ export const SaaSPlatformAdmin = () => {
         features: freemiumFeatures,
         global_trial_days: globalTrialDays
       });
+      
+      updateSetting('freemium_allowed_features', freemiumFeatures);
+      updateSetting('freemium_allowed_modules', freemiumModules);
+      updateSetting('global_trial_days', globalTrialDays);
+
       alert("Configuración de plan gratuito y días de prueba guardada con éxito.");
       setIsFreemiumConfigOpen(false);
     } catch (error) {
@@ -1951,12 +1957,58 @@ export const SaaSPlatformAdmin = () => {
               </div>
             </div>
 
-            {/* Sección 3: Funciones Especiales */}
+            {/* Sección 3: Eventos y Funciones del Reloj Checador (Dialer) */}
             <div>
               <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
-                <span>⚡</span> Funciones Especiales Desbloqueadas en Gratis
+                <span>🕒</span> Eventos y Funciones del Reloj Checador (Dialer)
               </h4>
-              <p className="text-[11px] text-slate-500 font-semibold mb-4">Activa funcionalidades específicas que se considerarán libres de costo en la versión gratuita:</p>
+              <p className="text-[11px] text-slate-500 font-semibold mb-4">Selecciona qué características y eventos del Dialer estarán desbloqueados en la versión gratuita:</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
+                  const isChecked = tag.isMandatory || freemiumFeatures.includes(tag.key);
+                  return (
+                    <label 
+                      key={tag.key}
+                      className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all select-none ${
+                        tag.isMandatory
+                          ? 'border-emerald-300 bg-emerald-50/40 cursor-not-allowed'
+                          : isChecked
+                          ? 'border-indigo-500 bg-indigo-50/30 cursor-pointer'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 cursor-pointer'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={tag.isMandatory}
+                        onChange={() => !tag.isMandatory && toggleFreemiumFeature(tag.key)}
+                        className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-800 block">{tag.name}</span>
+                          {tag.isMandatory ? (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">Core</span>
+                          ) : (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded uppercase">{tag.defaultTier}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-medium block mt-0.5">{tag.description}</span>
+                        <code className="text-[9px] text-slate-400 font-mono mt-1 inline-block">Key: {tag.key}</code>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sección 4: Funciones Especiales Globales */}
+            <div>
+              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
+                <span>⚡</span> Funciones Especiales Globales
+              </h4>
+              <p className="text-[11px] text-slate-500 font-semibold mb-4">Activa funcionalidades globales que se considerarán libres de costo en la versión gratuita:</p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
@@ -1966,10 +2018,7 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'gps_validation', label: 'Validación GPS de Checadas', desc: 'Restricción de ubicación geográfica al checar' },
                   { id: 'face_validation', label: 'Selfie Checador', desc: 'Checar obligatoriamente con selfie' },
                   { id: 'system_backups', label: 'Respaldos JSON', desc: 'Exportación de la BD de empresa' },
-                  { id: 'custom_logo', label: 'Logotipo Personalizado', desc: 'Establecer logotipo propio del workspace' },
-                  { id: 'meal_reservation', label: 'Reserva de Comida', desc: 'Agenda de comedor con cupo controlado' },
-                  { id: 'roll_call', label: 'Pase de Lista Masivo', desc: 'Asistencia masiva controlada por supervisor' },
-                  { id: 'key_delegation', label: 'Entrega de Llaves', desc: 'Delegar el rol de apertura/cierre de sucursal' }
+                  { id: 'custom_logo', label: 'Logotipo Personalizado', desc: 'Establecer logotipo propio del workspace' }
                 ].map(feat => (
                   <label 
                     key={feat.id}

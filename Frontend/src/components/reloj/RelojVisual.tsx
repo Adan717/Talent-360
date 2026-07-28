@@ -834,7 +834,6 @@ export default function RelojVisual({
   };
 
     const renderBarraCronologica = (isMobile: boolean) => {
-    if (!hasCheckedIn) return null;
     // Check for any deviations in the current turn
     const isLateIn = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
     const breakInfoObj = getBreakInfo();

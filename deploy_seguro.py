@@ -309,8 +309,56 @@ def reiniciar(ssh, ensayo):
     )
 
 
+def programar_tareas(ssh, ensayo):
+    """Scheduler de Laravel + drenado de la cola, vía cron del HOST (idempotente).
+
+    Sin esto NADA de lo agendado corre en producción: ni tasks:flag-unfinished
+    (tareas inconclusas), ni payroll:calculate-weekly (pre-nómina diaria), ni la
+    purga de chat. Y con QUEUE_CONNECTION=database, los jobs (LogTaskValidationJob,
+    eventos de websocket) se encolan y nadie los procesa.
+
+    El drenado usa `queue:work --stop-when-empty` cada minuto con flock: patrón
+    ligero suficiente para este tamaño de servidor, sin systemd/supervisor.
+    """
+    titulo("FASE 8 · Scheduler y cola (cron del host)")
+    if ensayo:
+        aviso("Ensayo: no se instala el cron.")
+        return
+
+    crons = [
+        (
+            "artisan schedule:run",
+            f"* * * * * docker exec -u www-data {CONTENEDOR_BACKEND} php artisan schedule:run "
+            ">> /var/log/talent360-schedule.log 2>&1",
+        ),
+        (
+            "artisan queue:work",
+            f"* * * * * flock -n /tmp/talent360-queue.lock docker exec -u www-data {CONTENEDOR_BACKEND} "
+            "php artisan queue:work --stop-when-empty --max-time=50 --tries=3 "
+            ">> /var/log/talent360-queue.log 2>&1",
+        ),
+    ]
+
+    for marca, linea in crons:
+        ya_instalado, _ = cmd_remoto(
+            ssh, f"crontab -l 2>/dev/null | grep -qF '{marca}'", permitir_fallo=True
+        )
+        if ya_instalado:
+            ok(f"cron ya instalado: {marca}")
+        else:
+            cmd_remoto(ssh, f'(crontab -l 2>/dev/null; echo "{linea}") | crontab -')
+            ok(f"cron instalado: {marca}")
+
+    # Confirmación: el scheduler debe listar las tareas sin tronar.
+    cmd_remoto(
+        ssh,
+        f"docker exec {CONTENEDOR_BACKEND} php artisan schedule:list",
+        permitir_fallo=True,
+    )
+
+
 def verificar(ssh, ensayo):
-    titulo("FASE 8 · Verificación posterior")
+    titulo("FASE 9 · Verificación posterior")
     if ensayo:
         aviso("Ensayo: no se verifica.")
         return
@@ -349,6 +397,7 @@ def main():
         actualizar_servidor(ssh, ensayo)
         migrar(ssh, archivo_respaldo, ensayo)
         reiniciar(ssh, ensayo)
+        programar_tareas(ssh, ensayo)
         verificar(ssh, ensayo)
 
         titulo("Despliegue completado")

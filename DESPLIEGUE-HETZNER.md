@@ -1,7 +1,8 @@
 # Despliegue a Hetzner — checklist
 
-Estado del código: **listo**. 721 tests en verde, build de frontend limpio, migraciones probadas
-sobre una base con datos reales, jornada completa verificada end-to-end.
+Estado del código: **listo**. 820 tests en verde (incluye la remediación 10/10 de la auditoría de
+Tareas/Rutinas del 2026-07-27), build de frontend limpio, migraciones probadas sobre una base con
+datos reales, jornada completa verificada end-to-end.
 
 Lo que sigue son los pasos que **no se pueden hacer desde el entorno de desarrollo** porque
 dependen del servidor. Los tres primeros son bloqueantes.
@@ -50,6 +51,23 @@ al compose.
 ```
 CACHE_STORE=file
 ```
+
+### 4. Scheduler y cola (sin esto, lo nocturno y los jobs NO corren)
+
+Nada en el servidor ejecuta `php artisan schedule:run`, así que **nada de lo agendado corre**:
+ni `tasks:flag-unfinished` (tareas inconclusas), ni `payroll:calculate-weekly` (pre-nómina
+diaria), ni la purga de chat. Y con `QUEUE_CONNECTION=database`, los jobs
+(`LogTaskValidationJob`, eventos de websocket) se encolan y nadie los procesa.
+
+**`deploy_seguro.py` ya instala ambos crons (FASE 8, idempotente).** Si despliegas a mano,
+estas son las líneas (crontab de root en el host):
+
+```bash
+* * * * * docker exec -u www-data talent360-backend php artisan schedule:run >> /var/log/talent360-schedule.log 2>&1
+* * * * * flock -n /tmp/talent360-queue.lock docker exec -u www-data talent360-backend php artisan queue:work --stop-when-empty --max-time=50 --tries=3 >> /var/log/talent360-queue.log 2>&1
+```
+
+Verifica con `crontab -l` y revisa los logs en `/var/log/talent360-*.log` el primer día.
 
 ---
 

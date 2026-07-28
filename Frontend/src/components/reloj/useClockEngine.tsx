@@ -278,7 +278,8 @@ export function useClockEngine(overrideUser?: any) {
   }, [currentUser.id]);
 
   const [storeOpenSimTime, setStoreOpenSimTime] = useState<number | null>(null);
-  const [activePushNotification, setActivePushNotification] = useState<{type: string, text: string, action: () => void} | null>(null);
+  const [activePushNotification, setActivePushNotification] = useState<{type: string, text: string, action: () => void, dismiss?: () => void} | null>(null);
+  const dismissedTaskNotificationsRef = useRef<Set<string>>(new Set());
 
   // NOTA (refactor Jul 2026): toda la lógica de apertura de tienda premium (settings, status,
   // checklist de apertura/cierre, apertura de emergencia, PIN de seguridad, declaración de
@@ -1527,26 +1528,39 @@ export function useClockEngine(overrideUser?: any) {
         const myTask = storeState.tasks.find(t => t.id === nextAssignment.taskId);
         const isDelayed = nextAssignment.expectedEndTimeMins && currentSimTime >= nextAssignment.expectedEndTimeMins;
 
+        const delayedKey = `tarea_retrasada_${nextAssignment.id}`;
+        const nextKey = `tarea_siguiente_${nextAssignment.id}`;
+
         if (isDelayed) {
-          if (activePushNotification?.type !== 'tarea_retrasada' || !activePushNotification?.text.includes(myTask?.title || '')) {
+          if (!dismissedTaskNotificationsRef.current.has(delayedKey) && (activePushNotification?.type !== 'tarea_retrasada' || !activePushNotification?.text.includes(myTask?.title || ''))) {
             setActivePushNotification({
               type: 'tarea_retrasada',
               text: `🚨 Retraso en rutina: desarrolla "${myTask?.title || 'Tarea'}". Quedan ${remainingCount} tareas.`,
               action: () => {
+                dismissedTaskNotificationsRef.current.add(delayedKey);
                 setActivePushNotification(null);
                 setPhoneTab('tareas');
+              },
+              dismiss: () => {
+                dismissedTaskNotificationsRef.current.add(delayedKey);
+                setActivePushNotification(null);
               }
             });
           }
         } else {
           // Mostrar aviso amigable si tiene tareas de rutina pendientes por desarrollar
-          if (activePushNotification?.type !== 'tarea_siguiente' && activePushNotification?.type !== 'tarea_retrasada') {
+          if (!dismissedTaskNotificationsRef.current.has(nextKey) && activePushNotification?.type !== 'tarea_siguiente' && activePushNotification?.type !== 'tarea_retrasada') {
             setActivePushNotification({
               type: 'tarea_siguiente',
               text: `📋 Siguiente tarea de tu rutina: "${myTask?.title || 'Tarea'}". (${remainingCount} pendientes).`,
               action: () => {
+                dismissedTaskNotificationsRef.current.add(nextKey);
                 setActivePushNotification(null);
                 setPhoneTab('tareas');
+              },
+              dismiss: () => {
+                dismissedTaskNotificationsRef.current.add(nextKey);
+                setActivePushNotification(null);
               }
             });
           }
@@ -1560,14 +1574,20 @@ export function useClockEngine(overrideUser?: any) {
       // Si no tiene rutinas, usar el comportamiento estándar de una tarea única en progreso
       const myAssignment = storeState.assignments.find(a => a.userId === currentUser.id && a.status === 'in_progress');
       if (myAssignment && myAssignment.expectedEndTimeMins && currentSimTime >= myAssignment.expectedEndTimeMins) {
-        if (activePushNotification?.type !== 'tarea_retrasada') {
+        const notifKey = `tarea_retrasada_${myAssignment.id}`;
+        if (!dismissedTaskNotificationsRef.current.has(notifKey) && activePushNotification?.type !== 'tarea_retrasada') {
           const myTask = storeState.tasks.find(t => t.id === myAssignment.taskId);
           setActivePushNotification({
             type: 'tarea_retrasada',
             text: `🚨 Estás retrasado en tu tarea: ${myTask?.title || 'Tarea Actual'}. ¡Apresúrate!`,
             action: () => {
+              dismissedTaskNotificationsRef.current.add(notifKey);
               setActivePushNotification(null);
               setPhoneTab('tareas');
+            },
+            dismiss: () => {
+              dismissedTaskNotificationsRef.current.add(notifKey);
+              setActivePushNotification(null);
             }
           });
         }

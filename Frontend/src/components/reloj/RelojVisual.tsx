@@ -3062,6 +3062,9 @@ export default function RelojVisual({
             <button 
               onClick={(e) => {
                 e.stopPropagation();
+                if (activePushNotification?.dismiss) {
+                  activePushNotification.dismiss();
+                }
                 setActivePushNotification(null);
               }}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-sm font-bold bg-transparent border-none cursor-pointer outline-none p-1 leading-none"

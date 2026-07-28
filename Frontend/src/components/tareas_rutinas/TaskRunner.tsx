@@ -914,27 +914,37 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-2.5 pb-4 pt-1.5 select-none relative overflow-hidden">
+        <div className="flex flex-col h-full bg-[#f8f9fe] text-slate-800 font-sans px-1 pb-4 pt-1 select-none relative overflow-hidden w-full">
             {/* Header Anclado de Monedero Digital & Menú de Pestañas (Sticky Top en Móvil) */}
-            <div className="sticky top-0 z-20 bg-[#f8f9fe] dark:bg-slate-950 pt-1 pb-2.5 -mx-2.5 px-2.5 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 select-none mb-3">
-                {/* Header de Monedero Digital & Gamificación (XP + Level + Coins) */}
-                <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white rounded-2xl p-3 mb-2.5 shadow-md flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl shadow-inner">
+            <div className="sticky top-0 z-20 bg-[#f8f9fe] dark:bg-slate-950 pt-1 pb-2 -mx-1 px-1 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0 select-none mb-3">
+                {/* Header de Monedero Digital & Gamificación Rediseñado */}
+                <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white rounded-3xl p-3.5 mb-2.5 shadow-lg border border-amber-400/30 flex items-center justify-between shrink-0 relative overflow-hidden">
+                    {/* Glow radial decorativo */}
+                    <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    
+                    <div className="flex items-center gap-3 relative z-10">
+                        <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-white/25 shrink-0">
                             🪙
                         </div>
-                        <div className="text-left">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-100 block leading-tight">Monedero Digital Talent360</span>
-                            <span className="text-lg font-black tracking-tight text-white leading-none">
-                                ${walletData.balance_coins.toFixed(2)} <span className="text-xs font-bold text-amber-200">Coins</span>
-                            </span>
+                        <div className="text-left leading-tight">
+                            <span className="text-[9.5px] font-black uppercase tracking-widest text-amber-100/90 block">Monedero Digital</span>
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                                <span className="text-xl font-black tracking-tight text-white drop-shadow-xs">
+                                    ${walletData.balance_coins.toFixed(2)}
+                                </span>
+                                <span className="text-[11px] font-extrabold text-amber-200 uppercase tracking-wide">Coins</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-xl border border-white/20 backdrop-blur-sm">
-                        <span className="text-xs">🌟</span>
-                        <div className="text-right">
-                            <span className="text-[9.5px] font-black text-amber-100 uppercase tracking-wide block leading-none">Nivel {walletData.level}</span>
-                            <span className="text-xs font-extrabold text-white">{walletData.xp_points} XP</span>
+
+                    <div className="flex flex-col items-end gap-1 relative z-10 shrink-0">
+                        <div className="bg-amber-950/30 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 flex items-center gap-1.5 shadow-inner">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-amber-200">NIVEL</span>
+                            <span className="text-xs font-black text-white bg-white/20 px-1.5 py-0.2 rounded-md">{walletData.level}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-white text-[10.5px] font-extrabold pr-0.5">
+                            <span className="text-amber-200 text-xs">🌟</span>
+                            <span>{walletData.xp_points} XP</span>
                         </div>
                     </div>
                 </div>

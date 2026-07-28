@@ -3499,7 +3499,7 @@ export default function RelojVisual({
           )}
 
           {phoneTab !== 'checador' && (
-            <div className="flex-1 overflow-hidden p-4 pt-[82px] pb-[100px] scrollbar-none flex flex-col">
+            <div className="flex-1 overflow-hidden px-1.5 pt-[82px] pb-[100px] scrollbar-none flex flex-col w-full">
               {isSimulated && simulatedTier === 'free' ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 animate-in zoom-in-95 duration-200">
                   <div className="w-12 h-12 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm shrink-0">

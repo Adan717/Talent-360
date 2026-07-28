@@ -50,7 +50,6 @@ const OrgVaultManager = lazy(() => import('./components/OrgVaultManager').then(m
 const WebPublicaOrganizacion = lazy(() => import('./components/WebPublicaOrganizacion').then(m => ({ default: m.WebPublicaOrganizacion })));
 const MonitorActividadesTiempoReal = lazy(() => import('./components/MonitorActividadesTiempoReal').then(m => ({ default: m.MonitorActividadesTiempoReal })));
 import { ModuleUnlockModal } from './components/ModuleUnlockModal';
-import { PromotionStoreDock } from './components/PromotionStoreDock';
 import { HeaderStats } from './components/HeaderStats';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
@@ -713,13 +712,6 @@ function MainLayout() {
         } : null}
         onSuccess={async () => {
           await useAppStore.getState().fetchState();
-        }}
-      />
-
-      <PromotionStoreDock
-        onOpenStore={() => {
-          setActiveModule('settings');
-          setSettingsTab('modules');
         }}
       />
     </div>

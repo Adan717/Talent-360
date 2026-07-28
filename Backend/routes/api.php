@@ -248,16 +248,18 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/academy/course-templates/{id}/import', [AcademyController::class, 'importTemplate']);
         });
 
-        // Dashboard Operativo y Monitoreo
+        // Dashboard Operativo y Monitoreo (Configurable por Puesto vía Matriz de Capacidades)
         Route::get('/admin/dashboard/stats', [DashboardController::class, 'getStats']);
-        Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
-        Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
-        Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
-        Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
-        Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
-        Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
-        Route::post('/admin/dashboard/vendors', [DashboardMonitorController::class, 'storeVendor']);
-        Route::post('/admin/dashboard/vendors/{id}/complete', [DashboardMonitorController::class, 'completeVendor']);
+        Route::middleware(['permission:manage_tasks,approve_operations,manage_store_opening,view_reports'])->group(function () {
+            Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
+            Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
+            Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
+            Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
+            Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
+            Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
+            Route::post('/admin/dashboard/vendors', [DashboardMonitorController::class, 'storeVendor']);
+            Route::post('/admin/dashboard/vendors/{id}/complete', [DashboardMonitorController::class, 'completeVendor']);
+        });
 
         // §39: configuración de la cadena de pedidos (qué puesto en cada etapa) — admin/supervisor
         Route::get('/supply-chain/config', [\App\Http\Controllers\SupplyOrderController::class, 'getConfig']);

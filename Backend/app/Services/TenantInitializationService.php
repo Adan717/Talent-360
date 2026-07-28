@@ -54,5 +54,23 @@ class TenantInitializationService
                 ]
             );
         }
+
+        $this->seedPermissionCatalog($tenantId);
+    }
+
+    /**
+     * §65: siembra el catálogo de capacidades delegables para un tenant nuevo. No asigna
+     * nada a puestos todavía (al crearse el tenant aún no hay job_roles) — eso lo hace el
+     * administrador desde la matriz, o los defaults al configurar el nicho. El admin dueño
+     * pasa siempre por bypass en PermissionMiddleware, así que nunca se queda fuera.
+     */
+    public function seedPermissionCatalog(int $tenantId): void
+    {
+        foreach (\App\Support\PermissionCatalog::DELEGABLE as $name => $description) {
+            DB::table('permissions')->updateOrInsert(
+                ['tenant_id' => $tenantId, 'name' => $name],
+                ['description' => $description, 'updated_at' => now(), 'created_at' => now()]
+            );
+        }
     }
 }

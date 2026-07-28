@@ -5,11 +5,12 @@ import {
   ArrowUpRight, ShieldAlert, ShieldCheck, GraduationCap, Loader2,
   User, LogOut, ChevronDown, Search, Filter, Eye, Key, LogIn, Ban, 
   Info, RefreshCw, X, ShieldX, KeyRound, CheckCircle2, Settings,
-  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor
+  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor, Menu
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { SaaSPlatformBilling } from './SaaSPlatformBilling';
+import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
 
 const moduleAudits = [
   {
@@ -388,6 +389,11 @@ export const SaaSPlatformAdmin = () => {
   const [newTenantName, setNewTenantName] = useState('');
   const [newTenantPlan, setNewTenantPlan] = useState('Freemium');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  const [showBanner, setShowBanner] = useState<boolean>(() => {
+    return localStorage.getItem('talent360_hide_global_banner') !== 'true';
+  });
+  const [isBannerCloseMenuOpen, setIsBannerCloseMenuOpen] = useState(false);
   const [createdTenantData, setCreatedTenantData] = useState<any>(null);
 
   // Estados para la configuración del plan gratuito (Freemium)
@@ -471,6 +477,9 @@ export const SaaSPlatformAdmin = () => {
   const [tenantDetail, setTenantDetail] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [tenantAllowedModules, setTenantAllowedModules] = useState<string[]>([]);
+  const [tenantAllowedFeatures, setTenantAllowedFeatures] = useState<string[]>([]);
+  const [isSavingTenantFeatures, setIsSavingTenantFeatures] = useState(false);
 
   // Suspensión Modal
   const [isSuspensionModalOpen, setIsSuspensionModalOpen] = useState(false);
@@ -540,15 +549,29 @@ export const SaaSPlatformAdmin = () => {
   const fetchGlobalData = async (search = '', plan = 'all', status = 'all') => {
     setIsLoading(true);
     try {
-      const [statsRes, tenantsRes, auditsRes] = await Promise.all([
+      const searchParam = search ? `search=${encodeURIComponent(search)}&` : '';
+      const planParam = (plan && plan !== 'all') ? `plan=${encodeURIComponent(plan)}&` : '';
+      const statusParam = (status && status !== 'all') ? `status=${encodeURIComponent(status)}&` : '';
+      const queryString = `${searchParam}${planParam}${statusParam}`.replace(/&$/, '');
+      const url = `/platform/tenants${queryString ? `?${queryString}` : ''}`;
+
+      const [statsRes, tenantsRes, auditsRes] = await Promise.allSettled([
         axiosInstance.get('/platform/stats'),
-        axiosInstance.get(`/platform/tenants?search=${search}&plan=${plan}&status=${status}`),
+        axiosInstance.get(url),
         axiosInstance.get('/platform/audits')
       ]);
       
-      setStats(statsRes.data);
-      setTenantsList(tenantsRes.data);
-      setModuleAuditsList(auditsRes.data);
+      if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+        setStats(statsRes.value.data);
+      }
+      if (tenantsRes.status === 'fulfilled') {
+        const rawData = tenantsRes.value.data;
+        const list = Array.isArray(rawData) ? rawData : (rawData?.tenants || rawData?.data || []);
+        setTenantsList(list);
+      }
+      if (auditsRes.status === 'fulfilled' && auditsRes.value.data) {
+        setModuleAuditsList(auditsRes.value.data);
+      }
     } catch (error) {
       console.error("Error fetching platform data:", error);
     } finally {
@@ -576,10 +599,10 @@ export const SaaSPlatformAdmin = () => {
   const timeMode = systemSettings?.time_mode || 'simulated';
 
   const kpis = [
-    { label: 'Ingresos Recurrentes (MRR)', value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: '+15% este mes' },
-    { label: 'Empresas Activas', value: stats.active_tenants.toString(), icon: Building2, color: 'text-blue-600', bg: 'bg-blue-100', trend: `+0 en Trial` },
-    { label: 'Usuarios Totales', value: stats.total_users.toLocaleString(), icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-100', trend: 'Crecimiento estable' },
-    { label: 'Tasa de Cancelación (Churn)', value: stats.churn_rate, icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-100', trend: 'Ligeramente alto' },
+    { label: 'MRR', value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600', watermarkColor: 'text-emerald-500/25', trend: '+15% este mes' },
+    { label: 'Empresas', value: stats.active_tenants.toString(), icon: Building2, color: 'text-blue-600', watermarkColor: 'text-blue-500/25', trend: `+0 en Trial` },
+    { label: 'Usuarios', value: stats.total_users.toLocaleString(), icon: Users, color: 'text-indigo-600', watermarkColor: 'text-indigo-500/25', trend: 'Crecimiento estable' },
+    { label: 'Churn', value: stats.churn_rate, icon: TrendingUp, color: 'text-rose-600', watermarkColor: 'text-rose-500/25', trend: 'Ligeramente alto' },
   ];
 
   const handleCreateTenant = async () => {
@@ -652,6 +675,10 @@ export const SaaSPlatformAdmin = () => {
       setEditAdminName(data.admin?.name || '');
       setEditAdminEmail(data.admin?.email || '');
       setEditAdminPhone(data.admin?.phone || '');
+
+      // Cargar módulos y características permitidas de este tenant
+      setTenantAllowedModules(Array.isArray(data.tenant?.allowed_modules) ? data.tenant.allowed_modules : []);
+      setTenantAllowedFeatures(Array.isArray(data.tenant?.allowed_features) ? data.tenant.allowed_features : []);
     } catch (error) {
       console.error("Error loading tenant details:", error);
       alert("Error al cargar los detalles de la empresa.");
@@ -659,6 +686,36 @@ export const SaaSPlatformAdmin = () => {
     } finally {
       setIsDetailLoading(false);
     }
+  };
+
+  const handleSaveTenantFeatures = async () => {
+    if (!selectedTenantId) return;
+    setIsSavingTenantFeatures(true);
+    try {
+      await axiosInstance.post(`/platform/tenants/${selectedTenantId}/features`, {
+        modules: tenantAllowedModules,
+        features: tenantAllowedFeatures
+      });
+      alert("Módulos y funciones personalizadas guardadas con éxito para esta empresa.");
+      await handleOpenDetails(selectedTenantId);
+    } catch (error: any) {
+      console.error("Error saving tenant features:", error);
+      alert(error.response?.data?.error || "Error al guardar los permisos de la empresa.");
+    } finally {
+      setIsSavingTenantFeatures(false);
+    }
+  };
+
+  const toggleTenantModule = (modId: string) => {
+    setTenantAllowedModules(prev =>
+      prev.includes(modId) ? prev.filter(id => id !== modId) : [...prev, modId]
+    );
+  };
+
+  const toggleTenantFeature = (featKey: string) => {
+    setTenantAllowedFeatures(prev =>
+      prev.includes(featKey) ? prev.filter(key => key !== featKey) : [...prev, featKey]
+    );
   };
 
   // Guardar Cambios de Edición del Inquilino
@@ -832,6 +889,11 @@ export const SaaSPlatformAdmin = () => {
         features: freemiumFeatures,
         global_trial_days: globalTrialDays
       });
+      
+      updateSetting('freemium_allowed_features', freemiumFeatures);
+      updateSetting('freemium_allowed_modules', freemiumModules);
+      updateSetting('global_trial_days', globalTrialDays);
+
       alert("Configuración de plan gratuito y días de prueba guardada con éxito.");
       setIsFreemiumConfigOpen(false);
     } catch (error) {
@@ -903,208 +965,320 @@ export const SaaSPlatformAdmin = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Top Bar with User Profile */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+      {/* Sticky Top Bar con Menú Hamburguesa y Perfil de Usuario */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-sm flex items-center justify-between gap-4 mb-6">
+        {/* Izquierda: Branding e Identificación de la Consola */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-            <span className="text-white font-black text-xl">T</span>
+          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+            <span className="text-white font-black text-lg">T</span>
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-800 leading-tight">{isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}</h2>
-            <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}</p>
+            <h2 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
+              {isAdmin ? 'Talent 360' : 'Página de Soporte'}
+            </h2>
+            <p className="text-[11px] text-slate-500 font-bold leading-tight">
+              {isAdmin ? 'Consola de administración' : 'Soporte técnico y atención a empresas'}
+            </p>
           </div>
         </div>
-        
-        {/* User Menu */}
-        <div className="relative">
-          <button 
-            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="flex items-center gap-3 hover:bg-slate-50 p-2 rounded-xl border border-slate-200 transition-colors"
-          >
-            <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 border border-slate-200 overflow-hidden">
-              {currentUser?.avatar ? (
-                <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <User size={18} />
-              )}
-            </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-xs font-black text-slate-800 leading-tight">{currentUser?.name || 'Administrador'}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{currentUser?.role || 'Super Admin'}</p>
-            </div>
-            <ChevronDown size={14} className="text-slate-400" />
-          </button>
 
-          {isProfileMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)}></div>
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="border-b border-slate-100 pb-3 mb-3">
-                  <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
-                  <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'master@talent360.com'}</p>
-                </div>
-                <div className="space-y-2.5 text-xs text-slate-600 font-semibold mb-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">ID Usuario:</span>
-                    <span>{currentUser?.id || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">Rol:</span>
-                    <span className="text-rose-600 font-bold">{currentUser?.system_role || currentUser?.role || 'platform_admin'}</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-transparent py-2.5 rounded-xl font-bold transition-all text-xs"
-                >
-                  <LogOut size={14} />
-                  Cerrar Sesión
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+        {/* Derecha: Menú Hamburguesa & Perfil del Usuario Estático */}
+        <div className="flex items-center gap-3">
+          {/* Menú de Hamburguesa para Navegación Global */}
+          <div className="relative">
+            <button 
+              type="button"
+              onClick={() => setIsNavMenuOpen(!isNavMenuOpen)}
+              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title="Menú de Navegación Global"
+            >
+              <Menu size={18} />
+              <span className="hidden sm:inline font-black text-slate-800">Menú</span>
+            </button>
 
-      {/* Tab Switcher */}
-      <div className="flex border-b border-slate-200 gap-6 mb-6">
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('dashboard')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 ${
-              activeTab === 'dashboard' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            📊 Dashboard Global
-          </button>
-        )}
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('pending_registrations')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
-              activeTab === 'pending_registrations' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            ⏳ Registros Inconclusos
-            {pendingRegistrations.length > 0 && (
-              <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full ml-1 animate-pulse">
-                {pendingRegistrations.length}
-              </span>
+            {isNavMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsNavMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-2.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1">
+                  <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secciones de Plataforma</p>
+                  </div>
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('dashboard'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">📊 Dashboard Global</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('pending_registrations'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'pending_registrations' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">⏳ Registros Inconclusos</span>
+                      {pendingRegistrations.length > 0 && (
+                        <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                          {pendingRegistrations.length}
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  <button 
+                    type="button"
+                    onClick={() => { setActiveTab('tickets'); setIsNavMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                      activeTab === 'tickets' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">🎧 Soporte Técnico / Tickets</span>
+                  </button>
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('security_logs'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'security_logs' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">🛡️ Bitácora de Seguridad</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('billing'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'billing' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">💳 Facturación Global</span>
+                    </button>
+                  )}
+                </div>
+              </>
             )}
-          </button>
-        )}
-        <button 
-          type="button"
-          onClick={() => setActiveTab('tickets')}
-          className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
-            activeTab === 'tickets' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <LifeBuoy size={16} />
-          Soporte Técnico / Tickets
-        </button>
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('security_logs')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
-              activeTab === 'security_logs' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            🛡️ Bitácora de Seguridad
-          </button>
-        )}
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('billing')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
-              activeTab === 'billing' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            💳 Facturación Global
-          </button>
-        )}
+          </div>
+
+          {/* Perfil del Usuario: Icono/Avatar arriba y abajo Nombre y Puesto */}
+          <div className="relative">
+            <button 
+              type="button"
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-50 rounded-xl transition-all cursor-pointer border-none bg-transparent group"
+            >
+              <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center overflow-hidden shadow-xs mb-0.5 group-hover:scale-105 transition-transform">
+                {currentUser?.avatar ? (
+                  <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={16} />
+                )}
+              </div>
+              <div className="text-center leading-tight max-w-[120px] truncate">
+                <p className="text-[11px] font-black text-slate-800 truncate">{currentUser?.name || 'Administrador'}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate">{currentUser?.role || 'Super Admin'}</p>
+              </div>
+            </button>
+
+            {isProfileMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="border-b border-slate-100 pb-3 mb-3">
+                    <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
+                    <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'master@talent360.com'}</p>
+                  </div>
+                  <div className="space-y-2.5 text-xs text-slate-600 font-semibold mb-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">ID Usuario:</span>
+                      <span>{currentUser?.id || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">Rol:</span>
+                      <span className="text-rose-600 font-bold">{currentUser?.system_role || currentUser?.role || 'platform_admin'}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-transparent py-2.5 rounded-xl font-bold transition-all text-xs"
+                  >
+                    <LogOut size={14} />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {activeTab === 'dashboard' && (
         <>
-          {/* Header del Platform Admin */}
-          <div className="bg-slate-900 p-8 rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-           <Activity size={200} />
-        </div>
-        <div className="relative z-10 flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full animate-pulse">
-              Plataforma Central
-            </span>
-            <span className="text-slate-400 text-sm font-bold">Modo Dueño del SaaS</span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">Centro de Control Global</h1>
-          <p className="text-slate-400 mt-2 max-w-xl">
-            Desde aquí monitoreas la salud de tu negocio de software, la facturación global y la infraestructura de los servidores de todos tus clientes.
-          </p>
-        </div>
-        <div className="relative z-10 flex flex-col gap-4 items-end">
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 backdrop-blur-md w-full max-w-xs">
-             <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Modo de Tiempo (DB)</span>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded ${timeMode === 'simulated' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                  {timeMode === 'simulated' ? 'Simulador Activo' : 'NTP Activo'}
-                </span>
-             </div>
-             <p className="text-[10px] text-slate-500 mb-3 leading-tight">Controla si el backend registra usando NTP (Real) o la máquina del tiempo.</p>
-             <div className="flex gap-2">
-                <button 
-                  onClick={() => updateSetting('time_mode', 'simulated')}
-                  className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${timeMode === 'simulated' ? 'bg-indigo-600 text-white shadow-inner' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}
-                >
-                  Simulado
-                </button>
-                <button 
-                  onClick={() => updateSetting('time_mode', 'real')}
-                  className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${timeMode === 'real' ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}
-                >
-                  Tiempo Real
-                </button>
-             </div>
-          </div>
-          <button className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-100 transition-colors flex items-center gap-2">
-            <CreditCard size={18} />
-            Ver Facturación Stripe
-          </button>
-        </div>
-      </div>
-
-      {/* KPIs Financieros y de Crecimiento */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((stat, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between group">
-            <div className="flex items-start justify-between">
-              <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-                <stat.icon size={24} strokeWidth={2} />
+          {/* Header del Platform Admin Compacto (Opcional/Cerrable) */}
+          {showBanner ? (
+            <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-xl border border-slate-800 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden mb-5 transition-all">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                <Activity size={160} />
               </div>
-              <ArrowUpRight size={20} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+
+              {/* Botón de cierre ("Tachita") en la esquina superior derecha */}
+              <div className="absolute top-3 right-3 z-20">
+                <button
+                  type="button"
+                  onClick={() => setIsBannerCloseMenuOpen(!isBannerCloseMenuOpen)}
+                  className="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-slate-700/60"
+                  title="Opciones de visibilidad del panel"
+                >
+                  <X size={14} />
+                </button>
+
+                {isBannerCloseMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setIsBannerCloseMenuOpen(false)}></div>
+                    <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-40 text-left text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                      <p className="font-black text-slate-200 mb-2 border-b border-slate-800 pb-1.5 px-1">
+                        Visibilidad del Panel
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowBanner(false);
+                          setIsBannerCloseMenuOpen(false);
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors block mb-1 cursor-pointer"
+                      >
+                        <p className="font-bold flex items-center gap-1.5 text-slate-100">
+                          <Eye size={14} className="text-indigo-400" /> Cerrar por esta sesión
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Se volverá a mostrar al recargar.</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.setItem('talent360_hide_global_banner', 'true');
+                          setShowBanner(false);
+                          setIsBannerCloseMenuOpen(false);
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors block cursor-pointer"
+                      >
+                        <p className="font-bold flex items-center gap-1.5 text-rose-400">
+                          <Ban size={14} /> No volver a mostrar
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Ocultar de forma permanente.</p>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="relative z-10 flex-1 pr-8">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-rose-500/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">
+                    Plataforma Central
+                  </span>
+                  <span className="text-slate-400 text-xs font-bold">Modo Dueño del SaaS</span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight">Centro de Control Global</h1>
+                <p className="text-slate-400 max-w-xl text-xs font-medium mt-0.5">
+                  Monitoreo de salud del software, facturación global e infraestructura de servidores.
+                </p>
+              </div>
+              
+              <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center gap-3 w-full md:w-auto pr-6 md:pr-0">
+                {/* Selector Modo de Tiempo Compacto */}
+                <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700 backdrop-blur-md flex items-center gap-2 flex-1 sm:flex-initial">
+                  <div className="text-left px-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Tiempo (DB)</span>
+                    <span className={`text-[10px] font-bold ${timeMode === 'simulated' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                      {timeMode === 'simulated' ? 'Simulado' : 'Tiempo Real'}
+                    </span>
+                  </div>
+                  <div className="flex bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/60 gap-1">
+                    <button 
+                      type="button"
+                      onClick={() => updateSetting('time_mode', 'simulated')}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'simulated' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      Simulado
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => updateSetting('time_mode', 'real')}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'real' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      Real
+                    </button>
+                  </div>
+                </div>
+
+                {/* Botón Facturación Stripe Compacto */}
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab('billing')}
+                  className="bg-white hover:bg-slate-100 text-slate-900 px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <CreditCard size={15} />
+                  Facturación Stripe
+                </button>
+              </div>
             </div>
-            <div className="mt-4">
-              <h3 className="text-3xl font-black text-slate-800">{stat.value}</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">{stat.label}</p>
+          ) : (
+            <div className="flex justify-end mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('talent360_hide_global_banner');
+                  setShowBanner(true);
+                }}
+                className="text-[11px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1.5 transition-colors bg-white hover:bg-indigo-50 border border-slate-200 px-3 py-1 rounded-xl shadow-2xs cursor-pointer"
+              >
+                <Info size={13} />
+                Mostrar panel de información
+              </button>
             </div>
-            <div className="mt-4 text-xs font-bold text-slate-400 bg-slate-50 py-1.5 px-3 rounded-lg inline-block w-max">
-              {stat.trend}
+          )}
+
+      {/* KPIs Financieros y de Crecimiento Compactos en una Sola Fila (1x4) con Marca de Agua Coloreada */}
+      <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-5">
+        {kpis.map((stat, idx) => (
+          <div 
+            key={idx} 
+            className="relative overflow-hidden bg-white p-2.5 sm:p-3.5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between group hover:border-indigo-300 transition-all min-h-[86px] sm:min-h-[92px]"
+          >
+            {/* Icono Grande de Fondo en Marca de Agua con Color Específico */}
+            <stat.icon 
+              size={64} 
+              className={`absolute -right-1 -bottom-1 ${stat.watermarkColor} pointer-events-none group-hover:scale-110 transition-transform duration-300`} 
+            />
+
+            <div className="flex items-center justify-between relative z-10">
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">
+                {stat.label}
+              </span>
+              <ArrowUpRight size={13} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0 hidden sm:block" />
+            </div>
+
+            <div className="relative z-10 my-0.5 sm:my-1">
+              <h3 className="text-base sm:text-xl md:text-2xl font-black text-slate-900 leading-none tracking-tight truncate">
+                {stat.value}
+              </h3>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between">
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100/80 inline-block truncate max-w-full">
+                {stat.trend}
+              </span>
             </div>
           </div>
         ))}
@@ -1164,7 +1338,83 @@ export const SaaSPlatformAdmin = () => {
              </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Vista Móvil (Tarjetas Responsivas) */}
+          <div className="block md:hidden space-y-3">
+             {isLoading ? (
+                <div className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</div>
+             ) : tenantsList.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</div>
+             ) : tenantsList.map((comp, idx) => (
+                <div key={idx} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-xs">
+                   <div className="flex justify-between items-start">
+                      <div>
+                         <h4 className="font-extrabold text-slate-900 text-sm leading-snug">{comp.name}</h4>
+                         <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                         comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
+                         comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
+                         'bg-slate-200 text-slate-700'
+                      }`}>
+                         {comp.plan}
+                      </span>
+                   </div>
+
+                   <div className="flex items-center justify-between text-xs border-t border-b border-slate-200/70 py-2">
+                      <span className="flex items-center gap-1.5">
+                         <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                         <span className={`font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                      </span>
+                      <span className="font-bold text-slate-600">{comp.users} usuarios</span>
+                   </div>
+
+                   <div className="flex items-center justify-between pt-1">
+                      <div className="text-xs">
+                         {(() => {
+                            if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
+                               return <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>;
+                            }
+                            if (comp.trial_ends_at) {
+                               const endsAt = new Date(comp.trial_ends_at);
+                               const diff = endsAt.getTime() - Date.now();
+                               const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                               return diff > 0 ? (
+                                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">⏳ {days}d prueba</span>
+                               ) : (
+                                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">⚠️ Prueba Expirada</span>
+                               );
+                            }
+                            if (comp.subscription_status === 'active') {
+                               return <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">✓ Suscrito</span>;
+                            }
+                            return null;
+                         })()}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                         <button 
+                           onClick={() => handleOpenDetails(comp.id)}
+                           title="Ver Detalles y Accesos"
+                           className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
+                         >
+                           <Eye size={14} />
+                           Detalles
+                         </button>
+                         <button 
+                           onClick={() => handleImpersonate(comp.id)}
+                           title="Iniciar Sesión como Admin"
+                           className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
+                         >
+                           <LogIn size={14} />
+                           Entrar
+                         </button>
+                      </div>
+                   </div>
+                </div>
+             ))}
+          </div>
+
+          {/* Vista Escritorio (Tabla Completa) */}
+          <div className="hidden md:block overflow-x-auto">
              <table className="w-full text-left text-sm">
                 <thead>
                    <tr className="border-b border-slate-100 text-slate-500">
@@ -1368,12 +1618,12 @@ export const SaaSPlatformAdmin = () => {
 
       {/* Estado de Módulos y Add-ons (App Store / Premium) */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
               <Activity className="text-indigo-600" size={20} />
               Adopción de Módulos y Precios
            </h2>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3">
                <button 
                   onClick={handleOpenFreemiumConfig} 
                   className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
@@ -1455,22 +1705,22 @@ export const SaaSPlatformAdmin = () => {
       )}
 
       {activeTab === 'pending_registrations' && (
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-in fade-in duration-300">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-slate-200 shadow-sm animate-in fade-in duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-amber-200/50">
                   Pre-registros Huérfanos
                 </span>
-                <h2 className="text-xl font-black text-slate-800">Registros Inconclusos de Plataforma</h2>
+                <h2 className="text-lg sm:text-xl font-black text-slate-800">Registros Inconclusos de Plataforma</h2>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs sm:text-sm text-slate-500">
                 Usuarios que iniciaron el registro en Talent360 pero no completaron la creación de su empresa. Puedes contactarles para dar seguimiento comercial o eliminar el registro para liberar el correo.
               </p>
             </div>
             <button 
               onClick={fetchPendingRegistrations}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shrink-0 border-none cursor-pointer"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0 border-none cursor-pointer w-full sm:w-auto"
             >
               <RefreshCw size={14} className={isPendingLoading ? 'animate-spin' : ''} />
               Actualizar Lista
@@ -1491,88 +1741,140 @@ export const SaaSPlatformAdmin = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
-                    <th className="p-4 rounded-l-xl">Solicitante</th>
-                    <th className="p-4">Correo Electrónico</th>
-                    <th className="p-4">Proveedor Auth</th>
-                    <th className="p-4">Registro</th>
-                    <th className="p-4 text-right rounded-r-xl">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {pendingRegistrations.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-4 font-black text-slate-800 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200">
+            <>
+              {/* Vista Móvil para Registros Inconclusos */}
+              <div className="block md:hidden space-y-3">
+                {pendingRegistrations.map((u) => (
+                  <div key={u.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-black text-slate-700 text-xs border border-slate-300">
                           {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div>
-                          <p className="font-extrabold text-slate-900">{u.name || 'Sin Nombre'}</p>
+                          <p className="font-extrabold text-slate-900 text-xs">{u.name || 'Sin Nombre'}</p>
                           <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
                         </div>
-                      </td>
-                      <td className="p-4 font-bold text-indigo-600">
-                        {u.email}
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}>
-                          {u.provider}
-                        </span>
-                      </td>
-                      <td className="p-4 text-slate-500 font-medium">
-                        {u.created_at_human}
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(u.email);
-                              alert(`Correo ${u.email} copiado al portapapeles.`);
-                            }}
-                            className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
-                            title="Copiar Correo"
-                          >
-                            <MessageSquare size={14} /> Contactar
-                          </button>
-                          <button
-                            onClick={() => handleDeletePendingRegistration(u.id, u.email)}
-                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
-                            title="Eliminar Registro Inconcluso"
-                          >
-                            <Trash2 size={14} /> Eliminar
-                          </button>
-                        </div>
-                      </td>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                        u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {u.provider}
+                      </span>
+                    </div>
+
+                    <div className="text-xs font-bold text-indigo-600 truncate border-t border-b border-slate-200/70 py-2">
+                      {u.email}
+                      <span className="block text-[10px] text-slate-400 font-normal mt-0.5">{u.created_at_human}</span>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(u.email);
+                          alert(`Correo ${u.email} copiado al portapapeles.`);
+                        }}
+                        className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                        title="Copiar Correo"
+                      >
+                        <MessageSquare size={14} /> Contactar
+                      </button>
+                      <button
+                        onClick={() => handleDeletePendingRegistration(u.id, u.email)}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                        title="Eliminar Registro Inconcluso"
+                      >
+                        <Trash2 size={14} /> Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Vista Escritorio para Registros Inconclusos */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
+                      <th className="p-4 rounded-l-xl">Solicitante</th>
+                      <th className="p-4">Correo Electrónico</th>
+                      <th className="p-4">Proveedor Auth</th>
+                      <th className="p-4">Registro</th>
+                      <th className="p-4 text-right rounded-r-xl">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingRegistrations.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-4 font-black text-slate-800 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200">
+                            {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-slate-900">{u.name || 'Sin Nombre'}</p>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 font-bold text-indigo-600">
+                          {u.email}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}>
+                            {u.provider}
+                          </span>
+                        </td>
+                        <td className="p-4 text-slate-500 font-medium">
+                          {u.created_at_human}
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(u.email);
+                                alert(`Correo ${u.email} copiado al portapapeles.`);
+                              }}
+                              className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                              title="Copiar Correo"
+                            >
+                              <MessageSquare size={14} /> Contactar
+                            </button>
+                            <button
+                              onClick={() => handleDeletePendingRegistration(u.id, u.email)}
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                              title="Eliminar Registro Inconcluso"
+                            >
+                              <Trash2 size={14} /> Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {activeTab === 'tickets' && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shrink-0">
                    <LifeBuoy className="text-white" size={20} />
                 </div>
                 <div>
-                   <h2 className="text-lg font-black text-slate-800 leading-tight">Consola de Soporte y Call Center</h2>
+                   <h2 className="text-base sm:text-lg font-black text-slate-800 leading-tight">Consola de Soporte y Call Center</h2>
                    <p className="text-xs text-slate-500 font-medium">Monitoreo de incidencias y atención a inquilinos en tiempo real</p>
                 </div>
              </div>
              <button 
                 type="button"
                 onClick={() => setIsNewTicketModalOpen(true)} 
-                className="bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition-colors flex items-center gap-1.5 text-xs"
+                className="bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition-colors flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
              >
                 <Plus size={14} />
                 Registrar Ticket
@@ -1937,12 +2239,58 @@ export const SaaSPlatformAdmin = () => {
               </div>
             </div>
 
-            {/* Sección 3: Funciones Especiales */}
+            {/* Sección 3: Eventos y Funciones del Reloj Checador (Dialer) */}
             <div>
               <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
-                <span>⚡</span> Funciones Especiales Desbloqueadas en Gratis
+                <span>🕒</span> Eventos y Funciones del Reloj Checador (Dialer)
               </h4>
-              <p className="text-[11px] text-slate-500 font-semibold mb-4">Activa funcionalidades específicas que se considerarán libres de costo en la versión gratuita:</p>
+              <p className="text-[11px] text-slate-500 font-semibold mb-4">Selecciona qué características y eventos del Dialer estarán desbloqueados en la versión gratuita:</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
+                  const isChecked = tag.isMandatory || freemiumFeatures.includes(tag.key);
+                  return (
+                    <label 
+                      key={tag.key}
+                      className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all select-none ${
+                        tag.isMandatory
+                          ? 'border-emerald-300 bg-emerald-50/40 cursor-not-allowed'
+                          : isChecked
+                          ? 'border-indigo-500 bg-indigo-50/30 cursor-pointer'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 cursor-pointer'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={tag.isMandatory}
+                        onChange={() => !tag.isMandatory && toggleFreemiumFeature(tag.key)}
+                        className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-800 block">{tag.name}</span>
+                          {tag.isMandatory ? (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">Core</span>
+                          ) : (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded uppercase">{tag.defaultTier}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-medium block mt-0.5">{tag.description}</span>
+                        <code className="text-[9px] text-slate-400 font-mono mt-1 inline-block">Key: {tag.key}</code>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sección 4: Funciones Especiales Globales */}
+            <div>
+              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-3 pb-1 border-b border-slate-100 flex items-center gap-1.5">
+                <span>⚡</span> Funciones Especiales Globales
+              </h4>
+              <p className="text-[11px] text-slate-500 font-semibold mb-4">Activa funcionalidades globales que se considerarán libres de costo en la versión gratuita:</p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
@@ -1952,10 +2300,7 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'gps_validation', label: 'Validación GPS de Checadas', desc: 'Restricción de ubicación geográfica al checar' },
                   { id: 'face_validation', label: 'Selfie Checador', desc: 'Checar obligatoriamente con selfie' },
                   { id: 'system_backups', label: 'Respaldos JSON', desc: 'Exportación de la BD de empresa' },
-                  { id: 'custom_logo', label: 'Logotipo Personalizado', desc: 'Establecer logotipo propio del workspace' },
-                  { id: 'meal_reservation', label: 'Reserva de Comida', desc: 'Agenda de comedor con cupo controlado' },
-                  { id: 'roll_call', label: 'Pase de Lista Masivo', desc: 'Asistencia masiva controlada por supervisor' },
-                  { id: 'key_delegation', label: 'Entrega de Llaves', desc: 'Delegar el rol de apertura/cierre de sucursal' }
+                  { id: 'custom_logo', label: 'Logotipo Personalizado', desc: 'Establecer logotipo propio del workspace' }
                 ].map(feat => (
                   <label 
                     key={feat.id}
@@ -2175,8 +2520,8 @@ export const SaaSPlatformAdmin = () => {
           onClick={() => setIsDetailOpen(false)}
         />
         
-        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-          <div className="pointer-events-auto w-screen max-w-lg transform bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
+        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
+          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
             {/* Header del Slide-over */}
             <div className="bg-slate-900 px-6 py-6 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -2427,6 +2772,118 @@ export const SaaSPlatformAdmin = () => {
                         </div>
                       </div>
 
+                      {/* Módulos y Funciones Habilitadas (Tenant Overrides) */}
+                      <div className="border border-indigo-200 bg-indigo-50/20 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                            <span>🎛️</span> Módulos y Funciones Habilitadas
+                          </h3>
+                          <span className="text-[9px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded uppercase">
+                            Empresa #{tenantDetail?.tenant?.id}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Personaliza los módulos y las funciones contratadas o permitidas específicamente para esta empresa:
+                        </p>
+
+                        {/* Módulos Principales */}
+                        <div className="space-y-2">
+                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">📦 Módulos de Sistema</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { id: 'rrhh', label: 'Recursos Humanos' },
+                              { id: 'reloj', label: 'Reloj Checador' },
+                              { id: 'operativo', label: 'Rutinas y Tareas' },
+                              { id: 'ats', label: 'Reclutamiento ATS' },
+                              { id: 'reportes', label: 'Reportes y Analítica' },
+                              { id: 'portal', label: 'Portal Web' },
+                              { id: 'academia', label: 'Academia 360' },
+                              { id: 'documentos', label: 'Gestor Documental' }
+                            ].map(mod => (
+                              <label key={mod.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
+                                <input 
+                                  type="checkbox"
+                                  checked={tenantAllowedModules.includes(mod.id)}
+                                  onChange={() => toggleTenantModule(mod.id)}
+                                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="truncate">{mod.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Eventos del Reloj Checador (Dialer) */}
+                        <div className="space-y-2 pt-2 border-t border-indigo-100">
+                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">🕒 Funciones del Dialer (Reloj)</h4>
+                          <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+                            {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
+                              const isChecked = tag.isMandatory || tenantAllowedFeatures.includes(tag.key);
+                              return (
+                                <label key={tag.key} className={`flex items-start gap-2 p-2 bg-white border rounded-xl text-xs select-none ${tag.isMandatory ? 'border-emerald-200 bg-emerald-50/30' : isChecked ? 'border-indigo-400 bg-indigo-50/40 cursor-pointer' : 'border-slate-200 hover:bg-slate-50 cursor-pointer'}`}>
+                                  <input 
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={tag.isMandatory}
+                                    onChange={() => !tag.isMandatory && toggleTenantFeature(tag.key)}
+                                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-slate-800 truncate">{tag.name}</span>
+                                      <span className="text-[8px] font-black px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded uppercase">{tag.defaultTier}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-normal leading-tight line-clamp-1">{tag.description}</p>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Funciones Especiales Globales */}
+                        <div className="space-y-2 pt-2 border-t border-indigo-100">
+                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">⚡ Funciones Especiales</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { id: 'voice_assistant', label: 'Asistente Voz AI' },
+                              { id: 'routines_management', label: 'Gestión Rutinas' },
+                              { id: 'supervisor_validation', label: 'Aprobación Tareas' },
+                              { id: 'gps_validation', label: 'Validación GPS' },
+                              { id: 'face_validation', label: 'Selfie Checador' },
+                              { id: 'system_backups', label: 'Respaldos JSON' },
+                              { id: 'custom_logo', label: 'Logo Propio' }
+                            ].map(feat => (
+                              <label key={feat.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
+                                <input 
+                                  type="checkbox"
+                                  checked={tenantAllowedFeatures.includes(feat.id)}
+                                  onChange={() => toggleTenantFeature(feat.id)}
+                                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="truncate">{feat.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Botón de Guardado para la Empresa */}
+                        <button 
+                          onClick={handleSaveTenantFeatures}
+                          disabled={isSavingTenantFeatures}
+                          className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer border-none"
+                        >
+                          {isSavingTenantFeatures ? (
+                            <>
+                              <Loader2 className="animate-spin" size={14} />
+                              Guardando...
+                            </>
+                          ) : (
+                            'Guardar Permisos de Empresa'
+                          )}
+                        </button>
+                      </div>
+
                       {/* Accesos Administrativos */}
                       <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center justify-between">
@@ -2659,8 +3116,8 @@ export const SaaSPlatformAdmin = () => {
     {isTicketDetailOpen && (
       <div className="fixed inset-0 z-50 overflow-hidden">
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsTicketDetailOpen(false)} />
-        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-          <div className="pointer-events-auto w-screen max-w-lg transform bg-white shadow-2xl transition-all duration-350 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
+        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
+          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-350 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
             {/* Header del Drawer */}
             <div className="bg-slate-950 px-6 py-6 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -2935,13 +3392,13 @@ export const SaaSPlatformAdmin = () => {
 
       {activeTab === 'security_logs' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="bg-slate-900 p-8 rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+          <div className="bg-slate-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-5">
                <ShieldCheck size={200} />
             </div>
             <div className="text-left relative z-10">
               <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full">Ciberseguridad SaaS</span>
-              <h1 className="text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Seguridad y Auditoría</span></h1>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Seguridad y Auditoría</span></h1>
               <p className="text-slate-400 text-xs font-semibold mt-1">Historial de accesos, intentos de autenticación, timbrados SAT CFDI 4.0 y eventos del sistema.</p>
             </div>
             
@@ -2949,7 +3406,7 @@ export const SaaSPlatformAdmin = () => {
               type="button"
               onClick={fetchSecurityLogs}
               disabled={isLogsLoading}
-              className="bg-white hover:bg-slate-50 text-slate-900 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer"
+              className="bg-white hover:bg-slate-50 text-slate-900 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer w-full sm:w-auto"
             >
               {isLogsLoading ? 'Recargando...' : '🔄 Actualizar Bitácora'}
             </button>

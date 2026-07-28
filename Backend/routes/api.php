@@ -103,6 +103,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/platform/stats', [PlatformAdminController::class, 'getStats']);
         Route::get('/platform/tenants', [PlatformAdminController::class, 'getTenants']);
         Route::get('/platform/tenants/{id}', [PlatformAdminController::class, 'getTenantDetails']);
+        Route::post('/platform/tenants/{id}/features', [PlatformAdminController::class, 'updateTenantFeatures']);
         Route::post('/platform/tenants/{id}/toggle-status', [PlatformAdminController::class, 'toggleTenantStatus']);
         Route::post('/platform/tenants/{id}/reset-password', [PlatformAdminController::class, 'resetPassword']);
         Route::post('/platform/tenants/{id}/impersonate', [PlatformAdminController::class, 'impersonateTenant']);
@@ -136,7 +137,26 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Registros Inconclusos / Pre-registros
         Route::get('/platform/pending-registrations', [PlatformAdminController::class, 'getPendingRegistrations']);
         Route::delete('/platform/pending-registrations/{id}', [PlatformAdminController::class, 'deletePendingRegistration']);
+
+        // Social Grace & Seasonal Promotions Admin
+        Route::get('/platform/social-grace-config', [PlatformAdminController::class, 'getSocialGraceConfig']);
+        Route::post('/platform/social-grace-config', [PlatformAdminController::class, 'saveSocialGraceConfig']);
+        Route::get('/platform/promotions', [PlatformAdminController::class, 'getPromotions']);
+        Route::post('/platform/promotions', [PlatformAdminController::class, 'savePromotion']);
+        Route::delete('/platform/promotions/{id}', [PlatformAdminController::class, 'deletePromotion']);
+        Route::get('/platform/social-claims', [PlatformAdminController::class, 'getSocialClaims']);
+        Route::post('/platform/social-claims/{id}/approve', [PlatformAdminController::class, 'approveSocialClaim']);
+        Route::post('/platform/social-claims/{id}/reject', [PlatformAdminController::class, 'rejectSocialClaim']);
     });
+
+    // Store & Add-ons (Client / Tenant)
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/store/addons', [\App\Http\Controllers\StoreAddonController::class, 'index']);
+        Route::get('/store/promotions/active', [\App\Http\Controllers\StoreAddonController::class, 'activePromotion']);
+        Route::post('/store/addons/claim-social-grace', [\App\Http\Controllers\StoreAddonController::class, 'claimSocialGrace']);
+        Route::post('/store/addons/subscribe', [\App\Http\Controllers\StoreAddonController::class, 'subscribe']);
+    });
+
 
     // DB Initialization (QA Simulator helper)
     // ⚠️ Solo platform_admin: initDb hace TRUNCATE de employees/job_roles/permissions
@@ -253,8 +273,19 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/lft-holidays', [LftSettingController::class, 'saveHoliday']);
         Route::delete('/admin/lft-holidays/{id}', [LftSettingController::class, 'deleteHoliday']);
 
+        // §65: administración de la matriz de capacidades por puesto — INDELEGABLE,
+        // solo admin (otorgar permisos es la llave que se queda con el dueño).
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'getMatrix']);
+            Route::put('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'updateMatrix']);
+        });
+
         // Nómina y Reportes Avanzados
-        Route::middleware('tenant.module:reportes')->group(function () {
+        // §65 (1er bloque sensible migrado a permisos delegables): calcular/cerrar nómina
+        // exige la capacidad `manage_payroll`. El admin pasa por bypass; un supervisor ya
+        // NO accede por defecto (set conservador) hasta que el admin se lo otorgue en la
+        // matriz — es el endurecimiento que pidió Francisco (raíz del §64).
+        Route::middleware(['tenant.module:reportes', 'permission:manage_payroll'])->group(function () {
             Route::get('/admin/payroll', [PayrollController::class, 'getPayrollData']);
             Route::get('/admin/reports/export', [PayrollController::class, 'exportReport']);
             Route::post('/admin/payroll/approve', [PayrollController::class, 'approvePayroll']);

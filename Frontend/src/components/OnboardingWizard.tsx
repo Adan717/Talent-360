@@ -422,6 +422,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         selected_tareas: filteredTareas
       });
       
+      // Persistir la bandera de onboarding completado para que el wizard no se vuelva a mostrar en login
+      try {
+        await updateSetting('onboarding_completed', true);
+      } catch (err) {
+        console.error("Error setting onboarding completed in step 1:", err);
+      }
+
       // Refrescar el estado para traer los puestos recién inyectados en Postgres
       await fetchState();
       
@@ -945,7 +952,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <>Cargar Estructura Seleccionada <ChevronRight size={18} /></>}
                 </button>
                 <button 
-                  onClick={() => setStep(2)}
+                  onClick={async () => {
+                    try { await updateSetting('onboarding_completed', true); } catch (e) {}
+                    setStep(2);
+                  }}
                   disabled={loading}
                   className="py-3.5 px-5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 active:scale-98"
                 >

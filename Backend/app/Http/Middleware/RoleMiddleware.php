@@ -24,6 +24,12 @@ class RoleMiddleware
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        if ($user instanceof \App\Models\PlatformUser) {
+            if (in_array('platform_admin', $roles) || in_array($user->role, $roles) || $user->role === 'platform_admin') {
+                return $next($request);
+            }
+        }
+
         if (!in_array($user->role, $roles)) {
             return response()->json(['message' => 'Acceso denegado. Permisos insuficientes.'], 403);
         }

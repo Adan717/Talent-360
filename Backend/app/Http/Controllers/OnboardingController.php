@@ -732,6 +732,11 @@ class OnboardingController extends Controller
                 ['value' => json_encode(['nicho' => $nicho, 'subNicho' => $subNicho]), 'updated_at' => now()]
             );
 
+            \DB::table('system_settings')->updateOrInsert(
+                ['key' => 'onboarding_completed', 'tenant_id' => $tenantId],
+                ['value' => json_encode(true), 'updated_at' => now()]
+            );
+
             \DB::commit();
 
             return response()->json([

@@ -80,8 +80,12 @@ class TimeEntryRecordedEventTest extends TestCase
         $user = $this->makeUser();
         $secret = $this->actingAs($user)->getJson('/api/v1/clock/offline-secret')->json('secret');
 
-        $time = '08:05:00';
-        $timestamp = '2026-07-21T08:05:00-06:00';
+        // ENMIENDA resync 2026-07-28: fechas RELATIVAS — el timestamp fijo original
+        // (2026-07-21) cayó fuera de la ventana MAX_AGE_DAYS del batch y el ponche se
+        // rechazaba por "demasiado antiguo" (mismo mal que ClockPunchBatchTest, 0dd7e24).
+        $momento = now()->subHours(2);
+        $time = $momento->format('H:i:s');
+        $timestamp = $momento->toIso8601String();
         $stamp = hash_hmac('sha256', "{$user->id}|check_in|{$time}|{$timestamp}", $secret);
 
         $this->actingAs($user)->postJson('/api/v1/clock/punch-batch', [

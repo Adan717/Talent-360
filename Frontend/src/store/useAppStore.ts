@@ -757,7 +757,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   isModuleUnlocked: (moduleId: string) => {
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedModules } = get();
-    if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'matrix') return true;
+    if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'matrix' || moduleId === 'organizacion') return true;
     if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') return true;
     if (currentTier === 'enterprise' || currentUser?.tenant_id === 1) return true;
     
@@ -774,18 +774,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     if (trialActive) return true;
     
-    if (!isSandboxMode) {
+    if (!isSandboxMode && allowedModules && allowedModules.length > 0) {
       return allowedModules.includes(moduleId);
     }
     
+    const activeMods = systemSettings?.active_modules || [];
+
     if (currentTier === 'freemium') {
-      const allowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo'];
-      return allowed.includes(moduleId);
+      const allowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo', 'lft', 'organizacion'];
+      return allowed.includes(moduleId) || activeMods.includes(moduleId);
     }
     
     if (currentTier === 'pro') {
-      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal'];
-      return activeMods.includes(moduleId);
+      const basePro = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'lft', 'organizacion'];
+      return basePro.includes(moduleId) || activeMods.includes(moduleId);
     }
     
     return false;

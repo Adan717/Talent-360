@@ -66,8 +66,8 @@ class SubscriptionController extends Controller
             $request->validate([
                 'subdomain' => [
                     'required', 'string', 'alpha_dash', 'max:50',
-                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
-                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->withoutTrashed(),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')->withoutTrashed()
                 ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
@@ -98,8 +98,8 @@ class SubscriptionController extends Controller
             $request->validate([
                 'subdomain' => [
                     'required', 'string', 'alpha_dash', 'max:50',
-                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
-                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->withoutTrashed(),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')->withoutTrashed()
                 ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
@@ -130,18 +130,18 @@ class SubscriptionController extends Controller
         $price = 0;
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         if (strtolower($payload['plan']) === 'pro') {
-            $employees = isset($payload['employees']) ? intval($payload['employees']) : 10;
-            $basePrice = $employees * 12;
+            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
             if ($billingCycle === 'yearly') {
-                $price = (float) round($basePrice * 12 * 0.8); // 20% discount billed annually
+                $price = (float) round($employees * 24 * 12); // $24/emp/mo billed annually
             } else {
-                $price = (float) $basePrice;
+                $price = (float) ($employees * 29); // $29/emp/mo
             }
         } elseif (strtolower($payload['plan']) === 'enterprise') {
+            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
             if ($billingCycle === 'yearly') {
-                $price = (float) round(499 * 12 * 0.8); // 20% discount billed annually
+                $price = (float) round($employees * 55 * 12); // $55/emp/mo billed annually
             } else {
-                $price = (float) 499;
+                $price = (float) ($employees * 69); // $69/emp/mo
             }
         }
 
@@ -210,7 +210,7 @@ class SubscriptionController extends Controller
         }
 
         // Fallback to simulated checkout URL
-        $simulatedUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
+        $simulatedUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -231,24 +231,24 @@ class SubscriptionController extends Controller
         $plan = $payload['plan'] ?? 'pro';
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         $price = 0;
-        if ($plan === 'pro') {
-            $employees = isset($payload['employees']) ? intval($payload['employees']) : 10;
-            $basePrice = $employees * 12;
+        if (strtolower($plan) === 'pro') {
+            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
             if ($billingCycle === 'yearly') {
-                $price = (float) round($basePrice * 12 * 0.8);
+                $price = (float) round($employees * 24 * 12);
             } else {
-                $price = (float) $basePrice;
+                $price = (float) ($employees * 29);
             }
-        } elseif ($plan === 'enterprise') {
+        } elseif (strtolower($plan) === 'enterprise') {
+            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
             if ($billingCycle === 'yearly') {
-                $price = (float) round(499 * 12 * 0.8);
+                $price = (float) round($employees * 55 * 12);
             } else {
-                $price = (float) 499;
+                $price = (float) ($employees * 69);
             }
         }
         $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
-        $confirmUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;
+        $confirmUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;
 
         // Fetch platform bank config
         $bankConfigRow = \DB::table('system_settings')
@@ -364,7 +364,7 @@ class SubscriptionController extends Controller
                     </div>
 
                     <div>
-                        <a href='" . env('FRONTEND_URL', 'http://localhost:5173') . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm text-center'>
+                        <a href='" . $this->getFrontendUrl($request) . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm text-center'>
                             Cancelar pago y volver
                         </a>
                     </div>
@@ -423,9 +423,6 @@ class SubscriptionController extends Controller
             </body>
             </html>
             ";
-        $origin = $request->header('Origin') ?: $request->header('Referer');
-        $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
-        $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
 
         return response($html, 200, ['Content-Type' => 'text/html']);
     }
@@ -449,9 +446,7 @@ class SubscriptionController extends Controller
             // Mark registration as processed
             $reg->delete();
 
-            $origin = $request->header('Origin') ?: $request->header('Referer');
-            $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
-            $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
+            $frontendUrl = $this->getFrontendUrl($request);
             if ($isUpgrade) {
                 return redirect("$frontendUrl/app?payment=success&action=upgrade");
             }
@@ -607,18 +602,46 @@ class SubscriptionController extends Controller
                 }
             }
 
-            Auth::login($admin);
+            if (method_exists(\Auth::guard(), 'login')) {
+                \Auth::login($admin);
+            }
 
             // 3. Inject Clean Base Structure (Roles & Policies) for the new Tenant
             $seeder = new TenantSeeder();
             $seeder->run();
 
-            Auth::logout();
+            if (method_exists(\Auth::guard(), 'logout')) {
+                \Auth::logout();
+            }
 
             return [
                 'tenant' => $tenant,
                 'admin' => $admin
             ];
         });
+    }
+
+    private function getBaseUrl(Request $request): string
+    {
+        $host = $request->header('X-Forwarded-Host') ?: ($request->header('Host') ?: $request->getHttpHost());
+        $scheme = $request->header('X-Forwarded-Proto') ?: $request->getScheme();
+        return rtrim("$scheme://$host", '/');
+    }
+
+    private function getFrontendUrl(Request $request): string
+    {
+        if (env('FRONTEND_URL')) {
+            return env('FRONTEND_URL');
+        }
+        $origin = $request->header('Origin') ?: $request->header('Referer');
+        if ($origin) {
+            $scheme = parse_url($origin, PHP_URL_SCHEME);
+            $host = parse_url($origin, PHP_URL_HOST);
+            $port = parse_url($origin, PHP_URL_PORT);
+            if ($scheme && $host) {
+                return rtrim($scheme . '://' . $host . ($port ? ':' . $port : ''), '/');
+            }
+        }
+        return $this->getBaseUrl($request);
     }
 }

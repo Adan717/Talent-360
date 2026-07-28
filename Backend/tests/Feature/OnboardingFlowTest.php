@@ -101,7 +101,7 @@ class OnboardingFlowTest extends TestCase
         $checkoutResponse = $this->get($initPoint);
         $checkoutResponse->assertStatus(200);
         $checkoutResponse->assertSee('DashComputer');
-        $checkoutResponse->assertSee('$216');
+        $checkoutResponse->assertSee('$522');
 
         // 3. Confirm simulated payment
         $prefId = explode('pref_id=', $initPoint)[1];

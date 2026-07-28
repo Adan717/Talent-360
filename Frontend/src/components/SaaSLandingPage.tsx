@@ -382,11 +382,13 @@ export const SaaSLandingPage = () => {
     }
   };
 
-  // Professional pricing calculations
-  const pricePerUser = 12; // $12 MXN per user
+  // Professional and Enterprise pricing calculations
+  const pricePerUser = 29; // $29 MXN per user/month ($24 in yearly)
   const monthlyProPrice = proEmployeesCount * pricePerUser;
-  const yearlyProPrice = Math.round((proEmployeesCount * pricePerUser * 12) * 0.8); // 20% discount
-  const fixedEnterprisePrice = 499;
+  const yearlyProPrice = Math.round(proEmployeesCount * 24 * 12); // $24/user/mo billed annually
+  const enterprisePricePerUser = 69; // $69 MXN per user/month ($55 in yearly)
+  const monthlyEnterprisePrice = proEmployeesCount * enterprisePricePerUser;
+  const yearlyEnterprisePrice = Math.round(proEmployeesCount * 55 * 12); // $55/user/mo billed annually
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
@@ -1183,7 +1185,7 @@ export const SaaSLandingPage = () => {
             {/* FREE PLAN CARD */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
               <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Gratuito</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Para pequeños negocios que inician la digitalización de su checador.</p>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Para micro-empresas y startups que buscan automatizar la asistencia y expediente sin costo.</p>
               <div className="mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 flex flex-col justify-center min-h-[106px]">
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-black text-slate-900">$0</span>
@@ -1192,11 +1194,12 @@ export const SaaSLandingPage = () => {
                 </div>
                 <span className="text-[10px] text-slate-400 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
               </div>
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Hasta 5 Colaboradores Activos</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Reloj Checador Básico</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Directorio de Puestos y Estructura</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-emerald-500 shrink-0" size={20}/> Onboarding Inicial Limpio</li>
+              <ul className="space-y-3.5 mb-8 flex-1">
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Hasta 10 Colaboradores Activos</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Reloj Checador Básico (PIN, Web y Móvil)</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Directorio Digital de Empleados y Puestos</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Control de Entradas y Salidas en Tiempo Real</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Opción de Desbloqueo PRO por Difusión Social</li>
               </ul>
               <button 
                 onClick={() => handleBuy('Freemium')} 
@@ -1212,7 +1215,7 @@ export const SaaSLandingPage = () => {
                 <Sparkles size={12} /> Plan Recomendado
               </div>
               <h4 className="text-2xl font-black text-slate-900 mb-1">Plan Profesional</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Escala a medida que tu equipo crece en base de datos optimizada.</p>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Supervisión operativa completa, geolocalización y control de equipos en tiempo real.</p>
               
               {/* Dynamic Price Display */}
               <div className="mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 transition-all duration-300">
@@ -1239,7 +1242,7 @@ export const SaaSLandingPage = () => {
               </div>
 
               {/* Slider Controller */}
-              <div className="mb-8">
+              <div className="mb-6">
                 <div className="flex justify-between text-xs font-bold text-slate-650 mb-2">
                   <span>Colaboradores:</span>
                   <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md font-black">{proEmployeesCount} activos</span>
@@ -1260,10 +1263,12 @@ export const SaaSLandingPage = () => {
                 </div>
               </div>
 
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Colaboradores Escalables (6 a 50)</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Módulos Incluidos (ATS, LMS, Reportes)</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-blue-500 shrink-0" size={20}/> Reloj Checador Pro</li>
+              <ul className="space-y-3.5 mb-8 flex-1">
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Todo lo del Plan Gratuito +</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Reloj Checador Avanzado (GPS / Geocercas + Foto)</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Centro de Mando Operativo en Vivo (Monitor Live)</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Tareas por Día & Checklists Operativos</li>
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-blue-500 shrink-0" size={18}/> Reportes & Exportaciones Avanzadas (Excel / PDF)</li>
               </ul>
               <button 
                 onClick={() => handleBuy('PRO')} 
@@ -1276,7 +1281,7 @@ export const SaaSLandingPage = () => {
             {/* ENTERPRISE PLAN CARD */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-8 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all text-left">
               <h4 className="text-2xl font-black text-slate-900 mb-2">Plan Enterprise</h4>
-              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Infraestructura dedicada y aislada para corporativos con volumen.</p>
+              <p className="text-slate-500 text-sm mb-6 min-h-[40px]">Suite HR & Legal integral para corporativos con cálculo de nómina y desarrollo de personal.</p>
               
               {/* Dynamic Price Display */}
               <div className="mb-8 bg-slate-50 p-5 rounded-2xl border border-slate-200/50 transition-all duration-300">
@@ -1286,7 +1291,7 @@ export const SaaSLandingPage = () => {
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-black text-slate-900 transition-all">
-                      ${(billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 0.8) : fixedEnterprisePrice).toLocaleString()}
+                      ${(billingCycle === 'yearly' ? Math.round(monthlyEnterprisePrice * 0.8) : monthlyEnterprisePrice).toLocaleString()}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
@@ -1297,16 +1302,21 @@ export const SaaSLandingPage = () => {
                     {billingCycle === 'yearly' ? 'Facturado anualmente:' : 'Ahorra 20% en Plan Anual:'}
                   </span>
                   <span className="text-slate-700 font-bold whitespace-nowrap">
-                    ${(billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 12 * 0.8) : Math.round(fixedEnterprisePrice * 12 * 0.8)).toLocaleString()} MXN/año
+                    ${yearlyEnterprisePrice.toLocaleString()} MXN/año
                   </span>
                 </div>
               </div>
 
-              <ul className="space-y-4 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Colaboradores Ilimitados</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Base de datos Dedicada y Aislada</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Subdominio Corporativo Propio</li>
-                <li className="flex items-start gap-3 text-slate-600 text-sm font-medium"><CheckCircle2 className="text-purple-500 shrink-0" size={20}/> Soporte Técnico 24/7 Dedicado</li>
+              <ul className="space-y-3 mb-8 flex-1">
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Todo lo del Plan PRO +</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Pre-Nómina Inteligente & Cálculo de Incidencias</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Bolsa de Trabajo ATS & Flyers de Reclutamiento</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Talent360 Academy (Capacitación LMS & Cursos)</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Archivo Digital 360 & Módulo Ley Federal del Trabajo (LFT)</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Colaboradores Ilimitados</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Base de datos Dedicada y Aislada</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Subdominio Corporativo Propio</li>
+                <li className="flex items-start gap-2.5 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-purple-500 shrink-0" size={16}/> Soporte Técnico 24/7 Dedicado</li>
               </ul>
               <button 
                 onClick={() => handleBuy('Enterprise')} 
@@ -1579,7 +1589,7 @@ export const SaaSLandingPage = () => {
                         ${selectedPlan === 'PRO' 
                           ? (billingCycle === 'yearly' ? yearlyProPrice.toLocaleString() : monthlyProPrice.toLocaleString()) 
                           : selectedPlan === 'Enterprise' 
-                            ? (billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 12 * 0.8).toLocaleString() : fixedEnterprisePrice.toLocaleString()) 
+                            ? (billingCycle === 'yearly' ? yearlyEnterprisePrice.toLocaleString() : monthlyEnterprisePrice.toLocaleString()) 
                             : '0'}
                       </span>
                       <span className="block text-[9px] text-blue-500 font-bold uppercase">

@@ -11,12 +11,35 @@ use Illuminate\Support\Facades\Hash;
 
 class PlatformAdminController extends Controller
 {
+    private function checkPlatformAdminAccess(): bool
+    {
+        $user = auth()->user() ?? auth('sanctum')->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user instanceof \App\Models\PlatformUser) {
+            return true;
+        }
+
+        $role = $user->role ?? $user->system_role ?? '';
+        if ($role === UserRole::PLATFORM_ADMIN->value || $role === 'platform_admin') {
+            return true;
+        }
+
+        if (in_array($role, ['support_agent', 'admin']) && ((int)($user->tenant_id ?? 0) === 1 || $user->tenant_id === null)) {
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Get global SaaS metrics
      */
     public function getStats()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -33,9 +56,10 @@ class PlatformAdminController extends Controller
         foreach ($tenants as $tenant) {
             if (!$tenant->is_active) continue;
             
-            if ($tenant->plan === 'pro') {
+            $plan = strtolower($tenant->plan ?? 'freemium');
+            if ($plan === 'pro') {
                 $mrr += 199;
-            } elseif ($tenant->plan === 'enterprise') {
+            } elseif ($plan === 'enterprise') {
                 $mrr += 499;
             }
         }
@@ -53,29 +77,32 @@ class PlatformAdminController extends Controller
      */
     public function getTenants(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
-        $query = Tenant::withCount('users');
+        $query = Tenant::withCount(['users' => function($q) {
+            $q->withoutGlobalScope(\App\Scopes\TenantScope::class);
+        }]);
 
         // Filter by search (name or subdomain)
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('subdomain', 'ilike', "%{$search}%");
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $likeOp = \DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function($q) use ($search, $likeOp) {
+                $q->where('name', $likeOp, "%{$search}%")
+                  ->orWhere('subdomain', $likeOp, "%{$search}%");
             });
         }
 
         // Filter by plan
-        if ($request->has('plan') && $request->plan !== 'all' && !empty($request->plan)) {
-            $query->where('plan', strtolower($request->plan));
+        if ($request->filled('plan') && strtolower($request->plan) !== 'all') {
+            $query->whereRaw('LOWER(plan) = ?', [strtolower($request->plan)]);
         }
 
         // Filter by status
-        if ($request->has('status') && $request->status !== 'all' && !empty($request->status)) {
-            $isActive = $request->status === 'active';
+        if ($request->filled('status') && strtolower($request->status) !== 'all') {
+            $isActive = strtolower($request->status) === 'active';
             $query->where('is_active', $isActive);
         }
 
@@ -83,10 +110,11 @@ class PlatformAdminController extends Controller
             return [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
+                'subdomain' => $tenant->subdomain,
                 'plan' => ucfirst($tenant->plan ?? 'freemium'),
                 'users' => $tenant->users_count,
                 'status' => $tenant->is_active ? 'Activo' : 'Inactivo',
-                'date' => $tenant->created_at->diffForHumans(),
+                'date' => $tenant->created_at ? $tenant->created_at->diffForHumans() : 'Reciente',
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
                 'trial_ends_at' => $tenant->trial_ends_at
             ];
@@ -127,6 +155,48 @@ class PlatformAdminController extends Controller
             ->where('tenant_id', $tenant->id)
             ->count();
 
+        $tenantModulesConfig = \DB::table('system_settings')
+            ->where('tenant_id', $tenant->id)
+            ->where('key', 'tenant_allowed_modules')
+            ->first();
+
+        $tenantFeaturesConfig = \DB::table('system_settings')
+            ->where('tenant_id', $tenant->id)
+            ->where('key', 'tenant_allowed_features')
+            ->first();
+
+        $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos'];
+        $allFeatures = [
+            'basic_punch', 'offline_contingency', 'emergency_open', 'store_closed_report', 
+            'store_opening', 'keys_control', 'meal_reservation', 'meal_timers', 
+            'enable_ley_silla', 'roll_call', 'checklists_validation', 'lates_academy_block', 
+            'door_amnesty', 'voice_assistant', 'routines_management', 'supervisor_validation', 
+            'gps_validation', 'face_validation', 'system_backups', 'custom_logo'
+        ];
+
+        $plan = strtolower($tenant->plan ?? 'freemium');
+        $isProOrEnterprise = in_array($plan, ['pro', 'enterprise']) || (int)$tenant->id === 1;
+
+        if ($tenantModulesConfig) {
+            $allowedModules = json_decode($tenantModulesConfig->value, true) ?: [];
+        } elseif (!empty($tenant->allowed_modules_json)) {
+            $allowedModules = $tenant->allowed_modules_json;
+        } elseif ($isProOrEnterprise) {
+            $allowedModules = $allModules;
+        } else {
+            $globalModSetting = \DB::table('system_settings')->whereNull('tenant_id')->where('key', 'freemium_allowed_modules')->first();
+            $allowedModules = $globalModSetting ? (json_decode($globalModSetting->value, true) ?: ['reloj', 'rrhh', 'operativo']) : ['reloj', 'rrhh', 'operativo'];
+        }
+
+        if ($tenantFeaturesConfig) {
+            $allowedFeatures = json_decode($tenantFeaturesConfig->value, true) ?: [];
+        } elseif ($isProOrEnterprise) {
+            $allowedFeatures = $allFeatures;
+        } else {
+            $globalFeatSetting = \DB::table('system_settings')->whereNull('tenant_id')->where('key', 'freemium_allowed_features')->first();
+            $allowedFeatures = $globalFeatSetting ? (json_decode($globalFeatSetting->value, true) ?: []) : [];
+        }
+
         return response()->json([
             'tenant' => [
                 'id' => $tenant->id,
@@ -141,6 +211,8 @@ class PlatformAdminController extends Controller
                 'current_period_end' => $tenant->current_period_end,
                 'max_users' => $tenant->max_users,
                 'created_at' => $tenant->created_at->toIso8601String(),
+                'allowed_modules' => $allowedModules,
+                'allowed_features' => $allowedFeatures,
             ],
             'admin' => $admin ? [
                 'name' => $admin->name,
@@ -151,6 +223,40 @@ class PlatformAdminController extends Controller
                 'users_count' => $usersCount,
                 'vacancies_count' => $vacanciesCount,
             ]
+        ]);
+    }
+
+    /**
+     * Update per-tenant allowed modules and feature tags override
+     */
+    public function updateTenantFeatures($id, Request $request)
+    {
+        if (!$this->checkPlatformAdminAccess()) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $tenant = Tenant::findOrFail($id);
+
+        $modules = $request->input('modules', []);
+        $features = $request->input('features', []);
+
+        \DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => $tenant->id, 'key' => 'tenant_allowed_modules'],
+            ['value' => json_encode($modules), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        \DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => $tenant->id, 'key' => 'tenant_allowed_features'],
+            ['value' => json_encode($features), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        $tenant->allowed_modules_json = $modules;
+        $tenant->save();
+
+        return response()->json([
+            'message' => 'Permisos y módulos de la empresa actualizados con éxito.',
+            'allowed_modules' => $modules,
+            'allowed_features' => $features
         ]);
     }
 
@@ -424,6 +530,13 @@ class PlatformAdminController extends Controller
             \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)
                 ->where('tenant_id', $tenant->id)
                 ->delete();
+
+            $timestamp = time();
+            $tenant->subdomain = $tenant->subdomain . '_deleted_' . $timestamp . '_' . $tenant->id;
+            if ($tenant->public_slug) {
+                $tenant->public_slug = $tenant->public_slug . '_deleted_' . $timestamp . '_' . $tenant->id;
+            }
+            $tenant->save();
 
             $tenant->delete();
         });
@@ -1250,4 +1363,204 @@ class PlatformAdminController extends Controller
             'message' => "Registro inconcluso ({$user->email}) eliminado con éxito. El correo ha sido liberado."
         ]);
     }
+
+    /**
+     * Obtiene la configuración global de días de gracia por redes sociales
+     */
+    public function getSocialGraceConfig()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $config = DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'social_grace_days')
+            ->first();
+
+        return response()->json([
+            'social_grace_days' => $config ? (int)$config->value : 30
+        ]);
+    }
+
+    /**
+     * Guarda la configuración global de días de gracia por redes sociales
+     */
+    public function saveSocialGraceConfig(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $validated = $request->validate([
+            'social_grace_days' => 'required|integer|min:1|max:365'
+        ]);
+
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => null, 'key' => 'social_grace_days'],
+            ['value' => (string)$validated['social_grace_days'], 'updated_at' => now()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración de días de gracia guardada con éxito.'
+        ]);
+    }
+
+    /**
+     * Listado de promociones de temporada (SuperAdmin)
+     */
+    public function getPromotions()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $promos = \App\Models\SeasonalPromotion::orderBy('id', 'desc')->get();
+        return response()->json(['promotions' => $promos]);
+    }
+
+    /**
+     * Crear o actualizar una promoción de temporada
+     */
+    public function savePromotion(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'title' => 'required|string',
+            'subtitle' => 'nullable|string',
+            'badge_text' => 'nullable|string',
+            'discount_percentage' => 'nullable|numeric',
+            'target_plan' => 'nullable|string',
+            'banner_bg_color' => 'nullable|string',
+            'banner_text_color' => 'nullable|string',
+            'cta_label' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $promo = \App\Models\SeasonalPromotion::updateOrCreate(
+            ['id' => $validated['id'] ?? null],
+            [
+                'title' => $validated['title'],
+                'subtitle' => $validated['subtitle'] ?? null,
+                'badge_text' => $validated['badge_text'] ?? '20% OFF',
+                'discount_percentage' => $validated['discount_percentage'] ?? 20.0,
+                'target_plan' => $validated['target_plan'] ?? 'all',
+                'banner_bg_color' => $validated['banner_bg_color'] ?? 'from-blue-600 to-indigo-700',
+                'banner_text_color' => $validated['banner_text_color'] ?? 'text-white',
+                'cta_label' => $validated['cta_label'] ?? 'Ver Oferta Especial',
+                'is_active' => $validated['is_active'] ?? true,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Promoción guardada correctamente.',
+            'promotion' => $promo
+        ]);
+    }
+
+    /**
+     * Eliminar promoción de temporada
+     */
+    public function deletePromotion($id)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $promo = \App\Models\SeasonalPromotion::find($id);
+        if ($promo) {
+            $promo->delete();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Promoción eliminada']);
+    }
+
+    /**
+     * Listar solicitudes de tiempo de gracia por redes sociales
+     */
+    public function getSocialClaims()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $claims = \App\Models\TenantModuleSubscription::with('tenant')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json(['claims' => $claims]);
+    }
+
+    /**
+     * Aprobar solicitud de tiempo de gracia
+     */
+    public function approveSocialClaim($id, Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $sub = \App\Models\TenantModuleSubscription::findOrFail($id);
+        
+        $graceDays = $sub->grace_days_granted ?: 30;
+        $expiresAt = now()->addDays($graceDays);
+
+        DB::transaction(function () use ($sub, $expiresAt) {
+            $sub->update([
+                'status' => 'active',
+                'expires_at' => $expiresAt,
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
+
+            // Sincronizar en system_settings del tenant
+            $tenantConfig = DB::table('system_settings')
+                ->where('tenant_id', $sub->tenant_id)
+                ->where('key', 'active_modules')
+                ->first();
+
+            $activeMods = $tenantConfig ? (json_decode($tenantConfig->value, true) ?: []) : [];
+            if (!in_array($sub->module_key, $activeMods)) {
+                $activeMods[] = $sub->module_key;
+                DB::table('system_settings')->updateOrInsert(
+                    ['tenant_id' => $sub->tenant_id, 'key' => 'active_modules'],
+                    ['value' => json_encode(array_values($activeMods)), 'updated_at' => now()]
+                );
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Solicitud aprobada con éxito. Tiempo de gracia concedido hasta {$expiresAt->format('Y-m-d')}."
+        ]);
+    }
+
+    /**
+     * Rechazar solicitud de tiempo de gracia
+     */
+    public function rejectSocialClaim($id, Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $sub = \App\Models\TenantModuleSubscription::findOrFail($id);
+        $sub->update([
+            'status' => 'rejected',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Solicitud rechazada.'
+        ]);
+    }
 }
+

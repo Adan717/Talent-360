@@ -77,7 +77,9 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 
 | §64 | 🔴 **Permisos excesivos:** las rutas de `billing` (datos fiscales, subida del **sello digital CSD del SAT** con su llave privada, y timbrado de nómina) están bajo `role:admin,supervisor`. Un supervisor de tienda puede reemplazar la identidad fiscal de la empresa y emitir comprobantes ante el SAT. Ver detalle abajo. | ✅ Punto 1 implementado (2026-07-26) — `billing` ahora es solo `admin`; punto 2 requiere decisión de Francisco |
 
-| §65 | **Modelo de permisos delegables (decisión de producto de Francisco, 2026-07-26):** toda la configuración nace en el administrador y se delega **por puesto**, usando las tablas `permissions`/`role_permissions` que YA existen pero que hoy nadie consulta (el gating está escrito a mano como `role:admin,supervisor`). Incluye un conjunto explícitamente **indelegable**. Reemplaza el parche puntual de §64. Ver detalle abajo. | ⏳ Pendiente |
+| §65 | **Modelo de permisos delegables (decisión de producto de Francisco, 2026-07-26):** toda la configuración nace en el administrador y se delega **por puesto**, usando las tablas `permissions`/`role_permissions` que YA existen pero que hoy nadie consulta (el gating está escrito a mano como `role:admin,supervisor`). Incluye un conjunto explícitamente **indelegable**. Reemplaza el parche puntual de §64. Ver detalle abajo. | ✅ Núcleo implementado (2026-07-26) — middleware `permission:`, catálogo, siembra, matriz admin y 1er bloque sensible (nómina) migrado; resto de rutas por migrar sin prisa |
+
+| §66 | **Ciclo de vida de la suscripción y de la empresa (decisión de producto de Francisco, 2026-07-26):** cancelación autoservicio sin cobro posterior, baja de empresa con 30 días de gracia + purga real, exportación de datos antes de purgar, y cancelación de la suscripción con la pasarela al eliminar. Corrige el hallazgo de que hoy el borrado es "suave" y por eso **el cascada nunca se dispara** y los datos quedan huérfanos para siempre. Ver detalle abajo. | ⏳ Pendiente |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -2505,3 +2507,84 @@ Ningún permiso debe poder otorgar esto, ni siquiera si el admin quiere:
 La pantalla donde el administrador asigna capacidades por puesto (matriz puestos × capacidades), consumiendo los dos endpoints del punto 4, con las indelegables mostradas pero bloqueadas y explicadas. Además ocultar del menú los módulos sin capacidad, apoyándonos en el `user_permissions` que `/sync/state` ya devuelve.
 
 **No incluir en v1:** delegaciones temporales con fecha de vencimiento (ej. "mientras estoy de vacaciones"). Suena bien, complica bastante, y se puede agregar después sin rehacer nada de lo anterior.
+
+### ✅ Núcleo implementado (2026-07-26) — resumen
+
+Se construyó toda la maquinaria reutilizable + se migró el primer bloque sensible. Los detalles:
+
+- **Middleware `permission:` nuevo** (`app/Http/Middleware/PermissionMiddleware.php`, alias registrado en `bootstrap/app.php`), **en paralelo a `role:`** (no rompe nada existente). Reglas: el `admin` del tenant **pasa siempre** por bypass (toda la config nace en él, nunca se queda fuera); cualquier otro rol pasa solo si su **puesto** (`employees.job_role_id`) tiene asignada al menos una de las capacidades pedidas en `role_permissions` (semántica OR, igual que `role:a,b`). Si no, 403 + `SecurityLogger('permission_denied')`. Uso: `Route::middleware(['auth:sanctum','permission:manage_payroll'])`.
+- **Catálogo único** (`app/Support/PermissionCatalog.php`): las **12 capacidades delegables** de la tabla del contrato + las **4 indelegables** (`manage_billing`, `manage_subscription`, `delete_company`, `manage_permissions`) + el set conservador de supervisor. Fuente de verdad compartida por migración, siembra y endpoints.
+- **Migración de siembra** (`2026_07_26_000001_seed_delegable_permissions.php`): (1) relaja el `UNIQUE(name)` **global** de `permissions` a `UNIQUE(tenant_id, name)` — los permisos son por-tenant, mismo arreglo que se hizo en `system_settings` (si no, la 2ª empresa no podía tener `manage_tasks`); (2) crea las 12 capacidades para cada tenant existente; (3) asigna defaults conservadores: puestos de **admin** = todas; puestos de **supervisor** = `{manage_tasks, approve_operations, manage_store_opening, view_reports}` (deriva el nivel de `users.role` de quién ocupa cada puesto). **Requiere `php artisan migrate` en Hetzner.**
+- **Siembra de tenants nuevos**: `TenantInitializationService::seedPermissionCatalog()` crea el catálogo al nacer el tenant (sin asignaciones aún — no hay puestos todavía; el admin las configura desde la matriz, y pasa por bypass mientras tanto).
+- **Endpoints de administración (INDELEGABLES, `role:admin`):** `GET /admin/permissions/matrix` (catálogo delegable + indelegable + puestos + qué tiene cada puesto hoy) y `PUT /admin/permissions/matrix` (body `{ "matrix": { "<job_role_id>": ["cap1","cap2"] } }`, reemplazo atómico por puesto). Rechaza/ignora nombres indelegables o desconocidos, valida que el puesto sea del tenant, **registra cada cambio en `SecurityLogger('permissions_changed')`** e invalida `TenantConfigCache` para que `/sync/state` refleje los nuevos permisos al instante.
+- **1er bloque sensible migrado:** las rutas de **nómina** (`/admin/payroll`, `/admin/reports/export`, `/admin/payroll/approve`, `/admin/payroll/ticket/{id}`) pasaron de `role:admin,supervisor` a `permission:manage_payroll`. **Billing** ya era `role:admin` desde §64 y se queda ahí (es indelegable, ningún permiso lo otorga). ⚠️ **Cambio de comportamiento intencional (raíz del §64):** un supervisor ya **no** accede a nómina por defecto; el admin (dueño) sigue entrando por bypass, y puede re-otorgar `manage_payroll` a un puesto desde la matriz.
+- **Tests:** `DelegablePermissionsTest` (6): bypass de admin, supervisor sin/con capacidad, matriz GET, otorgar-capacidad-y-que-surta-efecto (con indelegable ignorada), y matriz solo-admin. Suite completa **241/241** en verde.
+
+**Pendiente (no urgente, "el resto sin prisa"):** migrar los demás bloques sensibles que el contrato menciona —**expedientes** (Archivo Digital → `manage_documents`) y **directorio/salarios** (→ `manage_employees` / `view_salaries`)— y luego el resto de rutas operativas a `permission:`. Se dejó para un pase siguiente porque cada ruta necesita un mapeo deliberado de capacidad y conviene hacerlo junto con la pantalla de matriz de Cowork. La maquinaria ya está lista para que sea solo cambiar el middleware de cada grupo.
+
+**Lo que hace Cowork:** la pantalla de matriz puestos × capacidades (consumiendo los dos endpoints), con las indelegables mostradas pero bloqueadas, y ocultar del menú los módulos sin capacidad usando el `user_permissions` que `/sync/state` ya devuelve.
+
+---
+
+## §66. Ciclo de vida de la suscripción y de la empresa (cancelación, gracia, purga y exportación)
+
+**Contexto (decisión de producto de Francisco, 2026-07-26).** Salió de auditar por qué un subdominio seguía ocupado. El subdominio en sí resultó ser una empresa activa (no residuo — `deleteTenant` ya renombra el subdominio a `_deleted_<ts>_<id>` antes de borrar, y la validación usa `Rule::unique(...)->withoutTrashed()`, doble protección correcta). **Pero al revisarlo apareció un problema de fondo mayor:**
+
+`Tenant` usa `SoftDeletes`, así que `$tenant->delete()` solo escribe `deleted_at`. Como el borrado nunca llega a ser un `DELETE` real, **los `ON DELETE CASCADE` de las ~20 tablas con `tenant_id` jamás se disparan.** Resultado: al "eliminar" una empresa, TODO su contenido operativo se queda en la base indefinidamente — empleados, fichajes, tareas, evaluaciones, cursos, documentos, nómina — invisible en la interfaz pero presente y consultable por cualquier código que use `withoutGlobalScopes()`.
+
+Consecuencias: (1) **legal** — retención indefinida de datos personales de trabajadores de una empresa que ya no es cliente, justo lo que la LFPDPPP obliga a poder eliminar; (2) **operativa** — las tablas crecen sin límite con datos muertos, y el rendimiento ya es un tema (§45/§46); (3) **integridad** — `employees.user_id` está declarado `onDelete('set null')`, así que quedan fichas de empleado con nombre, puesto y salario apuntando a ningún usuario.
+
+Además: **al eliminar una empresa no se cancela nada con la pasarela de pago.** `mp_subscription_id` se guarda en el tenant pero nadie lo usa al dar de baja. Hoy no duele porque no hay cobros reales; el día que los haya, son cobros recurrentes a empresas que ya no existen, con las devoluciones y reclamos que eso implica.
+
+### Reglas de negocio que definió Francisco
+
+1. **Cancelar suscripción ≠ eliminar empresa.** Son dos acciones distintas y separadas. Mucha gente cancela el pago pero quiere conservar su cuenta.
+2. **Cancelación autoservicio:** el cliente cancela solo, desde su propio panel, sin pedir permiso ni escribir a soporte.
+3. **Sin cobro después de cancelar.** Conserva el servicio hasta que termine el periodo **que ya pagó**, y ahí baja a plan gratuito. No se emite ningún cargo nuevo. (Se descartó cobrar durante un periodo de gracia: genera contracargos, y en una disputa la pasarela suele fallar a favor del cliente, con penalización y riesgo de que suban la comisión.)
+4. **Eliminar empresa:** 30 días de gracia y después purga real. La gracia cubre el borrado por error y le da ventana al cliente para arrepentirse o pedir sus datos.
+5. **Exportación antes de purgar**, disponible para el cliente.
+
+### Lo que pedimos a Backend
+
+**A. Cancelación de suscripción**
+
+- `POST /me/subscription/cancel` (solo `admin` del tenant): llama a la pasarela para cancelar la renovación, guarda `cancels_at` = fin del periodo pagado, y responde el estado actualizado. **No** revoca acceso ni cambia el plan en ese momento.
+- `GET /me/subscription`: `{ plan, status, current_period_end, cancels_at, amount, currency, next_charge_at }` — lo que necesita la pantalla "Mi suscripción".
+- `POST /me/subscription/resume`: revertir la cancelación si se arrepiente antes del corte (barato de implementar y evita bajas por error).
+- Un job diario que, al llegar `current_period_end` de una suscripción cancelada, baje el tenant a `freemium` aplicando los límites del plan gratuito.
+- **✅ DECISIÓN TOMADA (Francisco, 2026-07-26): Stripe es la pasarela principal.** Todo el cobro recurrente —altas, cambios de plan, cancelación, reintentos— se construye **solo sobre Stripe**. MercadoPago **no** se elimina, pero queda relegado a un caso puntual y futuro: pago en efectivo (OXXO), SPEI y meses sin intereses, si algún día se ofrecen. No debe seguir existiendo como una segunda ruta paralela de suscripción.
+
+  Razones de la decisión: el producto es suscripción recurrente y Stripe está diseñado alrededor de eso (prorrateo automático al cambiar de plan, reintentos y avisos cuando una tarjeta rebota, y **Customer Portal alojado** que resuelve la cancelación autoservicio del punto A casi sin código). MercadoPago está pensado para comercio de pago único y todo eso habría que construirlo a mano. Además su comisión se publica sin IVA, así que el costo real es mayor.
+
+  **Implicaciones concretas para esta sección:** el punto A se implementa contra la API de Stripe (`Subscription.cancel_at_period_end = true` cubre la regla 3 de forma nativa: cancela la renovación y conserva el servicio hasta `current_period_end`, sin emitir cargo nuevo). Evaluar usar directamente el **Customer Portal** de Stripe en vez de construir la cancelación propia — si se opta por él, la pantalla de Cowork se reduce a mostrar el estado y un botón que abre el portal.
+
+  **Deuda a limpiar:** hay dos integraciones a medias conviviendo (`SubscriptionController` con MercadoPago, `StripeWebhookController`, `BillingProviderInterface`). Esa duplicidad ya causó inconsistencias reales —ver §58, el límite de colaboradores que sale distinto según el camino de registro—. Consolidar en una sola ruta y retirar el código muerto de la otra, dejando MercadoPago solo tras una bandera para el caso de efectivo.
+
+  **Pendiente de Francisco (no bloquea el diseño, sí el despliegue):** confirmar que puede abrir cuenta de Stripe con sus datos fiscales mexicanos. El timbrado CFDI no cambia con esta decisión — lo emite su PAC, no la pasarela (§ pendiente de CFDI).
+
+**B. Eliminación de empresa en dos fases**
+
+*Al eliminar (inmediato):*
+- Lo que ya hace (renombrar subdominio, marcar eliminado) **más**: revocar todos los `personal_access_tokens` del tenant, y **cancelar la suscripción con la pasarela** (esto falta hoy y es lo que puede costar dinero).
+- Registrar en `audit_logs` quién eliminó, cuándo y qué empresa.
+
+*A los 30 días (job programado):*
+- Purga real. Como `SoftDeletes` impide que el cascada se dispare, hay que hacer un `forceDelete()` (o `DB::table('tenants')->where(...)->delete()`) para que sí propague — y **verificar tabla por tabla**, porque `employees` y varias otras no están en la migración genérica de cascada (`add_tenant_id_to_all_tables.php` cubre 19 tablas; `employees`, `support_tickets`, los `obsidian_*` y las de suministro tienen su propia definición).
+- `POST /platform/tenants/{id}/restore` para revertir durante la ventana de gracia.
+
+**C. Qué se purga y qué se conserva** (esto no es opcional, son obligaciones distintas que se contradicen):
+
+| Se PURGA | Se CONSERVA |
+|---|---|
+| Empleados, fichajes, tareas y asignaciones, evaluaciones, avances de cursos, documentos y expedientes, vault, chat, PINs | Facturas y registros fiscales (**el SAT exige 5 años**), desligados de datos personales |
+| Datos personales identificables de trabajadores | Bitácora de la eliminación (quién, cuándo, qué empresa) |
+
+**D. Exportación de datos**
+
+- `POST /me/data-export` genera un paquete (ZIP con CSV/JSON) de los datos de la empresa y `GET /me/data-export/{id}` lo descarga. Enlace con expiración.
+- **Entrega en dos tiempos, a propósito:** por ahora **descarga desde el panel**, porque el envío de correo todavía no es operativo (falta dominio y servicio de envío, ver §52). En cuanto §52 esté activo, que además se mande el enlace por correo. Así la función sirve desde el día uno y no queda esperando algo que no depende de nosotros.
+- Al programar la eliminación, ofrecer la exportación en el mismo flujo.
+
+### Lo que hace Cowork
+
+Pantalla **"Mi suscripción"** en los ajustes de la empresa (plan actual, próximo cobro, cancelar con confirmación clara de hasta cuándo conserva el servicio, y reanudar si se arrepintió), y el botón de **exportar mis datos**. Se construyen contra los contratos de arriba; avisen si cambian alguna forma de respuesta antes de implementar, para no desalinearnos.

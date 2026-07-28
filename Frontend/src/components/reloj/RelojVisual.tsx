@@ -1350,7 +1350,7 @@ export default function RelojVisual({
           )}
         </div>
 
-        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
+        <div className="space-y-2.5 max-h-[340px] min-h-[160px] overflow-y-auto pr-1 scrollbar-thin">
           {visibleNotifications.length === 0 ? (
             <div className="text-center py-4 space-y-1">
               <p className="text-[11px] text-slate-400 italic">No hay notificaciones activas por el momento.</p>
@@ -3383,11 +3383,14 @@ export default function RelojVisual({
                   {renderBreakApprovalBanner()}
                 </div>
                 
-                {/* Bloque Superior Anclado (Fijo, sin scroll): Barra Cronológica + DialPrincipal + Botones de Acción */}
-                <div className="flex-none shrink-0 flex flex-col justify-center items-center w-full gap-2 max-w-[350px] mx-auto z-10">
+                {/* Bloque Superior: Barra Cronológica en Ancho Completo */}
+                <div className="w-full px-1 shrink-0 z-10 mb-2">
                   {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
                   {renderBarraCronologica(true)}
+                </div>
 
+                {/* Bloque Central Anclado: DialPrincipal + Botones de Acción */}
+                <div className="flex-none shrink-0 flex flex-col justify-center items-center w-full gap-2 max-w-[350px] mx-auto z-10">
                   {/* Fila Horizontal: Desempeño (Izquierda) - DialPrincipal (Centro) */}
                   <div className="flex flex-row items-center justify-center w-full shrink-0 relative my-2">
                     
@@ -3464,8 +3467,8 @@ export default function RelojVisual({
                   </div>
                 </div>
 
-                {/* Sección Inferior Deslizable de Notificaciones (Scroll vertical independiente) */}
-                <div className="flex-1 overflow-y-auto min-h-0 w-full max-w-[350px] mx-auto mt-1 pb-2 scrollbar-thin">
+                {/* Sección Inferior Deslizable de Notificaciones (Ancho Completo y Más Alta) */}
+                <div className="flex-1 overflow-y-auto min-h-[220px] max-h-[380px] w-full px-1 mx-auto mt-2 pb-3 scrollbar-thin">
                   {renderModuloNotificaciones(true)}
                 </div>
               </div>
@@ -3854,11 +3857,7 @@ export default function RelojVisual({
                 
                 {renderBreakApprovalBanner()}
                 
-                {/* Timeline Progress (No outer rectangular border - Unified) */}
-                {renderBarraCronologica(false)}
-
-
-                {/* Fading Divider below timeline section */}
+                {/* Fading Divider below top section */}
                 <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-5"></div>
 
                 {/* Clock Dial Area */}

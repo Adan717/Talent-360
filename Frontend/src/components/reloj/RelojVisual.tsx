@@ -4395,6 +4395,20 @@ export default function RelojVisual({
               {renderProfilePanel(false)}
             </div>
           )}
+
+          {/* Desktop Floating Dock (Always Visible) */}
+          <div className="mt-8 flex justify-center w-full pb-4">
+            <MobileBottomNav 
+              phoneTab={phoneTab} 
+              setPhoneTab={setPhoneTab} 
+              setInnerTool={setInnerTool} 
+              isDark={isDark} 
+              clockState={clockState} 
+              showCustomAlert={showCustomAlert} 
+              isStoreClosed={isStoreClosed} 
+              isMobileFrame={isMobileFrame} 
+            />
+          </div>
         </div>
       )}
 

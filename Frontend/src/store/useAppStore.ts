@@ -168,6 +168,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       allowTaskRejection: true,
       aiAutoApproveIfValid: false
     },
+    clockOpConfig: {
+      gpsValidationEnabled: false,
+      allowManualCheckIn: true,
+      allow_floating_push_notifications: false
+    },
     globalStoreShiftStart: '09:00',
     globalStoreShiftEnd: '18:00',
     uiState: { menuCollapsed: false, currentTheme: 'light' }

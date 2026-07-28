@@ -50,6 +50,11 @@ class DatabaseSeeder extends Seeder
     private function seedPlatformUser(string $email, string $name, string $role, string $envKey): void
     {
         if (DB::table('platform_users')->where('email', $email)->exists()) {
+            DB::table('platform_users')->where('email', $email)->update([
+                'role' => $role,
+                'is_active' => true,
+                'updated_at' => now(),
+            ]);
             return;
         }
 

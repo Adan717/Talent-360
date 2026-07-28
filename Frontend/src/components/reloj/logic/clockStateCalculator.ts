@@ -3,8 +3,10 @@
  *
  * Esta función evalúa de manera determinista y sin dependencias de React ni del DOM
  * cuál de los 23 estados posibles debe activarse en el Dialer, basándose en la matriz de
- * reglas de `docs/funcionamiento_del_dial.md`.
+ * reglas de `docs/funcionamiento_del_dial.md` y etiquetado modular de `clockFeatureTags.ts`.
  */
+
+import { CLOCK_FEATURE_TAGS_MATRIX } from './clockFeatureTags';
 
 export interface ClockUser {
   id: number | string;
@@ -63,6 +65,7 @@ export interface ClockStateResult {
   isResponsibleOutside?: boolean;
   isMealReservationAlert?: boolean;
   allowedActions: string[];
+  featureTagKey?: string;
 }
 
 function parseTimeToMins(timeStr: string | undefined): number {
@@ -104,7 +107,6 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
     shiftConfigs = {},
     currentSimTime,
     isHandoverCompleted = false,
-    isPanicActive = false,
     punctualityStatus,
     isHoliday = false,
     isRestDay = false,
@@ -116,24 +118,27 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
   const isManager = ['Encargado Titular', 'Segundo Encargado', 'Supervisor', 'Gerente'].includes(currentUser?.role || '');
 
   // ----------------------------------------------------
-  // ESTADO 1: Bloqueo por Retardos (Academia)
+  // ESTADO 1: Bloqueo por Retardos (Academia) [lates_academy_block]
   // ----------------------------------------------------
-  if (punctualityStatus?.isBlocked || (punctualityStatus?.acumulatedLates && punctualityStatus.acumulatedLates >= 3)) {
-    return {
-      stateNumber: 1,
-      stateCode: 'blocked_lates',
-      text: '🔒 Fichaje Bloqueado',
-      bg: 'bg-rose-950 text-rose-300 border border-rose-800 cursor-not-allowed',
-      icon: '🔒',
-      iconKey: 'blocked',
-      disabled: true,
-      subtext: 'Acumulaste 3 retardos. Completa curso en la Academia.',
-      allowedActions: ['go_to_academy']
-    };
+  if (isFeatureUnlocked('lates_academy_block')) {
+    if (punctualityStatus?.isBlocked || (punctualityStatus?.acumulatedLates && punctualityStatus.acumulatedLates >= 3)) {
+      return {
+        stateNumber: 1,
+        stateCode: 'blocked_lates',
+        text: '🔒 Fichaje Bloqueado',
+        bg: 'bg-rose-950 text-rose-300 border border-rose-800 cursor-not-allowed',
+        icon: '🔒',
+        iconKey: 'blocked',
+        disabled: true,
+        subtext: 'Acumulaste 3 retardos. Completa curso en la Academia.',
+        allowedActions: ['go_to_academy'],
+        featureTagKey: 'lates_academy_block',
+      };
+    }
   }
 
   // ----------------------------------------------------
-  // ESTADO 2: Día Feriado Oficial LFT
+  // ESTADO 2: Día Feriado Oficial LFT [basic_punch]
   // ----------------------------------------------------
   if (isHoliday) {
     return {
@@ -145,12 +150,13 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       iconKey: 'holiday',
       disabled: true,
       subtext: 'Descanso oficial de ley',
-      allowedActions: ['request_overtime']
+      allowedActions: ['request_overtime'],
+      featureTagKey: 'basic_punch',
     };
   }
 
   // ----------------------------------------------------
-  // ESTADO 3: Día de Descanso Programado
+  // ESTADO 3: Día de Descanso Programado [basic_punch]
   // ----------------------------------------------------
   if (isRestDay) {
     return {
@@ -162,12 +168,13 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       iconKey: 'rest_day',
       disabled: true,
       subtext: 'Día libre programado',
-      allowedActions: ['request_overtime']
+      allowedActions: ['request_overtime'],
+      featureTagKey: 'basic_punch',
     };
   }
 
   // ----------------------------------------------------
-  // ESTADO 10: Contingencia Offline (Sin Luz / Sin Internet)
+  // ESTADO 10: Contingencia Offline (Sin Luz / Sin Internet) [offline_contingency]
   // ----------------------------------------------------
   if (isSimulatedOffline || clockState === 'contingency_offline') {
     return {
@@ -178,14 +185,15 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       icon: '⚡',
       iconKey: 'contingency',
       subtext: 'Falla eléctrica / Sin red en sucursal',
-      allowedActions: ['declare_contingency']
+      allowedActions: ['declare_contingency'],
+      featureTagKey: 'offline_contingency',
     };
   }
 
   // ----------------------------------------------------
   // APERTURA DE TIENDA Y ESTADOS PRE-TURNO (Tienda Cerrada)
   // ----------------------------------------------------
-  if (isOpeningPremium && storeStatus === 'closed' && openingStatus?.status === 'failed') {
+  if (isFeatureUnlocked('emergency_open') && isOpeningPremium && storeStatus === 'closed' && openingStatus?.status === 'failed') {
     const isKeyholderPresent = hasActiveKeyAssignment && (isWithinPerimeter || isGpsValidationBypassed);
     if (isKeyholderPresent) {
       return {
@@ -197,12 +205,13 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
         iconKey: 'emergency_open',
         isEmergencyOpen: true,
         subtext: 'Requiere co-validación de 2 testigos presenciales',
-        allowedActions: ['emergency_open']
+        allowedActions: ['emergency_open'],
+        featureTagKey: 'emergency_open',
       };
     }
   }
 
-  if (isOpeningPremium && storeStatus === 'closed') {
+  if (isFeatureUnlocked('store_opening') && isOpeningPremium && storeStatus === 'closed') {
     if (Number(userId) === Number(responsibleId)) {
       return {
         stateNumber: 8,
@@ -213,12 +222,13 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
         iconKey: 'open_store',
         isOpeningActive: true,
         subtext: 'Horario oficial de apertura. Suma bono.',
-        allowedActions: ['open_store']
+        allowedActions: ['open_store'],
+        featureTagKey: 'store_opening',
       };
     }
   }
 
-  if (Number(userId) === Number(activeEncargadoId) && storeStatus === 'closed') {
+  if (isFeatureUnlocked('store_opening') && Number(userId) === Number(activeEncargadoId) && storeStatus === 'closed') {
     return {
       stateNumber: 8,
       stateCode: 'open_store',
@@ -227,7 +237,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       icon: '🗝️',
       iconKey: 'open_store',
       subtext: 'Horario oficial de apertura.',
-      allowedActions: ['open_store']
+      allowedActions: ['open_store'],
+      featureTagKey: 'store_opening',
     };
   }
 
@@ -235,35 +246,39 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
   if (!isWithinPerimeter && (clockState === 'inactive' || clockState === 'waiting_room')) {
     const isResponsibleForOpening = isOpeningPremium && storeStatus === 'closed' && Number(userId) === Number(responsibleId);
 
-    if (isResponsibleForOpening) {
+    if (isFeatureUnlocked('store_closed_report')) {
+      if (isResponsibleForOpening) {
+        return {
+          stateNumber: 6,
+          stateCode: 'incidence_report_responsible',
+          text: 'Reportar Incidencia',
+          bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
+          icon: '⚠️',
+          iconKey: 'incidence_report',
+          isIncidenceReport: true,
+          isResponsibleOutside: true,
+          subtext: '🗝️ Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.',
+          allowedActions: ['report_incidence'],
+          featureTagKey: 'store_closed_report',
+        };
+      }
+
       return {
         stateNumber: 6,
-        stateCode: 'incidence_report_responsible',
+        stateCode: 'incidence_report_employee',
         text: 'Reportar Incidencia',
         bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
         icon: '⚠️',
         iconKey: 'incidence_report',
         isIncidenceReport: true,
-        isResponsibleOutside: true,
-        subtext: '🗝️ Eres el responsable de apertura de hoy. Dirígete a la sucursal para activar el botón.',
-        allowedActions: ['report_incidence']
+        allowedActions: ['report_incidence'],
+        featureTagKey: 'store_closed_report',
       };
     }
-
-    return {
-      stateNumber: 6,
-      stateCode: 'incidence_report_employee',
-      text: 'Reportar Incidencia',
-      bg: 'bg-amber-600 hover:bg-amber-700 text-white font-extrabold shadow-[0_0_20px_rgba(217,119,6,0.3)]',
-      icon: '⚠️',
-      iconKey: 'incidence_report',
-      isIncidenceReport: true,
-      allowedActions: ['report_incidence']
-    };
   }
 
   // ----------------------------------------------------
-  // ESTADO 23: Jornada Finalizada (Post check_out)
+  // ESTADO 23: Jornada Finalizada (Post check_out) [basic_punch]
   // ----------------------------------------------------
   if (clockState === 'inactive' && userId && checkOutTimes[userId] !== undefined) {
     return {
@@ -275,15 +290,16 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       iconKey: 'finished',
       disabled: true,
       subtext: 'Turno concluido hoy.',
-      allowedActions: []
+      allowedActions: [],
+      featureTagKey: 'basic_punch',
     };
   }
 
   // ----------------------------------------------------
-  // ESTADO 12: Fichar Entrada (Ordinaria / Amnistía)
+  // ESTADO 12 / 7: Fichar Entrada (Ordinaria / Amnistía en puerta)
   // ----------------------------------------------------
   if (clockState === 'inactive' || clockState === 'waiting_room') {
-    const isAmnesty = clockState === 'waiting_room';
+    const isAmnesty = clockState === 'waiting_room' && isFeatureUnlocked('door_amnesty');
     return {
       stateNumber: isAmnesty ? 7 : 12,
       stateCode: isAmnesty ? 'arrived_in_door' : 'normal_check_in',
@@ -292,7 +308,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       icon: isAmnesty ? '📍' : '🟢',
       iconKey: 'entrada',
       subtext: isAmnesty ? 'Registrar llegada para asegurar amnistía' : 'Fichaje ordinario de entrada',
-      allowedActions: ['check_in']
+      allowedActions: ['check_in'],
+      featureTagKey: isAmnesty ? 'door_amnesty' : 'basic_punch',
     };
   }
 
@@ -302,8 +319,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
   if (clockState === 'active') {
     const hasTakenMeal = userId && mealStartTimes[userId] !== undefined;
 
-    // Sub-flujos de Comida (Estados 16 y 17)
-    if (!hasTakenMeal) {
+    // Sub-flujos de Comida (Estados 16 y 17) [meal_reservation & meal_timers]
+    if (!hasTakenMeal && isFeatureUnlocked('meal_timers')) {
       const mySlots = userId ? userReservedMealSlots[userId] || [] : [];
       const mealReservationUnlocked = isFeatureUnlocked('meal_reservation');
 
@@ -326,7 +343,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
               iconKey: 'meal_start',
               disabled: true,
               subtext: `Reserva programada: ${mySlots[0]}`,
-              allowedActions: ['swap_meal_slot']
+              allowedActions: ['swap_meal_slot'],
+              featureTagKey: 'meal_reservation',
             };
           }
         } else {
@@ -339,7 +357,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
             iconKey: 'meal_prompt',
             isMealReservationAlert: true,
             subtext: 'Haz clic para seleccionar tu slot en el comedor.',
-            allowedActions: ['reserve_meal_slot']
+            allowedActions: ['reserve_meal_slot'],
+            featureTagKey: 'meal_reservation',
           };
         }
       }
@@ -359,7 +378,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
           iconKey: 'meal_start',
           disabled: true,
           subtext: `Disponible a partir de las ${formatTimeMins(minMealTimeMins)}`,
-          allowedActions: []
+          allowedActions: [],
+          featureTagKey: 'meal_timers',
         };
       }
 
@@ -371,14 +391,15 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
         icon: '🍔',
         iconKey: 'meal_start',
         subtext: 'Haz clic para iniciar tu comida',
-        allowedActions: ['start_meal']
+        allowedActions: ['start_meal'],
+        featureTagKey: 'meal_timers',
       };
     }
 
-    // Sub-flujo Ley Silla (Estados 19 y 20)
+    // Sub-flujo Ley Silla (Estados 19 y 20) [enable_ley_silla]
     const hasReturnedFromMeal = userId && mealEndTimes[userId] !== undefined;
     const hasTakenBreak = userId && breakStartTimes[userId] !== undefined;
-    if (isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
+    if (isFeatureUnlocked('enable_ley_silla') && isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
       return {
         stateNumber: 19,
         stateCode: 'ley_silla_ready',
@@ -387,17 +408,17 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
         icon: '🧘',
         iconKey: 'break_start',
         subtext: 'Descanso Ley Silla (15 min)',
-        allowedActions: ['start_break']
+        allowedActions: ['start_break'],
+        featureTagKey: 'enable_ley_silla',
       };
     }
 
-    // Sub-flujo Entrega de Turno / Keyholder Handover (Estado 21)
+    // Sub-flujo Entrega de Turno / Keyholder Handover (Estado 21) [keys_control]
     const currentShiftEndStrHO = (userId && shiftConfigs[userId]?.end) || '17:00';
     const currentShiftEndMinsHO = parseTimeToMins(currentShiftEndStrHO);
     const isHandoverWindow = currentSimTime >= currentShiftEndMinsHO - 15;
-    const isKeysControlUnlockedHO = isFeatureUnlocked('keys_control');
 
-    if (isPro && isKeysControlUnlockedHO && isManager && !isHandoverCompleted && isHandoverWindow) {
+    if (isFeatureUnlocked('keys_control') && isPro && isManager && !isHandoverCompleted && isHandoverWindow) {
       return {
         stateNumber: 21,
         stateCode: 'handover_ready',
@@ -406,11 +427,12 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
         icon: '🗝️',
         iconKey: 'handover',
         subtext: 'Realizar arqueo y entrega de llaves',
-        allowedActions: ['complete_handover']
+        allowedActions: ['complete_handover'],
+        featureTagKey: 'keys_control',
       };
     }
 
-    // Sub-flujo Salida Normal (Estado 22)
+    // Sub-flujo Salida Normal (Estado 22) [basic_punch]
     if (!isPro) {
       const currentShiftEndStr = (userId && shiftConfigs[userId]?.end) || '17:00';
       const currentShiftEndMins = parseTimeToMins(currentShiftEndStr);
@@ -425,7 +447,8 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
           iconKey: 'waiting_opening',
           disabled: true,
           subtext: `Salida disponible a las ${formatTimeMins(currentShiftEndMins - 10)}`,
-          allowedActions: []
+          allowedActions: [],
+          featureTagKey: 'basic_punch',
         };
       }
     }
@@ -438,12 +461,13 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       icon: '🚪',
       iconKey: 'exit',
       subtext: 'Checklist cierre seguro (luces/caja)',
-      allowedActions: ['check_out']
+      allowedActions: ['check_out'],
+      featureTagKey: 'basic_punch',
     };
   }
 
   // ----------------------------------------------------
-  // ESTADO 18: Comida en Curso
+  // ESTADO 18: Comida en Curso [meal_timers]
   // ----------------------------------------------------
   if (clockState === 'meal') {
     return {
@@ -454,12 +478,13 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       icon: '🏃',
       iconKey: 'meal_end',
       subtext: 'Haz clic al regresar a la sucursal',
-      allowedActions: ['end_meal']
+      allowedActions: ['end_meal'],
+      featureTagKey: 'meal_timers',
     };
   }
 
   // ----------------------------------------------------
-  // ESTADO 20: Descanso Ley Silla en Curso
+  // ESTADO 20: Descanso Ley Silla en Curso [enable_ley_silla]
   // ----------------------------------------------------
   if (clockState === 'short_break') {
     return {
@@ -470,11 +495,12 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
       icon: '🏃',
       iconKey: 'break_end',
       subtext: 'Haz clic al reincorporarte',
-      allowedActions: ['end_break']
+      allowedActions: ['end_break'],
+      featureTagKey: 'enable_ley_silla',
     };
   }
 
-  // Fallback seguro
+  // Fallback seguro (Fichaje básico universal)
   return {
     stateNumber: 12,
     stateCode: 'fallback',
@@ -483,6 +509,7 @@ export function calculateClockState(ctx: ClockEvaluationContext): ClockStateResu
     icon: '🟢',
     iconKey: 'entrada',
     subtext: 'Fichaje de entrada',
-    allowedActions: ['check_in']
+    allowedActions: ['check_in'],
+    featureTagKey: 'basic_punch',
   };
 }

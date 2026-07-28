@@ -27,7 +27,7 @@ export function MobileBottomNav({
   isStoreClosed = false, 
   isMobileFrame = false 
 }: MobileBottomNavProps) {
-  const { systemSettings } = useAppStore();
+  const { systemSettings, isModuleUnlocked } = useAppStore();
 
   const getModuleColorHex = (modId: string, defaultHex: string) => {
     const cust = systemSettings?.moduleCustomizations?.[modId];
@@ -53,7 +53,7 @@ export function MobileBottomNav({
   const isAcademiaBlocked = !isStoreClosed && clockState === 'active';
   const isNominaBlocked = clockState === 'inactive' || clockState === 'waiting_room';
 
-  const handleTabClick = (tab: string, isBlocked: boolean, blockMsg: string) => {
+  const handleTabClick = (tabKey: string, isBlocked: boolean, blockMsg: string) => {
     if (isBlocked) {
       if (showCustomAlert) {
         showCustomAlert(blockMsg);
@@ -62,31 +62,41 @@ export function MobileBottomNav({
       }
       return;
     }
+    setPhoneTab(tabKey);
     setInnerTool(null);
-    setPhoneTab(tab);
   };
 
-  const notchMaskImage = `radial-gradient(circle ${NOTCH_RADIUS_PX}px at calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX}px) 50%, transparent ${NOTCH_RADIUS_PX}px, black ${NOTCH_RADIUS_PX + 1}px)`;
-
   return (
-    <nav
-      className={`fixed bottom-3 left-2.5 right-2.5 z-[75] h-16 flex items-center justify-around pl-4 pr-20 border backdrop-blur-md rounded-full transition-all duration-300 ${
-        isDark
-          ? 'bg-slate-950/90 border-violet-900/40 text-slate-400'
-          : 'bg-white/95 border-slate-200/90 text-slate-600 shadow-[0_-8px_32px_rgba(0,0,0,0.18)]'
-      }`}
-      style={{ WebkitMaskImage: notchMaskImage, maskImage: notchMaskImage }}
+    <nav 
+      className="bg-white/95 dark:bg-slate-950/95 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md rounded-full px-3 py-1.5 flex items-center justify-around w-full max-w-[420px] mx-auto select-none"
+      style={{
+        clipPath: `polygon(
+          0% 0%, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX + NOTCH_RADIUS_PX}px) 0%, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX + NOTCH_RADIUS_PX - 8}px) 8px, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX + NOTCH_RADIUS_PX - 16}px) 24px, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX}px) 44px, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX - NOTCH_RADIUS_PX + 16}px) 24px, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX - NOTCH_RADIUS_PX + 8}px) 8px, 
+          calc(100% - ${NOTCH_CENTER_FROM_RIGHT_PX - NOTCH_RADIUS_PX}px) 0%, 
+          100% 0%, 
+          100% 100%, 
+          0% 100%
+        )`
+      }}
     >
-
-      {/* 1. RELOJ */}
+      {/* 1. RELOJ CHECADOR */}
       <button
-        onClick={() => handleTabClick('checador', false, '')}
+        onClick={() => {
+          setPhoneTab('checador');
+          setInnerTool(null);
+        }}
         className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
         style={phoneTab === 'checador' ? { color: checadorColor } : {}}
       >
         <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-          phoneTab === 'checador'
-            ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105'
+          phoneTab === 'checador' 
+            ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
             : 'bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
         }`}>
           <Clock size={20} className={phoneTab === 'checador' ? 'animate-pulse text-emerald-500' : 'text-slate-400'} />
@@ -97,7 +107,7 @@ export function MobileBottomNav({
       </button>
 
       {/* 2. TAREAS */}
-      {!isStoreClosed && (
+      {!isStoreClosed && isModuleUnlocked('operativo') && (
         <button
           onClick={() => handleTabClick(
             'tareas',
@@ -123,29 +133,31 @@ export function MobileBottomNav({
       )}
 
       {/* 3. ACADEMIA */}
-      <button
-        onClick={() => handleTabClick(
-          'academia',
-          isAcademiaBlocked,
-          '⚠️ Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
-        )}
-        className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
-        style={phoneTab === 'academia' ? { color: academiaColor } : {}}
-      >
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-          phoneTab === 'academia'
-            ? 'bg-violet-500/15 border-2 border-violet-600 dark:border-violet-500 shadow-md shadow-violet-500/20 scale-105'
-            : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isAcademiaBlocked ? 'opacity-40' : ''}`
-        }`}>
-          <GraduationCap size={20} className={phoneTab === 'academia' ? 'text-violet-600' : 'text-slate-400'} />
-        </div>
-        <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-          phoneTab === 'academia' ? 'font-black text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500'
-        } ${isAcademiaBlocked ? 'opacity-40' : ''}`}>Academia</span>
-      </button>
+      {isModuleUnlocked('academia') && (
+        <button
+          onClick={() => handleTabClick(
+            'academia',
+            isAcademiaBlocked,
+            '⚠️ Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
+          )}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
+          style={phoneTab === 'academia' ? { color: academiaColor } : {}}
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            phoneTab === 'academia'
+              ? 'bg-violet-500/15 border-2 border-violet-600 dark:border-violet-500 shadow-md shadow-violet-500/20 scale-105'
+              : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isAcademiaBlocked ? 'opacity-40' : ''}`
+          }`}>
+            <GraduationCap size={20} className={phoneTab === 'academia' ? 'text-violet-600' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            phoneTab === 'academia' ? 'font-black text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500'
+          } ${isAcademiaBlocked ? 'opacity-40' : ''}`}>Academia</span>
+        </button>
+      )}
 
       {/* 4. NÓMINA */}
-      {!isStoreClosed && (
+      {!isStoreClosed && (isModuleUnlocked('reportes') || isModuleUnlocked('facturacion')) && (
         <button
           onClick={() => handleTabClick('nomina', isNominaBlocked, '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.')}
           className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"

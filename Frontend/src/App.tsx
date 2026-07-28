@@ -369,14 +369,35 @@ function MainLayout() {
   const activeModuleData = customizedModules.find(m => m.id === activeModule);
 
   const visibleModules = customizedModules.filter(mod => {
-    // Filtrar módulos que el administrador decidió ocultar de la barra lateral
+    // 1. Módulos esenciales del sistema siempre accesibles para gestión
+    if (mod.id === 'dashboard' || mod.id === 'settings' || mod.id === 'matrix') {
+      return true;
+    }
+
+    // 2. Filtrar módulos que el administrador ocultó manualmente de la barra lateral
     const hiddenModules = systemSettings?.hiddenMenuModules || [];
     if (hiddenModules.includes(mod.id)) {
       return false;
     }
+
+    // 3. Filtrar por permisos específicos de la empresa (Tenant Overrides)
+    const tenantAllowedModules = systemSettings?.tenant_allowed_modules || systemSettings?.allowed_modules;
+    if (Array.isArray(tenantAllowedModules) && tenantAllowedModules.length > 0) {
+      if (!tenantAllowedModules.includes(mod.id)) {
+        return false;
+      }
+    }
+
+    // 4. Módulo bloqueado por tier/plan
+    if (!isModuleUnlocked(mod.id)) {
+      return false;
+    }
+
+    // 5. Filtrar por rol de supervisor
     if (currentUser?.role === 'supervisor') {
       return !['reportes', 'matrix', 'settings'].includes(mod.id);
     }
+
     return true;
   });
 

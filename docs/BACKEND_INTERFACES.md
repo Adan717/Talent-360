@@ -2552,7 +2552,15 @@ Además: **al eliminar una empresa no se cancela nada con la pasarela de pago.**
 - `GET /me/subscription`: `{ plan, status, current_period_end, cancels_at, amount, currency, next_charge_at }` — lo que necesita la pantalla "Mi suscripción".
 - `POST /me/subscription/resume`: revertir la cancelación si se arrepiente antes del corte (barato de implementar y evita bajas por error).
 - Un job diario que, al llegar `current_period_end` de una suscripción cancelada, baje el tenant a `freemium` aplicando los límites del plan gratuito.
-- **Decisión previa necesaria:** hoy conviven código de **MercadoPago y de Stripe**. Hay que elegir uno antes de construir esto, porque el flujo de cancelación difiere. Si se elige Stripe, su Customer Portal ya resuelve gestión y cancelación alojadas y reduce mucho el trabajo.
+- **✅ DECISIÓN TOMADA (Francisco, 2026-07-26): Stripe es la pasarela principal.** Todo el cobro recurrente —altas, cambios de plan, cancelación, reintentos— se construye **solo sobre Stripe**. MercadoPago **no** se elimina, pero queda relegado a un caso puntual y futuro: pago en efectivo (OXXO), SPEI y meses sin intereses, si algún día se ofrecen. No debe seguir existiendo como una segunda ruta paralela de suscripción.
+
+  Razones de la decisión: el producto es suscripción recurrente y Stripe está diseñado alrededor de eso (prorrateo automático al cambiar de plan, reintentos y avisos cuando una tarjeta rebota, y **Customer Portal alojado** que resuelve la cancelación autoservicio del punto A casi sin código). MercadoPago está pensado para comercio de pago único y todo eso habría que construirlo a mano. Además su comisión se publica sin IVA, así que el costo real es mayor.
+
+  **Implicaciones concretas para esta sección:** el punto A se implementa contra la API de Stripe (`Subscription.cancel_at_period_end = true` cubre la regla 3 de forma nativa: cancela la renovación y conserva el servicio hasta `current_period_end`, sin emitir cargo nuevo). Evaluar usar directamente el **Customer Portal** de Stripe en vez de construir la cancelación propia — si se opta por él, la pantalla de Cowork se reduce a mostrar el estado y un botón que abre el portal.
+
+  **Deuda a limpiar:** hay dos integraciones a medias conviviendo (`SubscriptionController` con MercadoPago, `StripeWebhookController`, `BillingProviderInterface`). Esa duplicidad ya causó inconsistencias reales —ver §58, el límite de colaboradores que sale distinto según el camino de registro—. Consolidar en una sola ruta y retirar el código muerto de la otra, dejando MercadoPago solo tras una bandera para el caso de efectivo.
+
+  **Pendiente de Francisco (no bloquea el diseño, sí el despliegue):** confirmar que puede abrir cuenta de Stripe con sus datos fiscales mexicanos. El timbrado CFDI no cambia con esta decisión — lo emite su PAC, no la pasarela (§ pendiente de CFDI).
 
 **B. Eliminación de empresa en dos fases**
 

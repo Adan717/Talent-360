@@ -382,11 +382,13 @@ export const SaaSLandingPage = () => {
     }
   };
 
-  // Professional pricing calculations
-  const pricePerUser = 12; // $12 MXN per user
+  // Professional and Enterprise pricing calculations
+  const pricePerUser = 29; // $29 MXN per user/month ($24 in yearly)
   const monthlyProPrice = proEmployeesCount * pricePerUser;
-  const yearlyProPrice = Math.round((proEmployeesCount * pricePerUser * 12) * 0.8); // 20% discount
-  const fixedEnterprisePrice = 499;
+  const yearlyProPrice = Math.round(proEmployeesCount * 24 * 12); // $24/user/mo billed annually
+  const enterprisePricePerUser = 69; // $69 MXN per user/month ($55 in yearly)
+  const monthlyEnterprisePrice = proEmployeesCount * enterprisePricePerUser;
+  const yearlyEnterprisePrice = Math.round(proEmployeesCount * 55 * 12); // $55/user/mo billed annually
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
@@ -1286,7 +1288,7 @@ export const SaaSLandingPage = () => {
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-black text-slate-900 transition-all">
-                      ${(billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 0.8) : fixedEnterprisePrice).toLocaleString()}
+                      ${(billingCycle === 'yearly' ? Math.round(monthlyEnterprisePrice * 0.8) : monthlyEnterprisePrice).toLocaleString()}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
@@ -1297,7 +1299,7 @@ export const SaaSLandingPage = () => {
                     {billingCycle === 'yearly' ? 'Facturado anualmente:' : 'Ahorra 20% en Plan Anual:'}
                   </span>
                   <span className="text-slate-700 font-bold whitespace-nowrap">
-                    ${(billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 12 * 0.8) : Math.round(fixedEnterprisePrice * 12 * 0.8)).toLocaleString()} MXN/año
+                    ${yearlyEnterprisePrice.toLocaleString()} MXN/año
                   </span>
                 </div>
               </div>
@@ -1579,7 +1581,7 @@ export const SaaSLandingPage = () => {
                         ${selectedPlan === 'PRO' 
                           ? (billingCycle === 'yearly' ? yearlyProPrice.toLocaleString() : monthlyProPrice.toLocaleString()) 
                           : selectedPlan === 'Enterprise' 
-                            ? (billingCycle === 'yearly' ? Math.round(fixedEnterprisePrice * 12 * 0.8).toLocaleString() : fixedEnterprisePrice.toLocaleString()) 
+                            ? (billingCycle === 'yearly' ? yearlyEnterprisePrice.toLocaleString() : monthlyEnterprisePrice.toLocaleString()) 
                             : '0'}
                       </span>
                       <span className="block text-[9px] text-blue-500 font-bold uppercase">

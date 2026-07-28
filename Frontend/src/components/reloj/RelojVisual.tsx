@@ -17,6 +17,7 @@ import DialPrincipal from './DialPrincipal';
 import MealPhotoCapture from './MealPhotoCapture';
 import MealQueue from './MealQueue';
 import { SillaRequestsPanel } from './SillaRequestsPanel';
+import { getStoreScheduleState, formatWait } from './logic/storeSchedule';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -396,52 +397,26 @@ export default function RelojVisual({
   const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
   const [weeklyPayrollData, setWeeklyPayrollData] = useState<any>(null);
 
-  // Helper to check if store is closed based on schedule and pre-opening access window
-  const getStoreClosedInfo = () => {
-    const openTimeStr = systemSettings?.storeSchedule?.openTime || '08:00';
-    const closeTimeStr = systemSettings?.storeSchedule?.closeTime || '18:00';
-    const preOpeningAccessMins = systemSettings?.clockOpConfig?.preOpeningAccessMins ?? 60;
-    
-    const [oh, om] = openTimeStr.split(':').map(Number);
-    const [ch, cm] = closeTimeStr.split(':').map(Number);
-    const baseOpenMins = oh * 60 + om;
-    const closeMins = ch * 60 + cm;
-    
-    // Extend the opening time backwards by preOpeningAccessMins
-    let openMins = baseOpenMins - preOpeningAccessMins;
-    if (openMins < 0) {
-      openMins += 24 * 60;
-    }
-    
-    let isClosed = false;
-    if (openMins < closeMins) {
-      isClosed = currentSimTime < openMins || currentSimTime > closeMins;
-    } else {
-      isClosed = currentSimTime > closeMins && currentSimTime < openMins;
-    }
-
-    let remainingMins = 0;
-    if (isClosed) {
-      if (currentSimTime < openMins) {
-        remainingMins = openMins - currentSimTime;
-      } else {
-        remainingMins = (24 * 60 - currentSimTime) + openMins;
-      }
-    }
-
-    const hours = Math.floor(remainingMins / 60);
-    const minsFinal = remainingMins % 60;
-    let waitTimeText = '';
-    if (hours > 0) {
-      waitTimeText = `${hours} ${hours === 1 ? 'hora' : 'horas'} y ${minsFinal} ${minsFinal === 1 ? 'minuto' : 'minutos'}`;
-    } else {
-      waitTimeText = `${minsFinal} ${minsFinal === 1 ? 'minuto' : 'minutos'}`;
-    }
-
-    return { isClosed, waitTimeText };
-  };
-
-  const { isClosed: isStoreClosed, waitTimeText } = getStoreClosedInfo();
+  // 2026-07-26 — Primera pieza del reordenamiento del Reloj (acordado con Francisco).
+  // Esta regla vivía escrita a mano aquí dentro y fue la que falló en producción: el mismo
+  // día y a la misma hora le decía "Empresa Cerrada" al administrador mientras a los
+  // colaboradores les decía "ABIERTO" y les dejaba fichar. Ahora vive en
+  // `logic/storeSchedule.ts`, sin React, con 29 comprobaciones que la verifican en
+  // milisegundos (`storeSchedule.test.ts`) — incluidos los casos de medianoche y de
+  // configuración inválida, que a mano eran prácticamente imposibles de probar.
+  //
+  // Nota importante que quedó documentada en ese módulo: esto es SOLO la regla de horario.
+  // El estado real de apertura del día lo lleva el backend (`store_daily_opening_status`,
+  // "Apertura de hoy a cargo de X"). Que existan dos fuentes y puedan contradecirse es el
+  // bug de fondo; quien consuma esto debería combinar ambas, no confiar solo en el horario.
+  const storeSchedule = getStoreScheduleState({
+    nowMins: currentSimTime,
+    openTime: systemSettings?.storeSchedule?.openTime || '08:00',
+    closeTime: systemSettings?.storeSchedule?.closeTime || '18:00',
+    preOpeningAccessMins: systemSettings?.clockOpConfig?.preOpeningAccessMins ?? 60,
+  });
+  const isStoreClosed = storeSchedule.isClosed;
+  const waitTimeText = formatWait(storeSchedule.remainingMins);
 
   // Redirect to academia if store is closed and they are on a blocked tab
   useEffect(() => {

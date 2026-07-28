@@ -201,7 +201,7 @@ class SubscriptionController extends Controller
         }
 
         // Fallback to simulated checkout URL
-        $simulatedUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
+        $simulatedUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -237,7 +237,7 @@ class SubscriptionController extends Controller
         }
         $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
-        $confirmUrl = $request->getSchemeAndHttpHost() . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;
+        $confirmUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;
 
         // Fetch platform bank config
         $bankConfigRow = \DB::table('system_settings')
@@ -353,7 +353,7 @@ class SubscriptionController extends Controller
                     </div>
 
                     <div>
-                        <a href='" . env('FRONTEND_URL', 'http://localhost:5173') . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm text-center'>
+                        <a href='" . $this->getFrontendUrl($request) . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm text-center'>
                             Cancelar pago y volver
                         </a>
                     </div>
@@ -412,9 +412,6 @@ class SubscriptionController extends Controller
             </body>
             </html>
             ";
-        $origin = $request->header('Origin') ?: $request->header('Referer');
-        $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
-        $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
 
         return response($html, 200, ['Content-Type' => 'text/html']);
     }
@@ -436,9 +433,7 @@ class SubscriptionController extends Controller
             // Mark registration as processed
             $reg->delete();
 
-            $origin = $request->header('Origin') ?: $request->header('Referer');
-            $parsedOrigin = $origin ? rtrim(parse_url($origin, PHP_URL_SCHEME) . '://' . parse_url($origin, PHP_URL_HOST) . (parse_url($origin, PHP_URL_PORT) ? ':' . parse_url($origin, PHP_URL_PORT) : ''), '/') : null;
-            $frontendUrl = env('FRONTEND_URL') ?: ($parsedOrigin ?: 'http://localhost:5173');
+            $frontendUrl = $this->getFrontendUrl($request);
             if ($isUpgrade) {
                 return redirect("$frontendUrl/app?payment=success&action=upgrade");
             }
@@ -611,5 +606,29 @@ class SubscriptionController extends Controller
                 'admin' => $admin
             ];
         });
+    }
+
+    private function getBaseUrl(Request $request): string
+    {
+        $host = $request->header('X-Forwarded-Host') ?: ($request->header('Host') ?: $request->getHttpHost());
+        $scheme = $request->header('X-Forwarded-Proto') ?: $request->getScheme();
+        return rtrim("$scheme://$host", '/');
+    }
+
+    private function getFrontendUrl(Request $request): string
+    {
+        if (env('FRONTEND_URL')) {
+            return env('FRONTEND_URL');
+        }
+        $origin = $request->header('Origin') ?: $request->header('Referer');
+        if ($origin) {
+            $scheme = parse_url($origin, PHP_URL_SCHEME);
+            $host = parse_url($origin, PHP_URL_HOST);
+            $port = parse_url($origin, PHP_URL_PORT);
+            if ($scheme && $host) {
+                return rtrim($scheme . '://' . $host . ($port ? ':' . $port : ''), '/');
+            }
+        }
+        return $this->getBaseUrl($request);
     }
 }

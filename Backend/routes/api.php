@@ -272,6 +272,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/lft-holidays', [LftSettingController::class, 'saveHoliday']);
         Route::delete('/admin/lft-holidays/{id}', [LftSettingController::class, 'deleteHoliday']);
 
+        // §67.C — incidencias de fichaje (foto omitida por falla de cámara) para el supervisor.
+        Route::get('/admin/clock/flagged-punches', [TimeEntryController::class, 'flaggedPunches']);
+
         // §65: administración de la matriz de capacidades por puesto — INDELEGABLE,
         // solo admin (otorgar permisos es la llave que se queda con el dueño).
         Route::middleware('role:admin')->group(function () {

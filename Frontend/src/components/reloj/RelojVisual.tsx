@@ -2704,10 +2704,11 @@ export default function RelojVisual({
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(prev => !prev)}
-          className="w-14 h-14 bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-lg shadow-violet-600/35 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/40 cursor-pointer outline-none shrink-0"
+          className="w-16 h-16 bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-[0_0_30px_rgba(138,43,226,0.65)] flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 cursor-pointer outline-none relative shrink-0"
           title="Menú de Operaciones y Soporte AI"
         >
-          {isFabSheetOpen ? <X size={24} /> : <Sparkles size={24} className="text-white" />}
+          <span className="absolute -inset-1 rounded-full bg-purple-600/40 blur-md animate-pulse pointer-events-none"></span>
+          {isFabSheetOpen ? <X size={26} className="relative z-10" /> : <Sparkles size={28} className="text-white relative z-10 animate-pulse" />}
         </button>
       </div>
     );
@@ -3694,7 +3695,7 @@ export default function RelojVisual({
       {/* A3. MOBILE FLOATING DOCK (Fixed at bottom of screen) */}
       {isScrollableMobile && (
         <div className={`${isMobileFrame ? 'absolute bottom-3 inset-x-0' : 'fixed bottom-3 inset-x-0'} z-[80] pointer-events-none flex items-center justify-center px-3 font-sans`}>
-          <div className="w-full max-w-[440px] pointer-events-auto flex items-center gap-1.5">
+          <div className="w-full max-w-[440px] pointer-events-auto flex items-center">
             <MobileBottomNav 
               phoneTab={phoneTab} 
               setPhoneTab={setPhoneTab} 
@@ -3705,7 +3706,9 @@ export default function RelojVisual({
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
             />
-            {renderFloatingActionButton()}
+            <div className="-ml-7 z-20">
+              {renderFloatingActionButton()}
+            </div>
           </div>
         </div>
       )}
@@ -4412,7 +4415,7 @@ export default function RelojVisual({
 
           {/* Desktop Floating Dock (Always Visible) */}
           <div className="mt-8 flex justify-center w-full pb-4">
-            <div className="w-full max-w-[440px] flex items-center gap-1.5">
+            <div className="w-full max-w-[440px] flex items-center">
               <MobileBottomNav 
                 phoneTab={phoneTab} 
                 setPhoneTab={setPhoneTab} 
@@ -4423,7 +4426,9 @@ export default function RelojVisual({
                 isStoreClosed={isStoreClosed} 
                 isMobileFrame={isMobileFrame} 
               />
-              {renderFloatingActionButton()}
+              <div className="-ml-7 z-20">
+                {renderFloatingActionButton()}
+              </div>
             </div>
           </div>
         </div>

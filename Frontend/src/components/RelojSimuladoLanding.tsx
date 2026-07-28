@@ -1074,7 +1074,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           alineada con él sin cálculos aparte. Antes vivía afuera, a la izquierda, para no
           empalmarse con Herramientas — ya no hace falta, Herramientas se quitó de la barra. */}
       <div style={{ transform: 'scale(0.85)', transformOrigin: 'bottom center' }} className="absolute bottom-1 inset-x-0 z-30 shrink-0 flex items-center justify-center px-2">
-        <div className="w-full max-w-[440px] flex items-center gap-1.5">
+        <div className="w-full max-w-[440px] flex items-center">
           <MobileBottomNav
             phoneTab={phoneTab}
             setPhoneTab={(tab) => {
@@ -1089,13 +1089,16 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             clockState={clockState}
             showCustomAlert={(msg) => console.log('Landing Alert:', msg)}
           />
-          <button
-            type="button"
-            onClick={() => setIsFabSheetOpen(prev => !prev)}
-            className="w-14 h-14 bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-lg shadow-violet-600/35 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/40 cursor-pointer outline-none shrink-0"
-          >
-            {isFabSheetOpen ? <X size={24} /> : <Sparkles size={24} className="text-white" />}
-          </button>
+          <div className="-ml-7 z-20">
+            <button
+              type="button"
+              onClick={() => setIsFabSheetOpen(prev => !prev)}
+              className="w-16 h-16 bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-[0_0_30px_rgba(138,43,226,0.65)] flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 cursor-pointer outline-none relative shrink-0"
+            >
+              <span className="absolute -inset-1 rounded-full bg-purple-600/40 blur-md animate-pulse pointer-events-none"></span>
+              {isFabSheetOpen ? <X size={26} className="relative z-10" /> : <Sparkles size={28} className="text-white relative z-10 animate-pulse" />}
+            </button>
+          </div>
         </div>
       </div>
 

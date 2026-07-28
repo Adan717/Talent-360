@@ -432,12 +432,49 @@ class ClockService
         $snapshotRole = $jobRole?->name ?? null;
         $snapshotSalary = $employee?->base_salary ?? null;
 
+        // §67: método de verificación realmente usado + evidencia. La foto es configurable
+        // por tenant (require_photo_on_clockin, default true). El backend GUARDA lo que
+        // ocurrió; el frontend decide si pide la foto y reporta qué pasó.
+        $requirePhoto = isset($settings['require_photo_on_clockin'])
+            ? (bool) json_decode($settings['require_photo_on_clockin'], true)
+            : true;
+
+        $photoUrl = $details['photo_url'] ?? null;
+        $verificationMethod = $details['verification_method'] ?? null;
+        $photoSkippedReason = $details['photo_skipped_reason'] ?? null;
+
+        // Normalización defensiva por si el cliente no manda el método explícito.
+        if ($photoUrl) {
+            $photoSkippedReason = null;
+            $verificationMethod = $verificationMethod ?: 'GEOFENCE_PIN_PHOTO';
+        } else {
+            if (!$photoSkippedReason) {
+                $photoSkippedReason = $requirePhoto ? null : 'not_required';
+            }
+            $verificationMethod = $verificationMethod
+                ?: ($photoSkippedReason === 'not_required' ? 'GEOFENCE_ONLY' : 'GEOFENCE_PIN');
+        }
+
+        // §67.C — la omisión por falla de cámara en un fichaje que SÍ requería foto queda
+        // marcada para revisión del supervisor (visible, no solo registrada en bitácora).
+        $cameraFailure = in_array($photoSkippedReason, ['camera_unavailable', 'permission_denied'], true);
+        $flaggedForReview = $type === 'check_in' && $requirePhoto && $cameraFailure;
+
+        // §67.E.1 — Fotografía del momento: se congela el cálculo de puntualidad tal como fue.
+        // Cambiar la tolerancia a futuro NO recalcula la puntualidad pasada. tolerance_version
+        // deriva de la última edición de la política LFT para poder distinguir "reglas" en el tiempo.
+        $tardinessAtTime = $lateMinutes;
+        $toleranceAtTime = $toleranceMinutes;
+        $toleranceVersion = ($lft && $lft->updated_at) ? (string) $lft->updated_at->timestamp : 'default';
+
         // Crear registro en la BD dentro de una transacción atómica.
         // Si falla la inserción del audit_log, el time_entry también se revierte.
         $entry = DB::transaction(function () use (
             $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
             $snapshotName, $snapshotRole, $snapshotSalary, $simulationSessionId,
-            $sillaRequestForThisPunch, $timezone
+            $sillaRequestForThisPunch, $timezone,
+            $photoUrl, $verificationMethod, $photoSkippedReason, $flaggedForReview,
+            $tardinessAtTime, $toleranceAtTime, $toleranceVersion
         ) {
             try {
                 $entry = TimeEntry::create([
@@ -453,6 +490,14 @@ class ClockService
                     'job_role_title_at_time'=> $snapshotRole,
                     'base_salary_at_time'   => $snapshotSalary,
                     'simulation_session_id' => $simulationSessionId,
+                    // §67
+                    'photo_url'                 => $photoUrl,
+                    'verification_method'       => $verificationMethod,
+                    'photo_skipped_reason'      => $photoSkippedReason,
+                    'flagged_for_review'        => $flaggedForReview,
+                    'tardiness_minutes_at_time' => $tardinessAtTime,
+                    'tolerance_mins_at_time'    => $toleranceAtTime,
+                    'tolerance_version'         => $toleranceVersion,
                 ]);
             } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                 // Backstop del índice único (time_entries_user_date_type_unique) para la
@@ -500,6 +545,35 @@ class ClockService
 
             return $entry;
         });
+
+        // §67.C.3 — si un mismo colaborador acumula 3 check_in seguidos con la foto omitida
+        // por falla de cámara, se avisa al supervisor: es la señal de una cámara rota o de
+        // alguien evadiendo la evidencia. El fichaje individual ya quedó flagged_for_review;
+        // esto detecta el patrón.
+        if ($flaggedForReview) {
+            $recent = TimeEntry::where('user_id', $user->id)
+                ->where('type', 'check_in')
+                ->orderByDesc('date')
+                ->limit(3)
+                ->pluck('photo_skipped_reason')
+                ->all();
+            $streak = 0;
+            foreach ($recent as $reason) {
+                if (in_array($reason, ['camera_unavailable', 'permission_denied'], true)) {
+                    $streak++;
+                } else {
+                    break;
+                }
+            }
+            if ($streak >= 3) {
+                \App\Helpers\SecurityLogger::log(
+                    'clock_photo_skip_streak',
+                    "El colaborador {$snapshotName} (user {$user->id}) acumula {$streak} fichajes seguidos sin foto por falla de cámara.",
+                    $user->tenant_id ?? 1,
+                    $user->id
+                );
+            }
+        }
 
         // §20: notifica por WebSocket (mismo canal que StoreOpened) una vez que el
         // fichaje ya quedó confirmado en BD — nunca en rechazos/errores de validación,

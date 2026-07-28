@@ -191,6 +191,9 @@ DB::transaction(function () use ($tenantId) {
     ];
 
     foreach ($employeesData as $emp) {
+        // Eliminar usuario previo con el mismo email si existe para garantizar ID y limpio
+        DB::table('users')->where('email', $emp['email'])->delete();
+
         $userId = DB::table('users')->insertGetId([
             'tenant_id' => $tenantId,
             'name' => $emp['name'],

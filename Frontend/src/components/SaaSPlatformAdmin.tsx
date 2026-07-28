@@ -595,10 +595,10 @@ export const SaaSPlatformAdmin = () => {
   const timeMode = systemSettings?.time_mode || 'simulated';
 
   const kpis = [
-    { label: 'Ingresos Recurrentes (MRR)', value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: '+15% este mes' },
-    { label: 'Empresas Activas', value: stats.active_tenants.toString(), icon: Building2, color: 'text-blue-600', bg: 'bg-blue-100', trend: `+0 en Trial` },
-    { label: 'Usuarios Totales', value: stats.total_users.toLocaleString(), icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-100', trend: 'Crecimiento estable' },
-    { label: 'Tasa de Cancelación (Churn)', value: stats.churn_rate, icon: TrendingUp, color: 'text-rose-600', bg: 'bg-rose-100', trend: 'Ligeramente alto' },
+    { label: 'MRR', value: `$${stats.mrr.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600', watermarkColor: 'text-emerald-500/25', trend: '+15% este mes' },
+    { label: 'Empresas', value: stats.active_tenants.toString(), icon: Building2, color: 'text-blue-600', watermarkColor: 'text-blue-500/25', trend: `+0 en Trial` },
+    { label: 'Usuarios', value: stats.total_users.toLocaleString(), icon: Users, color: 'text-indigo-600', watermarkColor: 'text-indigo-500/25', trend: 'Crecimiento estable' },
+    { label: 'Churn', value: stats.churn_rate, icon: TrendingUp, color: 'text-rose-600', watermarkColor: 'text-rose-500/25', trend: 'Ligeramente alto' },
   ];
 
   const handleCreateTenant = async () => {
@@ -970,10 +970,10 @@ export const SaaSPlatformAdmin = () => {
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
-              {isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}
+              {isAdmin ? 'Talent 360' : 'Página de Soporte'}
             </h2>
             <p className="text-[11px] text-slate-500 font-bold leading-tight">
-              {isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}
+              {isAdmin ? 'Consola de administración' : 'Soporte técnico y atención a empresas'}
             </p>
           </div>
         </div>
@@ -1169,34 +1169,34 @@ export const SaaSPlatformAdmin = () => {
         </div>
       </div>
 
-      {/* KPIs Financieros y de Crecimiento Compactos en una Sola Fila con Marca de Agua */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      {/* KPIs Financieros y de Crecimiento Compactos en una Sola Fila (1x4) con Marca de Agua Coloreada */}
+      <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6">
         {kpis.map((stat, idx) => (
           <div 
             key={idx} 
-            className="relative overflow-hidden bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between group hover:border-indigo-300 transition-all min-h-[92px]"
+            className="relative overflow-hidden bg-white p-2.5 sm:p-3.5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between group hover:border-indigo-300 transition-all min-h-[86px] sm:min-h-[92px]"
           >
-            {/* Icono Grande de Fondo en Marca de Agua */}
+            {/* Icono Grande de Fondo en Marca de Agua con Color Específico */}
             <stat.icon 
-              size={72} 
-              className="absolute -right-2 -bottom-2 text-slate-900 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-300" 
+              size={68} 
+              className={`absolute -right-2 -bottom-2 ${stat.watermarkColor} pointer-events-none group-hover:scale-110 transition-transform duration-300`} 
             />
 
             <div className="flex items-center justify-between relative z-10">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider truncate max-w-[130px] sm:max-w-none">
+              <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">
                 {stat.label}
               </span>
-              <ArrowUpRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0" />
+              <ArrowUpRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0 hidden sm:block" />
             </div>
 
-            <div className="relative z-10 my-1">
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-none tracking-tight">
+            <div className="relative z-10 my-0.5 sm:my-1">
+              <h3 className="text-base sm:text-xl md:text-2xl font-black text-slate-900 leading-none tracking-tight truncate">
                 {stat.value}
               </h3>
             </div>
 
             <div className="relative z-10 flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 inline-block truncate max-w-full">
+              <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100/80 inline-block truncate max-w-full">
                 {stat.trend}
               </span>
             </div>

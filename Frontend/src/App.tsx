@@ -232,21 +232,12 @@ function MainLayout() {
   const modules: AppModule[] = [
     {
       id: 'dashboard',
-      title: 'Centro de Mando',
-      desc: 'Indicadores globales',
-      icon: <LayoutDashboard size={20} />,
+      title: 'Monitor 360',
+      desc: 'Supervisión en Tiempo Real',
+      icon: <Activity size={20} />,
       color: 'bg-blue-50 text-blue-600 border-blue-100',
       minTier: 'freemium',
-      version: 'v3.0'
-    },
-    {
-      id: 'monitor',
-      title: 'Monitor 360',
-      desc: 'Supervisión Tiempo Real',
-      icon: <Activity size={20} />,
-      color: 'bg-rose-50 text-rose-600 border-rose-100',
-      minTier: 'freemium',
-      version: 'v1.0'
+      version: 'v4.0'
     },
     {
       id: 'rrhh',
@@ -688,8 +679,7 @@ function MainLayout() {
         {/* Dynamic Canvas */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar relative z-10">
           <Suspense fallback={<LoadingScreen message="Cargando Módulo..." />}>
-            {activeModule === 'dashboard' && <DashboardTalent360 setActiveModule={setActiveModule} />}
-            {activeModule === 'monitor' && <MonitorActividadesTiempoReal setActiveModule={setActiveModule} />}
+            {activeModule === 'dashboard' && <MonitorActividadesTiempoReal setActiveModule={setActiveModule} />}
             {activeModule === 'rrhh' && <RecursosHumanos />}
             {activeModule === 'ats' && <AtsManager />}
             {activeModule === 'operativo' && <PanelTareasRutinas />}

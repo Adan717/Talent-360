@@ -5897,8 +5897,8 @@ export default function RelojVisual({
 
                               {/* Modal MealReservation */}
           {showMealReservationModal && (
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Enviando Solicitud...">
-              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative overflow-hidden">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Aparta tu Comida">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl animate-fade-in-up text-slate-800 text-left relative overflow-hidden max-h-[90vh] flex flex-col">
                 {isSwappingLoading && pendingSwapPartner ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
                     <div className="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin mx-auto"></div>
@@ -5966,19 +5966,48 @@ export default function RelojVisual({
                     // Candidatos compatibles para el intercambio rápido
                     const swapCandidates = globalUsers.filter((u: any) => 
                       u.is_active_employee !== false && 
-                      u.id !== currentUser.id && 
+                      u.id !== currentUser?.id && 
                       hasReservedMeal[u.id] && 
-                      areRolesCompatibleForSwap(currentUser.role, u.role)
+                      areRolesCompatibleForSwap(currentUser?.role, u.role)
                     );
 
+                    const currentReservedSlot = userReservedMealSlots[currentUser?.id]?.[0];
+
                     return (
-                      <>
-                        <h3 className="font-bold text-amber-600 mb-2 text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
-                        <p className="text-xs text-slate-500 mb-4 bg-amber-50 p-3 rounded-xl border border-amber-100/60 leading-normal">
-                          Selecciona tu horario o solicita un intercambio con un compañero compatible de tu mismo rango. (Aforo máximo: {mealSettings?.maxChairs || 3})
-                        </p>
+                      <div className="overflow-y-auto custom-scrollbar pr-1 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-extrabold text-amber-600 text-xl flex items-center gap-2"><span>🍔</span> Aparta tu Comida</h3>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Selecciona un horario disponible. Se garantiza 1 solo lugar por colaborador. (Aforo máximo: {mealSettings?.maxChairs || 3})
+                            </p>
+                          </div>
+                          <button 
+                            onClick={() => setShowMealReservationModal(false)} 
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-500 p-1.5 rounded-full border-none cursor-pointer transition-colors text-xs shrink-0"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {currentReservedSlot && (
+                          <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base">✅</span>
+                              <div>
+                                <p className="text-[11px] font-black text-emerald-950 leading-tight">Lugar Garantizado Reservado</p>
+                                <p className="text-[10px] text-emerald-700 font-bold leading-tight mt-0.5">
+                                  Inicio a las {currentReservedSlot}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-extrabold bg-emerald-200/70 text-emerald-900 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                              1 Lugar Activo
+                            </span>
+                          </div>
+                        )}
                         
-                        <div className="grid grid-cols-2 gap-2.5 mb-5 max-h-36 overflow-y-auto custom-scrollbar pr-2">
+                        <div className="grid grid-cols-2 gap-2 mb-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
                           {(() => {
                             const safeStart = mealSettings?.startHour ?? 13;
                             const safeEnd = mealSettings?.endHour ?? 17;
@@ -5997,6 +6026,7 @@ export default function RelojVisual({
                               const neededBlocks = Math.ceil(userMealMinutes / stepMins);
                               const totalPossibleBlocks = ((mealSettings?.endHour ?? 17) - (mealSettings?.startHour ?? 13)) * (60 / stepMins);
                               
+                              const isMySlot = currentReservedSlot === slotStr;
                               let canReserve = true;
                               let blockReason = '';
                               let firstBlockReservations = reservedMeals[slotStr] || [];
@@ -6013,20 +6043,21 @@ export default function RelojVisual({
                                     const checkSlotStr = `${ch > 12 ? ch - 12 : ch}:${cm.toString().padStart(2,'0')} ${campm}`;
                                     
                                     const res = reservedMeals[checkSlotStr] || [];
-                                    if (res.length >= (mealSettings?.maxChairs || 3)) {
+                                    const resWithoutMe = res.filter((r: any) => Number(r.userId) !== Number(currentUser?.id));
+                                    if (resWithoutMe.length >= (mealSettings?.maxChairs || 3)) {
                                        canReserve = false;
                                        blockReason = 'Aforo Lleno';
                                        break;
                                     }
-                                    if (mealSettings?.preventRoleOverlap && res.some((r: any) => r.role === currentUser.role)) {
+                                    if (mealSettings?.preventRoleOverlap && resWithoutMe.some((r: any) => r.role === currentUser?.role)) {
                                        canReserve = false;
-                                       blockReason = `Choque: ${currentUser.role}`;
+                                       blockReason = `Choque: ${currentUser?.role}`;
                                        break;
                                     }
                                  }
                               }
                               
-                              const disabled = !canReserve;
+                              const disabled = !canReserve && !isMySlot;
 
                               if (disabled && mealSettings?.hideFullSlots && (blockReason === 'Aforo Lleno' || blockReason.startsWith('Choque'))) {
                                  return null;
@@ -6037,11 +6068,17 @@ export default function RelojVisual({
                                   key={slotStr}
                                   onClick={() => confirmMealReservation(i)}
                                   disabled={disabled}
-                                  className={`p-2.5 rounded-xl border-2 flex flex-col items-center justify-center transition-colors border-none cursor-pointer ${disabled ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400' : 'bg-white border-amber-200 hover:border-amber-400 active:bg-amber-50 text-slate-800'}`}
+                                  className={`p-3 rounded-2xl border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                                    isMySlot
+                                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md ring-2 ring-emerald-300'
+                                      : disabled
+                                      ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed text-slate-400'
+                                      : 'bg-white border-amber-200 hover:border-amber-400 hover:bg-amber-50/50 text-slate-800'
+                                  }`}
                                 >
-                                  <span className="font-bold text-xs">{slotStr}</span>
-                                  <span className="text-[9px] mt-0.5 font-bold text-center leading-tight">
-                                    {disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.length}`}
+                                  <span className="font-extrabold text-xs">{slotStr}</span>
+                                  <span className={`text-[9.5px] mt-1 font-bold text-center leading-tight ${isMySlot ? 'text-emerald-100' : ''}`}>
+                                    {isMySlot ? '✓ Tu Lugar Apartado' : disabled ? `🔒 ${blockReason}` : `🪑 Disp: ${(mealSettings?.maxChairs || 3) - firstBlockReservations.filter((r: any) => Number(r.userId) !== Number(currentUser?.id)).length}`}
                                   </span>
                                 </button>
                               );
@@ -6050,7 +6087,7 @@ export default function RelojVisual({
                         </div>
 
                         {/* Listado Deslizable de Intercambio Filtrado */}
-                        <div className="border-t border-slate-100 pt-3.5 mb-4">
+                        <div className="border-t border-slate-100 pt-3.5">
                           <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                             <span>🔄</span> ¿Intercambiar horario con un compañero?
                           </h4>
@@ -6090,7 +6127,7 @@ export default function RelojVisual({
                               })}
                             </div>
                           ) : (
-                            <p className="text-slate-400 text-[10.5px] font-semibold text-center py-4 bg-slate-50 border border-slate-100 rounded-2xl leading-relaxed select-none">
+                            <p className="text-slate-400 text-[10.5px] font-semibold text-center py-3 bg-slate-50 border border-slate-100 rounded-2xl leading-relaxed select-none">
                               No hay compañeros compatibles con reservas hoy para realizar intercambio.
                             </p>
                           )}
@@ -6098,11 +6135,11 @@ export default function RelojVisual({
                         
                         <button 
                           onClick={() => setShowMealReservationModal(false)} 
-                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl border-none cursor-pointer transition-colors text-xs uppercase tracking-wider"
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl transition-all shadow-md text-xs uppercase tracking-wider border-none cursor-pointer mt-2"
                         >
-                          Cerrar
+                          Listo / Cerrar
                         </button>
-                      </>
+                      </div>
                     );
                   })()
                 )}

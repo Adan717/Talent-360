@@ -917,10 +917,23 @@ export function useClockEngine(overrideUser?: any) {
        blocksToReserve.push(`${bh > 12 ? bh - 12 : bh}:${bm.toString().padStart(2,'0')} ${bampm}`);
     }
 
+    // Clean up any previous reservation for currentUser to guarantee strictly 1 slot per collaborator
+    const oldSlots = userReservedMealSlots[currentUser.id] || [];
+    const newReservedMeals = { ...reservedMeals };
+    if (oldSlots.length > 0) {
+      oldSlots.forEach(slot => {
+        if (newReservedMeals[slot]) {
+          newReservedMeals[slot] = newReservedMeals[slot].filter((item: any) => Number(item.userId) !== Number(currentUser.id));
+          if (newReservedMeals[slot].length === 0) {
+            delete newReservedMeals[slot];
+          }
+        }
+      });
+    }
+
     setHasReservedMeal({ ...hasReservedMeal, [currentUser.id]: true });
     setUserReservedMealSlots({ ...userReservedMealSlots, [currentUser.id]: blocksToReserve });
     
-    const newReservedMeals = { ...reservedMeals };
     blocksToReserve.forEach(slot => {
        if (!newReservedMeals[slot]) newReservedMeals[slot] = [];
        newReservedMeals[slot].push({ userId: currentUser.id, role: currentUser.role });
@@ -2474,6 +2487,11 @@ export function useClockEngine(overrideUser?: any) {
         handleOpenStore(false);
       } else if (actionText === 'Iniciar Comida' || actionText === 'Iniciar Horario de Comida' || actionText === 'Tomar Comida') {
         // BUG FIX: getButtonProps retorna 'Iniciar Comida', unificamos ambos strings
+        // Si el usuario no ha apartado su lugar de comida, abre el modal de reservación primero
+        if (!hasReservedMeal[currentUser?.id] && useAppStore.getState().isFeatureUnlocked('meal_reservation')) {
+          setShowMealReservationModal(true);
+          return;
+        }
         // NUEVO (§23): si se exige evidencia fotográfica, se abre la cámara PRIMERO; el fichaje real
         // (meal_start) ocurre después, ya con la foto subida (ver submitMealPhotoAndPunch).
         if (isMealPhotoRequired && !isSandboxMode) {

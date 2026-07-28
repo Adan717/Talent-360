@@ -1089,7 +1089,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             clockState={clockState}
             showCustomAlert={(msg) => console.log('Landing Alert:', msg)}
           />
-          <div className="absolute -right-1 -bottom-1 z-40">
+          <div className="absolute right-[2px] bottom-[2px] z-40">
             <button
               type="button"
               onClick={() => setIsFabSheetOpen(prev => !prev)}

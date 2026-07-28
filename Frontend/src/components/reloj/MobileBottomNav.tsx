@@ -94,8 +94,8 @@ export function MobileBottomNav({
       >
         <path 
           d="M 32 0 L 325 0 C 300 0, 300 64, 325 64 L 32 64 A 32 32 0 0 1 32 0 Z" 
-          className="fill-white/92 dark:fill-slate-950/92 stroke-[#8a2be2] dark:stroke-purple-500 backdrop-blur-2xl"
-          strokeWidth="1.75"
+          className="fill-white/92 dark:fill-slate-950/92 stroke-purple-300/80 dark:stroke-purple-400/50 backdrop-blur-2xl"
+          strokeWidth="1.5"
         />
       </svg>
 

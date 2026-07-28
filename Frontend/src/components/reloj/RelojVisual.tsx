@@ -3682,7 +3682,7 @@ export default function RelojVisual({
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
             />
-            <div className="absolute -right-1 -bottom-1 z-[85]">
+            <div className="absolute right-[2px] bottom-[2px] z-[85]">
               {renderFloatingActionButton()}
             </div>
           </div>
@@ -4384,7 +4384,7 @@ export default function RelojVisual({
                 isStoreClosed={isStoreClosed} 
                 isMobileFrame={isMobileFrame} 
               />
-              <div className="absolute -right-1 -bottom-1 z-[85]">
+              <div className="absolute right-[2px] bottom-[2px] z-[85]">
                 {renderFloatingActionButton()}
               </div>
             </div>

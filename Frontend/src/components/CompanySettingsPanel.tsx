@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2, Key, ArrowUp, ArrowDown, Trash2, Plus, Briefcase, GraduationCap, FileText, FileSpreadsheet, Receipt } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { ClockControlCenterPanel } from './reloj/ui/ClockControlCenterPanel';
 
 
 export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = false }: { initialTab?: string; hideSidebar?: boolean }) => {
@@ -381,6 +382,13 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
             Operación del Reloj
           </button>
           <button 
+            onClick={() => setActiveTab('control_center')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'control_center' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Settings size={18} />
+            🎛️ Centro de Control (Módulos)
+          </button>
+          <button 
             onClick={() => setActiveTab('comidas')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'comidas' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
           >
@@ -447,7 +455,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
       <div className="flex-1 p-8 bg-white relative">
 
         {/* Sub-navegación local para pestañas agrupadas del Reloj Checador cuando se oculta el Sidebar */}
-        {hideSidebar && (activeTab === 'reloj' || activeTab === 'reloj_operacion') && (
+        {hideSidebar && (activeTab === 'reloj' || activeTab === 'reloj_operacion' || activeTab === 'control_center') && (
           <div className="flex gap-2 border-b border-slate-200 pb-4 mb-6 shrink-0">
             <button 
               onClick={() => setActiveTab('reloj')}
@@ -465,6 +473,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
             >
               ⚙️ Operación del Reloj
             </button>
+            <button 
+              onClick={() => setActiveTab('control_center')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-none cursor-pointer ${
+                activeTab === 'control_center' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-650/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              🎛️ Centro de Control (Módulos)
+            </button>
           </div>
         )}
         
@@ -472,6 +488,13 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         {saved && (
           <div className="absolute top-4 right-8 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-xl font-bold flex items-center gap-2 animate-in slide-in-from-top-2">
             <CheckCircle2 size={18} /> Ajustes Guardados
+          </div>
+        )}
+
+        {/* --- PESTAÑA: CENTRO DE CONTROL GENERAL (MÓDULOS RELOJ) --- */}
+        {activeTab === 'control_center' && (
+          <div className="animate-in slide-in-from-right-4">
+            <ClockControlCenterPanel />
           </div>
         )}
 

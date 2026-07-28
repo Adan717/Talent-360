@@ -3689,7 +3689,7 @@ export default function RelojVisual({
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}
-          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} isMobileFrame={true} />
+          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} isMobileFrame={isMobileFrame} />
         </div>
       )}
 

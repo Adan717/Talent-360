@@ -2610,7 +2610,7 @@ export default function RelojVisual({
       // ocupe el viewport completo, uno se movía/quedaba fijo y el otro no. Con `absolute` ambos
       // comparten el mismo ancestro posicionado y se mantienen estáticos juntos, igual que la barra
       // superior del menú hamburguesa (también `absolute`).
-      <div className="fixed bottom-3 right-2.5 z-[80] font-sans" ref={fabMenuRef}>
+      <div className="absolute bottom-0 right-0 z-[85] font-sans" ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"
@@ -3690,13 +3690,29 @@ export default function RelojVisual({
             </div>
           )}
 
-          {/* A3. MOBILE BOTTOM NAVIGATION */}
-          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} isMobileFrame={isMobileFrame} />
+        </div>
+      )}
+
+      {/* A3. MOBILE FLOATING DOCK (Fixed at bottom of screen, combining MobileBottomNav + Purple FAB) */}
+      {isScrollableMobile && (
+        <div className={`${isMobileFrame ? 'absolute bottom-2.5 inset-x-0' : 'fixed bottom-3 inset-x-0'} z-[80] pointer-events-none flex items-center justify-center px-2.5 font-sans`}>
+          <div className="w-full max-w-[420px] relative pointer-events-auto">
+            <MobileBottomNav 
+              phoneTab={phoneTab} 
+              setPhoneTab={setPhoneTab} 
+              setInnerTool={setInnerTool} 
+              isDark={isDark} 
+              clockState={clockState} 
+              showCustomAlert={showCustomAlert} 
+              isStoreClosed={isStoreClosed} 
+              isMobileFrame={isMobileFrame} 
+            />
+            {renderFloatingActionButton()}
+          </div>
         </div>
       )}
 
       {/* RENDER OPERATIONAL MODALS FOR MOBILE */}
-      {isScrollableMobile && renderFloatingActionButton()}
       {isScrollableMobile && renderTaskCreatorModal()}
       {isScrollableMobile && renderCopilotChatDrawer()}
 

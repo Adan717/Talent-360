@@ -248,8 +248,19 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/lft-holidays', [LftSettingController::class, 'saveHoliday']);
         Route::delete('/admin/lft-holidays/{id}', [LftSettingController::class, 'deleteHoliday']);
 
+        // §65: administración de la matriz de capacidades por puesto — INDELEGABLE,
+        // solo admin (otorgar permisos es la llave que se queda con el dueño).
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'getMatrix']);
+            Route::put('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'updateMatrix']);
+        });
+
         // Nómina y Reportes Avanzados
-        Route::middleware('tenant.module:reportes')->group(function () {
+        // §65 (1er bloque sensible migrado a permisos delegables): calcular/cerrar nómina
+        // exige la capacidad `manage_payroll`. El admin pasa por bypass; un supervisor ya
+        // NO accede por defecto (set conservador) hasta que el admin se lo otorgue en la
+        // matriz — es el endurecimiento que pidió Francisco (raíz del §64).
+        Route::middleware(['tenant.module:reportes', 'permission:manage_payroll'])->group(function () {
             Route::get('/admin/payroll', [PayrollController::class, 'getPayrollData']);
             Route::get('/admin/reports/export', [PayrollController::class, 'exportReport']);
             Route::post('/admin/payroll/approve', [PayrollController::class, 'approvePayroll']);

@@ -12,6 +12,7 @@ import { useStoreOpening } from './hooks/useStoreOpening';
 import { useKeyholderDelegation } from './hooks/useKeyholderDelegation';
 import { useClockUIState } from './hooks/useClockUIState';
 import { calculateClockState } from './logic/clockStateCalculator';
+import { evaluateCheckIn, resolveTolerance } from './logic/attendance';
 
 export function useClockEngine(overrideUser?: any) {
   const assignments = useTaskStore(s => s.assignments);
@@ -622,15 +623,22 @@ export function useClockEngine(overrideUser?: any) {
                     useTaskStore.getState().triggerCheckInRoutines(userId, u.job_role_id ?? 0, currentSimTime);
                 }
 
+                // Fase 1 del reordenamiento (2026-07-26): la puntualidad se calculaba a mano
+                // aquí, con tolerancia por defecto 10 — mientras que otros tres puntos del
+                // mismo archivo usaban 15 o un 10 fijo. Ahora todos pasan por `logic/attendance.ts`,
+                // que además garantiza que el retardo nunca sea negativo ni decimal (§61).
                 const startMins = shiftConfigs[userId]?.start ? parseInt(shiftConfigs[userId].start.split(':')[0])*60 + parseInt(shiftConfigs[userId].start.split(':')[1]) : 480;
-                const tolerance = shiftConfigs[userId]?.tolerance || 10;
-                if (currentSimTime <= startMins + tolerance) {
+                const evaluacion = evaluateCheckIn({
+                    nowMins: currentSimTime,
+                    shiftStartMins: startMins,
+                    toleranceMins: shiftConfigs[userId]?.tolerance,
+                });
+                if (!evaluacion.isLate) {
                     type = 'success';
                     desc = `Fichaje exitoso. El empleado ha llegado a tiempo (Puntual).`;
                 } else {
                     type = 'warning';
-                    const delayMins = currentSimTime - startMins;
-                    desc = `Fichaje con retardo. El empleado llegó tarde por ${delayMins} minutos.`;
+                    desc = `Fichaje con retardo. El empleado llegó tarde por ${evaluacion.lateMins} minutos.`;
                 }
             }
             else if (state === 'inactive' || state === 'finished') { 
@@ -682,9 +690,21 @@ export function useClockEngine(overrideUser?: any) {
             else if (state === 'inactive' || state === 'finished') type = 'check_out'; // BUG FIX: ambos mapean a check_out
             else if (prevState === 'meal' && state === 'active') type = 'meal_end';
             
+            // Fase 1 del reordenamiento (2026-07-26) — ESTE ES EL PUNTO QUE ESCRIBE A LA BASE.
+            // Antes calculaba el retardo a mano y con una tolerancia distinta a la de otros
+            // tres puntos del archivo. Ahora usa `logic/attendance.ts`, que garantiza que
+            // `lateMins` sea entero y nunca negativo — las dos condiciones que fallaron en
+            // producción (§61: -296.84 min a alguien que llegó temprano, con incidente de
+            // descuento de salario y un insert reventado por el decimal).
+            // Además maneja turnos que cruzan la medianoche, que aquí se calculaban mal.
             const startMins = shiftConfigs[userId]?.start ? parseInt(shiftConfigs[userId].start.split(':')[0])*60 + parseInt(shiftConfigs[userId].start.split(':')[1]) : 480;
-             const isLate = type === 'check_in' && currentSimTime > startMins + (shiftConfigs[userId]?.tolerance ?? (timeBankConfigs.maxLateMinsAllowed ?? 15));
-            const lateMins = isLate ? currentSimTime - startMins : 0;
+            const evalFichaje = evaluateCheckIn({
+                nowMins: currentSimTime,
+                shiftStartMins: startMins,
+                toleranceMins: shiftConfigs[userId]?.tolerance ?? timeBankConfigs.maxLateMinsAllowed,
+            });
+            const isLate = type === 'check_in' && evalFichaje.isLate;
+            const lateMins = isLate ? evalFichaje.lateMins : 0;
             
             syncToBackend('clock/punch', {
                 user_id: userId,
@@ -2034,7 +2054,7 @@ export function useClockEngine(overrideUser?: any) {
     const empleadosEnPuerta = globalUsers.filter(u => u.id !== currentUser.id && (globalClockStates[u.id] === 'waiting_room' || globalClockStates[u.id] === 'waiting')).map((u) => {
       const arrTime = globalArrivalTimes[u.id] || 0;
       const shiftStartMins = parseTimeToMins(shiftConfigs[u.id]?.start || '09:00');
-      const toleranceEndMins = shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15);
+      const toleranceEndMins = shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed);
       const isOnTime = arrTime <= toleranceEndMins; 
       
       const arrH = Math.floor(arrTime / 60);
@@ -2168,9 +2188,11 @@ export function useClockEngine(overrideUser?: any) {
   const handleKioscoAdd = () => {
     if(!kioscoInput) return;
     
-    // Asumimos horario default para kiosco
+    // Asumimos horario default para kiosco.
+    // Fase 1 (2026-07-26): antes la tolerancia estaba escrita a mano como `+ 10` aquí,
+    // distinta a la de los otros puntos del archivo. Ahora sale de la única fuente.
     const shiftStartMins = parseTimeToMins('08:00');
-    const toleranceEndMins = shiftStartMins + 10;
+    const toleranceEndMins = shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed);
 
     const newEmp = { 
       id: Date.now(), 
@@ -2358,7 +2380,7 @@ export function useClockEngine(overrideUser?: any) {
     }
 
     const shiftStartMins = parseTimeToMins((shiftConfigs[currentUser?.id]?.start || '09:00'));
-    const toleranceEndMins = shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15);
+    const toleranceEndMins = shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed);
   
 
 
@@ -3118,7 +3140,7 @@ export function useClockEngine(overrideUser?: any) {
     const shiftStartStr = shiftConfigs[currentUser?.id]?.start || '08:30';
     const shiftStartMins = parseTimeToMins(shiftStartStr);
 
-    const isLate = currentSimTime > (shiftStartMins + (timeBankConfigs.maxLateMinsAllowed ?? 15));
+    const isLate = currentSimTime > (shiftStartMins + resolveTolerance(timeBankConfigs.maxLateMinsAllowed));
 
     const formatTimeMins = (mins: number) => {
       const h = Math.floor(mins / 60);

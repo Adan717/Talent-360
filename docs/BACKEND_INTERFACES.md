@@ -81,6 +81,8 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 
 | §66 | **Ciclo de vida de la suscripción y de la empresa (decisión de producto de Francisco, 2026-07-26):** cancelación autoservicio sin cobro posterior, baja de empresa con 30 días de gracia + purga real, exportación de datos antes de purgar, y cancelación de la suscripción con la pasarela al eliminar. Corrige el hallazgo de que hoy el borrado es "suave" y por eso **el cascada nunca se dispara** y los datos quedan huérfanos para siempre. Ver detalle abajo. | ⏳ Pendiente |
 
+| §67 | Foto en el fichaje como **configuración opcional por tenant/sucursal** (privacidad, normativa o cámaras que fallan): flag `require_photo_on_clockin`, `photo_url` nullable, y registrar el `verification_method` realmente usado. Incluye las 3 reglas de arquitectura que pidió Francisco (fotografía del momento, tolerancia a desconexión, y tipado estricto de estados). Ver detalle abajo. | ⏳ Pendiente |
+
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
 ---
@@ -2588,3 +2590,52 @@ Además: **al eliminar una empresa no se cancela nada con la pasarela de pago.**
 ### Lo que hace Cowork
 
 Pantalla **"Mi suscripción"** en los ajustes de la empresa (plan actual, próximo cobro, cancelar con confirmación clara de hasta cuándo conserva el servicio, y reanudar si se arrepintió), y el botón de **exportar mis datos**. Se construyen contra los contratos de arriba; avisen si cambian alguna forma de respuesta antes de implementar, para no desalinearnos.
+
+---
+
+## §67. Foto en el fichaje configurable + reglas de arquitectura para el reordenamiento del Reloj
+
+**Contexto (Francisco, 2026-07-26).** La captura de foto al fichar debe poder desactivarse por tenant/sucursal: hay clientes con restricciones de privacidad o normativa interna, y hay tiendas donde la cámara simplemente no sirve. Hoy el flujo la asume siempre presente.
+
+### A. Configuración
+
+- Nueva propiedad **`require_photo_on_clockin`** (booleano, **default `true`**) en los ajustes de tienda/tenant. Sugerencia: vivir donde ya viven `storeSchedule` y `clockOpConfig` en `system_settings` por tenant, para no crear un mecanismo nuevo. Editable por el administrador (y sujeta a §65 cuando exista el modelo de permisos — **no** delegable a supervisor, es una decisión de cumplimiento).
+
+### B. Base de datos y payload de `time_entries`
+
+- `photo_url` (o el campo de evidencia) **nullable**.
+- Nueva columna **`verification_method`** (string) con el método realmente usado: `'GEOFENCE_PIN_PHOTO'`, `'GEOFENCE_PIN'`, `'GEOFENCE_ONLY'`. Guardar lo que ocurrió, no lo que se pedía.
+- Nueva columna **`photo_skipped_reason`** (string, nullable): `null` cuando no aplica, o `'not_required'` / `'camera_unavailable'` / `'permission_denied'`. Distingue "no se pidió" de "se pidió y no se pudo" — sin esto, ambos casos se ven idénticos en los reportes y la configuración deja de ser auditable.
+
+### C. Degradación: el punto que hay que resolver bien
+
+La propuesta original era degradar suavemente a `GEOFENCE_PIN` cuando la cámara falla, registrando la bandera. **El riesgo:** si la foto es obligatoria pero al fallar la cámara el fichaje pasa igual y solo queda una línea en la bitácora, entonces no es obligatoria — cualquiera niega el permiso de cámara una vez y nunca más se la piden. Es el mismo patrón del bloqueo por retardos que ya resultó evadible (Hallazgo 1).
+
+**Lo que pedimos:** no bloquear al colaborador (ese objetivo es correcto: nadie debe quedar sin poder fichar por una cámara descompuesta), pero que la omisión sea **visible, no solo registrada**:
+
+1. El fichaje se acepta con `verification_method = 'GEOFENCE_PIN'` y su `photo_skipped_reason`.
+2. Ese fichaje queda **marcado para revisión** y aparece en el monitor del supervisor como incidencia, no enterrado en `audit_logs`.
+3. Si un mismo colaborador acumula N omisiones seguidas por cámara (sugerido: 3), notificar al supervisor — es la señal de que hay una cámara rota o alguien evadiendo.
+
+Sin el punto 2 la configuración es decorativa: nadie revisa bitácoras.
+
+### D. Retención de las fotos (privacidad)
+
+Las fotos de fichaje son datos personales sensibles y la Landing ya promete "Derechos ARCO & Biométricos". Aplicarles la misma política de retención que a la evidencia de comedor (§23: purga a 90 días, comando `meal-evidence:purge`). **Ojo:** ese comando existe pero **nunca se agregó al scheduler** — al implementar esto conviene programar ambos de una vez.
+
+### E. Las 3 reglas de arquitectura para el reordenamiento (Francisco, 2026-07-26)
+
+**E.1 — Fotografía del momento (inmutabilidad de históricos).** Al registrar un fichaje, guardar el cálculo tal como fue: `tardiness_minutes_at_time`, `tolerance_mins_at_time` y `tolerance_version`. Si la empresa cambia la tolerancia de 10 a 5 minutos, los registros pasados conservan su cálculo original y **no se recalcula la puntualidad de forma retroactiva**. Es el mismo patrón que `time_entries` ya usa con `employee_name_at_time` / `job_role_title_at_time` / `base_salary_at_time`, así que es consistente con la arquitectura existente. **Esto son columnas nuevas: bloquea la Fase 1 del lado de Cowork** — mandaremos los campos, pero se descartan hasta que existan.
+
+**E.2 — Tolerancia a desconexión, con una distinción importante.** La sucursal pierde internet y el colaborador no debe quedar atrapado sin poder checar. Pero hay que separar dos cosas que NO son simétricas:
+
+- **Geocerca: sí, decisión local.** Es una *medición* — el dispositivo puede determinar solo si está dentro del radio. Sin riesgo.
+- **Bloqueo por retardos: NO decisión local.** Es una *restricción sobre la persona*. Si se decide localmente, la desconexión se vuelve la forma de evadirla: en dos semanas todos aprenden que con modo avión se les quita el bloqueo. Es exactamente el Hallazgo 1 que motivó construir `GET /me/punctuality-status`.
+
+  **Diseño correcto:** el fichaje **siempre se permite** sin conexión y se encola (la infraestructura de cola offline con firma HMAC ya existe); la **consecuencia del bloqueo la aplica el servidor al sincronizar**, no el dispositivo. El local propone, el servidor dispone. Y con red, el veredicto se cachea **en memoria, nunca en `localStorage`** — que es justo lo que hoy lo hace evadible.
+
+**E.3 — Tipado estricto de los 23 estados.** Al construir `logic/availableActions.ts` (Fase 3), modelar el estado como unión discriminada de TypeScript en vez de banderas booleanas sueltas (`isMeal`, `isBreak`, `isOverdue`), para que estados imposibles —estar en `MEAL_BREAK` y `STORE_CLOSED` a la vez— no compilen. Es más invasivo de lo que parece porque cambia el tipo que consume todo lo demás; por eso va en Fase 3 y no antes.
+
+### Lo que hace Cowork
+
+Saltar el paso de cámara de forma transparente cuando `require_photo_on_clockin` sea falso; degradar a `GEOFENCE_PIN` con su `photo_skipped_reason` cuando la cámara falle; mandar `verification_method` y los campos de fotografía del momento en cada fichaje; y mostrar la incidencia al supervisor. **Bloqueado hasta que existan las columnas de B y E.1** — construirlo antes solo produce datos que el servidor descarta en silencio.

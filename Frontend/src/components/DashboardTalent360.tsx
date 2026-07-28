@@ -797,27 +797,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
             </div>
           )}
 
-          {/* Banner de Bienvenida y Configuración de Giro (Wizard Banner) */}
-          {!systemSettings?.onboarding_completed && (
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-2xl p-4 sm:p-5 shadow-lg mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-amber-300 font-bold shrink-0">
-                  <Sparkles size={22} className="animate-pulse" />
-                </div>
-                <div>
-                  <h4 className="text-sm sm:text-base font-black text-white">Configuración Inicial de Empresa (Wizard)</h4>
-                  <p className="text-xs text-purple-100 font-medium">Selecciona el giro de tu empresa para precargar puestos, tareas, vacantes y cursos recomendados.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding-wizard'))}
-                className="px-4 py-2.5 bg-white hover:bg-slate-50 text-purple-700 rounded-xl font-bold text-xs shadow-md transition-all shrink-0 active:scale-95 flex items-center gap-2"
-              >
-                <Sparkles size={14} className="text-purple-600" />
-                <span>Iniciar Wizard de Giro</span>
-              </button>
-            </div>
-          )}
+
 
       {/* Métricas complementarias (lo que no repite ya las píldoras de arriba) */}
       <div className="grid grid-cols-2 gap-4">

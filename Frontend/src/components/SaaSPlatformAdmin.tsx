@@ -564,6 +564,29 @@ export const SaaSPlatformAdmin = () => {
     return `${clean.slice(0, 3)} ${clean.slice(3, 6)} ${clean.slice(6)}`;
   };
 
+  const getNichoBadge = (nicho?: string) => {
+    const n = (nicho || '').toLowerCase();
+    if (n.includes('retail') || n.includes('tienda') || n.includes('comercio') || n.includes('decoracion') || n.includes('boutique') || n.includes('minimarket') || n.includes('ferreteria')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0">🛍️ Tienda / Retail</span>;
+    }
+    if (n.includes('restaurante') || n.includes('comedor') || n.includes('cafeteria') || n.includes('comida') || n.includes('bar') || n.includes('taqueria')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shrink-0">🍽️ Restaurante</span>;
+    }
+    if (n.includes('oficina') || n.includes('servicios') || n.includes('despacho') || n.includes('agencia') || n.includes('consultoria') || n.includes('inmobiliaria')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md shrink-0">🏢 Servicios</span>;
+    }
+    if (n.includes('taller') || n.includes('mecanico') || n.includes('manufactura') || n.includes('industrial') || n.includes('tecnico')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-md shrink-0">🔧 Taller / Industria</span>;
+    }
+    if (n.includes('salud') || n.includes('farmacia') || n.includes('clinica') || n.includes('hospital')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md shrink-0">🩺 Salud / Clínica</span>;
+    }
+    if (n.includes('educacion') || n.includes('escuela') || n.includes('academia') || n.includes('curso')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md shrink-0">🎓 Educación</span>;
+    }
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md shrink-0">🏬 General</span>;
+  };
+
   const getCleanDbPhone = (val: string) => {
     const clean = val.replace(/\D/g, '');
     if (!clean) return '';
@@ -1397,6 +1420,7 @@ export const SaaSPlatformAdmin = () => {
                    <div className="flex justify-between items-start">
                       <div>
                          <h4 className="font-extrabold text-slate-900 text-sm leading-snug">{comp.name}</h4>
+                         <div className="mt-1">{getNichoBadge(comp.nicho)}</div>
                          <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
                       </div>
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
@@ -1481,7 +1505,12 @@ export const SaaSPlatformAdmin = () => {
                       <tr><td colSpan={6} className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
                    ) : tenantsList.map((comp, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-4 font-bold text-slate-800">{comp.name}</td>
+                          <td className="py-4 font-bold text-slate-800">
+                             <div className="flex items-center gap-2 flex-wrap">
+                                <span>{comp.name}</span>
+                                {getNichoBadge(comp.nicho)}
+                             </div>
+                          </td>
                           <td className="py-4">
                              <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
                                 comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :

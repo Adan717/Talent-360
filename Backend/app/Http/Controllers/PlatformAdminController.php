@@ -106,7 +106,15 @@ class PlatformAdminController extends Controller
             $query->where('is_active', $isActive);
         }
 
-        $tenants = $query->orderBy('created_at', 'desc')->get()->map(function($tenant) {
+        $settingsByTenant = \DB::table('system_settings')
+            ->where('key', 'nicho_configurado')
+            ->pluck('value', 'tenant_id');
+
+        $tenants = $query->orderBy('created_at', 'desc')->get()->map(function($tenant) use ($settingsByTenant) {
+            $rawNicho = $settingsByTenant->get($tenant->id);
+            $parsed = $rawNicho ? json_decode($rawNicho, true) : null;
+            $nicho = is_array($parsed) ? ($parsed['nicho'] ?? null) : null;
+
             return [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
@@ -116,7 +124,8 @@ class PlatformAdminController extends Controller
                 'status' => $tenant->is_active ? 'Activo' : 'Inactivo',
                 'date' => $tenant->created_at ? $tenant->created_at->diffForHumans() : 'Reciente',
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
-                'trial_ends_at' => $tenant->trial_ends_at
+                'trial_ends_at' => $tenant->trial_ends_at,
+                'nicho' => $nicho,
             ];
         });
 

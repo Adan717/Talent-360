@@ -68,14 +68,14 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
 
   return (
     <nav
-      className={`z-[75] h-16 flex items-center justify-between pl-3 pr-20 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all duration-200 ${
+      className={`z-[75] h-16 flex items-center justify-between pl-3 pr-20 border backdrop-blur-md rounded-full transition-all duration-200 ${
         isMobileFrame 
           ? 'absolute bottom-3 left-2.5 right-2.5' 
-          : 'fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md shadow-2xl'
+          : 'fixed bottom-3 left-2.5 right-2.5 shadow-[0_-8px_32px_rgba(0,0,0,0.25)]'
       } ${
         isDark
-          ? 'bg-slate-950/80 border-violet-900/40 text-slate-400 shadow-slate-950/50'
-          : 'bg-white/80 border-violet-100/50 text-slate-500 shadow-slate-200/50'
+          ? 'bg-slate-950/90 border-violet-900/40 text-slate-400'
+          : 'bg-white/90 border-violet-100/60 text-slate-500'
       }`}
       style={{ WebkitMaskImage: notchMaskImage, maskImage: notchMaskImage }}
     >

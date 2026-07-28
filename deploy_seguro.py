@@ -34,17 +34,24 @@ except ImportError:
     sys.exit(1)
 
 # --- Configuración del servidor -------------------------------------------------------------
+# Escenario V2 (2026-07-28): la instancia se despliega en el MISMO servidor del jefe pero
+# como segunda instalación (frontend :3002), desde SU repo nuevo pcmaster-prog/Talent-360-V2.
+# La ruta y los nombres de contenedor de esa instancia se confirman en el servidor y pueden
+# sobreescribirse por CLI: --ruta, --backend, --db-cont, --db-nombre.
 SERVIDOR_IP = "46.225.153.115"
 SERVIDOR_USUARIO = "root"
-RUTA_PROYECTO = "/var/www/talent360"
-CONTENEDOR_BACKEND = "talent360-backend"
-CONTENEDOR_DB = "talent360_postgres"
-BD_NOMBRE = "talent360_saas"
+RUTA_PROYECTO = "/var/www/talent360-v2"
+CONTENEDOR_BACKEND = "talent360-v2-backend"
+CONTENEDOR_DB = "talent360-v2-postgres"
+BD_NOMBRE = "talent360_v2"
 BD_USUARIO = "postgres"
-RUTA_RESPALDOS = "/var/backups/talent360"
+RUTA_RESPALDOS = "/var/backups/talent360-v2"
 
-# Repositorio al que se sube. El servidor DEBE tener este mismo remoto.
-REPO_ESPERADO = "Adan717/Talent-360"
+# Repositorio del que despliega EL SERVIDOR (git pull). El push local va a los DOS remotos:
+# el propio (origin = Adan717/Talent-360) y el del jefe (Talent-360-V2).
+REPO_ESPERADO = "pcmaster-prog/Talent-360-V2"
+REPO_LOCAL = "Adan717/Talent-360"
+URL_REPO_JEFE = "https://github.com/pcmaster-prog/Talent-360-V2.git"
 
 # Claves SSH candidatas, en orden de preferencia. La primera es la dedicada del
 # servidor propio (Talent-360-V2 en Hetzner, generada 2026-07-28).
@@ -150,12 +157,12 @@ def comprobaciones_locales(ensayo):
     ok(f"Rama: {rama}")
 
     _, remotos = cmd_local("git remote -v", permitir_fallo=True)
-    if REPO_ESPERADO not in remotos:
+    if REPO_LOCAL not in remotos:
         raise Abortar(
-            f"El remoto no apunta a {REPO_ESPERADO}. Configúralo con:\n"
-            f"    git remote add origin git@github.com:{REPO_ESPERADO}.git"
+            f"El remoto no apunta a {REPO_LOCAL}. Configúralo con:\n"
+            f"    git remote add origin git@github.com:{REPO_LOCAL}.git"
         )
-    ok(f"Remoto correcto ({REPO_ESPERADO})")
+    ok(f"Remoto correcto ({REPO_LOCAL})")
 
     _, pendientes = cmd_local("git status --porcelain", permitir_fallo=True)
     if pendientes:
@@ -173,7 +180,10 @@ def subir_codigo(mensaje, ensayo):
         cmd_local("git add -A")
         cmd_local(f'git commit -m "{mensaje}"', permitir_fallo=True)
     cmd_local("git push origin main")
-    ok("Código subido a GitHub")
+    # El servidor del jefe hace pull del repo V2 — sin este segundo push, el deploy
+    # "termina bien" pero despliega código viejo.
+    cmd_local(f"git push {URL_REPO_JEFE} main:main")
+    ok("Código subido a los dos repositorios (propio + Talent-360-V2)")
 
 
 def respaldar_base(ssh, ensayo):
@@ -326,17 +336,20 @@ def programar_tareas(ssh, ensayo):
         aviso("Ensayo: no se instala el cron.")
         return
 
+    # El marcador de idempotencia incluye el NOMBRE del contenedor: en un host con dos
+    # instancias (la del jefe + V2), un grep genérico de "artisan schedule:run" vería el
+    # cron de la otra instancia y se saltaría instalar el de ésta.
     crons = [
         (
-            "artisan schedule:run",
+            f"{CONTENEDOR_BACKEND} php artisan schedule:run",
             f"* * * * * docker exec -u www-data {CONTENEDOR_BACKEND} php artisan schedule:run "
-            ">> /var/log/talent360-schedule.log 2>&1",
+            f">> /var/log/{CONTENEDOR_BACKEND}-schedule.log 2>&1",
         ),
         (
-            "artisan queue:work",
-            f"* * * * * flock -n /tmp/talent360-queue.lock docker exec -u www-data {CONTENEDOR_BACKEND} "
+            f"{CONTENEDOR_BACKEND} php artisan queue:work",
+            f"* * * * * flock -n /tmp/{CONTENEDOR_BACKEND}-queue.lock docker exec -u www-data {CONTENEDOR_BACKEND} "
             "php artisan queue:work --stop-when-empty --max-time=50 --tries=3 "
-            ">> /var/log/talent360-queue.log 2>&1",
+            f">> /var/log/{CONTENEDOR_BACKEND}-queue.log 2>&1",
         ),
     ]
 
@@ -374,10 +387,25 @@ def verificar(ssh, ensayo):
 
 
 def main():
+    global RUTA_PROYECTO, CONTENEDOR_BACKEND, CONTENEDOR_DB, BD_NOMBRE
+
     parser = argparse.ArgumentParser(description="Despliegue a Hetzner con respaldo previo")
     parser.add_argument("-m", "--mensaje", default=None, help="Mensaje del commit de despliegue")
     parser.add_argument("--dry-run", action="store_true", help="Ensayo: no modifica nada")
+    parser.add_argument("--ruta", default=None, help=f"Ruta del proyecto en el servidor (default {RUTA_PROYECTO})")
+    parser.add_argument("--backend", default=None, help=f"Contenedor del backend (default {CONTENEDOR_BACKEND})")
+    parser.add_argument("--db-cont", default=None, help=f"Contenedor de Postgres (default {CONTENEDOR_DB})")
+    parser.add_argument("--db-nombre", default=None, help=f"Nombre de la BD (default {BD_NOMBRE})")
     args = parser.parse_args()
+
+    if args.ruta:
+        RUTA_PROYECTO = args.ruta
+    if args.backend:
+        CONTENEDOR_BACKEND = args.backend
+    if args.db_cont:
+        CONTENEDOR_DB = args.db_cont
+    if args.db_nombre:
+        BD_NOMBRE = args.db_nombre
 
     ensayo = args.dry_run
     mensaje = args.mensaje or f"Despliegue {datetime.now():%Y-%m-%d %H:%M}"

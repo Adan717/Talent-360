@@ -2671,11 +2671,6 @@ export default function RelojVisual({
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('buzon'); })} className={fabItemClass(isDark)}>
               <Fingerprint size={14} className="text-sky-400 shrink-0" /> Buzón Anónimo RRHH 🕵️
             </button>
-            {shiftConfigs[currentUser?.id]?.portadorLlaves !== 'Ninguno' && shiftConfigs[currentUser?.id]?.portadorLlaves !== 'ninguno' && (
-              <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('transfer'); })} className={fabItemClass(isDark)}>
-                <Key size={14} className="text-indigo-400 shrink-0" /> Transferir Cierre 🔑
-              </button>
-            )}
             <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('huida'); })} className={fabItemClass(isDark)}>
               <WifiOff size={14} className="text-amber-500 shrink-0" /> Simular Desconexión 🏃
             </button>
@@ -2684,14 +2679,6 @@ export default function RelojVisual({
                 <LogOut size={14} className="text-teal-500 shrink-0" /> Pase de Salida Temporal 🚪
               </button>
             )}
-            {isPro && clockState === 'active' && mealStartTimes[currentUser.id] === undefined && (
-              <button type="button" onClick={closeAnd(() => setShowMealSwapModal(true))} className={fabItemClass(isDark)}>
-                <Utensils size={14} className="text-amber-500 shrink-0" /> Intercambio de Comida 🍽️
-              </button>
-            )}
-            <button type="button" onClick={closeAnd(() => setShowPanicModal(true))} className={fabItemClass(isDark, true)}>
-              <AlertTriangle size={14} className="shrink-0" /> Botón de Pánico 🚨
-            </button>
             <button type="button" onClick={closeAnd(() => setPhoneTab('evaluacion360'))} className={fabItemClass(isDark)}>
               <Star size={14} className="text-amber-400 shrink-0" /> Evaluación de Compañeros ⭐
             </button>

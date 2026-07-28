@@ -96,7 +96,7 @@ export const SaaSPlatformBilling = () => {
   const totalEarnings = invoices.reduce((acc, curr) => curr.status === 'valid' ? acc + curr.total : acc, 0);
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-50 space-y-6">
+    <div className="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto custom-scrollbar bg-slate-50 space-y-6">
       {/* Alertas */}
       {successMsg && (
         <div className="p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
@@ -114,13 +114,13 @@ export const SaaSPlatformBilling = () => {
       {/* Cabecera y botón de acción */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-800">Centro de Facturación Global</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-800">Centro de Facturación Global</h2>
           <p className="text-xs text-slate-400 font-bold">Control de cobros a empresas y timbrado CFDI de suscripciones SaaS</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setShowManualModal(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-1.5"
+            className="w-full sm:w-auto justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-1.5"
           >
             <Plus size={14} /> Emitir Factura Manual
           </button>
@@ -128,7 +128,7 @@ export const SaaSPlatformBilling = () => {
       </div>
 
       {/* Tarjetas de Resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100">
             <DollarSign size={24} />

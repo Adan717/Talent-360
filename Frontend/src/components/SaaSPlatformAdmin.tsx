@@ -961,13 +961,13 @@ export const SaaSPlatformAdmin = () => {
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Top Bar with User Profile */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shrink-0">
             <span className="text-white font-black text-xl">T</span>
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-800 leading-tight">{isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}</h2>
+            <h2 className="text-base sm:text-lg font-black text-slate-800 leading-tight">{isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}</h2>
             <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}</p>
           </div>
         </div>
@@ -976,18 +976,20 @@ export const SaaSPlatformAdmin = () => {
         <div className="relative">
           <button 
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="flex items-center gap-3 hover:bg-slate-50 p-2 rounded-xl border border-slate-200 transition-colors"
+            className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 hover:bg-slate-50 p-2 rounded-xl border border-slate-200 transition-colors"
           >
-            <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 border border-slate-200 overflow-hidden">
-              {currentUser?.avatar ? (
-                <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <User size={18} />
-              )}
-            </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-xs font-black text-slate-800 leading-tight">{currentUser?.name || 'Administrador'}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{currentUser?.role || 'Super Admin'}</p>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 border border-slate-200 overflow-hidden shrink-0">
+                {currentUser?.avatar ? (
+                  <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={18} />
+                )}
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-black text-slate-800 leading-tight truncate max-w-[140px] sm:max-w-none">{currentUser?.name || 'Administrador'}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{currentUser?.role || 'Super Admin'}</p>
+              </div>
             </div>
             <ChevronDown size={14} className="text-slate-400" />
           </button>
@@ -995,7 +997,7 @@ export const SaaSPlatformAdmin = () => {
           {isProfileMenuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)}></div>
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 mt-2 w-full sm:w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="border-b border-slate-100 pb-3 mb-3">
                   <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
                   <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'master@talent360.com'}</p>
@@ -1024,12 +1026,12 @@ export const SaaSPlatformAdmin = () => {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex border-b border-slate-200 gap-6 mb-6">
+      <div className="flex border-b border-slate-200 gap-4 sm:gap-6 mb-6 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
         {isAdmin && (
           <button 
             type="button"
             onClick={() => setActiveTab('dashboard')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 ${
+            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 shrink-0 ${
               activeTab === 'dashboard' 
                 ? 'border-indigo-600 text-indigo-600' 
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -1042,7 +1044,7 @@ export const SaaSPlatformAdmin = () => {
           <button 
             type="button"
             onClick={() => setActiveTab('pending_registrations')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
+            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
               activeTab === 'pending_registrations' 
                 ? 'border-indigo-600 text-indigo-600' 
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -1059,7 +1061,7 @@ export const SaaSPlatformAdmin = () => {
         <button 
           type="button"
           onClick={() => setActiveTab('tickets')}
-          className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
+          className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
             activeTab === 'tickets' 
               ? 'border-indigo-600 text-indigo-600' 
               : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -1072,7 +1074,7 @@ export const SaaSPlatformAdmin = () => {
           <button 
             type="button"
             onClick={() => setActiveTab('security_logs')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
+            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
               activeTab === 'security_logs' 
                 ? 'border-indigo-600 text-indigo-600' 
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -1085,7 +1087,7 @@ export const SaaSPlatformAdmin = () => {
           <button 
             type="button"
             onClick={() => setActiveTab('billing')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 ${
+            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
               activeTab === 'billing' 
                 ? 'border-indigo-600 text-indigo-600' 
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -1099,7 +1101,7 @@ export const SaaSPlatformAdmin = () => {
       {activeTab === 'dashboard' && (
         <>
           {/* Header del Platform Admin */}
-          <div className="bg-slate-900 p-8 rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+          <div className="bg-slate-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-5">
            <Activity size={200} />
         </div>
@@ -1110,13 +1112,13 @@ export const SaaSPlatformAdmin = () => {
             </span>
             <span className="text-slate-400 text-sm font-bold">Modo Dueño del SaaS</span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight">Centro de Control Global</h1>
-          <p className="text-slate-400 mt-2 max-w-xl">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Centro de Control Global</h1>
+          <p className="text-slate-400 mt-2 max-w-xl text-xs sm:text-sm">
             Desde aquí monitoreas la salud de tu negocio de software, la facturación global y la infraestructura de los servidores de todos tus clientes.
           </p>
         </div>
-        <div className="relative z-10 flex flex-col gap-4 items-end">
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 backdrop-blur-md w-full max-w-xs">
+        <div className="relative z-10 flex flex-col gap-4 items-stretch sm:items-end w-full lg:w-auto">
+          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 backdrop-blur-md w-full sm:max-w-xs">
              <div className="flex justify-between items-center mb-2">
                 <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Modo de Tiempo (DB)</span>
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded ${timeMode === 'simulated' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
@@ -1139,7 +1141,7 @@ export const SaaSPlatformAdmin = () => {
                 </button>
              </div>
           </div>
-          <button className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-100 transition-colors flex items-center gap-2">
+          <button className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto">
             <CreditCard size={18} />
             Ver Facturación Stripe
           </button>
@@ -1221,7 +1223,83 @@ export const SaaSPlatformAdmin = () => {
              </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Vista Móvil (Tarjetas Responsivas) */}
+          <div className="block md:hidden space-y-3">
+             {isLoading ? (
+                <div className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</div>
+             ) : tenantsList.length === 0 ? (
+                <div className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</div>
+             ) : tenantsList.map((comp, idx) => (
+                <div key={idx} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-xs">
+                   <div className="flex justify-between items-start">
+                      <div>
+                         <h4 className="font-extrabold text-slate-900 text-sm leading-snug">{comp.name}</h4>
+                         <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                         comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
+                         comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
+                         'bg-slate-200 text-slate-700'
+                      }`}>
+                         {comp.plan}
+                      </span>
+                   </div>
+
+                   <div className="flex items-center justify-between text-xs border-t border-b border-slate-200/70 py-2">
+                      <span className="flex items-center gap-1.5">
+                         <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                         <span className={`font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                      </span>
+                      <span className="font-bold text-slate-600">{comp.users} usuarios</span>
+                   </div>
+
+                   <div className="flex items-center justify-between pt-1">
+                      <div className="text-xs">
+                         {(() => {
+                            if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
+                               return <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>;
+                            }
+                            if (comp.trial_ends_at) {
+                               const endsAt = new Date(comp.trial_ends_at);
+                               const diff = endsAt.getTime() - Date.now();
+                               const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                               return diff > 0 ? (
+                                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">⏳ {days}d prueba</span>
+                               ) : (
+                                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">⚠️ Prueba Expirada</span>
+                               );
+                            }
+                            if (comp.subscription_status === 'active') {
+                               return <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">✓ Suscrito</span>;
+                            }
+                            return null;
+                         })()}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                         <button 
+                           onClick={() => handleOpenDetails(comp.id)}
+                           title="Ver Detalles y Accesos"
+                           className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
+                         >
+                           <Eye size={14} />
+                           Detalles
+                         </button>
+                         <button 
+                           onClick={() => handleImpersonate(comp.id)}
+                           title="Iniciar Sesión como Admin"
+                           className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
+                         >
+                           <LogIn size={14} />
+                           Entrar
+                         </button>
+                      </div>
+                   </div>
+                </div>
+             ))}
+          </div>
+
+          {/* Vista Escritorio (Tabla Completa) */}
+          <div className="hidden md:block overflow-x-auto">
              <table className="w-full text-left text-sm">
                 <thead>
                    <tr className="border-b border-slate-100 text-slate-500">
@@ -1425,12 +1503,12 @@ export const SaaSPlatformAdmin = () => {
 
       {/* Estado de Módulos y Add-ons (App Store / Premium) */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mt-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
               <Activity className="text-indigo-600" size={20} />
               Adopción de Módulos y Precios
            </h2>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2.5 sm:gap-3">
                <button 
                   onClick={handleOpenFreemiumConfig} 
                   className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5"
@@ -1512,22 +1590,22 @@ export const SaaSPlatformAdmin = () => {
       )}
 
       {activeTab === 'pending_registrations' && (
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-in fade-in duration-300">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-slate-200 shadow-sm animate-in fade-in duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-6">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-amber-200/50">
                   Pre-registros Huérfanos
                 </span>
-                <h2 className="text-xl font-black text-slate-800">Registros Inconclusos de Plataforma</h2>
+                <h2 className="text-lg sm:text-xl font-black text-slate-800">Registros Inconclusos de Plataforma</h2>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs sm:text-sm text-slate-500">
                 Usuarios que iniciaron el registro en Talent360 pero no completaron la creación de su empresa. Puedes contactarles para dar seguimiento comercial o eliminar el registro para liberar el correo.
               </p>
             </div>
             <button 
               onClick={fetchPendingRegistrations}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shrink-0 border-none cursor-pointer"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0 border-none cursor-pointer w-full sm:w-auto"
             >
               <RefreshCw size={14} className={isPendingLoading ? 'animate-spin' : ''} />
               Actualizar Lista
@@ -1548,88 +1626,140 @@ export const SaaSPlatformAdmin = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
-                    <th className="p-4 rounded-l-xl">Solicitante</th>
-                    <th className="p-4">Correo Electrónico</th>
-                    <th className="p-4">Proveedor Auth</th>
-                    <th className="p-4">Registro</th>
-                    <th className="p-4 text-right rounded-r-xl">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {pendingRegistrations.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-4 font-black text-slate-800 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200">
+            <>
+              {/* Vista Móvil para Registros Inconclusos */}
+              <div className="block md:hidden space-y-3">
+                {pendingRegistrations.map((u) => (
+                  <div key={u.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-black text-slate-700 text-xs border border-slate-300">
                           {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                         </div>
                         <div>
-                          <p className="font-extrabold text-slate-900">{u.name || 'Sin Nombre'}</p>
+                          <p className="font-extrabold text-slate-900 text-xs">{u.name || 'Sin Nombre'}</p>
                           <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
                         </div>
-                      </td>
-                      <td className="p-4 font-bold text-indigo-600">
-                        {u.email}
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}>
-                          {u.provider}
-                        </span>
-                      </td>
-                      <td className="p-4 text-slate-500 font-medium">
-                        {u.created_at_human}
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(u.email);
-                              alert(`Correo ${u.email} copiado al portapapeles.`);
-                            }}
-                            className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
-                            title="Copiar Correo"
-                          >
-                            <MessageSquare size={14} /> Contactar
-                          </button>
-                          <button
-                            onClick={() => handleDeletePendingRegistration(u.id, u.email)}
-                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
-                            title="Eliminar Registro Inconcluso"
-                          >
-                            <Trash2 size={14} /> Eliminar
-                          </button>
-                        </div>
-                      </td>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                        u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {u.provider}
+                      </span>
+                    </div>
+
+                    <div className="text-xs font-bold text-indigo-600 truncate border-t border-b border-slate-200/70 py-2">
+                      {u.email}
+                      <span className="block text-[10px] text-slate-400 font-normal mt-0.5">{u.created_at_human}</span>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(u.email);
+                          alert(`Correo ${u.email} copiado al portapapeles.`);
+                        }}
+                        className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                        title="Copiar Correo"
+                      >
+                        <MessageSquare size={14} /> Contactar
+                      </button>
+                      <button
+                        onClick={() => handleDeletePendingRegistration(u.id, u.email)}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                        title="Eliminar Registro Inconcluso"
+                      >
+                        <Trash2 size={14} /> Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Vista Escritorio para Registros Inconclusos */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-black uppercase tracking-wider border-b border-slate-200">
+                      <th className="p-4 rounded-l-xl">Solicitante</th>
+                      <th className="p-4">Correo Electrónico</th>
+                      <th className="p-4">Proveedor Auth</th>
+                      <th className="p-4">Registro</th>
+                      <th className="p-4 text-right rounded-r-xl">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingRegistrations.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-4 font-black text-slate-800 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-600 border border-slate-200">
+                            {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-slate-900">{u.name || 'Sin Nombre'}</p>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase">ID #{u.id}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 font-bold text-indigo-600">
+                          {u.email}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            u.provider === 'Google' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}>
+                            {u.provider}
+                          </span>
+                        </td>
+                        <td className="p-4 text-slate-500 font-medium">
+                          {u.created_at_human}
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(u.email);
+                                alert(`Correo ${u.email} copiado al portapapeles.`);
+                              }}
+                              className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-slate-200 cursor-pointer"
+                              title="Copiar Correo"
+                            >
+                              <MessageSquare size={14} /> Contactar
+                            </button>
+                            <button
+                              onClick={() => handleDeletePendingRegistration(u.id, u.email)}
+                              className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold text-xs flex items-center gap-1 border border-rose-200 cursor-pointer"
+                              title="Eliminar Registro Inconcluso"
+                            >
+                              <Trash2 size={14} /> Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {activeTab === 'tickets' && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shrink-0">
                    <LifeBuoy className="text-white" size={20} />
                 </div>
                 <div>
-                   <h2 className="text-lg font-black text-slate-800 leading-tight">Consola de Soporte y Call Center</h2>
+                   <h2 className="text-base sm:text-lg font-black text-slate-800 leading-tight">Consola de Soporte y Call Center</h2>
                    <p className="text-xs text-slate-500 font-medium">Monitoreo de incidencias y atención a inquilinos en tiempo real</p>
                 </div>
              </div>
              <button 
                 type="button"
                 onClick={() => setIsNewTicketModalOpen(true)} 
-                className="bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition-colors flex items-center gap-1.5 text-xs"
+                className="bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition-colors flex items-center justify-center gap-1.5 text-xs w-full sm:w-auto"
              >
                 <Plus size={14} />
                 Registrar Ticket
@@ -2275,8 +2405,8 @@ export const SaaSPlatformAdmin = () => {
           onClick={() => setIsDetailOpen(false)}
         />
         
-        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-          <div className="pointer-events-auto w-screen max-w-lg transform bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
+        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
+          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-300 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
             {/* Header del Slide-over */}
             <div className="bg-slate-900 px-6 py-6 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -2871,8 +3001,8 @@ export const SaaSPlatformAdmin = () => {
     {isTicketDetailOpen && (
       <div className="fixed inset-0 z-50 overflow-hidden">
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsTicketDetailOpen(false)} />
-        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-          <div className="pointer-events-auto w-screen max-w-lg transform bg-white shadow-2xl transition-all duration-350 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
+        <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
+          <div className="pointer-events-auto w-screen max-w-full sm:max-w-xl md:max-w-2xl transform bg-white shadow-2xl transition-all duration-350 ease-in-out border-l border-slate-200 flex flex-col h-full animate-in slide-in-from-right duration-300">
             {/* Header del Drawer */}
             <div className="bg-slate-950 px-6 py-6 text-white flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -3147,13 +3277,13 @@ export const SaaSPlatformAdmin = () => {
 
       {activeTab === 'security_logs' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="bg-slate-900 p-8 rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+          <div className="bg-slate-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-5">
                <ShieldCheck size={200} />
             </div>
             <div className="text-left relative z-10">
               <span className="text-[10px] font-black uppercase text-indigo-400 tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full">Ciberseguridad SaaS</span>
-              <h1 className="text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Seguridad y Auditoría</span></h1>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">Bitácora de <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Seguridad y Auditoría</span></h1>
               <p className="text-slate-400 text-xs font-semibold mt-1">Historial de accesos, intentos de autenticación, timbrados SAT CFDI 4.0 y eventos del sistema.</p>
             </div>
             
@@ -3161,7 +3291,7 @@ export const SaaSPlatformAdmin = () => {
               type="button"
               onClick={fetchSecurityLogs}
               disabled={isLogsLoading}
-              className="bg-white hover:bg-slate-50 text-slate-900 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer"
+              className="bg-white hover:bg-slate-50 text-slate-900 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 border-none outline-none cursor-pointer w-full sm:w-auto"
             >
               {isLogsLoading ? 'Recargando...' : '🔄 Actualizar Bitácora'}
             </button>

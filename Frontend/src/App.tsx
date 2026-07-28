@@ -848,7 +848,7 @@ function App() {
       } />
       <Route path="/superadmin" element={
         <ProtectedRoute allowedRoles={['platform_admin']}>
-          <div className="min-h-[100dvh] bg-slate-50 p-4 md:p-8 overflow-y-auto">
+          <div className="min-h-[100dvh] bg-slate-50 p-3 sm:p-5 md:p-8 overflow-y-auto">
             <SaaSPlatformAdmin />
           </div>
         </ProtectedRoute>
@@ -860,7 +860,7 @@ function App() {
           propia URL para que sea, en los hechos, una superficie de acceso distinta. */}
       <Route path="/soporte" element={
         <ProtectedRoute allowedRoles={['support_agent', 'platform_admin']}>
-          <div className="min-h-[100dvh] bg-slate-50 p-4 md:p-8 overflow-y-auto">
+          <div className="min-h-[100dvh] bg-slate-50 p-3 sm:p-5 md:p-8 overflow-y-auto">
             <SaaSPlatformAdmin />
           </div>
         </ProtectedRoute>

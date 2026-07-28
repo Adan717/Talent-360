@@ -524,66 +524,6 @@ function MainLayout() {
         </div>
       </aside>
 
-      {/* UPSell Modal para Módulos Bloqueados */}
-      {upsellModule && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95">
-            <button onClick={() => setUpsellModule(null)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:text-slate-800 rounded-full transition-colors z-10">
-              <X size={18} />
-            </button>
-            
-            <div className="bg-gradient-to-br from-slate-900 to-blue-950 p-8 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"></div>
-              <div className="relative z-10">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center text-white mb-6 shadow-xl transform rotate-3">
-                  {upsellModule.icon}
-                </div>
-                <h2 className="text-2xl font-black text-white mb-2">{upsellModule.title}</h2>
-                <p className="text-blue-200 font-medium text-sm">Este módulo es exclusivo del plan {upsellModule.minTier.toUpperCase()}</p>
-              </div>
-            </div>
-
-            <div className="p-8">
-              <ul className="space-y-4 mb-8">
-                <li className="flex gap-3 text-slate-700 text-sm font-medium">
-                  <ShieldCheck size={20} className="text-emerald-500 shrink-0" /> Accede a herramientas avanzadas para optimizar la gestión de {upsellModule.title.toLowerCase()}.
-                </li>
-                <li className="flex gap-3 text-slate-700 text-sm font-medium">
-                  <Sparkles size={20} className="text-emerald-500 shrink-0" /> Automatiza procesos y ahorra cientos de horas hombre al mes.
-                </li>
-                <li className="flex gap-3 text-slate-700 text-sm font-medium">
-                  <Terminal size={20} className="text-emerald-500 shrink-0" /> Soporte prioritario 24/7 directo por nuestros ingenieros.
-                </li>
-              </ul>
-
-              <div className="flex gap-3">
-                <button onClick={() => setUpsellModule(null)} className="flex-1 py-3 px-4 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
-                  Quizás luego
-                </button>
-                <button onClick={async () => {
-                  try {
-                    const response = await axiosInstance.post('/subscriptions/create-preference', {
-                      plan: upsellModule.minTier
-                    });
-                    if (response.data.init_point) {
-                      window.location.href = response.data.init_point;
-                    } else {
-                      alert('Error al generar la preferencia de pago.');
-                    }
-                  } catch (e) {
-                    console.error(e);
-                    alert('Error al conectar con la pasarela de pagos.');
-                  }
-                  setUpsellModule(null);
-                }} className="flex-1 py-3 px-4 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
-                  <Zap size={18} className="fill-current" /> Mejorar Plan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50 relative z-0">
         {/* Top Navbar */}

@@ -1004,6 +1004,22 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                   <div className="flex justify-between items-center">
                     <div>
+                      <h5 className="font-semibold text-xs text-slate-700">🔔 Notificaciones Flotantes del Reloj</h5>
+                      <p className="text-[10px] text-slate-400">Muestra avisos emergentes (toasts) de pase de lista, aperturas GPS y recordatorios de turno.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={openingSettings.allow_floating_push_notifications ?? true}
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_floating_push_notifications: e.target.checked })} 
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
                       <h5 className="font-semibold text-xs text-slate-700">Delegación de Llaves Obligatoria</h5>
                       <p className="text-[10px] text-slate-400">Exigir al encargado ceder las llaves a un relevo si el día siguiente es su descanso.</p>
                     </div>

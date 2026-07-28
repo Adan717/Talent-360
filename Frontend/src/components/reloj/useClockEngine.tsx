@@ -281,6 +281,16 @@ export function useClockEngine(overrideUser?: any) {
   const [activePushNotification, setActivePushNotification] = useState<{type: string, text: string, action: () => void, dismiss?: () => void} | null>(null);
   const dismissedTaskNotificationsRef = useRef<Set<string>>(new Set());
 
+  // Auto-cierre de notificaciones emergentes flotantes a los 5 segundos
+  useEffect(() => {
+    if (activePushNotification) {
+      const timer = setTimeout(() => {
+        setActivePushNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [activePushNotification]);
+
   // NOTA (refactor Jul 2026): toda la lógica de apertura de tienda premium (settings, status,
   // checklist de apertura/cierre, apertura de emergencia, PIN de seguridad, declaración de
   // contingencia y los reportes de ausencia/retardo/tienda-cerrada) ahora vive en

@@ -1325,18 +1325,14 @@ export default function RelojVisual({
     const visibleNotifications = notificationsList.filter(item => !dismissedNotifications.includes(item.id));
 
     return (
-      <div className={`w-full border rounded-2xl p-3.5 flex flex-col gap-2 text-left transition-all ${
-        isDark 
-          ? 'bg-slate-900/60 border-slate-800 text-white' 
-          : 'bg-white/90 border-slate-200/80 text-slate-800 shadow-sm backdrop-blur-sm'
-      }`}>
-        <div className="flex justify-between items-center border-b pb-1.5 dark:border-slate-800">
+      <div className="w-full bg-transparent border-none p-0 flex flex-col gap-2 text-left transition-all">
+        <div className="flex justify-between items-center px-1 pb-1">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
             </span>
-            <h5 className="font-extrabold text-[10.5px] uppercase tracking-wider text-violet-600 dark:text-violet-400">
+            <h5 className="font-extrabold text-[10.5px] uppercase tracking-wider text-violet-600 dark:text-violet-400 drop-shadow-xs">
               Notificaciones y Avisos ({visibleNotifications.length})
             </h5>
           </div>
@@ -1350,7 +1346,7 @@ export default function RelojVisual({
           )}
         </div>
 
-        <div className="space-y-2.5 max-h-[340px] min-h-[160px] overflow-y-auto pr-1 scrollbar-thin">
+        <div className="space-y-3 max-h-[360px] min-h-[120px] overflow-y-auto overflow-x-hidden pr-0.5 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-y overscroll-contain">
           {visibleNotifications.length === 0 ? (
             <div className="text-center py-4 space-y-1">
               <p className="text-[11px] text-slate-400 italic">No hay notificaciones activas por el momento.</p>
@@ -1366,10 +1362,10 @@ export default function RelojVisual({
             </div>
           ) : (
             visibleNotifications.map((item) => {
-              const bgSeverity = item.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-800' :
-                                item.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' :
-                                item.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
-                                'bg-blue-50 border-blue-100 text-blue-800';
+              const bgSeverity = item.type === 'error' ? 'bg-rose-50/80 border-rose-200/80 text-rose-950 shadow-rose-900/5' :
+                                item.type === 'warning' ? 'bg-amber-50/80 border-amber-200/80 text-amber-950 shadow-amber-900/5' :
+                                item.type === 'success' ? 'bg-emerald-50/80 border-emerald-200/80 text-emerald-950 shadow-emerald-900/5' :
+                                'bg-blue-50/80 border-blue-200/80 text-blue-950 shadow-blue-900/5';
               
               const isClickable = !!item.action;
 
@@ -1377,43 +1373,54 @@ export default function RelojVisual({
                 <div 
                   key={item.id}
                   onClick={() => isClickable && item.action()}
-                  className={`flex flex-col gap-2 p-2.5 border rounded-xl transition-all duration-200 text-[11px] leading-tight relative group ${bgSeverity} ${
-                    isClickable ? 'cursor-pointer hover:border-slate-300 active:scale-[0.99]' : ''
+                  className={`relative overflow-hidden backdrop-blur-md rounded-2xl border p-3.5 shadow-md shadow-slate-950/5 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-300 group flex flex-col gap-2 min-h-[58px] ${bgSeverity} ${
+                    isClickable ? 'cursor-pointer hover:border-slate-300' : ''
                   }`}
                 >
-                  <div className="flex items-start gap-2">
-                    <span className="p-1 rounded-lg bg-white/80 shrink-0 border border-slate-200/10 shadow-xs">
-                      {item.icon}
-                    </span>
-                    <div className="flex-1 min-w-0 pr-4">
-                      <p className="font-extrabold uppercase text-[9px] tracking-wider opacity-90">{item.title}</p>
-                      <p className="font-semibold text-[11px] mt-0.5 opacity-95">{item.desc}</p>
-                    </div>
-                    {isClickable && item.actionText && (
-                      <span className="bg-white/90 font-black text-[8px] uppercase tracking-wider px-2 py-1 rounded-md shrink-0 border border-slate-200/20 shadow-xs hover:bg-white text-slate-700">
-                        {item.actionText} →
-                      </span>
+                  {/* Ícono traslúcido de fondo para dar estilo de marca de agua */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none z-0 text-current scale-[2.2] transition-transform duration-300 group-hover:scale-[2.6] group-hover:opacity-30">
+                    {item.icon}
+                  </div>
+
+                  {/* Botón de cierre circular en la parte superior derecha */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDismissedNotifications(prev => [...prev, item.id]);
+                    }}
+                    title="Descartar aviso"
+                    aria-label="Descartar notificación"
+                    className="absolute top-2.5 right-2.5 z-20 w-5 h-5 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-xs flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-300 dark:hover:bg-rose-950/60 transition-all duration-200 cursor-pointer active:scale-90"
+                  >
+                    <X size={11} strokeWidth={2.5} />
+                  </button>
+
+                  {/* Contenido expandido a todo el ancho */}
+                  <div className="relative z-10 pr-7 flex-1 flex flex-col justify-center">
+                    <p className="font-extrabold text-[12px] leading-snug tracking-tight opacity-95">
+                      {item.title}
+                    </p>
+                    {item.desc && (
+                      <p className="font-semibold text-[10.5px] mt-0.5 opacity-85 leading-snug">
+                        {item.desc}
+                      </p>
                     )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDismissedNotifications(prev => [...prev, item.id]);
-                      }}
-                      title="Descartar aviso"
-                      aria-label="Descartar notificación"
-                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-black/5 rounded-full transition-colors shrink-0 border-none bg-transparent cursor-pointer"
-                    >
-                      <X size={12} />
-                    </button>
+                    {isClickable && item.actionText && (
+                      <div className="mt-1.5 flex items-center">
+                        <span className="inline-flex items-center gap-1 font-black text-[8.5px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs text-slate-800 dark:text-slate-200 group-hover:border-violet-300 group-hover:text-violet-700 transition-colors">
+                          {item.actionText} →
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {item.buttons && item.buttons.length > 0 && (
-                    <div className="flex gap-1.5 justify-end mt-1">
+                    <div className="relative z-10 flex gap-1.5 justify-end mt-1">
                       {item.buttons.map((btn: any, bIdx: number) => {
                         const btnColor = btn.variant === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
                                          btn.variant === 'danger' ? 'bg-rose-600 hover:bg-rose-700 text-white' :
-                                         'bg-slate-200 hover:bg-slate-300 text-slate-700';
+                                         'bg-white/90 hover:bg-white text-slate-700 border border-slate-200';
                         return (
                           <button
                             key={bIdx}
@@ -3071,7 +3078,7 @@ export default function RelojVisual({
       )}
 
       {/* PUSH NOTIFICATIONS (Actionable) */}
-      {currentUser && clockState !== 'inactive' && clockState !== 'waiting_room' && activePushNotification && (
+      {currentUser && clockState !== 'inactive' && clockState !== 'waiting_room' && activePushNotification && (systemSettings?.clockOpConfig?.allow_floating_push_notifications ?? true) && (
         <div 
           onClick={activePushNotification.action}
           className={`z-[105] backdrop-blur-lg font-semibold px-4 py-3.5 rounded-2xl shadow-2xl animate-fade-in border text-xs flex flex-col gap-1.5 cursor-pointer hover:scale-[1.01] transition-transform ${

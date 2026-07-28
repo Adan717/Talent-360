@@ -390,6 +390,10 @@ export const SaaSPlatformAdmin = () => {
   const [newTenantPlan, setNewTenantPlan] = useState('Freemium');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
+  const [showBanner, setShowBanner] = useState<boolean>(() => {
+    return localStorage.getItem('talent360_hide_global_banner') !== 'true';
+  });
+  const [isBannerCloseMenuOpen, setIsBannerCloseMenuOpen] = useState(false);
   const [createdTenantData, setCreatedTenantData] = useState<any>(null);
 
   // Estados para la configuración del plan gratuito (Freemium)
@@ -1121,56 +1125,132 @@ export const SaaSPlatformAdmin = () => {
 
       {activeTab === 'dashboard' && (
         <>
-          {/* Header del Platform Admin */}
-          <div className="bg-slate-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden mb-6">
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-           <Activity size={200} />
-        </div>
-        <div className="relative z-10 flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full animate-pulse">
-              Plataforma Central
-            </span>
-            <span className="text-slate-400 text-sm font-bold">Modo Dueño del SaaS</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Centro de Control Global</h1>
-          <p className="text-slate-400 mt-2 max-w-xl text-xs sm:text-sm">
-            Desde aquí monitoreas la salud de tu negocio de software, la facturación global y la infraestructura de los servidores de todos tus clientes.
-          </p>
-        </div>
-        <div className="relative z-10 flex flex-col gap-4 items-stretch sm:items-end w-full lg:w-auto">
-          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 backdrop-blur-md w-full sm:max-w-xs">
-             <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Modo de Tiempo (DB)</span>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded ${timeMode === 'simulated' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                  {timeMode === 'simulated' ? 'Simulador Activo' : 'NTP Activo'}
-                </span>
-             </div>
-             <p className="text-[10px] text-slate-500 mb-3 leading-tight">Controla si el backend registra usando NTP (Real) o la máquina del tiempo.</p>
-             <div className="flex gap-2">
-                <button 
-                  onClick={() => updateSetting('time_mode', 'simulated')}
-                  className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${timeMode === 'simulated' ? 'bg-indigo-600 text-white shadow-inner' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}
+          {/* Header del Platform Admin Compacto (Opcional/Cerrable) */}
+          {showBanner ? (
+            <div className="bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-xl border border-slate-800 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden mb-5 transition-all">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                <Activity size={160} />
+              </div>
+
+              {/* Botón de cierre ("Tachita") en la esquina superior derecha */}
+              <div className="absolute top-3 right-3 z-20">
+                <button
+                  type="button"
+                  onClick={() => setIsBannerCloseMenuOpen(!isBannerCloseMenuOpen)}
+                  className="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-slate-700/60"
+                  title="Opciones de visibilidad del panel"
                 >
-                  Simulado
+                  <X size={14} />
                 </button>
+
+                {isBannerCloseMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setIsBannerCloseMenuOpen(false)}></div>
+                    <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-40 text-left text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                      <p className="font-black text-slate-200 mb-2 border-b border-slate-800 pb-1.5 px-1">
+                        Visibilidad del Panel
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowBanner(false);
+                          setIsBannerCloseMenuOpen(false);
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors block mb-1 cursor-pointer"
+                      >
+                        <p className="font-bold flex items-center gap-1.5 text-slate-100">
+                          <Eye size={14} className="text-indigo-400" /> Cerrar por esta sesión
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Se volverá a mostrar al recargar.</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.setItem('talent360_hide_global_banner', 'true');
+                          setShowBanner(false);
+                          setIsBannerCloseMenuOpen(false);
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition-colors block cursor-pointer"
+                      >
+                        <p className="font-bold flex items-center gap-1.5 text-rose-400">
+                          <Ban size={14} /> No volver a mostrar
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Ocultar de forma permanente.</p>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="relative z-10 flex-1 pr-8">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="bg-rose-500/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">
+                    Plataforma Central
+                  </span>
+                  <span className="text-slate-400 text-xs font-bold">Modo Dueño del SaaS</span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight">Centro de Control Global</h1>
+                <p className="text-slate-400 max-w-xl text-xs font-medium mt-0.5">
+                  Monitoreo de salud del software, facturación global e infraestructura de servidores.
+                </p>
+              </div>
+              
+              <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center gap-3 w-full md:w-auto pr-6 md:pr-0">
+                {/* Selector Modo de Tiempo Compacto */}
+                <div className="bg-slate-800/90 p-2 rounded-xl border border-slate-700 backdrop-blur-md flex items-center gap-2 flex-1 sm:flex-initial">
+                  <div className="text-left px-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Tiempo (DB)</span>
+                    <span className={`text-[10px] font-bold ${timeMode === 'simulated' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                      {timeMode === 'simulated' ? 'Simulado' : 'Tiempo Real'}
+                    </span>
+                  </div>
+                  <div className="flex bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/60 gap-1">
+                    <button 
+                      type="button"
+                      onClick={() => updateSetting('time_mode', 'simulated')}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'simulated' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      Simulado
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => updateSetting('time_mode', 'real')}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer ${timeMode === 'real' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      Real
+                    </button>
+                  </div>
+                </div>
+
+                {/* Botón Facturación Stripe Compacto */}
                 <button 
-                  onClick={() => updateSetting('time_mode', 'real')}
-                  className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${timeMode === 'real' ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}
+                  type="button"
+                  onClick={() => setActiveTab('billing')}
+                  className="bg-white hover:bg-slate-100 text-slate-900 px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                 >
-                  Tiempo Real
+                  <CreditCard size={15} />
+                  Facturación Stripe
                 </button>
-             </div>
-          </div>
-          <button className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto">
-            <CreditCard size={18} />
-            Ver Facturación Stripe
-          </button>
-        </div>
-      </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('talent360_hide_global_banner');
+                  setShowBanner(true);
+                }}
+                className="text-[11px] font-bold text-slate-400 hover:text-indigo-600 flex items-center gap-1.5 transition-colors bg-white hover:bg-indigo-50 border border-slate-200 px-3 py-1 rounded-xl shadow-2xs cursor-pointer"
+              >
+                <Info size={13} />
+                Mostrar panel de información
+              </button>
+            </div>
+          )}
 
       {/* KPIs Financieros y de Crecimiento Compactos en una Sola Fila (1x4) con Marca de Agua Coloreada */}
-      <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-5">
         {kpis.map((stat, idx) => (
           <div 
             key={idx} 
@@ -1178,15 +1258,15 @@ export const SaaSPlatformAdmin = () => {
           >
             {/* Icono Grande de Fondo en Marca de Agua con Color Específico */}
             <stat.icon 
-              size={68} 
-              className={`absolute -right-2 -bottom-2 ${stat.watermarkColor} pointer-events-none group-hover:scale-110 transition-transform duration-300`} 
+              size={64} 
+              className={`absolute -right-1 -bottom-1 ${stat.watermarkColor} pointer-events-none group-hover:scale-110 transition-transform duration-300`} 
             />
 
             <div className="flex items-center justify-between relative z-10">
               <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider truncate">
                 {stat.label}
               </span>
-              <ArrowUpRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0 hidden sm:block" />
+              <ArrowUpRight size={13} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0 hidden sm:block" />
             </div>
 
             <div className="relative z-10 my-0.5 sm:my-1">

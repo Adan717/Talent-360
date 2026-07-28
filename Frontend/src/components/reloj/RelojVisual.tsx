@@ -2610,13 +2610,13 @@ export default function RelojVisual({
       // ocupe el viewport completo, uno se movía/quedaba fijo y el otro no. Con `absolute` ambos
       // comparten el mismo ancestro posicionado y se mantienen estáticos juntos, igual que la barra
       // superior del menú hamburguesa (también `absolute`).
-      <div className="absolute bottom-0 right-0 z-[85] font-sans" ref={fabMenuRef}>
+      <div className="relative font-sans" ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"
             aria-label="Menú de Operaciones y Soporte AI"
-            className={`absolute bottom-24 right-0 w-64 max-h-[65vh] overflow-y-auto rounded-2xl shadow-xl border backdrop-blur-md p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 ${
-              isDark ? 'bg-slate-900/70 border-slate-800' : 'bg-white/70 border-slate-200/80'
+            className={`absolute bottom-14 right-0 w-64 max-h-[60vh] overflow-y-auto rounded-2xl shadow-2xl border backdrop-blur-md p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 z-[100] ${
+              isDark ? 'bg-slate-900/95 border-slate-800 text-slate-100' : 'bg-white/98 border-slate-200 text-slate-800'
             }`}
           >
             {/* Asistencia */}
@@ -2630,8 +2630,7 @@ export default function RelojVisual({
               </button>
             )}
 
-            {/* Módulo de Tareas: solo con phoneTab === 'tareas' — antes vivía en el FAB propio
-                de TaskRunner.tsx, ahora consolidado aquí con el mismo estilo de aquel menú. */}
+            {/* Módulo de Tareas */}
             {phoneTab === 'tareas' && (
               <>
                 <p className={fabSectionDivider(isDark, false)}>Módulo de Tareas</p>
@@ -2658,7 +2657,6 @@ export default function RelojVisual({
 
             {/* Caja de Herramientas */}
             <p className={fabSectionDivider(isDark, false)}>Caja de Herramientas</p>
-            {/* §25b: primero en la lista para quien aprueba — es acción pendiente, no consulta. */}
             {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
               <button type="button" onClick={closeAnd(() => { setPhoneTab('herramientas'); setInnerTool('silla_requests'); })} className={fabItemClass(isDark)}>
                 <Armchair size={14} className="text-violet-400 shrink-0" /> Solicitudes de Ley Silla 🪑
@@ -2706,10 +2704,10 @@ export default function RelojVisual({
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(prev => !prev)}
-          className="w-[68px] h-[68px] bg-gradient-to-br from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-xl shadow-purple-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/20 cursor-pointer outline-none"
+          className="w-10 h-10 xs:w-11 xs:h-11 bg-gradient-to-tr from-violet-600 via-violet-700 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-md shadow-violet-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer outline-none shrink-0"
           title="Menú de Operaciones y Soporte AI"
         >
-          {isFabSheetOpen ? <X size={26} /> : <Sparkles size={28} className="text-white animate-pulse" />}
+          {isFabSheetOpen ? <X size={20} /> : <Sparkles size={20} className="text-white" />}
         </button>
       </div>
     );
@@ -3695,8 +3693,8 @@ export default function RelojVisual({
 
       {/* A3. MOBILE FLOATING DOCK (Fixed at bottom of screen, combining MobileBottomNav + Purple FAB) */}
       {isScrollableMobile && (
-        <div className={`${isMobileFrame ? 'absolute bottom-2.5 inset-x-0' : 'fixed bottom-3 inset-x-0'} z-[80] pointer-events-none flex items-center justify-center px-2.5 font-sans`}>
-          <div className="w-full max-w-[420px] relative pointer-events-auto">
+        <div className={`${isMobileFrame ? 'absolute bottom-3 inset-x-0' : 'fixed bottom-3 inset-x-0'} z-[80] pointer-events-none flex items-center justify-center px-3 font-sans`}>
+          <div className="w-full max-w-[420px] pointer-events-auto">
             <MobileBottomNav 
               phoneTab={phoneTab} 
               setPhoneTab={setPhoneTab} 
@@ -3706,8 +3704,8 @@ export default function RelojVisual({
               showCustomAlert={showCustomAlert} 
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
+              fabButton={renderFloatingActionButton()}
             />
-            {renderFloatingActionButton()}
           </div>
         </div>
       )}
@@ -4423,6 +4421,7 @@ export default function RelojVisual({
               showCustomAlert={showCustomAlert} 
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
+              fabButton={renderFloatingActionButton()}
             />
           </div>
         </div>

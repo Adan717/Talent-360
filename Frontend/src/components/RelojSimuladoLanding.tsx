@@ -1087,17 +1087,16 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           isDark={isDark}
           clockState={clockState}
           showCustomAlert={(msg) => console.log('Landing Alert:', msg)}
+          fabButton={
+            <button
+              type="button"
+              onClick={() => setIsFabSheetOpen(prev => !prev)}
+              className="w-10 h-10 xs:w-11 xs:h-11 bg-gradient-to-tr from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full flex items-center justify-center shadow-md shadow-violet-600/30 hover:scale-105 active:scale-95 transition-all border-none outline-none cursor-pointer"
+            >
+              {isFabSheetOpen ? <X size={20} /> : <Sparkles size={20} className="text-white" />}
+            </button>
+          }
         />
-
-        <div className="absolute bottom-2.5 right-2.5 z-40">
-          <button
-            type="button"
-            onClick={() => setIsFabSheetOpen(prev => !prev)}
-            className="w-[68px] h-[68px] bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all border-none outline-none cursor-pointer"
-          >
-            {isFabSheetOpen ? <X size={26} /> : <Sparkles size={26} className="text-white" />}
-          </button>
-        </div>
       </div>
 
       {/* SHEET OPERATIVO FLOTANTE (MENÚ DE OPERACIONES FAB) — traslúcido, igual que en RelojVisual.tsx */}

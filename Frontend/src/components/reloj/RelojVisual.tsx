@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone, Plus } from 'lucide-react';
+import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone, Plus, ShieldAlert } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -392,6 +392,7 @@ export default function RelojVisual({
   const [selectedTransferReceiverId, setSelectedTransferReceiverId] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [showPerformanceModal, setShowPerformanceModal] = useState(false);
 
   const [weeklyPerformanceScore, setWeeklyPerformanceScore] = useState<number | null>(null);
@@ -1153,6 +1154,16 @@ export default function RelojVisual({
 
     const notificationsList: any[] = [];
 
+    if (activeContingency) {
+      notificationsList.push({
+        id: 'active_contingency',
+        type: 'warning',
+        title: 'Modo Contingencia Activo',
+        desc: 'Penalizaciones de puntualidad congeladas hoy (100% salario LFT).',
+        icon: <ShieldAlert className="text-amber-500 w-4 h-4" />
+      });
+    }
+
     if (pm) {
       notificationsList.push({
         id: 'admin_pm',
@@ -1311,32 +1322,50 @@ export default function RelojVisual({
       icon: <Clock className="text-blue-500 w-4 h-4" />
     });
 
+    const visibleNotifications = notificationsList.filter(item => !dismissedNotifications.includes(item.id));
+
     return (
-      <div className={`w-full border rounded-2xl p-4 flex flex-col gap-2.5 text-left transition-all ${
+      <div className={`w-full border rounded-2xl p-3.5 flex flex-col gap-2 text-left transition-all ${
         isDark 
           ? 'bg-slate-900/60 border-slate-800 text-white' 
-          : 'bg-white/80 border-slate-200/60 text-slate-800 shadow-sm'
+          : 'bg-white/90 border-slate-200/80 text-slate-800 shadow-sm backdrop-blur-sm'
       }`}>
-        <div className="flex justify-between items-center border-b pb-2 dark:border-slate-800">
+        <div className="flex justify-between items-center border-b pb-1.5 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
             </span>
-            <h5 className="font-extrabold text-[11px] uppercase tracking-wider text-violet-600 dark:text-violet-400">
-              Notificaciones de Turno
+            <h5 className="font-extrabold text-[10.5px] uppercase tracking-wider text-violet-600 dark:text-violet-400">
+              Notificaciones y Avisos ({visibleNotifications.length})
             </h5>
           </div>
-          <span className="text-[9px] text-slate-400 font-bold">
-            {notificationsList.length} activa{notificationsList.length !== 1 && 's'}
-          </span>
+          {dismissedNotifications.length > 0 && (
+            <button 
+              onClick={() => setDismissedNotifications([])}
+              className="text-[8.5px] text-slate-400 hover:text-violet-600 font-bold underline cursor-pointer border-none bg-transparent"
+            >
+              Restablecer ({dismissedNotifications.length})
+            </button>
+          )}
         </div>
 
-        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin">
-          {notificationsList.length === 0 ? (
-            <p className="text-[11px] text-slate-400 italic text-center py-4">Sin notificaciones de turno.</p>
+        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
+          {visibleNotifications.length === 0 ? (
+            <div className="text-center py-4 space-y-1">
+              <p className="text-[11px] text-slate-400 italic">No hay notificaciones activas por el momento.</p>
+              {dismissedNotifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDismissedNotifications([])}
+                  className="text-[9px] font-bold text-violet-600 hover:underline cursor-pointer border-none bg-transparent"
+                >
+                  Ver ocultas
+                </button>
+              )}
+            </div>
           ) : (
-            notificationsList.map((item) => {
+            visibleNotifications.map((item) => {
               const bgSeverity = item.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-800' :
                                 item.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' :
                                 item.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
@@ -1348,15 +1377,15 @@ export default function RelojVisual({
                 <div 
                   key={item.id}
                   onClick={() => isClickable && item.action()}
-                  className={`flex flex-col gap-2 p-2.5 border rounded-xl transition-all duration-200 text-[11px] leading-tight ${bgSeverity} ${
-                    isClickable ? 'cursor-pointer hover:scale-[1.01] hover:border-slate-300 active:scale-[0.99]' : ''
+                  className={`flex flex-col gap-2 p-2.5 border rounded-xl transition-all duration-200 text-[11px] leading-tight relative group ${bgSeverity} ${
+                    isClickable ? 'cursor-pointer hover:border-slate-300 active:scale-[0.99]' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">
                     <span className="p-1 rounded-lg bg-white/80 shrink-0 border border-slate-200/10 shadow-xs">
                       {item.icon}
                     </span>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-4">
                       <p className="font-extrabold uppercase text-[9px] tracking-wider opacity-90">{item.title}</p>
                       <p className="font-semibold text-[11px] mt-0.5 opacity-95">{item.desc}</p>
                     </div>
@@ -1365,6 +1394,18 @@ export default function RelojVisual({
                         {item.actionText} →
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDismissedNotifications(prev => [...prev, item.id]);
+                      }}
+                      title="Descartar aviso"
+                      aria-label="Descartar notificación"
+                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-black/5 rounded-full transition-colors shrink-0 border-none bg-transparent cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
                   </div>
 
                   {item.buttons && item.buttons.length > 0 && (
@@ -1377,7 +1418,7 @@ export default function RelojVisual({
                           <button
                             key={bIdx}
                             onClick={(e) => { e.stopPropagation(); btn.onClick(); }}
-                            className={`font-black text-[9px] uppercase tracking-wider px-2.5 py-1 rounded-lg border-none shadow-xs transition-all active:scale-95 ${btnColor}`}
+                            className={`font-black text-[9px] uppercase tracking-wider px-2.5 py-1 rounded-lg border-none shadow-xs transition-all active:scale-95 cursor-pointer ${btnColor}`}
                           >
                             {btn.text}
                           </button>
@@ -3339,52 +3380,11 @@ export default function RelojVisual({
                     </div>
                   )}
                   
-                  {/* NUEVO (estado #15 de la matriz): banner informativo "Modo Contingencia Activo" —
-                      no reemplaza el dial de fichaje (comida, salida, etc. siguen funcionando normal),
-                      solo informa que las penalizaciones de puntualidad están congeladas hoy. */}
-                  {activeContingency && (
-                    <div className="bg-amber-500 text-white px-4 py-3 rounded-2xl flex items-center gap-2 shadow-md mb-1 flex-row text-left shrink-0">
-                      <span className="text-sm">🛡️</span>
-                      <span className="text-xs font-bold">Modo Contingencia Activo — Penalizaciones congeladas (100% salario LFT).</span>
-                    </div>
-                  )}
-
-                  {/* Reminders of Premium opening - Mobile */}
-                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted && (
-                    <div className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">📋</span>
-                        <span className="text-xs font-bold">Checklist de apertura pendiente.</span>
-                      </div>
-                      <button 
-                        onClick={() => setShowOpeningChecklistModal(true)} 
-                        className="bg-white text-emerald-700 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
-                      >
-                        Completar
-                      </button>
-                    </div>
-                  )}
-
-                  {isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted && (
-                    <div className="bg-violet-600 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-md mb-1 flex-row text-left shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">📋</span>
-                        <span className="text-xs font-bold">Pase de lista de apertura pendiente.</span>
-                      </div>
-                      <button 
-                        onClick={() => initPaseLista(false)} 
-                        className="bg-white text-violet-700 hover:bg-slate-50 font-black text-[9px] px-2.5 py-1 rounded-lg border-none cursor-pointer shrink-0"
-                      >
-                        Iniciar
-                      </button>
-                    </div>
-                  )}
-
                   {renderBreakApprovalBanner()}
                 </div>
                 
-                {/* Grupo Centrado del Dial y Alertas (Fijos, sin scroll en el medio de las barras) */}
-                <div className="flex-1 flex flex-col justify-center items-center w-full gap-2 shrink-0 max-w-[350px] mx-auto">
+                {/* Bloque Superior Anclado (Fijo, sin scroll): Barra Cronológica + DialPrincipal + Botones de Acción */}
+                <div className="flex-none shrink-0 flex flex-col justify-center items-center w-full gap-2 max-w-[350px] mx-auto z-10">
                   {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
                   {renderBarraCronologica(true)}
 
@@ -3461,13 +3461,12 @@ export default function RelojVisual({
                         onGoToRequiredCourseClick={() => { setInnerTool(null); setPhoneTab('academia'); }}
                       />
                     </div>
-
-
-
                   </div>
+                </div>
 
-                  {/* Módulo de Notificaciones del Turno - Activo una vez registrada la entrada */}
-                  {hasCheckedIn && renderModuloNotificaciones(true)}
+                {/* Sección Inferior Deslizable de Notificaciones (Scroll vertical independiente) */}
+                <div className="flex-1 overflow-y-auto min-h-0 w-full max-w-[350px] mx-auto mt-1 pb-2 scrollbar-thin">
+                  {renderModuloNotificaciones(true)}
                 </div>
               </div>
             )

@@ -14,17 +14,19 @@ export interface MobileBottomNavProps {
   isMobileFrame?: boolean;
 }
 
-// 2026-07-23 (a petición de Francisco): se quitó el ícono de "Herramientas" — ese espacio
-// ahora lo ocupa el botón flotante único morado (ver RelojVisual.tsx, renderFloatingActionButton),
-// posicionado exactamente en el mismo bottom-right que este contenedor para que ambos compartan
-// el mismo eje vertical. La barra se hizo translúcida y tiene una muesca cóncava (mask-image)
-// tallada del lado derecho para que el botón "encaje" en el contorno en vez de solo quedar
-// pegado al lado. Si el botón cambia de tamaño/posición en RelojVisual.tsx, estos valores
-// (NOTCH_RADIUS_PX / notch center) deben ajustarse junto con los de allá para que sigan alineados.
 const NOTCH_RADIUS_PX = 34; // = mitad del botón flotante (68px de diámetro)
-const NOTCH_CENTER_FROM_RIGHT_PX = 34; // el botón comparte el mismo `right` que esta barra
+const NOTCH_CENTER_FROM_RIGHT_PX = 34; // comparte el mismo extremo derecho
 
-export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, clockState, showCustomAlert, isStoreClosed = false, isMobileFrame = false }: MobileBottomNavProps) {
+export function MobileBottomNav({ 
+  phoneTab, 
+  setPhoneTab, 
+  setInnerTool, 
+  isDark, 
+  clockState, 
+  showCustomAlert, 
+  isStoreClosed = false, 
+  isMobileFrame = false 
+}: MobileBottomNavProps) {
   const { systemSettings } = useAppStore();
 
   const getModuleColorHex = (modId: string, defaultHex: string) => {
@@ -68,14 +70,14 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
 
   return (
     <nav
-      className={`z-[75] h-16 flex items-center justify-between pl-3 pr-20 border backdrop-blur-md rounded-full transition-all duration-200 ${
+      className={`z-[75] h-16 flex items-center justify-around pl-4 pr-20 border backdrop-blur-md rounded-full transition-all duration-300 ${
         isMobileFrame 
           ? 'absolute bottom-3 left-2.5 right-2.5' 
-          : 'fixed bottom-3 left-2.5 right-2.5 shadow-[0_-8px_32px_rgba(0,0,0,0.25)]'
+          : 'fixed bottom-3 left-2.5 right-2.5 shadow-[0_-8px_32px_rgba(0,0,0,0.18)]'
       } ${
         isDark
           ? 'bg-slate-950/90 border-violet-900/40 text-slate-400'
-          : 'bg-white/90 border-violet-100/60 text-slate-500'
+          : 'bg-white/95 border-slate-200/90 text-slate-600 shadow-xl shadow-slate-900/10'
       }`}
       style={{ WebkitMaskImage: notchMaskImage, maskImage: notchMaskImage }}
     >
@@ -83,18 +85,18 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
       {/* 1. RELOJ */}
       <button
         onClick={() => handleTabClick('checador', false, '')}
-        className="flex flex-col items-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer"
+        className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
         style={phoneTab === 'checador' ? { color: checadorColor } : {}}
       >
-        <div className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all ${
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
           phoneTab === 'checador'
-            ? 'bg-emerald-500/10 border-2 border-emerald-500 shadow-sm scale-105'
-            : 'bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+            ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105'
+            : 'bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60'
         }`}>
-          <Clock size={19} className={phoneTab === 'checador' ? 'animate-pulse' : ''} />
+          <Clock size={20} className={phoneTab === 'checador' ? 'animate-pulse text-emerald-500' : 'text-slate-400'} />
         </div>
-        <span className={`text-[7.5px] uppercase tracking-wider font-black mt-0.5 ${
-          phoneTab === 'checador' ? 'font-black' : 'text-slate-400 dark:text-slate-500'
+        <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+          phoneTab === 'checador' ? 'font-black text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'
         }`}>Reloj</span>
       </button>
 
@@ -108,18 +110,18 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
               ? '⚠️ Tareas Bloqueadas: Estás en tu horario de comida.'
               : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
           )}
-          className="flex flex-col items-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer"
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
           style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
         >
-          <div className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all ${
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
             phoneTab === 'tareas'
-              ? 'bg-blue-500/10 border-2 border-blue-500 shadow-sm scale-105'
-              : `bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 ${isTareasBlocked ? 'opacity-40' : ''}`
+              ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105'
+              : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isTareasBlocked ? 'opacity-40' : ''}`
           }`}>
-            <ListTodo size={19} />
+            <ListTodo size={20} className={phoneTab === 'tareas' ? 'text-blue-500' : 'text-slate-400'} />
           </div>
-          <span className={`text-[7.5px] uppercase tracking-wider font-black mt-0.5 ${
-            phoneTab === 'tareas' ? 'font-black' : 'text-slate-400 dark:text-slate-500'
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            phoneTab === 'tareas' ? 'font-black text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'
           } ${isTareasBlocked ? 'opacity-40' : ''}`}>Tareas</span>
         </button>
       )}
@@ -131,18 +133,18 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
           isAcademiaBlocked,
           '⚠️ Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
         )}
-        className="flex flex-col items-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer"
+        className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
         style={phoneTab === 'academia' ? { color: academiaColor } : {}}
       >
-        <div className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all ${
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
           phoneTab === 'academia'
-            ? 'bg-violet-500/10 border-2 border-violet-600 dark:border-violet-500 shadow-sm scale-105'
-            : `bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 ${isAcademiaBlocked ? 'opacity-40' : ''}`
+            ? 'bg-violet-500/15 border-2 border-violet-600 dark:border-violet-500 shadow-md shadow-violet-500/20 scale-105'
+            : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isAcademiaBlocked ? 'opacity-40' : ''}`
         }`}>
-          <GraduationCap size={19} />
+          <GraduationCap size={20} className={phoneTab === 'academia' ? 'text-violet-600' : 'text-slate-400'} />
         </div>
-        <span className={`text-[7.5px] uppercase tracking-wider font-black mt-0.5 ${
-          phoneTab === 'academia' ? 'font-black' : 'text-slate-400 dark:text-slate-500'
+        <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+          phoneTab === 'academia' ? 'font-black text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500'
         } ${isAcademiaBlocked ? 'opacity-40' : ''}`}>Academia</span>
       </button>
 
@@ -150,18 +152,18 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
       {!isStoreClosed && (
         <button
           onClick={() => handleTabClick('nomina', isNominaBlocked, '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.')}
-          className="flex flex-col items-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer"
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
           style={phoneTab === 'nomina' ? { color: nominaColor } : {}}
         >
-          <div className={`w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all ${
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
             phoneTab === 'nomina'
-              ? 'bg-rose-500/10 border-2 border-rose-500 shadow-sm scale-105'
-              : `bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 ${isNominaBlocked ? 'opacity-40' : ''}`
+              ? 'bg-rose-500/15 border-2 border-rose-500 shadow-md shadow-rose-500/20 scale-105'
+              : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isNominaBlocked ? 'opacity-40' : ''}`
           }`}>
-            <DollarSign size={19} />
+            <DollarSign size={20} className={phoneTab === 'nomina' ? 'text-rose-500' : 'text-slate-400'} />
           </div>
-          <span className={`text-[7.5px] uppercase tracking-wider font-black mt-0.5 ${
-            phoneTab === 'nomina' ? 'font-black' : 'text-slate-400 dark:text-slate-500'
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            phoneTab === 'nomina' ? 'font-black text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
           } ${isNominaBlocked ? 'opacity-40' : ''}`}>Nómina</span>
         </button>
       )}

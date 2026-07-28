@@ -85,21 +85,33 @@ export function MobileBottomNav({
   const NOTCH_CENTER_FROM_RIGHT_PX = 32;
 
   return (
-    <div className="relative w-full max-w-[420px] mx-auto select-none font-sans filter drop-shadow-[0_12px_28px_rgba(0,0,0,0.15)]">
-      {/* Background SVG Vector Shape (Eliminates square gray box corners completely) */}
+    <div className="relative w-full max-w-[420px] mx-auto select-none font-sans filter drop-shadow-[0_14px_35px_rgba(138,43,226,0.22)] drop-shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+      {/* Background SVG Vector Shape with subtle violet glass tint */}
       <svg 
         className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" 
-        viewBox="0 0 420 60" 
+        viewBox="0 0 420 64" 
         preserveAspectRatio="none"
       >
+        <defs>
+          <linearGradient id="purple-glass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255, 255, 255, 0.82)" />
+            <stop offset="70%" stopColor="rgba(250, 242, 255, 0.78)" />
+            <stop offset="100%" stopColor="rgba(243, 230, 255, 0.75)" />
+          </linearGradient>
+          <linearGradient id="purple-glass-grad-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="rgba(15, 23, 42, 0.85)" />
+            <stop offset="100%" stopColor="rgba(24, 15, 45, 0.82)" />
+          </linearGradient>
+        </defs>
         <path 
-          d="M 30 0 L 330 0 C 310 0, 310 60, 330 60 L 30 60 A 30 30 0 0 1 30 0 Z" 
-          className="fill-white/90 dark:fill-slate-950/90 stroke-slate-200/90 dark:stroke-slate-800/90 backdrop-blur-xl"
+          d="M 32 0 L 325 0 C 300 0, 300 64, 325 64 L 32 64 A 32 32 0 0 1 32 0 Z" 
+          fill="url(#purple-glass-grad)"
+          className="stroke-purple-300/40 dark:stroke-purple-500/30 backdrop-blur-2xl"
           strokeWidth="1.5"
         />
       </svg>
 
-      <nav className="relative z-10 pl-5 pr-24 py-1.5 flex items-center justify-around w-full min-h-[58px]">
+      <nav className="relative z-10 pl-5 pr-24 py-1.5 flex items-center justify-around w-full min-h-[64px]">
         {/* 1. RELOJ CHECADOR */}
         {isRelojPermitted && (
           <button

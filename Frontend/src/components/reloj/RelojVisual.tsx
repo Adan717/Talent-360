@@ -2704,11 +2704,11 @@ export default function RelojVisual({
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(prev => !prev)}
-          className="w-16 h-16 bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-[0_0_30px_rgba(138,43,226,0.65)] flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 cursor-pointer outline-none relative shrink-0"
+          className="w-[72px] h-[72px] bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-[0_0_35px_rgba(138,43,226,0.7)] flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 cursor-pointer outline-none relative shrink-0"
           title="Menú de Operaciones y Soporte AI"
         >
-          <span className="absolute -inset-1 rounded-full bg-purple-600/40 blur-md animate-pulse pointer-events-none"></span>
-          {isFabSheetOpen ? <X size={26} className="relative z-10" /> : <Sparkles size={28} className="text-white relative z-10 animate-pulse" />}
+          <span className="absolute -inset-1.5 rounded-full bg-purple-600/40 blur-md animate-pulse pointer-events-none"></span>
+          {isFabSheetOpen ? <X size={28} className="relative z-10" /> : <Sparkles size={30} className="text-white relative z-10 animate-pulse" />}
         </button>
       </div>
     );
@@ -3706,7 +3706,7 @@ export default function RelojVisual({
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
             />
-            <div className="absolute right-0 bottom-0 z-[85]">
+            <div className="absolute -right-1 -bottom-1 z-[85]">
               {renderFloatingActionButton()}
             </div>
           </div>
@@ -4426,7 +4426,7 @@ export default function RelojVisual({
                 isStoreClosed={isStoreClosed} 
                 isMobileFrame={isMobileFrame} 
               />
-              <div className="absolute right-0 bottom-0 z-[85]">
+              <div className="absolute -right-1 -bottom-1 z-[85]">
                 {renderFloatingActionButton()}
               </div>
             </div>

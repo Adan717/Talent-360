@@ -369,21 +369,23 @@ function MainLayout() {
   const activeModuleData = customizedModules.find(m => m.id === activeModule);
 
   const visibleModules = customizedModules.filter(mod => {
-    // 1. Módulos esenciales del sistema siempre accesibles para gestión
-    if (mod.id === 'dashboard' || mod.id === 'settings' || mod.id === 'matrix') {
+    // 1. Módulos esenciales del sistema siempre accesibles para administración
+    if (mod.id === 'dashboard' || mod.id === 'settings') {
       return true;
     }
 
-    // 2. Filtrar módulos que el administrador ocultó manualmente de la barra lateral
-    const hiddenModules = systemSettings?.hiddenMenuModules || [];
-    if (hiddenModules.includes(mod.id)) {
-      return false;
+    // 2. Filtrar por permisos específicos de la empresa (Tenant Overrides de MÓDULOS Y FUNCIONES HABILITADAS)
+    const tenantAllowedModules = systemSettings?.tenant_allowed_modules || systemSettings?.allowed_modules;
+    if (Array.isArray(tenantAllowedModules)) {
+      if (!tenantAllowedModules.includes(mod.id)) {
+        return false;
+      }
     }
 
-    // 3. Filtrar por permisos específicos de la empresa (Tenant Overrides)
-    const tenantAllowedModules = systemSettings?.tenant_allowed_modules || systemSettings?.allowed_modules;
-    if (Array.isArray(tenantAllowedModules) && tenantAllowedModules.length > 0) {
-      if (!tenantAllowedModules.includes(mod.id)) {
+    // 3. Filtrar por permisos específicos asignados a este colaborador individual por el Admin de la Empresa
+    const userAllowedModules = currentUser?.employee?.allowed_modules || currentUser?.allowed_modules;
+    if (Array.isArray(userAllowedModules) && userAllowedModules.length > 0 && currentUser?.role !== 'admin' && currentUser?.role !== 'platform_admin') {
+      if (!userAllowedModules.includes(mod.id)) {
         return false;
       }
     }

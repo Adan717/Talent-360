@@ -107,74 +107,78 @@ export function MobileBottomNav({
       </button>
 
       {/* 2. TAREAS */}
-      {!isStoreClosed && isModuleUnlocked('operativo') && (
-        <button
-          onClick={() => handleTabClick(
-            'tareas',
-            isTareasBlocked,
-            clockState === 'meal' || clockState === 'short_break'
+      <button
+        onClick={() => handleTabClick(
+          'tareas',
+          !isModuleUnlocked('operativo') || isTareasBlocked,
+          !isModuleUnlocked('operativo')
+            ? '⚠️ Módulo Rutinas y Tareas no habilitado para tu empresa.'
+            : clockState === 'meal' || clockState === 'short_break'
               ? '⚠️ Tareas Bloqueadas: Estás en tu horario de comida.'
               : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
-          )}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
-          style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            phoneTab === 'tareas'
-              ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105'
-              : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isTareasBlocked ? 'opacity-40' : ''}`
-          }`}>
-            <ListTodo size={20} className={phoneTab === 'tareas' ? 'text-blue-500' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            phoneTab === 'tareas' ? 'font-black text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'
-          } ${isTareasBlocked ? 'opacity-40' : ''}`}>Tareas</span>
-        </button>
-      )}
+        )}
+        className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
+        style={phoneTab === 'tareas' ? { color: tareasColor } : {}}
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          phoneTab === 'tareas'
+            ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105'
+            : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isTareasBlocked || !isModuleUnlocked('operativo') ? 'opacity-40' : ''}`
+        }`}>
+          <ListTodo size={20} className={phoneTab === 'tareas' ? 'text-blue-500' : 'text-slate-400'} />
+        </div>
+        <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+          phoneTab === 'tareas' ? 'font-black text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'
+        } ${isTareasBlocked || !isModuleUnlocked('operativo') ? 'opacity-40' : ''}`}>Tareas</span>
+      </button>
 
       {/* 3. ACADEMIA */}
-      {isModuleUnlocked('academia') && (
-        <button
-          onClick={() => handleTabClick(
-            'academia',
-            isAcademiaBlocked,
-            '⚠️ Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
-          )}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
-          style={phoneTab === 'academia' ? { color: academiaColor } : {}}
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            phoneTab === 'academia'
-              ? 'bg-violet-500/15 border-2 border-violet-600 dark:border-violet-500 shadow-md shadow-violet-500/20 scale-105'
-              : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isAcademiaBlocked ? 'opacity-40' : ''}`
-          }`}>
-            <GraduationCap size={20} className={phoneTab === 'academia' ? 'text-violet-600' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            phoneTab === 'academia' ? 'font-black text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500'
-          } ${isAcademiaBlocked ? 'opacity-40' : ''}`}>Academia</span>
-        </button>
-      )}
+      <button
+        onClick={() => handleTabClick(
+          'academia',
+          !isModuleUnlocked('academia') || isAcademiaBlocked,
+          !isModuleUnlocked('academia')
+            ? '⚠️ Módulo Academia 360 no habilitado para tu empresa.'
+            : '⚠️ Academia Bloqueada: Enfócate en tus tareas de hoy. Estará disponible en tu hora de comida o fuera de turno.'
+        )}
+        className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
+        style={phoneTab === 'academia' ? { color: academiaColor } : {}}
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          phoneTab === 'academia'
+            ? 'bg-violet-500/15 border-2 border-violet-600 dark:border-violet-500 shadow-md shadow-violet-500/20 scale-105'
+            : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isAcademiaBlocked || !isModuleUnlocked('academia') ? 'opacity-40' : ''}`
+        }`}>
+          <GraduationCap size={20} className={phoneTab === 'academia' ? 'text-violet-600' : 'text-slate-400'} />
+        </div>
+        <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+          phoneTab === 'academia' ? 'font-black text-violet-600 dark:text-violet-400' : 'text-slate-400 dark:text-slate-500'
+        } ${isAcademiaBlocked || !isModuleUnlocked('academia') ? 'opacity-40' : ''}`}>Academia</span>
+      </button>
 
       {/* 4. NÓMINA */}
-      {!isStoreClosed && (isModuleUnlocked('reportes') || isModuleUnlocked('facturacion')) && (
-        <button
-          onClick={() => handleTabClick('nomina', isNominaBlocked, '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
-          style={phoneTab === 'nomina' ? { color: nominaColor } : {}}
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            phoneTab === 'nomina'
-              ? 'bg-rose-500/15 border-2 border-rose-500 shadow-md shadow-rose-500/20 scale-105'
-              : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isNominaBlocked ? 'opacity-40' : ''}`
-          }`}>
-            <DollarSign size={20} className={phoneTab === 'nomina' ? 'text-rose-500' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            phoneTab === 'nomina' ? 'font-black text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
-          } ${isNominaBlocked ? 'opacity-40' : ''}`}>Nómina</span>
-        </button>
-      )}
+      <button
+        onClick={() => handleTabClick(
+          'nomina', 
+          (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) || isNominaBlocked, 
+          (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion'))
+            ? '⚠️ Módulo Nómina / Reportes no habilitado para tu empresa.'
+            : '⚠️ Debes registrar tu entrada laboral para acceder a este módulo.'
+        )}
+        className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-1"
+        style={phoneTab === 'nomina' ? { color: nominaColor } : {}}
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          phoneTab === 'nomina'
+            ? 'bg-rose-500/15 border-2 border-rose-500 shadow-md shadow-rose-500/20 scale-105'
+            : `bg-slate-100/80 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 ${isNominaBlocked || (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) ? 'opacity-40' : ''}`
+        }`}>
+          <DollarSign size={20} className={phoneTab === 'nomina' ? 'text-rose-500' : 'text-slate-400'} />
+        </div>
+        <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+          phoneTab === 'nomina' ? 'font-black text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
+        } ${isNominaBlocked || (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) ? 'opacity-40' : ''}`}>Nómina</span>
+      </button>
 
     </nav>
   );

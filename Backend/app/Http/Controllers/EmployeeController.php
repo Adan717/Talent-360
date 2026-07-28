@@ -316,6 +316,8 @@ class EmployeeController extends Controller
             'restDay' => 'sometimes|nullable|string',
             'base_salary' => 'sometimes|nullable|numeric',
             'avatar' => 'sometimes|nullable|string',
+            'allowed_modules' => 'sometimes|nullable|array',
+            'allowed_features' => 'sometimes|nullable|array',
         ]);
 
         try {

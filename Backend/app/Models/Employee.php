@@ -39,7 +39,9 @@ class Employee extends Model
         'portadorLlaves',
         'avatar',
         'lunch_time',
-        'clock_preferences'
+        'clock_preferences',
+        'allowed_modules',
+        'allowed_features'
     ];
 
     protected $hidden = ['security_pin'];
@@ -51,7 +53,9 @@ class Employee extends Model
         'salary' => 'decimal:2',
         'base_salary' => 'decimal:2',
         'mealMinutes' => 'integer',
-        'clock_preferences' => 'array'
+        'clock_preferences' => 'array',
+        'allowed_modules' => 'array',
+        'allowed_features' => 'array'
     ];
 
     public function getRoleAttribute()

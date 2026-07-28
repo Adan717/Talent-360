@@ -11,12 +11,35 @@ use Illuminate\Support\Facades\Hash;
 
 class PlatformAdminController extends Controller
 {
+    private function checkPlatformAdminAccess(): bool
+    {
+        $user = auth()->user() ?? auth('sanctum')->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user instanceof \App\Models\PlatformUser) {
+            return true;
+        }
+
+        $role = $user->role ?? $user->system_role ?? '';
+        if ($role === UserRole::PLATFORM_ADMIN->value || $role === 'platform_admin') {
+            return true;
+        }
+
+        if (in_array($role, ['support_agent', 'admin']) && ((int)($user->tenant_id ?? 0) === 1 || $user->tenant_id === null)) {
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Get global SaaS metrics
      */
     public function getStats()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -33,9 +56,10 @@ class PlatformAdminController extends Controller
         foreach ($tenants as $tenant) {
             if (!$tenant->is_active) continue;
             
-            if ($tenant->plan === 'pro') {
+            $plan = strtolower($tenant->plan ?? 'freemium');
+            if ($plan === 'pro') {
                 $mrr += 199;
-            } elseif ($tenant->plan === 'enterprise') {
+            } elseif ($plan === 'enterprise') {
                 $mrr += 499;
             }
         }
@@ -53,15 +77,17 @@ class PlatformAdminController extends Controller
      */
     public function getTenants(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
-        $query = Tenant::withCount('users');
+        $query = Tenant::withCount(['users' => function($q) {
+            $q->withoutGlobalScope(\App\Scopes\TenantScope::class);
+        }]);
 
         // Filter by search (name or subdomain)
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
+        if ($request->filled('search')) {
+            $search = trim($request->search);
             $likeOp = \DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
             $query->where(function($q) use ($search, $likeOp) {
                 $q->where('name', $likeOp, "%{$search}%")
@@ -70,13 +96,13 @@ class PlatformAdminController extends Controller
         }
 
         // Filter by plan
-        if ($request->has('plan') && $request->plan !== 'all' && !empty($request->plan)) {
-            $query->where('plan', strtolower($request->plan));
+        if ($request->filled('plan') && strtolower($request->plan) !== 'all') {
+            $query->whereRaw('LOWER(plan) = ?', [strtolower($request->plan)]);
         }
 
         // Filter by status
-        if ($request->has('status') && $request->status !== 'all' && !empty($request->status)) {
-            $isActive = $request->status === 'active';
+        if ($request->filled('status') && strtolower($request->status) !== 'all') {
+            $isActive = strtolower($request->status) === 'active';
             $query->where('is_active', $isActive);
         }
 

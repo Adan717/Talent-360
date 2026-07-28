@@ -11,6 +11,7 @@ import { useBreakAndMealTimers } from './hooks/useBreakAndMealTimers';
 import { useStoreOpening } from './hooks/useStoreOpening';
 import { useKeyholderDelegation } from './hooks/useKeyholderDelegation';
 import { useClockUIState } from './hooks/useClockUIState';
+import { calculateClockState } from './logic/clockStateCalculator';
 
 export function useClockEngine(overrideUser?: any) {
   const assignments = useTaskStore(s => s.assignments);

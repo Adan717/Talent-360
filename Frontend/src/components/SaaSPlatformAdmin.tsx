@@ -540,15 +540,29 @@ export const SaaSPlatformAdmin = () => {
   const fetchGlobalData = async (search = '', plan = 'all', status = 'all') => {
     setIsLoading(true);
     try {
+      const searchParam = search ? `search=${encodeURIComponent(search)}&` : '';
+      const planParam = (plan && plan !== 'all') ? `plan=${encodeURIComponent(plan)}&` : '';
+      const statusParam = (status && status !== 'all') ? `status=${encodeURIComponent(status)}&` : '';
+      const queryString = `${searchParam}${planParam}${statusParam}`.replace(/&$/, '');
+      const url = `/platform/tenants${queryString ? `?${queryString}` : ''}`;
+
       const [statsRes, tenantsRes, auditsRes] = await Promise.allSettled([
         axiosInstance.get('/platform/stats'),
-        axiosInstance.get(`/platform/tenants?search=${encodeURIComponent(search)}&plan=${encodeURIComponent(plan)}&status=${encodeURIComponent(status)}`),
+        axiosInstance.get(url),
         axiosInstance.get('/platform/audits')
       ]);
       
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
-      if (tenantsRes.status === 'fulfilled') setTenantsList(tenantsRes.value.data);
-      if (auditsRes.status === 'fulfilled') setModuleAuditsList(auditsRes.value.data);
+      if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+        setStats(statsRes.value.data);
+      }
+      if (tenantsRes.status === 'fulfilled') {
+        const rawData = tenantsRes.value.data;
+        const list = Array.isArray(rawData) ? rawData : (rawData?.tenants || rawData?.data || []);
+        setTenantsList(list);
+      }
+      if (auditsRes.status === 'fulfilled' && auditsRes.value.data) {
+        setModuleAuditsList(auditsRes.value.data);
+      }
     } catch (error) {
       console.error("Error fetching platform data:", error);
     } finally {

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, GraduationCap, Clock, 
   CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase, ListTodo,
   FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User,
-  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale
+  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale, Activity
 } from 'lucide-react';
 import { useAppStore } from './store/useAppStore';
 import axiosInstance from './lib/axios';
@@ -48,6 +48,7 @@ const FacturacionManager = lazy(() => import('./components/FacturacionManager').
 const LftManager = lazy(() => import('./components/LftManager'));
 const OrgVaultManager = lazy(() => import('./components/OrgVaultManager').then(m => ({ default: m.OrgVaultManager })));
 const WebPublicaOrganizacion = lazy(() => import('./components/WebPublicaOrganizacion').then(m => ({ default: m.WebPublicaOrganizacion })));
+const MonitorActividadesTiempoReal = lazy(() => import('./components/MonitorActividadesTiempoReal').then(m => ({ default: m.MonitorActividadesTiempoReal })));
 import { ModuleUnlockModal } from './components/ModuleUnlockModal';
 import { PromotionStoreDock } from './components/PromotionStoreDock';
 import { HeaderStats } from './components/HeaderStats';
@@ -74,7 +75,8 @@ const IconMap: Record<string, React.ReactNode> = {
   Heart: <Heart size={20} />,
   Bell: <Bell size={20} />,
   Database: <Database size={20} />,
-  Globe: <Globe size={20} />
+  Globe: <Globe size={20} />,
+  Activity: <Activity size={20} />
 };
 
 const RootRoute = () => {
@@ -236,6 +238,15 @@ function MainLayout() {
       color: 'bg-blue-50 text-blue-600 border-blue-100',
       minTier: 'freemium',
       version: 'v3.0'
+    },
+    {
+      id: 'monitor',
+      title: 'Monitor 360',
+      desc: 'Supervisión Tiempo Real',
+      icon: <Activity size={20} />,
+      color: 'bg-rose-50 text-rose-600 border-rose-100',
+      minTier: 'freemium',
+      version: 'v1.0'
     },
     {
       id: 'rrhh',
@@ -678,6 +689,7 @@ function MainLayout() {
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar relative z-10">
           <Suspense fallback={<LoadingScreen message="Cargando Módulo..." />}>
             {activeModule === 'dashboard' && <DashboardTalent360 setActiveModule={setActiveModule} />}
+            {activeModule === 'monitor' && <MonitorActividadesTiempoReal setActiveModule={setActiveModule} />}
             {activeModule === 'rrhh' && <RecursosHumanos />}
             {activeModule === 'ats' && <AtsManager />}
             {activeModule === 'operativo' && <PanelTareasRutinas />}

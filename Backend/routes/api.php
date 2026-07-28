@@ -256,6 +256,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
         Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
         Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
+        Route::post('/admin/dashboard/vendors', [DashboardMonitorController::class, 'storeVendor']);
+        Route::post('/admin/dashboard/vendors/{id}/complete', [DashboardMonitorController::class, 'completeVendor']);
 
         // §39: configuración de la cadena de pedidos (qué puesto en cada etapa) — admin/supervisor
         Route::get('/supply-chain/config', [\App\Http\Controllers\SupplyOrderController::class, 'getConfig']);

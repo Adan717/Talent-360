@@ -3695,7 +3695,7 @@ export default function RelojVisual({
       {/* A3. MOBILE FLOATING DOCK (Fixed at bottom of screen) */}
       {isScrollableMobile && (
         <div className={`${isMobileFrame ? 'absolute bottom-3 inset-x-0' : 'fixed bottom-3 inset-x-0'} z-[80] pointer-events-none flex items-center justify-center px-3 font-sans`}>
-          <div className="w-full max-w-[440px] pointer-events-auto flex items-center">
+          <div className="w-full max-w-[420px] pointer-events-auto relative">
             <MobileBottomNav 
               phoneTab={phoneTab} 
               setPhoneTab={setPhoneTab} 
@@ -3706,7 +3706,7 @@ export default function RelojVisual({
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
             />
-            <div className="-ml-7 z-20">
+            <div className="absolute right-0 bottom-0 z-[85]">
               {renderFloatingActionButton()}
             </div>
           </div>
@@ -4415,7 +4415,7 @@ export default function RelojVisual({
 
           {/* Desktop Floating Dock (Always Visible) */}
           <div className="mt-8 flex justify-center w-full pb-4">
-            <div className="w-full max-w-[440px] flex items-center">
+            <div className="w-full max-w-[420px] relative">
               <MobileBottomNav 
                 phoneTab={phoneTab} 
                 setPhoneTab={setPhoneTab} 
@@ -4426,7 +4426,7 @@ export default function RelojVisual({
                 isStoreClosed={isStoreClosed} 
                 isMobileFrame={isMobileFrame} 
               />
-              <div className="-ml-7 z-20">
+              <div className="absolute right-0 bottom-0 z-[85]">
                 {renderFloatingActionButton()}
               </div>
             </div>

@@ -1074,7 +1074,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
           alineada con él sin cálculos aparte. Antes vivía afuera, a la izquierda, para no
           empalmarse con Herramientas — ya no hace falta, Herramientas se quitó de la barra. */}
       <div style={{ transform: 'scale(0.85)', transformOrigin: 'bottom center' }} className="absolute bottom-1 inset-x-0 z-30 shrink-0 flex items-center justify-center px-2">
-        <div className="w-full max-w-[440px] flex items-center">
+        <div className="w-full max-w-[420px] relative">
           <MobileBottomNav
             phoneTab={phoneTab}
             setPhoneTab={(tab) => {
@@ -1089,7 +1089,7 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
             clockState={clockState}
             showCustomAlert={(msg) => console.log('Landing Alert:', msg)}
           />
-          <div className="-ml-7 z-20">
+          <div className="absolute right-0 bottom-0 z-40">
             <button
               type="button"
               onClick={() => setIsFabSheetOpen(prev => !prev)}

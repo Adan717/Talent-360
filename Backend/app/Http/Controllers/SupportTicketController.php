@@ -38,11 +38,12 @@ class SupportTicketController extends Controller
         // Search in title, description, contact details
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'ilike', "%{$search}%")
-                  ->orWhere('description', 'ilike', "%{$search}%")
-                  ->orWhere('contact_name', 'ilike', "%{$search}%")
-                  ->orWhere('contact_email', 'ilike', "%{$search}%");
+            $likeOp = \DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function($q) use ($search, $likeOp) {
+                $q->where('title', $likeOp, "%{$search}%")
+                  ->orWhere('description', $likeOp, "%{$search}%")
+                  ->orWhere('contact_name', $likeOp, "%{$search}%")
+                  ->orWhere('contact_email', $likeOp, "%{$search}%");
             });
         }
 

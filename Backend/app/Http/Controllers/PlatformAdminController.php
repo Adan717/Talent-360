@@ -62,9 +62,10 @@ class PlatformAdminController extends Controller
         // Filter by search (name or subdomain)
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('subdomain', 'ilike', "%{$search}%");
+            $likeOp = \DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function($q) use ($search, $likeOp) {
+                $q->where('name', $likeOp, "%{$search}%")
+                  ->orWhere('subdomain', $likeOp, "%{$search}%");
             });
         }
 
@@ -83,10 +84,11 @@ class PlatformAdminController extends Controller
             return [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
+                'subdomain' => $tenant->subdomain,
                 'plan' => ucfirst($tenant->plan ?? 'freemium'),
                 'users' => $tenant->users_count,
                 'status' => $tenant->is_active ? 'Activo' : 'Inactivo',
-                'date' => $tenant->created_at->diffForHumans(),
+                'date' => $tenant->created_at ? $tenant->created_at->diffForHumans() : 'Reciente',
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
                 'trial_ends_at' => $tenant->trial_ends_at
             ];

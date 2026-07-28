@@ -540,15 +540,15 @@ export const SaaSPlatformAdmin = () => {
   const fetchGlobalData = async (search = '', plan = 'all', status = 'all') => {
     setIsLoading(true);
     try {
-      const [statsRes, tenantsRes, auditsRes] = await Promise.all([
+      const [statsRes, tenantsRes, auditsRes] = await Promise.allSettled([
         axiosInstance.get('/platform/stats'),
-        axiosInstance.get(`/platform/tenants?search=${search}&plan=${plan}&status=${status}`),
+        axiosInstance.get(`/platform/tenants?search=${encodeURIComponent(search)}&plan=${encodeURIComponent(plan)}&status=${encodeURIComponent(status)}`),
         axiosInstance.get('/platform/audits')
       ]);
       
-      setStats(statsRes.data);
-      setTenantsList(tenantsRes.data);
-      setModuleAuditsList(auditsRes.data);
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+      if (tenantsRes.status === 'fulfilled') setTenantsList(tenantsRes.value.data);
+      if (auditsRes.status === 'fulfilled') setModuleAuditsList(auditsRes.value.data);
     } catch (error) {
       console.error("Error fetching platform data:", error);
     } finally {

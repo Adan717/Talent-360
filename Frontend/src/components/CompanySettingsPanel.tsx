@@ -1974,6 +1974,101 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 </div>
               </div>
 
+              {/* Master Preset Selector: Modo Fichaje Rápido (Sin GPS) vs Modo GPS Perimetral */}
+              <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 border border-indigo-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-amber-400 text-slate-950 p-2 rounded-2xl font-black text-sm shadow-md">
+                      ⚡
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-white tracking-tight">Modo de Validación de Asistencia</h3>
+                      <p className="text-[11px] text-slate-300">Selecciona el nivel de flexibilidad operativa para tu equipo en 1 solo clic.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Opción 1: Modo Fichaje Rápido (Sin GPS) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        clockOpConfig: {
+                          ...prev.clockOpConfig,
+                          gpsValidationEnabled: false,
+                          allowManualCheckIn: true,
+                          allow_floating_push_notifications: false
+                        }
+                      }));
+                      setOpeningSettings((prev: any) => ({
+                        ...prev,
+                        require_opening_roll_call: false,
+                        require_opening_checklist: false,
+                        allow_floating_push_notifications: false
+                      }));
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
+                      formData.clockOpConfig?.gpsValidationEnabled === false
+                        ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg ring-2 ring-emerald-400/50'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs text-emerald-400 flex items-center gap-1.5">
+                        ⚡ Modo Fichaje Rápido (Sin GPS)
+                      </span>
+                      {formData.clockOpConfig?.gpsValidationEnabled === false && (
+                        <span className="bg-emerald-500 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                      )}
+                    </div>
+                    <p className="text-[10.5px] text-slate-300 leading-snug">
+                      Fichaje libre instantáneo sin pedir ubicación GPS. Desactiva avisos emergentes flotantes y bloqueos iniciales.
+                    </p>
+                  </button>
+
+                  {/* Opción 2: Modo GPS Perimetral (Sucursal) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        clockOpConfig: {
+                          ...prev.clockOpConfig,
+                          gpsValidationEnabled: true,
+                          allowManualCheckIn: false,
+                          allow_floating_push_notifications: true
+                        }
+                      }));
+                      setOpeningSettings((prev: any) => ({
+                        ...prev,
+                        require_opening_roll_call: true,
+                        require_opening_checklist: true,
+                        allow_floating_push_notifications: true
+                      }));
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
+                      formData.clockOpConfig?.gpsValidationEnabled !== false
+                        ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg ring-2 ring-indigo-400/50'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs text-indigo-300 flex items-center gap-1.5">
+                        📍 Modo GPS Perimetral (Sucursal)
+                      </span>
+                      {formData.clockOpConfig?.gpsValidationEnabled !== false && (
+                        <span className="bg-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                      )}
+                    </div>
+                    <p className="text-[10.5px] text-slate-300 leading-snug">
+                      Exige estar físicamente dentro del perímetro GPS de la sucursal para validar la llegada del colaborador.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               {/* Toggles booleanos */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
                 <div className="flex justify-between items-center">

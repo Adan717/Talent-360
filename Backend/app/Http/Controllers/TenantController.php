@@ -24,8 +24,8 @@ class TenantController extends Controller
         $request->validate([
             'subdomain' => [
                 'required', 'string',
-                \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
-                \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->withoutTrashed(),
+                \Illuminate\Validation\Rule::unique('tenants', 'public_slug')->withoutTrashed()
             ],
             'plan' => 'required|string',
             'company_name' => 'required|string',

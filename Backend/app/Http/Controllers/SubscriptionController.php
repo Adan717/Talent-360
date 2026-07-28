@@ -57,8 +57,8 @@ class SubscriptionController extends Controller
             $request->validate([
                 'subdomain' => [
                     'required', 'string', 'alpha_dash', 'max:50',
-                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
-                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->withoutTrashed(),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')->withoutTrashed()
                 ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
@@ -89,8 +89,8 @@ class SubscriptionController extends Controller
             $request->validate([
                 'subdomain' => [
                     'required', 'string', 'alpha_dash', 'max:50',
-                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain'),
-                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')
+                    \Illuminate\Validation\Rule::unique('tenants', 'subdomain')->withoutTrashed(),
+                    \Illuminate\Validation\Rule::unique('tenants', 'public_slug')->withoutTrashed()
                 ],
                 'plan' => 'required|string',
                 'company_name' => 'required|string',
@@ -594,13 +594,17 @@ class SubscriptionController extends Controller
                 }
             }
 
-            Auth::login($admin);
+            if (method_exists(\Auth::guard(), 'login')) {
+                \Auth::login($admin);
+            }
 
             // 3. Inject Clean Base Structure (Roles & Policies) for the new Tenant
             $seeder = new TenantSeeder();
             $seeder->run();
 
-            Auth::logout();
+            if (method_exists(\Auth::guard(), 'logout')) {
+                \Auth::logout();
+            }
 
             return [
                 'tenant' => $tenant,

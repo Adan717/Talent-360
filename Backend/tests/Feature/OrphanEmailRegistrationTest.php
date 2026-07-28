@@ -93,4 +93,52 @@ class OrphanEmailRegistrationTest extends TestCase
             'deleted_at' => null,
         ]);
     }
+
+    public function test_deleted_tenant_subdomain_is_freed_for_re_registration(): void
+    {
+        $platformAdmin = User::factory()->create([
+            'role' => 'platform_admin',
+            'email' => 'admin_subdomain@talent360.com'
+        ]);
+
+        $tenant = Tenant::create([
+            'name' => 'Dashcomputer',
+            'subdomain' => 'dashcomputer',
+            'public_slug' => 'dashcomputer',
+            'plan' => 'freemium',
+            'max_users' => 5,
+        ]);
+
+        $response = $this->actingAs($platformAdmin)->deleteJson("/api/v1/platform/tenants/{$tenant->id}");
+        $response->assertStatus(200);
+
+        $softDeletedTenant = Tenant::withTrashed()->find($tenant->id);
+        $this->assertStringContainsString('dashcomputer_deleted_', $softDeletedTenant->subdomain);
+
+        $userId = DB::table('users')->insertGetId([
+            'name' => 'Gael',
+            'email' => 'gael_new@dashcomputer.com',
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role' => 'admin',
+            'tenant_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $user = User::find($userId);
+
+        $registerResponse = $this->actingAs($user, 'sanctum')->postJson('/api/v1/subscriptions/create-preference', [
+            'subdomain' => 'dashcomputer',
+            'plan' => 'freemium',
+            'company_name' => 'Dashcomputer Nueva',
+        ]);
+
+        $registerResponse->assertStatus(200);
+        $registerResponse->assertJsonPath('provisioned', true);
+
+        $this->assertDatabaseHas('tenants', [
+            'subdomain' => 'dashcomputer',
+            'name' => 'Dashcomputer Nueva',
+            'deleted_at' => null,
+        ]);
+    }
 }

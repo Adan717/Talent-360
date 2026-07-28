@@ -425,6 +425,13 @@ class PlatformAdminController extends Controller
                 ->where('tenant_id', $tenant->id)
                 ->delete();
 
+            $timestamp = time();
+            $tenant->subdomain = $tenant->subdomain . '_deleted_' . $timestamp . '_' . $tenant->id;
+            if ($tenant->public_slug) {
+                $tenant->public_slug = $tenant->public_slug . '_deleted_' . $timestamp . '_' . $tenant->id;
+            }
+            $tenant->save();
+
             $tenant->delete();
         });
 

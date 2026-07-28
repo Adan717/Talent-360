@@ -48,6 +48,8 @@ const FacturacionManager = lazy(() => import('./components/FacturacionManager').
 const LftManager = lazy(() => import('./components/LftManager'));
 const OrgVaultManager = lazy(() => import('./components/OrgVaultManager').then(m => ({ default: m.OrgVaultManager })));
 const WebPublicaOrganizacion = lazy(() => import('./components/WebPublicaOrganizacion').then(m => ({ default: m.WebPublicaOrganizacion })));
+import { ModuleUnlockModal } from './components/ModuleUnlockModal';
+import { PromotionStoreDock } from './components/PromotionStoreDock';
 import { HeaderStats } from './components/HeaderStats';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
@@ -209,15 +211,16 @@ function MainLayout() {
       return true;
     }
     
-    // Non-trial checks
+    const activeMods = systemSettings?.active_modules || [];
+
     if (activeTier === 'freemium') {
-      const freeAllowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo', 'lft', 'reportes', 'facturacion'];
-      return freeAllowed.includes(targetModuleId);
+      const freeAllowed = systemSettings?.freemium_allowed_modules || ['reloj', 'rrhh', 'operativo', 'lft', 'organizacion'];
+      return freeAllowed.includes(targetModuleId) || activeMods.includes(targetModuleId);
     }
     
     if (activeTier === 'pro') {
-      const activeMods = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'documentos', 'portal', 'lft', 'facturacion'];
-      return activeMods.includes(targetModuleId);
+      const proBase = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'lft', 'organizacion'];
+      return proBase.includes(targetModuleId) || activeMods.includes(targetModuleId);
     }
     
     return false;
@@ -755,11 +758,28 @@ function MainLayout() {
         isOpen={isMyAccountOpen}
         onClose={() => setIsMyAccountOpen(false)}
       />
-      {/* 2026-07-23: se quitó <SupportChatCopilot /> (a petición de Francisco) — era un botón
-          flotante independiente que abría su propio chat contra /support/copilot, duplicando
-          al pixel la opción "Copiloto AI" que ya vive dentro del menú unificado del botón morado
-          en RelojVisual.tsx (mismo endpoint). Quitarlo también resuelve el problema de que se
-          viera "encima" del botón morado, ya que ese componente se montaba con z-[9999]. */}
+
+      <ModuleUnlockModal
+        isOpen={!!upsellModule}
+        onClose={() => setUpsellModule(null)}
+        moduleData={upsellModule ? {
+          id: upsellModule.id,
+          title: upsellModule.title,
+          desc: upsellModule.desc,
+          icon: upsellModule.icon,
+          pricePerColab: upsellModule.id === 'ats' ? 29 : upsellModule.id === 'academia' ? 49 : 19
+        } : null}
+        onSuccess={async () => {
+          await useAppStore.getState().fetchState();
+        }}
+      />
+
+      <PromotionStoreDock
+        onOpenStore={() => {
+          setActiveModule('settings');
+          setSettingsTab('modules');
+        }}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import {
   Users, Briefcase, GraduationCap, Clock, 
   ArrowUpRight, Activity, ShieldCheck, Zap,
   Lock, Settings, LayoutDashboard, ListTodo, BarChart3, Star,
-  Play, Send, CheckCircle2, MessageSquare, PlusCircle, Sparkles, MessageCircle, AlertTriangle, FileText, ChevronRight,
+  Play, Send, CheckCircle2, MessageSquare, PlusCircle, Sparkles, MessageCircle, AlertTriangle, FileText, ChevronRight, Receipt,
   Check, AlertCircle, Utensils, Armchair, Cpu, Bot, Mic,
   Smile, Frown, Award, Ban, UserMinus, UserCheck
 } from 'lucide-react';
@@ -1652,7 +1652,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
 
         {currentTier === 'freemium' ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-sm relative overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               
               {/* ATS Toggle Card */}
               {(() => {
@@ -1678,15 +1678,15 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-5 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 bg-violet-100 text-violet-600 rounded-xl">
-                        <Briefcase size={20} />
+                      <div className="p-2 bg-violet-100 text-violet-600 rounded-xl">
+                        <Briefcase size={18} />
                       </div>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
-                        className={`text-xs font-black px-4 py-2 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
                           isAtsActive 
                             ? 'bg-violet-600 hover:bg-violet-750 text-white shadow-sm' 
                             : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
@@ -1695,8 +1695,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         {isAtsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm">Reclutamiento ATS</h3>
-                    <p className="text-slate-500 text-[11px] mt-1 mb-3 leading-relaxed">Publica vacantes en bolsa de trabajo, recibe candidatos de Google/Apple y gestiona entrevistas.</p>
+                    <h3 className="font-bold text-slate-800 text-xs">Reclutamiento ATS</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Vacantes, bolsa de trabajo y entrevistas 1-click.</p>
                     <span className="text-xs font-black text-violet-600">+$29 MXN / mes</span>
                   </div>
                 );
@@ -1726,15 +1726,15 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-5 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 bg-sky-100 text-sky-600 rounded-xl">
-                        <GraduationCap size={20} />
+                      <div className="p-2 bg-sky-100 text-sky-600 rounded-xl">
+                        <GraduationCap size={18} />
                       </div>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
-                        className={`text-xs font-black px-4 py-2 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
                           isLmsActive 
                             ? 'bg-sky-600 hover:bg-sky-750 text-white shadow-sm' 
                             : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
@@ -1743,8 +1743,8 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         {isLmsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm">Academia 360 (LMS)</h3>
-                    <p className="text-slate-500 text-[11px] mt-1 mb-3 leading-relaxed">Cursos interactivos de inducción, gamificación con puntos de recompensa y constancias.</p>
+                    <h3 className="font-bold text-slate-800 text-xs">Academia 360</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Cursos interactivos, inducción y gamificación.</p>
                     <span className="text-xs font-black text-sky-600">+$49 MXN / mes</span>
                   </div>
                 );
@@ -1774,15 +1774,15 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 };
 
                 return (
-                  <div className={`p-5 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2.5 bg-rose-100 text-rose-600 rounded-xl">
-                        <BarChart3 size={20} />
+                      <div className="p-2 bg-rose-100 text-rose-600 rounded-xl">
+                        <BarChart3 size={18} />
                       </div>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={handleToggle}
-                        className={`text-xs font-black px-4 py-2 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
                           isReportsActive 
                             ? 'bg-rose-600 hover:bg-rose-750 text-white shadow-sm' 
                             : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
@@ -1791,9 +1791,105 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                         {isReportsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-sm">Reportes y Pre-Nómina</h3>
-                    <p className="text-slate-500 text-[11px] mt-1 mb-3 leading-relaxed">Cálculo de retardos, Ley Silla, faltas y justificaciones. Exporta reportes en Excel/PDF.</p>
+                    <h3 className="font-bold text-slate-800 text-xs">Reportes IA</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Faltas, retardos, Ley Silla y exportes Excel/PDF.</p>
                     <span className="text-xs font-black text-rose-600">+$19 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+              {/* Archivo Digital Toggle Card */}
+              {(() => {
+                const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
+                const isDocsActive = activeModules.includes('documentos');
+                
+                const handleToggle = async () => {
+                  setIsAdoptionSaving(true);
+                  const updatedModules = isDocsActive 
+                    ? activeModules.filter((m: string) => m !== 'documentos')
+                    : [...activeModules, 'documentos'];
+                  
+                  try {
+                    await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
+                    await fetchState();
+                    setToastMessage(isDocsActive ? 'Módulo Archivo Digital desactivado.' : 'Módulo Archivo Digital adoptado con éxito.');
+                    setTimeout(() => setToastMessage(null), 3000);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsAdoptionSaving(false);
+                  }
+                };
+
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+                        <FileText size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={handleToggle}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isDocsActive 
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isDocsActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Archivo Digital</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Expedientes avanzados, manuales y contratos.</p>
+                    <span className="text-xs font-black text-amber-600">+$19 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+              {/* Facturacion CFDI Toggle Card */}
+              {(() => {
+                const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
+                const isCfdiActive = activeModules.includes('facturacion');
+                
+                const handleToggle = async () => {
+                  setIsAdoptionSaving(true);
+                  const updatedModules = isCfdiActive 
+                    ? activeModules.filter((m: string) => m !== 'facturacion')
+                    : [...activeModules, 'facturacion'];
+                  
+                  try {
+                    await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
+                    await fetchState();
+                    setToastMessage(isCfdiActive ? 'Módulo Nómina CFDI desactivado.' : 'Módulo Nómina CFDI adoptado con éxito.');
+                    setTimeout(() => setToastMessage(null), 3000);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsAdoptionSaving(false);
+                  }
+                };
+
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <Receipt size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={handleToggle}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isCfdiActive 
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isCfdiActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Nómina CFDI 4.0</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed">Timbrado masivo de recibos del SAT.</p>
+                    <span className="text-xs font-black text-emerald-600">+$39 MXN / mes</span>
                   </div>
                 );
               })()}
@@ -1806,12 +1902,14 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
               const hasAts = activeModules.includes('ats');
               const hasLms = activeModules.includes('academia');
               const hasReports = activeModules.includes('reportes');
-              const totalCost = (hasAts ? 29 : 0) + (hasLms ? 49 : 0) + (hasReports ? 19 : 0);
+              const hasDocs = activeModules.includes('documentos');
+              const hasCfdi = activeModules.includes('facturacion');
+              const totalCost = (hasAts ? 29 : 0) + (hasLms ? 49 : 0) + (hasReports ? 19 : 0) + (hasDocs ? 19 : 0) + (hasCfdi ? 39 : 0);
 
               return (
                 <div className="pt-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="text-slate-600 text-xs font-medium">
-                    Suscripción modular calculada: <strong className="text-slate-800 font-bold">$0 base</strong> + {totalCost > 0 ? `$${totalCost} por módulos` : 'sin módulos extra'}
+                    Suscripción modular calculada: <strong className="text-slate-800 font-bold">$0 base (Starter)</strong> + {totalCost > 0 ? `$${totalCost} por módulos` : 'sin módulos extra'}
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="text-slate-500 text-sm font-bold">Total Mensual:</span>

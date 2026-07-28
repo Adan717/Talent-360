@@ -134,7 +134,26 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Registros Inconclusos / Pre-registros
         Route::get('/platform/pending-registrations', [PlatformAdminController::class, 'getPendingRegistrations']);
         Route::delete('/platform/pending-registrations/{id}', [PlatformAdminController::class, 'deletePendingRegistration']);
+
+        // Social Grace & Seasonal Promotions Admin
+        Route::get('/platform/social-grace-config', [PlatformAdminController::class, 'getSocialGraceConfig']);
+        Route::post('/platform/social-grace-config', [PlatformAdminController::class, 'saveSocialGraceConfig']);
+        Route::get('/platform/promotions', [PlatformAdminController::class, 'getPromotions']);
+        Route::post('/platform/promotions', [PlatformAdminController::class, 'savePromotion']);
+        Route::delete('/platform/promotions/{id}', [PlatformAdminController::class, 'deletePromotion']);
+        Route::get('/platform/social-claims', [PlatformAdminController::class, 'getSocialClaims']);
+        Route::post('/platform/social-claims/{id}/approve', [PlatformAdminController::class, 'approveSocialClaim']);
+        Route::post('/platform/social-claims/{id}/reject', [PlatformAdminController::class, 'rejectSocialClaim']);
     });
+
+    // Store & Add-ons (Client / Tenant)
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/store/addons', [\App\Http\Controllers\StoreAddonController::class, 'index']);
+        Route::get('/store/promotions/active', [\App\Http\Controllers\StoreAddonController::class, 'activePromotion']);
+        Route::post('/store/addons/claim-social-grace', [\App\Http\Controllers\StoreAddonController::class, 'claimSocialGrace']);
+        Route::post('/store/addons/subscribe', [\App\Http\Controllers\StoreAddonController::class, 'subscribe']);
+    });
+
 
     // DB Initialization (QA Simulator helper)
     // ⚠️ Solo platform_admin: initDb hace TRUNCATE de employees/job_roles/permissions

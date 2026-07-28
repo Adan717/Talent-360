@@ -1363,4 +1363,204 @@ class PlatformAdminController extends Controller
             'message' => "Registro inconcluso ({$user->email}) eliminado con éxito. El correo ha sido liberado."
         ]);
     }
+
+    /**
+     * Obtiene la configuración global de días de gracia por redes sociales
+     */
+    public function getSocialGraceConfig()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $config = DB::table('system_settings')
+            ->whereNull('tenant_id')
+            ->where('key', 'social_grace_days')
+            ->first();
+
+        return response()->json([
+            'social_grace_days' => $config ? (int)$config->value : 30
+        ]);
+    }
+
+    /**
+     * Guarda la configuración global de días de gracia por redes sociales
+     */
+    public function saveSocialGraceConfig(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $validated = $request->validate([
+            'social_grace_days' => 'required|integer|min:1|max:365'
+        ]);
+
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => null, 'key' => 'social_grace_days'],
+            ['value' => (string)$validated['social_grace_days'], 'updated_at' => now()]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración de días de gracia guardada con éxito.'
+        ]);
+    }
+
+    /**
+     * Listado de promociones de temporada (SuperAdmin)
+     */
+    public function getPromotions()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $promos = \App\Models\SeasonalPromotion::orderBy('id', 'desc')->get();
+        return response()->json(['promotions' => $promos]);
+    }
+
+    /**
+     * Crear o actualizar una promoción de temporada
+     */
+    public function savePromotion(Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'title' => 'required|string',
+            'subtitle' => 'nullable|string',
+            'badge_text' => 'nullable|string',
+            'discount_percentage' => 'nullable|numeric',
+            'target_plan' => 'nullable|string',
+            'banner_bg_color' => 'nullable|string',
+            'banner_text_color' => 'nullable|string',
+            'cta_label' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $promo = \App\Models\SeasonalPromotion::updateOrCreate(
+            ['id' => $validated['id'] ?? null],
+            [
+                'title' => $validated['title'],
+                'subtitle' => $validated['subtitle'] ?? null,
+                'badge_text' => $validated['badge_text'] ?? '20% OFF',
+                'discount_percentage' => $validated['discount_percentage'] ?? 20.0,
+                'target_plan' => $validated['target_plan'] ?? 'all',
+                'banner_bg_color' => $validated['banner_bg_color'] ?? 'from-blue-600 to-indigo-700',
+                'banner_text_color' => $validated['banner_text_color'] ?? 'text-white',
+                'cta_label' => $validated['cta_label'] ?? 'Ver Oferta Especial',
+                'is_active' => $validated['is_active'] ?? true,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Promoción guardada correctamente.',
+            'promotion' => $promo
+        ]);
+    }
+
+    /**
+     * Eliminar promoción de temporada
+     */
+    public function deletePromotion($id)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $promo = \App\Models\SeasonalPromotion::find($id);
+        if ($promo) {
+            $promo->delete();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Promoción eliminada']);
+    }
+
+    /**
+     * Listar solicitudes de tiempo de gracia por redes sociales
+     */
+    public function getSocialClaims()
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $claims = \App\Models\TenantModuleSubscription::with('tenant')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json(['claims' => $claims]);
+    }
+
+    /**
+     * Aprobar solicitud de tiempo de gracia
+     */
+    public function approveSocialClaim($id, Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $sub = \App\Models\TenantModuleSubscription::findOrFail($id);
+        
+        $graceDays = $sub->grace_days_granted ?: 30;
+        $expiresAt = now()->addDays($graceDays);
+
+        DB::transaction(function () use ($sub, $expiresAt) {
+            $sub->update([
+                'status' => 'active',
+                'expires_at' => $expiresAt,
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
+
+            // Sincronizar en system_settings del tenant
+            $tenantConfig = DB::table('system_settings')
+                ->where('tenant_id', $sub->tenant_id)
+                ->where('key', 'active_modules')
+                ->first();
+
+            $activeMods = $tenantConfig ? (json_decode($tenantConfig->value, true) ?: []) : [];
+            if (!in_array($sub->module_key, $activeMods)) {
+                $activeMods[] = $sub->module_key;
+                DB::table('system_settings')->updateOrInsert(
+                    ['tenant_id' => $sub->tenant_id, 'key' => 'active_modules'],
+                    ['value' => json_encode(array_values($activeMods)), 'updated_at' => now()]
+                );
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Solicitud aprobada con éxito. Tiempo de gracia concedido hasta {$expiresAt->format('Y-m-d')}."
+        ]);
+    }
+
+    /**
+     * Rechazar solicitud de tiempo de gracia
+     */
+    public function rejectSocialClaim($id, Request $request)
+    {
+        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $sub = \App\Models\TenantModuleSubscription::findOrFail($id);
+        $sub->update([
+            'status' => 'rejected',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Solicitud rechazada.'
+        ]);
+    }
 }
+

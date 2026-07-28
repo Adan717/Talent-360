@@ -86,28 +86,16 @@ export function MobileBottomNav({
 
   return (
     <div className="relative w-full max-w-[420px] mx-auto select-none font-sans filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.12)]">
-      {/* Background SVG Vector Shape with subtle violet glass tint */}
+      {/* Background SVG Vector Shape (Clean white glass + exact #8a2be2 purple border outline) */}
       <svg 
         className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" 
         viewBox="0 0 420 64" 
         preserveAspectRatio="none"
       >
-        <defs>
-          <linearGradient id="purple-glass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="rgba(255, 255, 255, 0.82)" />
-            <stop offset="70%" stopColor="rgba(250, 242, 255, 0.78)" />
-            <stop offset="100%" stopColor="rgba(243, 230, 255, 0.75)" />
-          </linearGradient>
-          <linearGradient id="purple-glass-grad-dark" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="rgba(15, 23, 42, 0.85)" />
-            <stop offset="100%" stopColor="rgba(24, 15, 45, 0.82)" />
-          </linearGradient>
-        </defs>
         <path 
           d="M 32 0 L 325 0 C 300 0, 300 64, 325 64 L 32 64 A 32 32 0 0 1 32 0 Z" 
-          fill="url(#purple-glass-grad)"
-          className="stroke-purple-300/40 dark:stroke-purple-500/30 backdrop-blur-2xl"
-          strokeWidth="1.5"
+          className="fill-white/92 dark:fill-slate-950/92 stroke-[#8a2be2] dark:stroke-purple-500 backdrop-blur-2xl"
+          strokeWidth="1.75"
         />
       </svg>
 

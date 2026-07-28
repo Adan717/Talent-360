@@ -100,6 +100,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/platform/stats', [PlatformAdminController::class, 'getStats']);
         Route::get('/platform/tenants', [PlatformAdminController::class, 'getTenants']);
         Route::get('/platform/tenants/{id}', [PlatformAdminController::class, 'getTenantDetails']);
+        Route::post('/platform/tenants/{id}/features', [PlatformAdminController::class, 'updateTenantFeatures']);
         Route::post('/platform/tenants/{id}/toggle-status', [PlatformAdminController::class, 'toggleTenantStatus']);
         Route::post('/platform/tenants/{id}/reset-password', [PlatformAdminController::class, 'resetPassword']);
         Route::post('/platform/tenants/{id}/impersonate', [PlatformAdminController::class, 'impersonateTenant']);

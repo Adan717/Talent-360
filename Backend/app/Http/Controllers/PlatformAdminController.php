@@ -155,6 +155,24 @@ class PlatformAdminController extends Controller
             ->where('tenant_id', $tenant->id)
             ->count();
 
+        $tenantModulesConfig = \DB::table('system_settings')
+            ->where('tenant_id', $tenant->id)
+            ->where('key', 'tenant_allowed_modules')
+            ->first();
+
+        $tenantFeaturesConfig = \DB::table('system_settings')
+            ->where('tenant_id', $tenant->id)
+            ->where('key', 'tenant_allowed_features')
+            ->first();
+
+        $allowedModules = $tenantModulesConfig 
+            ? (json_decode($tenantModulesConfig->value, true) ?: []) 
+            : ($tenant->allowed_modules_json ?: []);
+
+        $allowedFeatures = $tenantFeaturesConfig 
+            ? (json_decode($tenantFeaturesConfig->value, true) ?: []) 
+            : [];
+
         return response()->json([
             'tenant' => [
                 'id' => $tenant->id,
@@ -169,6 +187,8 @@ class PlatformAdminController extends Controller
                 'current_period_end' => $tenant->current_period_end,
                 'max_users' => $tenant->max_users,
                 'created_at' => $tenant->created_at->toIso8601String(),
+                'allowed_modules' => $allowedModules,
+                'allowed_features' => $allowedFeatures,
             ],
             'admin' => $admin ? [
                 'name' => $admin->name,
@@ -179,6 +199,40 @@ class PlatformAdminController extends Controller
                 'users_count' => $usersCount,
                 'vacancies_count' => $vacanciesCount,
             ]
+        ]);
+    }
+
+    /**
+     * Update per-tenant allowed modules and feature tags override
+     */
+    public function updateTenantFeatures($id, Request $request)
+    {
+        if (!$this->checkPlatformAdminAccess()) {
+            return response()->json(['error' => 'Acceso denegado'], 403);
+        }
+
+        $tenant = Tenant::findOrFail($id);
+
+        $modules = $request->input('modules', []);
+        $features = $request->input('features', []);
+
+        \DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => $tenant->id, 'key' => 'tenant_allowed_modules'],
+            ['value' => json_encode($modules), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        \DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => $tenant->id, 'key' => 'tenant_allowed_features'],
+            ['value' => json_encode($features), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        $tenant->allowed_modules_json = $modules;
+        $tenant->save();
+
+        return response()->json([
+            'message' => 'Permisos y módulos de la empresa actualizados con éxito.',
+            'allowed_modules' => $modules,
+            'allowed_features' => $features
         ]);
     }
 

@@ -472,6 +472,9 @@ export const SaaSPlatformAdmin = () => {
   const [tenantDetail, setTenantDetail] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [tenantAllowedModules, setTenantAllowedModules] = useState<string[]>([]);
+  const [tenantAllowedFeatures, setTenantAllowedFeatures] = useState<string[]>([]);
+  const [isSavingTenantFeatures, setIsSavingTenantFeatures] = useState(false);
 
   // Suspensión Modal
   const [isSuspensionModalOpen, setIsSuspensionModalOpen] = useState(false);
@@ -667,6 +670,10 @@ export const SaaSPlatformAdmin = () => {
       setEditAdminName(data.admin?.name || '');
       setEditAdminEmail(data.admin?.email || '');
       setEditAdminPhone(data.admin?.phone || '');
+
+      // Cargar módulos y características permitidas de este tenant
+      setTenantAllowedModules(Array.isArray(data.tenant?.allowed_modules) ? data.tenant.allowed_modules : []);
+      setTenantAllowedFeatures(Array.isArray(data.tenant?.allowed_features) ? data.tenant.allowed_features : []);
     } catch (error) {
       console.error("Error loading tenant details:", error);
       alert("Error al cargar los detalles de la empresa.");
@@ -674,6 +681,36 @@ export const SaaSPlatformAdmin = () => {
     } finally {
       setIsDetailLoading(false);
     }
+  };
+
+  const handleSaveTenantFeatures = async () => {
+    if (!selectedTenantId) return;
+    setIsSavingTenantFeatures(true);
+    try {
+      await axiosInstance.post(`/platform/tenants/${selectedTenantId}/features`, {
+        modules: tenantAllowedModules,
+        features: tenantAllowedFeatures
+      });
+      alert("Módulos y funciones personalizadas guardadas con éxito para esta empresa.");
+      await handleOpenDetails(selectedTenantId);
+    } catch (error: any) {
+      console.error("Error saving tenant features:", error);
+      alert(error.response?.data?.error || "Error al guardar los permisos de la empresa.");
+    } finally {
+      setIsSavingTenantFeatures(false);
+    }
+  };
+
+  const toggleTenantModule = (modId: string) => {
+    setTenantAllowedModules(prev =>
+      prev.includes(modId) ? prev.filter(id => id !== modId) : [...prev, modId]
+    );
+  };
+
+  const toggleTenantFeature = (featKey: string) => {
+    setTenantAllowedFeatures(prev =>
+      prev.includes(featKey) ? prev.filter(key => key !== featKey) : [...prev, featKey]
+    );
   };
 
   // Guardar Cambios de Edición del Inquilino
@@ -2488,6 +2525,118 @@ export const SaaSPlatformAdmin = () => {
                           <span className="font-semibold text-slate-500">Vacantes Publicadas:</span>
                           <span className="font-black text-slate-800 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">{tenantDetail?.metrics?.vacancies_count}</span>
                         </div>
+                      </div>
+
+                      {/* Módulos y Funciones Habilitadas (Tenant Overrides) */}
+                      <div className="border border-indigo-200 bg-indigo-50/20 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                            <span>🎛️</span> Módulos y Funciones Habilitadas
+                          </h3>
+                          <span className="text-[9px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded uppercase">
+                            Empresa #{tenantDetail?.tenant?.id}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Personaliza los módulos y las funciones contratadas o permitidas específicamente para esta empresa:
+                        </p>
+
+                        {/* Módulos Principales */}
+                        <div className="space-y-2">
+                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">📦 Módulos de Sistema</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { id: 'rrhh', label: 'Recursos Humanos' },
+                              { id: 'reloj', label: 'Reloj Checador' },
+                              { id: 'operativo', label: 'Rutinas y Tareas' },
+                              { id: 'ats', label: 'Reclutamiento ATS' },
+                              { id: 'reportes', label: 'Reportes y Analítica' },
+                              { id: 'portal', label: 'Portal Web' },
+                              { id: 'academia', label: 'Academia 360' },
+                              { id: 'documentos', label: 'Gestor Documental' }
+                            ].map(mod => (
+                              <label key={mod.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
+                                <input 
+                                  type="checkbox"
+                                  checked={tenantAllowedModules.includes(mod.id)}
+                                  onChange={() => toggleTenantModule(mod.id)}
+                                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="truncate">{mod.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Eventos del Reloj Checador (Dialer) */}
+                        <div className="space-y-2 pt-2 border-t border-indigo-100">
+                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">🕒 Funciones del Dialer (Reloj)</h4>
+                          <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+                            {CLOCK_FEATURE_TAGS_MATRIX.map(tag => {
+                              const isChecked = tag.isMandatory || tenantAllowedFeatures.includes(tag.key);
+                              return (
+                                <label key={tag.key} className={`flex items-start gap-2 p-2 bg-white border rounded-xl text-xs select-none ${tag.isMandatory ? 'border-emerald-200 bg-emerald-50/30' : isChecked ? 'border-indigo-400 bg-indigo-50/40 cursor-pointer' : 'border-slate-200 hover:bg-slate-50 cursor-pointer'}`}>
+                                  <input 
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={tag.isMandatory}
+                                    onChange={() => !tag.isMandatory && toggleTenantFeature(tag.key)}
+                                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-slate-800 truncate">{tag.name}</span>
+                                      <span className="text-[8px] font-black px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded uppercase">{tag.defaultTier}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-normal leading-tight line-clamp-1">{tag.description}</p>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Funciones Especiales Globales */}
+                        <div className="space-y-2 pt-2 border-t border-indigo-100">
+                          <h4 className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide">⚡ Funciones Especiales</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { id: 'voice_assistant', label: 'Asistente Voz AI' },
+                              { id: 'routines_management', label: 'Gestión Rutinas' },
+                              { id: 'supervisor_validation', label: 'Aprobación Tareas' },
+                              { id: 'gps_validation', label: 'Validación GPS' },
+                              { id: 'face_validation', label: 'Selfie Checador' },
+                              { id: 'system_backups', label: 'Respaldos JSON' },
+                              { id: 'custom_logo', label: 'Logo Propio' }
+                            ].map(feat => (
+                              <label key={feat.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
+                                <input 
+                                  type="checkbox"
+                                  checked={tenantAllowedFeatures.includes(feat.id)}
+                                  onChange={() => toggleTenantFeature(feat.id)}
+                                  className="rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="truncate">{feat.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Botón de Guardado para la Empresa */}
+                        <button 
+                          onClick={handleSaveTenantFeatures}
+                          disabled={isSavingTenantFeatures}
+                          className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl shadow-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer border-none"
+                        >
+                          {isSavingTenantFeatures ? (
+                            <>
+                              <Loader2 className="animate-spin" size={14} />
+                              Guardando...
+                            </>
+                          ) : (
+                            'Guardar Permisos de Empresa'
+                          )}
+                        </button>
                       </div>
 
                       {/* Accesos Administrativos */}

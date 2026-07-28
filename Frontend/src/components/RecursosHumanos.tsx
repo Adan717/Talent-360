@@ -848,9 +848,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleDeleteUser = async (id: number) => {
     if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
     try {
-      const emp = users.find((u: any) => u.id === id);
-      const targetId = emp?.employee_id || id;
-      const res = await axiosInstance.delete(`/employees/${targetId}`);
+      const res = await axiosInstance.delete(`/employees/${id}`);
       if (res.status !== 200) throw new Error("Failed to delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -863,9 +861,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleForceDeleteUser = async (id: number) => {
     if(!window.confirm('¿Seguro que deseas eliminar definitivamente a este colaborador? Esta acción no se puede deshacer y borrará permanentemente sus registros de la base de datos.')) return;
     try {
-      const emp = users.find((u: any) => u.id === id);
-      const targetId = emp?.employee_id || id;
-      const res = await axiosInstance.delete(`/employees/${targetId}/force`);
+      const res = await axiosInstance.delete(`/employees/${id}/force`);
       if (res.status !== 200) throw new Error("Failed to force delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -878,9 +874,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleRestoreUser = async (id: number) => {
     if(!window.confirm('¿Deseas restaurar a este colaborador? Volverá a aparecer en el directorio activo.')) return;
     try {
-      const emp = users.find((u: any) => u.id === id);
-      const targetId = emp?.employee_id || id;
-      const res = await axiosInstance.put(`/employees/${targetId}`, { is_active_employee: true });
+      const res = await axiosInstance.put(`/employees/${id}`, { is_active_employee: true });
       if (res.status !== 200) throw new Error("Failed to restore user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));

@@ -5,7 +5,7 @@ import {
   ArrowUpRight, ShieldAlert, ShieldCheck, GraduationCap, Loader2,
   User, LogOut, ChevronDown, Search, Filter, Eye, Key, LogIn, Ban, 
   Info, RefreshCw, X, ShieldX, KeyRound, CheckCircle2, Settings,
-  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor
+  LifeBuoy, MessageSquare, Plus, Trash2, Sparkles, Monitor, Menu
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
@@ -389,6 +389,7 @@ export const SaaSPlatformAdmin = () => {
   const [newTenantName, setNewTenantName] = useState('');
   const [newTenantPlan, setNewTenantPlan] = useState('Freemium');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
   const [createdTenantData, setCreatedTenantData] = useState<any>(null);
 
   // Estados para la configuración del plan gratuito (Freemium)
@@ -960,148 +961,168 @@ export const SaaSPlatformAdmin = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Top Bar with User Profile */}
-      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
+      {/* Sticky Top Bar con Menú Hamburguesa y Perfil de Usuario */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-sm flex items-center justify-between gap-4 mb-6">
+        {/* Izquierda: Branding e Identificación de la Consola */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shrink-0">
-            <span className="text-white font-black text-xl">T</span>
+          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+            <span className="text-white font-black text-lg">T</span>
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-black text-slate-800 leading-tight">{isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}</h2>
-            <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}</p>
+            <h2 className="text-sm sm:text-base font-black text-slate-800 leading-tight">
+              {isAdmin ? 'Plataforma Talent360' : 'Página de Soporte'}
+            </h2>
+            <p className="text-[11px] text-slate-500 font-bold leading-tight">
+              {isAdmin ? 'Consola de Administración Global' : 'Soporte técnico y atención a empresas'}
+            </p>
           </div>
         </div>
-        
-        {/* User Menu */}
-        <div className="relative">
-          <button 
-            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 hover:bg-slate-50 p-2 rounded-xl border border-slate-200 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 border border-slate-200 overflow-hidden shrink-0">
+
+        {/* Derecha: Menú Hamburguesa & Perfil del Usuario Estático */}
+        <div className="flex items-center gap-3">
+          {/* Menú de Hamburguesa para Navegación Global */}
+          <div className="relative">
+            <button 
+              type="button"
+              onClick={() => setIsNavMenuOpen(!isNavMenuOpen)}
+              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title="Menú de Navegación Global"
+            >
+              <Menu size={18} />
+              <span className="hidden sm:inline font-black text-slate-800">Menú</span>
+            </button>
+
+            {isNavMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsNavMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-2.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-1">
+                  <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secciones de Plataforma</p>
+                  </div>
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('dashboard'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">📊 Dashboard Global</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('pending_registrations'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'pending_registrations' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">⏳ Registros Inconclusos</span>
+                      {pendingRegistrations.length > 0 && (
+                        <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                          {pendingRegistrations.length}
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  <button 
+                    type="button"
+                    onClick={() => { setActiveTab('tickets'); setIsNavMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                      activeTab === 'tickets' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">🎧 Soporte Técnico / Tickets</span>
+                  </button>
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('security_logs'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'security_logs' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">🛡️ Bitácora de Seguridad</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('billing'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'billing' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">💳 Facturación Global</span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Perfil del Usuario: Icono/Avatar arriba y abajo Nombre y Puesto */}
+          <div className="relative">
+            <button 
+              type="button"
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              className="flex flex-col items-center justify-center p-1.5 hover:bg-slate-50 rounded-xl transition-all cursor-pointer border-none bg-transparent group"
+            >
+              <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center overflow-hidden shadow-xs mb-0.5 group-hover:scale-105 transition-transform">
                 {currentUser?.avatar ? (
                   <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <User size={18} />
+                  <User size={16} />
                 )}
               </div>
-              <div className="text-left">
-                <p className="text-xs font-black text-slate-800 leading-tight truncate max-w-[140px] sm:max-w-none">{currentUser?.name || 'Administrador'}</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{currentUser?.role || 'Super Admin'}</p>
+              <div className="text-center leading-tight max-w-[120px] truncate">
+                <p className="text-[11px] font-black text-slate-800 truncate">{currentUser?.name || 'Administrador'}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate">{currentUser?.role || 'Super Admin'}</p>
               </div>
-            </div>
-            <ChevronDown size={14} className="text-slate-400" />
-          </button>
+            </button>
 
-          {isProfileMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)}></div>
-              <div className="absolute right-0 mt-2 w-full sm:w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="border-b border-slate-100 pb-3 mb-3">
-                  <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
-                  <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'master@talent360.com'}</p>
-                </div>
-                <div className="space-y-2.5 text-xs text-slate-600 font-semibold mb-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">ID Usuario:</span>
-                    <span>{currentUser?.id || 'N/A'}</span>
+            {isProfileMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsProfileMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="border-b border-slate-100 pb-3 mb-3">
+                    <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
+                    <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'master@talent360.com'}</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">Rol:</span>
-                    <span className="text-rose-600 font-bold">{currentUser?.system_role || currentUser?.role || 'platform_admin'}</span>
+                  <div className="space-y-2.5 text-xs text-slate-600 font-semibold mb-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">ID Usuario:</span>
+                      <span>{currentUser?.id || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">Rol:</span>
+                      <span className="text-rose-600 font-bold">{currentUser?.system_role || currentUser?.role || 'platform_admin'}</span>
+                    </div>
                   </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-transparent py-2.5 rounded-xl font-bold transition-all text-xs"
+                  >
+                    <LogOut size={14} />
+                    Cerrar Sesión
+                  </button>
                 </div>
-                <button 
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-100 hover:border-transparent py-2.5 rounded-xl font-bold transition-all text-xs"
-                >
-                  <LogOut size={14} />
-                  Cerrar Sesión
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Tab Switcher */}
-      <div className="flex border-b border-slate-200 gap-4 sm:gap-6 mb-6 overflow-x-auto whitespace-nowrap scrollbar-none pb-1">
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('dashboard')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 shrink-0 ${
-              activeTab === 'dashboard' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            📊 Dashboard Global
-          </button>
-        )}
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('pending_registrations')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'pending_registrations' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            ⏳ Registros Inconclusos
-            {pendingRegistrations.length > 0 && (
-              <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full ml-1 animate-pulse">
-                {pendingRegistrations.length}
-              </span>
+              </>
             )}
-          </button>
-        )}
-        <button 
-          type="button"
-          onClick={() => setActiveTab('tickets')}
-          className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'tickets' 
-              ? 'border-indigo-600 text-indigo-600' 
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <LifeBuoy size={16} />
-          Soporte Técnico / Tickets
-        </button>
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('security_logs')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'security_logs' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            🛡️ Bitácora de Seguridad
-          </button>
-        )}
-        {isAdmin && (
-          <button 
-            type="button"
-            onClick={() => setActiveTab('billing')}
-            className={`pb-3 text-sm font-black transition-all border-b-2 px-1 flex items-center gap-1.5 shrink-0 ${
-              activeTab === 'billing' 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            💳 Facturación Global
-          </button>
-        )}
+          </div>
+        </div>
       </div>
 
       {activeTab === 'dashboard' && (
         <>
           {/* Header del Platform Admin */}
-          <div className="bg-slate-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden">
+          <div className="bg-slate-900 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-800 text-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative overflow-hidden mb-6">
         <div className="absolute top-0 right-0 p-8 opacity-5">
            <Activity size={200} />
         </div>
@@ -1148,22 +1169,36 @@ export const SaaSPlatformAdmin = () => {
         </div>
       </div>
 
-      {/* KPIs Financieros y de Crecimiento */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPIs Financieros y de Crecimiento Compactos en una Sola Fila con Marca de Agua */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {kpis.map((stat, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between group">
-            <div className="flex items-start justify-between">
-              <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-                <stat.icon size={24} strokeWidth={2} />
-              </div>
-              <ArrowUpRight size={20} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+          <div 
+            key={idx} 
+            className="relative overflow-hidden bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between group hover:border-indigo-300 transition-all min-h-[92px]"
+          >
+            {/* Icono Grande de Fondo en Marca de Agua */}
+            <stat.icon 
+              size={72} 
+              className="absolute -right-2 -bottom-2 text-slate-900 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-300" 
+            />
+
+            <div className="flex items-center justify-between relative z-10">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider truncate max-w-[130px] sm:max-w-none">
+                {stat.label}
+              </span>
+              <ArrowUpRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-colors shrink-0" />
             </div>
-            <div className="mt-4">
-              <h3 className="text-3xl font-black text-slate-800">{stat.value}</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">{stat.label}</p>
+
+            <div className="relative z-10 my-1">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-none tracking-tight">
+                {stat.value}
+              </h3>
             </div>
-            <div className="mt-4 text-xs font-bold text-slate-400 bg-slate-50 py-1.5 px-3 rounded-lg inline-block w-max">
-              {stat.trend}
+
+            <div className="relative z-10 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 inline-block truncate max-w-full">
+                {stat.trend}
+              </span>
             </div>
           </div>
         ))}

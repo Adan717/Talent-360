@@ -452,39 +452,7 @@ export default function DialPrincipal({
         </button>
       )}
 
-      {/* BUG FIX: Acceso directo a Botón de Pánico de Emergencia */}
-      {onPanicClick && (
-        <button
-          type="button"
-          onClick={onPanicClick}
-          aria-label="Activar protocolo de emergencia o pánico"
-          className="mt-2 py-1 px-3 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-[9px] font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer flex items-center gap-1 opacity-70 hover:opacity-100 z-20"
-        >
-          <AlertTriangle size={10} className="text-rose-500" />
-          Emergencia / Pánico
-        </button>
-      )}
 
-      {/* NUEVO (estado #10/#15 de la matriz): "Declarar Eventualidad" — botón persistente, igual que
-          el de pánico, porque una falla de luz/internet puede ocurrir en cualquier momento del turno,
-          no solo antes de fichar entrada. Si ya hay una contingencia activa hoy, cambia de texto/color
-          para reflejarlo en vez de permitir declarar dos veces. */}
-      {onDeclareContingencyClick && (
-        <button
-          type="button"
-          onClick={onDeclareContingencyClick}
-          disabled={hasActiveContingency}
-          aria-label={hasActiveContingency ? 'Contingencia ya declarada hoy' : 'Declarar eventualidad por falla eléctrica o de internet en la sucursal'}
-          className={`mt-2 py-1 px-3 border text-[9px] font-bold uppercase tracking-wider rounded-full transition-all flex items-center gap-1 z-20 ${
-            hasActiveContingency
-              ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-default opacity-90'
-              : 'bg-slate-100 hover:bg-amber-50 text-slate-500 hover:text-amber-600 border-slate-200 hover:border-amber-200 opacity-70 hover:opacity-100 cursor-pointer'
-          }`}
-        >
-          <AlertTriangle size={10} className={hasActiveContingency ? 'text-amber-500' : 'text-amber-500'} />
-          {hasActiveContingency ? 'Contingencia Activa' : 'Declarar Eventualidad'}
-        </button>
-      )}
 
       {/* Premium Centered GPS Instruction Modal */}
       {showGpsModal && (

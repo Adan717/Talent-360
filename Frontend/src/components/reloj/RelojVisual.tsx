@@ -904,19 +904,19 @@ export default function RelojVisual({
     const progressPercent = tDuration > 0 ? Math.min(100, Math.max(0, (elapsedTotal / tDuration) * 100)) : 0;
 
     return (
-      <div className={isMobile ? "py-2 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-4 w-full text-left py-2 select-none"}>
+      <div className={isMobile ? "py-1.5 px-1 text-left w-full select-none shrink-0" : "flex flex-col gap-3 w-full text-left py-1 select-none shrink-0"}>
         {/* Two-Column Status Bar: Store Status (Left) & Employee Shift Status (Right) */}
-        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[9.5px] mb-4 px-1' : 'text-[11px] mb-2 tracking-wider'}`}>
+        <div className={`flex justify-between items-center w-full font-bold uppercase tracking-wider ${isMobile ? 'text-[11.5px] mb-3 px-1' : 'text-xs md:text-sm mb-2.5 px-1 tracking-wider'}`}>
           {/* Left: Store status */}
           <div className="flex items-center select-none">
             {storeStatus === 'open' ? (
               <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                 <span>🏪 Sucursal Abierta</span>
               </span>
             ) : (
               <span className="text-rose-600 dark:text-rose-500 font-black flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                 <span>🔒 Sucursal Cerrada</span>
               </span>
             )}
@@ -930,12 +930,12 @@ export default function RelojVisual({
               </span>
             ) : hasCheckedIn ? (
               <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span>Turno Activo ✓</span>
               </span>
             ) : (
               <span className="text-slate-400 dark:text-slate-500 font-black flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                 <span>Turno Inactivo</span>
               </span>
             )}
@@ -954,21 +954,21 @@ export default function RelojVisual({
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-indigo-600 dark:text-indigo-400">Entrada</span>
+                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-indigo-600 dark:text-indigo-400">Entrada</span>
                 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
-                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                  isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
                   hasCheckedIn 
                     ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105 shadow-indigo-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <LogIn size={isMobile ? 18 : 20} className={!hasCheckedIn ? "animate-pulse" : ""} />
+                  <LogIn size={isMobile ? 20 : 22} className={!hasCheckedIn ? "animate-pulse" : ""} />
                   {hasCheckedIn && (
                     isLateIn ? (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Retardo">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Retardo">⚠️</div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Puntual">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Puntual">✓</div>
                     )
                   )}
                 </div>
@@ -989,21 +989,21 @@ export default function RelojVisual({
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-violet-600 dark:text-violet-400">Descanso</span>
+                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-violet-600 dark:text-violet-400">Descanso</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
-                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                  isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
                   isAccessible
                     ? 'border-violet-500 bg-violet-500 text-white font-extrabold scale-105 shadow-violet-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <Armchair size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
+                  <Armchair size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isBreakExceeded ? (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Límite excedido">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Límite excedido">⚠️</div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Dentro de límite">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Dentro de límite">✓</div>
                     )
                   )}
                 </div>
@@ -1024,21 +1024,21 @@ export default function RelojVisual({
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-amber-600 dark:text-amber-400">Comida</span>
+                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-amber-600 dark:text-amber-400">Comida</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
-                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                  isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
                   isAccessible
                     ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105 shadow-amber-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <Utensils size={isMobile ? 18 : 20} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
+                  <Utensils size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isMealExceeded ? (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Límite excedido">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Límite excedido">⚠️</div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Dentro de límite">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Dentro de límite">✓</div>
                     )
                   )}
                 </div>
@@ -1058,21 +1058,21 @@ export default function RelojVisual({
                 }`}
               >
                 {/* Upper label */}
-                <span className="text-[9px] font-black uppercase tracking-wider mb-0.5 text-emerald-600 dark:text-emerald-400">Salida</span>
+                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-emerald-600 dark:text-emerald-400">Salida</span>
 
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
-                  isMobile ? 'w-11 h-11' : 'w-12 h-12'
+                  isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
                   isAccessible
                     ? 'border-emerald-500 bg-emerald-500 text-white font-extrabold scale-105 shadow-emerald-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <LogOut size={isMobile ? 18 : 20} />
+                  <LogOut size={isMobile ? 20 : 22} />
                   {isDone && (
                     hasAnyDeviation ? (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Turno con desvíos">⚠️</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Turno con desvíos">⚠️</div>
                     ) : (
-                      <div className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm" title="Turno excelente">✓</div>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Turno excelente">✓</div>
                     )
                   )}
                 </div>
@@ -1082,9 +1082,9 @@ export default function RelojVisual({
         </div>
 
         {/* Timeline Bar - Thicker, Larger, and Innovatively Styled (Glassmorphism & Contrast Text) */}
-        <div className={`relative w-full z-0 ${isMobile ? 'px-2 mb-0.5 mt-1' : 'px-4 mb-2 mt-1.5'}`}>
-          {/* Progress Container (Slimmer size h-5 - Softest styled gray track with bevel shadow) */}
-          <div className="relative w-full h-5 bg-slate-50/20 dark:bg-slate-800/10 rounded-2xl border border-slate-200/20 dark:border-slate-700/15 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.03),_0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+        <div className={`relative w-full z-0 ${isMobile ? 'px-1 mb-0.5 mt-1.5' : 'px-2 mb-2 mt-2'}`}>
+          {/* Progress Container (Size h-6 - Softest styled gray track with bevel shadow) */}
+          <div className="relative w-full h-6 bg-slate-100/80 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.05)] overflow-hidden">
             
             {/* Elapsed Proportional Progress Segment Container */}
             {hasCheckedIn && elapsedTotal > 0 && (
@@ -1110,8 +1110,8 @@ export default function RelojVisual({
             )}
 
             {/* Absolute Overlay for Extremes Timestamps inside the bar */}
-            <div className="absolute inset-0 flex justify-between items-center px-3 pointer-events-none z-10 text-[10.5px] font-mono font-bold text-slate-500 dark:text-slate-400">
-              {/* Left & Right extremes using uniform slate-500 gray text */}
+            <div className="absolute inset-0 flex justify-between items-center px-3.5 pointer-events-none z-10 text-xs font-mono font-black text-slate-700 dark:text-slate-200">
+              {/* Left & Right extremes using uniform text */}
               <span>
                 {hasCheckedIn 
                   ? formatMinsToTimeClean(checkInTimes[currentUser.id]) 
@@ -3388,8 +3388,8 @@ export default function RelojVisual({
                   {/* Timeline Progress Line (Borderless/No Rectangular Box - Redesigned) */}
                   {renderBarraCronologica(true)}
 
-                  {/* Fila Horizontal: Desempeño (Izquierda) - DialPrincipal (Centro) - Pánico (Derecha) */}
-                  <div className="flex flex-row items-center justify-center gap-3.5 w-full shrink-0 relative my-2">
+                  {/* Fila Horizontal: Desempeño (Izquierda) - DialPrincipal (Centro) */}
+                  <div className="flex flex-row items-center justify-center w-full shrink-0 relative my-2">
                     
                     {/* Botón de Desempeño (Copa Trophy) */}
                     <button
@@ -3401,7 +3401,8 @@ export default function RelojVisual({
                         }
                         setShowPerformanceModal(true);
                       }}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-md relative shrink-0 border ${
+                      title="Ver desempeño semanal"
+                      className={`absolute left-2 w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md shrink-0 border z-20 ${
                         !hasCheckedIn
                           ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
                           : isDark 
@@ -3409,7 +3410,7 @@ export default function RelojVisual({
                             : 'bg-white border-slate-200 text-amber-500 hover:bg-slate-50 active:scale-95 cursor-pointer'
                       }`}
                     >
-                      <Trophy size={20} />
+                      <Trophy size={18} />
                       {hasCheckedIn && weeklyPerformanceScore !== null && (
                         <span className="absolute -top-1.5 -right-1 bg-violet-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-xs border border-white">
                           {weeklyPerformanceScore}%
@@ -3461,18 +3462,7 @@ export default function RelojVisual({
                       />
                     </div>
 
-                    {/* Botón de Pánico (Alerta de Emergencia) */}
-                    <button
-                      type="button"
-                      onClick={() => setShowPanicModal(true)}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md relative shrink-0 border cursor-pointer ${
-                        isDark 
-                          ? 'bg-rose-950/40 border-rose-900 text-rose-400 hover:bg-rose-900/30' 
-                          : 'bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-100/50'
-                      }`}
-                    >
-                      <AlertOctagon size={20} className="animate-pulse" />
-                    </button>
+
 
                   </div>
 
@@ -3998,25 +3988,7 @@ export default function RelojVisual({
                       <Phone size={13} /> Llamar a Encargado de Llaves
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setShowContingencyModal(true)}
-                    disabled={!!activeContingency}
-                    className={`w-full text-left py-2.5 px-3.5 border font-bold text-xs rounded-xl transition-all flex items-center gap-2 ${
-                      activeContingency
-                        ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-default opacity-90'
-                        : 'bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-700 border-slate-200 hover:border-amber-200 active:scale-[0.98]'
-                    }`}
-                  >
-                    ⚡ {activeContingency ? 'Contingencia Activa' : 'Declarar Eventualidad'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPanicModal(true)}
-                    className="w-full text-left py-2.5 px-3.5 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 font-bold text-xs rounded-xl transition-all flex items-center gap-2 active:scale-[0.98]"
-                  >
-                    🚨 Emergencia / Pánico
-                  </button>
+
                 </div>
 
                 {/* Módulo de Notificaciones de Turno */}

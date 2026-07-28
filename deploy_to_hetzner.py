@@ -82,7 +82,7 @@ def main():
         run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan migrate --force")
         # --- Verificación §65: el catálogo de 12 capacidades quedó sembrado por tenant ---
         print("\n--- Verificando siembra de catálogo de permisos §65 por tenant ---", flush=True)
-        run_remote_cmd(ssh, 'docker exec -u www-data talent360-backend php artisan tinker --execute="$rows = DB::table(\'permissions\')->whereIn(\'name\', [\'manage_payroll\',\'view_salaries\',\'manage_tasks\',\'manage_documents\',\'manage_employees\',\'manage_schedules\',\'manage_store_opening\',\'approve_operations\',\'manage_academy\',\'manage_recruitment\',\'manage_org_chart\',\'view_reports\'])->select(\'tenant_id\', DB::raw(\'count(*) as c\'))->groupBy(\'tenant_id\')->get(); echo $rows->toJson();"')
+        run_remote_cmd(ssh, """docker exec -u www-data talent360-backend php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo DB::table('permissions')->whereIn('name', ['manage_payroll','view_salaries','manage_tasks','manage_documents','manage_employees','manage_schedules','manage_store_opening','approve_operations','manage_academy','manage_recruitment','manage_org_chart','view_reports'])->select('tenant_id', DB::raw('count(*) as c'))->groupBy('tenant_id')->get()->toJson();" """)
         # Run DecorArte database seeder as www-data (Commented out to prevent data loss in future deployments)
         # run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php scripts_utilidad/seed_decorarte_final.php")
         # Clear config and cache as www-data

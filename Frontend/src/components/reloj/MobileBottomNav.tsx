@@ -93,7 +93,7 @@ export function MobileBottomNav({
         preserveAspectRatio="none"
       >
         <path 
-          d="M 28 0 L 330 0 C 348 0, 362 30, 394 60 L 28 60 A 28 28 0 0 1 28 0 Z" 
+          d="M 30 0 L 330 0 C 310 0, 310 60, 330 60 L 30 60 A 30 30 0 0 1 30 0 Z" 
           className="fill-white/90 dark:fill-slate-950/90 stroke-slate-200/90 dark:stroke-slate-800/90 backdrop-blur-xl"
           strokeWidth="1.5"
         />

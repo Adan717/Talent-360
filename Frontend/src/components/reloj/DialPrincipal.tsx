@@ -19,7 +19,8 @@ import {
   Ban,
   X,
   Camera,
-  MessageSquare
+  MessageSquare,
+  AlertOctagon
 } from 'lucide-react';
 
 interface DialPrincipalProps {
@@ -352,6 +353,21 @@ export default function DialPrincipal({
             </div>
           </div>
         </button>
+
+        {/* Botón de Pánico redondito a un lado del dialer */}
+        {onPanicClick && (
+          <button
+            type="button"
+            onClick={onPanicClick}
+            title="Botón de Pánico / Alerta de Emergencia 🚨"
+            aria-label="Botón de Pánico / Alerta de Emergencia 🚨"
+            className={`absolute -right-12 sm:-right-14 top-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md border cursor-pointer z-30 hover:scale-110 ${
+              isMobile ? 'w-10 h-10' : 'w-12 h-12'
+            } bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60`}
+          >
+            <AlertOctagon size={isMobile ? 18 : 20} className="animate-pulse text-rose-600 dark:text-rose-400" />
+          </button>
+        )}
       </div>
         );
       })()}

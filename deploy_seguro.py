@@ -46,8 +46,9 @@ RUTA_RESPALDOS = "/var/backups/talent360"
 # Repositorio al que se sube. El servidor DEBE tener este mismo remoto.
 REPO_ESPERADO = "Adan717/Talent-360"
 
-# Claves SSH candidatas, en orden de preferencia.
-CLAVES_SSH = ["~/.ssh/id_rsa_py", "~/.ssh/id_ed25519", "~/.ssh/id_rsa"]
+# Claves SSH candidatas, en orden de preferencia. La primera es la dedicada del
+# servidor propio (Talent-360-V2 en Hetzner, generada 2026-07-28).
+CLAVES_SSH = ["~/.ssh/talent360_v2", "~/.ssh/id_rsa_py", "~/.ssh/id_ed25519", "~/.ssh/id_rsa"]
 
 
 class Abortar(Exception):

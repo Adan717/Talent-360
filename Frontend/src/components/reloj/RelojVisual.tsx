@@ -2706,10 +2706,10 @@ export default function RelojVisual({
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(prev => !prev)}
-          className="w-[68px] h-[68px] bg-[#8a2be2] hover:bg-[#7b1fa2] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer outline-none"
+          className="w-[68px] h-[68px] bg-gradient-to-br from-violet-600 via-[#8a2be2] to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white rounded-full shadow-xl shadow-purple-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-2 border-white/20 cursor-pointer outline-none"
           title="Menú de Operaciones y Soporte AI"
         >
-          {isFabSheetOpen ? <X size={22} /> : <Sparkles size={22} />}
+          {isFabSheetOpen ? <X size={26} /> : <Sparkles size={28} className="text-white animate-pulse" />}
         </button>
       </div>
     );

@@ -86,7 +86,7 @@ export function MobileBottomNav({
 
   return (
     <nav 
-      className="bg-white/95 dark:bg-slate-950/95 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-md rounded-full px-3 py-1.5 flex items-center justify-around w-full max-w-[420px] mx-auto select-none"
+      className="bg-gradient-to-r from-white via-white to-purple-100/80 dark:from-slate-950 dark:via-slate-950 dark:to-violet-950/60 border border-slate-200/90 dark:border-slate-800 shadow-2xl backdrop-blur-md rounded-full pl-3 pr-16 py-1.5 flex items-center justify-around w-full max-w-[420px] mx-auto select-none"
       style={{
         clipPath: `polygon(
           0% 0%, 

@@ -1,0 +1,32 @@
+# Dockerfile para RAILWAY (entorno de PRUEBAS, 2026-07-28).
+#
+# Diferencias frente al Dockerfile de docker-compose (php-fpm + nginx aparte):
+# Railway corre UN contenedor por servicio con UN puerto HTTP ($PORT), así que aquí el
+# propio artisan sirve HTTP (suficiente para pruebas; en AWS/Hetzner se vuelve a fpm+nginx).
+#
+# El MISMO Dockerfile sirve para los 3 servicios de Railway cambiando el Start Command:
+#   backend : (el CMD de abajo — migra y sirve)
+#   worker  : sh -c "php artisan schedule:work & exec php artisan queue:work --tries=3 --sleep=3"
+#   reverb  : sh -c "php artisan reverb:start --host=0.0.0.0 --port=${PORT}"
+
+FROM php:8.3-cli
+
+RUN apt-get update && apt-get install -y \
+    git curl libpng-dev libonig-dev libxml2-dev zip unzip \
+    libpq-dev postgresql-client libzip-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd zip
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www
+COPY . /var/www
+
+RUN composer install --optimize-autoloader --no-dev \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Railway inyecta $PORT. Migra en el arranque (para pruebas es lo pragmático; en un
+# entorno serio la migración es un paso de release aparte con respaldo previo).
+CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]

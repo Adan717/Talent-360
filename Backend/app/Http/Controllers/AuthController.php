@@ -142,6 +142,19 @@ class AuthController extends Controller
         $minutes = $minutes ?? 60 * 24 * 365; // "indefinido" para login normal
         $secure = app()->isProduction();
 
+        // Despliegue Railway+Vercel (2026-07-28): con el FE y el BE en DOMINIOS distintos
+        // (vercel.app / railway.app), SameSite=Lax hace que el navegador NUNCA mande la
+        // cookie en los XHR cross-site — el login "funciona" pero ninguna petición queda
+        // autenticada. En esos entornos se fija AUTH_COOKIE_SAMESITE=None (exige Secure,
+        // que en producción ya va en true). Default 'Lax' = mismo comportamiento de
+        // siempre cuando FE y BE comparten dominio (Hetzner/local).
+        $sameSite = env('AUTH_COOKIE_SAMESITE', 'Lax');
+        if (strcasecmp($sameSite, 'None') === 0 && !$secure) {
+            // SameSite=None sin Secure lo RECHAZAN los navegadores — mejor caer a Lax
+            // que emitir una cookie muerta en entornos locales.
+            $sameSite = 'Lax';
+        }
+
         return cookie(
             \App\Http\Middleware\AuthTokenFromCookie::COOKIE_NAME,
             $token,
@@ -151,7 +164,7 @@ class AuthController extends Controller
             $secure,   // secure: solo HTTPS en producción
             true,      // httpOnly: JS no puede leerla
             false,
-            'Lax'
+            $sameSite
         );
     }
 

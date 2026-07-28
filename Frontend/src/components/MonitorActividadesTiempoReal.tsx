@@ -9,7 +9,7 @@ import {
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { HeaderStats } from './HeaderStats';
-import { CompanySettingsPanel } from './CompanySettingsPanel';
+import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 
 interface UserMonitorItem {
   id: number;
@@ -366,7 +366,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
       </div>
 
       {activeHeaderTab === 'onboarding' ? (
-        <CompanySettingsPanel />
+        <GlobalSystemSettingsPanel initialTab="onboarding" />
       ) : (
         <>
           {/* 2. PÍLDORAS DE SALUD OPERATIVA (HEADERSTATS) */}

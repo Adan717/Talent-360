@@ -43,6 +43,8 @@ const GestorAcademia = lazy(() => import('./components/GestorAcademia').then(mod
 const AtsManager = lazy(() => import('./components/AtsManager').then(module => ({ default: module.AtsManager })));
 const ReportesManager = lazy(() => import('./components/ReportesManager'));
 const SaaSAccountSettings = lazy(() => import('./components/SaaSAccountSettings').then(m => ({ default: m.SaaSAccountSettings })));
+const GlobalSystemSettingsPanel = lazy(() => import('./components/GlobalSystemSettingsPanel').then(m => ({ default: m.GlobalSystemSettingsPanel })));
+const CompanyProfileModal = lazy(() => import('./components/CompanyProfileModal').then(m => ({ default: m.CompanyProfileModal })));
 const GestorDocumentos = lazy(() => import('./components/GestorDocumentos').then(module => ({ default: module.GestorDocumentos })));
 const FacturacionManager = lazy(() => import('./components/FacturacionManager').then(m => ({ default: m.FacturacionManager })));
 const LftManager = lazy(() => import('./components/LftManager'));
@@ -122,6 +124,8 @@ function MainLayout() {
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMyAccountOpen, setIsMyAccountOpen] = useState(false);
+  const [isCompanyProfileOpen, setIsCompanyProfileOpen] = useState(false);
+  const [companyProfileTab, setCompanyProfileTab] = useState<'profile' | 'billing' | 'modules' | 'backups'>('profile');
   const [settingsTab, setSettingsTab] = useState<'profile' | 'billing' | 'modules'>('billing');
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -662,8 +666,8 @@ function MainLayout() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSettingsTab('profile');
-                          setActiveModule('settings');
+                          setCompanyProfileTab('profile');
+                          setIsCompanyProfileOpen(true);
                           setIsProfileMenuOpen(false);
                         }}
                         className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2"
@@ -673,14 +677,14 @@ function MainLayout() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSettingsTab('billing');
-                          setActiveModule('settings');
+                          setCompanyProfileTab('billing');
+                          setIsCompanyProfileOpen(true);
                           setIsProfileMenuOpen(false);
                         }}
                         className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2"
                       >
-                        <Settings size={14} className="text-slate-400" />
-                        Configuración de Empresa
+                        <Receipt size={14} className="text-slate-400" />
+                        Facturación & Licencias
                       </button>
                       <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
                       <button 
@@ -706,14 +710,14 @@ function MainLayout() {
             {activeModule === 'ats' && <AtsManager />}
             {activeModule === 'operativo' && <PanelTareasRutinas />}
             {activeModule === 'academia' && <GestorAcademia />}
-{activeModule === 'documentos' && <GestorDocumentos />}
+            {activeModule === 'documentos' && <GestorDocumentos />}
             {activeModule === 'organizacion' && <OrgVaultManager />}
             {activeModule === 'facturacion' && <FacturacionManager />}
             {activeModule === 'reloj' && <RelojChecador />}
             {activeModule === 'reportes' && <ReportesManager />}
             {activeModule === 'matrix' && <PanelSimulador />}
             {activeModule === 'lft' && <LftManager />}
-            {activeModule === 'settings' && <SaaSAccountSettings initialTab={settingsTab} />}
+            {activeModule === 'settings' && <GlobalSystemSettingsPanel />}
           </Suspense>
         </div>
       </main>
@@ -721,6 +725,12 @@ function MainLayout() {
       <MyAccountModal
         isOpen={isMyAccountOpen}
         onClose={() => setIsMyAccountOpen(false)}
+      />
+
+      <CompanyProfileModal
+        isOpen={isCompanyProfileOpen}
+        onClose={() => setIsCompanyProfileOpen(false)}
+        initialTab={companyProfileTab}
       />
 
       <ModuleUnlockModal

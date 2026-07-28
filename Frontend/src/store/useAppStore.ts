@@ -757,7 +757,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   isModuleUnlocked: (moduleId: string) => {
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedModules } = get();
-    if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'matrix' || moduleId === 'organizacion') return true;
+    if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'organizacion') return true;
 
     // 1. Si existe una lista de módulos explícitamente permitidos/desactivados para este tenant, esta manda con prioridad
     const tenantAllowedModules = systemSettings?.tenant_allowed_modules || systemSettings?.allowed_modules || allowedModules;

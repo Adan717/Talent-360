@@ -7,7 +7,7 @@ import {
   Check, AlertCircle, Utensils, Armchair, Cpu, Bot, Mic,
   Smile, Frown, Award, Ban, UserMinus, UserCheck
 } from 'lucide-react';
-import { CompanySettingsPanel } from './CompanySettingsPanel';
+import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
 import { HeaderStats } from './HeaderStats';
 
@@ -780,7 +780,7 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       </div>
 
       {activeTab === 'onboarding' ? (
-        <CompanySettingsPanel />
+        <GlobalSystemSettingsPanel initialTab="onboarding" />
       ) : (
         <>
           {showSetupWizard && (

@@ -273,6 +273,14 @@ class ClockController extends Controller
                 $systemSettings[$rs->key] = $rs->value;
             }
         }
+
+        // Fallback: Si el tenant ya cuenta con puestos de trabajo creados, considerar onboarding completado
+        if (!isset($systemSettings['onboarding_completed'])) {
+            $hasJobRoles = DB::table('job_roles')->where('tenant_id', $tenantId)->exists();
+            if ($hasJobRoles) {
+                $systemSettings['onboarding_completed'] = true;
+            }
+        }
         
         // Calculate activeEncargadoId based on yesterday's check_out details
         $lastDelegation = DB::table('time_entries')

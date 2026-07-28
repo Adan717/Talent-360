@@ -152,7 +152,7 @@ function MainLayout() {
     window.location.href = '/login';
   };
 
-  const { currentTier, currentUser, systemSettings, updateSetting, simulatedTierOverride } = useAppStore();
+  const { currentTier, currentUser, systemSettings, updateSetting, simulatedTierOverride, isLoadingDB } = useAppStore();
 
   const activeTier = simulatedTierOverride || currentTier;
 
@@ -180,7 +180,7 @@ function MainLayout() {
   }, []);
 
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'Loading') {
+    if (currentUser && currentUser.role !== 'Loading' && !isLoadingDB) {
       const completedFlag = systemSettings?.onboarding_completed === true || 
                             systemSettings?.onboarding_completed === 'true' || 
                             systemSettings?.onboarding_completed === 1 || 
@@ -192,7 +192,7 @@ function MainLayout() {
         setShowOnboarding(true);
       }
     }
-  }, [currentUser, systemSettings]);
+  }, [currentUser, systemSettings, isLoadingDB]);
 
   const isModuleUnlocked = (moduleId: string) => {
     const targetModuleId = moduleId;

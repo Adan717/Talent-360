@@ -165,13 +165,37 @@ class PlatformAdminController extends Controller
             ->where('key', 'tenant_allowed_features')
             ->first();
 
-        $allowedModules = $tenantModulesConfig 
-            ? (json_decode($tenantModulesConfig->value, true) ?: []) 
-            : ($tenant->allowed_modules_json ?: []);
+        $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos'];
+        $allFeatures = [
+            'basic_punch', 'offline_contingency', 'emergency_open', 'store_closed_report', 
+            'store_opening', 'keys_control', 'meal_reservation', 'meal_timers', 
+            'enable_ley_silla', 'roll_call', 'checklists_validation', 'lates_academy_block', 
+            'door_amnesty', 'voice_assistant', 'routines_management', 'supervisor_validation', 
+            'gps_validation', 'face_validation', 'system_backups', 'custom_logo'
+        ];
 
-        $allowedFeatures = $tenantFeaturesConfig 
-            ? (json_decode($tenantFeaturesConfig->value, true) ?: []) 
-            : [];
+        $plan = strtolower($tenant->plan ?? 'freemium');
+        $isProOrEnterprise = in_array($plan, ['pro', 'enterprise']) || (int)$tenant->id === 1;
+
+        if ($tenantModulesConfig) {
+            $allowedModules = json_decode($tenantModulesConfig->value, true) ?: [];
+        } elseif (!empty($tenant->allowed_modules_json)) {
+            $allowedModules = $tenant->allowed_modules_json;
+        } elseif ($isProOrEnterprise) {
+            $allowedModules = $allModules;
+        } else {
+            $globalModSetting = \DB::table('system_settings')->whereNull('tenant_id')->where('key', 'freemium_allowed_modules')->first();
+            $allowedModules = $globalModSetting ? (json_decode($globalModSetting->value, true) ?: ['reloj', 'rrhh', 'operativo']) : ['reloj', 'rrhh', 'operativo'];
+        }
+
+        if ($tenantFeaturesConfig) {
+            $allowedFeatures = json_decode($tenantFeaturesConfig->value, true) ?: [];
+        } elseif ($isProOrEnterprise) {
+            $allowedFeatures = $allFeatures;
+        } else {
+            $globalFeatSetting = \DB::table('system_settings')->whereNull('tenant_id')->where('key', 'freemium_allowed_features')->first();
+            $allowedFeatures = $globalFeatSetting ? (json_decode($globalFeatSetting->value, true) ?: []) : [];
+        }
 
         return response()->json([
             'tenant' => [

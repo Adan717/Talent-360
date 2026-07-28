@@ -85,7 +85,7 @@ export function MobileBottomNav({
   const NOTCH_CENTER_FROM_RIGHT_PX = 32;
 
   return (
-    <div className="relative w-full max-w-[420px] mx-auto select-none font-sans filter drop-shadow-[0_14px_35px_rgba(138,43,226,0.22)] drop-shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+    <div className="relative w-full max-w-[420px] mx-auto select-none font-sans filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.12)]">
       {/* Background SVG Vector Shape with subtle violet glass tint */}
       <svg 
         className="absolute inset-0 w-full h-full pointer-events-none overflow-visible" 

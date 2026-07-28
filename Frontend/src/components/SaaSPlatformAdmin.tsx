@@ -167,6 +167,34 @@ export const SaaSPlatformAdmin = () => {
   const [pendingRegistrations, setPendingRegistrations] = useState<any[]>([]);
   const [isPendingLoading, setIsPendingLoading] = useState(false);
 
+  // Social Grace & Seasonal Promotions State
+  const [socialClaims, setSocialClaims] = useState<any[]>([]);
+  const [promotionsList, setPromotionsList] = useState<any[]>([]);
+  const [socialGraceDaysConfig, setSocialGraceDaysConfig] = useState(30);
+  const [isSocialLoading, setIsSocialLoading] = useState(false);
+  const [newPromoTitle, setNewPromoTitle] = useState('');
+  const [newPromoSubtitle, setNewPromoSubtitle] = useState('');
+  const [newPromoBadge, setNewPromoBadge] = useState('20% OFF');
+  const [newPromoDiscount, setNewPromoDiscount] = useState(20);
+
+  const fetchSocialPromotionsData = async () => {
+    setIsSocialLoading(true);
+    try {
+      const [claimsRes, promosRes, configRes] = await Promise.all([
+        axiosInstance.get('/platform/social-claims'),
+        axiosInstance.get('/platform/promotions'),
+        axiosInstance.get('/platform/social-grace-config')
+      ]);
+      setSocialClaims(claimsRes.data.claims || []);
+      setPromotionsList(promosRes.data.promotions || []);
+      setSocialGraceDaysConfig(configRes.data.social_grace_days || 30);
+    } catch (err) {
+      console.error("Error fetching social & promotions data:", err);
+    } finally {
+      setIsSocialLoading(false);
+    }
+  };
+
   const fetchPendingRegistrations = async () => {
     setIsPendingLoading(true);
     try {
@@ -376,6 +404,9 @@ export const SaaSPlatformAdmin = () => {
     }
     if (activeTab === 'pending_registrations' || activeTab === 'dashboard') {
       fetchPendingRegistrations();
+    }
+    if (activeTab === 'social_promotions' || activeTab === 'dashboard') {
+      fetchSocialPromotionsData();
     }
   }, [activeTab, logsTenantFilter, logsEventFilter]);
 
@@ -1052,6 +1083,23 @@ export const SaaSPlatformAdmin = () => {
                       }`}
                     >
                       <span className="flex items-center gap-2">🛡️ Bitácora de Seguridad</span>
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setActiveTab('social_promotions'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'social_promotions' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">📱 Redes Sociales & Promociones</span>
+                      {socialClaims.filter(c => c.status === 'pending_approval').length > 0 && (
+                        <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                          {socialClaims.filter(c => c.status === 'pending_approval').length}
+                        </span>
+                      )}
                     </button>
                   )}
 
@@ -1856,6 +1904,259 @@ export const SaaSPlatformAdmin = () => {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {activeTab === 'social_promotions' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* Header & Grace Days Configuration */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-blue-200">
+                  Difusión Social & Promociones
+                </span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900">Gestión de Tiempo de Gracia y Banners</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Configura los días otorgados por compartir en redes sociales, aprueba solicitudes de clientes y crea banners promocionales para el pie de página.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3 shrink-0">
+              <span className="text-xs font-bold text-slate-600">Días de Gracia por Defecto:</span>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={socialGraceDaysConfig}
+                onChange={(e) => setSocialGraceDaysConfig(parseInt(e.target.value) || 30)}
+                className="w-16 text-center text-xs font-black p-2 rounded-xl border border-slate-300 bg-white"
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    await axiosInstance.post('/platform/social-grace-config', { social_grace_days: socialGraceDaysConfig });
+                    alert("Configuración de días de gracia guardada.");
+                  } catch (err) {
+                    alert("Error al guardar.");
+                  }
+                }}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+
+          {/* Solicitudes de Difusión Social (Clientes) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-slate-900">Solicitudes de Difusión Social</h3>
+                <p className="text-xs text-slate-500">Evidencias enviadas por clientes para desbloquear módulos gratis.</p>
+              </div>
+              <button
+                onClick={fetchSocialPromotionsData}
+                className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5"
+              >
+                <RefreshCw size={14} className={isSocialLoading ? 'animate-spin' : ''} /> Actualizar
+              </button>
+            </div>
+
+            {socialClaims.length === 0 ? (
+              <div className="text-center py-10 text-slate-400 text-xs font-medium">
+                No hay solicitudes de difusión en este momento.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                      <th className="p-3.5">Empresa / Tenant</th>
+                      <th className="p-3.5">Módulo Solicitado</th>
+                      <th className="p-3.5">Evidencia / URL</th>
+                      <th className="p-3.5">Días Otorgados</th>
+                      <th className="p-3.5">Estado</th>
+                      <th className="p-3.5 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {socialClaims.map((claim) => (
+                      <tr key={claim.id} className="hover:bg-slate-50/80">
+                        <td className="p-3.5 font-bold text-slate-900">
+                          {claim.tenant?.name || `Tenant #${claim.tenant_id}`}
+                        </td>
+                        <td className="p-3.5 font-extrabold text-blue-600 uppercase">
+                          {claim.module_key}
+                        </td>
+                        <td className="p-3.5 max-w-xs truncate">
+                          {claim.proof_url ? (
+                            <a href={claim.proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold truncate block">
+                              {claim.proof_url}
+                            </a>
+                          ) : (
+                            <span className="text-slate-400 font-medium">{claim.proof_note || 'Sin enlace'}</span>
+                          )}
+                        </td>
+                        <td className="p-3.5 font-bold text-slate-700">
+                          {claim.grace_days_granted || 30} días
+                        </td>
+                        <td className="p-3.5">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                            claim.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                            claim.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
+                            'bg-rose-100 text-rose-800'
+                          }`}>
+                            {claim.status === 'active' ? 'Aprobado (Activo)' : claim.status === 'pending_approval' ? 'Pendiente' : 'Rechazado'}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right">
+                          {claim.status === 'pending_approval' && (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await axiosInstance.post(`/platform/social-claims/${claim.id}/approve`);
+                                    fetchSocialPromotionsData();
+                                  } catch (err) {
+                                    alert("Error al aprobar.");
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                              >
+                                Aprobar
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await axiosInstance.post(`/platform/social-claims/${claim.id}/reject`);
+                                    fetchSocialPromotionsData();
+                                  } catch (err) {
+                                    alert("Error al rechazar.");
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                              >
+                                Rechazar
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Creador de Promociones de Temporada */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-base font-black text-slate-900">Promociones de Temporada (Store Dock Inferior)</h3>
+              <p className="text-xs text-slate-500">Crea banners flotantes de ofertas especiales para los clientes.</p>
+            </div>
+
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  await axiosInstance.post('/platform/promotions', {
+                    title: newPromoTitle,
+                    subtitle: newPromoSubtitle,
+                    badge_text: newPromoBadge,
+                    discount_percentage: newPromoDiscount,
+                    is_active: true
+                  });
+                  setNewPromoTitle('');
+                  setNewPromoSubtitle('');
+                  fetchSocialPromotionsData();
+                  alert("Promoción creada correctamente.");
+                } catch (err) {
+                  alert("Error al crear la promoción.");
+                }
+              }}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200"
+            >
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Título de la Oferta:</label>
+                <input
+                  type="text"
+                  required
+                  value={newPromoTitle}
+                  onChange={(e) => setNewPromoTitle(e.target.value)}
+                  placeholder="ej. 🔥 Especial Día del Padre"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Subtítulo / Mensaje:</label>
+                <input
+                  type="text"
+                  value={newPromoSubtitle}
+                  onChange={(e) => setNewPromoSubtitle(e.target.value)}
+                  placeholder="20% OFF en Plan Enterprise anual"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Etiqueta Badge:</label>
+                <input
+                  type="text"
+                  value={newPromoBadge}
+                  onChange={(e) => setNewPromoBadge(e.target.value)}
+                  placeholder="20% OFF"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+                >
+                  Publicar Promoción
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-700">Promociones Existentes:</h4>
+              {promotionsList.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No hay promociones activas registradas.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {promotionsList.map((promo) => (
+                    <div key={promo.id} className="p-4 rounded-2xl bg-slate-900 text-white flex justify-between items-center shadow-sm">
+                      <div>
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950">
+                          {promo.badge_text || 'PROMO'}
+                        </span>
+                        <h4 className="font-extrabold text-sm mt-1">{promo.title}</h4>
+                        <p className="text-xs text-slate-300">{promo.subtitle}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm("¿Eliminar esta promoción?")) {
+                            await axiosInstance.delete(`/platform/promotions/${promo.id}`);
+                            fetchSocialPromotionsData();
+                          }
+                        }}
+                        className="p-2 text-rose-400 hover:text-rose-200 hover:bg-white/10 rounded-xl"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
       )}
 

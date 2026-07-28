@@ -2611,7 +2611,7 @@ export default function RelojVisual({
       // ocupe el viewport completo, uno se movía/quedaba fijo y el otro no. Con `absolute` ambos
       // comparten el mismo ancestro posicionado y se mantienen estáticos juntos, igual que la barra
       // superior del menú hamburguesa (también `absolute`).
-      <div className="absolute bottom-2.5 right-2.5 z-[80] font-sans" ref={fabMenuRef}>
+      <div className={isMobileFrame ? "absolute bottom-2.5 right-2.5 z-[80] font-sans" : "fixed bottom-3.5 left-[calc(50%+160px)] sm:left-[calc(50%+185px)] z-[80] font-sans"} ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"
@@ -3689,7 +3689,7 @@ export default function RelojVisual({
           )}
 
           {/* A3. MOBILE BOTTOM NAVIGATION */}
-          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} />
+          <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} isMobileFrame={true} />
         </div>
       )}
 
@@ -6819,6 +6819,16 @@ export default function RelojVisual({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* FLOATING DOCK BAR AND IA FAB BUTTON FOR DESKTOP VIEW */}
+          {!isScrollableMobile && (
+            <>
+              <MobileBottomNav phoneTab={phoneTab} setPhoneTab={setPhoneTab} setInnerTool={setInnerTool} isDark={isDark} clockState={clockState} showCustomAlert={showCustomAlert} isStoreClosed={isStoreClosed} isMobileFrame={false} />
+              {renderFloatingActionButton()}
+              {renderTaskCreatorModal()}
+              {renderCopilotChatDrawer()}
+            </>
           )}
 
     </div>

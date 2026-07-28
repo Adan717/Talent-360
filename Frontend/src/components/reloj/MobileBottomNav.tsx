@@ -11,6 +11,7 @@ export interface MobileBottomNavProps {
   clockState: string;
   showCustomAlert?: (msg: string) => void;
   isStoreClosed?: boolean;
+  isMobileFrame?: boolean;
 }
 
 // 2026-07-23 (a petición de Francisco): se quitó el ícono de "Herramientas" — ese espacio
@@ -23,7 +24,7 @@ export interface MobileBottomNavProps {
 const NOTCH_RADIUS_PX = 34; // = mitad del botón flotante (68px de diámetro)
 const NOTCH_CENTER_FROM_RIGHT_PX = 34; // el botón comparte el mismo `right` que esta barra
 
-export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, clockState, showCustomAlert, isStoreClosed = false }: MobileBottomNavProps) {
+export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, clockState, showCustomAlert, isStoreClosed = false, isMobileFrame = false }: MobileBottomNavProps) {
   const { systemSettings } = useAppStore();
 
   const getModuleColorHex = (modId: string, defaultHex: string) => {
@@ -67,10 +68,14 @@ export function MobileBottomNav({ phoneTab, setPhoneTab, setInnerTool, isDark, c
 
   return (
     <nav
-      className={`absolute bottom-3 left-2.5 right-2.5 z-[75] h-16 flex items-center justify-between pl-3 pr-20 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-200 ${
+      className={`z-[75] h-16 flex items-center justify-between pl-3 pr-20 border backdrop-blur-md rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] transition-all duration-200 ${
+        isMobileFrame 
+          ? 'absolute bottom-3 left-2.5 right-2.5' 
+          : 'fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md shadow-2xl'
+      } ${
         isDark
-          ? 'bg-slate-950/40 border-violet-900/40 shadow-[0_-8px_32px_rgba(124,58,237,0.12),0_8px_32px_rgba(124,58,237,0.1)] text-slate-400'
-          : 'bg-white/40 border-violet-100/50 shadow-[0_-8px_32px_rgba(124,58,237,0.06),0_8px_32px_rgba(124,58,237,0.04)] text-slate-500'
+          ? 'bg-slate-950/80 border-violet-900/40 text-slate-400 shadow-slate-950/50'
+          : 'bg-white/80 border-violet-100/50 text-slate-500 shadow-slate-200/50'
       }`}
       style={{ WebkitMaskImage: notchMaskImage, maskImage: notchMaskImage }}
     >

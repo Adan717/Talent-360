@@ -81,7 +81,7 @@ Cuando Francisco diga la palabra clave **"revisa pendientes del contrato"**, ve 
 
 | §66 | **Ciclo de vida de la suscripción y de la empresa (decisión de producto de Francisco, 2026-07-26):** cancelación autoservicio sin cobro posterior, baja de empresa con 30 días de gracia + purga real, exportación de datos antes de purgar, y cancelación de la suscripción con la pasarela al eliminar. Corrige el hallazgo de que hoy el borrado es "suave" y por eso **el cascada nunca se dispara** y los datos quedan huérfanos para siempre. Ver detalle abajo. | ⏳ Pendiente |
 
-| §67 | Foto en el fichaje como **configuración opcional por tenant/sucursal** (privacidad, normativa o cámaras que fallan): flag `require_photo_on_clockin`, `photo_url` nullable, y registrar el `verification_method` realmente usado. Incluye las 3 reglas de arquitectura que pidió Francisco (fotografía del momento, tolerancia a desconexión, y tipado estricto de estados). Ver detalle abajo. | ⏳ Pendiente |
+| §67 | Foto en el fichaje como **configuración opcional por tenant/sucursal** (privacidad, normativa o cámaras que fallan): flag `require_photo_on_clockin`, `photo_url` nullable, y registrar el `verification_method` realmente usado. Incluye las 3 reglas de arquitectura que pidió Francisco (fotografía del momento, tolerancia a desconexión, y tipado estricto de estados). Ver detalle abajo. | ✅ Backend implementado (2026-07-26) — columnas B+E.1, flag configurable, flag de revisión, endpoint de incidencias y purga programada; E.2/E.3 son de Cowork |
 
 Si terminaste todo lo de arriba y no queda nada pendiente, contesta simplemente "sin pendientes" cuando te pregunten con la palabra clave.
 
@@ -2639,3 +2639,16 @@ Las fotos de fichaje son datos personales sensibles y la Landing ya promete "Der
 ### Lo que hace Cowork
 
 Saltar el paso de cámara de forma transparente cuando `require_photo_on_clockin` sea falso; degradar a `GEOFENCE_PIN` con su `photo_skipped_reason` cuando la cámara falle; mandar `verification_method` y los campos de fotografía del momento en cada fichaje; y mostrar la incidencia al supervisor. **Bloqueado hasta que existan las columnas de B y E.1** — construirlo antes solo produce datos que el servidor descarta en silencio.
+
+### ✅ Backend implementado (2026-07-26) — resumen
+
+Ya existen las columnas y la lógica de servidor; **Cowork queda desbloqueado** para construir A (UI del switch) y su parte de C (degradación de cámara). Lo hecho:
+
+- **B + E.1 — migración** `2026_07_26_000002_add_photo_and_calc_snapshot_to_time_entries.php`: agrega a `time_entries` → `photo_url`, `verification_method` (`GEOFENCE_PIN_PHOTO`/`GEOFENCE_PIN`/`GEOFENCE_ONLY`), `photo_skipped_reason` (`not_required`/`camera_unavailable`/`permission_denied`), `flagged_for_review`, y el snapshot inmutable del cálculo: `tardiness_minutes_at_time`, `tolerance_mins_at_time`, `tolerance_version`. Índice `(tenant_id, flagged_for_review)` para el monitor. **Requiere `php artisan migrate` en Hetzner.**
+- **A — configuración:** `require_photo_on_clockin` se lee de `system_settings` por tenant (default `true`), junto a `storeSchedule`/`clockOpConfig` como se sugirió. El backend solo la lee y registra lo que ocurrió; el frontend decide si pide la foto.
+- **Registro de lo que ocurrió** (`ClockService::processPunch`): guarda `verification_method`, `photo_url` y `photo_skipped_reason` que manda el cliente, con normalización defensiva por si faltan. **E.1:** congela `tardiness_minutes_at_time`/`tolerance_mins_at_time`/`tolerance_version` con el cálculo del momento (cambiar la tolerancia a futuro no recalcula la puntualidad pasada).
+- **C — visible, no enterrado:** un `check_in` que requería foto y la omitió por falla de cámara (`camera_unavailable`/`permission_denied`) queda `flagged_for_review = true` y se expone en `GET /admin/clock/flagged-punches` (admin/supervisor). Además, **3 omisiones seguidas por cámara** del mismo colaborador escriben un evento `clock_photo_skip_streak` en `saas_audit_logs` (señal de cámara rota o evasión).
+- **D — retención (privacidad):** nuevo comando `clock-photos:purge {--days=90}` (borra el archivo y limpia `photo_url`, conserva el registro de asistencia). **Se agregaron al scheduler** `meal-evidence:purge` (que existía pero nunca se había agendado) y `clock-photos:purge`, diarios de madrugada.
+- **Tests:** `ClockPhotoConfigTest` (5): foto presente, foto no requerida, falla de cámara marcada+visible, snapshot de retardo congelado, y racha de 3 omisiones. Suite **247/247** en verde.
+
+**Lo que queda para Cowork:** A (switch en la UI de ajustes, no delegable a supervisor), su lado de C (saltar cámara transparente / degradar y mandar los campos), **E.2** (el fichaje siempre se permite offline y el bloqueo por retardos lo aplica el servidor al sincronizar — la infraestructura de cola offline + `GET /me/punctuality-status` ya existe; el veredicto se cachea en memoria, nunca en `localStorage`) y **E.3** (unión discriminada de TS para los 23 estados, Fase 3).

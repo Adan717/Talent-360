@@ -3028,7 +3028,7 @@ export default function RelojVisual({
       {globalToast && (
         <div className={`z-[100] backdrop-blur-md font-semibold px-4 py-3 rounded-2xl shadow-xl animate-fade-in border text-xs flex items-center gap-3 ${
           isDark ? 'bg-slate-900/90 text-white border-slate-800' : 'bg-white/95 text-slate-800 border-slate-200'
-        } ${isScrollableMobile ? 'absolute top-4 left-4 right-4' : 'fixed top-20 left-4 right-4 md:left-auto md:right-6 md:w-96'}`}>
+        } ${isScrollableMobile ? 'fixed bottom-20 left-4 right-4' : 'fixed bottom-6 right-6 md:w-96'}`}>
           <div className="bg-violet-600 rounded-lg p-1 flex-shrink-0">
             <span role="img" aria-label="alert" className="text-white text-xs">🔔</span>
           </div>
@@ -3040,7 +3040,7 @@ export default function RelojVisual({
       {showPwaBanner && (
         <div className={`z-[110] backdrop-blur-md font-semibold px-4 py-3.5 rounded-2xl shadow-xl animate-fade-in border text-xs flex items-center justify-between gap-3 ${
           isDark ? 'bg-slate-900/90 text-white border-slate-800' : 'bg-white/95 text-slate-800 border-slate-200'
-        } ${isScrollableMobile ? 'absolute top-4 left-4 right-4' : 'fixed top-20 left-4 right-4 md:left-auto md:right-6 md:w-96'}`}>
+        } ${isScrollableMobile ? 'fixed bottom-20 left-4 right-4' : 'fixed bottom-6 right-6 md:w-96'}`}>
           <div className="flex items-center gap-2 min-w-0">
             <div className="bg-violet-600 rounded-lg p-1.5 flex-shrink-0 text-white flex items-center justify-center">
               📲
@@ -3076,7 +3076,7 @@ export default function RelojVisual({
           onClick={activePushNotification.action}
           className={`z-[105] backdrop-blur-lg font-semibold px-4 py-3.5 rounded-2xl shadow-2xl animate-fade-in border text-xs flex flex-col gap-1.5 cursor-pointer hover:scale-[1.01] transition-transform ${
             isDark ? 'bg-slate-900/95 text-white border-slate-800' : 'bg-white/95 text-slate-800 border-slate-200'
-          } ${isScrollableMobile ? 'absolute top-4 left-4 right-4' : 'fixed top-20 left-4 right-4 md:left-auto md:right-6 md:w-96'}`}
+          } ${isScrollableMobile ? 'fixed bottom-20 left-4 right-4' : 'fixed bottom-6 right-6 md:w-96'}`}
         >
           <div className="flex justify-between items-center w-full">
             <div className="flex items-center gap-2">

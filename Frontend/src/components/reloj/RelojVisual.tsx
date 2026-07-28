@@ -2610,12 +2610,12 @@ export default function RelojVisual({
       // ocupe el viewport completo, uno se movía/quedaba fijo y el otro no. Con `absolute` ambos
       // comparten el mismo ancestro posicionado y se mantienen estáticos juntos, igual que la barra
       // superior del menú hamburguesa (también `absolute`).
-      <div className="relative font-sans" ref={fabMenuRef}>
+      <div className="shrink-0 relative font-sans" ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"
             aria-label="Menú de Operaciones y Soporte AI"
-            className={`absolute bottom-14 right-0 w-64 max-h-[60vh] overflow-y-auto rounded-2xl shadow-2xl border backdrop-blur-md p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 z-[100] ${
+            className={`absolute bottom-16 right-0 w-64 max-h-[60vh] overflow-y-auto rounded-2xl shadow-2xl border backdrop-blur-md p-2 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-3 duration-200 z-[100] ${
               isDark ? 'bg-slate-900/95 border-slate-800 text-slate-100' : 'bg-white/98 border-slate-200 text-slate-800'
             }`}
           >
@@ -2704,10 +2704,11 @@ export default function RelojVisual({
         <button
           type="button"
           onClick={() => setIsFabSheetOpen(prev => !prev)}
-          className="w-10 h-10 xs:w-11 xs:h-11 bg-gradient-to-tr from-violet-600 via-violet-700 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-md shadow-violet-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none cursor-pointer outline-none shrink-0"
+          className="w-13 h-13 xs:w-14 xs:h-14 bg-gradient-to-tr from-violet-600 via-[#8a2be2] to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-[0_0_22px_rgba(138,43,226,0.5)] flex items-center justify-center transition-all hover:scale-110 active:scale-95 border-2 border-white/50 cursor-pointer outline-none relative shrink-0"
           title="Menú de Operaciones y Soporte AI"
         >
-          {isFabSheetOpen ? <X size={20} /> : <Sparkles size={20} className="text-white" />}
+          <span className="absolute -inset-1 rounded-full bg-purple-500/25 animate-pulse pointer-events-none"></span>
+          {isFabSheetOpen ? <X size={24} className="relative z-10" /> : <Sparkles size={26} className="text-white relative z-10 animate-pulse" />}
         </button>
       </div>
     );
@@ -3691,10 +3692,10 @@ export default function RelojVisual({
         </div>
       )}
 
-      {/* A3. MOBILE FLOATING DOCK (Fixed at bottom of screen, combining MobileBottomNav + Purple FAB) */}
+      {/* A3. MOBILE FLOATING DOCK (Fixed at bottom of screen) */}
       {isScrollableMobile && (
         <div className={`${isMobileFrame ? 'absolute bottom-3 inset-x-0' : 'fixed bottom-3 inset-x-0'} z-[80] pointer-events-none flex items-center justify-center px-3 font-sans`}>
-          <div className="w-full max-w-[420px] pointer-events-auto">
+          <div className="w-full max-w-[440px] pointer-events-auto flex items-center gap-2.5">
             <MobileBottomNav 
               phoneTab={phoneTab} 
               setPhoneTab={setPhoneTab} 
@@ -3704,8 +3705,8 @@ export default function RelojVisual({
               showCustomAlert={showCustomAlert} 
               isStoreClosed={isStoreClosed} 
               isMobileFrame={isMobileFrame} 
-              fabButton={renderFloatingActionButton()}
             />
+            {renderFloatingActionButton()}
           </div>
         </div>
       )}
@@ -4412,17 +4413,19 @@ export default function RelojVisual({
 
           {/* Desktop Floating Dock (Always Visible) */}
           <div className="mt-8 flex justify-center w-full pb-4">
-            <MobileBottomNav 
-              phoneTab={phoneTab} 
-              setPhoneTab={setPhoneTab} 
-              setInnerTool={setInnerTool} 
-              isDark={isDark} 
-              clockState={clockState} 
-              showCustomAlert={showCustomAlert} 
-              isStoreClosed={isStoreClosed} 
-              isMobileFrame={isMobileFrame} 
-              fabButton={renderFloatingActionButton()}
-            />
+            <div className="w-full max-w-[440px] flex items-center gap-2.5">
+              <MobileBottomNav 
+                phoneTab={phoneTab} 
+                setPhoneTab={setPhoneTab} 
+                setInnerTool={setInnerTool} 
+                isDark={isDark} 
+                clockState={clockState} 
+                showCustomAlert={showCustomAlert} 
+                isStoreClosed={isStoreClosed} 
+                isMobileFrame={isMobileFrame} 
+              />
+              {renderFloatingActionButton()}
+            </div>
           </div>
         </div>
       )}

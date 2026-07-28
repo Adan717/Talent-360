@@ -42,6 +42,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // la semana en curso de cada tenant (según su día de inicio configurado); al
         // cerrar la semana queda el draft final listo para revisar.
         $schedule->command('payroll:calculate-weekly')->dailyAt('23:00');
+        // §67.D / §23: purga de fotos (datos personales sensibles) a los 90 días. El
+        // comando de comedor existía pero nunca se había agendado; se programan ambos.
+        $schedule->command('meal-evidence:purge')->dailyAt('03:00');
+        $schedule->command('clock-photos:purge')->dailyAt('03:15');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

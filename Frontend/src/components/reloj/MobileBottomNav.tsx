@@ -70,14 +70,10 @@ export function MobileBottomNav({
 
   return (
     <nav
-      className={`z-[75] h-16 flex items-center justify-around pl-4 pr-20 border backdrop-blur-md rounded-full transition-all duration-300 ${
-        isMobileFrame 
-          ? 'absolute bottom-3 left-2.5 right-2.5' 
-          : 'fixed bottom-3 left-2.5 right-2.5 shadow-[0_-8px_32px_rgba(0,0,0,0.18)]'
-      } ${
+      className={`fixed bottom-3 left-2.5 right-2.5 z-[75] h-16 flex items-center justify-around pl-4 pr-20 border backdrop-blur-md rounded-full transition-all duration-300 ${
         isDark
           ? 'bg-slate-950/90 border-violet-900/40 text-slate-400'
-          : 'bg-white/95 border-slate-200/90 text-slate-600 shadow-xl shadow-slate-900/10'
+          : 'bg-white/95 border-slate-200/90 text-slate-600 shadow-[0_-8px_32px_rgba(0,0,0,0.18)]'
       }`}
       style={{ WebkitMaskImage: notchMaskImage, maskImage: notchMaskImage }}
     >

@@ -2611,7 +2611,7 @@ export default function RelojVisual({
       // ocupe el viewport completo, uno se movía/quedaba fijo y el otro no. Con `absolute` ambos
       // comparten el mismo ancestro posicionado y se mantienen estáticos juntos, igual que la barra
       // superior del menú hamburguesa (también `absolute`).
-      <div className={isMobileFrame ? "absolute bottom-2.5 right-2.5 z-[80] font-sans" : "fixed bottom-2.5 right-2.5 z-[80] font-sans"} ref={fabMenuRef}>
+      <div className="fixed bottom-3 right-2.5 z-[80] font-sans" ref={fabMenuRef}>
         {isFabSheetOpen && (
           <div
             role="menu"

@@ -3,11 +3,11 @@ import {
   Users, Clock, CheckSquare, Bot, Sparkles, Truck, MessageSquare, 
   Plus, Search, Filter, ShieldCheck, AlertTriangle, ChevronRight, X, 
   RefreshCw, Play, CheckCircle2, UserCheck, Building2, FileText, 
-  Camera, Zap, Send, Shield, LayoutDashboard, Settings, Award
+  Camera, Zap, Send, Shield, LayoutDashboard, Settings, Award,
+  Briefcase, GraduationCap, BarChart3, Receipt, Sparkle
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
-import { PromotionStoreDock } from './PromotionStoreDock';
 import { HeaderStats } from './HeaderStats';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 
@@ -81,10 +81,14 @@ interface AiPlanSuggestion {
 }
 
 export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveModule?: (mod: string) => void }) {
-  const { currentUser, currentTier } = useAppStore();
+  const { currentUser, currentTier, systemSettings, fetchState } = useAppStore();
   
   // Tab Principal de Cabecera (Visión General vs Onboarding)
   const [activeHeaderTab, setActiveHeaderTab] = useState<'overview' | 'onboarding'>('overview');
+
+  // Toast message
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isAdoptionSaving, setIsAdoptionSaving] = useState(false);
 
   // Data States
   const [users, setUsers] = useState<UserMonitorItem[]>([]);
@@ -145,6 +149,27 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Toggle Module Adoption
+  const handleToggleModule = async (moduleKey: string, moduleName: string) => {
+    setIsAdoptionSaving(true);
+    const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
+    const isActive = activeModules.includes(moduleKey);
+    const updatedModules = isActive 
+      ? activeModules.filter((m: string) => m !== moduleKey)
+      : [...activeModules, moduleKey];
+    
+    try {
+      await axiosInstance.post('/sync/settings', { active_modules: updatedModules });
+      await fetchState();
+      setToastMessage(isActive ? `Módulo ${moduleName} desactivado.` : `Módulo ${moduleName} adoptado con éxito.`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAdoptionSaving(false);
+    }
+  };
 
   // Generate AI Work Plan
   const handleGenerateAiPlan = async () => {
@@ -280,13 +305,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const inPremisesVendors = vendors.filter(v => v.status === 'in_premises').length;
   const avgEfficiency = users.length > 0 ? Math.round(users.reduce((acc, u) => acc + (u.efficiency || 100), 0) / users.length) : 100;
 
-  return (
-    <div className="space-y-6 text-slate-900 pb-20">
-      
-      {/* 1. BARRA SUPERIOR DE ADOPCIÓN DE MÓDULOS Y TIENDA PRECIOS SAAS */}
-      <PromotionStoreDock onOpenStore={() => setActiveModule && setActiveModule('facturacion')} />
+  const activeModules = systemSettings?.active_modules || ['reloj', 'rrhh', 'operativo'];
 
-      {/* 2. HEADER BIENVENIDA Y TABS DE NAVEGACIÓN (TEMA CLARO ELEGANTE) */}
+  return (
+    <div className="space-y-6 text-slate-900 pb-12">
+      
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl border border-slate-800 animate-in fade-in slide-in-from-top-3 duration-300">
+          {toastMessage}
+        </div>
+      )}
+
+      {/* 1. HEADER BIENVENIDA Y TABS DE NAVEGACIÓN */}
       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -338,7 +369,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         <CompanySettingsPanel />
       ) : (
         <>
-          {/* 3. PÍLDORAS DE SALUD OPERATIVA (HEADERSTATS) */}
+          {/* 2. PÍLDORAS DE SALUD OPERATIVA (HEADERSTATS) */}
           {setActiveModule && (
             <div className="space-y-2">
               <h2 className="text-xs font-black text-slate-400 tracking-wider uppercase">Salud Operativa e Indicadores</h2>
@@ -348,7 +379,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </div>
           )}
 
-          {/* 4. BARRA DE HERRAMIENTAS Y ACCIONES DEL MONITOR 360 (TEMA CLARO PRESTIGIO) */}
+          {/* 3. BARRA DE HERRAMIENTAS Y ACCIONES DEL MONITOR 360 */}
           <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -407,7 +438,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               </div>
             </div>
 
-            {/* KPI METRICAS RAPIDAS EN TEMA CLARO */}
+            {/* KPI METRICAS RAPIDAS */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-700">
@@ -514,7 +545,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 </div>
               </div>
 
-              {/* GRID CARDS EMPLEADOS EN TEMA CLARO PRESTIGIO */}
+              {/* GRID CARDS EMPLEADOS */}
               {loading ? (
                 <div className="p-12 text-center text-slate-400 bg-white rounded-3xl border border-slate-200">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
@@ -725,13 +756,167 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           </div>
 
+          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA CON BOTONES ADOPTAR / ADOPTADO */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-2">
+              <div>
+                <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  Nuevos Módulos Disponibles para Adopción
+                </h2>
+                <p className="text-xs text-slate-500 font-medium">Desbloquea funciones a la carta o mediante actividades en la plataforma</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              
+              {/* ATS Card */}
+              {(() => {
+                const isAtsActive = activeModules.includes('ats');
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-violet-100 text-violet-600 rounded-xl">
+                        <Briefcase size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={() => handleToggleModule('ats', 'Reclutamiento ATS')}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isAtsActive 
+                            ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isAtsActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Reclutamiento ATS</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Vacantes, bolsa de trabajo y entrevistas.</p>
+                    <span className="text-xs font-black text-violet-600">+$29 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+              {/* LMS Card */}
+              {(() => {
+                const isLmsActive = activeModules.includes('academia');
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-sky-100 text-sky-600 rounded-xl">
+                        <GraduationCap size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={() => handleToggleModule('academia', 'Academia 360')}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isLmsActive 
+                            ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isLmsActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Academia 360</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Cursos interactivos e inducción.</p>
+                    <span className="text-xs font-black text-sky-600">+$49 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+              {/* Reports Card */}
+              {(() => {
+                const isReportsActive = activeModules.includes('reportes');
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-rose-100 text-rose-600 rounded-xl">
+                        <BarChart3 size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={() => handleToggleModule('reportes', 'Reportes IA')}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isReportsActive 
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isReportsActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Reportes IA</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Faltas, retardos y analítica Ley Silla.</p>
+                    <span className="text-xs font-black text-rose-600">+$19 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+              {/* Archivo Digital Card */}
+              {(() => {
+                const isDocsActive = activeModules.includes('documentos');
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+                        <FileText size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={() => handleToggleModule('documentos', 'Archivo Digital')}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isDocsActive 
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isDocsActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Archivo Digital</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Expedientes avanzados y contratos.</p>
+                    <span className="text-xs font-black text-amber-600">+$19 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+              {/* Facturacion CFDI Card */}
+              {(() => {
+                const isCfdiActive = activeModules.includes('facturacion');
+                return (
+                  <div className={`p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <Receipt size={18} />
+                      </div>
+                      <button 
+                        disabled={isAdoptionSaving}
+                        onClick={() => handleToggleModule('facturacion', 'Nómina CFDI 4.0')}
+                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                          isCfdiActive 
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' 
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isCfdiActive ? 'Adoptado' : 'Adoptar'}
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-xs">Nómina CFDI 4.0</h3>
+                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Timbrado masivo del SAT.</p>
+                    <span className="text-xs font-black text-emerald-600">+$39 MXN / mes</span>
+                  </div>
+                );
+              })()}
+
+            </div>
+          </div>
+
         </>
       )}
 
-      {/* 5. BARRA INFERIOR DE ADOPCIÓN DE MÓDULOS Y TIENDA PRECIOS SAAS (PRESERVADA) */}
-      <PromotionStoreDock onOpenStore={() => setActiveModule && setActiveModule('facturacion')} />
-
-      {/* MODAL PLAN DE TRABAJO IA EN TEMA CLARO */}
+      {/* MODAL PLAN DE TRABAJO IA */}
       {showAiModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto text-slate-900">
@@ -939,7 +1124,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         </div>
       )}
 
-      {/* DRAWER CHAT OPERATIVO EN TEMA CLARO */}
+      {/* DRAWER CHAT OPERATIVO */}
       {showChatDrawer && (
         <div className="fixed bottom-0 right-0 sm:right-6 w-full sm:w-96 bg-white border border-slate-200 rounded-t-3xl sm:rounded-2xl p-4 shadow-2xl z-40 space-y-3 text-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">

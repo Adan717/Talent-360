@@ -506,33 +506,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         </div>
       )}
 
-      {/* Si el banner fue ocultado (versión ultra-compacta para máximo espacio operativo) */}
-      {headerDismissType !== 'none' && (
-        <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 text-white rounded-2xl px-4 py-2 shadow-sm backdrop-blur-md transition-all">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-[9px] font-black shrink-0">
-              360
-            </div>
-            <span className="text-xs font-bold text-slate-300 truncate">
-              Bienvenido a <span className="text-white">{currentUser?.tenant?.name || 'DecorArte 360'}</span>
-            </span>
-            <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] font-extrabold bg-amber-400/10 text-amber-300 border border-amber-400/30 rounded-full">
-              Plan {(currentUser?.tenant?.plan || currentTier).toUpperCase()}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button 
-              onClick={handleRestoreHeader}
-              className="text-xs font-extrabold text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 px-3 py-1 rounded-xl transition-all flex items-center gap-1.5 border border-sky-400/20"
-              title="Volver a desplegar el letrero de bienvenida"
-            >
-              <Sparkles size={13} />
-              <span>Mostrar Bienvenida</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Si el banner fue ocultado (Eliminación completa del DOM para espacio 100% libre) */}
+      {/* Nada se renderiza cuando se oculta en esta sesión o permanentemente */}
 
       {activeHeaderTab === 'onboarding' ? (
         <GlobalSystemSettingsPanel initialTab="onboarding" />

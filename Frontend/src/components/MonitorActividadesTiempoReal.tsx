@@ -134,6 +134,26 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [chatInput, setChatInput] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll slider ref and logic for adoption modules
+  const modulesSliderRef = useRef<HTMLDivElement>(null);
+  const [activeModuleIndex, setActiveModuleIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const slider = modulesSliderRef.current;
+      if (!slider) return;
+      
+      setActiveModuleIndex(prev => {
+        const nextIndex = (prev + 1) % 5;
+        const cardWidth = slider.scrollWidth / 5;
+        slider.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
+        return nextIndex;
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Fetch Real-time Monitor Data
   const fetchData = async () => {
     try {
@@ -809,41 +829,51 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           </div>
 
-          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA CON BOTONES ADOPTAR / ADOPTADO */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-2">
+          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA (CONTENEDOR ILUMINADO CON AUTO-SLIDER 2S) */}
+          <div className="bg-white border-2 border-amber-300/90 rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/10 space-y-4 relative overflow-hidden ring-2 ring-purple-500/20 hover:border-amber-400 transition-all">
+            {/* Barra de Gradiente Neón Superior */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-purple-500 via-pink-500 to-emerald-400"></div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-2 pt-1">
               <div>
                 <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  Nuevos Módulos Disponibles para Adopción
+                  <Sparkles className="w-5 h-5 text-amber-500 animate-bounce" />
+                  <span className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 bg-clip-text text-transparent">
+                    Nuevos Módulos Disponibles para Adopción
+                  </span>
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">Desbloquea funciones a la carta o mediante actividades en la plataforma</p>
               </div>
-              <div className="hidden sm:block text-xs text-slate-400 font-bold">
-                5 Módulos a la carta
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-black shadow-2xs">
+                  5 Módulos a la carta
+                </span>
               </div>
             </div>
 
-            {/* Carrusel Deslizable en Móvil (Snap Slider) / Grilla en Escritorio */}
-            <div className="flex sm:grid overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none gap-3.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {/* Carrusel Deslizable Automático (Snap Slider 2s) en Móvil / Grilla en Escritorio */}
+            <div 
+              ref={modulesSliderRef}
+              className="flex sm:grid overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+            >
               
               {/* ATS Card */}
               {(() => {
                 const isAtsActive = activeModules.includes('ats');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg ${
                     isAtsActive 
-                      ? 'border-violet-300 bg-gradient-to-b from-violet-100/80 via-purple-50/50 to-white' 
-                      : 'border-violet-100 bg-gradient-to-b from-violet-50/50 via-slate-50/30 to-white hover:border-violet-200'
+                      ? 'border-2 border-violet-400 bg-gradient-to-b from-violet-100/90 via-purple-50/60 to-white shadow-violet-500/20 ring-1 ring-violet-300' 
+                      : 'border-2 border-violet-300/80 bg-gradient-to-b from-violet-50/60 via-slate-50/40 to-white shadow-violet-500/10 hover:border-violet-400 ring-1 ring-violet-200/50'
                   }`}>
                     {/* Imagen Alusiva al Tema */}
-                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-violet-100/60">
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-violet-200/80">
                       <img 
                         src="/assets/modules/ats.jpg" 
                         alt="Reclutamiento ATS" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-violet-600 rounded-lg shadow-2xs border border-violet-100">
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-violet-600 rounded-lg shadow-2xs border border-violet-200">
                         <Briefcase size={16} />
                       </div>
                     </div>
@@ -853,10 +883,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('ats', 'Reclutamiento ATS')}
-                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs ${
                           isAtsActive 
-                            ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-violet-50 text-violet-700 border border-violet-200'
+                            ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30' 
+                            : 'bg-white hover:bg-violet-50 text-violet-700 border border-violet-300'
                         }`}
                       >
                         {isAtsActive ? 'Adoptado' : 'Adoptar'}
@@ -867,7 +897,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <span className="text-xs font-black text-violet-600 relative z-10">+$29 MXN / mes</span>
 
                     {/* Ícono de Marca de Agua al fondo */}
-                    <Briefcase className="absolute -right-3 -bottom-3 w-20 h-20 text-violet-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                    <Briefcase className="absolute -right-3 -bottom-3 w-20 h-20 text-violet-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -876,19 +906,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isLmsActive = activeModules.includes('academia');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg ${
                     isLmsActive 
-                      ? 'border-sky-300 bg-gradient-to-b from-sky-100/80 via-blue-50/50 to-white' 
-                      : 'border-sky-100 bg-gradient-to-b from-sky-50/50 via-slate-50/30 to-white hover:border-sky-200'
+                      ? 'border-2 border-sky-400 bg-gradient-to-b from-sky-100/90 via-blue-50/60 to-white shadow-sky-500/20 ring-1 ring-sky-300' 
+                      : 'border-2 border-sky-300/80 bg-gradient-to-b from-sky-50/60 via-slate-50/40 to-white shadow-sky-500/10 hover:border-sky-400 ring-1 ring-sky-200/50'
                   }`}>
                     {/* Imagen Alusiva al Tema */}
-                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-sky-100/60">
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-sky-200/80">
                       <img 
                         src="/assets/modules/academia.jpg" 
                         alt="Academia 360" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-sky-600 rounded-lg shadow-2xs border border-sky-100">
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-sky-600 rounded-lg shadow-2xs border border-sky-200">
                         <GraduationCap size={16} />
                       </div>
                     </div>
@@ -898,10 +928,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('academia', 'Academia 360')}
-                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs ${
                           isLmsActive 
-                            ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-sky-50 text-sky-700 border border-sky-200'
+                            ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/30' 
+                            : 'bg-white hover:bg-sky-50 text-sky-700 border border-sky-300'
                         }`}
                       >
                         {isLmsActive ? 'Adoptado' : 'Adoptar'}
@@ -912,7 +942,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <span className="text-xs font-black text-sky-600 relative z-10">+$49 MXN / mes</span>
 
                     {/* Ícono de Marca de Agua al fondo */}
-                    <GraduationCap className="absolute -right-3 -bottom-3 w-20 h-20 text-sky-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
+                    <GraduationCap className="absolute -right-3 -bottom-3 w-20 h-20 text-sky-600/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -921,19 +951,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isReportsActive = activeModules.includes('reportes');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg ${
                     isReportsActive 
-                      ? 'border-rose-300 bg-gradient-to-b from-rose-100/80 via-pink-50/50 to-white' 
-                      : 'border-rose-100 bg-gradient-to-b from-rose-50/50 via-slate-50/30 to-white hover:border-rose-200'
+                      ? 'border-2 border-rose-400 bg-gradient-to-b from-rose-100/90 via-pink-50/60 to-white shadow-rose-500/20 ring-1 ring-rose-300' 
+                      : 'border-2 border-rose-300/80 bg-gradient-to-b from-rose-50/60 via-slate-50/40 to-white shadow-rose-500/10 hover:border-rose-400 ring-1 ring-rose-200/50'
                   }`}>
                     {/* Imagen Alusiva al Tema */}
-                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-rose-100/60">
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-rose-200/80">
                       <img 
                         src="/assets/modules/reportes.jpg" 
                         alt="Reportes IA" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-rose-600 rounded-lg shadow-2xs border border-rose-100">
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-rose-600 rounded-lg shadow-2xs border border-rose-200">
                         <BarChart3 size={16} />
                       </div>
                     </div>
@@ -943,10 +973,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('reportes', 'Reportes IA')}
-                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs ${
                           isReportsActive 
-                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-rose-50 text-rose-700 border border-rose-200'
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/30' 
+                            : 'bg-white hover:bg-rose-50 text-rose-700 border border-rose-300'
                         }`}
                       >
                         {isReportsActive ? 'Adoptado' : 'Adoptar'}
@@ -957,7 +987,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <span className="text-xs font-black text-rose-600 relative z-10">+$19 MXN / mes</span>
 
                     {/* Ícono de Marca de Agua al fondo */}
-                    <BarChart3 className="absolute -right-3 -bottom-3 w-20 h-20 text-rose-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                    <BarChart3 className="absolute -right-3 -bottom-3 w-20 h-20 text-rose-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -966,19 +996,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isDocsActive = activeModules.includes('documentos');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg ${
                     isDocsActive 
-                      ? 'border-amber-300 bg-gradient-to-b from-amber-100/80 via-yellow-50/50 to-white' 
-                      : 'border-amber-100 bg-gradient-to-b from-amber-50/50 via-slate-50/30 to-white hover:border-amber-200'
+                      ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-100/90 via-yellow-50/60 to-white shadow-amber-500/20 ring-1 ring-amber-300' 
+                      : 'border-2 border-amber-300/80 bg-gradient-to-b from-amber-50/60 via-slate-50/40 to-white shadow-amber-500/10 hover:border-amber-400 ring-1 ring-amber-200/50'
                   }`}>
                     {/* Imagen Alusiva al Tema */}
-                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-amber-100/60">
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-amber-200/80">
                       <img 
                         src="/assets/modules/documentos.jpg" 
                         alt="Archivo Digital" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-amber-600 rounded-lg shadow-2xs border border-amber-100">
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-amber-600 rounded-lg shadow-2xs border border-amber-200">
                         <FileText size={16} />
                       </div>
                     </div>
@@ -988,10 +1018,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('documentos', 'Archivo Digital')}
-                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs ${
                           isDocsActive 
-                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-amber-50 text-amber-700 border border-amber-200'
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/30' 
+                            : 'bg-white hover:bg-amber-50 text-amber-700 border border-amber-300'
                         }`}
                       >
                         {isDocsActive ? 'Adoptado' : 'Adoptar'}
@@ -1002,7 +1032,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <span className="text-xs font-black text-amber-600 relative z-10">+$19 MXN / mes</span>
 
                     {/* Ícono de Marca de Agua al fondo */}
-                    <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-amber-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
+                    <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-amber-600/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -1011,19 +1041,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isCfdiActive = activeModules.includes('facturacion');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg ${
                     isCfdiActive 
-                      ? 'border-emerald-300 bg-gradient-to-b from-emerald-100/80 via-teal-50/50 to-white' 
-                      : 'border-emerald-100 bg-gradient-to-b from-emerald-50/50 via-slate-50/30 to-white hover:border-emerald-200'
+                      ? 'border-2 border-emerald-400 bg-gradient-to-b from-emerald-100/90 via-teal-50/60 to-white shadow-emerald-500/20 ring-1 ring-emerald-300' 
+                      : 'border-2 border-emerald-300/80 bg-gradient-to-b from-emerald-50/60 via-slate-50/40 to-white shadow-emerald-500/10 hover:border-emerald-400 ring-1 ring-emerald-200/50'
                   }`}>
                     {/* Imagen Alusiva al Tema */}
-                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-emerald-100/60">
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-emerald-200/80">
                       <img 
                         src="/assets/modules/facturacion.jpg" 
                         alt="Nómina CFDI 4.0" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-emerald-600 rounded-lg shadow-2xs border border-emerald-100">
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-emerald-600 rounded-lg shadow-2xs border border-emerald-200">
                         <Receipt size={16} />
                       </div>
                     </div>
@@ -1033,10 +1063,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('facturacion', 'Nómina CFDI 4.0')}
-                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs ${
                           isCfdiActive 
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/30' 
+                            : 'bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300'
                         }`}
                       >
                         {isCfdiActive ? 'Adoptado' : 'Adoptar'}
@@ -1047,17 +1077,21 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <span className="text-xs font-black text-emerald-600 relative z-10">+$39 MXN / mes</span>
 
                     {/* Ícono de Marca de Agua al fondo */}
-                    <Receipt className="absolute -right-3 -bottom-3 w-20 h-20 text-emerald-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                    <Receipt className="absolute -right-3 -bottom-3 w-20 h-20 text-emerald-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
 
             </div>
 
-            {/* Indicador visual de deslizamiento en celular */}
-            <div className="flex sm:hidden justify-center items-center gap-1.5 pt-1">
-              <span className="text-[10px] font-bold text-slate-400">Desliza lateralmente para ver más módulos</span>
-              <ChevronRight size={12} className="text-slate-400 animate-pulse" />
+            {/* Puntos Indicadores del Slider Automático (2s) en Celular */}
+            <div className="flex sm:hidden justify-center items-center gap-1.5 pt-2">
+              {[0, 1, 2, 3, 4].map(idx => (
+                <div 
+                  key={idx} 
+                  className={`h-2 rounded-full transition-all duration-500 ${activeModuleIndex === idx ? 'w-6 bg-purple-600 shadow-sm shadow-purple-500/40' : 'w-2 bg-slate-300'}`} 
+                />
+              ))}
             </div>
           </div>
 

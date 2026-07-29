@@ -137,7 +137,7 @@ class PlatformAdminController extends Controller
      */
     public function getTenantDetails($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -274,7 +274,7 @@ class PlatformAdminController extends Controller
      */
     public function toggleTenantStatus($id, Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -314,7 +314,7 @@ class PlatformAdminController extends Controller
      */
     public function resetPassword($id, Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -355,7 +355,7 @@ class PlatformAdminController extends Controller
      */
     public function impersonateTenant($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -396,7 +396,7 @@ class PlatformAdminController extends Controller
      */
     public function revokeAllPlatformSessions(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -423,7 +423,7 @@ class PlatformAdminController extends Controller
      */
     public function updateTenantDetails($id, Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -581,7 +581,7 @@ class PlatformAdminController extends Controller
      */
     public function getFreemiumConfig()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -622,7 +622,7 @@ class PlatformAdminController extends Controller
      */
     public function saveFreemiumConfig(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -655,7 +655,7 @@ class PlatformAdminController extends Controller
      */
     public function getSuspiciousDevices()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -702,7 +702,7 @@ class PlatformAdminController extends Controller
      */
     public function banDevice(Request $request, $id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -742,7 +742,7 @@ class PlatformAdminController extends Controller
      */
     public function unbanDevice($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -768,7 +768,7 @@ class PlatformAdminController extends Controller
      */
     public function getAlerts()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -800,7 +800,7 @@ class PlatformAdminController extends Controller
      */
     public function resolveAlert(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -841,7 +841,7 @@ class PlatformAdminController extends Controller
      */
     public function getModuleAudits()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1036,7 +1036,7 @@ class PlatformAdminController extends Controller
      */
     public function getSaasAuditLogs(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1092,7 +1092,7 @@ class PlatformAdminController extends Controller
      */
     public function getBankConfig()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1118,7 +1118,7 @@ class PlatformAdminController extends Controller
      */
     public function saveBankConfig(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1153,7 +1153,7 @@ class PlatformAdminController extends Controller
      */
     public function getSimulatorConfig()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1176,7 +1176,7 @@ class PlatformAdminController extends Controller
      */
     public function saveSimulatorConfig(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1245,7 +1245,7 @@ class PlatformAdminController extends Controller
      */
     public function deleteSaaSInvoice($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1341,7 +1341,7 @@ class PlatformAdminController extends Controller
      */
     public function getPendingRegistrations()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1374,7 +1374,7 @@ class PlatformAdminController extends Controller
      */
     public function deletePendingRegistration($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1400,7 +1400,7 @@ class PlatformAdminController extends Controller
      */
     public function getSocialGraceConfig()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1419,7 +1419,7 @@ class PlatformAdminController extends Controller
      */
     public function saveSocialGraceConfig(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1443,7 +1443,7 @@ class PlatformAdminController extends Controller
      */
     public function getPromotions()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1456,7 +1456,7 @@ class PlatformAdminController extends Controller
      */
     public function savePromotion(Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1500,7 +1500,7 @@ class PlatformAdminController extends Controller
      */
     public function deletePromotion($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1517,7 +1517,7 @@ class PlatformAdminController extends Controller
      */
     public function getSocialClaims()
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1533,7 +1533,7 @@ class PlatformAdminController extends Controller
      */
     public function approveSocialClaim($id, Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
@@ -1577,7 +1577,7 @@ class PlatformAdminController extends Controller
      */
     public function rejectSocialClaim($id, Request $request)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 

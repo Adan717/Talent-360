@@ -117,19 +117,27 @@ class PurgeTestTenantsCommand extends Command
                 }
 
                 // Limpiar system_settings de los tenants borrados
-                DB::table('system_settings')->whereIn('tenant_id', $testTenantIds)->delete();
+                if (DB::getSchemaBuilder()->hasTable('system_settings')) {
+                    DB::table('system_settings')->whereIn('tenant_id', $testTenantIds)->delete();
+                }
 
                 // 3. Eliminar empleados vinculados
-                $empCount = DB::table('employees')->whereIn('tenant_id', $testTenantIds)->delete();
-                $this->line(" - Tabla employees: {$empCount} registros eliminados.");
+                if (DB::getSchemaBuilder()->hasTable('employees')) {
+                    $empCount = DB::table('employees')->whereIn('tenant_id', $testTenantIds)->delete();
+                    $this->line(" - Tabla employees: {$empCount} registros eliminados.");
+                }
 
                 // 4. Eliminar usuarios vinculados (excluyendo cuentas de plataforma / platform_users)
-                $userCount = DB::table('users')->whereIn('tenant_id', $testTenantIds)->delete();
-                $this->line(" - Tabla users: {$userCount} registros eliminados.");
+                if (DB::getSchemaBuilder()->hasTable('users')) {
+                    $userCount = DB::table('users')->whereIn('tenant_id', $testTenantIds)->delete();
+                    $this->line(" - Tabla users: {$userCount} registros eliminados.");
+                }
 
                 // 5. Eliminar finalmente las filas de tenants
-                $tenantCount = DB::table('tenants')->whereIn('id', $testTenantIds)->delete();
-                $this->line(" - Tabla tenants: {$tenantCount} inquilinos eliminados definitivamente.");
+                if (DB::getSchemaBuilder()->hasTable('tenants')) {
+                    $tenantCount = DB::table('tenants')->whereIn('id', $testTenantIds)->delete();
+                    $this->line(" - Tabla tenants: {$tenantCount} inquilinos eliminados definitivamente.");
+                }
             }
 
             // 6. Sincronizar secuencias de PostgreSQL para que el próximo registro obtenga tenant_id = 2

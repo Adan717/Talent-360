@@ -1069,3 +1069,87 @@ export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
     </div>
   );
 };
+
+/**
+ * Genera una descripción inteligente y profesional para cualquier puesto cuando no se haya ingresado una personalizada.
+ */
+export function getRoleSmartDescription(rol?: { name?: string; area?: string; description?: string } | null): string {
+  if (!rol) return 'Puesto funcional clave en la organización.';
+  
+  if (rol.description && rol.description.trim() !== '' && !rol.description.toLowerCase().includes('sin descripción') && !rol.description.toLowerCase().includes('sin descripcion')) {
+    return rol.description;
+  }
+
+  const name = (rol.name || '').toLowerCase();
+  const area = (rol.area || 'la empresa').trim();
+
+  if (name.includes('administrador gerente') || name.includes('gerente general') || name.includes('director general') || name.includes('ceo')) {
+    return 'Liderazgo estratégico de la organización, supervisión de metas ejecutivas y dirección de operaciones.';
+  }
+  if (name.includes('supervisor de compras') || name.includes('compras') || name.includes('adquisicion')) {
+    return 'Gestión de abastecimiento, negociación con proveedores clave y optimización de presupuesto.';
+  }
+  if (name.includes('supervisor de ventas') || name.includes('jefe de ventas') || name.includes('coordinador comercial')) {
+    return 'Coordinación del equipo comercial, impulso de metas semanales y estrategia de clientes clave.';
+  }
+  if (name.includes('supervisor de producción') || name.includes('supervisor de produccion') || name.includes('producción') || name.includes('produccion')) {
+    return 'Control de calidad en planta, optimización de tiempos de ensamble e inspección de procesos.';
+  }
+  if (name.includes('asesor de ventas') || name.includes('atención al cliente') || name.includes('atencion al cliente') || name.includes('asesor comercial')) {
+    return 'Atención consultiva personalizada, asesoría en soluciones y fidelización de clientes.';
+  }
+  if (name.includes('ayudante integral') || name.includes('ayudante de piso') || name.includes('operativo')) {
+    return 'Soporte multifuncional en piso de trabajo, surtimiento de insumos y asistencia en operaciones.';
+  }
+  if (name.includes('apoyo eventual') || name.includes('eventual') || name.includes('auxiliar temporal')) {
+    return 'Refuerzo operativo y cobertura auxiliar por jornada durante picos de demanda o proyectos.';
+  }
+  if (name.includes('cajer') || name.includes('caja')) {
+    return 'Manejo de caja registradora, cobro ágil a clientes y arqueo diario de valores.';
+  }
+  if (name.includes('almacen') || name.includes('bodeg') || name.includes('inventari')) {
+    return 'Control de inventarios, recepción de mercancía y gestión de almacenamiento seguro.';
+  }
+  if (name.includes('chofer') || name.includes('repart') || name.includes('conductor')) {
+    return 'Conducción segura de unidades, entrega puntual de envíos y logística de rutas.';
+  }
+  if (name.includes('mecanico') || name.includes('mecanica') || name.includes('taller')) {
+    return 'Diagnóstico técnico automotriz, mantenimiento preventivo y reparación mecánica.';
+  }
+  if (name.includes('abogado') || name.includes('legal') || name.includes('juridico')) {
+    return 'Asesoría jurídica corporativa, revisión de expedientes y representación legal.';
+  }
+  if (name.includes('medico') || name.includes('doctor') || name.includes('salud')) {
+    return 'Atención médica integral, evaluación clínica y seguimiento a la salud de pacientes.';
+  }
+  if (name.includes('programad') || name.includes('desarrollad') || name.includes('software')) {
+    return 'Ingeniería de software, desarrollo de funcionalidades y mantenimiento de plataformas TI.';
+  }
+  if (name.includes('diseñad') || name.includes('creativ') || name.includes('marketing')) {
+    return 'Creación de contenido visual, diseño gráfico publicitario e identidad de marca.';
+  }
+  if (name.includes('contad') || name.includes('finanz') || name.includes('nomin')) {
+    return 'Gestión de contabilidad general, cálculo de nómina y elaboración de estados financieros.';
+  }
+  if (name.includes('chef') || name.includes('cocin')) {
+    return 'Preparación gastronómica especializada, control de insumos en cocina e higiene sanitaria.';
+  }
+  if (name.includes('meser') || name.includes('barista')) {
+    return 'Servicio de salón al cliente, preparación de bebidas y atención en mesa.';
+  }
+  if (name.includes('mantenimi') || name.includes('intendenc')) {
+    return 'Mantenimiento preventivo e instalatorio de infraestructura y servicios generales.';
+  }
+  if (name.includes('guardia') || name.includes('seguridad')) {
+    return 'Monitoreo de accesos, prevención de riesgos y resguardo de las instalaciones.';
+  }
+  if (name.includes('capacit') || name.includes('docent') || name.includes('instructor')) {
+    return 'Formación académica y capacitación continua del personal de la organización.';
+  }
+  if (name.includes('recepci')) {
+    return 'Recepción de visitantes, atención de conmutador telefónico y canalización de folios.';
+  }
+
+  return `Puesto clave enfocado en la excelencia operativa y el cumplimiento de metas del área de ${area}.`;
+}
+

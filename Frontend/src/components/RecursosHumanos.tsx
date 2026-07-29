@@ -6,7 +6,7 @@ import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
 import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
-import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey } from '../lib/jobRoleIcons';
+import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
 
 interface RecursosHumanosProps {
   readOnly?: boolean;
@@ -2116,27 +2116,37 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                            </div>
                         </div>
 
-                        <p className={`text-xs line-clamp-2 mb-4 h-9 relative z-10 ${cardStyle.descText}`}>
-                           {rol.description || 'Sin descripción detallada asignada.'}
+                        <p className={`text-xs leading-relaxed line-clamp-2 mb-4 h-9 relative z-10 ${cardStyle.descText}`}>
+                           {getRoleSmartDescription(rol)}
                         </p>
                      </div>
                      
-                     {/* Footer de Métricas (Colaboradores & Vacantes) */}
-                     <div className="flex items-center justify-between pt-3.5 border-t border-slate-200/80 mt-auto relative z-10 text-xs">
+                     {/* Footer KPI con números destacados y diseño responsivo móvil */}
+                     <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 mt-auto relative z-10 text-xs gap-2">
                         <button 
                           type="button"
                           onClick={() => setSelectedRoleForUsersModal(rol)} 
-                          className="flex items-center gap-2 font-bold text-slate-700 hover:text-indigo-600 transition-colors group/btn"
+                          className="flex items-center gap-1.5 bg-indigo-50/90 hover:bg-indigo-100/90 text-indigo-950 px-2.5 py-1.5 rounded-xl border border-indigo-200/80 transition-all shrink-0 group/stat"
+                          title="Ver colaboradores en este puesto"
                         >
-                           <Users size={15} className="text-slate-500 group-hover/btn:scale-110 transition-transform" />
-                           <span><span className="font-extrabold">{employeesWithRole}</span> {employeesWithRole === 1 ? 'Colaborador' : 'Colaboradores'}</span>
+                           <Users size={14} className="text-indigo-600 group-hover/stat:scale-110 transition-transform" />
+                           <span className="text-[11px] font-bold text-slate-700">Equipo</span>
+                           <span className="bg-indigo-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
+                              {employeesWithRole}
+                           </span>
                         </button>
+
                         <button 
                           type="button"
                           onClick={() => setSelectedRoleForVacanciesModal(rol)}
-                          className="font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1.5 transition-colors bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200"
+                          className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-950 px-2.5 py-1.5 rounded-xl border border-sky-200 transition-all shrink-0 group/vac"
+                          title="Ver vacantes para este puesto"
                         >
-                           Vacantes ({roleVacancies.length}) <ClipboardList size={13}/>
+                           <ClipboardList size={14} className="text-sky-600 group-hover/vac:scale-110 transition-transform" />
+                           <span className="text-[11px] font-bold text-slate-700">Vacantes</span>
+                           <span className="bg-sky-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
+                              {roleVacancies.length}
+                           </span>
                         </button>
                      </div>
                   </div>

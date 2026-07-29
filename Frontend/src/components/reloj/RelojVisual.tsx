@@ -835,55 +835,73 @@ export default function RelojVisual({
   };
 
     const renderBarraCronologica = (isMobile: boolean) => {
-    // Check for any deviations in the current turn
-    const isLateIn = lateUsers[currentUser.id] || (clockState === 'inactive' && currentSimTime > parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00') + 10);
+    // 1. Extracción de Horarios Dinámicos de Jornada Laboral del Colaborador
+    const userShiftStartStr = shiftConfigs[currentUser?.id]?.start || currentUser?.shiftStart || '09:00';
+    const userShiftEndStr = shiftConfigs[currentUser?.id]?.end || currentUser?.shiftEnd || '18:00';
+    const schedStartMins = parseTimeToMins(userShiftStartStr);
+    const schedEndMins = parseTimeToMins(userShiftEndStr);
+
+    const checkInMins = checkInTimes[currentUser?.id];
+    const hasUserCheckedIn = checkInMins !== undefined;
+    const checkOutMins = checkOutTimes[currentUser?.id];
+    const hasUserCheckedOut = checkOutMins !== undefined;
+
+    // 2. Detección de Retardo y Reposición de Jornada según LFT
+    const toleranceMins = shiftConfigs[currentUser?.id]?.tolerance ?? 10;
+    const lateMins = (hasUserCheckedIn && checkInMins > schedStartMins) 
+      ? (checkInMins - schedStartMins) 
+      : 0;
+    const isLateIn = lateUsers[currentUser?.id] || (lateMins > toleranceMins) || (clockState === 'inactive' && currentSimTime > schedStartMins + toleranceMins);
+
     const breakInfoObj = getBreakInfo();
     const isBreakExceeded = breakInfoObj && breakInfoObj.extra > 0;
     const mealInfoObj = getMealInfo();
     const isMealExceeded = mealInfoObj && !mealInfoObj.isReserved && (mealInfoObj.extra ?? 0) > 0;
-    
     const hasAnyDeviation = isLateIn || isBreakExceeded || isMealExceeded;
 
-    const tStart = Math.min(
-      parseTimeToMins(shiftConfigs[currentUser.id]?.start || '09:00'),
-      checkInTimes[currentUser.id] !== undefined ? checkInTimes[currentUser.id] : 99999
-    );
-    const tEnd = Math.max(
-      parseTimeToMins(shiftConfigs[currentUser.id]?.end || '18:00'),
-      checkOutTimes[currentUser.id] !== undefined ? checkOutTimes[currentUser.id] : 0,
-      currentSimTime
-    );
+    // Horario objetivo de salida ajustado por reposición de tiempo por retardo LFT
+    const targetExitMins = lateMins > 0 ? (schedEndMins + lateMins) : schedEndMins;
 
-    const tDuration = tEnd - tStart;
-    const limitPos = checkOutTimes[currentUser.id] !== undefined ? checkOutTimes[currentUser.id] : currentSimTime;
-    const elapsedTotal = limitPos - tStart;
+    // Límites de la barra cronológica
+    const tStart = Math.min(schedStartMins, hasUserCheckedIn ? checkInMins : 99999);
+    const tEnd = Math.max(targetExitMins, hasUserCheckedOut ? checkOutMins : 0, currentSimTime);
+
+    const tDuration = Math.max(1, tEnd - tStart);
+    const limitPos = hasUserCheckedOut ? checkOutMins : currentSimTime;
+    const elapsedTotal = Math.max(0, limitPos - tStart);
 
     const eventsList: { start: number; end: number; type: 'break' | 'meal' }[] = [];
     
     // Break time
-    const bStart = breakStartTimes[currentUser.id];
+    const bStart = breakStartTimes[currentUser?.id];
     if (bStart !== undefined) {
-      const bEnd = breakEndTimes[currentUser.id] !== undefined 
-        ? breakEndTimes[currentUser.id] 
+      const bEnd = breakEndTimes[currentUser?.id] !== undefined 
+        ? breakEndTimes[currentUser?.id] 
         : (clockState === 'short_break' ? currentSimTime : bStart + (leySillaConfig?.breakMinutes || 15));
       eventsList.push({ start: bStart, end: bEnd, type: 'break' });
     }
 
     // Meal time
-    const mStart = mealStartTimes[currentUser.id];
+    const mStart = mealStartTimes[currentUser?.id];
     if (mStart !== undefined) {
-      const mEnd = mealEndTimes[currentUser.id] !== undefined 
-        ? mealEndTimes[currentUser.id] 
-        : (clockState === 'meal' ? currentSimTime : mStart + (shiftConfigs[currentUser.id]?.mealMinutes || 45));
+      const mEnd = mealEndTimes[currentUser?.id] !== undefined 
+        ? mealEndTimes[currentUser?.id] 
+        : (clockState === 'meal' ? currentSimTime : mStart + (shiftConfigs[currentUser?.id]?.mealMinutes || 45));
       eventsList.push({ start: mStart, end: mEnd, type: 'meal' });
     }
 
-    // Sort by start minutes
+    // Sort events
     eventsList.sort((a, b) => a.start - b.start);
 
-    // Build chronological segments
-    const segmentsList: { mins: number; type: 'work' | 'break' | 'meal' }[] = [];
+    // Build chronological segments (incluyendo segmento de retardo si aplica)
+    const segmentsList: { mins: number; type: 'work' | 'break' | 'meal' | 'retardo' }[] = [];
     let currentPos = tStart;
+
+    // Si el usuario entró con retardo, agregar segmento inicial de tardanza
+    if (hasUserCheckedIn && checkInMins > schedStartMins) {
+      segmentsList.push({ mins: checkInMins - schedStartMins, type: 'retardo' });
+      currentPos = checkInMins;
+    }
 
     eventsList.forEach(ev => {
       const evStart = Math.max(currentPos, Math.min(ev.start, limitPos));
@@ -925,11 +943,11 @@ export default function RelojVisual({
 
           {/* Right: Employee Shift status */}
           <div className="flex items-center select-none">
-            {hasCheckedOut ? (
+            {hasUserCheckedOut ? (
               <span className="text-emerald-600 dark:text-emerald-400 font-black flex items-center gap-1.5">
                 <span>Turno Finalizado ✓</span>
               </span>
-            ) : hasCheckedIn ? (
+            ) : hasUserCheckedIn ? (
               <span className="text-emerald-600 dark:text-emerald-500 font-black flex items-center gap-1.5 animate-pulse">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span>Turno Activo ✓</span>
@@ -943,29 +961,26 @@ export default function RelojVisual({
           </div>
         </div>
         
-        {/* responsively spaced icons (divided in four equal spaces) */}
+        {/* responsively spaced icons (sin los títulos superiores "Entrada", "Descanso", "Comida", "Salida") */}
         <div className="flex w-full z-10 relative px-0 mb-0 mt-1">
           {/* Entrada Node */}
           {(() => {
             return (
               <div 
-                onClick={() => hasCheckedIn && setShowEntryDetailsModal(true)}
+                onClick={() => hasUserCheckedIn && setShowEntryDetailsModal(true)}
                 className={`w-1/4 flex flex-col items-center relative transition-all duration-300 transform ${
-                  hasCheckedIn ? 'cursor-pointer hover:scale-105' : 'cursor-default'
+                  hasUserCheckedIn ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
-                {/* Upper label */}
-                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-indigo-600 dark:text-indigo-400">Entrada</span>
-                
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
-                  hasCheckedIn 
+                  hasUserCheckedIn 
                     ? 'border-indigo-500 bg-indigo-500 text-white font-extrabold scale-105 shadow-indigo-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <LogIn size={isMobile ? 20 : 22} className={!hasCheckedIn ? "animate-pulse" : ""} />
-                  {hasCheckedIn && (
+                  <LogIn size={isMobile ? 20 : 22} className={!hasUserCheckedIn ? "animate-pulse" : ""} />
+                  {hasUserCheckedIn && (
                     isLateIn ? (
                       <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Retardo">⚠️</div>
                     ) : (
@@ -979,7 +994,7 @@ export default function RelojVisual({
 
           {/* Descanso Node */}
           {(() => {
-            const isDone = (breaksTaken[currentUser.id] || 0) > 0 || breakEndTimes[currentUser.id] !== undefined;
+            const isDone = (breaksTaken[currentUser?.id] || 0) > 0 || breakEndTimes[currentUser?.id] !== undefined;
             const isActive = clockState === 'short_break';
             const isAccessible = isBreakDone || isActive;
             return (
@@ -989,9 +1004,6 @@ export default function RelojVisual({
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
-                {/* Upper label */}
-                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-violet-600 dark:text-violet-400">Descanso</span>
-
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
@@ -999,7 +1011,7 @@ export default function RelojVisual({
                     ? 'border-violet-500 bg-violet-500 text-white font-extrabold scale-105 shadow-violet-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <Armchair size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
+                  <Armchair size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasUserCheckedIn && !isBreakDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isBreakExceeded ? (
                       <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Límite excedido">⚠️</div>
@@ -1014,7 +1026,7 @@ export default function RelojVisual({
 
           {/* Comida Node */}
           {(() => {
-            const isDone = hasReservedMeal[currentUser.id] || mealEndTimes[currentUser.id] !== undefined;
+            const isDone = hasReservedMeal[currentUser?.id] || mealEndTimes[currentUser?.id] !== undefined;
             const isActive = clockState === 'meal';
             const isAccessible = isMealDone || isActive;
             return (
@@ -1024,9 +1036,6 @@ export default function RelojVisual({
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
-                {/* Upper label */}
-                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-amber-600 dark:text-amber-400">Comida</span>
-
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 focus:outline-none ${
                   isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
@@ -1034,7 +1043,7 @@ export default function RelojVisual({
                     ? 'border-amber-500 bg-amber-500 text-white font-extrabold scale-105 shadow-amber-500/20' 
                     : 'border-slate-200 bg-white text-slate-400 shadow-sm'
                 }`}>
-                  <Utensils size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasCheckedIn && !isMealDone ? "animate-pulse" : "")} />
+                  <Utensils size={isMobile ? 20 : 22} className={isActive ? "animate-bounce" : (hasUserCheckedIn && !isMealDone ? "animate-pulse" : "")} />
                   {isDone && (
                     isMealExceeded ? (
                       <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm" title="Límite excedido">⚠️</div>
@@ -1049,8 +1058,8 @@ export default function RelojVisual({
 
           {/* Salida Node */}
           {(() => {
-            const isDone = hasCheckedOut;
-            const isAccessible = hasCheckedOut;
+            const isDone = hasUserCheckedOut;
+            const isAccessible = hasUserCheckedOut;
             return (
               <div 
                 onClick={() => isAccessible && setShowExitDetailsModal(true)}
@@ -1058,9 +1067,6 @@ export default function RelojVisual({
                   isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                 }`}
               >
-                {/* Upper label */}
-                <span className="text-[10.5px] md:text-xs font-black uppercase tracking-wider mb-1 text-emerald-600 dark:text-emerald-400">Salida</span>
-
                 <div className={`rounded-full flex items-center justify-center transition-all border-2 relative shadow-md hover:scale-110 active:scale-95 duration-300 ${
                   isMobile ? 'w-12 h-12' : 'w-14 h-14'
                 } ${
@@ -1084,11 +1090,11 @@ export default function RelojVisual({
 
         {/* Timeline Bar - Thicker, Larger, and Innovatively Styled (Glassmorphism & Contrast Text) */}
         <div className={`relative w-full z-0 ${isMobile ? 'px-1 mb-0.5 mt-1.5' : 'px-2 mb-2 mt-2'}`}>
-          {/* Progress Container (Size h-6 - Softest styled gray track with bevel shadow) */}
+          {/* Progress Container */}
           <div className="relative w-full h-6 bg-slate-100/80 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.05)] overflow-hidden">
             
             {/* Elapsed Proportional Progress Segment Container */}
-            {hasCheckedIn && elapsedTotal > 0 && (
+            {hasUserCheckedIn && elapsedTotal > 0 && (
               <div 
                 className="absolute top-0 left-0 h-full rounded-2xl overflow-hidden flex transition-all duration-700 ease-out"
                 style={{ width: `${progressPercent}%` }}
@@ -1096,6 +1102,7 @@ export default function RelojVisual({
                 {segmentsList.map((seg, sIdx) => {
                   const segWidth = (seg.mins / elapsedTotal) * 100;
                   let segColor = 'bg-emerald-500'; // Active Work
+                  if (seg.type === 'retardo') segColor = 'bg-rose-400/90 animate-pulse'; // Retardo de entrada
                   if (seg.type === 'break') segColor = 'bg-violet-400'; // Rest Day/Seat Break
                   if (seg.type === 'meal') segColor = 'bg-amber-400'; // Meal break (yellow)
                   
@@ -1104,6 +1111,7 @@ export default function RelojVisual({
                       key={sIdx}
                       className={`h-full ${segColor} transition-all duration-300`}
                       style={{ width: `${segWidth}%` }}
+                      title={seg.type === 'retardo' ? `Retardo de entrada (+${lateMins} min)` : undefined}
                     />
                   );
                 })}
@@ -1111,22 +1119,38 @@ export default function RelojVisual({
             )}
 
             {/* Absolute Overlay for Extremes Timestamps inside the bar */}
-            <div className="absolute inset-0 flex justify-between items-center px-3.5 pointer-events-none z-10 text-xs font-mono font-black text-slate-700 dark:text-slate-200">
-              {/* Left & Right extremes using uniform text */}
+            <div className="absolute inset-0 flex justify-between items-center px-3.5 pointer-events-none z-10 text-[11px] md:text-xs font-mono font-black text-slate-700 dark:text-slate-200">
+              {/* Left extreme: Entrada pactada / entrada real */}
               <span>
-                {hasCheckedIn 
-                  ? formatMinsToTimeClean(checkInTimes[currentUser.id]) 
-                  : formatStringToTimeClean(shiftConfigs[currentUser.id]?.start || '09:00')
+                {hasUserCheckedIn 
+                  ? `${formatMinsToTimeClean(checkInMins)}${lateMins > 0 ? ' ⚠️' : ''}` 
+                  : formatStringToTimeClean(userShiftStartStr)
                 }
               </span>
+
+              {/* Right extreme: Salida oficial / salida ajustada por reposición LFT */}
               <span>
-                {hasCheckedOut 
-                  ? formatMinsToTimeClean(checkOutTimes[currentUser.id]) 
-                  : formatStringToTimeClean(shiftConfigs[currentUser.id]?.end || '18:00')
+                {hasUserCheckedOut 
+                  ? formatMinsToTimeClean(checkOutMins) 
+                  : (lateMins > 0 
+                      ? `${formatMinsToTimeClean(targetExitMins)} (LFT +${lateMins}m)`
+                      : formatStringToTimeClean(userShiftEndStr)
+                    )
                 }
               </span>
             </div>
           </div>
+
+          {/* Sub-badge de alerta de retardo y reposición LFT */}
+          {hasUserCheckedIn && lateMins > 0 && (
+            <div className="mt-1 flex items-center justify-center">
+              <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+                <span>⚠️ Retardo de +{lateMins} min</span>
+                <span className="opacity-75">•</span>
+                <span>Salida LFT ajustada a las {formatMinsToTimeClean(targetExitMins)}</span>
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );

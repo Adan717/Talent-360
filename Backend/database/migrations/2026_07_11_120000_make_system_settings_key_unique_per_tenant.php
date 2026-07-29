@@ -28,10 +28,19 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'pgsql') {
             // In-place: preserva datos. El PK auto-nombrado por Postgres es <tabla>_pkey.
-            DB::statement('ALTER TABLE system_settings DROP CONSTRAINT system_settings_pkey');
-            Schema::table('system_settings', function (Blueprint $table) {
-                $table->unique(['tenant_id', 'key'], 'system_settings_tenant_id_key_unique');
-            });
+            // Resync 3 — IF EXISTS: en una BD donde la línea del jefe ya aplicó SU fix
+            // (2026_07_25_000005, que dropea este mismo PK), esta migración corre DESPUÉS
+            // del hecho y el constraint ya no existe (espejo del guard hasIndex de la 000005).
+            DB::statement('ALTER TABLE system_settings DROP CONSTRAINT IF EXISTS system_settings_pkey');
+            $yaMigrada = collect(DB::select(
+                "SELECT indexname FROM pg_indexes WHERE tablename = 'system_settings'
+                 AND indexname = 'system_settings_tenant_id_key_unique'"
+            ))->isNotEmpty();
+            if (!$yaMigrada) {
+                Schema::table('system_settings', function (Blueprint $table) {
+                    $table->unique(['tenant_id', 'key'], 'system_settings_tenant_id_key_unique');
+                });
+            }
         } else {
             // SQLite: reconstrucción (no se puede dropear un PRIMARY KEY con ALTER).
             // No hay duplicados que colapsar: `key` era único global, así que todo par
@@ -55,7 +64,8 @@ return new class extends Migration
         // soportada tanto por Postgres como por SQLite. Preserva la garantía que daba el
         // viejo PK global: una sola fila de plataforma por key (evita duplicados por
         // doble-submit/carrera en PlatformAdminController::saveBankConfig, etc.).
-        DB::statement('CREATE UNIQUE INDEX system_settings_platform_key_unique ON system_settings (key) WHERE tenant_id IS NULL');
+        // (Resync 3: IF NOT EXISTS — la 000005 del jefe crea este mismo índice.)
+        DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS system_settings_platform_key_unique ON system_settings (key) WHERE tenant_id IS NULL');
     }
 
     public function down(): void

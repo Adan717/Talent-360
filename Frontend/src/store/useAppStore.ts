@@ -106,7 +106,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   globalSimSpeed: 5,
   matrixTimeline: [],
   hasAlertedStoreDelay: false,
-  isSandboxMode: true,
+  // FIX H9 (prueba en vivo 2026-07-29): arrancaba en `true`, y con el sandbox encendido
+  // `syncToBackend` y `syncAssignmentRow` (useTaskStore) retornan SIN escribir ("guardado en
+  // RAM solamente"). El ÚNICO lugar que lo apagaba era el módulo Matrix QA al montarse
+  // (PanelSimulador), así que un usuario normal —que nunca entra ahí— trabajaba todo el día
+  // en sandbox: al completar una tarea el TaskRunner mostraba "¡Recompensa Obtenida! +$3.00 /
+  // +30 XP" y el monedero subía en pantalla, pero en la base la asignación seguía `pending`
+  // con 0 monedas y sin `wallet_transactions`; al recargar, todo perdido.
+  // El default seguro es NO-sandbox: se persiste de verdad. El modo de pruebas se enciende
+  // explícitamente (toggle de RelojVisual o al entrar a Matrix QA).
+  isSandboxMode: false,
   activeEncargadoId: 1,
   globalSimDay: 'Sábado',
   globalBreakStartTimes: {},

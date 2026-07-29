@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 interface EmployeeDoc {
   id: string;
@@ -208,44 +209,22 @@ export const GestorDocumentos = () => {
         </div>
       </header>
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
-        <button
-          onClick={() => { setActiveTab('employees'); setSelectedEmployeeId(null); }}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'employees' 
-              ? 'bg-amber-500/15 border-2 border-amber-500 shadow-md shadow-amber-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <FileText size={19} className={activeTab === 'employees' ? 'animate-pulse text-amber-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'employees' ? 'font-black text-amber-600' : 'text-slate-400'
-          }`}>
-            Expedientes
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('company')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'company' 
-              ? 'bg-amber-500/15 border-2 border-amber-500 shadow-md shadow-amber-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <FileCheck size={19} className={activeTab === 'company' ? 'animate-pulse text-amber-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'company' ? 'font-black text-amber-600' : 'text-slate-400'
-          }`}>
-            Corporativo
-          </span>
-        </button>
-      </div>
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB ámbar) */}
+      <MobileModuleBottomDock
+        colorTheme="amber"
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab as any);
+          if (tab === 'employees') setSelectedEmployeeId(null);
+        }}
+        fabIcon={<UploadCloud size={28} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('company')}
+        fabTitle="Subir Documento / Expediente"
+        items={[
+          { id: 'employees', label: 'Expedientes', icon: <FileText /> },
+          { id: 'company', label: 'Corporativo', icon: <FileCheck /> }
+        ]}
+      />
 
       {/* Main Container */}
       <div className="flex-1 overflow-hidden flex p-4 sm:p-8 gap-6 pb-24 sm:pb-8">

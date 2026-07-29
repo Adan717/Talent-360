@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Clock, Lock, Brain, Bot, Rocket, Plus, X, Camera, Hash, FileText, Search, LayoutList, Workflow, Armchair, Mic, Check, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { MobileModuleBottomDock } from '../common/MobileModuleBottomDock';
 import { useTaskStore } from '../../store/useTaskStore';
 import type { Task, Routine, ProcedureStep } from '../../store/useTaskStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -444,44 +445,19 @@ export function PanelTareasRutinas() {
                   </div>
               </div>
 
-              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
-              <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
-                <button
-                  onClick={() => setActiveTab('tareas')}
-                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    activeTab === 'tareas' 
-                      ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105' 
-                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-                  }`}>
-                    <LayoutList size={19} className={activeTab === 'tareas' ? 'animate-pulse text-blue-600 font-bold' : 'text-slate-400'} />
-                  </div>
-                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-                    activeTab === 'tareas' ? 'font-black text-blue-600' : 'text-slate-400'
-                  }`}>
-                    Tareas ({tasks.length})
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('rutinas')}
-                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    activeTab === 'rutinas' 
-                      ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105' 
-                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-                  }`}>
-                    <Workflow size={19} className={activeTab === 'rutinas' ? 'animate-pulse text-blue-600 font-bold' : 'text-slate-400'} />
-                  </div>
-                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-                    activeTab === 'rutinas' ? 'font-black text-blue-600' : 'text-slate-400'
-                  }`}>
-                    Rutinas ({routines.length})
-                  </span>
-                </button>
-              </div>
+              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB azul) */}
+              <MobileModuleBottomDock
+                colorTheme="blue"
+                activeTab={activeTab}
+                onSelectTab={(tab) => setActiveTab(tab as any)}
+                fabIcon={<Plus size={30} className="text-white relative z-10 animate-pulse" />}
+                onFabClick={() => setShowCreator(true)}
+                fabTitle="Crear Tarea / Rutina"
+                items={[
+                  { id: 'tareas', label: 'Tareas', icon: <LayoutList />, badge: tasks.length },
+                  { id: 'rutinas', label: 'Rutinas', icon: <Workflow />, badge: routines.length }
+                ]}
+              />
 
               {/* Tarjeta Inferior: Contenido principal */}
               <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 min-h-[500px]">

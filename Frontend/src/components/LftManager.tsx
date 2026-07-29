@@ -5,6 +5,7 @@ import {
   Calendar, Plus, Trash2, Lock, Unlock
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export default function LftManager() {
   const [latesPerAbsence, setLatesPerAbsence] = useState(3);
@@ -397,46 +398,19 @@ export default function LftManager() {
                 </div>
               </div>
 
-              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
-              <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('variables')}
-                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    activeTab === 'variables' 
-                      ? 'bg-amber-500/15 border-2 border-amber-500 shadow-md shadow-amber-500/20 scale-105' 
-                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-                  }`}>
-                    <Scale size={19} className={activeTab === 'variables' ? 'animate-pulse text-amber-600 font-bold' : 'text-slate-400'} />
-                  </div>
-                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-                    activeTab === 'variables' ? 'font-black text-amber-600' : 'text-slate-400'
-                  }`}>
-                    Reglamento
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('holidays')}
-                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                    activeTab === 'holidays' 
-                      ? 'bg-amber-500/15 border-2 border-amber-500 shadow-md shadow-amber-500/20 scale-105' 
-                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-                  }`}>
-                    <Calendar size={19} className={activeTab === 'holidays' ? 'animate-pulse text-amber-600 font-bold' : 'text-slate-400'} />
-                  </div>
-                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-                    activeTab === 'holidays' ? 'font-black text-amber-600' : 'text-slate-400'
-                  }`}>
-                    Festivos
-                  </span>
-                </button>
-              </div>
+              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB naranja) */}
+              <MobileModuleBottomDock
+                colorTheme="amber"
+                activeTab={activeTab}
+                onSelectTab={(tab) => setActiveTab(tab as any)}
+                fabIcon={<Upload size={28} className="text-white relative z-10 animate-pulse" />}
+                onFabClick={() => setActiveTab('variables')}
+                fabTitle="Cargar Reglamento LFT"
+                items={[
+                  { id: 'variables', label: 'Reglamento', icon: <Scale /> },
+                  { id: 'holidays', label: 'Festivos', icon: <Calendar /> }
+                ]}
+              />
 
               {activeTab === 'variables' ? (
                 <form onSubmit={handleSave} className="space-y-6">

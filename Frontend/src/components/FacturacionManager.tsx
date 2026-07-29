@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export const FacturacionManager = () => {
   const [activeTab, setActiveTab] = useState<'fiscal' | 'timbrado' | 'historial'>('fiscal');
@@ -307,62 +308,20 @@ export const FacturacionManager = () => {
         </div>
       </div>
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
-        <button
-          onClick={() => setActiveTab('fiscal')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'fiscal' 
-              ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <ShieldCheck size={19} className={activeTab === 'fiscal' ? 'animate-pulse text-emerald-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'fiscal' ? 'font-black text-emerald-600' : 'text-slate-400'
-          }`}>
-            Fiscal CSD
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('timbrado')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'timbrado' 
-              ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <Key size={19} className={activeTab === 'timbrado' ? 'animate-pulse text-emerald-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'timbrado' ? 'font-black text-emerald-600' : 'text-slate-400'
-          }`}>
-            Timbrado
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('historial')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'historial' 
-              ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <Clock size={19} className={activeTab === 'historial' ? 'animate-pulse text-emerald-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'historial' ? 'font-black text-emerald-600' : 'text-slate-400'
-          }`}>
-            Historial SAT
-          </span>
-        </button>
-      </div>
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB verde) */}
+      <MobileModuleBottomDock
+        colorTheme="emerald"
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab as any)}
+        fabIcon={<Receipt size={28} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('timbrado')}
+        fabTitle="Timbrar Nómina / CFDI 4.0"
+        items={[
+          { id: 'fiscal', label: 'Fiscal CSD', icon: <ShieldCheck /> },
+          { id: 'timbrado', label: 'Timbrado', icon: <Key /> },
+          { id: 'historial', label: 'Historial SAT', icon: <Clock /> }
+        ]}
+      />
 
       {/* Cuerpo del Módulo */}
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">

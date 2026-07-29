@@ -8,6 +8,7 @@ import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
 import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
 import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 interface JobRoleCardItemProps {
   rol: any;
@@ -1730,63 +1731,21 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         </div>
       )}
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB índigo) */}
       {!readOnly && (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
-          <button
-            onClick={() => setActiveTab('directorio')}
-            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              activeTab === 'directorio' 
-                ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105' 
-                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-            }`}>
-              <Users size={19} className={activeTab === 'directorio' ? 'animate-pulse text-blue-600 font-bold' : 'text-slate-400'} />
-            </div>
-            <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-              activeTab === 'directorio' ? 'font-black text-blue-600' : 'text-slate-400'
-            }`}>
-              Colaboradores
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('puestos')}
-            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              activeTab === 'puestos' 
-                ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
-                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-            }`}>
-              <Briefcase size={19} className={activeTab === 'puestos' ? 'animate-pulse text-emerald-600 font-bold' : 'text-slate-400'} />
-            </div>
-            <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-              activeTab === 'puestos' ? 'font-black text-emerald-600' : 'text-slate-400'
-            }`}>
-              Puestos
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('organigrama')}
-            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              activeTab === 'organigrama' 
-                ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
-                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-            }`}>
-              <Network size={19} className={activeTab === 'organigrama' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
-            </div>
-            <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-              activeTab === 'organigrama' ? 'font-black text-purple-600' : 'text-slate-400'
-            }`}>
-              Organigrama
-            </span>
-          </button>
-        </div>
+        <MobileModuleBottomDock
+          colorTheme="indigo"
+          activeTab={activeTab}
+          onSelectTab={(tab) => setActiveTab(tab as any)}
+          fabIcon={<UserPlus size={28} className="text-white relative z-10 animate-pulse" />}
+          onFabClick={() => activeTab === 'puestos' ? setEditingJobRole({ title: '', base_salary: 0 }) : (setEditingUser(null), setShowForm(true))}
+          fabTitle="Registrar Colaborador / Puesto"
+          items={[
+            { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.length },
+            { id: 'puestos', label: 'Puestos', icon: <Briefcase />, badge: jobRoles.length },
+            { id: 'organigrama', label: 'Organigrama', icon: <Network /> }
+          ]}
+        />
       )}
 
       {/* CONTENIDO TABS */}

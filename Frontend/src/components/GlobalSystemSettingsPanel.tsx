@@ -8,6 +8,7 @@ import {
 import { CompanyOnboardingSettings } from './CompanyOnboardingSettings';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import { useAppStore } from '../store/useAppStore';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 interface GlobalSystemSettingsPanelProps {
   initialTab?: string;
@@ -159,38 +160,23 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
         </div>
       </div>
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 lg:hidden flex items-center justify-around overflow-x-auto whitespace-nowrap scrollbar-none">
-        {navItems.map((item) => {
-          if (item.featureFlag && !isFeatureUnlocked(item.featureFlag as any)) {
-            return null;
-          }
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0"
-            >
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                isActive 
-                  ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
-                  : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-              }`}>
-                {React.cloneElement(item.icon, {
-                  size: 17,
-                  className: isActive ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'
-                })}
-              </div>
-              <span className={`text-[8px] uppercase tracking-wider font-extrabold mt-0.5 ${
-                isActive ? 'font-black text-indigo-600' : 'text-slate-400'
-              }`}>
-                {item.label.split(' ')[0]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB índigo) */}
+      <MobileModuleBottomDock
+        colorTheme="indigo"
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        fabIcon={<Sparkles size={28} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('onboarding')}
+        fabTitle="Ajustes y Parámetros Globales"
+        items={navItems
+          .filter(item => !item.featureFlag || isFeatureUnlocked(item.featureFlag as any))
+          .map(item => ({
+            id: item.id,
+            label: item.label.split(' ')[0],
+            icon: item.icon
+          }))
+        }
+      />
 
       {/* Área de Contenido de la Configuración Seleccionada */}
       <div className="flex-1 p-4 sm:p-8 overflow-y-auto custom-scrollbar bg-white pb-24 sm:pb-8">

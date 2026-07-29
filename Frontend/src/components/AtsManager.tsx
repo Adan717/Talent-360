@@ -6,6 +6,7 @@ import { WebPublica } from './WebPublica';
 import AtsPortalSettings from './AtsPortalSettings';
 import { Briefcase, ClipboardList, Calendar, Plus, Trash2, Clock, User, MessageSquare, X, Globe } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export function AtsManager() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -159,80 +160,21 @@ export function AtsManager() {
         </div>
       </div>
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
-        <button
-          onClick={() => setActiveTab('vacantes')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'vacantes' 
-              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <Briefcase size={19} className={activeTab === 'vacantes' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'vacantes' ? 'font-black text-purple-600' : 'text-slate-400'
-          }`}>
-            Vacantes
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('kanban')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'kanban' 
-              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <ClipboardList size={19} className={activeTab === 'kanban' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'kanban' ? 'font-black text-purple-600' : 'text-slate-400'
-          }`}>
-            Tablero
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('entrevistas')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'entrevistas' 
-              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <Calendar size={19} className={activeTab === 'entrevistas' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'entrevistas' ? 'font-black text-purple-600' : 'text-slate-400'
-          }`}>
-            Agenda
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('publico')}
-          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
-        >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-            activeTab === 'publico' 
-              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
-              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
-          }`}>
-            <Globe size={19} className={activeTab === 'publico' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
-          </div>
-          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
-            activeTab === 'publico' ? 'font-black text-purple-600' : 'text-slate-400'
-          }`}>
-            Pública
-          </span>
-        </button>
-      </div>
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB púrpura) */}
+      <MobileModuleBottomDock
+        colorTheme="purple"
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        fabIcon={<Plus size={30} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('vacantes')}
+        fabTitle="Nueva Vacante / Candidato"
+        items={[
+          { id: 'vacantes', label: 'Vacantes', icon: <Briefcase /> },
+          { id: 'kanban', label: 'Tablero', icon: <ClipboardList /> },
+          { id: 'entrevistas', label: 'Agenda', icon: <Calendar /> },
+          { id: 'publico', label: 'Pública', icon: <Globe /> }
+        ]}
+      />
 
       <div className="bg-transparent">
         {activeTab === 'vacantes' && <GestorVacantes />}

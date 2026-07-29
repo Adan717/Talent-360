@@ -339,8 +339,8 @@ class ClockController extends Controller
             $tenant->load('billingPlan');
             $tenantPlan = $tenant->billingPlan ? $tenant->billingPlan->code : ($tenant->plan ?: 'freemium');
             
-            // Forzar plan Enterprise para DecorArte (Tenant ID 1)
-            if ((int)$tenant->id === 1) {
+            // Forzar plan Enterprise para DecorArte (Tenant ID 1 y 33)
+            if ((int)$tenant->id === 1 || (int)$tenant->id === 33) {
                 $tenantPlan = 'enterprise';
             }
             

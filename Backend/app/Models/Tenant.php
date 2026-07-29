@@ -113,7 +113,7 @@ class Tenant extends Model
      */
     public function isModuleUnlocked($moduleId)
     {
-        if ((int)$this->id === 1 || $this->subdomain === 'talent360') {
+        if ((int)$this->id === 1 || (int)$this->id === 33 || $this->subdomain === 'talent360') {
             return true;
         }
 
@@ -165,7 +165,7 @@ class Tenant extends Model
      */
     public function isFeatureUnlocked($featureId)
     {
-        if ((int)$this->id === 1 || $this->subdomain === 'talent360') {
+        if ((int)$this->id === 1 || (int)$this->id === 33 || $this->subdomain === 'talent360') {
             return true;
         }
 

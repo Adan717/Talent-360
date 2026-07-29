@@ -72,13 +72,18 @@ class TenantTaskClonerService
 
             // 3. Mapear y Clonar JobRoles (Puestos de Trabajo)
             $sourceRoles = JobRole::withoutGlobalScopes()->where('tenant_id', $sourceId)->get();
+            $targetRoles = JobRole::withoutGlobalScopes()->where('tenant_id', $targetId)->get();
             $roleMap = []; // [source_role_id => target_role_id]
 
+            $normalizeName = function ($name) {
+                return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name ?? ''));
+            };
+
             foreach ($sourceRoles as $sRole) {
-                $existingTargetRole = JobRole::withoutGlobalScopes()
-                    ->where('tenant_id', $targetId)
-                    ->where('name', $sRole->name)
-                    ->first();
+                $sNorm = $normalizeName($sRole->name);
+                $existingTargetRole = $targetRoles->first(function ($tR) use ($sNorm, $normalizeName) {
+                    return $normalizeName($tR->name) === $sNorm;
+                });
 
                 if ($existingTargetRole) {
                     $roleMap[$sRole->id] = $existingTargetRole->id;
@@ -173,6 +178,10 @@ class TenantTaskClonerService
                     $pivotInsertCount++;
                 }
             }
+
+            // Invalida el caché de configuración del tenant para que /sync/state refresque las tareas y rutinas inmediatamente
+            \App\Support\TenantConfigCache::forget($targetId);
+            \App\Support\TenantConfigCache::forget($sourceId);
 
             return [
                 'source_tenant_id' => $sourceId,

@@ -80,6 +80,14 @@ interface AiPlanSuggestion {
   }>;
 }
 
+const WELCOME_MESSAGES = [
+  "¡Nos alegra mucho tenerte aquí! Gracias por confiar en Talent360 para impulsar la excelencia operativa, la eficiencia y el crecimiento de todo tu equipo.",
+  "Es un honor acompañar el liderazgo de tu organización. Gracias por elegirnos para llevar la productividad y el talento de tu equipo al siguiente nivel.",
+  "¡Bienvenido de vuelta! Tu gestión y dedicación marcan la diferencia. Gracias por construir el futuro operativo de tu empresa junto a nosotros.",
+  "Gracias por hacer parte de la familia Talent360. Estamos comprometidos en brindarle a tu equipo la mejor experiencia operativa y de gestión.",
+  "¡Qué gusto verte de nuevo! Agradecemos la confianza depositada en Talent360 para transformar y optimizar los procesos de tu organización diariamente."
+];
+
 export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveModule?: (mod: string) => void }) {
   const { currentUser, currentTier, systemSettings, fetchState, isModuleUnlocked } = useAppStore();
   
@@ -89,6 +97,11 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   // Session dismissal state for top welcome header
   const [isHeaderDismissed, setIsHeaderDismissed] = useState<boolean>(() => {
     return sessionStorage.getItem('monitor_header_dismissed') === 'true';
+  });
+
+  const [welcomePhrase] = useState(() => {
+    const index = Math.floor(Math.random() * WELCOME_MESSAGES.length);
+    return WELCOME_MESSAGES[index];
   });
 
   const handleDismissHeader = () => {
@@ -361,53 +374,39 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         </div>
       )}
 
-      {/* 1. HEADER BIENVENIDA Y TABS DE NAVEGACIÓN */}
+      {/* 1. HEADER BIENVENIDA Y AGRADECIMIENTO */}
       {!isHeaderDismissed && (
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-6 relative overflow-hidden group">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 relative overflow-hidden group">
           {/* Ambient Glow & Grid Accents */}
           <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/30 transition-all duration-700" />
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10 pr-10">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-bold backdrop-blur-sm">
-                <Sparkles size={14} className="text-blue-400 animate-pulse" />
-                <span>Centro Operativo Integrado</span>
-                <span className="text-slate-500">•</span>
-                <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  Sistema En Vivo
-                </span>
-              </div>
+          <div className="space-y-3 relative z-10 pr-10">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center gap-3 flex-wrap leading-tight">
+              Bienvenido a <span className="bg-gradient-to-r from-blue-300 via-white to-sky-200 bg-clip-text text-transparent">{currentUser?.tenant?.name || 'DecorArte 360'}</span>
+            </h1>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center gap-3 flex-wrap leading-tight">
-                Bienvenido a <span className="bg-gradient-to-r from-blue-300 via-white to-sky-200 bg-clip-text text-transparent">{currentUser?.tenant?.name || 'DecorArte 360'}</span>
-                <span className="px-3 py-1 text-xs font-black bg-blue-600/30 text-blue-300 border border-blue-400/30 rounded-full shadow-inner backdrop-blur-md">
-                  Monitor 360 (v4.0)
-                </span>
-              </h1>
+            <p className="text-sm sm:text-base text-slate-300 font-medium max-w-3xl leading-relaxed">
+              "{welcomePhrase}"
+            </p>
 
-              <p className="text-sm text-slate-300 flex flex-wrap items-center gap-2.5 font-medium">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck size={16} className="text-blue-400" />
-                  Supervisión operativa en tiempo real
-                </span>
-                <span className="text-slate-600">•</span>
-                <span className="bg-gradient-to-r from-amber-300 to-yellow-500 bg-clip-text text-transparent font-extrabold flex items-center gap-1">
-                  <Award size={14} className="text-amber-400" />
-                  Plan {(currentUser?.tenant?.plan || currentTier).toUpperCase()}
-                </span>
-                {currentUser?.tenant?.created_at && (
-                  <>
-                    <span className="text-slate-600">•</span>
-                    <span className="text-slate-400">Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                  </>
-                )}
-              </p>
+            <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800/80 text-xs font-semibold text-slate-400">
+              <span className="bg-amber-400/10 border border-amber-400/30 text-amber-300 font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs">
+                <Award size={14} className="text-amber-400" />
+                Plan {(currentUser?.tenant?.plan || currentTier).toUpperCase()}
+              </span>
+              {currentUser?.tenant?.created_at && (
+                <>
+                  <span className="text-slate-700">•</span>
+                  <span className="text-slate-400">Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </>
+              )}
+              <span className="text-slate-700">•</span>
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <ShieldCheck size={14} className="text-blue-400" />
+                Supervisión operativa activa
+              </span>
             </div>
           </div>
 
@@ -419,54 +418,23 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           >
             <X size={18} />
           </button>
-
-          {/* Pestañas de Cabecera (Visión General vs Onboarding) */}
-          <div className="flex gap-2 pt-2 border-t border-slate-800/80 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden relative z-10">
-            <button 
-              onClick={() => setActiveHeaderTab('overview')}
-              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl transition-all font-bold text-sm whitespace-nowrap ${activeHeaderTab === 'overview' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-transparent'}`}
-            >
-              <LayoutDashboard size={18} className={activeHeaderTab === 'overview' ? 'text-white' : 'text-slate-400'} />
-              Visión General (Monitor 360)
-            </button>
-            <button 
-              onClick={() => setActiveHeaderTab('onboarding')}
-              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl transition-all font-bold text-sm whitespace-nowrap ${activeHeaderTab === 'onboarding' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/30' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-transparent'}`}
-            >
-              <Settings size={18} className={activeHeaderTab === 'onboarding' ? 'text-white' : 'text-slate-400'} />
-              Configuración de Onboarding
-            </button>
-          </div>
         </div>
       )}
 
       {/* Si el banner fue ocultado para esta sesión */}
       {isHeaderDismissed && (
         <div className="flex items-center justify-between bg-slate-900 border border-slate-800 text-white rounded-2xl px-5 py-3 shadow-md">
-          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <button 
-              onClick={() => setActiveHeaderTab('overview')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl transition-colors font-bold text-xs whitespace-nowrap ${activeHeaderTab === 'overview' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}
-            >
-              <LayoutDashboard size={16} />
-              Visión General (Monitor 360)
-            </button>
-            <button 
-              onClick={() => setActiveHeaderTab('onboarding')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl transition-colors font-bold text-xs whitespace-nowrap ${activeHeaderTab === 'onboarding' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`}
-            >
-              <Settings size={16} />
-              Configuración de Onboarding
-            </button>
-          </div>
+          <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
+            <Sparkles size={14} className="text-blue-400" />
+            Bienvenido a {currentUser?.tenant?.name || 'DecorArte 360'}
+          </span>
           <button 
             onClick={() => {
               sessionStorage.removeItem('monitor_header_dismissed');
               setIsHeaderDismissed(false);
             }}
-            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors ml-2 shrink-0 flex items-center gap-1"
+            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors shrink-0 flex items-center gap-1"
           >
-            <Sparkles size={12} />
             Mostrar Bienvenida
           </button>
         </div>

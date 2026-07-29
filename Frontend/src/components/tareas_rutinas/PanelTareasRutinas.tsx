@@ -445,14 +445,32 @@ export function PanelTareasRutinas() {
                   </div>
               </div>
 
-              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB azul) */}
+              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y subacciones) */}
               <MobileModuleBottomDock
                 colorTheme="blue"
                 activeTab={activeTab}
                 onSelectTab={(tab) => setActiveTab(tab as any)}
                 fabIcon={<Plus size={30} className="text-white relative z-10 animate-pulse" />}
-                onFabClick={() => setShowCreator(true)}
-                fabTitle="Crear Tarea / Rutina"
+                fabTitle="Acciones Rápidas Tareas"
+                subActions={[
+                  {
+                    id: 'search',
+                    label: 'Buscar Tarea / Rutina',
+                    icon: <Search size={18} />,
+                    onClick: () => {
+                      setShowMobileSearch(!showMobileSearch);
+                      setTimeout(() => searchInputRef.current?.focus(), 300);
+                    },
+                    colorClass: 'bg-slate-100 text-slate-700'
+                  },
+                  {
+                    id: 'create',
+                    label: 'Crear Tarea / Rutina',
+                    icon: <Plus size={18} />,
+                    onClick: handleOpenCreator,
+                    colorClass: 'bg-blue-100 text-blue-600'
+                  }
+                ]}
                 items={[
                   { id: 'tareas', label: 'Tareas', icon: <LayoutList />, badge: tasks.length },
                   { id: 'rutinas', label: 'Rutinas', icon: <Workflow />, badge: routines.length }
@@ -1280,38 +1298,6 @@ export function PanelTareasRutinas() {
                     </div>
                 </div>
             )}
-            {/* Botón de Acción Flotante (FAB) Responsivo */}
-            <div className="fixed bottom-6 right-6 z-40 block sm:hidden">
-                {showFabMenu && (
-                    <div className="flex flex-col items-center gap-3.5 mb-3.5">
-                        <button
-                            onClick={() => {
-                                setShowMobileSearch(!showMobileSearch);
-                                setTimeout(() => searchInputRef.current?.focus(), 300);
-                                setShowFabMenu(false);
-                            }}
-                            className="w-12 h-12 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all duration-300 animate-fade-in-up-2"
-                        >
-                            <Search size={20} className="text-slate-500" />
-                        </button>
-                        <button
-                            onClick={() => {
-                                handleOpenCreator();
-                                setShowFabMenu(false);
-                            }}
-                            className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-600/20 active:scale-90 transition-all duration-300 animate-fade-in-up-1"
-                        >
-                            <Plus size={20} />
-                        </button>
-                    </div>
-                )}
-                <button 
-                    onClick={() => setShowFabMenu(!showFabMenu)}
-                    className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-600/35 transition-transform active:scale-95 z-50 relative"
-                >
-                    <Plus size={24} className={`transition-transform duration-300 ${showFabMenu ? 'rotate-45' : ''}`} />
-                </button>
-            </div>
         </div>
     );
 }

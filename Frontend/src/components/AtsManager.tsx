@@ -160,14 +160,37 @@ export function AtsManager() {
         </div>
       </div>
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB púrpura) */}
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y subacciones) */}
       <MobileModuleBottomDock
         colorTheme="purple"
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
         fabIcon={<Plus size={30} className="text-white relative z-10 animate-pulse" />}
-        onFabClick={() => setActiveTab('vacantes')}
-        fabTitle="Nueva Vacante / Candidato"
+        fabTitle="Acciones Rápidas ATS"
+        subActions={[
+          {
+            id: 'interview',
+            label: 'Agendar Entrevista',
+            icon: <Calendar size={18} />,
+            onClick: () => {
+              setActiveTab('entrevistas');
+              setShowScheduleForm(true);
+            },
+            colorClass: 'bg-indigo-100 text-indigo-600'
+          },
+          {
+            id: 'vacancy',
+            label: 'Crear Nueva Vacante',
+            icon: <Plus size={18} />,
+            onClick: () => {
+              setActiveTab('vacantes');
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('trigger-new-vacancy'));
+              }, 100);
+            },
+            colorClass: 'bg-purple-100 text-purple-600'
+          }
+        ]}
         items={[
           { id: 'vacantes', label: 'Vacantes', icon: <Briefcase /> },
           { id: 'kanban', label: 'Tablero', icon: <ClipboardList /> },
@@ -348,42 +371,6 @@ export function AtsManager() {
               )}
            </div>
         )}
-      </div>
-
-      {/* Botón de Acción Flotante (FAB) Responsivo */}
-      <div className="fixed bottom-6 right-6 z-40 block sm:hidden">
-        {showFabMenu && (
-          <div className="flex flex-col items-center gap-3.5 mb-3.5">
-            <button
-              onClick={() => {
-                setActiveTab('entrevistas');
-                setShowScheduleForm(true);
-                setShowFabMenu(false);
-              }}
-              className="w-12 h-12 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all duration-300 animate-fade-in-up-2"
-            >
-              <Calendar size={20} className="text-slate-500" />
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('vacantes');
-                setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('trigger-new-vacancy'));
-                }, 100);
-                setShowFabMenu(false);
-              }}
-              className="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/20 active:scale-90 transition-all duration-300 animate-fade-in-up-1"
-            >
-              <Plus size={20} />
-            </button>
-          </div>
-        )}
-        <button 
-          onClick={() => setShowFabMenu(!showFabMenu)}
-          className="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/35 transition-transform active:scale-95 z-50 relative"
-        >
-          <Plus size={24} className={`transition-transform duration-300 ${showFabMenu ? 'rotate-45' : ''}`} />
-        </button>
       </div>
 
     </div>

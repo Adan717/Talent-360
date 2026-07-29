@@ -366,9 +366,8 @@ class RoleMiddlewareTest extends TestCase
             'message' => 'Empresa eliminada con éxito'
         ]);
 
-        // Tenant usa SoftDeletes: la fila permanece (con deleted_at) para poder
-        // recuperarla, no se destruye físicamente.
-        $this->assertSoftDeleted('tenants', [
+        // Tenant borrado físicamente en cascada: la fila se elimina por completo de la BD.
+        $this->assertDatabaseMissing('tenants', [
             'id' => $tenantToDelete->id
         ]);
     }

@@ -6,7 +6,7 @@ import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
 import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
-import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, renderJobRoleIcon } from '../lib/jobRoleIcons';
+import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey } from '../lib/jobRoleIcons';
 
 interface RecursosHumanosProps {
   readOnly?: boolean;

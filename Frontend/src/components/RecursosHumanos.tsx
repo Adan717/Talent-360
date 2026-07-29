@@ -228,6 +228,256 @@ const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
   );
 };
 
+interface UserCardItemProps {
+  u: any;
+  jobRoles: any[];
+  directorioSubTab: string;
+  setEditingUser: (u: any) => void;
+  handleDeleteUser: (userId: number) => void;
+  handleRestoreUser: (userId: number) => void;
+  handleForceDeleteUser: (userId: number) => void;
+  formatEmployeeDisplayName: (name: string) => string;
+  getUserKeysIcon: (userId: number) => React.ReactNode;
+  getJobRoleKeysIcon: (roleId: number) => React.ReactNode;
+  formatTimeVisual: (timeStr?: string) => string;
+}
+
+const UserCardItem: React.FC<UserCardItemProps> = ({
+  u,
+  jobRoles,
+  directorioSubTab,
+  setEditingUser,
+  handleDeleteUser,
+  handleRestoreUser,
+  handleForceDeleteUser,
+  formatEmployeeDisplayName,
+  getUserKeysIcon,
+  getJobRoleKeysIcon,
+  formatTimeVisual
+}) => {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [isInCenter, setIsInCenter] = useState(false);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsInCenter(entry.isIntersecting);
+        });
+      },
+      {
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: 0.35
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const userRole = jobRoles.find((r: any) => r.id === u.job_role_id);
+  const iconKey = resolveJobRoleIconKey(userRole);
+  const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === iconKey);
+  const nivel = userRole?.nivel_mando ?? matchedItem?.nivel_mando ?? (
+    iconKey === 'monito-gerente' || iconKey === 'shield-check' || iconKey === 'crown' ? 1 :
+    iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
+  );
+
+  const hierarchyCardStyles: Record<number, { container: string; titleText: string; pillClass: string; label: string; watermarkColor: string }> = {
+    1: {
+      container: 'bg-gradient-to-br from-amber-50/90 via-white to-amber-100/30 border-2 border-amber-400 text-slate-900 shadow-md hover:border-amber-500 hover:shadow-xl',
+      titleText: 'text-amber-950 font-black',
+      pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold',
+      label: 'N1 • Dirección General',
+      watermarkColor: 'text-amber-500/15'
+    },
+    2: {
+      container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-2 border-indigo-400 text-slate-900 shadow-md hover:border-indigo-500 hover:shadow-xl',
+      titleText: 'text-indigo-950 font-bold',
+      pillClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
+      label: 'N2 • Supervisión / Jefatura',
+      watermarkColor: 'text-indigo-600/15'
+    },
+    3: {
+      container: 'bg-gradient-to-br from-sky-50/70 via-white to-slate-50 border-2 border-sky-400 text-slate-900 shadow-sm hover:border-sky-500 hover:shadow-md',
+      titleText: 'text-slate-900 font-bold',
+      pillClass: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
+      label: 'N3 • Especialista / Piso',
+      watermarkColor: 'text-sky-600/15'
+    },
+    4: {
+      container: 'bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 border-2 border-emerald-400 text-slate-900 shadow-xs hover:border-emerald-500 hover:shadow-md',
+      titleText: 'text-slate-800 font-bold',
+      pillClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+      label: 'N4 • Auxiliar Operativo',
+      watermarkColor: 'text-emerald-500/15'
+    },
+    5: {
+      container: 'bg-gradient-to-br from-purple-50/40 via-white to-slate-50 border-2 border-purple-300 text-slate-900 shadow-xs hover:border-purple-400 hover:shadow-md',
+      titleText: 'text-slate-700 font-semibold',
+      pillClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold',
+      label: 'N5 • Apoyo Eventual',
+      watermarkColor: 'text-purple-400/15'
+    }
+  };
+
+  const cardStyle = hierarchyCardStyles[nivel] || hierarchyCardStyles[3];
+  const isInactiveTab = directorioSubTab === 'inactivos';
+
+  return (
+    <div 
+      ref={cardRef}
+      key={u.id}
+      onClick={() => setEditingUser(u)}
+      className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl active:scale-[0.98] cursor-pointer flex flex-col justify-between ${
+        isInactiveTab 
+          ? 'bg-slate-50/80 border-slate-300 opacity-80 shadow-none' 
+          : cardStyle.container
+      } ${isInCenter ? 'scale-[1.02] shadow-lg -translate-y-0.5 border-opacity-100 ring-2 ring-indigo-400/30' : ''}`}
+    >
+       {/* Destello Cristalino Shimmer Beam Trail al Scroll/Hover */}
+       <div className="absolute inset-0 overflow-hidden rounded-2xl sm:rounded-3xl pointer-events-none z-0">
+          <div className={`w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent absolute top-0 -left-1/2 transition-opacity duration-500 ${
+            isInCenter ? 'animate-shimmer-trail opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:animate-shimmer-trail'
+          }`} />
+       </div>
+
+       {/* Marca de Agua (Watermark Vectorial del Monito Alusivo del Puesto del Colaborador) */}
+       <div className={`absolute -right-4 -bottom-4 transition-all duration-700 pointer-events-none ${
+         isInCenter 
+           ? 'opacity-30 scale-125 -rotate-6' 
+           : 'opacity-15 group-hover:opacity-25 group-hover:scale-110 group-hover:-rotate-6'
+       }`}>
+          {renderJobRoleIcon(userRole, 110, cardStyle.watermarkColor)}
+       </div>
+
+       <div>
+          {/* Header con Jerarquía, Estado y Acciones Rápidas */}
+          <div className="flex items-center justify-between mb-3 relative z-10">
+             <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
+                   {cardStyle.label}
+                </span>
+                {!isInactiveTab ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-300">
+                     ● Activo
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-200 text-slate-600 border-slate-300">
+                     ○ Archivado
+                  </span>
+                )}
+             </div>
+
+             {/* Acciones Secundarias (Editar / Eliminar / Restaurar) */}
+             <div className="flex items-center gap-1 shrink-0">
+                {!isInactiveTab ? (
+                   <button 
+                     type="button"
+                     onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteUser(u.id);
+                     }}
+                     className="w-7 h-7 rounded-full bg-slate-100/90 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200/80 shadow-2xs group/del" 
+                     title="Enviar a inactivo"
+                   >
+                     <UserMinus size={14} className="group-hover/del:scale-110 transition-transform"/>
+                   </button>
+                ) : (
+                   <div className="flex items-center gap-1">
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           handleRestoreUser(u.id);
+                        }}
+                        className="w-7 h-7 rounded-full bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-600 flex items-center justify-center transition-colors border border-emerald-200 shadow-2xs" 
+                        title="Re-activar Colaborador"
+                      >
+                         <RotateCcw size={14}/>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           handleForceDeleteUser(u.id);
+                        }}
+                        className="w-7 h-7 rounded-full bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200 shadow-2xs" 
+                        title="Eliminar Definitivamente"
+                      >
+                         <Trash2 size={14}/>
+                      </button>
+                   </div>
+                )}
+             </div>
+          </div>
+
+          {/* Ficha Principal: Avatar + Nombre + Puesto Monito */}
+          <div className="flex items-center gap-3.5 mb-3 relative z-10">
+             <div className="relative shrink-0">
+                <img 
+                  src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} 
+                  alt={u.name} 
+                  className="w-13 h-13 sm:w-15 sm:h-15 rounded-full object-cover border-2 border-white shadow-md group-hover:scale-105 transition-transform" 
+                />
+                <div className={`absolute -bottom-1 -right-1 bg-white p-0.5 rounded-full shadow-xs shrink-0 ${
+                   isInCenter ? 'animate-float-subtle' : ''
+                }`}>
+                   <JobRoleIconBadge role={userRole} isActive={!isInactiveTab} size={20} />
+                </div>
+             </div>
+
+             <div className="min-w-0 flex-1">
+                <h4 className={`text-base sm:text-lg leading-snug tracking-tight font-black text-slate-900 ${isInactiveTab ? 'line-through opacity-70' : ''}`}>
+                   {formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.employee_id ? Number(u.employee_id) : Number(u.id))}
+                </h4>
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                   <span className="text-xs font-bold text-indigo-700 bg-indigo-50/90 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
+                      {userRole?.name || 'Sin Puesto'}{userRole && getJobRoleKeysIcon(userRole.id)}
+                   </span>
+                   {u.area && (
+                      <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                         {u.area}
+                      </span>
+                   )}
+                </div>
+             </div>
+          </div>
+       </div>
+
+       {/* Footer KPI: Horario de Trabajo + Botón Directo de Contacto */}
+       <div className="pt-3 border-t border-slate-200/80 mt-2 relative z-10 text-xs space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-white/70 backdrop-blur-xs p-2 rounded-xl border border-slate-200/60 flex-wrap gap-1">
+             <div className="flex items-center gap-1.5 text-slate-700 font-bold">
+                <Clock size={13} className="text-indigo-600 shrink-0" />
+                <span>{formatTimeVisual(u.shiftStart)} - {formatTimeVisual(u.shiftEnd)}</span>
+             </div>
+             <div className="flex items-center gap-1.5 text-slate-600">
+                <Coffee size={13} className="text-slate-400 shrink-0" />
+                <span>{u.restDay || 'Descanso'} ({u.mealMinutes || 60}m)</span>
+             </div>
+          </div>
+
+          {u.phone && (
+             <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] font-bold text-slate-500">Contacto Directo:</span>
+                <a 
+                  href={`tel:${u.phone}`} 
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-xs transition-colors shrink-0"
+                >
+                   <Phone size={12} className="text-emerald-600" /> {u.phone}
+                </a>
+             </div>
+          )}
+       </div>
+    </div>
+  );
+};
+
 interface RecursosHumanosProps {
   readOnly?: boolean;
   initialTab?: string;
@@ -1585,72 +1835,23 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                    </div>
                 ) : (
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {filteredUsers.map((u: any) => {
-                       const userRole = jobRoles.find((r: any) => r.id === u.job_role_id);
-                       return (
-                         <div key={u.id} className={`bg-white border rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow relative ${directorioSubTab === 'inactivos' ? 'border-slate-200 opacity-85 bg-slate-50/50 shadow-none' : 'border-slate-200'}`}>
-                           {directorioSubTab === 'activos' ? (
-                              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
-                                <button onClick={() => setEditingUser(u)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Editar"><Pencil size={14}/></button>
-                                <button onClick={() => handleDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors font-bold" title="Enviar a inactivo">
-                                  <UserMinus size={14}/>
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
-                                <button onClick={() => handleRestoreUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Re-activar Colaborador">
-                                  <RotateCcw size={14}/>
-                                </button>
-                                <button onClick={() => handleForceDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Eliminar Definitivamente">
-                                  <Trash2 size={14}/>
-                                </button>
-                              </div>
-                            )}
-                           <div className="flex items-center gap-3 sm:gap-4 mb-4">
-                             <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} alt={u.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-slate-100" />
-                             <div className="pr-16 sm:pr-20">
-                               <h4 className="font-bold text-slate-800 text-base sm:text-lg leading-tight">{formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.employee_id ? Number(u.employee_id) : Number(u.id))}</h4>
-                               <div className="flex gap-1.5 items-center mt-1 flex-wrap">
-                                 <p className="text-indigo-600 font-bold text-xs sm:text-sm">{userRole?.name || 'Sin Puesto'}{userRole && getJobRoleKeysIcon(userRole.id)}</p>
-                                 {directorioSubTab === 'inactivos' && (
-                                   <span className="text-[9px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">Archivado</span>
-                                 )}
-                               </div>
-                             </div>
-                           </div>
-                           
-                           {/* Horario/Jornada: Vista Escritorio */}
-                           <div className="hidden sm:block bg-slate-50 rounded-xl p-3 text-sm border border-slate-100">
-                             <div className="flex justify-between mb-1"><span className="text-slate-500">Horario:</span> <span className="font-bold text-slate-700">{formatTimeVisual(u.shiftStart)} - {formatTimeVisual(u.shiftEnd)}</span></div>
-                             <div className="flex justify-between mb-1"><span className="text-slate-500">Comida:</span> <span className="font-bold text-slate-700">{u.mealMinutes} min</span></div>
-                             <div className="flex justify-between"><span className="text-slate-500">Descanso:</span> <span className="font-bold text-slate-700">{u.restDay}</span></div>
-                           </div>
-                            
-                            {/* Horario/Jornada: Vista Móvil Condensada */}
-                            <div className="block sm:hidden bg-slate-50 rounded-xl p-2.5 text-[11px] border border-slate-100">
-                              <div className="flex items-center justify-between flex-wrap gap-1 text-slate-700 font-semibold">
-                                <div className="flex items-center gap-1.5">
-                                  <Clock size={12} className="text-slate-400 shrink-0" />
-                                  <span>{formatTimeVisual(u.shiftStart)} - {formatTimeVisual(u.shiftEnd)}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Coffee size={12} className="text-slate-400 shrink-0" />
-                                  <span>{u.restDay} / {u.mealMinutes}m</span>
-                                </div>
-                              </div>
-                              {u.phone && (
-                                <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/50 mt-1.5">
-                                  <span className="text-slate-500 font-normal">Contacto:</span>
-                                  <a href={`tel:${u.phone}`} className="text-indigo-600 font-bold hover:underline flex items-center gap-1">
-                                    <Phone size={10} /> {u.phone}
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                     {filteredUsers.map((u: any) => (
+                       <UserCardItem
+                         key={u.id}
+                         u={u}
+                         jobRoles={jobRoles}
+                         directorioSubTab={directorioSubTab}
+                         setEditingUser={setEditingUser}
+                         handleDeleteUser={handleDeleteUser}
+                         handleRestoreUser={handleRestoreUser}
+                         handleForceDeleteUser={handleForceDeleteUser}
+                         formatEmployeeDisplayName={formatEmployeeDisplayName}
+                         getUserKeysIcon={getUserKeysIcon}
+                         getJobRoleKeysIcon={getJobRoleKeysIcon}
+                         formatTimeVisual={formatTimeVisual}
+                       />
+                     ))}
+                   </div>
                   )}
               {/* <!-- EDIT MODAL --> */}
               {editingUser && (

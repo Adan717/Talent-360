@@ -1972,13 +1972,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 </button>
               </div>
             </div>
-            <p className="text-slate-500 mb-8">Administra los roles funcionales de tu empresa, revisa quiénes los ocupan y conéctalos con las vacantes activas.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {jobRoles.map((rol: any) => {
-                const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id).length;
+                const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id || (Array.isArray(u.job_role_ids) && u.job_role_ids.includes(rol.id))).length;
                 const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
-                const isActive = rol.is_active !== false;
+                const isAutoActive = employeesWithRole > 0;
                 
                 // Determinar Jerarquía de Mando
                 const iconKey = resolveJobRoleIconKey(rol);
@@ -2037,75 +2036,59 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 return (
                   <div 
                     key={rol.id} 
-                    className={`group relative overflow-hidden rounded-3xl border p-5 sm:p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl flex flex-col justify-between min-h-[240px] ${
-                      isActive 
+                    onClick={() => setEditingJobRole({
+                      ...rol,
+                      icon: rol.icon || 'auto',
+                      reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
+                      org_parent_role_id: rol.org_parent_role_id || null,
+                      nivel_mando: rol.nivel_mando ?? 4
+                    })}
+                    className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between cursor-pointer ${
+                      isAutoActive 
                         ? cardStyle.container 
-                        : 'bg-slate-100/70 border-slate-300 text-slate-400 opacity-60'
+                        : 'bg-slate-50/80 border-slate-250 text-slate-700 opacity-90'
                     }`}
                   >
                      {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) */}
-                     <div className="absolute -right-5 -bottom-5 opacity-15 group-hover:opacity-25 group-hover:scale-125 group-hover:-rotate-6 transition-all duration-500 pointer-events-none">
-                        {renderJobRoleIcon(rol, 130, cardStyle.watermarkColor)}
+                     <div className="absolute -right-4 -bottom-4 opacity-15 group-hover:opacity-25 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 pointer-events-none">
+                        {renderJobRoleIcon(rol, 110, cardStyle.watermarkColor)}
                      </div>
 
                      <div>
-                        {/* Header con Acciones y Switch Active */}
-                        <div className="flex items-center justify-between mb-4 relative z-10">
+                        {/* Header con Jerarquía, Estado Automático y Botón Tachita (X) Flotante */}
+                        <div className="flex items-center justify-between mb-3 relative z-10">
                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border ${cardStyle.pillClass}`}>
+                              <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
                                  {cardStyle.label}
                               </span>
-                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                                 isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-200 text-slate-500 border-slate-300'
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                 isAutoActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-600 border-slate-200'
                               }`}>
-                                 {isActive ? '● Activo' : '○ Inactivo'}
+                                 {isAutoActive ? '● Activo' : '○ Inactivo'}
                               </span>
                            </div>
 
-                           <div className="flex items-center gap-1.5 bg-slate-100/90 backdrop-blur-md p-1 rounded-full border border-slate-200/80">
-                              <button 
-                                type="button"
-                                onClick={() => handleToggleJobRoleActive(rol)} 
-                                className={`w-8 h-4.5 rounded-full transition-colors relative shrink-0 ${
-                                  isActive ? 'bg-indigo-600' : 'bg-slate-350'
-                                }`}
-                                title={isActive ? "Desactivar puesto" : "Activar puesto"}
-                              >
-                                <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                                  isActive ? 'right-0.5' : 'left-0.5'
-                                }`} />
-                              </button>
-
-                              <button 
-                                onClick={() => setEditingJobRole({
-                                  ...rol,
-                                  icon: rol.icon || 'auto',
-                                  reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
-                                  org_parent_role_id: rol.org_parent_role_id || null,
-                                  nivel_mando: rol.nivel_mando ?? 4
-                                })} 
-                                className="w-7 h-7 rounded-full bg-white hover:bg-indigo-600 hover:text-white text-slate-600 flex items-center justify-center transition-colors border border-slate-200 shadow-2xs" 
-                                title="Editar Puesto"
-                              >
-                                <Pencil size={13}/>
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteJobRole(rol.id)} 
-                                className="w-7 h-7 rounded-full bg-white hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200 shadow-2xs" 
-                                title="Eliminar Puesto"
-                              >
-                                <Trash2 size={13}/>
-                              </button>
-                           </div>
+                           {/* Tachita Flotante (X) para Eliminar Puesto */}
+                           <button 
+                             type="button"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleDeleteJobRole(rol.id);
+                             }} 
+                             className="w-7 h-7 rounded-full bg-slate-100/90 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200/80 shadow-2xs group/del shrink-0" 
+                             title="Eliminar Puesto"
+                           >
+                             <X size={14} className="group-hover/del:scale-110 transition-transform"/>
+                           </button>
                         </div>
 
                         {/* Ficha Principal con Monito Icon Badge */}
-                        <div className="flex items-start gap-3.5 mb-3 relative z-10">
+                        <div className="flex items-start gap-3 relative z-10 mb-2">
                            <div className="shrink-0 transition-transform duration-300 group-hover:scale-110">
-                              <JobRoleIconBadge role={rol} isActive={isActive} size={24} />
+                              <JobRoleIconBadge role={rol} isActive={isAutoActive} size={22} />
                            </div>
                            <div className="min-w-0 flex-1">
-                              <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText} ${!isActive ? 'line-through opacity-70' : ''}`}>
+                              <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText}`}>
                                  {rol.name}{getJobRoleKeysIcon(rol.id)}
                               </h4>
                               <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -2115,17 +2098,16 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                               </div>
                            </div>
                         </div>
-
-                        <p className={`text-xs leading-relaxed line-clamp-2 mb-4 h-9 relative z-10 ${cardStyle.descText}`}>
-                           {getRoleSmartDescription(rol)}
-                        </p>
                      </div>
                      
                      {/* Footer KPI con números destacados y diseño responsivo móvil */}
-                     <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 mt-auto relative z-10 text-xs gap-2">
+                     <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 mt-2 relative z-10 text-xs gap-2">
                         <button 
                           type="button"
-                          onClick={() => setSelectedRoleForUsersModal(rol)} 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRoleForUsersModal(rol);
+                          }} 
                           className="flex items-center gap-1.5 bg-indigo-50/90 hover:bg-indigo-100/90 text-indigo-950 px-2.5 py-1.5 rounded-xl border border-indigo-200/80 transition-all shrink-0 group/stat"
                           title="Ver colaboradores en este puesto"
                         >
@@ -2138,7 +2120,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                         <button 
                           type="button"
-                          onClick={() => setSelectedRoleForVacanciesModal(rol)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRoleForVacanciesModal(rol);
+                          }}
                           className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-950 px-2.5 py-1.5 rounded-xl border border-sky-200 transition-all shrink-0 group/vac"
                           title="Ver vacantes para este puesto"
                         >

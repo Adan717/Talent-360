@@ -1020,36 +1020,36 @@ export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
     key === 'monito-asesor' || key === 'monito-ayudante' || key === 'monito-enfermero' || key === 'monito-asistente-legal' || key === 'monito-maestro-obra' || key === 'user-check' || key === 'clipboard-check' ? 3 : 4
   );
 
-  // Paleta de colores ejecutivos y jerárquicos
+  // Paleta de colores ejecutivos y jerárquicos lumínicos (Sin fondos oscuros/negros)
   const hierarchyStyles: Record<number, { bg: string; text: string; ring: string; levelBadge: string }> = {
     1: { 
-      bg: 'bg-indigo-950/90 border-indigo-700/80 shadow-md', 
-      text: 'text-amber-400', 
-      ring: 'ring-2 ring-amber-400/50',
+      bg: 'bg-amber-100/90 border-amber-300 shadow-sm', 
+      text: 'text-amber-900', 
+      ring: 'ring-2 ring-amber-400/60',
       levelBadge: 'N1 - Dirección General / Socios'
     },
     2: { 
-      bg: 'bg-slate-900/85 border-slate-700 shadow-sm', 
-      text: 'text-indigo-400', 
-      ring: 'ring-1 ring-indigo-400/40',
-      levelBadge: 'N2 - Especialista / Supervisión'
+      bg: 'bg-indigo-100/90 border-indigo-250 shadow-xs', 
+      text: 'text-indigo-900', 
+      ring: 'ring-2 ring-indigo-300/80',
+      levelBadge: 'N2 - Supervisión / Jefaturas'
     },
     3: { 
-      bg: 'bg-slate-100/90 border-slate-300', 
-      text: 'text-slate-700', 
-      ring: 'border-slate-250',
-      levelBadge: 'N3 - Asistente / Operativo'
+      bg: 'bg-sky-100/90 border-sky-200 shadow-xs', 
+      text: 'text-sky-900', 
+      ring: 'ring-1 ring-sky-300/60',
+      levelBadge: 'N3 - Especialista / Coordinación'
     },
     4: { 
-      bg: 'bg-slate-50 border-slate-200', 
-      text: 'text-slate-600', 
-      ring: 'border-slate-150',
-      levelBadge: 'N4 - Auxiliar / Pasante'
+      bg: 'bg-slate-100 border-slate-200', 
+      text: 'text-slate-700', 
+      ring: 'ring-1 ring-slate-250',
+      levelBadge: 'N4 - Auxiliar Operativo'
     },
     5: { 
       bg: 'bg-slate-50 border-slate-200', 
-      text: 'text-slate-500', 
-      ring: 'border-slate-150',
+      text: 'text-slate-600', 
+      ring: 'ring-1 ring-slate-200',
       levelBadge: 'N5 - Apoyo Eventual'
     },
   };

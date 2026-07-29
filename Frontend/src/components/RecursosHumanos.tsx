@@ -1988,42 +1988,47 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
                 );
 
-                // Estilos por Jerarquía de Mando
-                const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string }> = {
+                // Estilos Lumínicos y Elegantes por Jerarquía de Mando (Sin fondos oscuros)
+                const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string; watermarkColor: string }> = {
                   1: {
-                    container: 'bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 border-amber-400/50 text-white shadow-xl shadow-amber-950/20 hover:border-amber-300',
-                    titleText: 'text-amber-300 font-extrabold',
-                    descText: 'text-slate-300',
-                    pillClass: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
-                    label: 'N1 • Dirección'
+                    container: 'bg-gradient-to-br from-amber-50/80 via-white to-amber-100/30 border-amber-300 text-slate-900 shadow-md hover:border-amber-400 hover:shadow-xl',
+                    titleText: 'text-indigo-950 font-black',
+                    descText: 'text-slate-600',
+                    pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-bold',
+                    label: 'N1 • Dirección General',
+                    watermarkColor: 'text-amber-500/15'
                   },
                   2: {
-                    container: 'bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/90 border-indigo-500/40 text-white shadow-lg shadow-indigo-950/20 hover:border-indigo-400',
-                    titleText: 'text-indigo-200 font-bold',
-                    descText: 'text-slate-300',
-                    pillClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40',
-                    label: 'N2 • Supervisión'
+                    container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-indigo-250 text-slate-900 shadow-md hover:border-indigo-400 hover:shadow-xl',
+                    titleText: 'text-indigo-900 font-bold',
+                    descText: 'text-slate-600',
+                    pillClass: 'bg-indigo-100 text-indigo-800 border-indigo-250 font-bold',
+                    label: 'N2 • Supervisión / Jefatura',
+                    watermarkColor: 'text-indigo-600/15'
                   },
                   3: {
-                    container: 'bg-white border-slate-200 text-slate-800 hover:border-sky-400 shadow-md',
+                    container: 'bg-gradient-to-br from-sky-50/60 via-white to-slate-50 border-sky-200 text-slate-900 shadow-sm hover:border-sky-350 hover:shadow-md',
                     titleText: 'text-slate-900 font-bold',
-                    descText: 'text-slate-500',
-                    pillClass: 'bg-sky-50 text-sky-700 border-sky-200',
-                    label: 'N3 • Especialista'
+                    descText: 'text-slate-600',
+                    pillClass: 'bg-sky-100 text-sky-800 border-sky-200 font-semibold',
+                    label: 'N3 • Especialista / Piso',
+                    watermarkColor: 'text-sky-600/15'
                   },
                   4: {
-                    container: 'bg-slate-50/90 border-slate-250 text-slate-700 hover:border-slate-400 shadow-xs',
+                    container: 'bg-white border-slate-200 text-slate-800 hover:border-slate-350 shadow-xs',
                     titleText: 'text-slate-800 font-bold',
                     descText: 'text-slate-500',
-                    pillClass: 'bg-slate-200/60 text-slate-700 border-slate-300',
-                    label: 'N4 • Operativo'
+                    pillClass: 'bg-slate-100 text-slate-700 border-slate-250 font-medium',
+                    label: 'N4 • Auxiliar Operativo',
+                    watermarkColor: 'text-slate-400/15'
                   },
                   5: {
-                    container: 'bg-slate-50 border-slate-200 text-slate-600 shadow-xs',
+                    container: 'bg-slate-50/90 border-slate-200 text-slate-700 shadow-xs',
                     titleText: 'text-slate-700 font-semibold',
-                    descText: 'text-slate-400',
-                    pillClass: 'bg-slate-100 text-slate-600 border-slate-200',
-                    label: 'N5 • Eventual'
+                    descText: 'text-slate-500',
+                    pillClass: 'bg-slate-100 text-slate-600 border-slate-200 font-medium',
+                    label: 'N5 • Apoyo Eventual',
+                    watermarkColor: 'text-slate-400/15'
                   }
                 };
 
@@ -2039,30 +2044,30 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                     }`}
                   >
                      {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) */}
-                     <div className="absolute -right-5 -bottom-5 opacity-10 group-hover:opacity-20 group-hover:scale-125 group-hover:-rotate-6 transition-all duration-500 pointer-events-none">
-                        {renderJobRoleIcon(rol, 130, nivel <= 2 ? 'text-amber-300' : 'text-indigo-600')}
+                     <div className="absolute -right-5 -bottom-5 opacity-15 group-hover:opacity-25 group-hover:scale-125 group-hover:-rotate-6 transition-all duration-500 pointer-events-none">
+                        {renderJobRoleIcon(rol, 130, cardStyle.watermarkColor)}
                      </div>
 
                      <div>
                         {/* Header con Acciones y Switch Active */}
                         <div className="flex items-center justify-between mb-4 relative z-10">
                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${cardStyle.pillClass}`}>
+                              <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border ${cardStyle.pillClass}`}>
                                  {cardStyle.label}
                               </span>
                               <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                                 isActive ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400/30' : 'bg-slate-200 text-slate-500 border-slate-300'
+                                 isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-200 text-slate-500 border-slate-300'
                               }`}>
                                  {isActive ? '● Activo' : '○ Inactivo'}
                               </span>
                            </div>
 
-                           <div className="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 backdrop-blur-md p-1 rounded-full border border-white/10">
+                           <div className="flex items-center gap-1.5 bg-slate-100/90 backdrop-blur-md p-1 rounded-full border border-slate-200/80">
                               <button 
                                 type="button"
                                 onClick={() => handleToggleJobRoleActive(rol)} 
                                 className={`w-8 h-4.5 rounded-full transition-colors relative shrink-0 ${
-                                  isActive ? 'bg-indigo-500' : 'bg-slate-400'
+                                  isActive ? 'bg-indigo-600' : 'bg-slate-350'
                                 }`}
                                 title={isActive ? "Desactivar puesto" : "Activar puesto"}
                               >
@@ -2079,14 +2084,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                   org_parent_role_id: rol.org_parent_role_id || null,
                                   nivel_mando: rol.nivel_mando ?? 4
                                 })} 
-                                className="w-7 h-7 rounded-full bg-white/20 hover:bg-indigo-600 text-white flex items-center justify-center transition-colors" 
+                                className="w-7 h-7 rounded-full bg-white hover:bg-indigo-600 hover:text-white text-slate-600 flex items-center justify-center transition-colors border border-slate-200 shadow-2xs" 
                                 title="Editar Puesto"
                               >
                                 <Pencil size={13}/>
                               </button>
                               <button 
                                 onClick={() => handleDeleteJobRole(rol.id)} 
-                                className="w-7 h-7 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center transition-colors" 
+                                className="w-7 h-7 rounded-full bg-white hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200 shadow-2xs" 
                                 title="Eliminar Puesto"
                               >
                                 <Trash2 size={13}/>
@@ -2105,7 +2110,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                               </h4>
                               <div className="flex gap-1.5 mt-1 flex-wrap">
                                  {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
-                                     <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-xs border border-white/10 opacity-90">{a}</span>
+                                     <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 border border-slate-200">{a}</span>
                                   ))}
                               </div>
                            </div>
@@ -2117,19 +2122,19 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                      </div>
                      
                      {/* Footer de Métricas (Colaboradores & Vacantes) */}
-                     <div className="flex items-center justify-between pt-3.5 border-t border-white/10 mt-auto relative z-10 text-xs">
+                     <div className="flex items-center justify-between pt-3.5 border-t border-slate-200/80 mt-auto relative z-10 text-xs">
                         <button 
                           type="button"
                           onClick={() => setSelectedRoleForUsersModal(rol)} 
-                          className="flex items-center gap-2 font-semibold hover:text-indigo-400 transition-colors group/btn"
+                          className="flex items-center gap-2 font-bold text-slate-700 hover:text-indigo-600 transition-colors group/btn"
                         >
-                           <Users size={15} className="opacity-80 group-hover/btn:scale-110 transition-transform" />
+                           <Users size={15} className="text-slate-500 group-hover/btn:scale-110 transition-transform" />
                            <span><span className="font-extrabold">{employeesWithRole}</span> {employeesWithRole === 1 ? 'Colaborador' : 'Colaboradores'}</span>
                         </button>
                         <button 
                           type="button"
                           onClick={() => setSelectedRoleForVacanciesModal(rol)}
-                          className="font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1.5 transition-colors bg-sky-500/10 px-2.5 py-1 rounded-lg border border-sky-400/20"
+                          className="font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1.5 transition-colors bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200"
                         >
                            Vacantes ({roleVacancies.length}) <ClipboardList size={13}/>
                         </button>

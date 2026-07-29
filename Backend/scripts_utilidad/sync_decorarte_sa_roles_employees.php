@@ -216,6 +216,7 @@ DB::transaction(function () use ($tenantId) {
             'email' => $emp['email'],
             'password' => Hash::make('password123'),
             'role' => ($emp['name'] === 'Francisco') ? 'admin' : 'employee',
+            'job_role_id' => $emp['role_id'],
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -245,6 +246,9 @@ DB::transaction(function () use ($tenantId) {
     $cloner = app(\App\Services\TenantTaskClonerService::class);
     $res = $cloner->cloneTasksAndRoutines(1, $tenantId);
     echo "  - Tareas clonadas: {$res['tasks_cloned']}, Rutinas clonadas: {$res['routines_cloned']}\n";
+
+    // Asegurar que usuarios administradores sin puesto asignado tengan $adminRoleId
+    DB::table('users')->where('tenant_id', $tenantId)->whereNull('job_role_id')->update(['job_role_id' => $adminRoleId]);
 
     echo "Sincronización completada exitosamente para DecorArte S.A. de C.V.!\n";
 });

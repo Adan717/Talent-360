@@ -127,37 +127,43 @@ class TenantTaskClonerService
             Task::withoutGlobalScopes()->where('tenant_id', $targetId)->forceDelete();
 
             // 5. Clonar Tareas
-            $sourceTasks = Task::withoutGlobalScopes()->where('tenant_id', $sourceId)->get();
+            $sourceTasks = DB::table('tasks')->where('tenant_id', $sourceId)->whereNull('deleted_at')->get();
             $taskMap = []; // [source_task_id => target_task_id]
 
             foreach ($sourceTasks as $sTask) {
-                $taskData = $sTask->toArray();
-                unset($taskData['id'], $taskData['created_at'], $taskData['updated_at'], $taskData['deleted_at']);
+                $taskData = (array) $sTask;
+                unset($taskData['id']);
                 
                 $taskData['tenant_id'] = $targetId;
+                $taskData['created_at'] = now();
+                $taskData['updated_at'] = now();
+
                 if (($taskData['target_type'] ?? '') === 'role' && !empty($taskData['target_id'])) {
                     $taskData['target_id'] = $roleMap[$taskData['target_id']] ?? $taskData['target_id'];
                 }
 
-                $newTask = Task::withoutGlobalScopes()->create($taskData);
-                $taskMap[$sTask->id] = $newTask->id;
+                $newTaskId = DB::table('tasks')->insertGetId($taskData);
+                $taskMap[$sTask->id] = $newTaskId;
             }
 
             // 6. Clonar Rutinas
-            $sourceRoutines = Routine::withoutGlobalScopes()->where('tenant_id', $sourceId)->get();
+            $sourceRoutines = DB::table('routines')->where('tenant_id', $sourceId)->whereNull('deleted_at')->get();
             $routineMap = []; // [source_routine_id => target_routine_id]
 
             foreach ($sourceRoutines as $sRoutine) {
-                $routineData = $sRoutine->toArray();
-                unset($routineData['id'], $routineData['created_at'], $routineData['updated_at'], $routineData['deleted_at']);
+                $routineData = (array) $sRoutine;
+                unset($routineData['id']);
                 
                 $routineData['tenant_id'] = $targetId;
+                $routineData['created_at'] = now();
+                $routineData['updated_at'] = now();
+
                 if (!empty($routineData['target_role_id'])) {
                     $routineData['target_role_id'] = $roleMap[$routineData['target_role_id']] ?? $routineData['target_role_id'];
                 }
 
-                $newRoutine = Routine::withoutGlobalScopes()->create($routineData);
-                $routineMap[$sRoutine->id] = $newRoutine->id;
+                $newRoutineId = DB::table('routines')->insertGetId($routineData);
+                $routineMap[$sRoutine->id] = $newRoutineId;
             }
 
             // 7. Re-asociar Pivote routine_task

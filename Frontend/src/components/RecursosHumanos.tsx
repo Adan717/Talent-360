@@ -9,6 +9,218 @@ import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
 import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
 
+interface JobRoleCardItemProps {
+  rol: any;
+  users: any[];
+  vacancies: any[];
+  setEditingJobRole: (rol: any) => void;
+  handleDeleteJobRole: (roleId: number) => void;
+  setSelectedRoleForUsersModal: (rol: any) => void;
+  setSelectedRoleForVacanciesModal: (rol: any) => void;
+  getJobRoleKeysIcon: (roleId: number) => React.ReactNode;
+}
+
+const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
+  rol,
+  users,
+  vacancies,
+  setEditingJobRole,
+  handleDeleteJobRole,
+  setSelectedRoleForUsersModal,
+  setSelectedRoleForVacanciesModal,
+  getJobRoleKeysIcon
+}) => {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [isInCenter, setIsInCenter] = useState(false);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsInCenter(entry.isIntersecting);
+        });
+      },
+      {
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: 0.35
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id || (Array.isArray(u.job_role_ids) && u.job_role_ids.includes(rol.id))).length;
+  const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
+  const isAutoActive = employeesWithRole > 0;
+  
+  const iconKey = resolveJobRoleIconKey(rol);
+  const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === iconKey);
+  const nivel = rol.nivel_mando ?? matchedItem?.nivel_mando ?? (
+    iconKey === 'monito-gerente' || iconKey === 'shield-check' || iconKey === 'crown' ? 1 :
+    iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
+  );
+
+  const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string; watermarkColor: string }> = {
+    1: {
+      container: 'bg-gradient-to-br from-amber-50/90 via-white to-amber-100/30 border-2 border-amber-400 text-slate-900 shadow-md hover:border-amber-500 hover:shadow-xl',
+      titleText: 'text-amber-950 font-black',
+      descText: 'text-slate-600',
+      pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold',
+      label: 'N1 • Dirección General',
+      watermarkColor: 'text-amber-500/15'
+    },
+    2: {
+      container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-2 border-indigo-400 text-slate-900 shadow-md hover:border-indigo-500 hover:shadow-xl',
+      titleText: 'text-indigo-950 font-bold',
+      descText: 'text-slate-600',
+      pillClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
+      label: 'N2 • Supervisión / Jefatura',
+      watermarkColor: 'text-indigo-600/15'
+    },
+    3: {
+      container: 'bg-gradient-to-br from-sky-50/70 via-white to-slate-50 border-2 border-sky-400 text-slate-900 shadow-sm hover:border-sky-500 hover:shadow-md',
+      titleText: 'text-slate-900 font-bold',
+      descText: 'text-slate-600',
+      pillClass: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
+      label: 'N3 • Especialista / Piso',
+      watermarkColor: 'text-sky-600/15'
+    },
+    4: {
+      container: 'bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 border-2 border-emerald-400 text-slate-900 shadow-xs hover:border-emerald-500 hover:shadow-md',
+      titleText: 'text-slate-800 font-bold',
+      descText: 'text-slate-500',
+      pillClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+      label: 'N4 • Auxiliar Operativo',
+      watermarkColor: 'text-emerald-500/15'
+    },
+    5: {
+      container: 'bg-gradient-to-br from-purple-50/40 via-white to-slate-50 border-2 border-purple-300 text-slate-900 shadow-xs hover:border-purple-400 hover:shadow-md',
+      titleText: 'text-slate-700 font-semibold',
+      descText: 'text-slate-500',
+      pillClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold',
+      label: 'N5 • Apoyo Eventual',
+      watermarkColor: 'text-purple-400/15'
+    }
+  };
+
+  const cardStyle = hierarchyCardStyles[nivel] || hierarchyCardStyles[3];
+
+  return (
+    <div 
+      ref={cardRef}
+      key={rol.id} 
+      onClick={() => setEditingJobRole({
+        ...rol,
+        icon: rol.icon || 'auto',
+        reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
+        org_parent_role_id: rol.org_parent_role_id || null,
+        nivel_mando: rol.nivel_mando ?? 4
+      })}
+      className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl active:scale-[0.98] cursor-pointer ${
+        isAutoActive 
+          ? cardStyle.container 
+          : 'bg-slate-50/80 border-slate-250 text-slate-700 opacity-90'
+      } ${isInCenter ? 'scale-[1.02] shadow-lg -translate-y-0.5 border-opacity-100 ring-2 ring-indigo-400/20' : ''}`}
+    >
+       {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) con animación dinámica al scroll */}
+       <div className={`absolute -right-4 -bottom-4 transition-all duration-700 pointer-events-none ${
+         isInCenter 
+           ? 'opacity-30 scale-125 -rotate-6' 
+           : 'opacity-15 group-hover:opacity-25 group-hover:scale-110 group-hover:-rotate-6'
+       }`}>
+          {renderJobRoleIcon(rol, 110, cardStyle.watermarkColor)}
+       </div>
+
+       <div>
+          {/* Header con Jerarquía, Estado Automático y Botón Tachita (X) Flotante */}
+          <div className="flex items-center justify-between mb-3 relative z-10">
+             <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
+                   {cardStyle.label}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                   isAutoActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                   {isAutoActive ? '● Activo' : '○ Inactivo'}
+                </span>
+             </div>
+
+             {/* Tachita Flotante (X) para Eliminar Puesto */}
+             <button 
+               type="button"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 handleDeleteJobRole(rol.id);
+               }} 
+               className="w-7 h-7 rounded-full bg-slate-100/90 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200/80 shadow-2xs group/del shrink-0" 
+               title="Eliminar Puesto"
+             >
+               <X size={14} className="group-hover/del:scale-110 transition-transform"/>
+             </button>
+          </div>
+
+          {/* Ficha Principal con Puro Monito Icono y animación orgánica al scroll móvil */}
+          <div className="flex items-center gap-3 relative z-10 mb-2">
+             <div className={`shrink-0 transition-transform duration-500 ${
+               isInCenter ? 'scale-125 rotate-3' : 'group-hover:scale-115 group-hover:rotate-3'
+             }`}>
+                <JobRoleIconBadge role={rol} isActive={isAutoActive} size={36} />
+             </div>
+             <div className="min-w-0 flex-1">
+                <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText}`}>
+                   {rol.name}{getJobRoleKeysIcon(rol.id)}
+                </h4>
+                <div className="flex gap-1.5 mt-1 flex-wrap">
+                   {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
+                       <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 border border-slate-200">{a}</span>
+                    ))}
+                </div>
+             </div>
+          </div>
+       </div>
+       
+       {/* Footer KPI con números destacados y diseño responsivo móvil */}
+       <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 mt-2 relative z-10 text-xs gap-2">
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedRoleForUsersModal(rol);
+            }} 
+            className="flex items-center gap-1.5 bg-indigo-50/90 hover:bg-indigo-100/90 text-indigo-950 px-2.5 py-1.5 rounded-xl border border-indigo-200/80 transition-all shrink-0 group/stat"
+            title="Ver colaboradores en este puesto"
+          >
+             <Users size={14} className="text-indigo-600 group-hover/stat:scale-110 transition-transform" />
+             <span className="text-[11px] font-bold text-slate-700">Equipo</span>
+             <span className="bg-indigo-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
+                {employeesWithRole}
+             </span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedRoleForVacanciesModal(rol);
+            }}
+            className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-950 px-2.5 py-1.5 rounded-xl border border-sky-200 transition-all shrink-0 group/vac"
+            title="Ver vacantes para este puesto"
+          >
+             <ClipboardList size={14} className="text-sky-600 group-hover/vac:scale-110 transition-transform" />
+             <span className="text-[11px] font-bold text-slate-700">Vacantes</span>
+             <span className="bg-sky-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
+                {roleVacancies.length}
+             </span>
+          </button>
+       </div>
+    </div>
+  );
+};
+
 interface RecursosHumanosProps {
   readOnly?: boolean;
   initialTab?: string;
@@ -2005,169 +2217,19 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {jobRoles.map((rol: any) => {
-                const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id || (Array.isArray(u.job_role_ids) && u.job_role_ids.includes(rol.id))).length;
-                const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
-                const isAutoActive = employeesWithRole > 0;
-                
-                // Determinar Jerarquía de Mando
-                const iconKey = resolveJobRoleIconKey(rol);
-                const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === iconKey);
-                const nivel = rol.nivel_mando ?? matchedItem?.nivel_mando ?? (
-                  iconKey === 'monito-gerente' || iconKey === 'shield-check' || iconKey === 'crown' ? 1 :
-                  iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
-                );
-
-                // Estilos Lumínicos y Bordes Distintivos de un solo color por Jerarquía de Mando (N1 a N5)
-                const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string; watermarkColor: string }> = {
-                  1: {
-                    container: 'bg-gradient-to-br from-amber-50/90 via-white to-amber-100/30 border-2 border-amber-400 text-slate-900 shadow-md hover:border-amber-500 hover:shadow-xl',
-                    titleText: 'text-amber-950 font-black',
-                    descText: 'text-slate-600',
-                    pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold',
-                    label: 'N1 • Dirección General',
-                    watermarkColor: 'text-amber-500/15'
-                  },
-                  2: {
-                    container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-2 border-indigo-400 text-slate-900 shadow-md hover:border-indigo-500 hover:shadow-xl',
-                    titleText: 'text-indigo-950 font-bold',
-                    descText: 'text-slate-600',
-                    pillClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
-                    label: 'N2 • Supervisión / Jefatura',
-                    watermarkColor: 'text-indigo-600/15'
-                  },
-                  3: {
-                    container: 'bg-gradient-to-br from-sky-50/70 via-white to-slate-50 border-2 border-sky-400 text-slate-900 shadow-sm hover:border-sky-500 hover:shadow-md',
-                    titleText: 'text-slate-900 font-bold',
-                    descText: 'text-slate-600',
-                    pillClass: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
-                    label: 'N3 • Especialista / Piso',
-                    watermarkColor: 'text-sky-600/15'
-                  },
-                  4: {
-                    container: 'bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 border-2 border-emerald-400 text-slate-900 shadow-xs hover:border-emerald-500 hover:shadow-md',
-                    titleText: 'text-slate-800 font-bold',
-                    descText: 'text-slate-500',
-                    pillClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
-                    label: 'N4 • Auxiliar Operativo',
-                    watermarkColor: 'text-emerald-500/15'
-                  },
-                  5: {
-                    container: 'bg-gradient-to-br from-purple-50/40 via-white to-slate-50 border-2 border-purple-300 text-slate-900 shadow-xs hover:border-purple-400 hover:shadow-md',
-                    titleText: 'text-slate-700 font-semibold',
-                    descText: 'text-slate-500',
-                    pillClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold',
-                    label: 'N5 • Apoyo Eventual',
-                    watermarkColor: 'text-purple-400/15'
-                  }
-                };
-
-                const cardStyle = hierarchyCardStyles[nivel] || hierarchyCardStyles[3];
-
-                return (
-                  <div 
-                    key={rol.id} 
-                    onClick={() => setEditingJobRole({
-                      ...rol,
-                      icon: rol.icon || 'auto',
-                      reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
-                      org_parent_role_id: rol.org_parent_role_id || null,
-                      nivel_mando: rol.nivel_mando ?? 4
-                    })}
-                    className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between cursor-pointer ${
-                      isAutoActive 
-                        ? cardStyle.container 
-                        : 'bg-slate-50/80 border-slate-250 text-slate-700 opacity-90'
-                    }`}
-                  >
-                     {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) */}
-                     <div className="absolute -right-4 -bottom-4 opacity-15 group-hover:opacity-25 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 pointer-events-none">
-                        {renderJobRoleIcon(rol, 110, cardStyle.watermarkColor)}
-                     </div>
-
-                     <div>
-                        {/* Header con Jerarquía, Estado Automático y Botón Tachita (X) Flotante */}
-                        <div className="flex items-center justify-between mb-3 relative z-10">
-                           <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
-                                 {cardStyle.label}
-                              </span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                 isAutoActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-600 border-slate-200'
-                              }`}>
-                                 {isAutoActive ? '● Activo' : '○ Inactivo'}
-                              </span>
-                           </div>
-
-                           {/* Tachita Flotante (X) para Eliminar Puesto */}
-                           <button 
-                             type="button"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               handleDeleteJobRole(rol.id);
-                             }} 
-                             className="w-7 h-7 rounded-full bg-slate-100/90 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200/80 shadow-2xs group/del shrink-0" 
-                             title="Eliminar Puesto"
-                           >
-                             <X size={14} className="group-hover/del:scale-110 transition-transform"/>
-                           </button>
-                        </div>
-
-                        {/* Ficha Principal con Puro Monito Icono (Sin recuadro) */}
-                        <div className="flex items-center gap-3 relative z-10 mb-2">
-                           <div className="shrink-0 transition-transform duration-300 group-hover:scale-115 group-hover:rotate-3">
-                              <JobRoleIconBadge role={rol} isActive={isAutoActive} size={36} />
-                           </div>
-                           <div className="min-w-0 flex-1">
-                              <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText}`}>
-                                 {rol.name}{getJobRoleKeysIcon(rol.id)}
-                              </h4>
-                              <div className="flex gap-1.5 mt-1 flex-wrap">
-                                 {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
-                                     <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 border border-slate-200">{a}</span>
-                                  ))}
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                     
-                     {/* Footer KPI con números destacados y diseño responsivo móvil */}
-                     <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 mt-2 relative z-10 text-xs gap-2">
-                        <button 
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedRoleForUsersModal(rol);
-                          }} 
-                          className="flex items-center gap-1.5 bg-indigo-50/90 hover:bg-indigo-100/90 text-indigo-950 px-2.5 py-1.5 rounded-xl border border-indigo-200/80 transition-all shrink-0 group/stat"
-                          title="Ver colaboradores en este puesto"
-                        >
-                           <Users size={14} className="text-indigo-600 group-hover/stat:scale-110 transition-transform" />
-                           <span className="text-[11px] font-bold text-slate-700">Equipo</span>
-                           <span className="bg-indigo-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
-                              {employeesWithRole}
-                           </span>
-                        </button>
-
-                        <button 
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedRoleForVacanciesModal(rol);
-                          }}
-                          className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-950 px-2.5 py-1.5 rounded-xl border border-sky-200 transition-all shrink-0 group/vac"
-                          title="Ver vacantes para este puesto"
-                        >
-                           <ClipboardList size={14} className="text-sky-600 group-hover/vac:scale-110 transition-transform" />
-                           <span className="text-[11px] font-bold text-slate-700">Vacantes</span>
-                           <span className="bg-sky-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
-                              {roleVacancies.length}
-                           </span>
-                        </button>
-                     </div>
-                  </div>
-                );
-              })}
+              {jobRoles.map((rol: any) => (
+                <JobRoleCardItem
+                  key={rol.id}
+                  rol={rol}
+                  users={users}
+                  vacancies={vacancies}
+                  setEditingJobRole={setEditingJobRole}
+                  handleDeleteJobRole={handleDeleteJobRole}
+                  setSelectedRoleForUsersModal={setSelectedRoleForUsersModal}
+                  setSelectedRoleForVacanciesModal={setSelectedRoleForVacanciesModal}
+                  getJobRoleKeysIcon={getJobRoleKeysIcon}
+                />
+              ))}
             </div>
           </div>
         )}

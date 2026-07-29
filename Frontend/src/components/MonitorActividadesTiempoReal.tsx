@@ -922,37 +922,135 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           </div>
 
-          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA / BANNER FULL SUITE PLATINUM */}
+          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA / ROADMAP PRÓXIMOS LANZAMIENTOS (SLIDER 3S) */}
           {(() => {
             const isFullSuiteAdopted = ['ats', 'academia', 'reportes', 'documentos', 'facturacion'].every(mod => activeModules.includes(mod));
             
             if (isFullSuiteAdopted) {
               return (
-                <div className="bg-gradient-to-r from-slate-900 via-amber-950/90 to-slate-900 text-white border-2 border-amber-400/80 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-4 relative overflow-hidden group">
+                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border-2 border-indigo-400/60 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 relative overflow-hidden group">
                   {/* Ambient Glow */}
-                  <div className="absolute -top-20 -right-20 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-400/30 transition-all duration-700" />
-                  <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -top-24 -right-24 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-400/30 transition-all duration-700" />
+                  <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-                    <div className="space-y-2">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-black tracking-wide">
-                        <Award size={16} className="text-amber-400 animate-pulse" />
-                        <span>ESTATUS PLATINUM • FULL SUITE (5/5 MÓDULOS)</span>
+                  {/* Header Full Suite + Botón Sugerir Función */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-indigo-800/60 pb-4 relative z-10">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-black tracking-wide mb-1.5">
+                        <Award size={14} className="text-amber-400 animate-pulse" />
+                        <span>SUITE COMPLETA 100% ACTIVA (5/5 MÓDULOS)</span>
                       </div>
-                      <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5 flex-wrap">
-                        🏆 ¡Felicidades! Tu Organización Opera con la Suite Completa 360
+                      <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2 flex-wrap">
+                        🚀 Próximos Lanzamientos & Roadmap de Innovación
                       </h2>
-                      <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-2xl leading-relaxed">
-                        Has desbloqueado el 100% de la potencia de Talent360: Reclutamiento ATS, Academia 360, Reportes IA, Archivo Digital y Timbrado CFDI SAT.
-                      </p>
+                      <p className="text-xs text-slate-300 font-medium">Tu organización opera a máxima capacidad. Descubre las funciones en desarrollo o sugiere la siguiente.</p>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-3">
-                      <span className="px-4 py-2.5 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-400/40 text-xs font-black shadow-inner flex items-center gap-2">
-                        <CheckCircle2 size={18} className="text-emerald-400" />
-                        Capacidad Máxima Activa
+                    <button 
+                      onClick={() => {
+                        const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
+                        if (suggestion && suggestion.trim()) {
+                          setToastMessage("¡Gracias! Tu sugerencia ha sido enviada al equipo de desarrollo.");
+                          setTimeout(() => setToastMessage(null), 4000);
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 border border-amber-300 shrink-0 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Sparkles size={16} />
+                      💡 Sugerir una función a nuestro equipo
+                    </button>
+                  </div>
+
+                  {/* Carrusel Deslizable Automático de Próximos Lanzamientos (3s) */}
+                  <div 
+                    ref={modulesSliderRef}
+                    className="flex sm:grid overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4 relative z-10"
+                  >
+                    {/* Roadmap 1: Evaluación 360 */}
+                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-amber-400/80 transition-all">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase">
+                            En Desarrollo • Q3 2026
+                          </span>
+                          <Award size={18} className="text-amber-400" />
+                        </div>
+                        <h3 className="font-bold text-white text-sm mb-1">Evaluación 360° & Desempeño</h3>
+                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
+                          🔥 "¡Mide el potencial, competencias y retroalimentación 360° de tus líderes y colaboradores!"
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
+                        <Sparkles size={12} /> Próximamente para tu plan Full Suite
                       </span>
                     </div>
+
+                    {/* Roadmap 2: Firma Electrónica */}
+                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-blue-400/80 transition-all">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-blue-400/20 text-blue-300 border border-blue-400/30 text-[10px] font-black uppercase">
+                            En Desarrollo • Q3 2026
+                          </span>
+                          <FileText size={18} className="text-blue-400" />
+                        </div>
+                        <h3 className="font-bold text-white text-sm mb-1">Firma Electrónica Avanzada</h3>
+                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
+                          🖋️ "¡Firma contratos laborales y convenios digitalmente con validez legal oficial ante autoridades!"
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
+                        <ShieldCheck size={12} /> Integración NOM-151 incluida
+                      </span>
+                    </div>
+
+                    {/* Roadmap 3: Bot WhatsApp */}
+                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-emerald-400/80 transition-all">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black uppercase">
+                            Próximamente • Q4 2026
+                          </span>
+                          <MessageSquare size={18} className="text-emerald-400" />
+                        </div>
+                        <h3 className="font-bold text-white text-sm mb-1">Bot Asistente WhatsApp 24/7</h3>
+                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
+                          💬 "¡Atención automatizada a colaboradores, recibos de nómina y solicitud de vacaciones por WhatsApp!"
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
+                        <Zap size={12} /> Respuestas instantáneas con IA
+                      </span>
+                    </div>
+
+                    {/* Roadmap 4: Control de Activos */}
+                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-purple-400/80 transition-all">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-purple-400/20 text-purple-300 border border-purple-400/30 text-[10px] font-black uppercase">
+                            Próximamente • Q4 2026
+                          </span>
+                          <Building2 size={18} className="text-purple-400" />
+                        </div>
+                        <h3 className="font-bold text-white text-sm mb-1">Control de Activos & Equipos</h3>
+                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
+                          💻 "¡Gestiona laptops, celulares, uniformes y herramientas de trabajo asignadas al personal!"
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
+                        <Truck size={12} /> Inventarios y resguardos digitales
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Indicadores en Celular */}
+                  <div className="flex sm:hidden justify-center items-center gap-1.5 pt-1">
+                    {[0, 1, 2, 3].map(idx => (
+                      <div 
+                        key={idx} 
+                        className={`h-2 rounded-full transition-all duration-500 ${activeModuleIndex === idx ? 'w-6 bg-amber-400 shadow-sm shadow-amber-500/40' : 'w-2 bg-slate-600'}`} 
+                      />
+                    ))}
                   </div>
                 </div>
               );

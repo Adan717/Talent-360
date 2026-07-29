@@ -525,29 +525,51 @@ class PlatformAdminController extends Controller
      */
     public function deleteTenant($id)
     {
-        if (auth()->user()->role !== UserRole::PLATFORM_ADMIN->value) {
+        if (!$this->checkPlatformAdminAccess()) {
             return response()->json(['error' => 'Acceso denegado'], 403);
         }
 
-        $tenant = Tenant::findOrFail($id);
+        $tenant = Tenant::withTrashed()->findOrFail($id);
         
         if ((int)$tenant->id === 1 || $tenant->subdomain === 'talent360') {
             return response()->json(['error' => 'No se puede eliminar el inquilino principal por defecto.'], 400);
         }
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($tenant) {
-            \App\Models\User::withoutGlobalScope(\App\Scopes\TenantScope::class)
-                ->where('tenant_id', $tenant->id)
-                ->delete();
+            $tenantId = (int)$tenant->id;
 
-            $timestamp = time();
-            $tenant->subdomain = $tenant->subdomain . '_deleted_' . $timestamp . '_' . $tenant->id;
-            if ($tenant->public_slug) {
-                $tenant->public_slug = $tenant->public_slug . '_deleted_' . $timestamp . '_' . $tenant->id;
+            $tenantTables = [
+                'time_entries', 'store_logs', 'contingencies', 'audit_logs', 'saas_audit_logs',
+                'store_opening_assignments', 'store_daily_opening_statuses', 'store_opening_events',
+                'key_transfers', 'door_notices', 'weekly_payrolls', 'daily_approvals',
+                'pase_lista_ratings', 'meal_photo_evidences', 'meal_reservations',
+                'meal_queue_entries', 'meal_queue_rounds', 'silla_requests', 'contingency_declarations',
+                'simulator_sessions', 'tenant_offline_secrets', 'task_assignments', 'tasks',
+                'routines', 'vacancy_alerts', 'interviews', 'candidates', 'vacancies',
+                'user_course_progress', 'academy_courses', 'obsidian_exam_attempts',
+                'obsidian_exam_questions', 'obsidian_exams', 'obsidian_suggestions',
+                'obsidian_read_progress', 'obsidian_links', 'obsidian_documents', 'obsidian_vaults',
+                'obsidian_users', 'role_clock_policies', 'ui_rbac_rules', 'role_permissions',
+                'job_roles', 'device_registrations', 'employee_reports', 'team_chat_messages',
+                'billing_cards', 'support_ticket_notes', 'support_tickets', 'lft_holidays',
+                'company_features', 'tenant_module_subscriptions'
+            ];
+
+            foreach ($tenantTables as $table) {
+                if (\Illuminate\Support\Facades\DB::getSchemaBuilder()->hasTable($table) && \Illuminate\Support\Facades\DB::getSchemaBuilder()->hasColumn($table, 'tenant_id')) {
+                    \Illuminate\Support\Facades\DB::table($table)->where('tenant_id', $tenantId)->delete();
+                }
             }
-            $tenant->save();
 
-            $tenant->delete();
+            \Illuminate\Support\Facades\DB::table('system_settings')->where('tenant_id', $tenantId)->delete();
+            \Illuminate\Support\Facades\DB::table('employees')->where('tenant_id', $tenantId)->delete();
+            \Illuminate\Support\Facades\DB::table('users')->where('tenant_id', $tenantId)->delete();
+
+            $tenant->forceDelete();
+
+            if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                \Illuminate\Support\Facades\DB::statement("SELECT setval('tenants_id_seq', COALESCE((SELECT MAX(id) FROM tenants), 1))");
+            }
         });
 
         return response()->json(['message' => 'Empresa eliminada con éxito']);

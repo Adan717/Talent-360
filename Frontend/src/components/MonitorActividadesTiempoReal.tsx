@@ -182,11 +182,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   useEffect(() => {
     const interval = setInterval(() => {
       const slider = modulesSliderRef.current;
-      if (!slider) return;
+      if (!slider || !slider.children.length) return;
       
+      const totalCards = slider.children.length;
       setActiveModuleIndex(prev => {
-        const nextIndex = (prev + 1) % 5;
-        const cardWidth = slider.scrollWidth / 5;
+        const nextIndex = (prev + 1) % totalCards;
+        const cardWidth = slider.scrollWidth / totalCards;
         slider.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
         return nextIndex;
       });
@@ -922,445 +923,376 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           </div>
 
-          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA / ROADMAP PRÓXIMOS LANZAMIENTOS (SLIDER 3S) */}
-          {(() => {
-            const isFullSuiteAdopted = ['ats', 'academia', 'reportes', 'documentos', 'facturacion'].every(mod => activeModules.includes(mod));
-            
-            if (isFullSuiteAdopted) {
-              return (
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border-2 border-indigo-400/60 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 relative overflow-hidden group">
-                  {/* Ambient Glow */}
-                  <div className="absolute -top-24 -right-24 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-400/30 transition-all duration-700" />
-                  <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+          {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS & ROADMAP DE INNOVACIÓN (SLIDER 3S CON BOTÓN Y TARJETA DE SUGERENCIAS) */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 relative overflow-hidden">
+            {/* Barra de Gradiente Superior Elegante */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 to-amber-500"></div>
 
-                  {/* Header Full Suite + Botón Sugerir Función */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-indigo-800/60 pb-4 relative z-10">
-                    <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-black tracking-wide mb-1.5">
-                        <Award size={14} className="text-amber-400 animate-pulse" />
-                        <span>SUITE COMPLETA 100% ACTIVA (5/5 MÓDULOS)</span>
-                      </div>
-                      <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2 flex-wrap">
-                        🚀 Próximos Lanzamientos & Roadmap de Innovación
-                      </h2>
-                      <p className="text-xs text-slate-300 font-medium">Tu organización opera a máxima capacidad. Descubre las funciones en desarrollo o sugiere la siguiente.</p>
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
-                        if (suggestion && suggestion.trim()) {
-                          setToastMessage("¡Gracias! Tu sugerencia ha sido enviada al equipo de desarrollo.");
-                          setTimeout(() => setToastMessage(null), 4000);
-                        }
-                      }}
-                      className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 border border-amber-300 shrink-0 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-                    >
-                      <Sparkles size={16} />
-                      💡 Sugerir una función a nuestro equipo
-                    </button>
-                  </div>
-
-                  {/* Carrusel Deslizable Automático de Próximos Lanzamientos (3s) */}
-                  <div 
-                    ref={modulesSliderRef}
-                    className="flex sm:grid overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 sm:pb-0 sm:grid-cols-2 lg:grid-cols-4 relative z-10"
-                  >
-                    {/* Roadmap 1: Evaluación 360 */}
-                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-amber-400/80 transition-all">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase">
-                            En Desarrollo • Q3 2026
-                          </span>
-                          <Award size={18} className="text-amber-400" />
-                        </div>
-                        <h3 className="font-bold text-white text-sm mb-1">Evaluación 360° & Desempeño</h3>
-                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
-                          🔥 "¡Mide el potencial, competencias y retroalimentación 360° de tus líderes y colaboradores!"
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
-                        <Sparkles size={12} /> Próximamente para tu plan Full Suite
-                      </span>
-                    </div>
-
-                    {/* Roadmap 2: Firma Electrónica */}
-                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-blue-400/80 transition-all">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-blue-400/20 text-blue-300 border border-blue-400/30 text-[10px] font-black uppercase">
-                            En Desarrollo • Q3 2026
-                          </span>
-                          <FileText size={18} className="text-blue-400" />
-                        </div>
-                        <h3 className="font-bold text-white text-sm mb-1">Firma Electrónica Avanzada</h3>
-                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
-                          🖋️ "¡Firma contratos laborales y convenios digitalmente con validez legal oficial ante autoridades!"
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
-                        <ShieldCheck size={12} /> Integración NOM-151 incluida
-                      </span>
-                    </div>
-
-                    {/* Roadmap 3: Bot WhatsApp */}
-                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-emerald-400/80 transition-all">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black uppercase">
-                            Próximamente • Q4 2026
-                          </span>
-                          <MessageSquare size={18} className="text-emerald-400" />
-                        </div>
-                        <h3 className="font-bold text-white text-sm mb-1">Bot Asistente WhatsApp 24/7</h3>
-                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
-                          💬 "¡Atención automatizada a colaboradores, recibos de nómina y solicitud de vacaciones por WhatsApp!"
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
-                        <Zap size={12} /> Respuestas instantáneas con IA
-                      </span>
-                    </div>
-
-                    {/* Roadmap 4: Control de Activos */}
-                    <div className="min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-lg flex flex-col justify-between group hover:border-purple-400/80 transition-all">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-purple-400/20 text-purple-300 border border-purple-400/30 text-[10px] font-black uppercase">
-                            Próximamente • Q4 2026
-                          </span>
-                          <Building2 size={18} className="text-purple-400" />
-                        </div>
-                        <h3 className="font-bold text-white text-sm mb-1">Control de Activos & Equipos</h3>
-                        <p className="text-slate-300 text-xs mb-3 font-medium leading-relaxed">
-                          💻 "¡Gestiona laptops, celulares, uniformes y herramientas de trabajo asignadas al personal!"
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
-                        <Truck size={12} /> Inventarios y resguardos digitales
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Indicadores en Celular */}
-                  <div className="flex sm:hidden justify-center items-center gap-1.5 pt-1">
-                    {[0, 1, 2, 3].map(idx => (
-                      <div 
-                        key={idx} 
-                        className={`h-2 rounded-full transition-all duration-500 ${activeModuleIndex === idx ? 'w-6 bg-amber-400 shadow-sm shadow-amber-500/40' : 'w-2 bg-slate-600'}`} 
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4 relative overflow-hidden">
-                {/* Barra de Gradiente Superior Elegante */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500"></div>
-
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-2 pt-1">
-                  <div>
-                    <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-amber-500" />
-                      Nuevos Módulos Disponibles para Adopción
-                    </h2>
-                    <p className="text-xs text-slate-500 font-medium">Desbloquea funciones estratégicas a la carta para potenciar tu organización</p>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black shadow-2xs">
-                      {5 - activeModules.filter((m: string) => ['ats', 'academia', 'reportes', 'documentos', 'facturacion'].includes(m)).length} Módulos disponibles
-                    </span>
-                  </div>
-                </div>
-
-                {/* Carrusel Deslizable Automático (Snap Slider 3s) en Móvil / Grilla en Escritorio */}
-                <div 
-                  ref={modulesSliderRef}
-                  className="flex sm:grid overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
-                >
-                  
-                  {/* ATS Card */}
-                  {(() => {
-                    const isAtsActive = activeModules.includes('ats');
-                    return (
-                      <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between ${
-                        isAtsActive 
-                          ? 'border-2 border-violet-400 bg-gradient-to-b from-violet-100/90 via-purple-50/60 to-white shadow-violet-500/20 ring-1 ring-violet-300' 
-                          : 'border-2 border-violet-300/80 bg-gradient-to-b from-violet-50/60 via-slate-50/40 to-white shadow-violet-500/10 hover:border-violet-400 ring-1 ring-violet-200/50'
-                      }`}>
-                        <div>
-                          {/* Imagen Alusiva al Tema */}
-                          <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-violet-200/80">
-                            <img 
-                              src="/assets/modules/ats.jpg" 
-                              alt="Reclutamiento ATS" 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                            />
-                            <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-violet-600 rounded-lg shadow-2xs border border-violet-200">
-                              <Briefcase size={16} />
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-start mb-2 relative z-10">
-                            <h3 className="font-bold text-slate-900 text-xs">Reclutamiento ATS</h3>
-                            <button 
-                              disabled={isAdoptionSaving}
-                              onClick={() => handleToggleModule('ats', 'Reclutamiento ATS')}
-                              className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                                isAtsActive 
-                                  ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30' 
-                                  : 'bg-white hover:bg-violet-50 text-violet-700 border border-violet-300'
-                              }`}
-                            >
-                              {isAtsActive ? 'Adoptado' : 'Adoptar'}
-                            </button>
-                          </div>
-
-                          {/* Frase Gancho Persuasiva */}
-                          <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-violet-600/10 border border-violet-300/40 text-[10px] font-bold text-violet-800 leading-tight relative z-10">
-                            🔥 "¡Contrata al mejor talento en tiempo récord antes que la competencia!"
-                          </div>
-
-                          <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Vacantes, bolsa de trabajo y entrevistas.</p>
-                        </div>
-
-                        <span className="text-xs font-black text-violet-600 relative z-10">+$29 MXN / mes</span>
-
-                        {/* Ícono de Marca de Agua al fondo */}
-                        <Briefcase className="absolute -right-3 -bottom-3 w-20 h-20 text-violet-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-                      </div>
-                    );
-                  })()}
-
-                  {/* LMS Card */}
-                  {(() => {
-                    const isLmsActive = activeModules.includes('academia');
-                    return (
-                      <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between ${
-                        isLmsActive 
-                          ? 'border-2 border-sky-400 bg-gradient-to-b from-sky-100/90 via-blue-50/60 to-white shadow-sky-500/20 ring-1 ring-sky-300' 
-                          : 'border-2 border-sky-300/80 bg-gradient-to-b from-sky-50/60 via-slate-50/40 to-white shadow-sky-500/10 hover:border-sky-400 ring-1 ring-sky-200/50'
-                      }`}>
-                        <div>
-                          {/* Imagen Alusiva al Tema */}
-                          <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-sky-200/80">
-                            <img 
-                              src="/assets/modules/academia.jpg" 
-                              alt="Academia 360" 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                            />
-                            <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-sky-600 rounded-lg shadow-2xs border border-sky-200">
-                              <GraduationCap size={16} />
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-start mb-2 relative z-10">
-                            <h3 className="font-bold text-slate-900 text-xs">Academia 360</h3>
-                            <button 
-                              disabled={isAdoptionSaving}
-                              onClick={() => handleToggleModule('academia', 'Academia 360')}
-                              className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                                isLmsActive 
-                                  ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/30' 
-                                  : 'bg-white hover:bg-sky-50 text-sky-700 border border-sky-300'
-                              }`}
-                            >
-                              {isLmsActive ? 'Adoptado' : 'Adoptar'}
-                            </button>
-                          </div>
-
-                          {/* Frase Gancho Persuasiva */}
-                          <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-sky-600/10 border border-sky-300/40 text-[10px] font-bold text-sky-800 leading-tight relative z-10">
-                            🚀 "¡Capacita e induce a tu personal 100% en automático sin perder tiempo!"
-                          </div>
-
-                          <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Cursos interactivos e inducción.</p>
-                        </div>
-
-                        <span className="text-xs font-black text-sky-600 relative z-10">+$49 MXN / mes</span>
-
-                        {/* Ícono de Marca de Agua al fondo */}
-                        <GraduationCap className="absolute -right-3 -bottom-3 w-20 h-20 text-sky-600/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
-                      </div>
-                    );
-                  })()}
-
-                  {/* Reports Card */}
-                  {(() => {
-                    const isReportsActive = activeModules.includes('reportes');
-                    return (
-                      <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between ${
-                        isReportsActive 
-                          ? 'border-2 border-rose-400 bg-gradient-to-b from-rose-100/90 via-pink-50/60 to-white shadow-rose-500/20 ring-1 ring-rose-300' 
-                          : 'border-2 border-rose-300/80 bg-gradient-to-b from-rose-50/60 via-slate-50/40 to-white shadow-rose-500/10 hover:border-rose-400 ring-1 ring-rose-200/50'
-                      }`}>
-                        <div>
-                          {/* Imagen Alusiva al Tema */}
-                          <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-rose-200/80">
-                            <img 
-                              src="/assets/modules/reportes.jpg" 
-                              alt="Reportes IA" 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                            />
-                            <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-rose-600 rounded-lg shadow-2xs border border-rose-200">
-                              <BarChart3 size={16} />
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-start mb-2 relative z-10">
-                            <h3 className="font-bold text-slate-900 text-xs">Reportes IA</h3>
-                            <button 
-                              disabled={isAdoptionSaving}
-                              onClick={() => handleToggleModule('reportes', 'Reportes IA')}
-                              className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                                isReportsActive 
-                                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/30' 
-                                  : 'bg-white hover:bg-rose-50 text-rose-700 border border-rose-300'
-                              }`}
-                            >
-                              {isReportsActive ? 'Adoptado' : 'Adoptar'}
-                            </button>
-                          </div>
-
-                          {/* Frase Gancho Persuasiva */}
-                          <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-rose-600/10 border border-rose-300/40 text-[10px] font-bold text-rose-800 leading-tight relative z-10">
-                            💡 "¡Detecta fugas de tiempo y toma decisiones operativas con IA!"
-                          </div>
-
-                          <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Faltas, retardos y analítica Ley Silla.</p>
-                        </div>
-
-                        <span className="text-xs font-black text-rose-600 relative z-10">+$19 MXN / mes</span>
-
-                        {/* Ícono de Marca de Agua al fondo */}
-                        <BarChart3 className="absolute -right-3 -bottom-3 w-20 h-20 text-rose-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-                      </div>
-                    );
-                  })()}
-
-                  {/* Archivo Digital Card */}
-                  {(() => {
-                    const isDocsActive = activeModules.includes('documentos');
-                    return (
-                      <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between ${
-                        isDocsActive 
-                          ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-100/90 via-yellow-50/60 to-white shadow-amber-500/20 ring-1 ring-amber-300' 
-                          : 'border-2 border-amber-300/80 bg-gradient-to-b from-amber-50/60 via-slate-50/40 to-white shadow-amber-500/10 hover:border-amber-400 ring-1 ring-amber-200/50'
-                      }`}>
-                        <div>
-                          {/* Imagen Alusiva al Tema */}
-                          <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-amber-200/80">
-                            <img 
-                              src="/assets/modules/documentos.jpg" 
-                              alt="Archivo Digital" 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                            />
-                            <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-amber-600 rounded-lg shadow-2xs border border-amber-200">
-                              <FileText size={16} />
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-start mb-2 relative z-10">
-                            <h3 className="font-bold text-slate-900 text-xs">Archivo Digital</h3>
-                            <button 
-                              disabled={isAdoptionSaving}
-                              onClick={() => handleToggleModule('documentos', 'Archivo Digital')}
-                              className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                                isDocsActive 
-                                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/30' 
-                                  : 'bg-white hover:bg-amber-50 text-amber-700 border border-amber-300'
-                              }`}
-                            >
-                              {isDocsActive ? 'Adoptado' : 'Adoptar'}
-                            </button>
-                          </div>
-
-                          {/* Frase Gancho Persuasiva */}
-                          <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-amber-600/10 border border-amber-300/40 text-[10px] font-bold text-amber-800 leading-tight relative z-10">
-                            📁 "¡Di adiós al papel y protege tus expedientes laborales en la nube!"
-                          </div>
-
-                          <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Expedientes avanzados y contratos.</p>
-                        </div>
-
-                        <span className="text-xs font-black text-amber-600 relative z-10">+$19 MXN / mes</span>
-
-                        {/* Ícono de Marca de Agua al fondo */}
-                        <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-amber-600/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
-                      </div>
-                    );
-                  })()}
-
-                  {/* Facturacion CFDI Card */}
-                  {(() => {
-                    const isCfdiActive = activeModules.includes('facturacion');
-                    return (
-                      <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between ${
-                        isCfdiActive 
-                          ? 'border-2 border-emerald-400 bg-gradient-to-b from-emerald-100/90 via-teal-50/60 to-white shadow-emerald-500/20 ring-1 ring-emerald-300' 
-                          : 'border-2 border-emerald-300/80 bg-gradient-to-b from-emerald-50/60 via-slate-50/40 to-white shadow-emerald-500/10 hover:border-emerald-400 ring-1 ring-emerald-200/50'
-                      }`}>
-                        <div>
-                          {/* Imagen Alusiva al Tema */}
-                          <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-emerald-200/80">
-                            <img 
-                              src="/assets/modules/facturacion.jpg" 
-                              alt="Nómina CFDI 4.0" 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                            />
-                            <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-emerald-600 rounded-lg shadow-2xs border border-emerald-200">
-                              <Receipt size={16} />
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-start mb-2 relative z-10">
-                            <h3 className="font-bold text-slate-900 text-xs">Nómina CFDI 4.0</h3>
-                            <button 
-                              disabled={isAdoptionSaving}
-                              onClick={() => handleToggleModule('facturacion', 'Nómina CFDI 4.0')}
-                              className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
-                                isCfdiActive 
-                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/30' 
-                                  : 'bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300'
-                              }`}
-                            >
-                              {isCfdiActive ? 'Adoptado' : 'Adoptar'}
-                            </button>
-                          </div>
-
-                          {/* Frase Gancho Persuasiva */}
-                          <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-emerald-600/10 border border-emerald-300/40 text-[10px] font-bold text-emerald-800 leading-tight relative z-10">
-                            ⚡ "¡Timbra tu nómina masiva ante el SAT sin errores y en un solo clic!"
-                          </div>
-
-                          <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Timbrado masivo del SAT.</p>
-                        </div>
-
-                        <span className="text-xs font-black text-emerald-600 relative z-10">+$39 MXN / mes</span>
-
-                        {/* Ícono de Marca de Agua al fondo */}
-                        <Receipt className="absolute -right-3 -bottom-3 w-20 h-20 text-emerald-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-                      </div>
-                    );
-                  })()}
-
-                </div>
-
-                {/* Puntos Indicadores del Slider Automático (3s) en Celular */}
-                <div className="flex sm:hidden justify-center items-center gap-1.5 pt-2">
-                  {[0, 1, 2, 3, 4].map(idx => (
-                    <div 
-                      key={idx} 
-                      className={`h-2 rounded-full transition-all duration-500 ${activeModuleIndex === idx ? 'w-6 bg-purple-600 shadow-sm shadow-purple-500/40' : 'w-2 bg-slate-300'}`} 
-                    />
-                  ))}
-                </div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-3 pt-1">
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                  <Sparkles className="w-5 h-5 text-amber-500 animate-bounce" />
+                  Nuevos Módulos Disponibles & Roadmap de Innovación
+                </h2>
+                <p className="text-xs text-slate-500 font-medium">Adopta funciones a la carta o sugiere las próximas innovaciones para tu organización</p>
               </div>
-            );
-          })()}
+
+              <button 
+                onClick={() => {
+                  const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
+                  if (suggestion && suggestion.trim()) {
+                    setToastMessage("¡Gracias! Tu sugerencia ha sido enviada al equipo de desarrollo de Talent360.");
+                    setTimeout(() => setToastMessage(null), 4000);
+                  }
+                }}
+                className="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 border border-amber-300 shrink-0 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+              >
+                <Sparkles size={16} />
+                💡 Sugerir una función a nuestro equipo
+              </button>
+            </div>
+
+            {/* Carrusel Deslizable Automático (Snap Slider 3s) en Celular y Escritorio */}
+            <div 
+              ref={modulesSliderRef}
+              className="flex overflow-x-auto snap-x snap-mandatory gap-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-3 pt-1 text-slate-900"
+            >
+              
+              {/* ATS Card */}
+              {(() => {
+                const isAtsActive = activeModules.includes('ats');
+                return (
+                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-violet-300/80 bg-gradient-to-b from-violet-50/60 via-slate-50/40 to-white hover:border-violet-400 ring-1 ring-violet-200/50">
+                    <div>
+                      {/* Imagen Alusiva al Tema */}
+                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-violet-200/80">
+                        <img 
+                          src="/assets/modules/ats.jpg" 
+                          alt="Reclutamiento ATS" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-violet-600 rounded-lg shadow-2xs border border-violet-200">
+                          <Briefcase size={16} />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-start mb-2 relative z-10">
+                        <h3 className="font-bold text-slate-900 text-xs">Reclutamiento ATS</h3>
+                        <button 
+                          disabled={isAdoptionSaving}
+                          onClick={() => handleToggleModule('ats', 'Reclutamiento ATS')}
+                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
+                            isAtsActive 
+                              ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30' 
+                              : 'bg-white hover:bg-violet-50 text-violet-700 border border-violet-300'
+                          }`}
+                        >
+                          {isAtsActive ? 'Adoptado' : 'Adoptar'}
+                        </button>
+                      </div>
+
+                      {/* Frase Gancho Persuasiva */}
+                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-violet-600/10 border border-violet-300/40 text-[10px] font-bold text-violet-800 leading-tight relative z-10">
+                        🔥 "¡Contrata al mejor talento en tiempo récord antes que la competencia!"
+                      </div>
+
+                      <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Vacantes, bolsa de trabajo y entrevistas.</p>
+                    </div>
+
+                    <span className="text-xs font-black text-violet-600 relative z-10">+$29 MXN / mes</span>
+                    <Briefcase className="absolute -right-3 -bottom-3 w-20 h-20 text-violet-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                  </div>
+                );
+              })()}
+
+              {/* LMS Card */}
+              {(() => {
+                const isLmsActive = activeModules.includes('academia');
+                return (
+                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-sky-300/80 bg-gradient-to-b from-sky-50/60 via-slate-50/40 to-white hover:border-sky-400 ring-1 ring-sky-200/50">
+                    <div>
+                      {/* Imagen Alusiva al Tema */}
+                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-sky-200/80">
+                        <img 
+                          src="/assets/modules/academia.jpg" 
+                          alt="Academia 360" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-sky-600 rounded-lg shadow-2xs border border-sky-200">
+                          <GraduationCap size={16} />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-start mb-2 relative z-10">
+                        <h3 className="font-bold text-slate-900 text-xs">Academia 360</h3>
+                        <button 
+                          disabled={isAdoptionSaving}
+                          onClick={() => handleToggleModule('academia', 'Academia 360')}
+                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
+                            isLmsActive 
+                              ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/30' 
+                              : 'bg-white hover:bg-sky-50 text-sky-700 border border-sky-300'
+                          }`}
+                        >
+                          {isLmsActive ? 'Adoptado' : 'Adoptar'}
+                        </button>
+                      </div>
+
+                      {/* Frase Gancho Persuasiva */}
+                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-sky-600/10 border border-sky-300/40 text-[10px] font-bold text-sky-800 leading-tight relative z-10">
+                        🚀 "¡Capacita e induce a tu personal 100% en automático sin perder tiempo!"
+                      </div>
+
+                      <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Cursos interactivos e inducción.</p>
+                    </div>
+
+                    <span className="text-xs font-black text-sky-600 relative z-10">+$49 MXN / mes</span>
+                    <GraduationCap className="absolute -right-3 -bottom-3 w-20 h-20 text-sky-600/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
+                  </div>
+                );
+              })()}
+
+              {/* Reports Card */}
+              {(() => {
+                const isReportsActive = activeModules.includes('reportes');
+                return (
+                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-rose-300/80 bg-gradient-to-b from-rose-50/60 via-slate-50/40 to-white hover:border-rose-400 ring-1 ring-rose-200/50">
+                    <div>
+                      {/* Imagen Alusiva al Tema */}
+                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-rose-200/80">
+                        <img 
+                          src="/assets/modules/reportes.jpg" 
+                          alt="Reportes IA" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-rose-600 rounded-lg shadow-2xs border border-rose-200">
+                          <BarChart3 size={16} />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-start mb-2 relative z-10">
+                        <h3 className="font-bold text-slate-900 text-xs">Reportes IA</h3>
+                        <button 
+                          disabled={isAdoptionSaving}
+                          onClick={() => handleToggleModule('reportes', 'Reportes IA')}
+                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
+                            isReportsActive 
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/30' 
+                              : 'bg-white hover:bg-rose-50 text-rose-700 border border-rose-300'
+                          }`}
+                        >
+                          {isReportsActive ? 'Adoptado' : 'Adoptar'}
+                        </button>
+                      </div>
+
+                      {/* Frase Gancho Persuasiva */}
+                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-rose-600/10 border border-rose-300/40 text-[10px] font-bold text-rose-800 leading-tight relative z-10">
+                        💡 "¡Detecta fugas de tiempo y toma decisiones operativas con IA!"
+                      </div>
+
+                      <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Faltas, retardos y analítica Ley Silla.</p>
+                    </div>
+
+                    <span className="text-xs font-black text-rose-600 relative z-10">+$19 MXN / mes</span>
+                    <BarChart3 className="absolute -right-3 -bottom-3 w-20 h-20 text-rose-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                  </div>
+                );
+              })()}
+
+              {/* Archivo Digital Card */}
+              {(() => {
+                const isDocsActive = activeModules.includes('documentos');
+                return (
+                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-amber-300/80 bg-gradient-to-b from-amber-50/60 via-slate-50/40 to-white hover:border-amber-400 ring-1 ring-amber-200/50">
+                    <div>
+                      {/* Imagen Alusiva al Tema */}
+                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-amber-200/80">
+                        <img 
+                          src="/assets/modules/documentos.jpg" 
+                          alt="Archivo Digital" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-amber-600 rounded-lg shadow-2xs border border-amber-200">
+                          <FileText size={16} />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-start mb-2 relative z-10">
+                        <h3 className="font-bold text-slate-900 text-xs">Archivo Digital</h3>
+                        <button 
+                          disabled={isAdoptionSaving}
+                          onClick={() => handleToggleModule('documentos', 'Archivo Digital')}
+                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
+                            isDocsActive 
+                              ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/30' 
+                              : 'bg-white hover:bg-amber-50 text-amber-700 border border-amber-300'
+                          }`}
+                        >
+                          {isDocsActive ? 'Adoptado' : 'Adoptar'}
+                        </button>
+                      </div>
+
+                      {/* Frase Gancho Persuasiva */}
+                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-amber-600/10 border border-amber-300/40 text-[10px] font-bold text-amber-800 leading-tight relative z-10">
+                        📁 "¡Di adiós al papel y protege tus expedientes laborales en la nube!"
+                      </div>
+
+                      <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Expedientes avanzados y contratos.</p>
+                    </div>
+
+                    <span className="text-xs font-black text-amber-600 relative z-10">+$19 MXN / mes</span>
+                    <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-amber-600/15 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
+                  </div>
+                );
+              })()}
+
+              {/* Facturacion CFDI Card */}
+              {(() => {
+                const isCfdiActive = activeModules.includes('facturacion');
+                return (
+                  <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl transition-all relative overflow-hidden group shadow-md hover:shadow-lg flex flex-col justify-between border-2 border-emerald-300/80 bg-gradient-to-b from-emerald-50/60 via-slate-50/40 to-white hover:border-emerald-400 ring-1 ring-emerald-200/50">
+                    <div>
+                      {/* Imagen Alusiva al Tema */}
+                      <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-emerald-200/80">
+                        <img 
+                          src="/assets/modules/facturacion.jpg" 
+                          alt="Nómina CFDI 4.0" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-emerald-600 rounded-lg shadow-2xs border border-emerald-200">
+                          <Receipt size={16} />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-start mb-2 relative z-10">
+                        <h3 className="font-bold text-slate-900 text-xs">Nómina CFDI 4.0</h3>
+                        <button 
+                          disabled={isAdoptionSaving}
+                          onClick={() => handleToggleModule('facturacion', 'Nómina CFDI 4.0')}
+                          className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all shadow-xs shrink-0 ${
+                            isCfdiActive 
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/30' 
+                              : 'bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300'
+                          }`}
+                        >
+                          {isCfdiActive ? 'Adoptado' : 'Adoptar'}
+                        </button>
+                      </div>
+
+                      {/* Frase Gancho Persuasiva */}
+                      <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-emerald-600/10 border border-emerald-300/40 text-[10px] font-bold text-emerald-800 leading-tight relative z-10">
+                        ⚡ "¡Timbra tu nómina masiva ante el SAT sin errores y en un solo clic!"
+                      </div>
+
+                      <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Timbrado masivo del SAT.</p>
+                    </div>
+
+                    <span className="text-xs font-black text-emerald-600 relative z-10">+$39 MXN / mes</span>
+                    <Receipt className="absolute -right-3 -bottom-3 w-20 h-20 text-emerald-600/15 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                  </div>
+                );
+              })()}
+
+              {/* ROADMAP 1: Evaluación 360 */}
+              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-b from-indigo-900 via-slate-900 to-slate-950 text-white border-2 border-amber-400/60 shadow-lg flex flex-col justify-between group hover:border-amber-400 transition-all relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-black uppercase">
+                      🚀 Roadmap • Q3 2026
+                    </span>
+                    <Award size={18} className="text-amber-400" />
+                  </div>
+                  <h3 className="font-bold text-white text-xs mb-1">Evaluación 360° & Desempeño</h3>
+                  <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-amber-400/10 border border-amber-400/30 text-[10px] font-bold text-amber-200 leading-tight">
+                    🔥 "¡Mide el potencial, competencias y retroalimentación 360° de tus líderes!"
+                  </div>
+                  <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Evaluaciones periódicas y matriz de talento.</p>
+                </div>
+                <span className="text-xs font-black text-amber-400 relative z-10">Próximo Lanzamiento</span>
+                <Award className="absolute -right-3 -bottom-3 w-20 h-20 text-amber-400/15 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
+              </div>
+
+              {/* ROADMAP 2: Firma Electrónica NOM-151 */}
+              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 text-white border-2 border-blue-400/60 shadow-lg flex flex-col justify-between group hover:border-blue-400 transition-all relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-400/20 text-blue-300 border border-blue-400/40 text-[10px] font-black uppercase">
+                      🖋️ Roadmap • Q3 2026
+                    </span>
+                    <FileText size={18} className="text-blue-400" />
+                  </div>
+                  <h3 className="font-bold text-white text-xs mb-1">Firma Electrónica Avanzada</h3>
+                  <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-blue-400/10 border border-blue-400/30 text-[10px] font-bold text-blue-200 leading-tight">
+                    🖋️ "¡Firma contratos y convenios digitalmente con validez oficial NOM-151!"
+                  </div>
+                  <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Contratos digitales e historial con sello legal.</p>
+                </div>
+                <span className="text-xs font-black text-blue-400 relative z-10">Próximo Lanzamiento</span>
+                <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-blue-400/15 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
+              </div>
+
+              {/* ROADMAP 3: Bot WhatsApp */}
+              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-950 text-white border-2 border-emerald-400/60 shadow-lg flex flex-col justify-between group hover:border-emerald-400 transition-all relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-black uppercase">
+                      💬 Roadmap • Q4 2026
+                    </span>
+                    <MessageSquare size={18} className="text-emerald-400" />
+                  </div>
+                  <h3 className="font-bold text-white text-xs mb-1">Bot Asistente WhatsApp 24/7</h3>
+                  <div className="mb-2.5 px-2 py-1.5 rounded-lg bg-emerald-400/10 border border-emerald-400/30 text-[10px] font-bold text-emerald-200 leading-tight">
+                    💬 "¡Atención a colaboradores, recibos de nómina y vacaciones vía WhatsApp!"
+                  </div>
+                  <p className="text-slate-300 text-[10px] mb-2 leading-relaxed font-medium">Respuestas automatizadas e inteligencia artificial.</p>
+                </div>
+                <span className="text-xs font-black text-emerald-400 relative z-10">Próximo Lanzamiento</span>
+                <MessageSquare className="absolute -right-3 -bottom-3 w-20 h-20 text-emerald-400/15 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
+              </div>
+
+              {/* CARD DEDICADA 9: SUGERIR UNA FUNCIÓN / MÓDULO */}
+              <div className="min-w-[280px] sm:min-w-[310px] snap-center p-4 rounded-2xl bg-gradient-to-br from-amber-500 via-purple-700 to-slate-900 text-white border-2 border-amber-300 shadow-xl flex flex-col justify-between group relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/30 text-[10px] font-black uppercase flex items-center gap-1">
+                      <Sparkles size={12} className="animate-spin" /> Tu Opinión Importa
+                    </span>
+                    <Sparkles size={20} className="text-amber-300 animate-bounce" />
+                  </div>
+                  <h3 className="font-black text-white text-sm mb-1">¿Tienes una idea para Talent360?</h3>
+                  <p className="text-amber-100 text-xs mb-3 font-medium leading-relaxed">
+                    💡 "¡Construimos la plataforma junto contigo! Dinos qué función o módulo necesita tu empresa."
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
+                    if (suggestion && suggestion.trim()) {
+                      setToastMessage("¡Gracias! Tu sugerencia ha sido enviada al equipo de desarrollo.");
+                      setTimeout(() => setToastMessage(null), 4000);
+                    }
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-white text-purple-950 font-black text-xs shadow-md hover:bg-amber-50 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 relative z-10"
+                >
+                  <Sparkles size={16} className="text-amber-600" />
+                  Sugerir una función ahora
+                </button>
+                <Sparkles className="absolute -right-3 -bottom-3 w-24 h-24 text-white/10 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
+              </div>
+
+            </div>
+
+            {/* Puntos Indicadores del Slider Automático (3s) */}
+            <div className="flex justify-center items-center gap-1.5 pt-2">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(idx => (
+                <div 
+                  key={idx} 
+                  className={`h-2 rounded-full transition-all duration-500 ${activeModuleIndex === idx ? 'w-6 bg-purple-600 shadow-sm shadow-purple-500/40' : 'w-2 bg-slate-300'}`} 
+                />
+              ))}
+            </div>
+          </div>
 
         </>
       )}

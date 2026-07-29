@@ -2018,47 +2018,47 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
                 );
 
-                // Estilos Lumínicos y Elegantes por Jerarquía de Mando (Sin fondos oscuros)
+                // Estilos Lumínicos y Bordes Distintivos de un solo color por Jerarquía de Mando (N1 a N5)
                 const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string; watermarkColor: string }> = {
                   1: {
-                    container: 'bg-gradient-to-br from-amber-50/80 via-white to-amber-100/30 border-amber-300 text-slate-900 shadow-md hover:border-amber-400 hover:shadow-xl',
-                    titleText: 'text-indigo-950 font-black',
+                    container: 'bg-gradient-to-br from-amber-50/90 via-white to-amber-100/30 border-2 border-amber-400 text-slate-900 shadow-md hover:border-amber-500 hover:shadow-xl',
+                    titleText: 'text-amber-950 font-black',
                     descText: 'text-slate-600',
-                    pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-bold',
+                    pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold',
                     label: 'N1 • Dirección General',
                     watermarkColor: 'text-amber-500/15'
                   },
                   2: {
-                    container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-indigo-250 text-slate-900 shadow-md hover:border-indigo-400 hover:shadow-xl',
-                    titleText: 'text-indigo-900 font-bold',
+                    container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-2 border-indigo-400 text-slate-900 shadow-md hover:border-indigo-500 hover:shadow-xl',
+                    titleText: 'text-indigo-950 font-bold',
                     descText: 'text-slate-600',
-                    pillClass: 'bg-indigo-100 text-indigo-800 border-indigo-250 font-bold',
+                    pillClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
                     label: 'N2 • Supervisión / Jefatura',
                     watermarkColor: 'text-indigo-600/15'
                   },
                   3: {
-                    container: 'bg-gradient-to-br from-sky-50/60 via-white to-slate-50 border-sky-200 text-slate-900 shadow-sm hover:border-sky-350 hover:shadow-md',
+                    container: 'bg-gradient-to-br from-sky-50/70 via-white to-slate-50 border-2 border-sky-400 text-slate-900 shadow-sm hover:border-sky-500 hover:shadow-md',
                     titleText: 'text-slate-900 font-bold',
                     descText: 'text-slate-600',
-                    pillClass: 'bg-sky-100 text-sky-800 border-sky-200 font-semibold',
+                    pillClass: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
                     label: 'N3 • Especialista / Piso',
                     watermarkColor: 'text-sky-600/15'
                   },
                   4: {
-                    container: 'bg-white border-slate-200 text-slate-800 hover:border-slate-350 shadow-xs',
+                    container: 'bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 border-2 border-emerald-400 text-slate-900 shadow-xs hover:border-emerald-500 hover:shadow-md',
                     titleText: 'text-slate-800 font-bold',
                     descText: 'text-slate-500',
-                    pillClass: 'bg-slate-100 text-slate-700 border-slate-250 font-medium',
+                    pillClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
                     label: 'N4 • Auxiliar Operativo',
-                    watermarkColor: 'text-slate-400/15'
+                    watermarkColor: 'text-emerald-500/15'
                   },
                   5: {
-                    container: 'bg-slate-50/90 border-slate-200 text-slate-700 shadow-xs',
+                    container: 'bg-gradient-to-br from-purple-50/40 via-white to-slate-50 border-2 border-purple-300 text-slate-900 shadow-xs hover:border-purple-400 hover:shadow-md',
                     titleText: 'text-slate-700 font-semibold',
                     descText: 'text-slate-500',
-                    pillClass: 'bg-slate-100 text-slate-600 border-slate-200 font-medium',
+                    pillClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold',
                     label: 'N5 • Apoyo Eventual',
-                    watermarkColor: 'text-slate-400/15'
+                    watermarkColor: 'text-purple-400/15'
                   }
                 };
 

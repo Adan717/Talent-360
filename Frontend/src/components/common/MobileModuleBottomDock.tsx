@@ -40,7 +40,7 @@ const themeStyles: Record<ColorTheme, {
   fabGlowBg: string;
 }> = {
   blue: {
-    stroke: 'stroke-blue-400/80 dark:stroke-blue-400/50',
+    stroke: 'stroke-blue-500 dark:stroke-blue-400',
     activeBg: 'bg-blue-500/15',
     activeBorder: 'border-blue-500',
     activeShadow: 'shadow-blue-500/20',
@@ -50,7 +50,7 @@ const themeStyles: Record<ColorTheme, {
     fabGlowBg: 'bg-blue-600/40'
   },
   indigo: {
-    stroke: 'stroke-indigo-400/80 dark:stroke-indigo-400/50',
+    stroke: 'stroke-indigo-500 dark:stroke-indigo-400',
     activeBg: 'bg-indigo-500/15',
     activeBorder: 'border-indigo-500',
     activeShadow: 'shadow-indigo-500/20',
@@ -60,7 +60,7 @@ const themeStyles: Record<ColorTheme, {
     fabGlowBg: 'bg-indigo-600/40'
   },
   purple: {
-    stroke: 'stroke-purple-400/80 dark:stroke-purple-400/50',
+    stroke: 'stroke-purple-500 dark:stroke-purple-400',
     activeBg: 'bg-purple-500/15',
     activeBorder: 'border-purple-500',
     activeShadow: 'shadow-purple-500/20',
@@ -70,7 +70,7 @@ const themeStyles: Record<ColorTheme, {
     fabGlowBg: 'bg-purple-600/40'
   },
   sky: {
-    stroke: 'stroke-sky-400/80 dark:stroke-sky-400/50',
+    stroke: 'stroke-sky-500 dark:stroke-sky-400',
     activeBg: 'bg-sky-500/15',
     activeBorder: 'border-sky-500',
     activeShadow: 'shadow-sky-500/20',
@@ -80,7 +80,7 @@ const themeStyles: Record<ColorTheme, {
     fabGlowBg: 'bg-sky-500/40'
   },
   amber: {
-    stroke: 'stroke-amber-400/80 dark:stroke-amber-400/50',
+    stroke: 'stroke-amber-500 dark:stroke-amber-400',
     activeBg: 'bg-amber-500/15',
     activeBorder: 'border-amber-500',
     activeShadow: 'shadow-amber-500/20',
@@ -90,7 +90,7 @@ const themeStyles: Record<ColorTheme, {
     fabGlowBg: 'bg-amber-500/40'
   },
   emerald: {
-    stroke: 'stroke-emerald-400/80 dark:stroke-emerald-400/50',
+    stroke: 'stroke-emerald-500 dark:stroke-emerald-400',
     activeBg: 'bg-emerald-500/15',
     activeBorder: 'border-emerald-500',
     activeShadow: 'shadow-emerald-500/20',
@@ -148,12 +148,7 @@ export function MobileModuleBottomDock({
         >
           <path
             d="M 32 0 L 325 0 C 300 0, 300 64, 325 64 L 32 64 A 32 32 0 0 1 32 0 Z"
-            className="fill-white/95 dark:fill-slate-900/95 backdrop-blur-2xl"
-          />
-          <path
-            d="M 32 0 L 325 0 C 300 0, 300 64, 325 64 L 32 64"
-            className={`stroke-2 ${theme.stroke}`}
-            fill="none"
+            className={`fill-white/95 dark:fill-slate-900/95 backdrop-blur-2xl stroke-[2.5] ${theme.stroke}`}
           />
         </svg>
 

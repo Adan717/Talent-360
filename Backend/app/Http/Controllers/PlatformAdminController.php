@@ -262,6 +262,12 @@ class PlatformAdminController extends Controller
                 $allowedModules = $globalModSetting ? (json_decode($globalModSetting->value, true) ?: ['reloj', 'rrhh', 'operativo']) : ['reloj', 'rrhh', 'operativo'];
             }
 
+            // Freemium compliance status
+            $latestCompliance = \DB::table('freemium_compliance_checks')
+                ->where('tenant_id', $tenant->id)
+                ->orderBy('period', 'desc')
+                ->first();
+
             return [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
@@ -279,6 +285,9 @@ class PlatformAdminController extends Controller
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
                 'trial_ends_at' => $tenant->trial_ends_at,
                 'nicho' => $nicho,
+                'freemium_compliance_status' => $latestCompliance ? $latestCompliance->status : 'pending',
+                'freemium_compliance_proof_url' => $latestCompliance?->proof_url,
+                'freemium_compliance_proof_note' => $latestCompliance?->proof_note,
                 'tx_30_days' => $txMetrics['tx_30_days'],
                 'tx_daily_avg' => $txMetrics['tx_daily_avg'],
                 'tx_total' => $txMetrics['tx_total'],

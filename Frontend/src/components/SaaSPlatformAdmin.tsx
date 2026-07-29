@@ -1575,7 +1575,28 @@ export const SaaSPlatformAdmin = () => {
                                 </span>
                                 {(() => {
                                    if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
-                                      return <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>;
+                                      return (
+                                         <div className="mt-0.5">
+                                            <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>
+                                            {comp.freemium_compliance_status === 'approved' ? (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mt-1">
+                                                  ✓ Evidencia Aprobada
+                                               </span>
+                                            ) : comp.freemium_compliance_status === 'submitted' ? (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
+                                                  ⏳ Comprobante por Revisar
+                                               </span>
+                                            ) : comp.freemium_compliance_status === 'rejected' ? (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full mt-1">
+                                                  ⚠️ Evidencia Rechazada
+                                               </span>
+                                            ) : (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full mt-1">
+                                                  📢 Comprobante Pendiente
+                                               </span>
+                                            )}
+                                         </div>
+                                      );
                                    }
                                    
                                    if (comp.trial_ends_at) {
@@ -1591,9 +1612,20 @@ export const SaaSPlatformAdmin = () => {
                                          );
                                       } else {
                                          return (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
-                                               ⚠️ Prueba Expirada
-                                            </span>
+                                            <div className="mt-0.5">
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                  ⚠️ Prueba Expirada
+                                               </span>
+                                               {comp.freemium_compliance_status === 'approved' ? (
+                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full block mt-1">
+                                                     ✓ Evidencia Aprobada
+                                                  </span>
+                                               ) : (
+                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full block mt-1">
+                                                     📢 Publicidad Pendiente
+                                                  </span>
+                                               )}
+                                            </div>
                                          );
                                       }
                                    }

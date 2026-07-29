@@ -81,7 +81,7 @@ interface AiPlanSuggestion {
 }
 
 export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveModule?: (mod: string) => void }) {
-  const { currentUser, currentTier, systemSettings, fetchState } = useAppStore();
+  const { currentUser, currentTier, systemSettings, fetchState, isModuleUnlocked } = useAppStore();
   
   // Tab Principal de Cabecera (Visión General vs Onboarding)
   const [activeHeaderTab, setActiveHeaderTab] = useState<'overview' | 'onboarding'>('overview');
@@ -107,6 +107,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [jobRoles, setJobRoles] = useState<any[]>([]);
   const [vendors, setVendors] = useState<VendorLog[]>([]);
+  const [prospectsCount, setProspectsCount] = useState<number>(0);
 
   // UI & Filter States
   const [loading, setLoading] = useState(true);
@@ -165,6 +166,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         setFeed(res.data.data.feed || []);
         setChatMessages(res.data.data.chat || []);
         setJobRoles(res.data.data.job_roles || []);
+        if (res.data.data.prospects_count !== undefined) {
+          setProspectsCount(res.data.data.prospects_count);
+        }
+      }
+      
+      // Fallback si no viene prospects_count y ATS está desbloqueado
+      if (isModuleUnlocked('ats') && (!res.data?.data || res.data.data.prospects_count === undefined)) {
+        try {
+          const candRes = await axiosInstance.get('/admin/candidates');
+          setProspectsCount(candRes.data?.length || 0);
+        } catch (cErr) {
+          // ignore candidate fallback error
+        }
       }
     } catch (err) {
       console.error("Error al cargar datos del monitor:", err);
@@ -537,10 +551,14 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               </div>
             </div>
 
-            {/* KPI METRICAS RAPIDAS (3 Fichas estilo botón/pill en 1 sola fila continua) */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
+            {/* KPI METRICAS RAPIDAS (3 o 4 Fichas estilo botón/pill según si ATS está activo) */}
+            <div className={`grid ${isModuleUnlocked('ats') ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 pt-1`}>
               {/* Personal Presente */}
-              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+              <div 
+                onClick={() => setActiveModule && setActiveModule('rrhh')}
+                className={`relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs ${setActiveModule ? 'cursor-pointer active:scale-98' : ''}`}
+                title={setActiveModule ? "Ir a Gestión de RRHH" : undefined}
+              >
                 <div className="flex items-center gap-2 sm:gap-3 z-10 min-w-0">
                   <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-100/90 text-emerald-700 font-bold shadow-2xs shrink-0">
                     <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -580,6 +598,26 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 </div>
                 <CheckSquare className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-blue-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
+
+              {/* Prospectos (Solo si ATS está activo) */}
+              {isModuleUnlocked('ats') && (
+                <div 
+                  onClick={() => setActiveModule && setActiveModule('ats')}
+                  className={`relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs ${setActiveModule ? 'cursor-pointer active:scale-98' : ''}`}
+                  title={setActiveModule ? "Ir a Bolsa de Trabajo ATS" : undefined}
+                >
+                  <div className="flex items-center gap-2 sm:gap-3 z-10 min-w-0">
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-purple-100/90 text-purple-700 font-bold shadow-2xs shrink-0">
+                      <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm sm:text-lg font-black text-slate-900 leading-tight truncate">{prospectsCount}</div>
+                      <div className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-tight truncate">Prospectos</div>
+                    </div>
+                  </div>
+                  <Briefcase className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-purple-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
+                </div>
+              )}
             </div>
 
           </div>

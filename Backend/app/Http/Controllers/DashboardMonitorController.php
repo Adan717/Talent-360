@@ -290,6 +290,12 @@ class DashboardMonitorController extends Controller
                 ->select('id', 'name')
                 ->get();
 
+            // Fetch prospects count (candidates) of the tenant
+            $prospectsCount = DB::table('candidates')
+                ->where('tenant_id', $userTenantId)
+                ->whereNull('deleted_at')
+                ->count();
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -298,6 +304,7 @@ class DashboardMonitorController extends Controller
                     'feed' => $feed,
                     'chat' => $chatMessages,
                     'job_roles' => $jobRoles,
+                    'prospects_count' => $prospectsCount,
                 ]
             ]);
 

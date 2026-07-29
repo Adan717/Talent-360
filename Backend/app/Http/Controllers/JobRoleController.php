@@ -86,6 +86,7 @@ class JobRoleController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'area' => 'required|string|max:255',
+            'icon' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'responsibilities' => 'nullable|string',
             'manual_name' => 'nullable|string|max:255',
@@ -244,6 +245,7 @@ class JobRoleController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'area' => 'sometimes|required|string|max:255',
+            'icon' => 'nullable|string|max:50',
             'description' => 'nullable|string',
             'responsibilities' => 'nullable|string',
             'manual_name' => 'nullable|string|max:255',

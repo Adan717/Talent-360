@@ -35,6 +35,7 @@ class JobRoleTemplateController extends Controller
             $jobRole = JobRole::create([
                 'name' => $template->name,
                 'area' => $template->area,
+                'icon' => $template->icon,
                 'esAperturador' => $template->is_opener,
                 'portadorLlaves' => $template->is_opener ? 'apertura' : 'ninguno',
                 'jerarquiaLlaves' => $template->is_opener ? 2 : 0,

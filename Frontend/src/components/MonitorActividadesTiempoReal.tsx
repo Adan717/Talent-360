@@ -9,6 +9,11 @@ import {
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
+import { LateAuthorizationsPanel } from './reloj/LateAuthorizationsPanel';
+import { PanicIncidentsPanel } from './reloj/PanicIncidentsPanel';
+import { LateJustificationsPanel } from './reloj/LateJustificationsPanel';
+import { ContingenciesPanel } from './reloj/ContingenciesPanel';
+import { IncompleteTasksPanel } from './reloj/IncompleteTasksPanel';
 
 interface UserMonitorItem {
   id: number;
@@ -514,6 +519,18 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         <GlobalSystemSettingsPanel initialTab="onboarding" />
       ) : (
         <>
+          {/* Paneles de resolución del Reloj. Viven aquí porque el rediseño Monitor 360
+              sustituyó a DashboardTalent360 como pantalla del módulo `dashboard` (App.tsx),
+              y sin ellos NADA de lo que el colaborador declara desde el dial (entrada tardía
+              R56/R57, pánico R80, justificante R82, contingencia R83, tareas inconclusas M3)
+              tiene dónde aprobarse o rechazarse. Son autocontenidos: sondean solos y se
+              ocultan cuando no hay pendientes. */}
+          <LateAuthorizationsPanel />
+          <PanicIncidentsPanel />
+          <LateJustificationsPanel />
+          <ContingenciesPanel />
+          <IncompleteTasksPanel />
+
           {/* 3. BARRA DE HERRAMIENTAS Y ACCIONES DEL MONITOR 360 */}
           <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
             

@@ -95,8 +95,8 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
 
   return (
     <div className="w-full bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden min-h-[680px] flex flex-col lg:flex-row">
-      {/* Sidebar de Navegación de Configuraciones */}
-      <div className="w-full lg:w-80 bg-slate-50/80 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 sm:p-6 flex flex-col shrink-0">
+      {/* Sidebar de Navegación de Configuraciones Sticky */}
+      <div className="w-full lg:w-80 bg-slate-50/95 backdrop-blur-md border-b lg:border-b-0 lg:border-r border-slate-200 p-4 sm:p-6 flex flex-col shrink-0 sticky top-0 z-20 lg:static">
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center font-bold">

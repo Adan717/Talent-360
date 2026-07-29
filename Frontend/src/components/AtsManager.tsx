@@ -122,45 +122,46 @@ export function AtsManager() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
       
-      {/* HEADER ATS */}
-      <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
-        
-        {/* TABS */}
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/60 sm:bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none border border-slate-200">
-          <button 
-            onClick={() => setActiveTab('vacantes')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'vacantes' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <Briefcase size={18} className={activeTab === 'vacantes' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Bolsa de Trabajo</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('kanban')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'kanban' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <ClipboardList size={18} className={activeTab === 'kanban' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tablero Candidatos</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('entrevistas')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'entrevistas' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <Calendar size={18} className={activeTab === 'entrevistas' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
-              <span className="block sm:hidden">Agenda</span>
-              <span className="hidden sm:block">Agenda de Entrevistas</span>
-            </span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('publico')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'publico' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <Globe size={18} className={activeTab === 'publico' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
-              <span className="block sm:hidden">Web Pública</span>
-              <span className="hidden sm:block">Vista Pública (Web)</span>
-            </span>
-          </button>
+      {/* HEADER ATS STICKY */}
+      <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
+        <div className="bg-white rounded-3xl p-1.5 sm:p-2 shadow-sm border border-slate-200">
+          {/* TABS */}
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+            <button 
+              onClick={() => setActiveTab('vacantes')}
+              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'vacantes' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <Briefcase size={18} className={activeTab === 'vacantes' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Bolsa de Trabajo</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('kanban')}
+              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'kanban' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <ClipboardList size={18} className={activeTab === 'kanban' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tablero Candidatos</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('entrevistas')}
+              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'entrevistas' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <Calendar size={18} className={activeTab === 'entrevistas' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
+                <span className="block sm:hidden">Agenda</span>
+                <span className="hidden sm:block">Agenda de Entrevistas</span>
+              </span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('publico')}
+              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'publico' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <Globe size={18} className={activeTab === 'publico' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
+                <span className="block sm:hidden">Web Pública</span>
+                <span className="hidden sm:block">Vista Pública (Web)</span>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

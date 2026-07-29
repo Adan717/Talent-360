@@ -735,71 +735,73 @@ export function OrgVaultManager() {
       {/* Main pane */}
       <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
         
-        {/* Admin Navigation (for managers) */}
+        {/* Admin Navigation Sticky */}
         {isAdmin && (
-          <div className="flex border-b border-slate-200 pb-3 mb-5 gap-2 overflow-x-auto">
-            <button
-              onClick={() => setAdminTab('view')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                adminTab === 'view' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <BookOpen size={14} /> Leer Documento
-            </button>
-            <button
-              onClick={() => setAdminTab('suggestions')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 relative ${
-                adminTab === 'suggestions' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <GitPullRequest size={14} /> Propuestas de Cambio
-              {suggestions.filter(s => s.status === 'pending').length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center animate-bounce">
-                  {suggestions.filter(s => s.status === 'pending').length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setAdminTab('edit')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                adminTab === 'edit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-              disabled={!activeDoc}
-            >
-              <Edit size={14} /> Editar Directamente
-            </button>
-            <button
-              onClick={() => setAdminTab('sync')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                adminTab === 'sync' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Upload size={14} /> Sincronización
-            </button>
-            <button
-              onClick={() => setAdminTab('users')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                adminTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Users size={14} /> Avance y Usuarios
-            </button>
-            <button
-              onClick={() => setAdminTab('matrix')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                adminTab === 'matrix' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <LayoutGrid size={14} /> Matriz de Puestos
-            </button>
-            <button
-              onClick={() => setAdminTab('exams')}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
-                adminTab === 'exams' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Trophy size={14} /> Certificaciones
-            </button>
+          <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
+            <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex border-b border-slate-200 pb-2 mb-1 gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+              <button
+                onClick={() => setAdminTab('view')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                  adminTab === 'view' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <BookOpen size={14} /> Leer Documento
+              </button>
+              <button
+                onClick={() => setAdminTab('suggestions')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 relative ${
+                  adminTab === 'suggestions' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <GitPullRequest size={14} /> Propuestas de Cambio
+                {suggestions.filter(s => s.status === 'pending').length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center animate-bounce">
+                    {suggestions.filter(s => s.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setAdminTab('edit')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                  adminTab === 'edit' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+                disabled={!activeDoc}
+              >
+                <Edit size={14} /> Editar Directamente
+              </button>
+              <button
+                onClick={() => setAdminTab('sync')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                  adminTab === 'sync' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Upload size={14} /> Sincronización
+              </button>
+              <button
+                onClick={() => setAdminTab('users')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                  adminTab === 'users' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Users size={14} /> Avance y Usuarios
+              </button>
+              <button
+                onClick={() => setAdminTab('matrix')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                  adminTab === 'matrix' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <LayoutGrid size={14} /> Matriz de Puestos
+              </button>
+              <button
+                onClick={() => setAdminTab('exams')}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
+                  adminTab === 'exams' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Trophy size={14} /> Certificaciones
+              </button>
+            </div>
           </div>
         )}
 

@@ -369,30 +369,32 @@ export default function LftManager() {
             {/* Columna Izquierda: Configuración con pestañas */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Selector de Pestañas */}
-              <div className="flex gap-2 border-b border-slate-200 pb-px mb-6">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('variables')}
-                  className={`pb-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer border-none bg-transparent ${
-                    activeTab === 'variables'
-                      ? 'border-b-amber-500 text-slate-800 font-extrabold'
-                      : 'border-b-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Reglamento y Tolerancias
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('holidays')}
-                  className={`pb-3 px-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer border-none bg-transparent ${
-                    activeTab === 'holidays'
-                      ? 'border-b-amber-500 text-slate-800 font-extrabold'
-                      : 'border-b-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Días Festivos Oficiales
-                </button>
+              {/* Selector de Pestañas Sticky */}
+              <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
+                <div className="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('variables')}
+                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-xl border-none cursor-pointer ${
+                      activeTab === 'variables'
+                        ? 'bg-amber-500 text-white font-extrabold shadow-sm'
+                        : 'bg-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    Reglamento y Tolerancias
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('holidays')}
+                    className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-xl border-none cursor-pointer ${
+                      activeTab === 'holidays'
+                        ? 'bg-amber-500 text-white font-extrabold shadow-sm'
+                        : 'bg-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    Días Festivos Oficiales
+                  </button>
+                </div>
               </div>
 
               {activeTab === 'variables' ? (

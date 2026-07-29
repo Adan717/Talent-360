@@ -1426,56 +1426,58 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
-      {/* HEADER RRHH */}
+      {/* HEADER RRHH STICKY */}
       {!readOnly && (
-        <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
-          {/* TABS */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/60 sm:bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none border border-slate-200">
-            <button 
-              onClick={() => setActiveTab('directorio')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
-                activeTab === 'directorio' 
-                  ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Users size={18} className={activeTab === 'directorio' ? 'text-blue-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Colaboradores</span>
-              {/* Counter Badge */}
-              <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
-                activeTab === 'directorio' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
-              }`}>
-                {users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0).length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('puestos')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
-                activeTab === 'puestos' 
-                  ? 'bg-white text-emerald-700 shadow-sm border border-slate-150' 
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Briefcase size={18} className={activeTab === 'puestos' ? 'text-emerald-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Puestos</span>
-              {/* Counter Badge */}
-              <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
-                activeTab === 'puestos' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
-              }`}>
-                {jobRoles.filter((role: any) => role.is_active !== false).length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('organigrama')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
-                activeTab === 'organigrama' 
-                  ? 'bg-white text-purple-700 shadow-sm border border-slate-150' 
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Network size={18} className={activeTab === 'organigrama' ? 'text-purple-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Organigrama</span>
-            </button>
+        <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
+          <div className="bg-white rounded-3xl p-1.5 sm:p-2 shadow-sm border border-slate-200">
+            {/* TABS */}
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+              <button 
+                onClick={() => setActiveTab('directorio')}
+                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                  activeTab === 'directorio' 
+                    ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Users size={18} className={activeTab === 'directorio' ? 'text-blue-600' : 'text-slate-400'} />
+                <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Colaboradores</span>
+                {/* Counter Badge */}
+                <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                  activeTab === 'directorio' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
+                }`}>
+                  {users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0).length}
+                </span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('puestos')}
+                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                  activeTab === 'puestos' 
+                    ? 'bg-white text-emerald-700 shadow-sm border border-slate-150' 
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Briefcase size={18} className={activeTab === 'puestos' ? 'text-emerald-600' : 'text-slate-400'} />
+                <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Puestos</span>
+                {/* Counter Badge */}
+                <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                  activeTab === 'puestos' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
+                }`}>
+                  {jobRoles.filter((role: any) => role.is_active !== false).length}
+                </span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('organigrama')}
+                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                  activeTab === 'organigrama' 
+                    ? 'bg-white text-purple-700 shadow-sm border border-slate-150' 
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Network size={18} className={activeTab === 'organigrama' ? 'text-purple-600' : 'text-slate-400'} />
+                <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Organigrama</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -857,12 +857,13 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
     try {
       const res = await axiosInstance.delete(`/employees/${id}`);
-      if (res.status !== 200) throw new Error("Failed to delete user");
+      if (res.status !== 200 && res.status !== 204) throw new Error("Failed to delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
-    } catch(e) {
-      console.error(e);
-      alert("Error al desactivar la ficha.");
+    } catch(e: any) {
+      console.error("Error al enviar a inactivo:", e);
+      const errMsg = e.response?.data?.error || e.response?.data?.message || "Error al desactivar la ficha.";
+      alert(errMsg);
     }
   };
 

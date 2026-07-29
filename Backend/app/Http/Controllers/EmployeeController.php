@@ -382,7 +382,7 @@ class EmployeeController extends Controller
 
     public function destroy($id)
     {
-        $employee = Employee::findOrFail($id);
+        $employee = Employee::withTrashed()->findOrFail($id);
 
         try {
             DB::beginTransaction();
@@ -392,7 +392,7 @@ class EmployeeController extends Controller
 
             // Si tiene usuario enlazado, desactivar su acceso web (pero no eliminarlo por completo para conservar integridad, y nunca tocar cuentas admin)
             if ($employee->user_id) {
-                $user = User::withoutGlobalScopes()->find($employee->user_id);
+                $user = User::withoutGlobalScopes()->withTrashed()->find($employee->user_id);
                 if ($user && $user->role !== 'admin') {
                     $user->update(['is_active' => false]);
                 }

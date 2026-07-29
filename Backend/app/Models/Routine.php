@@ -12,7 +12,10 @@ class Routine extends Model
     use Tenantable, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'id', 'title', 'target_role_id', 'trigger', 'trigger_time', 'assign_mode'
+        // Resync 3: unión — su `tenant_id` (scripts de seed/clonado) + nuestro
+        // `trigger_time` (rutinas de horario fijo, T15). El tenant_id de los requests
+        // reales lo fija el servidor (sync/controllers lo escriben explícito).
+        'id', 'tenant_id', 'title', 'target_role_id', 'trigger', 'trigger_time', 'assign_mode'
     ];
 
     public function tasks()

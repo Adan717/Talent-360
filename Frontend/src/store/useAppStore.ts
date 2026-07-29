@@ -168,6 +168,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       allowTaskRejection: true,
       aiAutoApproveIfValid: false
     },
+    clockOpConfig: {
+      gpsValidationEnabled: false,
+      allowManualCheckIn: true,
+      allow_floating_push_notifications: false
+    },
     globalStoreShiftStart: '09:00',
     globalStoreShiftEnd: '18:00',
     uiState: { menuCollapsed: false, currentTheme: 'light' }
@@ -757,9 +762,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   isModuleUnlocked: (moduleId: string) => {
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedModules } = get();
-    if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'matrix' || moduleId === 'organizacion') return true;
+    if (moduleId === 'dashboard' || moduleId === 'settings' || moduleId === 'organizacion') return true;
+
+    // 1. Si existe una lista de módulos explícitamente permitidos/desactivados para este tenant, esta manda con prioridad
+    const tenantAllowedModules = systemSettings?.tenant_allowed_modules || systemSettings?.allowed_modules || allowedModules;
+    if (Array.isArray(tenantAllowedModules) && tenantAllowedModules.length > 0) {
+      return tenantAllowedModules.includes(moduleId);
+    }
+
     if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') return true;
-    if (currentTier === 'enterprise' || currentUser?.tenant_id === 1) return true;
+    if (currentTier === 'enterprise') return true;
     
     // Check if trial is active
     const tenant = currentUser?.tenant;
@@ -773,10 +785,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
     if (trialActive) return true;
-    
-    if (!isSandboxMode && allowedModules && allowedModules.length > 0) {
-      return allowedModules.includes(moduleId);
-    }
     
     const activeMods = systemSettings?.active_modules || [];
 
@@ -795,7 +803,15 @@ export const useAppStore = create<AppState>((set, get) => ({
  
   isFeatureUnlocked: (featureId: string) => {
     const { currentTier, currentUser, systemSettings, isSandboxMode, allowedFeatures } = get();
-    if (currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1) return true;
+
+    // 1. Si existe una lista de funciones explícitamente permitidas/desactivadas para este tenant, esta manda con prioridad
+    const tenantAllowedFeatures = systemSettings?.tenant_allowed_features || systemSettings?.allowed_features || allowedFeatures;
+    if (Array.isArray(tenantAllowedFeatures) && tenantAllowedFeatures.length > 0) {
+      return tenantAllowedFeatures.includes(featureId);
+    }
+
+    if (currentUser?.system_role === 'platform_admin' || currentUser?.role === 'platform_admin') return true;
+    if (currentTier === 'pro' || currentTier === 'enterprise') return true;
     
     const tenant = currentUser?.tenant;
     let trialActive = false;
@@ -808,10 +824,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
     if (trialActive) return true;
-    
-    if (!isSandboxMode) {
-      return allowedFeatures.includes(featureId);
-    }
     
     const allowed = systemSettings?.freemium_allowed_features || [];
     return allowed.includes(featureId);

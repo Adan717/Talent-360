@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus } from 'lucide-react';
 import axiosInstance from '../lib/axios';
@@ -6,6 +7,477 @@ import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
 import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
+import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
+
+interface JobRoleCardItemProps {
+  rol: any;
+  users: any[];
+  vacancies: any[];
+  setEditingJobRole: (rol: any) => void;
+  handleDeleteJobRole: (roleId: number) => void;
+  setSelectedRoleForUsersModal: (rol: any) => void;
+  setSelectedRoleForVacanciesModal: (rol: any) => void;
+  getJobRoleKeysIcon: (roleId: number) => React.ReactNode;
+}
+
+const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
+  rol,
+  users,
+  vacancies,
+  setEditingJobRole,
+  handleDeleteJobRole,
+  setSelectedRoleForUsersModal,
+  setSelectedRoleForVacanciesModal,
+  getJobRoleKeysIcon
+}) => {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [isInCenter, setIsInCenter] = useState(false);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsInCenter(entry.isIntersecting);
+        });
+      },
+      {
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: 0.35
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id || (Array.isArray(u.job_role_ids) && u.job_role_ids.includes(rol.id))).length;
+  const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
+  const isAutoActive = employeesWithRole > 0;
+  
+  const iconKey = resolveJobRoleIconKey(rol);
+  const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === iconKey);
+  const nivel = rol.nivel_mando ?? matchedItem?.nivel_mando ?? (
+    iconKey === 'monito-gerente' || iconKey === 'shield-check' || iconKey === 'crown' ? 1 :
+    iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
+  );
+
+  const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string; watermarkColor: string }> = {
+    1: {
+      container: 'bg-gradient-to-br from-amber-50/90 via-white to-amber-100/30 border-2 border-amber-400 text-slate-900 shadow-md hover:border-amber-500 hover:shadow-xl',
+      titleText: 'text-amber-950 font-black',
+      descText: 'text-slate-600',
+      pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold',
+      label: 'N1 • Dirección General',
+      watermarkColor: 'text-amber-500/15'
+    },
+    2: {
+      container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-2 border-indigo-400 text-slate-900 shadow-md hover:border-indigo-500 hover:shadow-xl',
+      titleText: 'text-indigo-950 font-bold',
+      descText: 'text-slate-600',
+      pillClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
+      label: 'N2 • Supervisión / Jefatura',
+      watermarkColor: 'text-indigo-600/15'
+    },
+    3: {
+      container: 'bg-gradient-to-br from-sky-50/70 via-white to-slate-50 border-2 border-sky-400 text-slate-900 shadow-sm hover:border-sky-500 hover:shadow-md',
+      titleText: 'text-slate-900 font-bold',
+      descText: 'text-slate-600',
+      pillClass: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
+      label: 'N3 • Especialista / Piso',
+      watermarkColor: 'text-sky-600/15'
+    },
+    4: {
+      container: 'bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 border-2 border-emerald-400 text-slate-900 shadow-xs hover:border-emerald-500 hover:shadow-md',
+      titleText: 'text-slate-800 font-bold',
+      descText: 'text-slate-500',
+      pillClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+      label: 'N4 • Auxiliar Operativo',
+      watermarkColor: 'text-emerald-500/15'
+    },
+    5: {
+      container: 'bg-gradient-to-br from-purple-50/40 via-white to-slate-50 border-2 border-purple-300 text-slate-900 shadow-xs hover:border-purple-400 hover:shadow-md',
+      titleText: 'text-slate-700 font-semibold',
+      descText: 'text-slate-500',
+      pillClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold',
+      label: 'N5 • Apoyo Eventual',
+      watermarkColor: 'text-purple-400/15'
+    }
+  };
+
+  const cardStyle = hierarchyCardStyles[nivel] || hierarchyCardStyles[3];
+
+  return (
+    <div 
+      ref={cardRef}
+      key={rol.id} 
+      onClick={() => setEditingJobRole({
+        ...rol,
+        icon: rol.icon || 'auto',
+        reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
+        org_parent_role_id: rol.org_parent_role_id || null,
+        nivel_mando: rol.nivel_mando ?? 4
+      })}
+      className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl active:scale-[0.98] cursor-pointer ${
+        isAutoActive 
+          ? cardStyle.container 
+          : 'bg-slate-50/80 border-slate-250 text-slate-700 opacity-90'
+      } ${isInCenter ? 'scale-[1.02] shadow-lg -translate-y-0.5 border-opacity-100 ring-2 ring-indigo-400/30' : ''}`}
+    >
+       {/* Destello Cristalino Shimmer Beam Trail al Scroll/Hover */}
+       <div className="absolute inset-0 overflow-hidden rounded-2xl sm:rounded-3xl pointer-events-none z-0">
+          <div className={`w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent absolute top-0 -left-1/2 transition-opacity duration-500 ${
+            isInCenter ? 'animate-shimmer-trail opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:animate-shimmer-trail'
+          }`} />
+       </div>
+
+       {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) con animación dinámica al scroll */}
+       <div className={`absolute -right-4 -bottom-4 transition-all duration-700 pointer-events-none ${
+         isInCenter 
+           ? 'opacity-30 scale-125 -rotate-6' 
+           : 'opacity-15 group-hover:opacity-25 group-hover:scale-110 group-hover:-rotate-6'
+       }`}>
+          {renderJobRoleIcon(rol, 110, cardStyle.watermarkColor)}
+       </div>
+
+       <div>
+          {/* Header con Jerarquía, Estado Automático y Botón Tachita (X) Flotante */}
+          <div className="flex items-center justify-between mb-3 relative z-10">
+             <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
+                   {cardStyle.label}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                   isAutoActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                   {isAutoActive ? '● Activo' : '○ Inactivo'}
+                </span>
+             </div>
+
+             {/* Tachita Flotante (X) para Eliminar Puesto */}
+             <button 
+               type="button"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 handleDeleteJobRole(rol.id);
+               }} 
+               className="w-7 h-7 rounded-full bg-slate-100/90 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200/80 shadow-2xs group/del shrink-0" 
+               title="Eliminar Puesto"
+             >
+               <X size={14} className="group-hover/del:scale-110 transition-transform"/>
+             </button>
+          </div>
+
+          {/* Ficha Principal con Puro Monito Icono y flotación 3D orgánica al scroll móvil */}
+          <div className="flex items-center gap-3 relative z-10 mb-2">
+             <div className={`shrink-0 transition-transform duration-500 ${
+               isInCenter ? 'scale-125 rotate-3 animate-float-subtle' : 'group-hover:scale-115 group-hover:rotate-3'
+             }`}>
+                <JobRoleIconBadge role={rol} isActive={isAutoActive} size={36} />
+             </div>
+             <div className="min-w-0 flex-1">
+                <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText}`}>
+                   {rol.name}{getJobRoleKeysIcon(rol.id)}
+                </h4>
+                <div className="flex gap-1.5 mt-1 flex-wrap">
+                   {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
+                       <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100/90 text-slate-700 border border-slate-200">{a}</span>
+                    ))}
+                </div>
+             </div>
+          </div>
+       </div>
+       
+       {/* Footer KPI con números destacados y diseño responsivo móvil */}
+       <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 mt-2 relative z-10 text-xs gap-2">
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedRoleForUsersModal(rol);
+            }} 
+            className="flex items-center gap-1.5 bg-indigo-50/90 hover:bg-indigo-100/90 text-indigo-950 px-2.5 py-1.5 rounded-xl border border-indigo-200/80 transition-all shrink-0 group/stat"
+            title="Ver colaboradores en este puesto"
+          >
+             <Users size={14} className="text-indigo-600 group-hover/stat:scale-110 transition-transform" />
+             <span className="text-[11px] font-bold text-slate-700">Equipo</span>
+             <span className="bg-indigo-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
+                {employeesWithRole}
+             </span>
+          </button>
+
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedRoleForVacanciesModal(rol);
+            }}
+            className="flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-950 px-2.5 py-1.5 rounded-xl border border-sky-200 transition-all shrink-0 group/vac"
+            title="Ver vacantes para este puesto"
+          >
+             <ClipboardList size={14} className="text-sky-600 group-hover/vac:scale-110 transition-transform" />
+             <span className="text-[11px] font-bold text-slate-700">Vacantes</span>
+             <span className="bg-sky-600 text-white font-black text-xs px-2 py-0.5 rounded-full shadow-2xs">
+                {roleVacancies.length}
+             </span>
+          </button>
+       </div>
+    </div>
+  );
+};
+
+interface UserCardItemProps {
+  u: any;
+  jobRoles: any[];
+  directorioSubTab: string;
+  setEditingUser: (u: any) => void;
+  handleDeleteUser: (userId: number) => void;
+  handleRestoreUser: (userId: number) => void;
+  handleForceDeleteUser: (userId: number) => void;
+  formatEmployeeDisplayName: (name: string) => string;
+  getUserKeysIcon: (userId: number) => React.ReactNode;
+  getJobRoleKeysIcon: (roleId: number) => React.ReactNode;
+  formatTimeVisual: (timeStr?: string) => string;
+}
+
+const UserCardItem: React.FC<UserCardItemProps> = ({
+  u,
+  jobRoles,
+  directorioSubTab,
+  setEditingUser,
+  handleDeleteUser,
+  handleRestoreUser,
+  handleForceDeleteUser,
+  formatEmployeeDisplayName,
+  getUserKeysIcon,
+  getJobRoleKeysIcon,
+  formatTimeVisual
+}) => {
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [isInCenter, setIsInCenter] = useState(false);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setIsInCenter(entry.isIntersecting);
+        });
+      },
+      {
+        rootMargin: '-20% 0px -20% 0px',
+        threshold: 0.35
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const userRole = jobRoles.find((r: any) => r.id === u.job_role_id);
+  const iconKey = resolveJobRoleIconKey(userRole);
+  const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === iconKey);
+  const nivel = userRole?.nivel_mando ?? matchedItem?.nivel_mando ?? (
+    iconKey === 'monito-gerente' || iconKey === 'shield-check' || iconKey === 'crown' ? 1 :
+    iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
+  );
+
+  const hierarchyCardStyles: Record<number, { container: string; titleText: string; pillClass: string; label: string; watermarkColor: string }> = {
+    1: {
+      container: 'bg-gradient-to-br from-amber-50/90 via-white to-amber-100/30 border-2 border-amber-400 text-slate-900 shadow-md hover:border-amber-500 hover:shadow-xl',
+      titleText: 'text-amber-950 font-black',
+      pillClass: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold',
+      label: 'N1 • Dirección General',
+      watermarkColor: 'text-amber-500/15'
+    },
+    2: {
+      container: 'bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border-2 border-indigo-400 text-slate-900 shadow-md hover:border-indigo-500 hover:shadow-xl',
+      titleText: 'text-indigo-950 font-bold',
+      pillClass: 'bg-indigo-100 text-indigo-900 border-indigo-300 font-bold',
+      label: 'N2 • Supervisión / Jefatura',
+      watermarkColor: 'text-indigo-600/15'
+    },
+    3: {
+      container: 'bg-gradient-to-br from-sky-50/70 via-white to-slate-50 border-2 border-sky-400 text-slate-900 shadow-sm hover:border-sky-500 hover:shadow-md',
+      titleText: 'text-slate-900 font-bold',
+      pillClass: 'bg-sky-100 text-sky-900 border-sky-300 font-bold',
+      label: 'N3 • Especialista / Piso',
+      watermarkColor: 'text-sky-600/15'
+    },
+    4: {
+      container: 'bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 border-2 border-emerald-400 text-slate-900 shadow-xs hover:border-emerald-500 hover:shadow-md',
+      titleText: 'text-slate-800 font-bold',
+      pillClass: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold',
+      label: 'N4 • Auxiliar Operativo',
+      watermarkColor: 'text-emerald-500/15'
+    },
+    5: {
+      container: 'bg-gradient-to-br from-purple-50/40 via-white to-slate-50 border-2 border-purple-300 text-slate-900 shadow-xs hover:border-purple-400 hover:shadow-md',
+      titleText: 'text-slate-700 font-semibold',
+      pillClass: 'bg-purple-100 text-purple-900 border-purple-300 font-bold',
+      label: 'N5 • Apoyo Eventual',
+      watermarkColor: 'text-purple-400/15'
+    }
+  };
+
+  const cardStyle = hierarchyCardStyles[nivel] || hierarchyCardStyles[3];
+  const isInactiveTab = directorioSubTab === 'inactivos';
+
+  return (
+    <div 
+      ref={cardRef}
+      key={u.id}
+      onClick={() => setEditingUser(u)}
+      className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl active:scale-[0.98] cursor-pointer flex flex-col justify-between ${
+        isInactiveTab 
+          ? 'bg-slate-50/80 border-slate-300 opacity-80 shadow-none' 
+          : cardStyle.container
+      } ${isInCenter ? 'scale-[1.02] shadow-lg -translate-y-0.5 border-opacity-100 ring-2 ring-indigo-400/30' : ''}`}
+    >
+       {/* Destello Cristalino Shimmer Beam Trail al Scroll/Hover */}
+       <div className="absolute inset-0 overflow-hidden rounded-2xl sm:rounded-3xl pointer-events-none z-0">
+          <div className={`w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent absolute top-0 -left-1/2 transition-opacity duration-500 ${
+            isInCenter ? 'animate-shimmer-trail opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:animate-shimmer-trail'
+          }`} />
+       </div>
+
+       {/* Marca de Agua (Watermark Vectorial del Monito Alusivo del Puesto del Colaborador) */}
+       <div className={`absolute -right-4 -bottom-4 transition-all duration-700 pointer-events-none ${
+         isInCenter 
+           ? 'opacity-30 scale-125 -rotate-6' 
+           : 'opacity-15 group-hover:opacity-25 group-hover:scale-110 group-hover:-rotate-6'
+       }`}>
+          {renderJobRoleIcon(userRole, 110, cardStyle.watermarkColor)}
+       </div>
+
+       <div>
+          {/* Header con Jerarquía, Estado y Acciones Rápidas */}
+          <div className="flex items-center justify-between mb-3 relative z-10">
+             <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${cardStyle.pillClass}`}>
+                   {cardStyle.label}
+                </span>
+                {!isInactiveTab ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-300">
+                     ● Activo
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-200 text-slate-600 border-slate-300">
+                     ○ Archivado
+                  </span>
+                )}
+             </div>
+
+             {/* Acciones Secundarias (Editar / Eliminar / Restaurar) */}
+             <div className="flex items-center gap-1 shrink-0">
+                {!isInactiveTab ? (
+                   <button 
+                     type="button"
+                     onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteUser(u.id);
+                     }}
+                     className="w-7 h-7 rounded-full bg-slate-100/90 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200/80 shadow-2xs group/del" 
+                     title="Enviar a inactivo"
+                   >
+                     <UserMinus size={14} className="group-hover/del:scale-110 transition-transform"/>
+                   </button>
+                ) : (
+                   <div className="flex items-center gap-1">
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           handleRestoreUser(u.id);
+                        }}
+                        className="w-7 h-7 rounded-full bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-600 flex items-center justify-center transition-colors border border-emerald-200 shadow-2xs" 
+                        title="Re-activar Colaborador"
+                      >
+                         <RotateCcw size={14}/>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           handleForceDeleteUser(u.id);
+                        }}
+                        className="w-7 h-7 rounded-full bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-400 flex items-center justify-center transition-colors border border-slate-200 shadow-2xs" 
+                        title="Eliminar Definitivamente"
+                      >
+                         <Trash2 size={14}/>
+                      </button>
+                   </div>
+                )}
+             </div>
+          </div>
+
+          {/* Ficha Principal: Avatar + Nombre + Puesto Monito */}
+          <div className="flex items-center gap-3.5 mb-3 relative z-10">
+             <div className="relative shrink-0">
+                <img 
+                  src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} 
+                  alt={u.name} 
+                  className="w-13 h-13 sm:w-15 sm:h-15 rounded-full object-cover border-2 border-white shadow-md group-hover:scale-105 transition-transform" 
+                />
+                <div className={`absolute -bottom-1 -right-1 bg-white p-0.5 rounded-full shadow-xs shrink-0 ${
+                   isInCenter ? 'animate-float-subtle' : ''
+                }`}>
+                   <JobRoleIconBadge role={userRole} isActive={!isInactiveTab} size={20} />
+                </div>
+             </div>
+
+             <div className="min-w-0 flex-1">
+                <h4 className={`text-base sm:text-lg leading-snug tracking-tight font-black text-slate-900 ${isInactiveTab ? 'line-through opacity-70' : ''}`}>
+                   {formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.employee_id ? Number(u.employee_id) : Number(u.id))}
+                </h4>
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                   <span className="text-xs font-bold text-indigo-700 bg-indigo-50/90 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
+                      {userRole?.name || 'Sin Puesto'}{userRole && getJobRoleKeysIcon(userRole.id)}
+                   </span>
+                   {u.area && (
+                      <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                         {u.area}
+                      </span>
+                   )}
+                </div>
+             </div>
+          </div>
+       </div>
+
+       {/* Footer KPI: Horario de Trabajo + Botón Directo de Contacto */}
+       <div className="pt-3 border-t border-slate-200/80 mt-2 relative z-10 text-xs space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-white/70 backdrop-blur-xs p-2 rounded-xl border border-slate-200/60 flex-wrap gap-1">
+             <div className="flex items-center gap-1.5 text-slate-700 font-bold">
+                <Clock size={13} className="text-indigo-600 shrink-0" />
+                <span>{formatTimeVisual(u.shiftStart)} - {formatTimeVisual(u.shiftEnd)}</span>
+             </div>
+             <div className="flex items-center gap-1.5 text-slate-600">
+                <Coffee size={13} className="text-slate-400 shrink-0" />
+                <span>{u.restDay || 'Descanso'} ({u.mealMinutes || 60}m)</span>
+             </div>
+          </div>
+
+          {u.phone && (
+             <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] font-bold text-slate-500">Contacto Directo:</span>
+                <a 
+                  href={`tel:${u.phone}`} 
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-xs transition-colors shrink-0"
+                >
+                   <Phone size={12} className="text-emerald-600" /> {u.phone}
+                </a>
+             </div>
+          )}
+       </div>
+    </div>
+  );
+};
 
 interface RecursosHumanosProps {
   readOnly?: boolean;
@@ -13,7 +485,37 @@ interface RecursosHumanosProps {
 }
 
 export default function RecursosHumanos({ readOnly = false, initialTab = 'directorio' }: RecursosHumanosProps) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const storedTab = localStorage.getItem('talent360_rrhh_active_tab');
+  const [activeTab, setActiveTabState] = useState(urlTab || storedTab || initialTab);
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('talent360_rrhh_active_tab', tab);
+    } catch {}
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
+      try {
+        localStorage.setItem('talent360_rrhh_active_tab', urlTab);
+      } catch {}
+    } else if (!urlTab && activeTab) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', activeTab);
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab]);
 
   const getUserKeysIcon = (userId: number) => {
     try {
@@ -190,6 +692,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('');
   const [templateIndustryFilter, setTemplateIndustryFilter] = useState('');
+  const [selectedIndustryFilter, setSelectedIndustryFilter] = useState('decorarte');
   const [importingTemplate, setImportingTemplate] = useState(false);
 
   const [orgViewMode, setOrgViewMode] = useState<'tree' | 'levels'>('tree');
@@ -499,9 +1002,18 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       setLoading(true);
       
       const [stateRes, empRes, rolesRes, vacRes, assRes] = await Promise.all([
-          axiosInstance.get('/sync/state'),
-          axiosInstance.get('/employees'),
-          axiosInstance.get('/job-roles'),
+          axiosInstance.get('/sync/state').catch(err => {
+              console.error("Error al cargar /sync/state en RRHH:", err);
+              return { data: {} };
+          }),
+          axiosInstance.get('/employees').catch(err => {
+              console.error("Error al cargar /employees en RRHH:", err);
+              return { data: [] };
+          }),
+          axiosInstance.get('/job-roles').catch(err => {
+              console.error("Error al cargar /job-roles en RRHH:", err);
+              return { data: [] };
+          }),
           axiosInstance.get('/admin/vacancies').catch(vacError => {
               console.error("Error al cargar vacantes para RRHH:", vacError);
               return { data: [] };
@@ -516,7 +1028,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         localStorage.setItem('store_opening_assignments', JSON.stringify(assRes.data));
       }
 
-      const data = stateRes.data;
+      const data = stateRes.data || {};
       setUsers(empRes.data || []);
       const cleanRoles = (rolesRes.data || []).map((r: any) => ({
         ...r,
@@ -567,8 +1079,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       setRolePermissionsConfig(newPermConfig);
 
     } catch(e) {
-      console.error("Error al cargar desde DB:", e);
-      alert("Error al cargar la información desde la base de datos relacional de Postgres. Por favor, verifique que el servidor Laravel y Postgres estén activos.");
+      console.error("Error al cargar desde DB en RRHH:", e);
     } finally {
       setLoading(false);
     }
@@ -649,6 +1160,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       id: 0,
       name: '',
       area: 'Administración',
+      icon: 'auto',
       description: '',
       responsibilities: '',
       reports_to_role_id: null,
@@ -848,24 +1360,21 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleDeleteUser = async (id: number) => {
     if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
     try {
-      const emp = users.find((u: any) => u.id === id);
-      const targetId = emp?.employee_id || id;
-      const res = await axiosInstance.delete(`/employees/${targetId}`);
-      if (res.status !== 200) throw new Error("Failed to delete user");
+      const res = await axiosInstance.delete(`/employees/${id}`);
+      if (res.status !== 200 && res.status !== 204) throw new Error("Failed to delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
-    } catch(e) {
-      console.error(e);
-      alert("Error al desactivar la ficha.");
+    } catch(e: any) {
+      console.error("Error al enviar a inactivo:", e);
+      const errMsg = e.response?.data?.error || e.response?.data?.message || "Error al desactivar la ficha.";
+      alert(errMsg);
     }
   };
 
   const handleForceDeleteUser = async (id: number) => {
     if(!window.confirm('¿Seguro que deseas eliminar definitivamente a este colaborador? Esta acción no se puede deshacer y borrará permanentemente sus registros de la base de datos.')) return;
     try {
-      const emp = users.find((u: any) => u.id === id);
-      const targetId = emp?.employee_id || id;
-      const res = await axiosInstance.delete(`/employees/${targetId}/force`);
+      const res = await axiosInstance.delete(`/employees/${id}/force`);
       if (res.status !== 200) throw new Error("Failed to force delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -878,9 +1387,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const handleRestoreUser = async (id: number) => {
     if(!window.confirm('¿Deseas restaurar a este colaborador? Volverá a aparecer en el directorio activo.')) return;
     try {
-      const emp = users.find((u: any) => u.id === id);
-      const targetId = emp?.employee_id || id;
-      const res = await axiosInstance.put(`/employees/${targetId}`, { is_active_employee: true });
+      const res = await axiosInstance.put(`/employees/${id}`, { is_active_employee: true });
       if (res.status !== 200) throw new Error("Failed to restore user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));
@@ -1168,60 +1675,77 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 pb-24 sm:pb-6">
       
-      {/* HEADER RRHH */}
+      {/* HEADER RRHH (Escritorio) */}
       {!readOnly && (
-        <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
-          {/* TABS */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/60 sm:bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none border border-slate-200">
-            <button 
-              onClick={() => setActiveTab('directorio')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
-                activeTab === 'directorio' 
-                  ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Users size={18} className={activeTab === 'directorio' ? 'text-blue-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Colaboradores</span>
-              {/* Counter Badge */}
-              <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
-                activeTab === 'directorio' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
-              }`}>
-                {users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0).length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('puestos')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
-                activeTab === 'puestos' 
-                  ? 'bg-white text-emerald-700 shadow-sm border border-slate-150' 
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Briefcase size={18} className={activeTab === 'puestos' ? 'text-emerald-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Puestos</span>
-              {/* Counter Badge */}
-              <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
-                activeTab === 'puestos' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
-              }`}>
-                {jobRoles.filter((role: any) => role.is_active !== false).length}
-              </span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('organigrama')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
-                activeTab === 'organigrama' 
-                  ? 'bg-white text-purple-700 shadow-sm border border-slate-150' 
-                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <Network size={18} className={activeTab === 'organigrama' ? 'text-purple-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Organigrama</span>
-            </button>
+        <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+          <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200">
+            {/* TABS */}
+            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+              <button 
+                onClick={() => setActiveTab('directorio')}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
+                  activeTab === 'directorio' 
+                    ? 'bg-white text-blue-700 shadow-sm border border-slate-150' 
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Users size={18} className={activeTab === 'directorio' ? 'text-blue-600' : 'text-slate-400'} />
+                <span className="whitespace-nowrap text-center leading-tight">Colaboradores</span>
+                <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                  activeTab === 'directorio' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
+                }`}>
+                  {users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0).length}
+                </span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('puestos')}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
+                  activeTab === 'puestos' 
+                    ? 'bg-white text-emerald-700 shadow-sm border border-slate-150' 
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Briefcase size={18} className={activeTab === 'puestos' ? 'text-emerald-600' : 'text-slate-400'} />
+                <span className="whitespace-nowrap text-center leading-tight">Puestos</span>
+                <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                  activeTab === 'puestos' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-200 text-slate-600 border border-slate-300'
+                }`}>
+                  {jobRoles.filter((role: any) => role.is_active !== false).length}
+                </span>
+              </button>
+              <button 
+                onClick={() => setActiveTab('organigrama')}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
+                  activeTab === 'organigrama' 
+                    ? 'bg-white text-purple-700 shadow-sm border border-slate-150' 
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Network size={18} className={activeTab === 'organigrama' ? 'text-purple-600' : 'text-slate-400'} />
+                <span className="whitespace-nowrap text-center leading-tight">Organigrama</span>
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB índigo) */}
+      {!readOnly && (
+        <MobileModuleBottomDock
+          colorTheme="indigo"
+          activeTab={activeTab}
+          onSelectTab={(tab) => setActiveTab(tab as any)}
+          fabIcon={<UserPlus size={28} className="text-white relative z-10 animate-pulse" />}
+          onFabClick={() => activeTab === 'puestos' ? setEditingJobRole({}) : setShowForm(true)}
+          fabTitle="Registrar Colaborador / Puesto"
+          items={[
+            { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.length },
+            { id: 'puestos', label: 'Puestos', icon: <Briefcase />, badge: jobRoles.length },
+            { id: 'organigrama', label: 'Organigrama', icon: <Network /> }
+          ]}
+        />
       )}
 
       {/* CONTENIDO TABS */}
@@ -1327,72 +1851,23 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                    </div>
                 ) : (
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {filteredUsers.map((u: any) => {
-                       const userRole = jobRoles.find((r: any) => r.id === u.job_role_id);
-                       return (
-                         <div key={u.id} className={`bg-white border rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow relative ${directorioSubTab === 'inactivos' ? 'border-slate-200 opacity-85 bg-slate-50/50 shadow-none' : 'border-slate-200'}`}>
-                           {directorioSubTab === 'activos' ? (
-                              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
-                                <button onClick={() => setEditingUser(u)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Editar"><Pencil size={14}/></button>
-                                <button onClick={() => handleDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors font-bold" title="Enviar a inactivo">
-                                  <UserMinus size={14}/>
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex gap-1.5">
-                                <button onClick={() => handleRestoreUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Re-activar Colaborador">
-                                  <RotateCcw size={14}/>
-                                </button>
-                                <button onClick={() => handleForceDeleteUser(u.id)} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors font-bold" title="Eliminar Definitivamente">
-                                  <Trash2 size={14}/>
-                                </button>
-                              </div>
-                            )}
-                           <div className="flex items-center gap-3 sm:gap-4 mb-4">
-                             <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} alt={u.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-slate-100" />
-                             <div className="pr-16 sm:pr-20">
-                               <h4 className="font-bold text-slate-800 text-base sm:text-lg leading-tight">{formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.employee_id ? Number(u.employee_id) : Number(u.id))}</h4>
-                               <div className="flex gap-1.5 items-center mt-1 flex-wrap">
-                                 <p className="text-indigo-600 font-bold text-xs sm:text-sm">{userRole?.name || 'Sin Puesto'}{userRole && getJobRoleKeysIcon(userRole.id)}</p>
-                                 {directorioSubTab === 'inactivos' && (
-                                   <span className="text-[9px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md border border-slate-200 uppercase tracking-wider">Archivado</span>
-                                 )}
-                               </div>
-                             </div>
-                           </div>
-                           
-                           {/* Horario/Jornada: Vista Escritorio */}
-                           <div className="hidden sm:block bg-slate-50 rounded-xl p-3 text-sm border border-slate-100">
-                             <div className="flex justify-between mb-1"><span className="text-slate-500">Horario:</span> <span className="font-bold text-slate-700">{formatTimeVisual(u.shiftStart)} - {formatTimeVisual(u.shiftEnd)}</span></div>
-                             <div className="flex justify-between mb-1"><span className="text-slate-500">Comida:</span> <span className="font-bold text-slate-700">{u.mealMinutes} min</span></div>
-                             <div className="flex justify-between"><span className="text-slate-500">Descanso:</span> <span className="font-bold text-slate-700">{u.restDay}</span></div>
-                           </div>
-                            
-                            {/* Horario/Jornada: Vista Móvil Condensada */}
-                            <div className="block sm:hidden bg-slate-50 rounded-xl p-2.5 text-[11px] border border-slate-100">
-                              <div className="flex items-center justify-between flex-wrap gap-1 text-slate-700 font-semibold">
-                                <div className="flex items-center gap-1.5">
-                                  <Clock size={12} className="text-slate-400 shrink-0" />
-                                  <span>{formatTimeVisual(u.shiftStart)} - {formatTimeVisual(u.shiftEnd)}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Coffee size={12} className="text-slate-400 shrink-0" />
-                                  <span>{u.restDay} / {u.mealMinutes}m</span>
-                                </div>
-                              </div>
-                              {u.phone && (
-                                <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/50 mt-1.5">
-                                  <span className="text-slate-500 font-normal">Contacto:</span>
-                                  <a href={`tel:${u.phone}`} className="text-indigo-600 font-bold hover:underline flex items-center gap-1">
-                                    <Phone size={10} /> {u.phone}
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                     {filteredUsers.map((u: any) => (
+                       <UserCardItem
+                         key={u.id}
+                         u={u}
+                         jobRoles={jobRoles}
+                         directorioSubTab={directorioSubTab}
+                         setEditingUser={setEditingUser}
+                         handleDeleteUser={handleDeleteUser}
+                         handleRestoreUser={handleRestoreUser}
+                         handleForceDeleteUser={handleForceDeleteUser}
+                         formatEmployeeDisplayName={formatEmployeeDisplayName}
+                         getUserKeysIcon={getUserKeysIcon}
+                         getJobRoleKeysIcon={getJobRoleKeysIcon}
+                         formatTimeVisual={formatTimeVisual}
+                       />
+                     ))}
+                   </div>
                   )}
               {/* <!-- EDIT MODAL --> */}
               {editingUser && (
@@ -1966,88 +2441,21 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 </button>
               </div>
             </div>
-            <p className="text-slate-500 mb-8">Administra los roles funcionales de tu empresa, revisa quiénes los ocupan y conéctalos con las vacantes activas.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {jobRoles.map((rol: any) => {
-                const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id).length;
-                const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
-                const isActive = rol.is_active !== false;
-                return (
-                  <div 
-                    key={rol.id} 
-                    className={`bg-white border rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all relative flex flex-col justify-between min-h-[220px] ${
-                      isActive ? 'border-slate-200' : 'border-slate-350 bg-slate-50/50 opacity-70'
-                    }`}
-                  >
-                     <div>
-                        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2 animate-fade-in">
-                           <button 
-                             type="button"
-                             onClick={() => handleToggleJobRoleActive(rol)} 
-                             className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${
-                               isActive ? 'bg-indigo-600' : 'bg-slate-350'
-                             }`}
-                             title={isActive ? "Desactivar puesto" : "Activar puesto"}
-                           >
-                             <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                               isActive ? 'right-0.5' : 'left-0.5'
-                             }`} />
-                           </button>
-
-                           <button onClick={() => setEditingJobRole({
-                              ...rol,
-                              reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
-                              org_parent_role_id: rol.org_parent_role_id || null,
-                              nivel_mando: rol.nivel_mando ?? 4
-                            })} className="w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-colors" title="Editar Puesto">
-                              <Pencil size={14}/>
-                           </button>
-                           <button onClick={() => handleDeleteJobRole(rol.id)} className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors" title="Eliminar Puesto">
-                              <Trash2 size={14}/>
-                           </button>
-                        </div>
-                        <div className="flex items-center gap-3 mb-4">
-                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
-                              <Briefcase size={24} />
-                           </div>
-                           <div className="pr-20 sm:pr-24">
-                              <h4 className={`font-bold text-base sm:text-lg leading-tight ${isActive ? 'text-slate-800' : 'text-slate-500 line-through'}`}>{rol.name}{getJobRoleKeysIcon(rol.id)}</h4>
-                              <div className="flex gap-1.5 mt-1 flex-wrap">
-                                 {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
-                                     <span key={a} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{a}</span>
-                                  ))}
-                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                    isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'
-                                 }`}>
-                                    {isActive ? 'Activo' : 'Inactivo'}
-                                 </span>
-                              </div>
-                           </div>
-                        </div>
-                        <p className="text-sm text-slate-500 line-clamp-2 mb-4 h-10">{rol.description || 'Sin descripción detallada.'}</p>
-                     </div>
-                     
-                     <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
-                        <button 
-                          type="button"
-                          onClick={() => setSelectedRoleForUsersModal(rol)} 
-                          className="flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600 transition-colors group text-left"
-                        >
-                           <Users size={16} className="text-slate-400 group-hover:text-indigo-500" />
-                           <span><span className="font-bold">{employeesWithRole}</span> {employeesWithRole === 1 ? 'Colaborador' : 'Colaboradores'}</span>
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => setSelectedRoleForVacanciesModal(rol)}
-                          className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 transition-colors"
-                        >
-                           Vacantes ({roleVacancies.length}) <ClipboardList size={14}/>
-                        </button>
-                     </div>
-                  </div>
-                );
-              })}
+              {jobRoles.map((rol: any) => (
+                <JobRoleCardItem
+                  key={rol.id}
+                  rol={rol}
+                  users={users}
+                  vacancies={vacancies}
+                  setEditingJobRole={setEditingJobRole}
+                  handleDeleteJobRole={handleDeleteJobRole}
+                  setSelectedRoleForUsersModal={setSelectedRoleForUsersModal}
+                  setSelectedRoleForVacanciesModal={setSelectedRoleForVacanciesModal}
+                  getJobRoleKeysIcon={getJobRoleKeysIcon}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -2504,6 +2912,104 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                      <div className="col-span-1 sm:col-span-2">
                         <label className="block text-sm font-bold text-slate-600 mb-2">Nombre del Puesto</label>
                         <input type="text" value={editingJobRole.name || ''} onChange={e => setEditingJobRole({...editingJobRole, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl" />
+                     </div>
+                     <div className="col-span-1 sm:col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                           <label className="block text-sm font-bold text-slate-700">Icono Alusivo del Puesto</label>
+                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700">
+                             Monito Alusivo Automático
+                           </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mb-3">
+                           Se asigna automáticamente el Monito Alusivo según el título e industria de tu empresa:
+                        </p>
+                        
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 mb-3 shadow-xs">
+                           <JobRoleIconBadge role={editingJobRole} iconKey={editingJobRole.icon} size={26} />
+                           <div className="flex-1 min-w-0">
+                              <div className="text-xs font-bold text-slate-800 truncate">
+                                {editingJobRole.name || 'Sin nombre asignado'}
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-medium truncate">
+                                {editingJobRole.icon && editingJobRole.icon !== 'auto'
+                                  ? `Icono asignado: ${editingJobRole.icon}`
+                                  : `Monito alusivo sugerido automáticamente para este puesto`}
+                              </div>
+                           </div>
+                           {(editingJobRole.icon && editingJobRole.icon !== 'auto') && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingJobRole({ ...editingJobRole, icon: 'auto' })}
+                                className="text-xs text-indigo-600 font-bold hover:underline shrink-0"
+                              >
+                                Restablecer Auto
+                              </button>
+                           )}
+                        </div>
+
+                        {/* Selector colapsable por Giro de Empresa */}
+                        <details className="group">
+                           <summary className="text-xs font-bold text-indigo-600 cursor-pointer hover:text-indigo-800 select-none flex items-center gap-1">
+                              <span>⚙️ Personalizar o explorar catálogo de personajes por Giro de Empresa...</span>
+                           </summary>
+                           <div className="mt-3 pt-3 border-t border-slate-200">
+                              <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                                 {[
+                                   { id: 'decorarte', label: '🎨 Decorarte 360' },
+                                   { id: 'automotriz', label: '🚗 Automotriz / Mecánica' },
+                                   { id: 'legal', label: '⚖️ Jurídico & Legal' },
+                                   { id: 'salud', label: '🏥 Salud & Clínicas' },
+                                   { id: 'construccion', label: '🏗️ Construcción & Obra' },
+                                   { id: 'servicios', label: '⚡ Servicios & Mantenimiento' },
+                                   { id: 'educacion', label: '🎓 Educación & Colegios' },
+                                   { id: 'belleza', label: '💇 Estética & Spa' },
+                                   { id: 'retail', label: '🏪 Retail & Tiendas' },
+                                   { id: 'oficina', label: '🏢 Oficina & Corp' },
+                                   { id: 'tecnologia', label: '💻 Tecnología' },
+                                   { id: 'restaurante', label: '🍽️ Restaurantes' },
+                                   { id: 'all', label: '🌐 Todos' },
+                                 ].map((cat) => (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      onClick={() => setSelectedIndustryFilter(cat.id)}
+                                      className={`px-3 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all ${
+                                        selectedIndustryFilter === cat.id
+                                          ? 'bg-indigo-600 text-white shadow-xs'
+                                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                      }`}
+                                    >
+                                       {cat.label}
+                                    </button>
+                                 ))}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                                 {JOB_ROLE_ICON_OPTIONS
+                                   .filter(opt => selectedIndustryFilter === 'all' || opt.industry === selectedIndustryFilter || opt.industry === 'all')
+                                   .map((opt) => {
+                                      const isSelected = (editingJobRole.icon || 'auto') === opt.key;
+                                      return (
+                                         <button
+                                           key={opt.key}
+                                           type="button"
+                                           onClick={() => setEditingJobRole({ ...editingJobRole, icon: opt.key })}
+                                           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all text-left truncate ${
+                                              isSelected
+                                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                                           }`}
+                                         >
+                                            <div className="shrink-0">
+                                              {renderJobRoleIcon(opt.key === 'auto' ? editingJobRole : opt.key, 16, isSelected ? 'text-white' : 'text-indigo-600')}
+                                            </div>
+                                            <span className="truncate text-[11px]">{opt.label}</span>
+                                         </button>
+                                      );
+                                   })}
+                              </div>
+                           </div>
+                        </details>
                      </div>
                      <div className="col-span-1 sm:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center">
                         <div>

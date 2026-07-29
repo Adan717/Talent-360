@@ -1004,6 +1004,22 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
                   <div className="flex justify-between items-center">
                     <div>
+                      <h5 className="font-semibold text-xs text-slate-700">🔔 Notificaciones Flotantes del Reloj</h5>
+                      <p className="text-[10px] text-slate-400">Muestra avisos emergentes (toasts) de pase de lista, aperturas GPS y recordatorios de turno.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={openingSettings.allow_floating_push_notifications ?? true}
+                        onChange={(e) => setOpeningSettings({ ...openingSettings, allow_floating_push_notifications: e.target.checked })} 
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
                       <h5 className="font-semibold text-xs text-slate-700">Delegación de Llaves Obligatoria</h5>
                       <p className="text-[10px] text-slate-400">Exigir al encargado ceder las llaves a un relevo si el día siguiente es su descanso.</p>
                     </div>
@@ -1955,6 +1971,101 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       </label>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Master Preset Selector: Modo Fichaje Rápido (Sin GPS) vs Modo GPS Perimetral */}
+              <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white p-5 rounded-3xl shadow-xl space-y-3 border border-indigo-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-amber-400 text-slate-950 p-2 rounded-2xl font-black text-sm shadow-md">
+                      ⚡
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-white tracking-tight">Modo de Validación de Asistencia</h3>
+                      <p className="text-[11px] text-slate-300">Selecciona el nivel de flexibilidad operativa para tu equipo en 1 solo clic.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Opción 1: Modo Fichaje Rápido (Sin GPS) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        clockOpConfig: {
+                          ...prev.clockOpConfig,
+                          gpsValidationEnabled: false,
+                          allowManualCheckIn: true,
+                          allow_floating_push_notifications: false
+                        }
+                      }));
+                      setOpeningSettings((prev: any) => ({
+                        ...prev,
+                        require_opening_roll_call: false,
+                        require_opening_checklist: false,
+                        allow_floating_push_notifications: false
+                      }));
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
+                      formData.clockOpConfig?.gpsValidationEnabled === false
+                        ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg ring-2 ring-emerald-400/50'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs text-emerald-400 flex items-center gap-1.5">
+                        ⚡ Modo Fichaje Rápido (Sin GPS)
+                      </span>
+                      {formData.clockOpConfig?.gpsValidationEnabled === false && (
+                        <span className="bg-emerald-500 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                      )}
+                    </div>
+                    <p className="text-[10.5px] text-slate-300 leading-snug">
+                      Fichaje libre instantáneo sin pedir ubicación GPS. Desactiva avisos emergentes flotantes y bloqueos iniciales.
+                    </p>
+                  </button>
+
+                  {/* Opción 2: Modo GPS Perimetral (Sucursal) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev: any) => ({
+                        ...prev,
+                        clockOpConfig: {
+                          ...prev.clockOpConfig,
+                          gpsValidationEnabled: true,
+                          allowManualCheckIn: false,
+                          allow_floating_push_notifications: true
+                        }
+                      }));
+                      setOpeningSettings((prev: any) => ({
+                        ...prev,
+                        require_opening_roll_call: true,
+                        require_opening_checklist: true,
+                        allow_floating_push_notifications: true
+                      }));
+                    }}
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
+                      formData.clockOpConfig?.gpsValidationEnabled !== false
+                        ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg ring-2 ring-indigo-400/50'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs text-indigo-300 flex items-center gap-1.5">
+                        📍 Modo GPS Perimetral (Sucursal)
+                      </span>
+                      {formData.clockOpConfig?.gpsValidationEnabled !== false && (
+                        <span className="bg-indigo-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Activo</span>
+                      )}
+                    </div>
+                    <p className="text-[10.5px] text-slate-300 leading-snug">
+                      Exige estar físicamente dentro del perímetro GPS de la sucursal para validar la llegada del colaborador.
+                    </p>
+                  </button>
                 </div>
               </div>
 

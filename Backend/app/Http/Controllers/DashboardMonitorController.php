@@ -307,6 +307,12 @@ class DashboardMonitorController extends Controller
                 ->select('id', 'name')
                 ->get();
 
+            // Fetch prospects count (candidates) of the tenant
+            $prospectsCount = DB::table('candidates')
+                ->where('tenant_id', $userTenantId)
+                ->whereNull('deleted_at')
+                ->count();
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -315,6 +321,7 @@ class DashboardMonitorController extends Controller
                     'feed' => $feed,
                     'chat' => $chatMessages,
                     'job_roles' => $jobRoles,
+                    'prospects_count' => $prospectsCount,
                 ]
             ]);
 
@@ -889,4 +896,73 @@ class DashboardMonitorController extends Controller
             'message' => 'Turno cerrado de forma remota.'
         ]);
     }
+
+    // Resync 3 (línea del jefe): registro de proveedores en instalaciones.
+    public function storeVendor(Request $request)
+    {
+        $request->validate([
+            'vendor_name' => 'required|string|max:255',
+            'driver_name' => 'nullable|string|max:255',
+            'order_ref' => 'nullable|string|max:255',
+            'photo_evidence_url' => 'nullable|string',
+        ]);
+
+        try {
+            $user = auth()->user() ?? auth('sanctum')->user();
+            $tenantId = $user ? $user->tenant_id : 1;
+
+            $vendor = \App\Models\VendorLog::create([
+                'tenant_id' => $tenantId,
+                'vendor_name' => $request->vendor_name,
+                'driver_name' => $request->driver_name ?? 'Repartidor',
+                'order_ref' => $request->order_ref ?? 'S/N',
+                'arrival_at' => now(),
+                'status' => 'in_premises',
+                'photo_evidence_url' => $request->photo_evidence_url,
+                'received_by_user_id' => $user ? $user->id : null,
+                'received_by_name_snapshot' => $user ? $user->name : 'Supervisor',
+            ]);
+
+            event(new MonitorUpdated($tenantId));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Proveedor registrado exitosamente en instalaciones.',
+                'data' => $vendor
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function completeVendor($id)
+    {
+        try {
+            $user = auth()->user() ?? auth('sanctum')->user();
+            $tenantId = $user ? $user->tenant_id : 1;
+
+            $vendor = \App\Models\VendorLog::where('tenant_id', $tenantId)->findOrFail($id);
+            $vendor->update([
+                'status' => 'completed',
+                'departure_at' => now(),
+            ]);
+
+            event(new MonitorUpdated($tenantId));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Salida de proveedor registrada.',
+                'data' => $vendor
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
+

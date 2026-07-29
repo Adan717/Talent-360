@@ -4,6 +4,7 @@ import {
   Lock, Zap, Table, FileSpreadsheet, FileOutput, CheckCircle2, AlertCircle, Bot, DollarSign
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export default function ReportesManager() {
   const [activeTab, setActiveTab] = useState<'basicos' | 'avanzados'>('basicos');
@@ -74,38 +75,54 @@ export default function ReportesManager() {
         <button onClick={() => setDemoTier('pro')} className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${demoTier === 'pro' ? 'bg-blue-600 shadow text-white' : 'text-slate-500 hover:bg-slate-200'}`}>PRO</button>
       </div>
 
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50 shrink-0 mt-4 md:mt-0">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
-            <FileText size={22} />
+      {/* Header (Escritorio) */}
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
+              <FileText size={24} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Módulo de Reportes IA</h1>
+              <p className="text-sm text-slate-500">Exportación de datos y cálculo inteligente de pagos</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">Centro de Reportes y Nómina</h2>
-            <p className="text-sm text-slate-500">Exportación de datos y cálculo inteligente de pagos</p>
-          </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-200 mt-6">
-          <button 
-            onClick={() => setActiveTab('basicos')}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'basicos' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-          >
-            Reportes Básicos (Gratis)
-          </button>
-          <button 
-            onClick={() => setActiveTab('avanzados')}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-amber-500 text-amber-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-          >
-            Nómina y Avanzados
-            {demoTier === 'freemium' && <Lock size={14} className="text-amber-500" />}
-          </button>
+          {/* Tabs */}
+          <div className="flex items-center gap-2 border-b border-slate-200 mt-4 overflow-x-auto whitespace-nowrap scrollbar-none">
+            <button 
+              onClick={() => setActiveTab('basicos')}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'basicos' ? 'border-emerald-600 text-emerald-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            >
+              Reportes Básicos (Gratis)
+            </button>
+            <button 
+              onClick={() => setActiveTab('avanzados')}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-amber-500 text-amber-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            >
+              Nómina y Avanzados
+              {demoTier === 'freemium' && <Lock size={14} className="text-amber-500" />}
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB verde) */}
+      <MobileModuleBottomDock
+        colorTheme="emerald"
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab as any)}
+        fabIcon={<Bot size={28} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('avanzados')}
+        fabTitle="Generar Reportes Inteligentes IA"
+        items={[
+          { id: 'basicos', label: 'Básicos', icon: <FileText /> },
+          { id: 'avanzados', label: 'Avanzados', icon: <DollarSign /> }
+        ]}
+      />
+
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+      <div className="flex-1 overflow-y-auto p-6 bg-slate-50 pb-24 sm:pb-6">
         
         {/* TABS: FREEMIUM */}
         {activeTab === 'basicos' && (

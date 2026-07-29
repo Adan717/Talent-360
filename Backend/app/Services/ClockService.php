@@ -951,17 +951,59 @@ class ClockService
         $snapshotRole = $jobRole?->name ?? null;
         $snapshotSalary = $employee?->base_salary ?? null;
 
+        // RESYNC 3 — UNIÓN de ambas líneas en el insert del ponche:
+        //  · Línea del jefe (§67): foto de fichaje configurable + inmutabilidad del cálculo.
+        //  · Línea del Reloj: check_out_status (Salida Doble Llave R75) y client_stamp
+        //    (idempotencia del batch offline R84).
+        //  · Se DESCARTA su try/catch del índice UNIQUE(user,date,type): ese índice se
+        //    retiró en F3 (prohibía turno partido y pausas múltiples) y el catch genérico
+        //    además rompería la detección de duplicados del batch (PunchBatchController
+        //    depende de que la UniqueConstraintViolationException del client_stamp se
+        //    propague tal cual).
+
+        // §67: método de verificación realmente usado + evidencia. La foto es configurable
+        // por tenant (require_photo_on_clockin, default true). El backend GUARDA lo que
+        // ocurrió; el frontend decide si pide la foto y reporta qué pasó.
+        $requirePhoto = isset($settings['require_photo_on_clockin'])
+            ? (bool) json_decode($settings['require_photo_on_clockin'], true)
+            : true;
+
+        $photoUrl = $details['photo_url'] ?? null;
+        $verificationMethod = $details['verification_method'] ?? null;
+        $photoSkippedReason = $details['photo_skipped_reason'] ?? null;
+
+        // Normalización defensiva por si el cliente no manda el método explícito.
+        if ($photoUrl) {
+            $photoSkippedReason = null;
+            $verificationMethod = $verificationMethod ?: 'GEOFENCE_PIN_PHOTO';
+        } else {
+            if (!$photoSkippedReason) {
+                $photoSkippedReason = $requirePhoto ? null : 'not_required';
+            }
+            $verificationMethod = $verificationMethod
+                ?: ($photoSkippedReason === 'not_required' ? 'GEOFENCE_ONLY' : 'GEOFENCE_PIN');
+        }
+
+        // §67.C — la omisión por falla de cámara en un fichaje que SÍ requería foto queda
+        // marcada para revisión del supervisor (visible, no solo registrada en bitácora).
+        $cameraFailure = in_array($photoSkippedReason, ['camera_unavailable', 'permission_denied'], true);
+        $flaggedForReview = $type === 'check_in' && $requirePhoto && $cameraFailure;
+
+        // §67.E.1 — Fotografía del momento: se congela el cálculo de puntualidad tal como fue.
+        // Cambiar la tolerancia a futuro NO recalcula la puntualidad pasada. tolerance_version
+        // deriva de la última edición de la política LFT para poder distinguir "reglas" en el tiempo.
+        $tardinessAtTime = $lateMinutes;
+        $toleranceAtTime = $toleranceMinutes;
+        $toleranceVersion = ($lft && $lft->updated_at) ? (string) $lft->updated_at->timestamp : 'default';
+
         // Crear registro + audit + transiciones Silla en una transacción atómica (si falla el
         // audit_log, el time_entry también se revierte).
-        //
-        // ARBITRAJE F3: el índice UNIQUE(user,date,type) de la línea §15 se RETIRA (migración F3):
-        // prohibía el turno partido y las pausas múltiples. El guard de estado de arriba cubre los
-        // duplicados reales (doble toque, retry, cola offline vía client_stamp). La única brecha
-        // restante es una race verdaderamente simultánea — artefacto de estrés, no uso real (R63).
         $entry = DB::transaction(function () use (
             $user, $date, $type, $time, $isLate, $lateMinutes, $detailsMerge,
             $snapshotName, $snapshotRole, $snapshotSalary, $simulationSessionId,
-            $sillaRequestForThisPunch, $timezone, $checkOutStatus, $clientStamp, $lft
+            $sillaRequestForThisPunch, $timezone, $checkOutStatus, $clientStamp, $lft,
+            $photoUrl, $verificationMethod, $photoSkippedReason, $flaggedForReview,
+            $tardinessAtTime, $toleranceAtTime, $toleranceVersion
         ) {
             $entry = TimeEntry::create([
                 'user_id'               => $user->id,
@@ -979,6 +1021,14 @@ class ClockService
                 'job_role_title_at_time'=> $snapshotRole,
                 'base_salary_at_time'   => $snapshotSalary,
                 'simulation_session_id' => $simulationSessionId,
+                // §67
+                'photo_url'                 => $photoUrl,
+                'verification_method'       => $verificationMethod,
+                'photo_skipped_reason'      => $photoSkippedReason,
+                'flagged_for_review'        => $flaggedForReview,
+                'tardiness_minutes_at_time' => $tardinessAtTime,
+                'tolerance_mins_at_time'    => $toleranceAtTime,
+                'tolerance_version'         => $toleranceVersion,
             ]);
 
             DB::table('audit_logs')->insert([
@@ -1017,6 +1067,35 @@ class ClockService
 
             return $entry;
         });
+
+        // §67.C.3 — si un mismo colaborador acumula 3 check_in seguidos con la foto omitida
+        // por falla de cámara, se avisa al supervisor: es la señal de una cámara rota o de
+        // alguien evadiendo la evidencia. El fichaje individual ya quedó flagged_for_review;
+        // esto detecta el patrón.
+        if ($flaggedForReview) {
+            $recent = TimeEntry::where('user_id', $user->id)
+                ->where('type', 'check_in')
+                ->orderByDesc('date')
+                ->limit(3)
+                ->pluck('photo_skipped_reason')
+                ->all();
+            $streak = 0;
+            foreach ($recent as $reason) {
+                if (in_array($reason, ['camera_unavailable', 'permission_denied'], true)) {
+                    $streak++;
+                } else {
+                    break;
+                }
+            }
+            if ($streak >= 3) {
+                \App\Helpers\SecurityLogger::log(
+                    'clock_photo_skip_streak',
+                    "El colaborador {$snapshotName} (user {$user->id}) acumula {$streak} fichajes seguidos sin foto por falla de cámara.",
+                    $user->tenant_id ?? 1,
+                    $user->id
+                );
+            }
+        }
 
         // §20: notifica por WebSocket una vez que el fichaje ya quedó confirmado en BD — nunca en
         // rechazos/errores de validación, que ya cortaron con throw antes de llegar aquí.

@@ -40,7 +40,9 @@ class Employee extends Model
         'portadorLlaves',
         'avatar',
         'lunch_time',
-        'clock_preferences'
+        'clock_preferences',
+        'allowed_modules',
+        'allowed_features'
     ];
 
     protected $appends = ['role'];
@@ -62,7 +64,10 @@ class Employee extends Model
         // nivel de modelo independientemente del driver/versión de PHP; el FE distingue 0 (off)
         // de null/positivo.
         'pre_shift_alarm_minutes' => 'integer',
-        'clock_preferences' => 'array'
+        'clock_preferences' => 'array',
+        // Resync 3 (línea del jefe): módulos/funciones permitidos por colaborador.
+        'allowed_modules' => 'array',
+        'allowed_features' => 'array'
     ];
 
     public function getRoleAttribute()

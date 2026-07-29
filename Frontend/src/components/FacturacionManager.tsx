@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export const FacturacionManager = () => {
   const [activeTab, setActiveTab] = useState<'fiscal' | 'timbrado' | 'historial'>('fiscal');
@@ -264,46 +265,63 @@ export const FacturacionManager = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-      {/* Cabecera del Panel */}
-      <div className="bg-white px-8 py-5 border-b border-slate-200 shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 shadow-inner">
-            <Receipt size={24} />
+      {/* Encabezado Principal (Escritorio) */}
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 shadow-inner">
+              <Receipt size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-800">Facturación Electrónica CFDI 4.0</h2>
+              <p className="text-xs text-slate-400 font-semibold">Configuración de sellos CSD y timbrado de recibos de nómina SAT</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-black text-slate-800">Facturación Electrónica CFDI 4.0</h2>
-            <p className="text-xs text-slate-400 font-semibold">Configuración de sellos CSD y timbrado de recibos de nómina SAT</p>
-          </div>
-        </div>
 
-        {/* Tab Selector */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
-          <button
-            onClick={() => setActiveTab('fiscal')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
-              activeTab === 'fiscal' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
-            }`}
-          >
-            <ShieldCheck size={14} /> Fiscal / CSD
-          </button>
-          <button
-            onClick={() => setActiveTab('timbrado')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
-              activeTab === 'timbrado' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
-            }`}
-          >
-            <Key size={14} /> Timbrado de Nómina
-          </button>
-          <button
-            onClick={() => setActiveTab('historial')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
-              activeTab === 'historial' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
-            }`}
-          >
-            <Clock size={14} /> Historial SAT
-          </button>
+          {/* Tab Selector */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
+            <button
+              onClick={() => setActiveTab('fiscal')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
+                activeTab === 'fiscal' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
+              }`}
+            >
+              <ShieldCheck size={14} /> Fiscal / CSD
+            </button>
+            <button
+              onClick={() => setActiveTab('timbrado')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
+                activeTab === 'timbrado' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
+              }`}
+            >
+              <Key size={14} /> Timbrado de Nómina
+            </button>
+            <button
+              onClick={() => setActiveTab('historial')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border-none ${
+                activeTab === 'historial' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
+              }`}
+            >
+              <Clock size={14} /> Historial SAT
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB verde) */}
+      <MobileModuleBottomDock
+        colorTheme="emerald"
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab as any)}
+        fabIcon={<Receipt size={28} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('timbrado')}
+        fabTitle="Timbrar Nómina / CFDI 4.0"
+        items={[
+          { id: 'fiscal', label: 'Fiscal CSD', icon: <ShieldCheck /> },
+          { id: 'timbrado', label: 'Timbrado', icon: <Key /> },
+          { id: 'historial', label: 'Historial SAT', icon: <Clock /> }
+        ]}
+      />
 
       {/* Cuerpo del Módulo */}
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">

@@ -95,6 +95,11 @@ class Tenant extends Model
         return $this->belongsTo(BillingPlan::class, 'billing_plan_id');
     }
 
+    public function subscriptionHistories()
+    {
+        return $this->hasMany(TenantSubscriptionHistory::class, 'tenant_id');
+    }
+
     /**
      * Check if the tenant's free trial is currently active.
      */
@@ -121,7 +126,7 @@ class Tenant extends Model
      */
     public function isModuleUnlocked($moduleId)
     {
-        if ((int)$this->id === 1 || $this->subdomain === 'talent360') {
+        if ((int)$this->id === 1 || (int)$this->id === 33 || $this->subdomain === 'talent360') {
             return true;
         }
 
@@ -156,7 +161,7 @@ class Tenant extends Model
             return true;
         }
         if ($this->plan === 'pro') {
-            $proAllowed = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'portal', 'documentos', 'academia'];
+            $proAllowed = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'portal', 'documentos', 'academia', 'facturacion', 'lft', 'organizacion', 'matrix'];
             return in_array($moduleId, $proAllowed);
         }
         
@@ -173,7 +178,7 @@ class Tenant extends Model
      */
     public function isFeatureUnlocked($featureId)
     {
-        if ((int)$this->id === 1 || $this->subdomain === 'talent360') {
+        if ((int)$this->id === 1 || (int)$this->id === 33 || $this->subdomain === 'talent360') {
             return true;
         }
 

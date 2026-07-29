@@ -136,6 +136,33 @@ class TimeEntryController extends Controller
     }
 
     /**
+     * §67.C — Incidencias de fichaje para el monitor del supervisor: fichajes que se
+     * aceptaron pero omitieron la foto por falla de cámara cuando era obligatoria. Visibles
+     * como incidencia, no enterrados en audit_logs. Filtra por el tenant del usuario.
+     * (Resync 3: método de la línea del jefe; convive con authorizeCheckout de la del Reloj.)
+     */
+    public function flaggedPunches(Request $request)
+    {
+        $tenantId = $request->user()->tenant_id;
+
+        $entries = \App\Models\TimeEntry::where('tenant_id', $tenantId)
+            ->where('flagged_for_review', true)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get([
+                'id', 'user_id', 'employee_name_at_time', 'date', 'type', 'time',
+                'verification_method', 'photo_skipped_reason',
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'count' => $entries->count(),
+            'data' => $entries,
+        ]);
+    }
+
+    /**
      * Devuelve el secreto HMAC vigente del tenant del usuario autenticado,
      * usado por el frontend para firmar fichajes offline (offline_stamp).
      */

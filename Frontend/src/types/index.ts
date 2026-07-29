@@ -40,6 +40,9 @@ export interface User {
   // §38: preferencias sueltas del empleado (hoy solo academy_assistant_enabled), viven
   // en employees.clock_preferences (json) del lado backend.
   clock_preferences?: { academy_assistant_enabled?: boolean; [key: string]: any };
+  employee?: any;
+  allowed_modules?: string[];
+  allowed_features?: string[];
 }
 
 export interface Tenant {

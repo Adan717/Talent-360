@@ -10,8 +10,8 @@ class FeatureAccessService
 {
     public static function tenantHasFeature($tenantId, $featureKey)
     {
-        // Tenant ID 1 (DecorArte) or subdomain talent360 is always fully unlocked
-        if ((int)$tenantId === 1) {
+        // Tenant ID 1 y 33 (DecorArte) or subdomain talent360 is always fully unlocked
+        if ((int)$tenantId === 1 || (int)$tenantId === 33) {
             return true;
         }
 

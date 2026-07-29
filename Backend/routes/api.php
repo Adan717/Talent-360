@@ -251,16 +251,22 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/academy/course-templates/{id}/import', [AcademyController::class, 'importTemplate']);
         });
 
-        // Dashboard Operativo y Monitoreo
+        // Dashboard Operativo y Monitoreo (Configurable por Puesto vía Matriz de Capacidades)
         Route::get('/admin/dashboard/stats', [DashboardController::class, 'getStats']);
-        Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
-        Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
-        // Kill-Switch (línea del Reloj): el mando cierra remotamente un turno abierto.
-        Route::post('/admin/dashboard/force-close-shift', [DashboardMonitorController::class, 'forceCloseShift']);
-        Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
-        Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
-        Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
-        Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
+        // Resync 3: el grupo de capacidades §65 del jefe envuelve el dashboard operativo;
+        // dentro va también el Kill-Switch de la línea del Reloj.
+        Route::middleware(['permission:manage_tasks,approve_operations,manage_store_opening,view_reports'])->group(function () {
+            Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
+            Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
+            // Kill-Switch (línea del Reloj): el mando cierra remotamente un turno abierto.
+            Route::post('/admin/dashboard/force-close-shift', [DashboardMonitorController::class, 'forceCloseShift']);
+            Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
+            Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
+            Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
+            Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
+            Route::post('/admin/dashboard/vendors', [DashboardMonitorController::class, 'storeVendor']);
+            Route::post('/admin/dashboard/vendors/{id}/complete', [DashboardMonitorController::class, 'completeVendor']);
+        });
 
         // §39: configuración de la cadena de pedidos (qué puesto en cada etapa) — admin/supervisor
         Route::get('/supply-chain/config', [\App\Http\Controllers\SupplyOrderController::class, 'getConfig']);
@@ -272,6 +278,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::get('/admin/lft-holidays', [LftSettingController::class, 'getHolidays']);
         Route::post('/admin/lft-holidays', [LftSettingController::class, 'saveHoliday']);
         Route::delete('/admin/lft-holidays/{id}', [LftSettingController::class, 'deleteHoliday']);
+
+        // §67.C — incidencias de fichaje (foto omitida por falla de cámara) para el supervisor.
+        Route::get('/admin/clock/flagged-punches', [TimeEntryController::class, 'flaggedPunches']);
 
         // §65: administración de la matriz de capacidades por puesto — INDELEGABLE,
         // solo admin (otorgar permisos es la llave que se queda con el dueño).

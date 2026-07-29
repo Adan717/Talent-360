@@ -80,14 +80,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   // Step 2: Giro Comercial / Nicho & Puestos
-  const [selectedNicho, setSelectedNicho] = useState<'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom'>('retail');
-  const [selectedSubNicho, setSelectedSubNicho] = useState<string>('decoracion');
+  const [selectedNicho, setSelectedNicho] = useState<'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom'>('materias_primas');
+  const [selectedSubNicho, setSelectedSubNicho] = useState<string>('reposteria');
   const [customNichoDesc, setCustomNichoDesc] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState<number | string>('');
   const [createdRoleId, setCreatedRoleId] = useState<number | null>(null);
 
   // Mappings y presets interactivos para la precarga del wizard
   const SUB_NICHOS: Record<string, { id: string; label: string; icon: string }[]> = {
+    materias_primas: [
+      { id: 'reposteria', label: 'Insumos para Repostería & Panadería', icon: '🧁' },
+      { id: 'empaques', label: 'Empaques y Materias Primas Mayoreo', icon: '📦' },
+      { id: 'chocolateria', label: 'Chocolatería, Confitería y Decoración', icon: '🍫' },
+    ],
     retail: [
       { id: 'decoracion', label: 'Decoración, Hogar y Regalos', icon: '🎨' },
       { id: 'boutique', label: 'Boutique / Ropa y Calzado', icon: '👗' },
@@ -120,6 +125,135 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     vacantes: { title: string; salary: string }[];
     cursos: { title: string; type: string }[];
   }> = {
+    materias_primas: {
+      puestos: [
+        { name: 'Administrador Gerente', area: 'Gerencia General', esAperturador: true, jerarquiaLlaves: 1 },
+        { name: 'Supervisor de Compras', area: 'Compras & Almacén', esAperturador: false, jerarquiaLlaves: 2 },
+        { name: 'Supervisor de Ventas', area: 'Ventas & Mostrador', esAperturador: false, jerarquiaLlaves: 2 },
+        { name: 'Supervisor de Producción', area: 'Producción & Envasado', esAperturador: false, jerarquiaLlaves: 2 },
+        { name: 'Asesor de Ventas', area: 'Piso de Ventas', esAperturador: false, jerarquiaLlaves: 3 },
+        { name: 'Ayudante Integral', area: 'Operaciones', esAperturador: false, jerarquiaLlaves: 3 },
+        { name: 'Apoyo Eventual', area: 'Operaciones', esAperturador: false, jerarquiaLlaves: 4 }
+      ],
+      tareas: [
+        // Administrador Gerente (22 Tareas)
+        { title: 'Desactivar alarma perimetral y encender switch principal de energía', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de alarma desactivada.', target_role_name: 'Administrador Gerente' },
+        { title: 'Verificar funcionamiento de las luces del piso de ventas y clima', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Realizar conteo del fondo de caja inicial y apertura en punto de venta', category: 'operativo', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Monto de fondo inicial.', target_role_name: 'Administrador Gerente' },
+        { title: 'Inspeccionar estado exterior de la sucursal y tomar foto de la fachada frontal', category: 'seguridad', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de fachada frontal.', target_role_name: 'Administrador Gerente' },
+        { title: 'Apertura de caja fuerte/tómbola y asignación de fondos a cajas registradoras', category: 'operativo', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Monto asignado a cajas.', target_role_name: 'Administrador Gerente' },
+        { title: 'Verificar el grupo de trabajo del día y confirmar asistencia del personal (Pase de lista)', category: 'supervision', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Recorrer pasillos asegurando que el piso esté libre de cajas u obstáculos', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Validar que el personal esté portando el gafete y uniforme limpios', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Auditoría de puntualidad, retardos y justificantes en el reloj checador', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Revisión de bitácora de novedades de la jornada anterior', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Supervisión de clima laboral y atención a incidencias de personal', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Revisión de flujo de caja diario, retiros parciales y depósitos', category: 'operativo', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Retiros parciales.', target_role_name: 'Administrador Gerente' },
+        { title: 'Ejecutar corte X/Y y validar retiros de efectivo con cajeros (Arqueo gerencial)', category: 'operativo', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Total arqueado.', target_role_name: 'Administrador Gerente' },
+        { title: 'Realizar conciliación bancaria diaria y voucher de terminales', category: 'operativo', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de vouchers.', target_role_name: 'Administrador Gerente' },
+        { title: 'Resguardo de efectivo sobrante en la tómbola de seguridad', category: 'seguridad', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Monto en tómbola.', target_role_name: 'Administrador Gerente' },
+        { title: 'Apagar equipos de cómputo, clima y luces de piso de venta', category: 'seguridad', priority: 'bloqueante', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Verificación de cierre seguro de puertas de emergencia y accesos', category: 'seguridad', priority: 'bloqueante', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Cierre de cortina metálica principal y colocación de candados reforzados', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de candado cerrado.', target_role_name: 'Administrador Gerente' },
+        { title: 'Activar alarma perimetral y verificar reporte de armado en sistema', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto de alarma armada.', target_role_name: 'Administrador Gerente' },
+        { title: 'Envío de reporte diario de ventas y asistencia a dirección general', category: 'supervision', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Supervisión de cumplimiento de metas de venta semanales', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+        { title: 'Autorización de compras de insumos operativos extraordinarios', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Administrador Gerente' },
+
+        // Supervisor de Compras (12 Tareas)
+        { title: 'Auditoría de niveles de inventario crítico en bodega y góndolas', category: 'supervision', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Conteo diario de productos A (alta rotación y mayor valor)', category: 'operativo', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Piezas contadas.', target_role_name: 'Supervisor de Compras' },
+        { title: 'Identificación de faltantes y alertas de stock mínimo', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Revisión y recepción de fletes de materias primas (harinas, azúcar, mantecas, chocolates)', category: 'operativo', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto del flete.', target_role_name: 'Supervisor de Compras' },
+        { title: 'Inspección física de empaques y caducidades en sacos y cajas recibidas', category: 'calidad', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Cotejo de remisiones/facturas físicas contra orden de compra', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Ingreso de entradas de mercancía al sistema ERP/Inventarios', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Generación de órdenes de compra con proveedores de materias primas', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Seguimiento a entregas pendientes y reclamos por mermas/defectos', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Control e inventario de material de empaque (bolsas, cajas, domos)', category: 'operativo', priority: 'normal', assistant_type: 'captura_numero', assistant_prompt: 'Unidades de empaque.', target_role_name: 'Supervisor de Compras' },
+        { title: 'Reporte de variación de costos e insumos de temporada', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+        { title: 'Supervisión de stock de insumos para cajas y mostrador', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Compras' },
+
+        // Supervisor de Ventas (14 Tareas)
+        { title: 'Supervisar la atención al cliente en mostrador y agilidad en cajas', category: 'supervision', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Monitoreo de tiempo de espera en fila de clientes', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Atención y resolución de quejas o devoluciones de clientes', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Verificación de precios visibles y promociones vigentes', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Revisar pedidos de clientes especiales, escuelas o de mayoreo pendientes de procesar', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Autorización de descuentos especiales o facturación a clientes corporativos', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Realizar arqueos sorpresivos de caja a cajeros y vendedores', category: 'supervision', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Monto en arqueo.', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Validación de cierres parciales de ventas, arqueos y depósitos', category: 'operativo', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Monto validado.', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Realizar inventario rotativo (conteo de productos de alta rotación)', category: 'operativo', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Piezas contadas.', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Realizar ajustes de inventario por mermas o roturas en piso', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Alinear los precios en las etiquetas de los domos principales', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto exhibidor.', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Coordinación de frenteo y exhibición en cabeceras de pasillo', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto cabecera.', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Supervisión de arqueos de cambio en cajas registradoras', category: 'supervision', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Cambio en cajas.', target_role_name: 'Supervisor de Ventas' },
+        { title: 'Reporte diario de conversión de ventas y tickets promedio', category: 'supervision', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Ventas' },
+
+        // Supervisor de Producción (12 Tareas)
+        { title: 'Inspección de lotes de fraccionado, empacado y etiquetado de insumos a granel', category: 'produccion', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto fraccionados.', target_role_name: 'Supervisor de Producción' },
+        { title: 'Supervisión de básculas de pesado para asegurar gramajes exactos', category: 'calidad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto báscula.', target_role_name: 'Supervisor de Producción' },
+        { title: 'Control e impresión de etiquetas con fecha de caducidad y lote', category: 'produccion', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto etiqueta.', target_role_name: 'Supervisor de Producción' },
+        { title: 'Verificación de la rotación PEPS (Primeras Entradas, Primeras Salidas) en almacén de granel', category: 'calidad', priority: 'bloqueante', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Producción' },
+        { title: 'Auditoría de higiene en la zona de envasado y herramientas de trabajo', category: 'seguridad', priority: 'alta', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto área.', target_role_name: 'Supervisor de Producción' },
+        { title: 'Control de mermas y pesado de materias primas procesadas en taller de fraccionado', category: 'produccion', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Kg de merma.', target_role_name: 'Supervisor de Producción' },
+        { title: 'Monitoreo de condiciones de temperatura y humedad en almacén de insumos sensibles', category: 'calidad', priority: 'bloqueante', assistant_type: 'captura_numero', assistant_prompt: 'Temperatura °C.', target_role_name: 'Supervisor de Producción' },
+        { title: 'Registro de bitácora de limpieza de maquinaria y moldes', category: 'seguridad', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Producción' },
+        { title: 'Control de merma por humedad o empaque dañado', category: 'produccion', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Producción' },
+        { title: 'Reporte semanal de rendimiento de insumos procesados', category: 'produccion', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Producción' },
+        { title: 'Inspección de calidad organoléptica en materia prima recibida', category: 'calidad', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Producción' },
+        { title: 'Supervisión del correcto etiquetado de alérgenos en insumos empacados', category: 'calidad', priority: 'bloqueante', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Supervisor de Producción' },
+
+        // Asesor de Ventas (12 Tareas)
+        { title: 'Bienvenida y atención personalizada a clientes reposteros y panaderos', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Asesoría técnica sobre rendimiento y uso de insumos, esencias y coberturas', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Cobro rápido en caja y manejo de terminales de pago', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Verificación de datos fiscales para facturación a clientes', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Limpieza fina de mostrador, vitrinas y desinfección de terminales punto de venta', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto mostrador.', target_role_name: 'Asesor de Ventas' },
+        { title: 'Revisión general de productos exhibidos en góndola para verificar faltantes', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Rellenar góndolas y acomodar mercancía (Frenteo, orden y alineación de precios)', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto góndola.', target_role_name: 'Asesor de Ventas' },
+        { title: 'Limpieza fina de estanterías y productos destacados', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Apoyo en el etiquetado de precios de nueva colección o promociones', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Verificar pedidos especiales del día y validarlos con el sistema', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Acomodo de devoluciones de productos en anaqueles', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Asesor de Ventas' },
+        { title: 'Conteo e inventario rápido de cierre en zona de mostrador', category: 'operativo', priority: 'alta', assistant_type: 'captura_numero', assistant_prompt: 'Piezas contadas.', target_role_name: 'Asesor de Ventas' },
+
+        // Ayudante Integral (14 Tareas)
+        { title: 'Levantar las cortinas de la entrada y quitar candados', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Abrir la puerta principal y colocar la rampa de acceso', category: 'operativo', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto rampa.', target_role_name: 'Ayudante Integral' },
+        { title: 'Sacar los tapetes de bienvenida y colocarlos en la entrada', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Barrer la banqueta exterior y limpiar fachada frontal', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto banqueta.', target_role_name: 'Ayudante Integral' },
+        { title: 'Limpieza de las vitrinas frontales de exhibición principal', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Lavar los tapetes de bienvenida de la entrada con hidrolavadora', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Trapear los pasillos principales y áreas de exhibición', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Lavar y desinfectar el baño de clientes y personal', category: 'operativo', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto baños.', target_role_name: 'Ayudante Integral' },
+        { title: 'Limpiar las escaleras interiores y sacudir pasamanos', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Limpiar el patio de servicio y ordenar contenedores de mermas', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Surtido de bodega a exhibidores y traslado de mercancía pesada', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Sacudir polvo acumulado en estanterías de bodega trasera', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+        { title: 'Guardar tapetes de entrada, cerrar rampa y candados al cierre', category: 'seguridad', priority: 'bloqueante', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto candado.', target_role_name: 'Ayudante Integral' },
+        { title: 'Recolección y depósito de basura general de la sucursal', category: 'operativo', priority: 'bloqueante', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Ayudante Integral' },
+
+        // Apoyo Eventual (6 Tareas)
+        { title: 'Apoyo en la descarga de fletes pesados de sacos de harina, azúcar y mantecas', category: 'operativo', priority: 'alta', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Apoyo Eventual' },
+        { title: 'Apoyo en el traslado de sacos de bodega a zona de fraccionado', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Apoyo Eventual' },
+        { title: 'Acomodar y clasificar cajas vacías en el área de reciclaje', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto reciclaje.', target_role_name: 'Apoyo Eventual' },
+        { title: 'Apoyo en el pegado de etiquetas de promociones y reempaquetado especial', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Apoyo Eventual' },
+        { title: 'Limpieza y despeje de pasillos auxiliares en temporadas de alta afluencia', category: 'operativo', priority: 'normal', assistant_type: 'ninguno', assistant_prompt: '', target_role_name: 'Apoyo Eventual' },
+        { title: 'Apoyo general en montaje de exhibiciones de temporada (Navidad, Rosca, Valentín)', category: 'operativo', priority: 'normal', assistant_type: 'evidencia_foto', assistant_prompt: 'Foto exhibición.', target_role_name: 'Apoyo Eventual' }
+      ],
+      vacantes: [
+        { title: 'Supervisor de Ventas', salary: '$11,000 - $13,500 MXN' },
+        { title: 'Supervisor de Compras', salary: '$11,000 - $13,500 MXN' },
+        { title: 'Asesor de Ventas', salary: '$8,500 - $9,800 MXN' },
+        { title: 'Ayudante Integral', salary: '$8,200 - $9,000 MXN' }
+      ],
+      cursos: [
+        { title: 'Protocolo de Operación Comercial y Calidad Decorarte 360', type: 'Inducción' },
+        { title: 'Manejo e Higiene de Materias Primas, Fraccionado y Conservación PEPS', type: 'Capacitación' },
+        { title: 'Técnicas de Venta Asistida en Insumos de Repostería y Panadería', type: 'Capacitación' }
+      ]
+    },
     retail: {
       puestos: [
         { name: 'Gerente de Tienda', area: 'Gerencia', esAperturador: true, jerarquiaLlaves: 1 },
@@ -208,7 +342,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [selectedTareas, setSelectedTareas] = useState<string[]>(() => activePreset.tareas.map(t => t.title));
 
   // Al cambiar de giro, resetear selección de puestos y tareas
-  const handleSelectNicho = (nichoKey: 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
+  const handleSelectNicho = (nichoKey: 'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
     setSelectedNicho(nichoKey);
     const preset = PRESET_DATA[nichoKey] || PRESET_DATA.retail;
     setSelectedPuestos(preset.puestos.map(p => p.name));
@@ -737,6 +871,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               {/* Botones de Giros Principales */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleSelectNicho('materias_primas')}
+                  className={`p-3 border rounded-2xl flex flex-col items-center gap-1.5 transition-all active:scale-98 ${
+                    selectedNicho === 'materias_primas' 
+                      ? 'border-purple-600 bg-purple-50/60 shadow-sm ring-1 ring-purple-600/30' 
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                  }`}
+                >
+                  <span className="text-xl">🧁</span>
+                  <span className="text-xs font-bold text-slate-700">Materias Primas / Repostería</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleSelectNicho('retail')}

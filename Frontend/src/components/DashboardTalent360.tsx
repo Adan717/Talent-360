@@ -7,11 +7,12 @@ import {
   Check, AlertCircle, Utensils, Armchair, Cpu, Bot, Mic,
   Smile, Frown, Award, Ban, UserMinus, UserCheck
 } from 'lucide-react';
-import { CompanySettingsPanel } from './CompanySettingsPanel';
+import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
-import { HeaderStats } from './HeaderStats';
-// merge FE: paneles de resolución del Reloj. Autocontenidos (sondean solos y se ocultan si no hay
-// pendientes) y con la ruta gateada a admin/supervisor en el backend, que es quien está aquí.
+// Resync 3: HeaderStats se va (su refactor Monitor 360 borró el componente); los paneles de
+// resolución del Reloj SE QUEDAN — son funcionales, no estética: sin ellos, lo que los
+// empleados declaran desde el dial (entrada tardía R56/R57, pánico R80, justificante R82,
+// contingencia R83, inconclusas M3) se queda en la BD sin que nadie pueda resolverlo.
 import { LateAuthorizationsPanel } from './reloj/LateAuthorizationsPanel';
 import { PanicIncidentsPanel } from './reloj/PanicIncidentsPanel';
 import { LateJustificationsPanel } from './reloj/LateJustificationsPanel';
@@ -726,8 +727,6 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       });
   };
 
-  // Empleados/Tareas/Prospectos ya se muestran arriba en las píldoras de HeaderStats —
-  // aquí solo van las métricas que no se repiten, para no duplicar la misma cifra dos veces.
   const stats = [
     { label: 'Asistencia del Día', value: `${realStats.cumplimiento}%`, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: 'Cumplimiento' },
     { label: 'Retardos del Día', value: realStats.retardos_hoy.toString(), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', trend: 'Hoy' },
@@ -787,55 +786,23 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       </div>
 
       {activeTab === 'onboarding' ? (
-        <CompanySettingsPanel />
+        <GlobalSystemSettingsPanel initialTab="onboarding" />
       ) : (
         <>
           {showSetupWizard && (
             <OnboardingWizard onComplete={() => setShowSetupWizard(false)} />
           )}
 
-          {/* Píldoras de Salud y Estadísticas Interactivas */}
-          {setActiveModule && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
-              <h2 className="text-xs font-black text-slate-400 tracking-wider uppercase">Salud y Control Operativo</h2>
-              <div className="flex justify-start">
-                <HeaderStats activeModule="dashboard" setActiveModule={setActiveModule} />
-              </div>
-            </div>
-          )}
 
-          {/* merge FE — sin estos paneles, lo que los empleados declaran desde el dial (entrada
-              tardía R56/R57, pánico R80, justificante R82, contingencia R83) se queda en la BD sin
-              que nadie pueda aprobarlo ni rechazarlo. */}
+          {/* Resync 3 — paneles de resolución del Reloj (funcionales, se conservan sobre el
+              rediseño Monitor 360): sin ellos, lo declarado desde el dial (entrada tardía,
+              pánico, justificante, contingencia, inconclusas M3) no se puede resolver.
+              El banner del Wizard sí se va (decisión de producto del rediseño del jefe). */}
           <LateAuthorizationsPanel />
           <PanicIncidentsPanel />
           <LateJustificationsPanel />
           <ContingenciesPanel />
-          {/* M3: sin este panel, lo que el nocturno flaggea como inconcluso no tenía
-              dónde resolverse con los 3 botones (aprobar/reprogramar/rechazar). */}
           <IncompleteTasksPanel />
-
-          {/* Banner de Bienvenida y Configuración de Giro (Wizard Banner) */}
-          {!systemSettings?.onboarding_completed && (
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-2xl p-4 sm:p-5 shadow-lg mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-amber-300 font-bold shrink-0">
-                  <Sparkles size={22} className="animate-pulse" />
-                </div>
-                <div>
-                  <h4 className="text-sm sm:text-base font-black text-white">Configuración Inicial de Empresa (Wizard)</h4>
-                  <p className="text-xs text-purple-100 font-medium">Selecciona el giro de tu empresa para precargar puestos, tareas, vacantes y cursos recomendados.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding-wizard'))}
-                className="px-4 py-2.5 bg-white hover:bg-slate-50 text-purple-700 rounded-xl font-bold text-xs shadow-md transition-all shrink-0 active:scale-95 flex items-center gap-2"
-              >
-                <Sparkles size={14} className="text-purple-600" />
-                <span>Iniciar Wizard de Giro</span>
-              </button>
-            </div>
-          )}
 
       {/* Métricas complementarias (lo que no repite ya las píldoras de arriba) */}
       <div className="grid grid-cols-2 gap-4">

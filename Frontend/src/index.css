@@ -14,6 +14,8 @@
   --animate-scale-up: scale-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-spin-once: spin-once 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-wiggle-once: wiggle-once 0.5s ease-in-out both;
+  --animate-shimmer-trail: shimmer-trail 2.5s infinite linear;
+  --animate-float-subtle: float-subtle 3s ease-in-out infinite;
   --animate-bounce-twice: bounce-twice 0.8s ease-in-out 2;
   --animate-pulse-once: pulse-once 0.5s ease-in-out both;
 
@@ -84,6 +86,24 @@
     }
     50% {
       transform: scale(1.2);
+    }
+  }
+
+  @keyframes shimmer-trail {
+    0% {
+      transform: translateX(-150%) skewX(-20deg);
+    }
+    100% {
+      transform: translateX(300%) skewX(-20deg);
+    }
+  }
+
+  @keyframes float-subtle {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-5px) rotate(3deg);
     }
   }
 }

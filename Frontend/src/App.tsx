@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, GraduationCap, Clock, 
   CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase, ListTodo,
   FileText, X, Lock, Sparkles, ShieldCheck, Zap, Settings, User,
-  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale
+  Coffee, Calendar, MapPin, Heart, Bell, Database, Receipt, Scale, Activity
 } from 'lucide-react';
 import { useAppStore } from './store/useAppStore';
 import { usePreShiftAlarm } from './hooks/usePreShiftAlarm';
@@ -45,14 +45,15 @@ const GestorAcademia = lazy(() => import('./components/GestorAcademia').then(mod
 const AtsManager = lazy(() => import('./components/AtsManager').then(module => ({ default: module.AtsManager })));
 const ReportesManager = lazy(() => import('./components/ReportesManager'));
 const SaaSAccountSettings = lazy(() => import('./components/SaaSAccountSettings').then(m => ({ default: m.SaaSAccountSettings })));
+const GlobalSystemSettingsPanel = lazy(() => import('./components/GlobalSystemSettingsPanel').then(m => ({ default: m.GlobalSystemSettingsPanel })));
+const CompanyProfileModal = lazy(() => import('./components/CompanyProfileModal').then(m => ({ default: m.CompanyProfileModal })));
 const GestorDocumentos = lazy(() => import('./components/GestorDocumentos').then(module => ({ default: module.GestorDocumentos })));
 const FacturacionManager = lazy(() => import('./components/FacturacionManager').then(m => ({ default: m.FacturacionManager })));
 const LftManager = lazy(() => import('./components/LftManager'));
 const OrgVaultManager = lazy(() => import('./components/OrgVaultManager').then(m => ({ default: m.OrgVaultManager })));
 const WebPublicaOrganizacion = lazy(() => import('./components/WebPublicaOrganizacion').then(m => ({ default: m.WebPublicaOrganizacion })));
+const MonitorActividadesTiempoReal = lazy(() => import('./components/MonitorActividadesTiempoReal').then(m => ({ default: m.MonitorActividadesTiempoReal })));
 import { ModuleUnlockModal } from './components/ModuleUnlockModal';
-import { PromotionStoreDock } from './components/PromotionStoreDock';
-import { HeaderStats } from './components/HeaderStats';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding';
 import { SaaSPlatformAdmin } from './components/SaaSPlatformAdmin';
@@ -76,7 +77,8 @@ const IconMap: Record<string, React.ReactNode> = {
   Heart: <Heart size={20} />,
   Bell: <Bell size={20} />,
   Database: <Database size={20} />,
-  Globe: <Globe size={20} />
+  Globe: <Globe size={20} />,
+  Activity: <Activity size={20} />
 };
 
 const RootRoute = () => {
@@ -115,7 +117,41 @@ const RootRoute = () => {
 };
 
 function MainLayout() {
-  const [activeModule, setActiveModule] = useState<string>('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialModule = searchParams.get('module') || localStorage.getItem('talent360_active_module') || 'dashboard';
+  const [activeModule, setActiveModuleState] = useState<string>(initialModule);
+
+  const setActiveModule = (modId: string) => {
+    setActiveModuleState(modId);
+    try {
+      localStorage.setItem('talent360_active_module', modId);
+    } catch {}
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (next.get('module') !== modId) {
+        next.set('module', modId);
+        next.delete('tab');
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    const urlModule = searchParams.get('module');
+    if (urlModule && urlModule !== activeModule) {
+      setActiveModuleState(urlModule);
+      try {
+        localStorage.setItem('talent360_active_module', urlModule);
+      } catch {}
+    } else if (!urlModule && activeModule) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('module', activeModule);
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams]);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -123,6 +159,8 @@ function MainLayout() {
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMyAccountOpen, setIsMyAccountOpen] = useState(false);
+  const [isCompanyProfileOpen, setIsCompanyProfileOpen] = useState(false);
+  const [companyProfileTab, setCompanyProfileTab] = useState<'profile' | 'billing' | 'modules' | 'backups'>('profile');
   const [settingsTab, setSettingsTab] = useState<'profile' | 'billing' | 'modules'>('billing');
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -232,12 +270,12 @@ function MainLayout() {
   const modules: AppModule[] = [
     {
       id: 'dashboard',
-      title: 'Centro de Mando',
-      desc: 'Indicadores globales',
-      icon: <LayoutDashboard size={20} />,
+      title: 'Monitor 360',
+      desc: 'Supervisión en Tiempo Real',
+      icon: <Activity size={20} />,
       color: 'bg-blue-50 text-blue-600 border-blue-100',
       minTier: 'freemium',
-      version: 'v3.0'
+      version: 'v4.0'
     },
     {
       id: 'rrhh',
@@ -370,14 +408,37 @@ function MainLayout() {
   const activeModuleData = customizedModules.find(m => m.id === activeModule);
 
   const visibleModules = customizedModules.filter(mod => {
-    // Filtrar módulos que el administrador decidió ocultar de la barra lateral
-    const hiddenModules = systemSettings?.hiddenMenuModules || [];
-    if (hiddenModules.includes(mod.id)) {
+    // 1. Módulos esenciales del sistema siempre accesibles para administración
+    if (mod.id === 'dashboard' || mod.id === 'settings' || mod.id === 'matrix') {
+      return true;
+    }
+
+    // 2. Filtrar por permisos específicos de la empresa (Tenant Overrides de MÓDULOS Y FUNCIONES HABILITADAS)
+    const tenantAllowedModules = systemSettings?.tenant_allowed_modules || systemSettings?.allowed_modules;
+    if (Array.isArray(tenantAllowedModules)) {
+      if (!tenantAllowedModules.includes(mod.id)) {
+        return false;
+      }
+    }
+
+    // 3. Filtrar por permisos específicos asignados a este colaborador individual por el Admin de la Empresa
+    const userAllowedModules = currentUser?.employee?.allowed_modules || currentUser?.allowed_modules;
+    if (Array.isArray(userAllowedModules) && userAllowedModules.length > 0 && currentUser?.role !== 'admin' && currentUser?.role !== 'platform_admin') {
+      if (!userAllowedModules.includes(mod.id)) {
+        return false;
+      }
+    }
+
+    // 4. Módulo bloqueado por tier/plan
+    if (!isModuleUnlocked(mod.id)) {
       return false;
     }
+
+    // 5. Filtrar por rol de supervisor
     if (currentUser?.role === 'supervisor') {
       return !['reportes', 'matrix', 'settings'].includes(mod.id);
     }
+
     return true;
   });
 
@@ -526,66 +587,6 @@ function MainLayout() {
         </div>
       </aside>
 
-      {/* UPSell Modal para Módulos Bloqueados */}
-      {upsellModule && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95">
-            <button onClick={() => setUpsellModule(null)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:text-slate-800 rounded-full transition-colors z-10">
-              <X size={18} />
-            </button>
-            
-            <div className="bg-gradient-to-br from-slate-900 to-blue-950 p-8 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"></div>
-              <div className="relative z-10">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center text-white mb-6 shadow-xl transform rotate-3">
-                  {upsellModule.icon}
-                </div>
-                <h2 className="text-2xl font-black text-white mb-2">{upsellModule.title}</h2>
-                <p className="text-blue-200 font-medium text-sm">Este módulo es exclusivo del plan {upsellModule.minTier.toUpperCase()}</p>
-              </div>
-            </div>
-
-            <div className="p-8">
-              <ul className="space-y-4 mb-8">
-                <li className="flex gap-3 text-slate-700 text-sm font-medium">
-                  <ShieldCheck size={20} className="text-emerald-500 shrink-0" /> Accede a herramientas avanzadas para optimizar la gestión de {upsellModule.title.toLowerCase()}.
-                </li>
-                <li className="flex gap-3 text-slate-700 text-sm font-medium">
-                  <Sparkles size={20} className="text-emerald-500 shrink-0" /> Automatiza procesos y ahorra cientos de horas hombre al mes.
-                </li>
-                <li className="flex gap-3 text-slate-700 text-sm font-medium">
-                  <Terminal size={20} className="text-emerald-500 shrink-0" /> Soporte prioritario 24/7 directo por nuestros ingenieros.
-                </li>
-              </ul>
-
-              <div className="flex gap-3">
-                <button onClick={() => setUpsellModule(null)} className="flex-1 py-3 px-4 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
-                  Quizás luego
-                </button>
-                <button onClick={async () => {
-                  try {
-                    const response = await axiosInstance.post('/subscriptions/create-preference', {
-                      plan: upsellModule.minTier
-                    });
-                    if (response.data.init_point) {
-                      window.location.href = response.data.init_point;
-                    } else {
-                      alert('Error al generar la preferencia de pago.');
-                    }
-                  } catch (e) {
-                    console.error(e);
-                    alert('Error al conectar con la pasarela de pagos.');
-                  }
-                  setUpsellModule(null);
-                }} className="flex-1 py-3 px-4 rounded-xl font-black text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
-                  <Zap size={18} className="fill-current" /> Mejorar Plan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50 relative z-0">
         {/* Top Navbar */}
@@ -700,8 +701,8 @@ function MainLayout() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSettingsTab('profile');
-                          setActiveModule('settings');
+                          setCompanyProfileTab('profile');
+                          setIsCompanyProfileOpen(true);
                           setIsProfileMenuOpen(false);
                         }}
                         className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2"
@@ -711,14 +712,14 @@ function MainLayout() {
                       </button>
                       <button 
                         onClick={() => {
-                          setSettingsTab('billing');
-                          setActiveModule('settings');
+                          setCompanyProfileTab('billing');
+                          setIsCompanyProfileOpen(true);
                           setIsProfileMenuOpen(false);
                         }}
                         className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2"
                       >
-                        <Settings size={14} className="text-slate-400" />
-                        Configuración de Empresa
+                        <Receipt size={14} className="text-slate-400" />
+                        Facturación & Licencias
                       </button>
                       <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
                       <button 
@@ -739,19 +740,19 @@ function MainLayout() {
         {/* Dynamic Canvas */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar relative z-10">
           <Suspense fallback={<LoadingScreen message="Cargando Módulo..." />}>
-            {activeModule === 'dashboard' && <DashboardTalent360 setActiveModule={setActiveModule} />}
+            {activeModule === 'dashboard' && <MonitorActividadesTiempoReal setActiveModule={setActiveModule} />}
             {activeModule === 'rrhh' && <RecursosHumanos />}
             {activeModule === 'ats' && <AtsManager />}
             {activeModule === 'operativo' && <PanelTareasRutinas />}
             {activeModule === 'academia' && <GestorAcademia />}
-{activeModule === 'documentos' && <GestorDocumentos />}
+            {activeModule === 'documentos' && <GestorDocumentos />}
             {activeModule === 'organizacion' && <OrgVaultManager />}
             {activeModule === 'facturacion' && <FacturacionManager />}
             {activeModule === 'reloj' && <RelojChecador />}
             {activeModule === 'reportes' && <ReportesManager />}
             {activeModule === 'matrix' && <PanelSimulador />}
             {activeModule === 'lft' && <LftManager />}
-            {activeModule === 'settings' && <SaaSAccountSettings initialTab={settingsTab} />}
+            {activeModule === 'settings' && <GlobalSystemSettingsPanel />}
           </Suspense>
         </div>
       </main>
@@ -759,6 +760,12 @@ function MainLayout() {
       <MyAccountModal
         isOpen={isMyAccountOpen}
         onClose={() => setIsMyAccountOpen(false)}
+      />
+
+      <CompanyProfileModal
+        isOpen={isCompanyProfileOpen}
+        onClose={() => setIsCompanyProfileOpen(false)}
+        initialTab={companyProfileTab}
       />
 
       <ModuleUnlockModal
@@ -773,13 +780,6 @@ function MainLayout() {
         } : null}
         onSuccess={async () => {
           await useAppStore.getState().fetchState();
-        }}
-      />
-
-      <PromotionStoreDock
-        onOpenStore={() => {
-          setActiveModule('settings');
-          setSettingsTab('modules');
         }}
       />
     </div>

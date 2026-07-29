@@ -357,6 +357,7 @@ try {
     (new \Database\Seeders\DecorarteTasksSeeder())->run();
     (new \Database\Seeders\SupervisorRoutinesSeeder())->run();
     (new \Database\Seeders\RoleClockPolicySeeder())->run();
+    (new \Database\Seeders\DecorarteSadcvTasksSeeder())->run();
 
     DB::commit();
     echo "DecorArte seeded successfully!\n";

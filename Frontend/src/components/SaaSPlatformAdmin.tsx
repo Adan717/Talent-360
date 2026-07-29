@@ -167,6 +167,34 @@ export const SaaSPlatformAdmin = () => {
   const [pendingRegistrations, setPendingRegistrations] = useState<any[]>([]);
   const [isPendingLoading, setIsPendingLoading] = useState(false);
 
+  // Social Grace & Seasonal Promotions State
+  const [socialClaims, setSocialClaims] = useState<any[]>([]);
+  const [promotionsList, setPromotionsList] = useState<any[]>([]);
+  const [socialGraceDaysConfig, setSocialGraceDaysConfig] = useState(30);
+  const [isSocialLoading, setIsSocialLoading] = useState(false);
+  const [newPromoTitle, setNewPromoTitle] = useState('');
+  const [newPromoSubtitle, setNewPromoSubtitle] = useState('');
+  const [newPromoBadge, setNewPromoBadge] = useState('20% OFF');
+  const [newPromoDiscount, setNewPromoDiscount] = useState(20);
+
+  const fetchSocialPromotionsData = async () => {
+    setIsSocialLoading(true);
+    try {
+      const [claimsRes, promosRes, configRes] = await Promise.all([
+        axiosInstance.get('/platform/social-claims'),
+        axiosInstance.get('/platform/promotions'),
+        axiosInstance.get('/platform/social-grace-config')
+      ]);
+      setSocialClaims(claimsRes.data.claims || []);
+      setPromotionsList(promosRes.data.promotions || []);
+      setSocialGraceDaysConfig(configRes.data.social_grace_days || 30);
+    } catch (err) {
+      console.error("Error fetching social & promotions data:", err);
+    } finally {
+      setIsSocialLoading(false);
+    }
+  };
+
   const fetchPendingRegistrations = async () => {
     setIsPendingLoading(true);
     try {
@@ -377,6 +405,9 @@ export const SaaSPlatformAdmin = () => {
     if (activeTab === 'pending_registrations' || activeTab === 'dashboard') {
       fetchPendingRegistrations();
     }
+    if (activeTab === 'social_promotions' || activeTab === 'dashboard') {
+      fetchSocialPromotionsData();
+    }
   }, [activeTab, logsTenantFilter, logsEventFilter]);
 
   useEffect(() => {
@@ -531,6 +562,29 @@ export const SaaSPlatformAdmin = () => {
     if (clean.length <= 3) return clean;
     if (clean.length <= 6) return `${clean.slice(0, 3)} ${clean.slice(3)}`;
     return `${clean.slice(0, 3)} ${clean.slice(3, 6)} ${clean.slice(6)}`;
+  };
+
+  const getNichoBadge = (nicho?: string) => {
+    const n = (nicho || '').toLowerCase();
+    if (n.includes('retail') || n.includes('tienda') || n.includes('comercio') || n.includes('decoracion') || n.includes('boutique') || n.includes('minimarket') || n.includes('ferreteria')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0">🛍️ Tienda / Retail</span>;
+    }
+    if (n.includes('restaurante') || n.includes('comedor') || n.includes('cafeteria') || n.includes('comida') || n.includes('bar') || n.includes('taqueria')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shrink-0">🍽️ Restaurante</span>;
+    }
+    if (n.includes('oficina') || n.includes('servicios') || n.includes('despacho') || n.includes('agencia') || n.includes('consultoria') || n.includes('inmobiliaria')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md shrink-0">🏢 Servicios</span>;
+    }
+    if (n.includes('taller') || n.includes('mecanico') || n.includes('manufactura') || n.includes('industrial') || n.includes('tecnico')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-md shrink-0">🔧 Taller / Industria</span>;
+    }
+    if (n.includes('salud') || n.includes('farmacia') || n.includes('clinica') || n.includes('hospital')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md shrink-0">🩺 Salud / Clínica</span>;
+    }
+    if (n.includes('educacion') || n.includes('escuela') || n.includes('academia') || n.includes('curso')) {
+      return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md shrink-0">🎓 Educación</span>;
+    }
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md shrink-0">🏬 General</span>;
   };
 
   const getCleanDbPhone = (val: string) => {
@@ -1058,6 +1112,23 @@ export const SaaSPlatformAdmin = () => {
                   {isAdmin && (
                     <button 
                       type="button"
+                      onClick={() => { setActiveTab('social_promotions'); setIsNavMenuOpen(false); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
+                        activeTab === 'social_promotions' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">📱 Redes Sociales & Promociones</span>
+                      {socialClaims.filter(c => c.status === 'pending_approval').length > 0 && (
+                        <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                          {socialClaims.filter(c => c.status === 'pending_approval').length}
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button 
+                      type="button"
                       onClick={() => { setActiveTab('billing'); setIsNavMenuOpen(false); }}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-black transition-all ${
                         activeTab === 'billing' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'
@@ -1349,15 +1420,36 @@ export const SaaSPlatformAdmin = () => {
                    <div className="flex justify-between items-start">
                       <div>
                          <h4 className="font-extrabold text-slate-900 text-sm leading-snug">{comp.name}</h4>
+                         <div className="mt-1">{getNichoBadge(comp.nicho)}</div>
                          <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
                       </div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                         comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
-                         comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                         'bg-slate-200 text-slate-700'
-                      }`}>
-                         {comp.plan}
-                      </span>
+                      <div className="text-right">
+                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
+                            comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
+                            'bg-slate-200 text-slate-700'
+                         }`}>
+                            {comp.plan}
+                         </span>
+                         <div className="text-[11px] font-extrabold text-slate-800 mt-1">
+                            ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-500 font-semibold">/mes</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white p-2 rounded-xl border border-slate-200/80">
+                      <div>
+                         <span className="text-[9px] font-black text-slate-400 block uppercase">Módulos</span>
+                         <span className="font-extrabold text-indigo-600">{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
+                      </div>
+                      <div>
+                         <span className="text-[9px] font-black text-slate-400 block uppercase">Usuarios</span>
+                         <span className="font-extrabold text-slate-700">{comp.users} / {comp.max_users ?? 5}</span>
+                      </div>
+                      <div>
+                         <span className="text-[9px] font-black text-slate-400 block uppercase">Volumen DB</span>
+                         <span className="font-extrabold text-emerald-600">{comp.tx_daily_avg ?? 0} <span className="text-[8px] text-slate-400">Tx/día</span></span>
+                      </div>
                    </div>
 
                    <div className="flex items-center justify-between text-xs border-t border-b border-slate-200/70 py-2">
@@ -1365,10 +1457,6 @@ export const SaaSPlatformAdmin = () => {
                          <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                          <span className={`font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
                       </span>
-                      <span className="font-bold text-slate-600">{comp.users} usuarios</span>
-                   </div>
-
-                   <div className="flex items-center justify-between pt-1">
                       <div className="text-xs">
                          {(() => {
                             if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
@@ -1390,24 +1478,25 @@ export const SaaSPlatformAdmin = () => {
                             return null;
                          })()}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                         <button 
-                           onClick={() => handleOpenDetails(comp.id)}
-                           title="Ver Detalles y Accesos"
-                           className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
-                         >
-                           <Eye size={14} />
-                           Detalles
-                         </button>
-                         <button 
-                           onClick={() => handleImpersonate(comp.id)}
-                           title="Iniciar Sesión como Admin"
-                           className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
-                         >
-                           <LogIn size={14} />
-                           Entrar
-                         </button>
-                      </div>
+                   </div>
+
+                   <div className="flex items-center justify-end gap-1.5 pt-1">
+                      <button 
+                        onClick={() => handleOpenDetails(comp.id)}
+                        title="Ver Detalles y Accesos"
+                        className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
+                      >
+                        <Eye size={14} />
+                        Detalles
+                      </button>
+                      <button 
+                        onClick={() => handleImpersonate(comp.id)}
+                        title="Iniciar Sesión como Admin"
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
+                      >
+                        <LogIn size={14} />
+                        Entrar
+                      </button>
                    </div>
                 </div>
              ))}
@@ -1419,75 +1508,140 @@ export const SaaSPlatformAdmin = () => {
                 <thead>
                    <tr className="border-b border-slate-100 text-slate-500">
                       <th className="pb-3 font-bold">Empresa</th>
-                      <th className="pb-3 font-bold">Plan</th>
+                      <th className="pb-3 font-bold">Plan & Costo</th>
+                      <th className="pb-3 font-bold">Módulos</th>
                       <th className="pb-3 font-bold">Usuarios</th>
+                      <th className="pb-3 font-bold">Volumen DB</th>
                       <th className="pb-3 font-bold">Estado</th>
-                      <th className="pb-3 font-bold">Suscripción</th>
                       <th className="pb-3 font-bold text-right">Acciones</th>
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                    {isLoading ? (
-                      <tr><td colSpan={6} className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</td></tr>
                    ) : tenantsList.length === 0 ? (
-                      <tr><td colSpan={6} className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
                    ) : tenantsList.map((comp, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-4 font-bold text-slate-800">{comp.name}</td>
+                          <td className="py-4 font-bold text-slate-800">
+                             <div className="flex items-center gap-2 flex-wrap">
+                                <span>{comp.name}</span>
+                                {getNichoBadge(comp.nicho)}
+                             </div>
+                             <span className="text-[10px] text-slate-400 font-semibold block">{comp.subdomain}.talent360.com</span>
+                          </td>
                           <td className="py-4">
-                             <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                                comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
-                                comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                                'bg-slate-100 text-slate-600'
-                             }`}>
-                                {comp.plan}
+                             <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                                   comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
+                                   comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
+                                   'bg-slate-100 text-slate-600'
+                                }`}>
+                                   {comp.plan}
+                                </span>
+                                <span className="text-xs font-black text-slate-800">
+                                   ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-400 font-medium">/mes</span>
+                                </span>
+                             </div>
+                          </td>
+                          <td className="py-4">
+                             <span 
+                               title={`Módulos habilitados (${comp.allowed_modules?.length || 0}): ${(comp.allowed_modules || []).join(', ')}`}
+                               className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-extrabold cursor-help"
+                             >
+                               <span>📦</span>
+                               <span>{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
                              </span>
                           </td>
-                          <td className="py-4 font-medium text-slate-600">{comp.users}</td>
-                          <td className="py-4">
-                             <span className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
-                             </span>
+                          <td className="py-4 font-medium text-slate-600">
+                             <span className="font-bold text-slate-800">{comp.users}</span>
+                             <span className="text-[10px] text-slate-400 font-semibold"> / {comp.max_users ?? 5}</span>
                           </td>
-                           <td className="py-4 text-xs font-medium text-slate-500">
-                              <div>{comp.date}</div>
-                              {(() => {
-                                 if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
-                                    return <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Gratuito permanente</span>;
-                                 }
-                                 
-                                 if (comp.trial_ends_at) {
-                                    const endsAt = new Date(comp.trial_ends_at);
-                                    const diff = endsAt.getTime() - Date.now();
-                                    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                                    
-                                    if (diff > 0) {
-                                       return (
-                                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full mt-1.5 whitespace-nowrap">
-                                             ⏳ Quedan {days} días de prueba
-                                          </span>
-                                       );
-                                    } else {
-                                       return (
-                                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full mt-1.5 whitespace-nowrap">
-                                             ⚠️ Prueba Expirada
-                                          </span>
-                                       );
-                                    }
-                                 }
+                          <td className="py-4">
+                             <div 
+                               title={`Total 30 días: ${comp.tx_30_days || 0} operaciones de base de datos (${comp.tx_total || 0} históricas)`}
+                               className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg text-xs font-extrabold cursor-help"
+                             >
+                               <span>⚡</span>
+                               <span>{comp.tx_daily_avg ?? 0}</span>
+                               <span className="text-[9px] font-semibold text-emerald-600">Tx/día</span>
+                             </div>
+                          </td>
+                          <td className="py-4">
+                             <div className="flex flex-col gap-0.5">
+                                <span className="flex items-center gap-1.5">
+                                   <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                   <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                                </span>
+                                {(() => {
+                                   if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
+                                      return (
+                                         <div className="mt-0.5">
+                                            <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>
+                                            {comp.freemium_compliance_status === 'approved' ? (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mt-1">
+                                                  ✓ Evidencia Aprobada
+                                               </span>
+                                            ) : comp.freemium_compliance_status === 'submitted' ? (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
+                                                  ⏳ Comprobante por Revisar
+                                               </span>
+                                            ) : comp.freemium_compliance_status === 'rejected' ? (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full mt-1">
+                                                  ⚠️ Evidencia Rechazada
+                                               </span>
+                                            ) : (
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full mt-1">
+                                                  📢 Comprobante Pendiente
+                                               </span>
+                                            )}
+                                         </div>
+                                      );
+                                   }
+                                   
+                                   if (comp.trial_ends_at) {
+                                      const endsAt = new Date(comp.trial_ends_at);
+                                      const diff = endsAt.getTime() - Date.now();
+                                      const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                      
+                                      if (diff > 0) {
+                                         return (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
+                                               ⏳ Quedan {days} días de prueba
+                                            </span>
+                                         );
+                                      } else {
+                                         return (
+                                            <div className="mt-0.5">
+                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                  ⚠️ Prueba Expirada
+                                               </span>
+                                               {comp.freemium_compliance_status === 'approved' ? (
+                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full block mt-1">
+                                                     ✓ Evidencia Aprobada
+                                                  </span>
+                                               ) : (
+                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full block mt-1">
+                                                     📢 Publicidad Pendiente
+                                                  </span>
+                                               )}
+                                            </div>
+                                         );
+                                      }
+                                   }
 
-                                 if (comp.subscription_status === 'active') {
-                                    return (
-                                       <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full mt-1.5 whitespace-nowrap">
-                                          ✓ Suscrito
-                                       </span>
-                                    );
-                                 }
+                                   if (comp.subscription_status === 'active') {
+                                      return (
+                                         <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
+                                            ✓ Suscrito
+                                         </span>
+                                      );
+                                   }
 
-                                 return null;
-                              })()}
-                           </td>
+                                   return null;
+                                })()}
+                             </div>
+                          </td>
                           <td className="py-4 text-right">
                              <div className="flex justify-end gap-1.5">
                                 <button 
@@ -1859,6 +2013,259 @@ export const SaaSPlatformAdmin = () => {
         </div>
       )}
 
+      {activeTab === 'social_promotions' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* Header & Grace Days Configuration */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-blue-200">
+                  Difusión Social & Promociones
+                </span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900">Gestión de Tiempo de Gracia y Banners</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Configura los días otorgados por compartir en redes sociales, aprueba solicitudes de clientes y crea banners promocionales para el pie de página.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3 shrink-0">
+              <span className="text-xs font-bold text-slate-600">Días de Gracia por Defecto:</span>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={socialGraceDaysConfig}
+                onChange={(e) => setSocialGraceDaysConfig(parseInt(e.target.value) || 30)}
+                className="w-16 text-center text-xs font-black p-2 rounded-xl border border-slate-300 bg-white"
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    await axiosInstance.post('/platform/social-grace-config', { social_grace_days: socialGraceDaysConfig });
+                    alert("Configuración de días de gracia guardada.");
+                  } catch (err) {
+                    alert("Error al guardar.");
+                  }
+                }}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+
+          {/* Solicitudes de Difusión Social (Clientes) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-slate-900">Solicitudes de Difusión Social</h3>
+                <p className="text-xs text-slate-500">Evidencias enviadas por clientes para desbloquear módulos gratis.</p>
+              </div>
+              <button
+                onClick={fetchSocialPromotionsData}
+                className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 text-xs font-bold flex items-center gap-1.5"
+              >
+                <RefreshCw size={14} className={isSocialLoading ? 'animate-spin' : ''} /> Actualizar
+              </button>
+            </div>
+
+            {socialClaims.length === 0 ? (
+              <div className="text-center py-10 text-slate-400 text-xs font-medium">
+                No hay solicitudes de difusión en este momento.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                      <th className="p-3.5">Empresa / Tenant</th>
+                      <th className="p-3.5">Módulo Solicitado</th>
+                      <th className="p-3.5">Evidencia / URL</th>
+                      <th className="p-3.5">Días Otorgados</th>
+                      <th className="p-3.5">Estado</th>
+                      <th className="p-3.5 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {socialClaims.map((claim) => (
+                      <tr key={claim.id} className="hover:bg-slate-50/80">
+                        <td className="p-3.5 font-bold text-slate-900">
+                          {claim.tenant?.name || `Tenant #${claim.tenant_id}`}
+                        </td>
+                        <td className="p-3.5 font-extrabold text-blue-600 uppercase">
+                          {claim.module_key}
+                        </td>
+                        <td className="p-3.5 max-w-xs truncate">
+                          {claim.proof_url ? (
+                            <a href={claim.proof_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-semibold truncate block">
+                              {claim.proof_url}
+                            </a>
+                          ) : (
+                            <span className="text-slate-400 font-medium">{claim.proof_note || 'Sin enlace'}</span>
+                          )}
+                        </td>
+                        <td className="p-3.5 font-bold text-slate-700">
+                          {claim.grace_days_granted || 30} días
+                        </td>
+                        <td className="p-3.5">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                            claim.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                            claim.status === 'pending_approval' ? 'bg-amber-100 text-amber-800' :
+                            'bg-rose-100 text-rose-800'
+                          }`}>
+                            {claim.status === 'active' ? 'Aprobado (Activo)' : claim.status === 'pending_approval' ? 'Pendiente' : 'Rechazado'}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right">
+                          {claim.status === 'pending_approval' && (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await axiosInstance.post(`/platform/social-claims/${claim.id}/approve`);
+                                    fetchSocialPromotionsData();
+                                  } catch (err) {
+                                    alert("Error al aprobar.");
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                              >
+                                Aprobar
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await axiosInstance.post(`/platform/social-claims/${claim.id}/reject`);
+                                    fetchSocialPromotionsData();
+                                  } catch (err) {
+                                    alert("Error al rechazar.");
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                              >
+                                Rechazar
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Creador de Promociones de Temporada */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-base font-black text-slate-900">Promociones de Temporada (Store Dock Inferior)</h3>
+              <p className="text-xs text-slate-500">Crea banners flotantes de ofertas especiales para los clientes.</p>
+            </div>
+
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  await axiosInstance.post('/platform/promotions', {
+                    title: newPromoTitle,
+                    subtitle: newPromoSubtitle,
+                    badge_text: newPromoBadge,
+                    discount_percentage: newPromoDiscount,
+                    is_active: true
+                  });
+                  setNewPromoTitle('');
+                  setNewPromoSubtitle('');
+                  fetchSocialPromotionsData();
+                  alert("Promoción creada correctamente.");
+                } catch (err) {
+                  alert("Error al crear la promoción.");
+                }
+              }}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200"
+            >
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Título de la Oferta:</label>
+                <input
+                  type="text"
+                  required
+                  value={newPromoTitle}
+                  onChange={(e) => setNewPromoTitle(e.target.value)}
+                  placeholder="ej. 🔥 Especial Día del Padre"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Subtítulo / Mensaje:</label>
+                <input
+                  type="text"
+                  value={newPromoSubtitle}
+                  onChange={(e) => setNewPromoSubtitle(e.target.value)}
+                  placeholder="20% OFF en Plan Enterprise anual"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Etiqueta Badge:</label>
+                <input
+                  type="text"
+                  value={newPromoBadge}
+                  onChange={(e) => setNewPromoBadge(e.target.value)}
+                  placeholder="20% OFF"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all"
+                >
+                  Publicar Promoción
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-700">Promociones Existentes:</h4>
+              {promotionsList.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No hay promociones activas registradas.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {promotionsList.map((promo) => (
+                    <div key={promo.id} className="p-4 rounded-2xl bg-slate-900 text-white flex justify-between items-center shadow-sm">
+                      <div>
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950">
+                          {promo.badge_text || 'PROMO'}
+                        </span>
+                        <h4 className="font-extrabold text-sm mt-1">{promo.title}</h4>
+                        <p className="text-xs text-slate-300">{promo.subtitle}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (window.confirm("¿Eliminar esta promoción?")) {
+                            await axiosInstance.delete(`/platform/promotions/${promo.id}`);
+                            fetchSocialPromotionsData();
+                          }
+                        }}
+                        className="p-2 text-rose-400 hover:text-rose-200 hover:bg-white/10 rounded-xl"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
+
       {activeTab === 'tickets' && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm gap-4">
@@ -2214,7 +2621,11 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'reportes', label: 'Reportes y Analítica', desc: 'BI, prenóminas e incidencias' },
                   { id: 'portal', label: 'Portal Web', desc: 'Bolsa de trabajo pública' },
                   { id: 'academia', label: 'Academia 360', desc: 'Capacitación y cursos LMS' },
-                  { id: 'documentos', label: 'Documentos', desc: 'Expediente digital y políticas de empresa' }
+                  { id: 'documentos', label: 'Documentos', desc: 'Expediente digital y políticas de empresa' },
+                  { id: 'matrix', label: 'Matrix QA', desc: 'Entorno de simulación' },
+                  { id: 'facturacion', label: 'Nómina CFDI 4.0', desc: 'Timbrado masivo del SAT' },
+                  { id: 'lft', label: 'Ley Federal del Trabajo', desc: 'Reglamento y tolerancias' },
+                  { id: 'organizacion', label: 'Organigrama y SOP', desc: 'Procesos, Puestos y Wiki' }
                 ].map(mod => (
                   <label 
                     key={mod.id}
@@ -2709,11 +3120,17 @@ export const SaaSPlatformAdmin = () => {
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-semibold text-slate-500">Plan Contratado:</span>
                           <span className={`px-2.5 py-1 rounded-md text-xs font-black ${
-                            tenantDetail?.tenant?.plan === 'pro' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                            tenantDetail?.tenant?.plan === 'enterprise' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
+                            tenantDetail?.tenant?.plan?.toLowerCase() === 'pro' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                            tenantDetail?.tenant?.plan?.toLowerCase() === 'enterprise' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
                             'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}>
                             {tenantDetail?.tenant?.plan}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="font-semibold text-slate-500">Costo Mensual Actual:</span>
+                          <span className="font-black text-indigo-600 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-lg text-sm">
+                            ${tenantDetail?.tenant?.monthly_price ?? 0} <span className="text-[10px] text-slate-500 font-semibold">/mes</span>
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
@@ -2741,9 +3158,61 @@ export const SaaSPlatformAdmin = () => {
                         )}
                       </div>
 
+                      {/* Historial de Suscripciones y Evolución de Plan (Snapshotting Inmutable) */}
+                      <div className="border border-indigo-200 bg-indigo-50/10 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                            <span>📈</span> Historial y Evolución de Plan
+                          </h3>
+                          <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                            {tenantDetail?.subscription_history?.length || 0} registros
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Registro inmutable de la evolución de la empresa, pagos acordados y módulos contratados a lo largo del tiempo:
+                        </p>
+
+                        <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-200">
+                          {(tenantDetail?.subscription_history || []).map((hist: any, index: number) => (
+                            <div key={hist.id || index} className="relative pl-7 text-xs">
+                              <div className={`absolute left-1.5 top-1.5 w-3 h-3 rounded-full border-2 bg-white ${
+                                hist.status === 'active' ? 'border-emerald-500 bg-emerald-500' : 'border-indigo-400'
+                              }`} />
+                              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-black text-slate-900">{hist.plan_name}</span>
+                                    <span className="font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-[10px]">
+                                      ${hist.monthly_price} /mes
+                                    </span>
+                                  </div>
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                    hist.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {hist.status === 'active' ? 'Vigente Actual' : 'Histórico'}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                                  <span>📦 <strong>{hist.modules_count}</strong> Módulos</span>
+                                  <span>•</span>
+                                  <span>👥 <strong>{hist.max_users}</strong> Usuarios Max</span>
+                                  <span>•</span>
+                                  <span className="text-slate-400 font-mono text-[10px]">{hist.date_formatted}</span>
+                                </div>
+                                {hist.change_reason && (
+                                  <div className="text-[10px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-150">
+                                    Motivo: {hist.change_reason}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Consumo y Recursos */}
                       <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Consumo de Recursos</h3>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Consumo de Recursos y Transacciones BD</h3>
                         
                         {/* Barra de usuarios */}
                         <div>
@@ -2762,6 +3231,22 @@ export const SaaSPlatformAdmin = () => {
                               }`}
                               style={{ width: `${Math.min(100, (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) * 100)}%` }}
                             ></div>
+                          </div>
+                        </div>
+
+                        {/* Volumen de Transacciones */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-extrabold text-slate-700 flex items-center gap-1">
+                              ⚡ Throughput BD (Últimos 30 días):
+                            </span>
+                            <span className="font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                              {tenantDetail?.metrics?.tx_daily_avg ?? 0} Tx / día
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex justify-between font-medium">
+                            <span>Total 30 Días: <strong>{tenantDetail?.metrics?.tx_30_days ?? 0}</strong> operaciones</span>
+                            <span>Histórico Total: <strong>{tenantDetail?.metrics?.tx_total ?? 0}</strong> operaciones</span>
                           </div>
                         </div>
 
@@ -2798,7 +3283,11 @@ export const SaaSPlatformAdmin = () => {
                               { id: 'reportes', label: 'Reportes y Analítica' },
                               { id: 'portal', label: 'Portal Web' },
                               { id: 'academia', label: 'Academia 360' },
-                              { id: 'documentos', label: 'Gestor Documental' }
+                              { id: 'documentos', label: 'Gestor Documental' },
+                              { id: 'matrix', label: 'Matrix QA (Simulador)' },
+                              { id: 'facturacion', label: 'Nómina CFDI 4.0' },
+                              { id: 'lft', label: 'Ley Federal del Trabajo' },
+                              { id: 'organizacion', label: 'Organigrama y SOP' }
                             ].map(mod => (
                               <label key={mod.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
                                 <input 

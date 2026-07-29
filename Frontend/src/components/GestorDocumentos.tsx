@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 interface EmployeeDoc {
   id: string;
@@ -184,30 +185,49 @@ export const GestorDocumentos = () => {
   return (
     <div className="h-full bg-slate-50 flex flex-col font-sans">
       
-      {/* Header */}
-      <header className="bg-white px-8 py-6 border-b border-slate-200 flex justify-between items-center shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800">Gestor Documental y Expedientes</h1>
-          <p className="text-sm text-slate-500">Expedientes de colaboradores y almacén corporativo de manuales oficiales.</p>
-        </div>
-        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
-          <button 
-            onClick={() => { setActiveTab('employees'); setSelectedEmployeeId(null); }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'employees' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            📂 Expedientes Colaboradores
-          </button>
-          <button 
-            onClick={() => { setActiveTab('company'); }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'company' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            🏢 Documentos Corporativos
-          </button>
+      {/* Header Sticky (Escritorio) */}
+      <header className="sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-800">Gestor Documental y Expedientes</h1>
+            <p className="text-sm text-slate-500">Expedientes de colaboradores y almacén corporativo de manuales oficiales.</p>
+          </div>
+          <div className="hidden sm:flex gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button 
+              onClick={() => { setActiveTab('employees'); setSelectedEmployeeId(null); }}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'employees' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              📂 Expedientes Colaboradores
+            </button>
+            <button 
+              onClick={() => { setActiveTab('company'); }}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'company' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              🏢 Documentos Corporativos
+            </button>
+          </div>
         </div>
       </header>
 
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB ámbar) */}
+      <MobileModuleBottomDock
+        colorTheme="amber"
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab as any);
+          if (tab === 'employees') setSelectedEmployeeId(null);
+        }}
+        fabIcon={<UploadCloud size={28} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('company')}
+        fabTitle="Subir Documento / Expediente"
+        items={[
+          { id: 'employees', label: 'Expedientes', icon: <FileText /> },
+          { id: 'company', label: 'Corporativo', icon: <FileCheck /> }
+        ]}
+      />
+
       {/* Main Container */}
-      <div className="flex-1 overflow-hidden flex p-8 gap-6">
+      <div className="flex-1 overflow-hidden flex p-4 sm:p-8 gap-6 pb-24 sm:pb-8">
         
         {/* TAB 1: EXPEDIENTES DE COLABORADORES */}
         {activeTab === 'employees' && (

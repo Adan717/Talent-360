@@ -54,8 +54,8 @@ class OrphanEmailRegistrationTest extends TestCase
         $response = $this->actingAs($platformAdmin)->deleteJson("/api/v1/platform/tenants/{$tenant->id}");
         $response->assertStatus(200);
 
-        $this->assertSoftDeleted('tenants', ['id' => $tenant->id]);
-        $this->assertSoftDeleted('users', ['id' => $user->id]);
+        $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 
     public function test_orphan_user_can_re_register_new_company(): void
@@ -75,9 +75,9 @@ class OrphanEmailRegistrationTest extends TestCase
         ]);
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => $tenant->id]);
 
-        // Soft delete the tenant and user
-        $tenant->delete();
-        $user->delete();
+        // Soft delete or force delete the tenant and user
+        $tenant->forceDelete();
+        $user->forceDelete();
 
         // Now attempt registration with the same email
         $response = $this->postJson('/api/v1/register', [
@@ -112,8 +112,7 @@ class OrphanEmailRegistrationTest extends TestCase
         $response = $this->actingAs($platformAdmin)->deleteJson("/api/v1/platform/tenants/{$tenant->id}");
         $response->assertStatus(200);
 
-        $softDeletedTenant = Tenant::withTrashed()->find($tenant->id);
-        $this->assertStringContainsString('dashcomputer_deleted_', $softDeletedTenant->subdomain);
+        $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
 
         $userId = DB::table('users')->insertGetId([
             'name' => 'Gael',

@@ -16,6 +16,7 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { renderJobRoleIcon } from '../lib/jobRoleIcons';
 
 // Organigrama interactivo de puestos (Directorio > Puestos). Reemplaza el árbol CSS estático que
 // vivía inline en RecursosHumanos.tsx por un lienzo real donde se puede dibujar la conexión entre
@@ -220,8 +221,9 @@ function PuestoNode({ data }: NodeProps) {
       <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${levelInfo.bg}`}>
         {levelInfo.text}
       </span>
-      <div className="font-black text-xs text-slate-800 uppercase tracking-widest mt-2 mb-1 truncate" title={role.name}>
-        {role.name}
+      <div className="font-black text-xs text-slate-800 uppercase tracking-widest mt-2 mb-1 truncate flex items-center justify-center gap-1.5" title={role.name}>
+        <span className="shrink-0 text-indigo-600">{renderJobRoleIcon(role, 14)}</span>
+        <span className="truncate">{role.name}</span>
       </div>
       <div className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md inline-block mb-2">
         {role.area || 'General'}

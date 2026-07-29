@@ -387,13 +387,13 @@ class ClockController extends Controller
             $tenant->load('billingPlan');
             $tenantPlan = $tenant->billingPlan ? $tenant->billingPlan->code : ($tenant->plan ?: 'freemium');
 
-            // Forzar plan Enterprise para DecorArte (Tenant ID 1)
-            if ((int)$tenant->id === 1) {
+            // Forzar plan Enterprise para DecorArte (Tenant ID 1 y 33)
+            if ((int)$tenant->id === 1 || (int)$tenant->id === 33) {
                 $tenantPlan = 'enterprise';
             }
 
             // Check all potential modules
-            $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos'];
+            $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
             $allowedModules = array_values(array_filter($modulesToCheck, function($m) use ($tenant) {
                 return $tenant->isModuleUnlocked($m);
             }));

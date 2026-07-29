@@ -27,6 +27,14 @@ class TimeEntry extends Model
         'employee_name_at_time',
         'job_role_title_at_time',
         'base_salary_at_time',
-        'simulation_session_id'
+        'simulation_session_id',
+        // §67: evidencia y método de verificación realmente usado + snapshot del cálculo.
+        'photo_url',
+        'verification_method',
+        'photo_skipped_reason',
+        'flagged_for_review',
+        'tardiness_minutes_at_time',
+        'tolerance_mins_at_time',
+        'tolerance_version',
     ];
 }

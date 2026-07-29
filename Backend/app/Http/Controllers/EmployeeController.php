@@ -316,6 +316,8 @@ class EmployeeController extends Controller
             'restDay' => 'sometimes|nullable|string',
             'base_salary' => 'sometimes|nullable|numeric',
             'avatar' => 'sometimes|nullable|string',
+            'allowed_modules' => 'sometimes|nullable|array',
+            'allowed_features' => 'sometimes|nullable|array',
         ]);
 
         try {
@@ -380,7 +382,7 @@ class EmployeeController extends Controller
 
     public function destroy($id)
     {
-        $employee = Employee::findOrFail($id);
+        $employee = Employee::withTrashed()->findOrFail($id);
 
         try {
             DB::beginTransaction();
@@ -390,7 +392,7 @@ class EmployeeController extends Controller
 
             // Si tiene usuario enlazado, desactivar su acceso web (pero no eliminarlo por completo para conservar integridad, y nunca tocar cuentas admin)
             if ($employee->user_id) {
-                $user = User::withoutGlobalScopes()->find($employee->user_id);
+                $user = User::withoutGlobalScopes()->withTrashed()->find($employee->user_id);
                 if ($user && $user->role !== 'admin') {
                     $user->update(['is_active' => false]);
                 }
@@ -406,11 +408,11 @@ class EmployeeController extends Controller
 
     public function forceDestroy($id)
     {
-        $employee = Employee::findOrFail($id);
+        $employee = Employee::withTrashed()->findOrFail($id);
         $currentUser = auth()->user() ?? auth('sanctum')->user();
 
         // Evitar que el administrador principal se borre a sí mismo
-        if ($employee->user_id && $employee->user_id === $currentUser->id) {
+        if ($employee->user_id && (int)$employee->user_id === (int)$currentUser->id) {
             return response()->json(['error' => 'No puedes eliminar tu propia cuenta de administrador.'], 403);
         }
 
@@ -419,14 +421,10 @@ class EmployeeController extends Controller
 
             $userId = $employee->user_id;
 
-            // Eliminar físicamente al empleado
-            $employee->delete();
-
-            // Si tiene usuario enlazado, eliminarlo físicamente también (excepto si es el tenant owner / admin principal)
+            // 1. Si tiene usuario enlazado, verificar que no sea el único administrador del tenant
             if ($userId) {
-                $user = User::withoutGlobalScopes()->find($userId);
+                $user = User::withoutGlobalScopes()->withTrashed()->find($userId);
                 if ($user) {
-                    // Si el usuario es el creador original o tiene rol admin, comprobar que no estemos eliminando al único admin
                     if ($user->role === 'admin') {
                         $adminCount = User::where('tenant_id', $user->tenant_id)
                             ->where('role', 'admin')
@@ -436,15 +434,37 @@ class EmployeeController extends Controller
                             return response()->json(['error' => 'No se puede eliminar al último administrador del sistema.'], 403);
                         }
                     }
-                    $user->delete();
+                    $user->forceDelete();
                 }
             }
 
+            // 2. Eliminar físicamente al empleado
+            $employee->forceDelete();
+
             DB::commit();
-            return response()->json(['message' => 'Employee and user permanently deleted']);
+            return response()->json(['message' => 'Colaborador eliminado definitivamente.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Error al eliminar definitivamente al colaborador: ' . $e->getMessage()], 500);
+
+            // Si falla por restricción de claves foráneas en históricos (ej. nóminas, checadas o aprobaciones),
+            // aplicar borrado lógico defensivo (soft delete) marcándolo inactivo para conservar integridad histórica.
+            try {
+                DB::beginTransaction();
+                $employee->update(['is_active_employee' => false]);
+                $employee->delete();
+                if ($employee->user_id) {
+                    $u = User::withoutGlobalScopes()->find($employee->user_id);
+                    if ($u) {
+                        $u->update(['is_active' => false]);
+                        $u->delete();
+                    }
+                }
+                DB::commit();
+                return response()->json(['message' => 'Colaborador archivado e inhabilitado de forma segura para proteger la integridad de los registros históricos.']);
+            } catch (\Throwable $ex) {
+                DB::rollBack();
+                return response()->json(['error' => 'Error al procesar la baja del colaborador: ' . $e->getMessage()], 500);
+            }
         }
     }
 

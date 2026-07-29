@@ -1,13 +1,46 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { RecruitmentBoard } from './RecruitmentBoard';
 import GestorVacantes from './GestorVacantes';
 import { WebPublica } from './WebPublica';
 import AtsPortalSettings from './AtsPortalSettings';
 import { Briefcase, ClipboardList, Calendar, Plus, Trash2, Clock, User, MessageSquare, X, Globe } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export function AtsManager() {
-  const [activeTab, setActiveTab] = useState('vacantes');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const storedTab = localStorage.getItem('talent360_ats_active_tab');
+  const [activeTab, setActiveTabState] = useState(urlTab || storedTab || 'vacantes');
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('talent360_ats_active_tab', tab);
+    } catch {}
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
+      try {
+        localStorage.setItem('talent360_ats_active_tab', urlTab);
+      } catch {}
+    } else if (!urlTab && activeTab) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', activeTab);
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab]);
+
   const [showFabMenu, setShowFabMenu] = useState(false);
   
   // States for Interviews
@@ -88,49 +121,60 @@ export function AtsManager() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 sm:pb-6">
       
-      {/* HEADER ATS */}
-      <div className="bg-transparent sm:bg-white rounded-3xl p-0 sm:p-8 shadow-none sm:shadow-sm border-none sm:border sm:border-slate-200">
-        
-        {/* TABS */}
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100/60 sm:bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none border border-slate-200">
-          <button 
-            onClick={() => setActiveTab('vacantes')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'vacantes' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <Briefcase size={18} className={activeTab === 'vacantes' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Bolsa de Trabajo</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('kanban')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'kanban' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <ClipboardList size={18} className={activeTab === 'kanban' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tablero Candidatos</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('entrevistas')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'entrevistas' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <Calendar size={18} className={activeTab === 'entrevistas' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
-              <span className="block sm:hidden">Agenda</span>
-              <span className="hidden sm:block">Agenda de Entrevistas</span>
-            </span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('publico')}
-            className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'publico' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
-          >
-            <Globe size={18} className={activeTab === 'publico' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
-              <span className="block sm:hidden">Web Pública</span>
-              <span className="hidden sm:block">Vista Pública (Web)</span>
-            </span>
-          </button>
+      {/* HEADER ATS (Escritorio) */}
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+        <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200">
+          {/* TABS */}
+          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+            <button 
+              onClick={() => setActiveTab('vacantes')}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'vacantes' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <Briefcase size={18} className={activeTab === 'vacantes' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-nowrap text-center leading-tight">Bolsa de Trabajo</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('kanban')}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'kanban' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <ClipboardList size={18} className={activeTab === 'kanban' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-nowrap text-center leading-tight">Tablero Candidatos</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('entrevistas')}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'entrevistas' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <Calendar size={18} className={activeTab === 'entrevistas' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-nowrap text-center leading-tight">Agenda de Entrevistas</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('publico')}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'publico' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+            >
+              <Globe size={18} className={activeTab === 'publico' ? 'text-indigo-600' : 'text-slate-400'} />
+              <span className="whitespace-nowrap text-center leading-tight">Vista Pública (Web)</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB púrpura) */}
+      <MobileModuleBottomDock
+        colorTheme="purple"
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        fabIcon={<Plus size={30} className="text-white relative z-10 animate-pulse" />}
+        onFabClick={() => setActiveTab('vacantes')}
+        fabTitle="Nueva Vacante / Candidato"
+        items={[
+          { id: 'vacantes', label: 'Vacantes', icon: <Briefcase /> },
+          { id: 'kanban', label: 'Tablero', icon: <ClipboardList /> },
+          { id: 'entrevistas', label: 'Agenda', icon: <Calendar /> },
+          { id: 'publico', label: 'Pública', icon: <Globe /> }
+        ]}
+      />
 
       <div className="bg-transparent">
         {activeTab === 'vacantes' && <GestorVacantes />}

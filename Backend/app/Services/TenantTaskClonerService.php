@@ -126,8 +126,13 @@ class TenantTaskClonerService
             Routine::withoutGlobalScopes()->where('tenant_id', $targetId)->forceDelete();
             Task::withoutGlobalScopes()->where('tenant_id', $targetId)->forceDelete();
 
-            // 5. Clonar Tareas
-            $sourceTasks = DB::table('tasks')->where('tenant_id', $sourceId)->whereNull('deleted_at')->get();
+            // 5. Clonar Tareas (asegurando títulos únicos)
+            $sourceTasks = DB::table('tasks')
+                ->where('tenant_id', $sourceId)
+                ->whereNull('deleted_at')
+                ->get()
+                ->unique(fn($t) => trim(mb_strtolower($t->title)));
+
             $taskMap = []; // [source_task_id => target_task_id]
 
             foreach ($sourceTasks as $sTask) {
@@ -146,8 +151,13 @@ class TenantTaskClonerService
                 $taskMap[$sTask->id] = $newTaskId;
             }
 
-            // 6. Clonar Rutinas
-            $sourceRoutines = DB::table('routines')->where('tenant_id', $sourceId)->whereNull('deleted_at')->get();
+            // 6. Clonar Rutinas (asegurando títulos y roles únicos)
+            $sourceRoutines = DB::table('routines')
+                ->where('tenant_id', $sourceId)
+                ->whereNull('deleted_at')
+                ->get()
+                ->unique(fn($r) => trim(mb_strtolower($r->title)) . '_' . $r->target_role_id);
+
             $routineMap = []; // [source_routine_id => target_routine_id]
 
             foreach ($sourceRoutines as $sRoutine) {

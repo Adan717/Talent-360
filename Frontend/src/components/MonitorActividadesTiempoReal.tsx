@@ -489,48 +489,48 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               </div>
             </div>
 
-            {/* KPI METRICAS RAPIDAS (3 Fichas estilo botón/pill con marca de agua) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            {/* KPI METRICAS RAPIDAS (3 Fichas estilo botón/pill en 1 sola fila continua) */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
               {/* Personal Presente */}
-              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
-                <div className="flex items-center gap-3 z-10">
-                  <div className="p-2.5 rounded-xl bg-emerald-100/90 text-emerald-700 font-bold shadow-2xs">
-                    <UserCheck className="w-5 h-5" />
+              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+                <div className="flex items-center gap-2 sm:gap-3 z-10 min-w-0">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-100/90 text-emerald-700 font-bold shadow-2xs shrink-0">
+                    <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <div className="text-lg font-black text-slate-900 leading-tight">{activeCount} / {users.length}</div>
-                    <div className="text-xs text-slate-500 font-bold tracking-tight">Personal Presente</div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-slate-900 leading-tight truncate">{activeCount} / {users.length}</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-tight truncate">Personal</div>
                   </div>
                 </div>
-                <UserCheck className="absolute -right-3 -bottom-3 w-16 h-16 text-emerald-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                <UserCheck className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-emerald-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
 
               {/* En Almuerzo/Break */}
-              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
-                <div className="flex items-center gap-3 z-10">
-                  <div className="p-2.5 rounded-xl bg-amber-100/90 text-amber-700 font-bold shadow-2xs">
-                    <Clock className="w-5 h-5" />
+              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+                <div className="flex items-center gap-2 sm:gap-3 z-10 min-w-0">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-amber-100/90 text-amber-700 font-bold shadow-2xs shrink-0">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <div className="text-lg font-black text-slate-900 leading-tight">{breakCount}</div>
-                    <div className="text-xs text-slate-500 font-bold tracking-tight">En Almuerzo/Break</div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-slate-900 leading-tight truncate">{breakCount}</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-tight truncate">Almuerzo</div>
                   </div>
                 </div>
-                <Clock className="absolute -right-3 -bottom-3 w-16 h-16 text-amber-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
+                <Clock className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-amber-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
               </div>
 
               {/* Eficiencia Promedio */}
-              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
-                <div className="flex items-center gap-3 z-10">
-                  <div className="p-2.5 rounded-xl bg-blue-100/90 text-blue-700 font-bold shadow-2xs">
-                    <CheckSquare className="w-5 h-5" />
+              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+                <div className="flex items-center gap-2 sm:gap-3 z-10 min-w-0">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-blue-100/90 text-blue-700 font-bold shadow-2xs shrink-0">
+                    <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <div className="text-lg font-black text-slate-900 leading-tight">{avgEfficiency}%</div>
-                    <div className="text-xs text-slate-500 font-bold tracking-tight">Eficiencia Promedio</div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-slate-900 leading-tight truncate">{avgEfficiency}%</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-tight truncate">Eficiencia</div>
                   </div>
                 </div>
-                <CheckSquare className="absolute -right-3 -bottom-3 w-16 h-16 text-blue-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
+                <CheckSquare className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-blue-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
             </div>
 

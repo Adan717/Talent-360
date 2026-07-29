@@ -439,6 +439,32 @@ export function useClockEngine(overrideUser?: any) {
   }, {});
   const [shiftConfigs, setShiftConfigs] = useState<Record<string, any>>(initialShifts);
 
+  // FIX (prueba en vivo 2026-07-29): `useState(initialShifts)` sólo lee su argumento en el
+  // PRIMER render, y en ese momento `globalUsers` todavía está vacío (la carga es asíncrona),
+  // así que `shiftConfigs` se quedaba en {} de por vida. Consecuencia: TODO el dial evaluaba
+  // contra el horario por defecto (09:00, `|| 480` en los cálculos) sin importar el turno real
+  // del colaborador → retardos falsos y "ACCESO BLOQUEADO / TOLERANCIA VENCIDA" permanente en
+  // cualquier empresa cuyo turno no fuera 09:00-18:00. Reproducido con turno 15:49-23:30:
+  // el backend fichaba bien (200) mientras el dial seguía bloqueado.
+  //
+  // Se hidrata cuando llegan/cambian los usuarios, PRESERVANDO lo que el usuario ya editó en
+  // la sesión (los valores existentes ganan sobre los del servidor).
+  useEffect(() => {
+    if (!globalUsers || globalUsers.length === 0) return;
+    setShiftConfigs(prev => {
+      const merged = { ...prev };
+      let changed = false;
+      for (const [userId, cfg] of Object.entries(initialShifts as Record<string, any>)) {
+        if (userId === 'isGlobalLoading') continue;
+        if (!merged[userId]) {
+          merged[userId] = cfg;
+          changed = true;
+        }
+      }
+      return changed ? merged : prev;
+    });
+  }, [globalUsers]);
+
   const timeMode = systemSettings?.time_mode || 'simulated';
   const isRealTimeMode = timeMode === 'realtime';
 

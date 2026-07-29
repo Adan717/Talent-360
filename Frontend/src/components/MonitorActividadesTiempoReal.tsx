@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, Clock, CheckSquare, Bot, Sparkles, Truck, MessageSquare, 
-  Plus, Search, Filter, ShieldCheck, AlertTriangle, ChevronRight, X, 
+  Plus, Search, Filter, ShieldCheck, AlertTriangle, ChevronRight, X, EyeOff,
   RefreshCw, Play, CheckCircle2, UserCheck, Building2, FileText, 
   Camera, Zap, Send, Shield, LayoutDashboard, Settings, Award,
   Briefcase, GraduationCap, BarChart3, Receipt, Sparkle
@@ -104,19 +104,36 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   // Tab Principal de Cabecera (Visión General vs Onboarding)
   const [activeHeaderTab, setActiveHeaderTab] = useState<'overview' | 'onboarding'>('overview');
 
-  // Session dismissal state for top welcome header
-  const [isHeaderDismissed, setIsHeaderDismissed] = useState<boolean>(() => {
-    return sessionStorage.getItem('monitor_header_dismissed') === 'true';
+  // Dismissal states: 'session' | 'permanent' | 'none'
+  const [headerDismissType, setHeaderDismissType] = useState<'none' | 'session' | 'permanent'>(() => {
+    if (localStorage.getItem('monitor_header_dismissed_perm') === 'true') return 'permanent';
+    if (sessionStorage.getItem('monitor_header_dismissed') === 'true') return 'session';
+    return 'none';
   });
+
+  const [showDismissMenu, setShowDismissMenu] = useState(false);
 
   const [welcomePhrase] = useState(() => {
     const index = Math.floor(Math.random() * WELCOME_MESSAGES.length);
     return WELCOME_MESSAGES[index];
   });
 
-  const handleDismissHeader = () => {
+  const handleDismissSession = () => {
     sessionStorage.setItem('monitor_header_dismissed', 'true');
-    setIsHeaderDismissed(true);
+    setHeaderDismissType('session');
+    setShowDismissMenu(false);
+  };
+
+  const handleDismissPermanent = () => {
+    localStorage.setItem('monitor_header_dismissed_perm', 'true');
+    setHeaderDismissType('permanent');
+    setShowDismissMenu(false);
+  };
+
+  const handleRestoreHeader = () => {
+    sessionStorage.removeItem('monitor_header_dismissed');
+    localStorage.removeItem('monitor_header_dismissed_perm');
+    setHeaderDismissType('none');
   };
 
   // Toast message
@@ -385,7 +402,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
       )}
 
       {/* 1. HEADER BIENVENIDA Y AGRADECIMIENTO (ALINEACIÓN CENTRAL) */}
-      {!isHeaderDismissed && (
+      {headerDismissType === 'none' && (
         <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden group text-center flex flex-col items-center">
           {/* Ambient Glow & Grid Accents */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/25 transition-all duration-700" />
@@ -453,33 +470,67 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </div>
           </div>
 
-          {/* Botón para cerrar / ocultar esta sesión */}
-          <button
-            onClick={handleDismissHeader}
-            className="absolute top-5 right-5 p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-md border border-transparent hover:border-slate-700 z-20"
-            title="Ocultar bienvenida durante esta sesión"
-          >
-            <X size={18} />
-          </button>
+          {/* Botón X con Menú de Opciones de Ocultar */}
+          <div className="absolute top-5 right-5 z-20">
+            <button
+              onClick={() => setShowDismissMenu(!showDismissMenu)}
+              className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all backdrop-blur-md border border-transparent hover:border-slate-700"
+              title="Opciones para ocultar bienvenida"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Menú Desplegable de Cierre */}
+            {showDismissMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-30 text-left animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 py-2 border-b border-slate-800 text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                  ¿Ocultar este mensaje?
+                </div>
+                <button
+                  onClick={handleDismissSession}
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-sky-300 transition-colors flex items-center gap-2.5"
+                >
+                  <EyeOff size={14} className="text-sky-400 shrink-0" />
+                  <span>Ocultar en esta sesión</span>
+                </button>
+                <button
+                  onClick={handleDismissPermanent}
+                  className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-rose-400 transition-colors flex items-center gap-2.5 border-t border-slate-800/60 mt-1"
+                >
+                  <CheckCircle2 size={14} className="text-rose-400 shrink-0" />
+                  <span>No volver a mostrar nunca</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Si el banner fue ocultado para esta sesión */}
-      {isHeaderDismissed && (
-        <div className="flex items-center justify-between bg-slate-900 border border-slate-800 text-white rounded-2xl px-5 py-3 shadow-md">
-          <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
-            <Sparkles size={14} className="text-blue-400" />
-            Bienvenido a {currentUser?.tenant?.name || 'DecorArte 360'}
-          </span>
-          <button 
-            onClick={() => {
-              sessionStorage.removeItem('monitor_header_dismissed');
-              setIsHeaderDismissed(false);
-            }}
-            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors shrink-0 flex items-center gap-1"
-          >
-            Mostrar Bienvenida
-          </button>
+      {/* Si el banner fue ocultado (versión ultra-compacta para máximo espacio operativo) */}
+      {headerDismissType !== 'none' && (
+        <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 text-white rounded-2xl px-4 py-2 shadow-sm backdrop-blur-md transition-all">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-[9px] font-black shrink-0">
+              360
+            </div>
+            <span className="text-xs font-bold text-slate-300 truncate">
+              Bienvenido a <span className="text-white">{currentUser?.tenant?.name || 'DecorArte 360'}</span>
+            </span>
+            <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] font-extrabold bg-amber-400/10 text-amber-300 border border-amber-400/30 rounded-full">
+              Plan {(currentUser?.tenant?.plan || currentTier).toUpperCase()}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button 
+              onClick={handleRestoreHeader}
+              className="text-xs font-extrabold text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 px-3 py-1 rounded-xl transition-all flex items-center gap-1.5 border border-sky-400/20"
+              title="Volver a desplegar el letrero de bienvenida"
+            >
+              <Sparkles size={13} />
+              <span>Mostrar Bienvenida</span>
+            </button>
+          </div>
         </div>
       )}
 

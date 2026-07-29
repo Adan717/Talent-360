@@ -508,8 +508,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               </div>
             </div>
 
-            {/* KPI METRICAS RAPIDAS (3 o 4 Fichas estilo botón/pill según si ATS está activo) */}
-            <div className={`grid ${isModuleUnlocked('ats') ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 pt-1`}>
+            {/* KPI METRICAS RAPIDAS (3 o 4 Fichas estilo botón/pill en 1 sola fila continua) */}
+            <div className={`grid ${isModuleUnlocked('ats') ? 'grid-cols-4' : 'grid-cols-3'} gap-1.5 sm:gap-3 pt-1`}>
               {/* Personal Presente */}
               <div 
                 onClick={() => setActiveModule && setActiveModule('rrhh')}

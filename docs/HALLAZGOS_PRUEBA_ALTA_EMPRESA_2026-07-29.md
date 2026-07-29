@@ -149,6 +149,60 @@ en `system_settings` de una empresa nueva.
 
 ---
 
+# Tercera tanda — flujo completo con el entorno desbloqueado
+
+## ✅ Lo que quedó VERIFICADO end-to-end (con `b6b4709` aplicado)
+
+Jornada completa de Marisol (Administrador Gerente) en la instancia V2:
+
+| Paso | Resultado en BD |
+|---|---|
+| Apertura de sucursal | `store_daily_opening_statuses.status = opened` |
+| Fichar entrada | `check_in @ 15:56:56`, sin retardo (turno 15:49) |
+| Reservar comedor | `meal_reservation @ 16:00` (con aforo y validación "tiempo insuficiente") |
+| Tomar comida | `meal_start @ 16:06:42` |
+| Terminar comida | `meal_end @ 16:07:35` |
+| Crear y asignar tarea (admin) | tarea 94 "Preparar vitrina de pasteles", 30 pts |
+| Completar tarea | `completed`, `points_awarded=30`, `coins_awarded=3.00`, **1** `wallet_transaction`, wallet = 3.00 coins / 30 XP |
+| **Reenviar "completed" 3 veces** | **Sigue 1 transacción y 3.00 coins** — el ancla anti-doble-pago (A3) aguanta en producción |
+
+La aritmética del pago es exacta (30 pts × 0.10 = 3 monedas) y el ciclo del Reloj registra cada
+ponche con su hora real.
+
+## 🔴 H9 — El TaskRunner celebra la recompensa pero NO la persiste
+
+Al pulsar **Completar** en el TaskRunner, la UI muestra el modal "¡Recompensa Obtenida! +$3.00
+monedas, +30 XP" y el monedero de la pantalla salta a $3.00… pero **no se dispara ninguna
+petición de red**. En BD la asignación seguía `pending` con `coins_awarded = 0.00`, cero
+`wallet_transactions` y el monedero real en 0.00.
+
+Sólo al invocar `POST /sync/tasks` a mano se persistió todo correctamente (y ahí el pago fue
+correcto y único). Es decir: **el backend está bien; el que no sincroniza es el cliente**.
+
+**Consecuencia:** el colaborador ve que ganó monedas y al recargar las ha perdido; el supervisor
+nunca ve la tarea como completada. Es el defecto más grave encontrado en esta sesión, porque
+rompe la confianza en la gamificación (el usuario cree que cobró).
+
+**Dónde mirar:** el flujo `completeTask` del `useTaskStore` y su llamada a `syncToBackend`
+(comprobar si se está omitiendo el sync cuando la acción viene del TaskRunner del Reloj, y si
+algún `catch` silencioso se está tragando el error).
+
+## 🟠 H10 — El dial se vuelve a bloquear después de `meal_end`
+
+Tras terminar la comida (secuencia correcta en BD: `check_in → meal_reservation → meal_start →
+meal_end`), el dial regresó a "🔒 ACCESO BLOQUEADO / TOLERANCIA VENCIDA" pese a que el
+colaborador está en turno y el backend tiene todo consistente. Se destraba recargando/renovando
+el estado, pero es el mismo síntoma que H8: el recálculo posterior al regreso de comida vuelve a
+usar una referencia horaria equivocada.
+
+## 🟡 H11 — `GET` del monitor devuelve 404 en bucle
+
+La consola del navegador registra `Error al cargar datos del monitor: 404` repetido cada pocos
+segundos mientras el Reloj está abierto. No rompe la pantalla, pero ensucia el log y consume
+peticiones; conviene revisar qué endpoint del monitor está pidiendo el dial que ya no existe.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

@@ -1738,7 +1738,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           activeTab={activeTab}
           onSelectTab={(tab) => setActiveTab(tab as any)}
           fabIcon={<UserPlus size={28} className="text-white relative z-10 animate-pulse" />}
-          onFabClick={() => activeTab === 'puestos' ? setEditingJobRole({ title: '', base_salary: 0 }) : (setEditingUser(null), setShowForm(true))}
+          onFabClick={() => activeTab === 'puestos' ? setEditingJobRole({}) : setShowForm(true)}
           fabTitle="Registrar Colaborador / Puesto"
           items={[
             { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.length },

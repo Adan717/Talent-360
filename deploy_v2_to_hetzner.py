@@ -43,8 +43,8 @@ def main():
         run_remote_cmd(ssh, "docker exec -u www-data talent360-v2-backend php artisan cache:clear")
 
         print("\n--- PASO 3: Reiniciando contenedores V2 ---")
-        run_remote_cmd(ssh, f"cd {target_dir} && docker compose restart backend backend-web reverb")
-        run_remote_cmd(ssh, f"cd {target_dir} && docker compose up -d --build --force-recreate frontend")
+        run_remote_cmd(ssh, f"cd {target_dir} && docker compose -f docker-compose.v2.yml restart backend backend-web reverb")
+        run_remote_cmd(ssh, f"cd {target_dir} && docker compose -f docker-compose.v2.yml up -d --build --force-recreate frontend")
 
         print("\n--- PASO 4: Estado de contenedores Talent 360 V2 ---")
         run_remote_cmd(ssh, "docker ps --filter 'name=talent360-v2'")

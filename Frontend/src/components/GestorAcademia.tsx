@@ -334,7 +334,7 @@ export const GestorAcademia = () => {
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab as any)}
         fabIcon={<Plus size={30} className="text-white relative z-10 animate-pulse" />}
-        onFabClick={() => { setEditingCourse(null); setIsModalOpen(true); }}
+        onFabClick={openNewCourse}
         fabTitle="Crear Nuevo Curso"
         items={[
           { id: 'all', label: 'Todos', icon: <BookOpen /> },

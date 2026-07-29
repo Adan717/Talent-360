@@ -373,7 +373,7 @@ function MainLayout() {
 
   const visibleModules = customizedModules.filter(mod => {
     // 1. Módulos esenciales del sistema siempre accesibles para administración
-    if (mod.id === 'dashboard' || mod.id === 'settings') {
+    if (mod.id === 'dashboard' || mod.id === 'settings' || mod.id === 'matrix') {
       return true;
     }
 

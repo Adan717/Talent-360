@@ -2544,7 +2544,11 @@ export const SaaSPlatformAdmin = () => {
                   { id: 'reportes', label: 'Reportes y Analítica', desc: 'BI, prenóminas e incidencias' },
                   { id: 'portal', label: 'Portal Web', desc: 'Bolsa de trabajo pública' },
                   { id: 'academia', label: 'Academia 360', desc: 'Capacitación y cursos LMS' },
-                  { id: 'documentos', label: 'Documentos', desc: 'Expediente digital y políticas de empresa' }
+                  { id: 'documentos', label: 'Documentos', desc: 'Expediente digital y políticas de empresa' },
+                  { id: 'matrix', label: 'Matrix QA', desc: 'Entorno de simulación' },
+                  { id: 'facturacion', label: 'Nómina CFDI 4.0', desc: 'Timbrado masivo del SAT' },
+                  { id: 'lft', label: 'Ley Federal del Trabajo', desc: 'Reglamento y tolerancias' },
+                  { id: 'organizacion', label: 'Organigrama y SOP', desc: 'Procesos, Puestos y Wiki' }
                 ].map(mod => (
                   <label 
                     key={mod.id}
@@ -3128,7 +3132,11 @@ export const SaaSPlatformAdmin = () => {
                               { id: 'reportes', label: 'Reportes y Analítica' },
                               { id: 'portal', label: 'Portal Web' },
                               { id: 'academia', label: 'Academia 360' },
-                              { id: 'documentos', label: 'Gestor Documental' }
+                              { id: 'documentos', label: 'Gestor Documental' },
+                              { id: 'matrix', label: 'Matrix QA (Simulador)' },
+                              { id: 'facturacion', label: 'Nómina CFDI 4.0' },
+                              { id: 'lft', label: 'Ley Federal del Trabajo' },
+                              { id: 'organizacion', label: 'Organigrama y SOP' }
                             ].map(mod => (
                               <label key={mod.id} className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer text-xs font-bold text-slate-800 hover:bg-slate-50">
                                 <input 

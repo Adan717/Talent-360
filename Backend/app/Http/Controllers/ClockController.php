@@ -345,7 +345,7 @@ class ClockController extends Controller
             }
             
             // Check all potential modules
-            $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos'];
+            $modulesToCheck = ['reloj', 'rrhh', 'operativo', 'reportes', 'ats', 'academia', 'portal', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
             $allowedModules = array_values(array_filter($modulesToCheck, function($m) use ($tenant) {
                 return $tenant->isModuleUnlocked($m);
             }));

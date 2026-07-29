@@ -174,7 +174,7 @@ class PlatformAdminController extends Controller
             ->where('key', 'tenant_allowed_features')
             ->first();
 
-        $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos'];
+        $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
         $allFeatures = [
             'basic_punch', 'offline_contingency', 'emergency_open', 'store_closed_report', 
             'store_opening', 'keys_control', 'meal_reservation', 'meal_timers', 

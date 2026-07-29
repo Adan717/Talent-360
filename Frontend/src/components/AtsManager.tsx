@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { RecruitmentBoard } from './RecruitmentBoard';
 import GestorVacantes from './GestorVacantes';
 import { WebPublica } from './WebPublica';
@@ -7,7 +8,38 @@ import { Briefcase, ClipboardList, Calendar, Plus, Trash2, Clock, User, MessageS
 import axiosInstance from '../lib/axios';
 
 export function AtsManager() {
-  const [activeTab, setActiveTab] = useState('vacantes');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const storedTab = localStorage.getItem('talent360_ats_active_tab');
+  const [activeTab, setActiveTabState] = useState(urlTab || storedTab || 'vacantes');
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('talent360_ats_active_tab', tab);
+    } catch {}
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
+      try {
+        localStorage.setItem('talent360_ats_active_tab', urlTab);
+      } catch {}
+    } else if (!urlTab && activeTab) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', activeTab);
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab]);
+
   const [showFabMenu, setShowFabMenu] = useState(false);
   
   // States for Interviews

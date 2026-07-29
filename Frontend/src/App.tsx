@@ -115,7 +115,41 @@ const RootRoute = () => {
 };
 
 function MainLayout() {
-  const [activeModule, setActiveModule] = useState<string>('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialModule = searchParams.get('module') || localStorage.getItem('talent360_active_module') || 'dashboard';
+  const [activeModule, setActiveModuleState] = useState<string>(initialModule);
+
+  const setActiveModule = (modId: string) => {
+    setActiveModuleState(modId);
+    try {
+      localStorage.setItem('talent360_active_module', modId);
+    } catch {}
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (next.get('module') !== modId) {
+        next.set('module', modId);
+        next.delete('tab');
+      }
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    const urlModule = searchParams.get('module');
+    if (urlModule && urlModule !== activeModule) {
+      setActiveModuleState(urlModule);
+      try {
+        localStorage.setItem('talent360_active_module', urlModule);
+      } catch {}
+    } else if (!urlModule && activeModule) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('module', activeModule);
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams]);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);

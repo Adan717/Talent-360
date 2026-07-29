@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus } from 'lucide-react';
 import axiosInstance from '../lib/axios';
@@ -14,7 +15,37 @@ interface RecursosHumanosProps {
 }
 
 export default function RecursosHumanos({ readOnly = false, initialTab = 'directorio' }: RecursosHumanosProps) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const storedTab = localStorage.getItem('talent360_rrhh_active_tab');
+  const [activeTab, setActiveTabState] = useState(urlTab || storedTab || initialTab);
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('talent360_rrhh_active_tab', tab);
+    } catch {}
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTabState(urlTab);
+      try {
+        localStorage.setItem('talent360_rrhh_active_tab', urlTab);
+      } catch {}
+    } else if (!urlTab && activeTab) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', activeTab);
+        return next;
+      }, { replace: true });
+    }
+  }, [urlTab]);
 
   const getUserKeysIcon = (userId: number) => {
     try {

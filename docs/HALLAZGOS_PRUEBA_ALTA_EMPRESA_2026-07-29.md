@@ -169,7 +169,30 @@ Jornada completa de Marisol (Administrador Gerente) en la instancia V2:
 La aritmética del pago es exacta (30 pts × 0.10 = 3 monedas) y el ciclo del Reloj registra cada
 ponche con su hora real.
 
-## 🔴 H9 — El TaskRunner celebra la recompensa pero NO la persiste
+## 🔴 H9 — El TaskRunner celebra la recompensa pero NO la persiste — ✅ CORREGIDO (`c7e06d8`)
+
+**Causa raíz:** `useAppStore.isSandboxMode` arrancaba en **`true`**. Con el sandbox encendido,
+`syncToBackend` y `syncAssignmentRow` (useTaskStore) retornan sin escribir ("guardado en RAM
+solamente"). El **único** lugar de la app que lo apagaba era el módulo Matrix QA al montarse
+(`PanelSimulador`), así que un usuario normal —que nunca entra ahí— trabajaba todo el día en
+sandbox sin saberlo.
+
+**Fix:** el default pasa a `false` (se persiste de verdad); el modo de pruebas se enciende
+explícitamente con el toggle de `RelojVisual` o entrando a Matrix QA.
+
+**Verificado end-to-end tras el fix**, completando "Hornear pan de la tarde" (50 pts) desde el
+TaskRunner sin tocar la API:
+
+```
+Preparar vitrina de pasteles -> completed | pts=30 coins=3.00
+Hornear pan de la tarde      -> completed | pts=50 coins=5.00
+TRANSACCIONES: 2   ·   WALLET Marisol: 8.00 coins / 80 xp
+```
+
+Y tras recargar la página: siguen 2 transacciones y 8.00 monedas — el sync automático **no
+duplica** el pago (el ancla `coins_awarded` sigue haciendo su trabajo con el sandbox apagado).
+
+### Descripción original del síntoma
 
 Al pulsar **Completar** en el TaskRunner, la UI muestra el modal "¡Recompensa Obtenida! +$3.00
 monedas, +30 XP" y el monedero de la pantalla salta a $3.00… pero **no se dispara ninguna

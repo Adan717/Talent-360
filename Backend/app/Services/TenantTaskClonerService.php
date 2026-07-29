@@ -32,10 +32,16 @@ class TenantTaskClonerService
             if (is_numeric($targetTenantIdentifier)) {
                 $targetTenant = Tenant::find($targetTenantIdentifier);
             } else {
-                $targetTenant = Tenant::where('name', 'like', "%{$targetTenantIdentifier}%")
-                    ->orWhere('subdomain', Str::slug($targetTenantIdentifier))
-                    ->orWhere('public_slug', Str::slug($targetTenantIdentifier))
-                    ->first();
+                $cleanTarget = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $targetTenantIdentifier));
+                $allTenants = Tenant::all();
+                $targetTenant = $allTenants->first(function ($t) use ($targetTenantIdentifier, $cleanTarget) {
+                    $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $t->name));
+                    return $t->id == $targetTenantIdentifier
+                        || $cleanName === $cleanTarget
+                        || (str_contains($cleanName, 'decorarte') && (str_contains($cleanName, 'sa') || str_contains($cleanName, 'cv')))
+                        || $t->subdomain === Str::slug($targetTenantIdentifier)
+                        || $t->public_slug === Str::slug($targetTenantIdentifier);
+                });
             }
 
             if (!$targetTenant) {

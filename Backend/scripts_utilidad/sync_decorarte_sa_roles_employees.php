@@ -10,6 +10,22 @@ use Illuminate\Support\Facades\Hash;
 $tenantId = 33; // DecorArte S.A. de C.V.
 
 DB::transaction(function () use ($tenantId) {
+    // 0. Garantizar la existencia del Tenant #33
+    DB::table('tenants')->updateOrInsert(
+        ['id' => $tenantId],
+        [
+            'name' => 'DecorArte S.A. de C.V.',
+            'subdomain' => 'decorarte-sadcv',
+            'public_slug' => 'decorarte-sadcv',
+            'plan' => 'enterprise',
+            'brand_color' => '#8b5cf6',
+            'logo_url' => 'https://decorarte360.com/logo.png',
+            'subscription_status' => 'active',
+            'trial_ends_at' => now()->addDays(30),
+            'updated_at' => now(),
+        ]
+    );
+
     echo "1. Limpiando puestos y colaboradores anteriores de Tenant #{$tenantId}...\n";
     
     // Hard delete or soft delete existing records for tenant 33
@@ -224,6 +240,11 @@ DB::transaction(function () use ($tenantId) {
 
         echo "  - Creado colaborador: {$emp['name']} (#{$emp['pin']})\n";
     }
+
+    echo "4. Clonando tareas y rutinas desde DecorArte 360 (Tenant #1) hacia Tenant #{$tenantId}...\n";
+    $cloner = app(\App\Services\TenantTaskClonerService::class);
+    $res = $cloner->cloneTasksAndRoutines(1, $tenantId);
+    echo "  - Tareas clonadas: {$res['tasks_cloned']}, Rutinas clonadas: {$res['routines_cloned']}\n";
 
     echo "Sincronización completada exitosamente para DecorArte S.A. de C.V.!\n";
 });

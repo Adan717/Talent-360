@@ -87,6 +87,17 @@ const WELCOME_MESSAGES = [
   "¡Qué gusto verte de nuevo! Agradecemos la confianza depositada en Talent360 para transformar y optimizar los procesos de tu organización diariamente."
 ];
 
+const MODULE_ICON_LIST = [
+  { id: 'reloj', name: 'Reloj Checador', icon: Clock, color: 'text-sky-400 bg-sky-500/20 border-sky-400/40' },
+  { id: 'rrhh', name: 'Gestión RRHH', icon: Users, color: 'text-emerald-400 bg-emerald-500/20 border-emerald-400/40' },
+  { id: 'operativo', name: 'Control Operativo', icon: Zap, color: 'text-amber-400 bg-amber-500/20 border-amber-400/40' },
+  { id: 'ats', name: 'Reclutamiento ATS', icon: Briefcase, color: 'text-purple-400 bg-purple-500/20 border-purple-400/40' },
+  { id: 'academia', name: 'Academia 360', icon: GraduationCap, color: 'text-blue-400 bg-blue-500/20 border-blue-400/40' },
+  { id: 'reportes', name: 'Reportes IA', icon: BarChart3, color: 'text-rose-400 bg-rose-500/20 border-rose-400/40' },
+  { id: 'documentos', name: 'Archivo Digital', icon: FileText, color: 'text-amber-400 bg-amber-500/20 border-amber-400/40' },
+  { id: 'facturacion', name: 'Nómina CFDI 4.0', icon: Receipt, color: 'text-emerald-400 bg-emerald-500/20 border-emerald-400/40' },
+];
+
 export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveModule?: (mod: string) => void }) {
   const { currentUser, currentTier, systemSettings, fetchState, isModuleUnlocked } = useAppStore();
   
@@ -373,38 +384,71 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         </div>
       )}
 
-      {/* 1. HEADER BIENVENIDA Y AGRADECIMIENTO */}
+      {/* 1. HEADER BIENVENIDA Y AGRADECIMIENTO (ALINEACIÓN CENTRAL) */}
       {!isHeaderDismissed && (
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white border border-slate-800/80 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 relative overflow-hidden group">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 text-white border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden group text-center flex flex-col items-center">
           {/* Ambient Glow & Grid Accents */}
-          <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/30 transition-all duration-700" />
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/25 transition-all duration-700" />
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
 
-          <div className="space-y-3 relative z-10 pr-10">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center gap-3 flex-wrap leading-tight">
+          {/* Logo Emblem Oficial de Talent 360 */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-white shadow-md backdrop-blur-md relative z-10 hover:border-slate-600 transition-all">
+            <div className="relative w-6 h-6 flex items-center justify-center">
+              <div className="absolute inset-0 bg-blue-500 rounded-full blur-xs opacity-75 animate-pulse"></div>
+              <div className="relative w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-[10px] shadow-xs">
+                360
+              </div>
+            </div>
+            <span className="text-xs font-black tracking-widest uppercase text-slate-200">
+              TALENT <span className="text-sky-400 font-black">360</span>
+            </span>
+          </div>
+
+          <div className="space-y-3 relative z-10 max-w-4xl mx-auto">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-3 flex-wrap leading-tight">
               Bienvenido a <span className="bg-gradient-to-r from-blue-300 via-white to-sky-200 bg-clip-text text-transparent">{currentUser?.tenant?.name || 'DecorArte 360'}</span>
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 font-medium max-w-3xl leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed italic">
               "{welcomePhrase}"
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800/80 text-xs font-semibold text-slate-400">
-              <span className="bg-amber-400/10 border border-amber-400/30 text-amber-300 font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs">
+            {/* Metadatos: Plan + Iconos de Módulos Contratados + Cliente Desde */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-slate-800/80 text-xs font-semibold text-slate-400 w-full">
+              {/* Badge del Plan */}
+              <span className="bg-amber-400/10 border border-amber-400/30 text-amber-300 font-extrabold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs">
                 <Award size={14} className="text-amber-400" />
                 Plan {(currentUser?.tenant?.plan || currentTier).toUpperCase()}
               </span>
+
+              {/* Iconos de Módulos Activos / Contratados */}
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/60 border border-slate-700/60 backdrop-blur-md" title="Módulos Activos en tu Plan">
+                <span className="text-[11px] font-bold text-slate-400 mr-1">Módulos:</span>
+                {MODULE_ICON_LIST.filter(m => activeModules.includes(m.id)).map(m => {
+                  const IconComp = m.icon;
+                  return (
+                    <span 
+                      key={m.id} 
+                      title={m.name}
+                      className={`p-1 rounded-lg border flex items-center justify-center transition-all hover:scale-115 ${m.color}`}
+                    >
+                      <IconComp size={13} />
+                    </span>
+                  );
+                })}
+              </div>
+
               {currentUser?.tenant?.created_at && (
                 <>
-                  <span className="text-slate-700">•</span>
+                  <span className="text-slate-700 hidden sm:inline">•</span>
                   <span className="text-slate-400">Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 </>
               )}
-              <span className="text-slate-700">•</span>
+              <span className="text-slate-700 hidden sm:inline">•</span>
               <span className="flex items-center gap-1.5 text-slate-400">
                 <ShieldCheck size={14} className="text-blue-400" />
-                Supervisión operativa activa
+                Supervisión activa
               </span>
             </div>
           </div>

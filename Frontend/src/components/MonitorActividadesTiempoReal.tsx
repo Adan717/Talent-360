@@ -86,6 +86,16 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   // Tab Principal de Cabecera (Visión General vs Onboarding)
   const [activeHeaderTab, setActiveHeaderTab] = useState<'overview' | 'onboarding'>('overview');
 
+  // Session dismissal state for top welcome header
+  const [isHeaderDismissed, setIsHeaderDismissed] = useState<boolean>(() => {
+    return sessionStorage.getItem('monitor_header_dismissed') === 'true';
+  });
+
+  const handleDismissHeader = () => {
+    sessionStorage.setItem('monitor_header_dismissed', 'true');
+    setIsHeaderDismissed(true);
+  };
+
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isAdoptionSaving, setIsAdoptionSaving] = useState(false);
@@ -318,52 +328,87 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
       )}
 
       {/* 1. HEADER BIENVENIDA Y TABS DE NAVEGACIÓN */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              Bienvenido a {currentUser?.tenant?.name || 'Decorarte 360'}
-              <span className="px-2.5 py-0.5 text-xs font-extrabold bg-blue-50 text-blue-600 border border-blue-200 rounded-full">
-                Monitor 360 (v4.0)
-              </span>
-            </h1>
-            <p className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2 font-medium">
-              <span>Supervisión operativa en tiempo real (Plan <span className="font-extrabold text-blue-600">{(currentUser?.tenant?.plan || currentTier).toUpperCase()}</span>)</span>
-              {currentUser?.tenant?.created_at && (
-                <>
-                  <span className="text-slate-300">•</span>
-                  <span>Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                </>
-              )}
-            </p>
+      {!isHeaderDismissed && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4 relative group">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pr-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                Bienvenido a {currentUser?.tenant?.name || 'Decorarte 360'}
+                <span className="px-2.5 py-0.5 text-xs font-extrabold bg-blue-50 text-blue-600 border border-blue-200 rounded-full">
+                  Monitor 360 (v4.0)
+                </span>
+              </h1>
+              <p className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2 font-medium">
+                <span>Supervisión operativa en tiempo real (Plan <span className="font-extrabold text-blue-600">{(currentUser?.tenant?.plan || currentTier).toUpperCase()}</span>)</span>
+                {currentUser?.tenant?.created_at && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span>Cliente desde {new Date(currentUser.tenant.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-xs flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              En Vivo (3s)
-            </span>
+          {/* Botón para cerrar / ocultar esta sesión */}
+          <button
+            onClick={handleDismissHeader}
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all"
+            title="Ocultar bienvenida durante esta sesión"
+          >
+            <X size={18} />
+          </button>
+
+          {/* Pestañas de Cabecera (Visión General vs Onboarding) */}
+          <div className="flex gap-2 border-b border-slate-100 pb-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <button 
+              onClick={() => setActiveHeaderTab('overview')}
+              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors font-bold text-sm whitespace-nowrap ${activeHeaderTab === 'overview' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              <LayoutDashboard size={18} />
+              Visión General (Monitor 360)
+            </button>
+            <button 
+              onClick={() => setActiveHeaderTab('onboarding')}
+              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors font-bold text-sm whitespace-nowrap ${activeHeaderTab === 'onboarding' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              <Settings size={18} />
+              Configuración de Onboarding
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Pestañas de Cabecera (Visión General vs Onboarding) */}
-        <div className="flex gap-2 border-b border-slate-100 pb-0 overflow-x-auto">
+      {/* Si el banner fue ocultado para esta sesión */}
+      {isHeaderDismissed && (
+        <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-xs">
+          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <button 
+              onClick={() => setActiveHeaderTab('overview')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors font-bold text-xs whitespace-nowrap ${activeHeaderTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <LayoutDashboard size={16} />
+              Visión General (Monitor 360)
+            </button>
+            <button 
+              onClick={() => setActiveHeaderTab('onboarding')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors font-bold text-xs whitespace-nowrap ${activeHeaderTab === 'onboarding' ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <Settings size={16} />
+              Configuración de Onboarding
+            </button>
+          </div>
           <button 
-            onClick={() => setActiveHeaderTab('overview')}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors font-bold text-sm whitespace-nowrap ${activeHeaderTab === 'overview' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            onClick={() => {
+              sessionStorage.removeItem('monitor_header_dismissed');
+              setIsHeaderDismissed(false);
+            }}
+            className="text-[11px] font-bold text-slate-400 hover:text-blue-600 transition-colors ml-2 shrink-0"
           >
-            <LayoutDashboard size={18} />
-            Visión General (Monitor 360)
-          </button>
-          <button 
-            onClick={() => setActiveHeaderTab('onboarding')}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors font-bold text-sm whitespace-nowrap ${activeHeaderTab === 'onboarding' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <Settings size={18} />
-            Configuración de Onboarding
+            Mostrar Bienvenida
           </button>
         </div>
-      </div>
+      )}
 
       {activeHeaderTab === 'onboarding' ? (
         <GlobalSystemSettingsPanel initialTab="onboarding" />
@@ -388,7 +433,13 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   <Zap className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Control Operativo en Tiempo Real</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-slate-900">Control Operativo en Tiempo Real</h2>
+                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      En Vivo (3s)
+                    </span>
+                  </div>
                   <p className="text-xs text-slate-500">Supervisión de colaboradores, tareas, proveedores y chat activo</p>
                 </div>
               </div>
@@ -438,46 +489,48 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               </div>
             </div>
 
-            {/* KPI METRICAS RAPIDAS */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-700">
-                  <UserCheck className="w-5 h-5" />
+            {/* KPI METRICAS RAPIDAS (3 Fichas estilo botón/pill con marca de agua) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              {/* Personal Presente */}
+              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+                <div className="flex items-center gap-3 z-10">
+                  <div className="p-2.5 rounded-xl bg-emerald-100/90 text-emerald-700 font-bold shadow-2xs">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-slate-900 leading-tight">{activeCount} / {users.length}</div>
+                    <div className="text-xs text-slate-500 font-bold tracking-tight">Personal Presente</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-lg font-black text-slate-900">{activeCount} / {users.length}</div>
-                  <div className="text-xs text-slate-500 font-medium">Personal Presente</div>
-                </div>
+                <UserCheck className="absolute -right-3 -bottom-3 w-16 h-16 text-emerald-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-amber-100 text-amber-700">
-                  <Clock className="w-5 h-5" />
+              {/* En Almuerzo/Break */}
+              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+                <div className="flex items-center gap-3 z-10">
+                  <div className="p-2.5 rounded-xl bg-amber-100/90 text-amber-700 font-bold shadow-2xs">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-slate-900 leading-tight">{breakCount}</div>
+                    <div className="text-xs text-slate-500 font-bold tracking-tight">En Almuerzo/Break</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-lg font-black text-slate-900">{breakCount}</div>
-                  <div className="text-xs text-slate-500 font-medium">En Almuerzo/Break</div>
-                </div>
+                <Clock className="absolute -right-3 -bottom-3 w-16 h-16 text-amber-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-blue-100 text-blue-700">
-                  <CheckSquare className="w-5 h-5" />
+              {/* Eficiencia Promedio */}
+              <div className="relative overflow-hidden bg-slate-50/90 hover:bg-slate-100/90 p-3.5 rounded-2xl border border-slate-200/80 transition-all flex items-center justify-between group shadow-2xs">
+                <div className="flex items-center gap-3 z-10">
+                  <div className="p-2.5 rounded-xl bg-blue-100/90 text-blue-700 font-bold shadow-2xs">
+                    <CheckSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-slate-900 leading-tight">{avgEfficiency}%</div>
+                    <div className="text-xs text-slate-500 font-bold tracking-tight">Eficiencia Promedio</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-lg font-black text-slate-900">{avgEfficiency}%</div>
-                  <div className="text-xs text-slate-500 font-medium">Eficiencia Promedio</div>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-purple-100 text-purple-700">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-lg font-black text-slate-900">{inPremisesVendors} en sitio</div>
-                  <div className="text-xs text-slate-500 font-medium">Proveedores Hoy</div>
-                </div>
+                <CheckSquare className="absolute -right-3 -bottom-3 w-16 h-16 text-blue-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
               </div>
             </div>
 
@@ -757,7 +810,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           </div>
 
           {/* 4. SECCIÓN DE ADOPCIÓN DE MÓDULOS A LA CARTA CON BOTONES ADOPTAR / ADOPTADO */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-2">
               <div>
                 <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -766,15 +819,19 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">Desbloquea funciones a la carta o mediante actividades en la plataforma</p>
               </div>
+              <div className="hidden sm:block text-xs text-slate-400 font-bold">
+                5 Módulos a la carta
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Carrusel Deslizable en Móvil (Snap Slider) / Grilla en Escritorio */}
+            <div className="flex sm:grid overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none gap-3.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-2 sm:pb-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
               
               {/* ATS Card */}
               {(() => {
                 const isAtsActive = activeModules.includes('ats');
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="p-2 bg-violet-100 text-violet-600 rounded-xl">
                         <Briefcase size={18} />
@@ -802,7 +859,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isLmsActive = activeModules.includes('academia');
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="p-2 bg-sky-100 text-sky-600 rounded-xl">
                         <GraduationCap size={18} />
@@ -830,7 +887,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isReportsActive = activeModules.includes('reportes');
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="p-2 bg-rose-100 text-rose-600 rounded-xl">
                         <BarChart3 size={18} />
@@ -858,7 +915,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isDocsActive = activeModules.includes('documentos');
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
                         <FileText size={18} />
@@ -886,7 +943,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isCfdiActive = activeModules.includes('facturacion');
                 return (
-                  <div className={`p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
                     <div className="flex justify-between items-start mb-3">
                       <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
                         <Receipt size={18} />
@@ -910,6 +967,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 );
               })()}
 
+            </div>
+
+            {/* Indicador visual de deslizamiento en celular */}
+            <div className="flex sm:hidden justify-center items-center gap-1.5 pt-1">
+              <span className="text-[10px] font-bold text-slate-400">Desliza lateralmente para ver más módulos</span>
+              <ChevronRight size={12} className="text-slate-400 animate-pulse" />
             </div>
           </div>
 

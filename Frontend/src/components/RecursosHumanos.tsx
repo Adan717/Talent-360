@@ -499,9 +499,18 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       setLoading(true);
       
       const [stateRes, empRes, rolesRes, vacRes, assRes] = await Promise.all([
-          axiosInstance.get('/sync/state'),
-          axiosInstance.get('/employees'),
-          axiosInstance.get('/job-roles'),
+          axiosInstance.get('/sync/state').catch(err => {
+              console.error("Error al cargar /sync/state en RRHH:", err);
+              return { data: {} };
+          }),
+          axiosInstance.get('/employees').catch(err => {
+              console.error("Error al cargar /employees en RRHH:", err);
+              return { data: [] };
+          }),
+          axiosInstance.get('/job-roles').catch(err => {
+              console.error("Error al cargar /job-roles en RRHH:", err);
+              return { data: [] };
+          }),
           axiosInstance.get('/admin/vacancies').catch(vacError => {
               console.error("Error al cargar vacantes para RRHH:", vacError);
               return { data: [] };
@@ -516,7 +525,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         localStorage.setItem('store_opening_assignments', JSON.stringify(assRes.data));
       }
 
-      const data = stateRes.data;
+      const data = stateRes.data || {};
       setUsers(empRes.data || []);
       const cleanRoles = (rolesRes.data || []).map((r: any) => ({
         ...r,
@@ -567,8 +576,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       setRolePermissionsConfig(newPermConfig);
 
     } catch(e) {
-      console.error("Error al cargar desde DB:", e);
-      alert("Error al cargar la información desde la base de datos relacional de Postgres. Por favor, verifique que el servidor Laravel y Postgres estén activos.");
+      console.error("Error al cargar desde DB en RRHH:", e);
     } finally {
       setLoading(false);
     }

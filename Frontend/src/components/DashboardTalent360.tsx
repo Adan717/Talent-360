@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 import { OnboardingWizard } from './OnboardingWizard';
-import { HeaderStats } from './HeaderStats';
 
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
@@ -719,8 +718,6 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
       });
   };
 
-  // Empleados/Tareas/Prospectos ya se muestran arriba en las píldoras de HeaderStats —
-  // aquí solo van las métricas que no se repiten, para no duplicar la misma cifra dos veces.
   const stats = [
     { label: 'Asistencia del Día', value: `${realStats.cumplimiento}%`, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: 'Cumplimiento' },
     { label: 'Retardos del Día', value: realStats.retardos_hoy.toString(), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', trend: 'Hoy' },
@@ -785,16 +782,6 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
         <>
           {showSetupWizard && (
             <OnboardingWizard onComplete={() => setShowSetupWizard(false)} />
-          )}
-
-          {/* Píldoras de Salud y Estadísticas Interactivas */}
-          {setActiveModule && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
-              <h2 className="text-xs font-black text-slate-400 tracking-wider uppercase">Salud y Control Operativo</h2>
-              <div className="flex justify-start">
-                <HeaderStats activeModule="dashboard" setActiveModule={setActiveModule} />
-              </div>
-            </div>
           )}
 
 

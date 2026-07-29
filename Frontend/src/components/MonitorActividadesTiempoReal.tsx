@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
-import { HeaderStats } from './HeaderStats';
 import { GlobalSystemSettingsPanel } from './GlobalSystemSettingsPanel';
 
 interface UserMonitorItem {
@@ -444,16 +443,6 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         <GlobalSystemSettingsPanel initialTab="onboarding" />
       ) : (
         <>
-          {/* 2. PÍLDORAS DE SALUD OPERATIVA (HEADERSTATS) */}
-          {setActiveModule && (
-            <div className="space-y-2">
-              <h2 className="text-xs font-black text-slate-400 tracking-wider uppercase">Salud Operativa e Indicadores</h2>
-              <div className="flex justify-start">
-                <HeaderStats activeModule="dashboard" setActiveModule={setActiveModule} />
-              </div>
-            </div>
-          )}
-
           {/* 3. BARRA DE HERRAMIENTAS Y ACCIONES DEL MONITOR 360 */}
           <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
             

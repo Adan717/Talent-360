@@ -2113,10 +2113,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                            </button>
                         </div>
 
-                        {/* Ficha Principal con Monito Icon Badge */}
-                        <div className="flex items-start gap-3 relative z-10 mb-2">
-                           <div className="shrink-0 transition-transform duration-300 group-hover:scale-110">
-                              <JobRoleIconBadge role={rol} isActive={isAutoActive} size={22} />
+                        {/* Ficha Principal con Puro Monito Icono (Sin recuadro) */}
+                        <div className="flex items-center gap-3 relative z-10 mb-2">
+                           <div className="shrink-0 transition-transform duration-300 group-hover:scale-115 group-hover:rotate-3">
+                              <JobRoleIconBadge role={rol} isActive={isAutoActive} size={36} />
                            </div>
                            <div className="min-w-0 flex-1">
                               <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText}`}>

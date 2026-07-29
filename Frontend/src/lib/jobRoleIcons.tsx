@@ -990,22 +990,27 @@ export function renderJobRoleIcon(
   }
 }
 
-interface JobRoleIconProps {
-  role?: { name?: string; area?: string; icon?: string; nivel_mando?: number } | null;
+
+/**
+ * Componente Ficha Icono de Puesto con personajes Monitos Alusivos y distinciones jerárquicas de mando.
+ */
+export interface JobRoleIconProps {
+  role?: any;
   iconKey?: string;
   size?: number;
   className?: string;
   containerClassName?: string;
   isActive?: boolean;
+  standalone?: boolean;
 }
 
 /**
- * Componente Ficha Icono de Puesto con personajes Monitos Alusivos y distinciones jerárquicas de mando.
+ * Componente Icono de Puesto con personajes Monitos Alusivos (Puro icono sin recuadro).
  */
 export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
   role,
   iconKey,
-  size = 24,
+  size = 34,
   className,
   containerClassName,
   isActive = true
@@ -1020,52 +1025,24 @@ export const JobRoleIconBadge: React.FC<JobRoleIconProps> = ({
     key === 'monito-asesor' || key === 'monito-ayudante' || key === 'monito-enfermero' || key === 'monito-asistente-legal' || key === 'monito-maestro-obra' || key === 'user-check' || key === 'clipboard-check' ? 3 : 4
   );
 
-  // Paleta de colores ejecutivos y jerárquicos lumínicos (Sin fondos oscuros/negros)
-  const hierarchyStyles: Record<number, { bg: string; text: string; ring: string; levelBadge: string }> = {
-    1: { 
-      bg: 'bg-amber-100/90 border-amber-300 shadow-sm', 
-      text: 'text-amber-900', 
-      ring: 'ring-2 ring-amber-400/60',
-      levelBadge: 'N1 - Dirección General / Socios'
-    },
-    2: { 
-      bg: 'bg-indigo-100/90 border-indigo-250 shadow-xs', 
-      text: 'text-indigo-900', 
-      ring: 'ring-2 ring-indigo-300/80',
-      levelBadge: 'N2 - Supervisión / Jefaturas'
-    },
-    3: { 
-      bg: 'bg-sky-100/90 border-sky-200 shadow-xs', 
-      text: 'text-sky-900', 
-      ring: 'ring-1 ring-sky-300/60',
-      levelBadge: 'N3 - Especialista / Coordinación'
-    },
-    4: { 
-      bg: 'bg-slate-100 border-slate-200', 
-      text: 'text-slate-700', 
-      ring: 'ring-1 ring-slate-250',
-      levelBadge: 'N4 - Auxiliar Operativo'
-    },
-    5: { 
-      bg: 'bg-slate-50 border-slate-200', 
-      text: 'text-slate-600', 
-      ring: 'ring-1 ring-slate-200',
-      levelBadge: 'N5 - Apoyo Eventual'
-    },
+  // Colores vivos por Jerarquía de Mando
+  const hierarchyColors: Record<number, { text: string; levelBadge: string }> = {
+    1: { text: 'text-amber-600', levelBadge: 'N1 - Dirección General' },
+    2: { text: 'text-indigo-600', levelBadge: 'N2 - Supervisión / Jefatura' },
+    3: { text: 'text-sky-600', levelBadge: 'N3 - Especialista / Piso' },
+    4: { text: 'text-slate-600', levelBadge: 'N4 - Auxiliar Operativo' },
+    5: { text: 'text-slate-500', levelBadge: 'N5 - Apoyo Eventual' },
   };
 
-  const levelStyle = hierarchyStyles[nivel] || hierarchyStyles[4];
-  const activeBg = isActive ? levelStyle.bg : 'bg-slate-100 border-slate-200 opacity-60';
+  const levelStyle = hierarchyColors[nivel] || hierarchyColors[4];
   const activeText = isActive ? levelStyle.text : 'text-slate-400';
 
   return (
-    <div className="relative group shrink-0">
-      <div
-        className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-200 ${activeBg} ${levelStyle.ring} ${containerClassName || ''}`}
-        title={`Puesto: ${role?.name || ''} (${levelStyle.levelBadge})`}
-      >
-        {renderJobRoleIcon(key, size, `${activeText} ${className || ''}`)}
-      </div>
+    <div 
+      className={`relative shrink-0 flex items-center justify-center p-1 ${containerClassName || ''}`}
+      title={`Puesto: ${role?.name || ''} (${levelStyle.levelBadge})`}
+    >
+      {renderJobRoleIcon(key, size, `${activeText} transition-all duration-300 ${className || ''}`)}
     </div>
   );
 };

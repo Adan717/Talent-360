@@ -2553,11 +2553,17 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                               <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
                                  {[
                                    { id: 'decorarte', label: '🎨 Decorarte 360' },
-                                   { id: 'retail', label: '🏪 Retail / Tiendas' },
-                                   { id: 'oficina', label: '🏢 Oficina / Corp' },
+                                   { id: 'automotriz', label: '🚗 Automotriz / Mecánica' },
+                                   { id: 'legal', label: '⚖️ Jurídico & Legal' },
+                                   { id: 'salud', label: '🏥 Salud & Clínicas' },
+                                   { id: 'construccion', label: '🏗️ Construcción & Obra' },
+                                   { id: 'servicios', label: '⚡ Servicios & Mantenimiento' },
+                                   { id: 'educacion', label: '🎓 Educación & Colegios' },
+                                   { id: 'belleza', label: '💇 Estética & Spa' },
+                                   { id: 'retail', label: '🏪 Retail & Tiendas' },
+                                   { id: 'oficina', label: '🏢 Oficina & Corp' },
                                    { id: 'tecnologia', label: '💻 Tecnología' },
                                    { id: 'restaurante', label: '🍽️ Restaurantes' },
-                                   { id: 'servicios', label: '⚙️ Servicios / Planta' },
                                    { id: 'all', label: '🌐 Todos' },
                                  ].map((cat) => (
                                     <button

@@ -19,9 +19,13 @@ class SubscriptionController extends Controller
      * Merge F3: el simulador de cobro SOLO existe en local/testing — en producción estos
      * endpoints deben ser 404 (antes provisionaban tenants con un pago fingido).
      */
-    private function simulatorAllowed(): bool
+        private function simulatorAllowed(): bool
     {
-        return app()->environment('local', 'testing');
+        // ALLOW_SIMULATED_CHECKOUT: opt-in explícito para staging con APP_ENV=production
+        // (instancia V2). Sin la variable, producción sigue siendo 404. NUNCA encenderla
+        // en un servidor con clientes reales.
+        return app()->environment('local', 'testing')
+            || (bool) env('ALLOW_SIMULATED_CHECKOUT', false);
     }
 
     /**

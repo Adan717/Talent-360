@@ -1979,75 +1979,159 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id).length;
                 const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
                 const isActive = rol.is_active !== false;
+                
+                // Determinar Jerarquía de Mando
+                const iconKey = resolveJobRoleIconKey(rol);
+                const matchedItem = JOB_ROLE_PROFESSIONS_MATRIX.find(p => p.key === iconKey);
+                const nivel = rol.nivel_mando ?? matchedItem?.nivel_mando ?? (
+                  iconKey === 'monito-gerente' || iconKey === 'shield-check' || iconKey === 'crown' ? 1 :
+                  iconKey === 'monito-compras' || iconKey === 'monito-ventas' || iconKey === 'monito-produccion' ? 2 : 3
+                );
+
+                // Estilos por Jerarquía de Mando
+                const hierarchyCardStyles: Record<number, { container: string; titleText: string; descText: string; pillClass: string; label: string }> = {
+                  1: {
+                    container: 'bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 border-amber-400/50 text-white shadow-xl shadow-amber-950/20 hover:border-amber-300',
+                    titleText: 'text-amber-300 font-extrabold',
+                    descText: 'text-slate-300',
+                    pillClass: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
+                    label: 'N1 • Dirección'
+                  },
+                  2: {
+                    container: 'bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/90 border-indigo-500/40 text-white shadow-lg shadow-indigo-950/20 hover:border-indigo-400',
+                    titleText: 'text-indigo-200 font-bold',
+                    descText: 'text-slate-300',
+                    pillClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40',
+                    label: 'N2 • Supervisión'
+                  },
+                  3: {
+                    container: 'bg-white border-slate-200 text-slate-800 hover:border-sky-400 shadow-md',
+                    titleText: 'text-slate-900 font-bold',
+                    descText: 'text-slate-500',
+                    pillClass: 'bg-sky-50 text-sky-700 border-sky-200',
+                    label: 'N3 • Especialista'
+                  },
+                  4: {
+                    container: 'bg-slate-50/90 border-slate-250 text-slate-700 hover:border-slate-400 shadow-xs',
+                    titleText: 'text-slate-800 font-bold',
+                    descText: 'text-slate-500',
+                    pillClass: 'bg-slate-200/60 text-slate-700 border-slate-300',
+                    label: 'N4 • Operativo'
+                  },
+                  5: {
+                    container: 'bg-slate-50 border-slate-200 text-slate-600 shadow-xs',
+                    titleText: 'text-slate-700 font-semibold',
+                    descText: 'text-slate-400',
+                    pillClass: 'bg-slate-100 text-slate-600 border-slate-200',
+                    label: 'N5 • Eventual'
+                  }
+                };
+
+                const cardStyle = hierarchyCardStyles[nivel] || hierarchyCardStyles[3];
+
                 return (
                   <div 
                     key={rol.id} 
-                    className={`bg-white border rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all relative flex flex-col justify-between min-h-[220px] ${
-                      isActive ? 'border-slate-200' : 'border-slate-350 bg-slate-50/50 opacity-70'
+                    className={`group relative overflow-hidden rounded-3xl border p-5 sm:p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl flex flex-col justify-between min-h-[240px] ${
+                      isActive 
+                        ? cardStyle.container 
+                        : 'bg-slate-100/70 border-slate-300 text-slate-400 opacity-60'
                     }`}
                   >
-                     <div>
-                        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2 animate-fade-in">
-                           <button 
-                             type="button"
-                             onClick={() => handleToggleJobRoleActive(rol)} 
-                             className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${
-                               isActive ? 'bg-indigo-600' : 'bg-slate-350'
-                             }`}
-                             title={isActive ? "Desactivar puesto" : "Activar puesto"}
-                           >
-                             <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                               isActive ? 'right-0.5' : 'left-0.5'
-                             }`} />
-                           </button>
+                     {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) */}
+                     <div className="absolute -right-5 -bottom-5 opacity-10 group-hover:opacity-20 group-hover:scale-125 group-hover:-rotate-6 transition-all duration-500 pointer-events-none">
+                        {renderJobRoleIcon(rol, 130, nivel <= 2 ? 'text-amber-300' : 'text-indigo-600')}
+                     </div>
 
-                           <button onClick={() => setEditingJobRole({
-                              ...rol,
-                              icon: rol.icon || 'auto',
-                              reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
-                              org_parent_role_id: rol.org_parent_role_id || null,
-                              nivel_mando: rol.nivel_mando ?? 4
-                            })} className="w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-colors" title="Editar Puesto">
-                              <Pencil size={14}/>
-                           </button>
-                           <button onClick={() => handleDeleteJobRole(rol.id)} className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors" title="Eliminar Puesto">
-                              <Trash2 size={14}/>
-                           </button>
+                     <div>
+                        {/* Header con Acciones y Switch Active */}
+                        <div className="flex items-center justify-between mb-4 relative z-10">
+                           <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${cardStyle.pillClass}`}>
+                                 {cardStyle.label}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                                 isActive ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400/30' : 'bg-slate-200 text-slate-500 border-slate-300'
+                              }`}>
+                                 {isActive ? '● Activo' : '○ Inactivo'}
+                              </span>
+                           </div>
+
+                           <div className="flex items-center gap-1.5 bg-black/10 dark:bg-white/10 backdrop-blur-md p-1 rounded-full border border-white/10">
+                              <button 
+                                type="button"
+                                onClick={() => handleToggleJobRoleActive(rol)} 
+                                className={`w-8 h-4.5 rounded-full transition-colors relative shrink-0 ${
+                                  isActive ? 'bg-indigo-500' : 'bg-slate-400'
+                                }`}
+                                title={isActive ? "Desactivar puesto" : "Activar puesto"}
+                              >
+                                <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
+                                  isActive ? 'right-0.5' : 'left-0.5'
+                                }`} />
+                              </button>
+
+                              <button 
+                                onClick={() => setEditingJobRole({
+                                  ...rol,
+                                  icon: rol.icon || 'auto',
+                                  reports_to_role_ids: rol.reports_to_role_ids || (rol.reports_to_role_id ? [rol.reports_to_role_id] : []),
+                                  org_parent_role_id: rol.org_parent_role_id || null,
+                                  nivel_mando: rol.nivel_mando ?? 4
+                                })} 
+                                className="w-7 h-7 rounded-full bg-white/20 hover:bg-indigo-600 text-white flex items-center justify-center transition-colors" 
+                                title="Editar Puesto"
+                              >
+                                <Pencil size={13}/>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteJobRole(rol.id)} 
+                                className="w-7 h-7 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center transition-colors" 
+                                title="Eliminar Puesto"
+                              >
+                                <Trash2 size={13}/>
+                              </button>
+                           </div>
                         </div>
-                        <div className="flex items-center gap-3 mb-4">
-                           <JobRoleIconBadge role={rol} isActive={isActive} size={22} />
-                           <div className="pr-20 sm:pr-24">
-                              <h4 className={`font-bold text-base sm:text-lg leading-tight ${isActive ? 'text-slate-800' : 'text-slate-500 line-through'}`}>{rol.name}{getJobRoleKeysIcon(rol.id)}</h4>
+
+                        {/* Ficha Principal con Monito Icon Badge */}
+                        <div className="flex items-start gap-3.5 mb-3 relative z-10">
+                           <div className="shrink-0 transition-transform duration-300 group-hover:scale-110">
+                              <JobRoleIconBadge role={rol} isActive={isActive} size={24} />
+                           </div>
+                           <div className="min-w-0 flex-1">
+                              <h4 className={`text-base sm:text-lg leading-snug tracking-tight ${cardStyle.titleText} ${!isActive ? 'line-through opacity-70' : ''}`}>
+                                 {rol.name}{getJobRoleKeysIcon(rol.id)}
+                              </h4>
                               <div className="flex gap-1.5 mt-1 flex-wrap">
                                  {(rol.area || 'General').split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => (
-                                     <span key={a} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{a}</span>
+                                     <span key={a} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-xs border border-white/10 opacity-90">{a}</span>
                                   ))}
-                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                    isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'
-                                 }`}>
-                                    {isActive ? 'Activo' : 'Inactivo'}
-                                 </span>
                               </div>
                            </div>
                         </div>
-                        <p className="text-sm text-slate-500 line-clamp-2 mb-4 h-10">{rol.description || 'Sin descripción detallada.'}</p>
+
+                        <p className={`text-xs line-clamp-2 mb-4 h-9 relative z-10 ${cardStyle.descText}`}>
+                           {rol.description || 'Sin descripción detallada asignada.'}
+                        </p>
                      </div>
                      
-                     <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
+                     {/* Footer de Métricas (Colaboradores & Vacantes) */}
+                     <div className="flex items-center justify-between pt-3.5 border-t border-white/10 mt-auto relative z-10 text-xs">
                         <button 
                           type="button"
                           onClick={() => setSelectedRoleForUsersModal(rol)} 
-                          className="flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600 transition-colors group text-left"
+                          className="flex items-center gap-2 font-semibold hover:text-indigo-400 transition-colors group/btn"
                         >
-                           <Users size={16} className="text-slate-400 group-hover:text-indigo-500" />
-                           <span><span className="font-bold">{employeesWithRole}</span> {employeesWithRole === 1 ? 'Colaborador' : 'Colaboradores'}</span>
+                           <Users size={15} className="opacity-80 group-hover/btn:scale-110 transition-transform" />
+                           <span><span className="font-extrabold">{employeesWithRole}</span> {employeesWithRole === 1 ? 'Colaborador' : 'Colaboradores'}</span>
                         </button>
                         <button 
                           type="button"
                           onClick={() => setSelectedRoleForVacanciesModal(rol)}
-                          className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 transition-colors"
+                          className="font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1.5 transition-colors bg-sky-500/10 px-2.5 py-1 rounded-lg border border-sky-400/20"
                         >
-                           Vacantes ({roleVacancies.length}) <ClipboardList size={14}/>
+                           Vacantes ({roleVacancies.length}) <ClipboardList size={13}/>
                         </button>
                      </div>
                   </div>

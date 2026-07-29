@@ -191,6 +191,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('');
   const [templateIndustryFilter, setTemplateIndustryFilter] = useState('');
+  const [selectedIndustryFilter, setSelectedIndustryFilter] = useState('decorarte');
   const [importingTemplate, setImportingTemplate] = useState(false);
 
   const [orgViewMode, setOrgViewMode] = useState<'tree' | 'levels'>('tree');
@@ -2510,43 +2511,96 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                         <input type="text" value={editingJobRole.name || ''} onChange={e => setEditingJobRole({...editingJobRole, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl" />
                      </div>
                      <div className="col-span-1 sm:col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Icono Alusivo del Puesto</label>
-                        <p className="text-[11px] text-slate-500 mb-3">Selecciona un icono representativo o mantenlo en 'Auto' para inferirlo del título:</p>
+                        <div className="flex items-center justify-between mb-2">
+                           <label className="block text-sm font-bold text-slate-700">Icono Alusivo del Puesto</label>
+                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700">
+                             Monito Alusivo Automático
+                           </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mb-3">
+                           Se asigna automáticamente el Monito Alusivo según el título e industria de tu empresa:
+                        </p>
                         
-                        <div className="flex items-center gap-3 mb-3">
-                           <JobRoleIconBadge role={editingJobRole} iconKey={editingJobRole.icon} size={22} />
-                           <div>
-                              <div className="text-xs font-bold text-slate-800">Vista previa del icono</div>
-                              <div className="text-[11px] text-slate-500 font-medium">
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 mb-3 shadow-xs">
+                           <JobRoleIconBadge role={editingJobRole} iconKey={editingJobRole.icon} size={26} />
+                           <div className="flex-1 min-w-0">
+                              <div className="text-xs font-bold text-slate-800 truncate">
+                                {editingJobRole.name || 'Sin nombre asignado'}
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-medium truncate">
                                 {editingJobRole.icon && editingJobRole.icon !== 'auto'
                                   ? `Icono asignado: ${editingJobRole.icon}`
-                                  : `Asignación automática basada en nombre (${editingJobRole.name || 'Sin nombre'})`}
+                                  : `Monito alusivo sugerido automáticamente para este puesto`}
                               </div>
                            </div>
+                           {(editingJobRole.icon && editingJobRole.icon !== 'auto') && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingJobRole({ ...editingJobRole, icon: 'auto' })}
+                                className="text-xs text-indigo-600 font-bold hover:underline shrink-0"
+                              >
+                                Restablecer Auto
+                              </button>
+                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
-                           {JOB_ROLE_ICON_OPTIONS.map((opt) => {
-                              const isSelected = (editingJobRole.icon || 'auto') === opt.key;
-                              return (
-                                 <button
-                                   key={opt.key}
-                                   type="button"
-                                   onClick={() => setEditingJobRole({ ...editingJobRole, icon: opt.key })}
-                                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left ${
-                                      isSelected
-                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-                                   }`}
-                                 >
-                                    <div className="shrink-0">
-                                      {renderJobRoleIcon(opt.key === 'auto' ? editingJobRole : opt.key, 16, isSelected ? 'text-white' : 'text-slate-600')}
-                                    </div>
-                                    <span className="truncate">{opt.label}</span>
-                                 </button>
-                              );
-                           })}
-                        </div>
+                        {/* Selector colapsable por Giro de Empresa */}
+                        <details className="group">
+                           <summary className="text-xs font-bold text-indigo-600 cursor-pointer hover:text-indigo-800 select-none flex items-center gap-1">
+                              <span>⚙️ Personalizar o explorar catálogo de personajes por Giro de Empresa...</span>
+                           </summary>
+                           <div className="mt-3 pt-3 border-t border-slate-200">
+                              <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                                 {[
+                                   { id: 'decorarte', label: '🎨 Decorarte 360' },
+                                   { id: 'retail', label: '🏪 Retail / Tiendas' },
+                                   { id: 'oficina', label: '🏢 Oficina / Corp' },
+                                   { id: 'tecnologia', label: '💻 Tecnología' },
+                                   { id: 'restaurante', label: '🍽️ Restaurantes' },
+                                   { id: 'servicios', label: '⚙️ Servicios / Planta' },
+                                   { id: 'all', label: '🌐 Todos' },
+                                 ].map((cat) => (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      onClick={() => setSelectedIndustryFilter(cat.id)}
+                                      className={`px-3 py-1 rounded-lg text-[11px] font-bold shrink-0 transition-all ${
+                                        selectedIndustryFilter === cat.id
+                                          ? 'bg-indigo-600 text-white shadow-xs'
+                                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                      }`}
+                                    >
+                                       {cat.label}
+                                    </button>
+                                 ))}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                                 {JOB_ROLE_ICON_OPTIONS
+                                   .filter(opt => selectedIndustryFilter === 'all' || opt.industry === selectedIndustryFilter || opt.industry === 'all')
+                                   .map((opt) => {
+                                      const isSelected = (editingJobRole.icon || 'auto') === opt.key;
+                                      return (
+                                         <button
+                                           key={opt.key}
+                                           type="button"
+                                           onClick={() => setEditingJobRole({ ...editingJobRole, icon: opt.key })}
+                                           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all text-left truncate ${
+                                              isSelected
+                                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                                           }`}
+                                         >
+                                            <div className="shrink-0">
+                                              {renderJobRoleIcon(opt.key === 'auto' ? editingJobRole : opt.key, 16, isSelected ? 'text-white' : 'text-indigo-600')}
+                                            </div>
+                                            <span className="truncate text-[11px]">{opt.label}</span>
+                                         </button>
+                                      );
+                                   })}
+                              </div>
+                           </div>
+                        </details>
                      </div>
                      <div className="col-span-1 sm:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center">
                         <div>

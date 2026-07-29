@@ -23,24 +23,24 @@ return new class extends Migration
             });
         }
 
-        // Poblar iconos alusivos ejecutivos en registros existentes de job_roles
+        // Poblar personajes Monitos Alusivos en registros existentes de job_roles
         $mappings = [
-            'Administrador Gerente' => 'shield-check',
-            'Supervisor de Compras' => 'scale',
-            'Supervisor de Ventas' => 'bar-chart-3',
-            'Supervisor de Producción' => 'workflow',
-            'Asesor de Ventas' => 'user-check',
-            'Atención al Cliente' => 'user-check',
-            'Ayudante Integral' => 'clipboard-check',
-            'Apoyo Eventual' => 'clock',
+            'Administrador Gerente' => 'monito-gerente',
+            'Supervisor de Compras' => 'monito-compras',
+            'Supervisor de Ventas' => 'monito-ventas',
+            'Supervisor de Producción' => 'monito-produccion',
+            'Asesor de Ventas' => 'monito-asesor',
+            'Atención al Cliente' => 'monito-asesor',
+            'Ayudante Integral' => 'monito-ayudante',
+            'Apoyo Eventual' => 'monito-eventual',
             'Gerente de Sucursal' => 'store',
             'Supervisor de Tienda' => 'store',
             'Cajero' => 'credit-card',
             'Cajero(a)' => 'credit-card',
             'Supervisor de Cajas' => 'credit-card',
-            'Ayudante de Ventas' => 'user-check',
+            'Ayudante de Ventas' => 'monito-asesor',
             'Almacenista' => 'package',
-            'Gerente General' => 'shield-check',
+            'Gerente General' => 'monito-gerente',
             'Director de Operaciones' => 'building-2',
             'Recepcionista' => 'headset',
             'Contador' => 'calculator',

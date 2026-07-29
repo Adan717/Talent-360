@@ -40,6 +40,34 @@ class KillSwitchTest extends TestCase
         ]);
     }
 
+    /**
+     * ENMIENDA resync 3 (§65): la ruta del kill-switch quedó dentro del grupo de la matriz
+     * de capacidades del anfitrión — un supervisor ya no pasa solo por ROL, necesita la
+     * capacidad DELEGADA en su puesto (aquí `approve_operations`). Un admin sigue pasando
+     * directo. Este helper arma puesto + expediente + delegación, como lo haría la matriz.
+     */
+    private function delegarCapacidad(User $user, int $tenantId, string $capability): void
+    {
+        $jobRoleId = DB::table('job_roles')->insertGetId([
+            'tenant_id' => $tenantId, 'name' => 'Supervisor KS', 'area' => 'Ops',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('employees')->insert([
+            'tenant_id' => $tenantId, 'user_id' => $user->id, 'name' => $user->name,
+            'email' => $user->email, 'job_role_id' => $jobRoleId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $permId = DB::table('permissions')->where('tenant_id', $tenantId)->where('name', $capability)->value('id')
+            ?? DB::table('permissions')->insertGetId([
+                'tenant_id' => $tenantId, 'name' => $capability, 'description' => $capability,
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+        DB::table('role_permissions')->insert([
+            'tenant_id' => $tenantId, 'job_role_id' => $jobRoleId, 'permission_id' => $permId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
     private function insertCheckIn(int $tenantId, int $userId, string $date, string $time = '09:00:00'): void
     {
         DB::table('time_entries')->insert([
@@ -61,6 +89,7 @@ class KillSwitchTest extends TestCase
         try {
             $tenant = $this->makeTenant('ks-a');
             $supervisor = $this->makeUser($tenant->id, 'sup@ks.local', 'supervisor');
+            $this->delegarCapacidad($supervisor, $tenant->id, 'approve_operations');
             $target = $this->makeUser($tenant->id, 'target@ks.local');
             $today = now()->toDateString();
             $this->insertCheckIn($tenant->id, $target->id, $today);
@@ -92,6 +121,7 @@ class KillSwitchTest extends TestCase
         try {
             $tenant = $this->makeTenant('ks-tz');
             $supervisor = $this->makeUser($tenant->id, 'sup@kstz.local', 'supervisor');
+            $this->delegarCapacidad($supervisor, $tenant->id, 'approve_operations');
             $target = $this->makeUser($tenant->id, 'target@kstz.local');
             $localDate = Carbon::now('America/Mexico_City')->toDateString(); // 2026-07-10
             $this->insertCheckIn($tenant->id, $target->id, $localDate);
@@ -115,6 +145,7 @@ class KillSwitchTest extends TestCase
         try {
             $tenant = $this->makeTenant('ks-idem');
             $supervisor = $this->makeUser($tenant->id, 'sup@ksi.local', 'supervisor');
+            $this->delegarCapacidad($supervisor, $tenant->id, 'approve_operations');
             $target = $this->makeUser($tenant->id, 'target@ksi.local');
             $this->insertCheckIn($tenant->id, $target->id, now()->toDateString());
 

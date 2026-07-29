@@ -831,26 +831,43 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isAtsActive = activeModules.includes('ats');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isAtsActive ? 'border-violet-200 bg-violet-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-violet-100 text-violet-600 rounded-xl">
-                        <Briefcase size={18} />
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                    isAtsActive 
+                      ? 'border-violet-300 bg-gradient-to-b from-violet-100/80 via-purple-50/50 to-white' 
+                      : 'border-violet-100 bg-gradient-to-b from-violet-50/50 via-slate-50/30 to-white hover:border-violet-200'
+                  }`}>
+                    {/* Imagen Alusiva al Tema */}
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-violet-100/60">
+                      <img 
+                        src="/assets/modules/ats.jpg" 
+                        alt="Reclutamiento ATS" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-violet-600 rounded-lg shadow-2xs border border-violet-100">
+                        <Briefcase size={16} />
                       </div>
+                    </div>
+
+                    <div className="flex justify-between items-start mb-2 relative z-10">
+                      <h3 className="font-bold text-slate-900 text-xs">Reclutamiento ATS</h3>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('ats', 'Reclutamiento ATS')}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
                           isAtsActive 
                             ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                            : 'bg-white hover:bg-violet-50 text-violet-700 border border-violet-200'
                         }`}
                       >
                         {isAtsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Reclutamiento ATS</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Vacantes, bolsa de trabajo y entrevistas.</p>
-                    <span className="text-xs font-black text-violet-600">+$29 MXN / mes</span>
+
+                    <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Vacantes, bolsa de trabajo y entrevistas.</p>
+                    <span className="text-xs font-black text-violet-600 relative z-10">+$29 MXN / mes</span>
+
+                    {/* Ícono de Marca de Agua al fondo */}
+                    <Briefcase className="absolute -right-3 -bottom-3 w-20 h-20 text-violet-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -859,26 +876,43 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isLmsActive = activeModules.includes('academia');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isLmsActive ? 'border-sky-200 bg-sky-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-sky-100 text-sky-600 rounded-xl">
-                        <GraduationCap size={18} />
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                    isLmsActive 
+                      ? 'border-sky-300 bg-gradient-to-b from-sky-100/80 via-blue-50/50 to-white' 
+                      : 'border-sky-100 bg-gradient-to-b from-sky-50/50 via-slate-50/30 to-white hover:border-sky-200'
+                  }`}>
+                    {/* Imagen Alusiva al Tema */}
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-sky-100/60">
+                      <img 
+                        src="/assets/modules/academia.jpg" 
+                        alt="Academia 360" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-sky-600 rounded-lg shadow-2xs border border-sky-100">
+                        <GraduationCap size={16} />
                       </div>
+                    </div>
+
+                    <div className="flex justify-between items-start mb-2 relative z-10">
+                      <h3 className="font-bold text-slate-900 text-xs">Academia 360</h3>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('academia', 'Academia 360')}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
                           isLmsActive 
                             ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                            : 'bg-white hover:bg-sky-50 text-sky-700 border border-sky-200'
                         }`}
                       >
                         {isLmsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Academia 360</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Cursos interactivos e inducción.</p>
-                    <span className="text-xs font-black text-sky-600">+$49 MXN / mes</span>
+
+                    <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Cursos interactivos e inducción.</p>
+                    <span className="text-xs font-black text-sky-600 relative z-10">+$49 MXN / mes</span>
+
+                    {/* Ícono de Marca de Agua al fondo */}
+                    <GraduationCap className="absolute -right-3 -bottom-3 w-20 h-20 text-sky-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -887,26 +921,43 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isReportsActive = activeModules.includes('reportes');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isReportsActive ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-rose-100 text-rose-600 rounded-xl">
-                        <BarChart3 size={18} />
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                    isReportsActive 
+                      ? 'border-rose-300 bg-gradient-to-b from-rose-100/80 via-pink-50/50 to-white' 
+                      : 'border-rose-100 bg-gradient-to-b from-rose-50/50 via-slate-50/30 to-white hover:border-rose-200'
+                  }`}>
+                    {/* Imagen Alusiva al Tema */}
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-rose-100/60">
+                      <img 
+                        src="/assets/modules/reportes.jpg" 
+                        alt="Reportes IA" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-rose-600 rounded-lg shadow-2xs border border-rose-100">
+                        <BarChart3 size={16} />
                       </div>
+                    </div>
+
+                    <div className="flex justify-between items-start mb-2 relative z-10">
+                      <h3 className="font-bold text-slate-900 text-xs">Reportes IA</h3>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('reportes', 'Reportes IA')}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
                           isReportsActive 
                             ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                            : 'bg-white hover:bg-rose-50 text-rose-700 border border-rose-200'
                         }`}
                       >
                         {isReportsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Reportes IA</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Faltas, retardos y analítica Ley Silla.</p>
-                    <span className="text-xs font-black text-rose-600">+$19 MXN / mes</span>
+
+                    <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Faltas, retardos y analítica Ley Silla.</p>
+                    <span className="text-xs font-black text-rose-600 relative z-10">+$19 MXN / mes</span>
+
+                    {/* Ícono de Marca de Agua al fondo */}
+                    <BarChart3 className="absolute -right-3 -bottom-3 w-20 h-20 text-rose-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -915,26 +966,43 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isDocsActive = activeModules.includes('documentos');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isDocsActive ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
-                        <FileText size={18} />
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                    isDocsActive 
+                      ? 'border-amber-300 bg-gradient-to-b from-amber-100/80 via-yellow-50/50 to-white' 
+                      : 'border-amber-100 bg-gradient-to-b from-amber-50/50 via-slate-50/30 to-white hover:border-amber-200'
+                  }`}>
+                    {/* Imagen Alusiva al Tema */}
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-amber-100/60">
+                      <img 
+                        src="/assets/modules/documentos.jpg" 
+                        alt="Archivo Digital" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-amber-600 rounded-lg shadow-2xs border border-amber-100">
+                        <FileText size={16} />
                       </div>
+                    </div>
+
+                    <div className="flex justify-between items-start mb-2 relative z-10">
+                      <h3 className="font-bold text-slate-900 text-xs">Archivo Digital</h3>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('documentos', 'Archivo Digital')}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
                           isDocsActive 
                             ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                            : 'bg-white hover:bg-amber-50 text-amber-700 border border-amber-200'
                         }`}
                       >
                         {isDocsActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Archivo Digital</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Expedientes avanzados y contratos.</p>
-                    <span className="text-xs font-black text-amber-600">+$19 MXN / mes</span>
+
+                    <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Expedientes avanzados y contratos.</p>
+                    <span className="text-xs font-black text-amber-600 relative z-10">+$19 MXN / mes</span>
+
+                    {/* Ícono de Marca de Agua al fondo */}
+                    <FileText className="absolute -right-3 -bottom-3 w-20 h-20 text-amber-600/10 pointer-events-none group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}
@@ -943,26 +1011,43 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               {(() => {
                 const isCfdiActive = activeModules.includes('facturacion');
                 return (
-                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all ${isCfdiActive ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
-                        <Receipt size={18} />
+                  <div className={`min-w-[84%] sm:min-w-0 snap-center p-4 rounded-2xl border transition-all relative overflow-hidden group shadow-2xs ${
+                    isCfdiActive 
+                      ? 'border-emerald-300 bg-gradient-to-b from-emerald-100/80 via-teal-50/50 to-white' 
+                      : 'border-emerald-100 bg-gradient-to-b from-emerald-50/50 via-slate-50/30 to-white hover:border-emerald-200'
+                  }`}>
+                    {/* Imagen Alusiva al Tema */}
+                    <div className="relative h-28 w-full mb-3 rounded-xl overflow-hidden shadow-xs border border-emerald-100/60">
+                      <img 
+                        src="/assets/modules/facturacion.jpg" 
+                        alt="Nómina CFDI 4.0" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/95 backdrop-blur-xs text-emerald-600 rounded-lg shadow-2xs border border-emerald-100">
+                        <Receipt size={16} />
                       </div>
+                    </div>
+
+                    <div className="flex justify-between items-start mb-2 relative z-10">
+                      <h3 className="font-bold text-slate-900 text-xs">Nómina CFDI 4.0</h3>
                       <button 
                         disabled={isAdoptionSaving}
                         onClick={() => handleToggleModule('facturacion', 'Nómina CFDI 4.0')}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-xl transition-all ${
+                        className={`text-[11px] font-black px-3 py-1 rounded-xl transition-all ${
                           isCfdiActive 
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' 
-                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                            : 'bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200'
                         }`}
                       >
                         {isCfdiActive ? 'Adoptado' : 'Adoptar'}
                       </button>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-xs">Nómina CFDI 4.0</h3>
-                    <p className="text-slate-500 text-[10px] mt-1 mb-2 leading-relaxed font-medium">Timbrado masivo del SAT.</p>
-                    <span className="text-xs font-black text-emerald-600">+$39 MXN / mes</span>
+
+                    <p className="text-slate-500 text-[10px] mb-2 leading-relaxed font-medium relative z-10">Timbrado masivo del SAT.</p>
+                    <span className="text-xs font-black text-emerald-600 relative z-10">+$39 MXN / mes</span>
+
+                    {/* Ícono de Marca de Agua al fondo */}
+                    <Receipt className="absolute -right-3 -bottom-3 w-20 h-20 text-emerald-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
                   </div>
                 );
               })()}

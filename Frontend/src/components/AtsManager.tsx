@@ -120,49 +120,118 @@ export function AtsManager() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-24 sm:pb-6">
       
-      {/* HEADER ATS STICKY */}
-      <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
-        <div className="bg-white rounded-3xl p-1.5 sm:p-2 shadow-sm border border-slate-200">
+      {/* HEADER ATS (Escritorio) */}
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+        <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200">
           {/* TABS */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
             <button 
               onClick={() => setActiveTab('vacantes')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'vacantes' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'vacantes' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
             >
               <Briefcase size={18} className={activeTab === 'vacantes' ? 'text-indigo-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Bolsa de Trabajo</span>
+              <span className="whitespace-nowrap text-center leading-tight">Bolsa de Trabajo</span>
             </button>
             <button 
               onClick={() => setActiveTab('kanban')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'kanban' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'kanban' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
             >
               <ClipboardList size={18} className={activeTab === 'kanban' ? 'text-indigo-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tablero Candidatos</span>
+              <span className="whitespace-nowrap text-center leading-tight">Tablero Candidatos</span>
             </button>
             <button 
               onClick={() => setActiveTab('entrevistas')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'entrevistas' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'entrevistas' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
             >
               <Calendar size={18} className={activeTab === 'entrevistas' ? 'text-indigo-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
-                <span className="block sm:hidden">Agenda</span>
-                <span className="hidden sm:block">Agenda de Entrevistas</span>
-              </span>
+              <span className="whitespace-nowrap text-center leading-tight">Agenda de Entrevistas</span>
             </button>
             <button 
               onClick={() => setActiveTab('publico')}
-              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'publico' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all ${activeTab === 'publico' ? 'bg-white text-indigo-700 shadow-sm border border-slate-150' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
             >
               <Globe size={18} className={activeTab === 'publico' ? 'text-indigo-600' : 'text-slate-400'} />
-              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">
-                <span className="block sm:hidden">Web Pública</span>
-                <span className="hidden sm:block">Vista Pública (Web)</span>
-              </span>
+              <span className="whitespace-nowrap text-center leading-tight">Vista Pública (Web)</span>
             </button>
           </div>
         </div>
+      </div>
+
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
+        <button
+          onClick={() => setActiveTab('vacantes')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'vacantes' 
+              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <Briefcase size={19} className={activeTab === 'vacantes' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'vacantes' ? 'font-black text-purple-600' : 'text-slate-400'
+          }`}>
+            Vacantes
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('kanban')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'kanban' 
+              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <ClipboardList size={19} className={activeTab === 'kanban' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'kanban' ? 'font-black text-purple-600' : 'text-slate-400'
+          }`}>
+            Tablero
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('entrevistas')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'entrevistas' 
+              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <Calendar size={19} className={activeTab === 'entrevistas' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'entrevistas' ? 'font-black text-purple-600' : 'text-slate-400'
+          }`}>
+            Agenda
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('publico')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'publico' 
+              ? 'bg-purple-500/15 border-2 border-purple-500 shadow-md shadow-purple-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <Globe size={19} className={activeTab === 'publico' ? 'animate-pulse text-purple-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'publico' ? 'font-black text-purple-600' : 'text-slate-400'
+          }`}>
+            Pública
+          </span>
+        </button>
       </div>
 
       <div className="bg-transparent">

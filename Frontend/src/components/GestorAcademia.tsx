@@ -241,34 +241,34 @@ export const GestorAcademia = () => {
   return (
     <div className="h-full bg-white rounded-3xl p-8 border border-slate-200 text-slate-800 relative flex flex-col shadow-sm">
       
-      <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
         <div className="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-1.5 rounded-3xl sm:rounded-xl overflow-x-auto w-full lg:w-auto scrollbar-none whitespace-nowrap">
+            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl overflow-x-auto w-full lg:w-auto scrollbar-none whitespace-nowrap">
               <button 
                 onClick={() => setActiveTab('all')} 
-                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2 rounded-2xl sm:rounded-lg min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2 rounded-lg transition-all ${activeTab === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
               >
                 <BookOpen size={18} className={activeTab === 'all' ? 'text-blue-600' : 'text-slate-400'} />
                 <span>Todos</span>
               </button>
               <button 
                 onClick={() => setActiveTab('induction')} 
-                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2 rounded-2xl sm:rounded-lg min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'induction' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2 rounded-lg transition-all ${activeTab === 'induction' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
               >
                 <BookOpen size={18} className={activeTab === 'induction' ? 'text-blue-600' : 'text-slate-400'} />
                 <span>Inducción</span>
               </button>
               <button 
                 onClick={() => setActiveTab('training')} 
-                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2 rounded-2xl sm:rounded-lg min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'training' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2 rounded-lg transition-all ${activeTab === 'training' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
               >
                 <PlayCircle size={18} className={activeTab === 'training' ? 'text-blue-600' : 'text-slate-400'} />
                 <span>Entrenamiento</span>
               </button>
               <button 
                 onClick={() => setActiveTab('promotion')} 
-                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2 rounded-2xl sm:rounded-lg min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'promotion' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2 rounded-lg transition-all ${activeTab === 'promotion' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
               >
                 <Trophy size={18} className={activeTab === 'promotion' ? 'text-blue-600' : 'text-slate-400'} />
                 <span>Promoción</span>
@@ -276,7 +276,7 @@ export const GestorAcademia = () => {
               <div className="w-px bg-slate-300 mx-2 self-stretch hidden sm:block"></div>
               <button 
                 onClick={() => setActiveTab('templates')} 
-                className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2 rounded-2xl sm:rounded-lg min-w-[85px] sm:min-w-0 transition-all ${activeTab === 'templates' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2 rounded-lg transition-all ${activeTab === 'templates' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/50'}`}
               >
                 <FileBadge size={18} className={activeTab === 'templates' ? 'text-white' : 'text-slate-400'} />
                 <span>Diplomas</span>
@@ -325,9 +325,102 @@ export const GestorAcademia = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-10">
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
+        <button
+          onClick={() => setActiveTab('all')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'all' 
+              ? 'bg-sky-500/15 border-2 border-sky-500 shadow-md shadow-sky-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <BookOpen size={19} className={activeTab === 'all' ? 'animate-pulse text-sky-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'all' ? 'font-black text-sky-600' : 'text-slate-400'
+          }`}>
+            Todos
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('induction')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'induction' 
+              ? 'bg-sky-500/15 border-2 border-sky-500 shadow-md shadow-sky-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <BookOpen size={19} className={activeTab === 'induction' ? 'animate-pulse text-sky-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'induction' ? 'font-black text-sky-600' : 'text-slate-400'
+          }`}>
+            Inducción
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('training')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'training' 
+              ? 'bg-sky-500/15 border-2 border-sky-500 shadow-md shadow-sky-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <PlayCircle size={19} className={activeTab === 'training' ? 'animate-pulse text-sky-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'training' ? 'font-black text-sky-600' : 'text-slate-400'
+          }`}>
+            Capacita
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('promotion')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'promotion' 
+              ? 'bg-sky-500/15 border-2 border-sky-500 shadow-md shadow-sky-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <Trophy size={19} className={activeTab === 'promotion' ? 'animate-pulse text-sky-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'promotion' ? 'font-black text-sky-600' : 'text-slate-400'
+          }`}>
+            Promoción
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('templates')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'templates' 
+              ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <FileBadge size={19} className={activeTab === 'templates' ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'templates' ? 'font-black text-indigo-600' : 'text-slate-400'
+          }`}>
+            Diplomas
+          </span>
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-24 sm:pb-10">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

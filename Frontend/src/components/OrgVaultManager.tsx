@@ -735,10 +735,10 @@ export function OrgVaultManager() {
       {/* Main pane */}
       <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col min-w-0">
         
-        {/* Admin Navigation Sticky */}
+        {/* Admin Navigation (Escritorio) */}
         {isAdmin && (
-          <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
-            <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex border-b border-slate-200 pb-2 mb-1 gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
+          <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+            <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
               <button
                 onClick={() => setAdminTab('view')}
                 className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
@@ -804,6 +804,102 @@ export function OrgVaultManager() {
             </div>
           </div>
         )}
+
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+      {isAdmin && (
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around overflow-x-auto whitespace-nowrap scrollbar-none">
+          <button
+            onClick={() => setAdminTab('view')}
+            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              adminTab === 'view' 
+                ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
+                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+            }`}>
+              <BookOpen size={17} className={adminTab === 'view' ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'} />
+            </div>
+            <span className={`text-[8px] uppercase tracking-wider font-extrabold mt-0.5 ${
+              adminTab === 'view' ? 'font-black text-indigo-600' : 'text-slate-400'
+            }`}>
+              Leer
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('suggestions')}
+            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0 relative"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              adminTab === 'suggestions' 
+                ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
+                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+            }`}>
+              <GitPullRequest size={17} className={adminTab === 'suggestions' ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'} />
+            </div>
+            <span className={`text-[8px] uppercase tracking-wider font-extrabold mt-0.5 ${
+              adminTab === 'suggestions' ? 'font-black text-indigo-600' : 'text-slate-400'
+            }`}>
+              Cambios
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('edit')}
+            disabled={!activeDoc}
+            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0 disabled:opacity-40"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              adminTab === 'edit' 
+                ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
+                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+            }`}>
+              <Edit size={17} className={adminTab === 'edit' ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'} />
+            </div>
+            <span className={`text-[8px] uppercase tracking-wider font-extrabold mt-0.5 ${
+              adminTab === 'edit' ? 'font-black text-indigo-600' : 'text-slate-400'
+            }`}>
+              Editar
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('sync')}
+            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              adminTab === 'sync' 
+                ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
+                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+            }`}>
+              <Upload size={17} className={adminTab === 'sync' ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'} />
+            </div>
+            <span className={`text-[8px] uppercase tracking-wider font-extrabold mt-0.5 ${
+              adminTab === 'sync' ? 'font-black text-indigo-600' : 'text-slate-400'
+            }`}>
+              Sync
+            </span>
+          </button>
+
+          <button
+            onClick={() => setAdminTab('matrix')}
+            className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1 shrink-0"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              adminTab === 'matrix' 
+                ? 'bg-indigo-500/15 border-2 border-indigo-500 shadow-md shadow-indigo-500/20 scale-105' 
+                : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+            }`}>
+              <LayoutGrid size={17} className={adminTab === 'matrix' ? 'animate-pulse text-indigo-600 font-bold' : 'text-slate-400'} />
+            </div>
+            <span className={`text-[8px] uppercase tracking-wider font-extrabold mt-0.5 ${
+              adminTab === 'matrix' ? 'font-black text-indigo-600' : 'text-slate-400'
+            }`}>
+              Matriz
+            </span>
+          </button>
+        </div>
+      )}
 
         {/* Tab content */}
         {adminTab === 'view' && (

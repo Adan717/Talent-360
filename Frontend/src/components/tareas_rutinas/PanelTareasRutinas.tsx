@@ -399,23 +399,22 @@ export function PanelTareasRutinas() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 font-sans">
-              {/* Tarjeta Superior: Menú de Pestañas Sticky */}
-              <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
-                  <div className="bg-white rounded-3xl p-1.5 sm:p-2 shadow-sm border border-slate-200">
-                      <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-1.5 rounded-3xl sm:rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
+        <div className="max-w-7xl mx-auto space-y-6 font-sans pb-24 sm:pb-6">
+              {/* Tarjeta Superior: Menú de Pestañas (Escritorio) */}
+              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+                  <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-200">
+                      <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl w-full overflow-x-auto whitespace-nowrap scrollbar-none">
                           <button 
                               onClick={() => setActiveTab('tareas')} 
-                              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
                                   activeTab === 'tareas' 
                                       ? 'bg-white text-blue-700 shadow-sm border border-slate-100' 
                                       : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                               }`}
                           >
                               <LayoutList size={18} className={activeTab === 'tareas' ? 'text-blue-600' : 'text-slate-400'} />
-                              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Tareas</span>
-                              {/* Counter Badge */}
-                              <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                              <span className="whitespace-nowrap text-center leading-tight">Tareas</span>
+                              <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
                                   activeTab === 'tareas' 
                                       ? 'bg-blue-100 text-blue-800 border border-blue-200' 
                                       : 'bg-slate-200 text-slate-600 border border-slate-300'
@@ -425,16 +424,15 @@ export function PanelTareasRutinas() {
                           </button>
                           <button 
                               onClick={() => setActiveTab('rutinas')} 
-                              className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-bold p-3 sm:px-6 sm:py-2.5 rounded-2xl sm:rounded-xl min-w-[85px] sm:min-w-0 transition-all relative ${
+                              className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
                                   activeTab === 'rutinas' 
                                       ? 'bg-white text-blue-700 shadow-sm border border-slate-100' 
                                       : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                               }`}
                           >
                               <Workflow size={18} className={activeTab === 'rutinas' ? 'text-blue-600' : 'text-slate-400'} />
-                              <span className="whitespace-normal sm:whitespace-nowrap text-center leading-tight">Rutinas</span>
-                              {/* Counter Badge */}
-                              <span className={`absolute top-1 sm:top-auto sm:relative right-1.5 sm:right-auto px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
+                              <span className="whitespace-nowrap text-center leading-tight">Rutinas</span>
+                              <span className={`relative px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none ${
                                   activeTab === 'rutinas' 
                                       ? 'bg-blue-100 text-blue-800 border border-blue-200' 
                                       : 'bg-slate-200 text-slate-600 border border-slate-300'
@@ -444,6 +442,45 @@ export function PanelTareasRutinas() {
                           </button>
                       </div>
                   </div>
+              </div>
+
+              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+              <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
+                <button
+                  onClick={() => setActiveTab('tareas')}
+                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    activeTab === 'tareas' 
+                      ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105' 
+                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+                  }`}>
+                    <LayoutList size={19} className={activeTab === 'tareas' ? 'animate-pulse text-blue-600 font-bold' : 'text-slate-400'} />
+                  </div>
+                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+                    activeTab === 'tareas' ? 'font-black text-blue-600' : 'text-slate-400'
+                  }`}>
+                    Tareas ({tasks.length})
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('rutinas')}
+                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    activeTab === 'rutinas' 
+                      ? 'bg-blue-500/15 border-2 border-blue-500 shadow-md shadow-blue-500/20 scale-105' 
+                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+                  }`}>
+                    <Workflow size={19} className={activeTab === 'rutinas' ? 'animate-pulse text-blue-600 font-bold' : 'text-slate-400'} />
+                  </div>
+                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+                    activeTab === 'rutinas' ? 'font-black text-blue-600' : 'text-slate-400'
+                  }`}>
+                    Rutinas ({routines.length})
+                  </span>
+                </button>
               </div>
 
               {/* Tarjeta Inferior: Contenido principal */}

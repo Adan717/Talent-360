@@ -74,9 +74,9 @@ export default function ReportesManager() {
         <button onClick={() => setDemoTier('pro')} className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${demoTier === 'pro' ? 'bg-blue-600 shadow text-white' : 'text-slate-500 hover:bg-slate-200'}`}>PRO</button>
       </div>
 
-      {/* Header Sticky */}
-      <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm">
+      {/* Header (Escritorio) */}
+      <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
               <FileText size={24} />
@@ -106,8 +106,47 @@ export default function ReportesManager() {
         </div>
       </div>
 
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
+        <button
+          onClick={() => setActiveTab('basicos')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'basicos' 
+              ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <FileText size={19} className={activeTab === 'basicos' ? 'animate-pulse text-emerald-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'basicos' ? 'font-black text-emerald-600' : 'text-slate-400'
+          }`}>
+            Básicos
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('avanzados')}
+          className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            activeTab === 'avanzados' 
+              ? 'bg-emerald-500/15 border-2 border-emerald-500 shadow-md shadow-emerald-500/20 scale-105' 
+              : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+          }`}>
+            <DollarSign size={19} className={activeTab === 'avanzados' ? 'animate-pulse text-emerald-600 font-bold' : 'text-slate-400'} />
+          </div>
+          <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+            activeTab === 'avanzados' ? 'font-black text-emerald-600' : 'text-slate-400'
+          }`}>
+            Avanzados
+          </span>
+        </button>
+      </div>
+
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+      <div className="flex-1 overflow-y-auto p-6 bg-slate-50 pb-24 sm:pb-6">
         
         {/* TABS: FREEMIUM */}
         {activeTab === 'basicos' && (

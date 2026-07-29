@@ -287,7 +287,7 @@ export default function LftManager() {
       </div>
 
       {/* Cuerpo */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar pb-24 sm:pb-8">
         {successMsg && (
           <div className="mb-6 p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
             <CheckCircle2 size={18} className="shrink-0 text-emerald-600 animate-bounce" />
@@ -369,8 +369,8 @@ export default function LftManager() {
             {/* Columna Izquierda: Configuración con pestañas */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Selector de Pestañas Sticky */}
-              <div className="sticky -top-4 sm:-top-8 -mt-4 sm:-mt-8 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 sm:pt-6 pb-2 sm:pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-4 sm:mb-6">
+              {/* Selector de Pestañas (Escritorio) */}
+              <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
                 <div className="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
                   <button
                     type="button"
@@ -395,6 +395,47 @@ export default function LftManager() {
                     Días Festivos Oficiales
                   </button>
                 </div>
+              </div>
+
+              {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador) */}
+              <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-40 sm:hidden flex items-center justify-around">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('variables')}
+                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    activeTab === 'variables' 
+                      ? 'bg-amber-500/15 border-2 border-amber-500 shadow-md shadow-amber-500/20 scale-105' 
+                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+                  }`}>
+                    <Scale size={19} className={activeTab === 'variables' ? 'animate-pulse text-amber-600 font-bold' : 'text-slate-400'} />
+                  </div>
+                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+                    activeTab === 'variables' ? 'font-black text-amber-600' : 'text-slate-400'
+                  }`}>
+                    Reglamento
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('holidays')}
+                  className="flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all active:scale-95 border-none bg-transparent cursor-pointer py-0.5 px-1"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    activeTab === 'holidays' 
+                      ? 'bg-amber-500/15 border-2 border-amber-500 shadow-md shadow-amber-500/20 scale-105' 
+                      : 'bg-slate-100 border border-slate-200/80 hover:bg-slate-200/60'
+                  }`}>
+                    <Calendar size={19} className={activeTab === 'holidays' ? 'animate-pulse text-amber-600 font-bold' : 'text-slate-400'} />
+                  </div>
+                  <span className={`text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
+                    activeTab === 'holidays' ? 'font-black text-amber-600' : 'text-slate-400'
+                  }`}>
+                    Festivos
+                  </span>
+                </button>
               </div>
 
               {activeTab === 'variables' ? (

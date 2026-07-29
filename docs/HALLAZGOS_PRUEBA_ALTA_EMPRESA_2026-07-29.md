@@ -84,6 +84,71 @@ teclearlo en el login. Además, si dos nombres difieren solo por acentos colisio
 
 ---
 
+---
+
+# Segunda tanda — prueba del RELOJ CHECADOR (misma sesión)
+
+## 🔴 H5 — REGRESIÓN DEL RESYNC (ya corregida, commit `8623d26`): los 5 paneles de resolución quedaron huérfanos
+
+Al fusionar la línea del jefe, su rediseño cambió `App.tsx` para que el módulo `dashboard`
+renderice `MonitorActividadesTiempoReal` (Monitor 360) en lugar de `DashboardTalent360`. El
+conflicto DENTRO de `DashboardTalent360` se resolvió bien (los paneles se conservaron), pero **ese
+componente ya no se renderiza en ningún lado** → `LateAuthorizationsPanel`, `PanicIncidentsPanel`,
+`LateJustificationsPanel`, `ContingenciesPanel` e `IncompleteTasksPanel` desaparecieron de la app.
+
+**Reproducido en vivo:** Marisol solicitó autorización de entrada tardía desde el dial; la
+solicitud quedó `pending` en BD y `GET /admin/late-authorizations` devolvía 200 con ella, pero
+**ninguna pantalla la mostraba** → el admin no tenía dónde aprobarla. Sin este fix, todo lo que un
+colaborador declara desde el dial entra a la base y se queda ahí para siempre.
+
+**Corregido:** los 5 paneles se montaron en `MonitorActividadesTiempoReal`, la pantalla real del
+dashboard. Verificado: el panel aparece con "Marisol Herrera · Retardo de 392 min" y el botón
+Autorizar deja la solicitud en `approved`.
+
+**Lección para futuros resyncs:** no basta con resolver el conflicto dentro de un archivo; hay que
+verificar que el archivo **siga montado** cuando el otro lado reemplaza pantallas completas.
+
+## 🟠 H6 — La autorización aprobada NO desbloquea el dial del colaborador
+
+`ClockService` (l.848) respeta correctamente la aprobación: si existe una fila `approved` en
+`late_authorization_requests` para ese usuario y fecha, permite el `check_in` pese al Retardo
+Extremo. **Verificado por API:** `POST /clock/punch` respondió `200` y registró el fichaje con
+404 min de retardo e incidencia LFT de descuento.
+
+Pero **el dial nunca consulta ese estado**: tras la aprobación sigue mostrando "🔒 ACCESO
+BLOQUEADO / TOLERANCIA VENCIDA" y no ofrece botón para fichar. El colaborador autorizado queda
+sin poder registrar su entrada aunque el servidor ya se lo permite.
+
+**Fix sugerido:** exponer el estado de la solicitud al dial (o incluirlo en el payload de
+`/clock/state`) y levantar el bloqueo del FE cuando esté `approved`.
+
+## 🟠 H7 — Deadlock de apertura: si nadie abrió la sucursal a tiempo, nadie puede fichar
+
+Configuración por defecto de una empresa nueva: `storeSchedule = {openTime: 08:00, closeTime:
+20:00}`, `clockOpConfig.arrivalWindowMins = 30`. Si la sucursal no se abre dentro de esa ventana,
+el dial de **todos** —incluido el encargado aperturador— queda en "ESPERANDO APERTURA POR:
+ENCARGADO" + "ACCESO BLOQUEADO", y en la pestaña Herramientas no aparece ninguna vía de escape
+(la apertura de emergencia con testigos y el "reportar tienda cerrada" existen en el backend pero
+no se ofrecen en esa pantalla).
+
+**Verificado:** Marisol tiene el puesto correcto (`esAperturador: true`, `portadorLlaves:
+'apertura'`, `jerarquiaLlaves: 1`) y aun así no puede abrir ni fichar desde la UI.
+
+**Consecuencia:** el primer día de uso de cualquier empresa (o cualquier día en que el encargado
+llegue tarde) el Reloj queda inoperable hasta que alguien intervenga por backend.
+
+## 🟡 H8 — El horario del colaborador no llega a la etiqueta del dial
+
+`RelojVisual.tsx:3777` pinta el turno con `shiftConfigs[user.id]?.shiftStart || '09:00'`, mientras
+que el cálculo de estado (l.840) usa `shiftConfigs[user.id]?.start || currentUser?.shiftStart`.
+Dos claves distintas (`shiftStart` vs `start`) sobre el mismo mapa, y `shiftConfigs` viene `NULL`
+en `system_settings` de una empresa nueva.
+
+**Verificado:** `GET /me` devolvía `shiftStart: "08:00:00"` y el dial seguía mostrando
+"Turno de hoy: 09:00 - 18:00 hrs" (el default hardcodeado).
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

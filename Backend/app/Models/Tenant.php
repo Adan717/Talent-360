@@ -87,6 +87,11 @@ class Tenant extends Model
         return $this->belongsTo(BillingPlan::class, 'billing_plan_id');
     }
 
+    public function subscriptionHistories()
+    {
+        return $this->hasMany(TenantSubscriptionHistory::class, 'tenant_id');
+    }
+
     /**
      * Check if the tenant's free trial is currently active.
      */

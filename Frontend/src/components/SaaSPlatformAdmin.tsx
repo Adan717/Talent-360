@@ -1423,13 +1423,33 @@ export const SaaSPlatformAdmin = () => {
                          <div className="mt-1">{getNichoBadge(comp.nicho)}</div>
                          <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{comp.date}</span>
                       </div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                         comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
-                         comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                         'bg-slate-200 text-slate-700'
-                      }`}>
-                         {comp.plan}
-                      </span>
+                      <div className="text-right">
+                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
+                            comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
+                            'bg-slate-200 text-slate-700'
+                         }`}>
+                            {comp.plan}
+                         </span>
+                         <div className="text-[11px] font-extrabold text-slate-800 mt-1">
+                            ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-500 font-semibold">/mes</span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-3 gap-2 text-center text-xs bg-white p-2 rounded-xl border border-slate-200/80">
+                      <div>
+                         <span className="text-[9px] font-black text-slate-400 block uppercase">Módulos</span>
+                         <span className="font-extrabold text-indigo-600">{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
+                      </div>
+                      <div>
+                         <span className="text-[9px] font-black text-slate-400 block uppercase">Usuarios</span>
+                         <span className="font-extrabold text-slate-700">{comp.users} / {comp.max_users ?? 5}</span>
+                      </div>
+                      <div>
+                         <span className="text-[9px] font-black text-slate-400 block uppercase">Volumen DB</span>
+                         <span className="font-extrabold text-emerald-600">{comp.tx_daily_avg ?? 0} <span className="text-[8px] text-slate-400">Tx/día</span></span>
+                      </div>
                    </div>
 
                    <div className="flex items-center justify-between text-xs border-t border-b border-slate-200/70 py-2">
@@ -1437,10 +1457,6 @@ export const SaaSPlatformAdmin = () => {
                          <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                          <span className={`font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
                       </span>
-                      <span className="font-bold text-slate-600">{comp.users} usuarios</span>
-                   </div>
-
-                   <div className="flex items-center justify-between pt-1">
                       <div className="text-xs">
                          {(() => {
                             if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
@@ -1462,24 +1478,25 @@ export const SaaSPlatformAdmin = () => {
                             return null;
                          })()}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                         <button 
-                           onClick={() => handleOpenDetails(comp.id)}
-                           title="Ver Detalles y Accesos"
-                           className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
-                         >
-                           <Eye size={14} />
-                           Detalles
-                         </button>
-                         <button 
-                           onClick={() => handleImpersonate(comp.id)}
-                           title="Iniciar Sesión como Admin"
-                           className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
-                         >
-                           <LogIn size={14} />
-                           Entrar
-                         </button>
-                      </div>
+                   </div>
+
+                   <div className="flex items-center justify-end gap-1.5 pt-1">
+                      <button 
+                        onClick={() => handleOpenDetails(comp.id)}
+                        title="Ver Detalles y Accesos"
+                        className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl transition-colors border border-slate-200 text-xs font-bold flex items-center gap-1"
+                      >
+                        <Eye size={14} />
+                        Detalles
+                      </button>
+                      <button 
+                        onClick={() => handleImpersonate(comp.id)}
+                        title="Iniciar Sesión como Admin"
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-xs font-bold flex items-center gap-1"
+                      >
+                        <LogIn size={14} />
+                        Entrar
+                      </button>
                    </div>
                 </div>
              ))}
@@ -1491,18 +1508,19 @@ export const SaaSPlatformAdmin = () => {
                 <thead>
                    <tr className="border-b border-slate-100 text-slate-500">
                       <th className="pb-3 font-bold">Empresa</th>
-                      <th className="pb-3 font-bold">Plan</th>
+                      <th className="pb-3 font-bold">Plan & Costo</th>
+                      <th className="pb-3 font-bold">Módulos</th>
                       <th className="pb-3 font-bold">Usuarios</th>
+                      <th className="pb-3 font-bold">Volumen DB</th>
                       <th className="pb-3 font-bold">Estado</th>
-                      <th className="pb-3 font-bold">Suscripción</th>
                       <th className="pb-3 font-bold text-right">Acciones</th>
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                    {isLoading ? (
-                      <tr><td colSpan={6} className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-slate-500 font-medium"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando inquilinos...</td></tr>
                    ) : tenantsList.length === 0 ? (
-                      <tr><td colSpan={6} className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
+                      <tr><td colSpan={7} className="py-8 text-center text-slate-500 font-medium">No se encontraron inquilinos con los filtros aplicados.</td></tr>
                    ) : tenantsList.map((comp, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-4 font-bold text-slate-800">
@@ -1510,61 +1528,88 @@ export const SaaSPlatformAdmin = () => {
                                 <span>{comp.name}</span>
                                 {getNichoBadge(comp.nicho)}
                              </div>
+                             <span className="text-[10px] text-slate-400 font-semibold block">{comp.subdomain}.talent360.com</span>
                           </td>
                           <td className="py-4">
-                             <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                                comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
-                                comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                                'bg-slate-100 text-slate-600'
-                             }`}>
-                                {comp.plan}
-                             </span>
+                             <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                                   comp.plan === 'PRO' ? 'bg-amber-100 text-amber-700' :
+                                   comp.plan === 'Enterprise' ? 'bg-indigo-100 text-indigo-700' :
+                                   'bg-slate-100 text-slate-600'
+                                }`}>
+                                   {comp.plan}
+                                </span>
+                                <span className="text-xs font-black text-slate-800">
+                                   ${comp.monthly_price ?? 0} <span className="text-[9px] text-slate-400 font-medium">/mes</span>
+                                </span>
+                             </div>
                           </td>
-                          <td className="py-4 font-medium text-slate-600">{comp.users}</td>
                           <td className="py-4">
-                             <span className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                             <span 
+                               title={`Módulos habilitados (${comp.allowed_modules?.length || 0}): ${(comp.allowed_modules || []).join(', ')}`}
+                               className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-extrabold cursor-help"
+                             >
+                               <span>📦</span>
+                               <span>{comp.modules_count ?? 0} / {comp.total_modules_available ?? 12}</span>
                              </span>
                           </td>
-                           <td className="py-4 text-xs font-medium text-slate-500">
-                              <div>{comp.date}</div>
-                              {(() => {
-                                 if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
-                                    return <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Gratuito permanente</span>;
-                                 }
-                                 
-                                 if (comp.trial_ends_at) {
-                                    const endsAt = new Date(comp.trial_ends_at);
-                                    const diff = endsAt.getTime() - Date.now();
-                                    const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                                    
-                                    if (diff > 0) {
-                                       return (
-                                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full mt-1.5 whitespace-nowrap">
-                                             ⏳ Quedan {days} días de prueba
-                                          </span>
-                                       );
-                                    } else {
-                                       return (
-                                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full mt-1.5 whitespace-nowrap">
-                                             ⚠️ Prueba Expirada
-                                          </span>
-                                       );
-                                    }
-                                 }
+                          <td className="py-4 font-medium text-slate-600">
+                             <span className="font-bold text-slate-800">{comp.users}</span>
+                             <span className="text-[10px] text-slate-400 font-semibold"> / {comp.max_users ?? 5}</span>
+                          </td>
+                          <td className="py-4">
+                             <div 
+                               title={`Total 30 días: ${comp.tx_30_days || 0} operaciones de base de datos (${comp.tx_total || 0} históricas)`}
+                               className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg text-xs font-extrabold cursor-help"
+                             >
+                               <span>⚡</span>
+                               <span>{comp.tx_daily_avg ?? 0}</span>
+                               <span className="text-[9px] font-semibold text-emerald-600">Tx/día</span>
+                             </div>
+                          </td>
+                          <td className="py-4">
+                             <div className="flex flex-col gap-0.5">
+                                <span className="flex items-center gap-1.5">
+                                   <span className={`w-2 h-2 rounded-full ${comp.status === 'Activo' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                   <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
+                                </span>
+                                {(() => {
+                                   if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
+                                      return <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>;
+                                   }
+                                   
+                                   if (comp.trial_ends_at) {
+                                      const endsAt = new Date(comp.trial_ends_at);
+                                      const diff = endsAt.getTime() - Date.now();
+                                      const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                                      
+                                      if (diff > 0) {
+                                         return (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
+                                               ⏳ Quedan {days} días de prueba
+                                            </span>
+                                         );
+                                      } else {
+                                         return (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
+                                               ⚠️ Prueba Expirada
+                                            </span>
+                                         );
+                                      }
+                                   }
 
-                                 if (comp.subscription_status === 'active') {
-                                    return (
-                                       <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full mt-1.5 whitespace-nowrap">
-                                          ✓ Suscrito
-                                       </span>
-                                    );
-                                 }
+                                   if (comp.subscription_status === 'active') {
+                                      return (
+                                         <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
+                                            ✓ Suscrito
+                                         </span>
+                                      );
+                                   }
 
-                                 return null;
-                              })()}
-                           </td>
+                                   return null;
+                                })()}
+                             </div>
+                          </td>
                           <td className="py-4 text-right">
                              <div className="flex justify-end gap-1.5">
                                 <button 
@@ -3043,11 +3088,17 @@ export const SaaSPlatformAdmin = () => {
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-semibold text-slate-500">Plan Contratado:</span>
                           <span className={`px-2.5 py-1 rounded-md text-xs font-black ${
-                            tenantDetail?.tenant?.plan === 'pro' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                            tenantDetail?.tenant?.plan === 'enterprise' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
+                            tenantDetail?.tenant?.plan?.toLowerCase() === 'pro' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                            tenantDetail?.tenant?.plan?.toLowerCase() === 'enterprise' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
                             'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}>
                             {tenantDetail?.tenant?.plan}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="font-semibold text-slate-500">Costo Mensual Actual:</span>
+                          <span className="font-black text-indigo-600 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-lg text-sm">
+                            ${tenantDetail?.tenant?.monthly_price ?? 0} <span className="text-[10px] text-slate-500 font-semibold">/mes</span>
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
@@ -3075,9 +3126,61 @@ export const SaaSPlatformAdmin = () => {
                         )}
                       </div>
 
+                      {/* Historial de Suscripciones y Evolución de Plan (Snapshotting Inmutable) */}
+                      <div className="border border-indigo-200 bg-indigo-50/10 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                            <span>📈</span> Historial y Evolución de Plan
+                          </h3>
+                          <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                            {tenantDetail?.subscription_history?.length || 0} registros
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Registro inmutable de la evolución de la empresa, pagos acordados y módulos contratados a lo largo del tiempo:
+                        </p>
+
+                        <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-200">
+                          {(tenantDetail?.subscription_history || []).map((hist: any, index: number) => (
+                            <div key={hist.id || index} className="relative pl-7 text-xs">
+                              <div className={`absolute left-1.5 top-1.5 w-3 h-3 rounded-full border-2 bg-white ${
+                                hist.status === 'active' ? 'border-emerald-500 bg-emerald-500' : 'border-indigo-400'
+                              }`} />
+                              <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-black text-slate-900">{hist.plan_name}</span>
+                                    <span className="font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-[10px]">
+                                      ${hist.monthly_price} /mes
+                                    </span>
+                                  </div>
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                    hist.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {hist.status === 'active' ? 'Vigente Actual' : 'Histórico'}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                                  <span>📦 <strong>{hist.modules_count}</strong> Módulos</span>
+                                  <span>•</span>
+                                  <span>👥 <strong>{hist.max_users}</strong> Usuarios Max</span>
+                                  <span>•</span>
+                                  <span className="text-slate-400 font-mono text-[10px]">{hist.date_formatted}</span>
+                                </div>
+                                {hist.change_reason && (
+                                  <div className="text-[10px] text-slate-500 italic bg-slate-50 p-1.5 rounded border border-slate-150">
+                                    Motivo: {hist.change_reason}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Consumo y Recursos */}
                       <div className="border border-slate-200 rounded-2xl p-5 space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Consumo de Recursos</h3>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">Consumo de Recursos y Transacciones BD</h3>
                         
                         {/* Barra de usuarios */}
                         <div>
@@ -3096,6 +3199,22 @@ export const SaaSPlatformAdmin = () => {
                               }`}
                               style={{ width: `${Math.min(100, (tenantDetail?.metrics?.users_count / tenantDetail?.tenant?.max_users) * 100)}%` }}
                             ></div>
+                          </div>
+                        </div>
+
+                        {/* Volumen de Transacciones */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-extrabold text-slate-700 flex items-center gap-1">
+                              ⚡ Throughput BD (Últimos 30 días):
+                            </span>
+                            <span className="font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                              {tenantDetail?.metrics?.tx_daily_avg ?? 0} Tx / día
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex justify-between font-medium">
+                            <span>Total 30 Días: <strong>{tenantDetail?.metrics?.tx_30_days ?? 0}</strong> operaciones</span>
+                            <span>Histórico Total: <strong>{tenantDetail?.metrics?.tx_total ?? 0}</strong> operaciones</span>
                           </div>
                         </div>
 

@@ -6,11 +6,116 @@ use Illuminate\Http\Request;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Employee;
+use App\Models\TenantSubscriptionHistory;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PlatformAdminController extends Controller
 {
+    /**
+     * Compute operational database transaction volume for a tenant (last 30 days & daily average)
+     */
+    private function getTenantTransactionVolume(int $tenantId): array
+    {
+        $since = now()->subDays(30);
+        $tables = [
+            'time_entries', 'store_logs', 'task_assignments',
+            'weekly_payrolls', 'silla_requests', 'meal_queue_entries',
+            'saas_audit_logs', 'interviews', 'candidates', 'audit_logs'
+        ];
+
+        $tx30Days = 0;
+        $txTotal = 0;
+        $byTable = [];
+
+        foreach ($tables as $tbl) {
+            if (Schema::hasTable($tbl) && Schema::hasColumn($tbl, 'tenant_id')) {
+                $qTotal = DB::table($tbl)->where('tenant_id', $tenantId)->count();
+                $q30 = Schema::hasColumn($tbl, 'created_at')
+                    ? DB::table($tbl)->where('tenant_id', $tenantId)->where('created_at', '>=', $since)->count()
+                    : $qTotal;
+
+                $txTotal += $qTotal;
+                $tx30Days += $q30;
+                $byTable[$tbl] = $q30;
+            }
+        }
+
+        $dailyAvg = (int) round($tx30Days / 30);
+
+        return [
+            'tx_30_days' => $tx30Days,
+            'tx_daily_avg' => $dailyAvg,
+            'tx_total' => $txTotal,
+            'breakdown' => $byTable,
+        ];
+    }
+
+    /**
+     * Helper to create an immutable subscription snapshot
+     */
+    private function recordSubscriptionSnapshot(Tenant $tenant, string $changeReason = 'manual_admin_update', ?array $modules = null, ?array $features = null): TenantSubscriptionHistory
+    {
+        return DB::transaction(function () use ($tenant, $changeReason, $modules, $features) {
+            $planCode = strtolower($tenant->plan ?? 'freemium');
+            $billingPlan = $tenant->billingPlan ?: \App\Models\BillingPlan::where('code', $planCode)->first();
+
+            $price = 0.00;
+            if ($billingPlan && $billingPlan->price) {
+                $price = (float) $billingPlan->price;
+            } elseif ($planCode === 'pro') {
+                $price = 199.00;
+            } elseif ($planCode === 'enterprise') {
+                $price = 499.00;
+            }
+
+            $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
+            if ($modules === null) {
+                $tenantModulesConfig = DB::table('system_settings')
+                    ->where('tenant_id', $tenant->id)
+                    ->where('key', 'tenant_allowed_modules')
+                    ->first();
+                if ($tenantModulesConfig) {
+                    $modules = json_decode($tenantModulesConfig->value, true) ?: [];
+                } elseif (!empty($tenant->allowed_modules_json)) {
+                    $modules = $tenant->allowed_modules_json;
+                } elseif (in_array($planCode, ['pro', 'enterprise']) || (int)$tenant->id === 1) {
+                    $modules = $allModules;
+                } else {
+                    $globalModSetting = DB::table('system_settings')->whereNull('tenant_id')->where('key', 'freemium_allowed_modules')->first();
+                    $modules = $globalModSetting ? (json_decode($globalModSetting->value, true) ?: ['reloj', 'rrhh', 'operativo']) : ['reloj', 'rrhh', 'operativo'];
+                }
+            }
+
+            $usersCount = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('tenant_id', $tenant->id)->count();
+
+            // Mark previous active records as superseded
+            TenantSubscriptionHistory::where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->update(['status' => 'superseded', 'updated_at' => now()]);
+
+            return TenantSubscriptionHistory::create([
+                'tenant_id' => $tenant->id,
+                'billing_plan_id' => $billingPlan?->id,
+                'plan_code' => $planCode,
+                'plan_name_at_time' => ucfirst($planCode),
+                'monthly_price_at_time' => $price,
+                'currency' => $billingPlan?->currency ?? 'USD',
+                'billing_cycle' => $billingPlan?->billing_interval ?? 'monthly',
+                'modules_count_at_time' => count($modules),
+                'modules_snapshot_json' => array_values($modules),
+                'features_snapshot_json' => $features ?: [],
+                'max_users_at_time' => $tenant->max_users ?: Tenant::maxUsersForPlan($planCode),
+                'active_users_at_time' => $usersCount,
+                'change_reason' => $changeReason,
+                'effective_at' => now(),
+                'status' => 'active',
+            ]);
+        });
+    }
+
     private function checkPlatformAdminAccess(): bool
     {
         $user = auth()->user() ?? auth('sanctum')->user();
@@ -110,22 +215,73 @@ class PlatformAdminController extends Controller
             ->where('key', 'nicho_configurado')
             ->pluck('value', 'tenant_id');
 
-        $tenants = $query->orderBy('created_at', 'desc')->get()->map(function($tenant) use ($settingsByTenant) {
+        $allModulesList = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
+
+        $tenants = $query->orderBy('created_at', 'desc')->get()->map(function($tenant) use ($settingsByTenant, $allModulesList) {
             $rawNicho = $settingsByTenant->get($tenant->id);
             $parsed = $rawNicho ? json_decode($rawNicho, true) : null;
             $nicho = is_array($parsed) ? ($parsed['nicho'] ?? null) : null;
+
+            // Ensure history record exists
+            $latestHistory = TenantSubscriptionHistory::where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->latest()
+                ->first();
+
+            if (!$latestHistory) {
+                try {
+                    $latestHistory = $this->recordSubscriptionSnapshot($tenant, 'initial_registration');
+                } catch (\Throwable $e) {
+                    \Log::error("Failed to auto-create snapshot for tenant {$tenant->id}: " . $e->getMessage());
+                }
+            }
+
+            // Compute transaction volume in DB
+            $txMetrics = $this->getTenantTransactionVolume($tenant->id);
+
+            // Compute current price
+            $planCode = strtolower($tenant->plan ?? 'freemium');
+            $monthlyPrice = $latestHistory?->monthly_price_at_time !== null 
+                ? (float) $latestHistory->monthly_price_at_time 
+                : ($planCode === 'pro' ? 199.0 : ($planCode === 'enterprise' ? 499.0 : 0.0));
+
+            // Compute modules count
+            $tenantModulesConfig = \DB::table('system_settings')
+                ->where('tenant_id', $tenant->id)
+                ->where('key', 'tenant_allowed_modules')
+                ->first();
+
+            if ($tenantModulesConfig) {
+                $allowedModules = json_decode($tenantModulesConfig->value, true) ?: [];
+            } elseif (!empty($tenant->allowed_modules_json)) {
+                $allowedModules = $tenant->allowed_modules_json;
+            } elseif (in_array($planCode, ['pro', 'enterprise']) || (int)$tenant->id === 1) {
+                $allowedModules = $allModulesList;
+            } else {
+                $globalModSetting = \DB::table('system_settings')->whereNull('tenant_id')->where('key', 'freemium_allowed_modules')->first();
+                $allowedModules = $globalModSetting ? (json_decode($globalModSetting->value, true) ?: ['reloj', 'rrhh', 'operativo']) : ['reloj', 'rrhh', 'operativo'];
+            }
 
             return [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
                 'subdomain' => $tenant->subdomain,
                 'plan' => ucfirst($tenant->plan ?? 'freemium'),
+                'monthly_price' => $monthlyPrice,
+                'currency' => $latestHistory?->currency ?? 'USD',
+                'modules_count' => count($allowedModules),
+                'total_modules_available' => count($allModulesList),
+                'allowed_modules' => $allowedModules,
                 'users' => $tenant->users_count,
+                'max_users' => $tenant->max_users ?: Tenant::maxUsersForPlan($planCode),
                 'status' => $tenant->is_active ? 'Activo' : 'Inactivo',
                 'date' => $tenant->created_at ? $tenant->created_at->diffForHumans() : 'Reciente',
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
                 'trial_ends_at' => $tenant->trial_ends_at,
                 'nicho' => $nicho,
+                'tx_30_days' => $txMetrics['tx_30_days'],
+                'tx_daily_avg' => $txMetrics['tx_daily_avg'],
+                'tx_total' => $txMetrics['tx_total'],
             ];
         });
 
@@ -206,12 +362,48 @@ class PlatformAdminController extends Controller
             $allowedFeatures = $globalFeatSetting ? (json_decode($globalFeatSetting->value, true) ?: []) : [];
         }
 
+        // Fetch subscription history timeline
+        $subscriptionHistory = TenantSubscriptionHistory::where('tenant_id', $tenant->id)
+            ->orderBy('effective_at', 'desc')
+            ->get()
+            ->map(function($h) {
+                return [
+                    'id' => $h->id,
+                    'plan_code' => $h->plan_code,
+                    'plan_name' => $h->plan_name_at_time,
+                    'monthly_price' => (float) $h->monthly_price_at_time,
+                    'currency' => $h->currency,
+                    'billing_cycle' => $h->billing_cycle,
+                    'modules_count' => $h->modules_count_at_time,
+                    'modules_snapshot' => $h->modules_snapshot_json ?: [],
+                    'features_snapshot' => $h->features_snapshot_json ?: [],
+                    'max_users' => $h->max_users_at_time,
+                    'active_users' => $h->active_users_at_time,
+                    'change_reason' => $h->change_reason,
+                    'status' => $h->status,
+                    'effective_at' => $h->effective_at ? $h->effective_at->toIso8601String() : null,
+                    'date_formatted' => $h->effective_at ? $h->effective_at->format('d/m/Y H:i') : 'N/A',
+                ];
+            });
+
+        // Compute transaction metrics
+        $txMetrics = $this->getTenantTransactionVolume($tenant->id);
+
+        $currentPrice = 0.0;
+        $activeHist = $subscriptionHistory->firstWhere('status', 'active');
+        if ($activeHist) {
+            $currentPrice = $activeHist['monthly_price'];
+        } else {
+            $currentPrice = $plan === 'pro' ? 199.0 : ($plan === 'enterprise' ? 499.0 : 0.0);
+        }
+
         return response()->json([
             'tenant' => [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
                 'subdomain' => $tenant->subdomain,
                 'plan' => ucfirst($tenant->plan ?? 'freemium'),
+                'monthly_price' => $currentPrice,
                 'is_active' => $tenant->is_active,
                 'suspension_reason' => $tenant->suspension_reason,
                 'suspended_at' => $tenant->suspended_at,
@@ -231,7 +423,12 @@ class PlatformAdminController extends Controller
             'metrics' => [
                 'users_count' => $usersCount,
                 'vacancies_count' => $vacanciesCount,
-            ]
+                'tx_30_days' => $txMetrics['tx_30_days'],
+                'tx_daily_avg' => $txMetrics['tx_daily_avg'],
+                'tx_total' => $txMetrics['tx_total'],
+                'tx_breakdown' => $txMetrics['breakdown'],
+            ],
+            'subscription_history' => $subscriptionHistory,
         ]);
     }
 
@@ -261,6 +458,13 @@ class PlatformAdminController extends Controller
 
         $tenant->allowed_modules_json = $modules;
         $tenant->save();
+
+        // Record immutable subscription history snapshot
+        try {
+            $this->recordSubscriptionSnapshot($tenant, 'custom_module_update', $modules, $features);
+        } catch (\Throwable $e) {
+            \Log::error("Error recording subscription snapshot on features update for tenant {$tenant->id}: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Permisos y módulos de la empresa actualizados con éxito.',
@@ -468,10 +672,19 @@ class PlatformAdminController extends Controller
         }
 
         // Actualizar datos del Tenant
+        $planChanged = (strtolower($tenant->plan) !== strtolower($request->plan));
         $tenant->name = $request->name;
         $tenant->plan = strtolower($request->plan);
         $tenant->max_users = $request->max_users;
         $tenant->save();
+
+        // Record immutable subscription snapshot
+        try {
+            $reason = $planChanged ? 'plan_update' : 'manual_admin_update';
+            $this->recordSubscriptionSnapshot($tenant, $reason);
+        } catch (\Throwable $e) {
+            \Log::error("Error recording subscription snapshot on details update for tenant {$tenant->id}: " . $e->getMessage());
+        }
 
         // Crear o actualizar datos del Administrador
         if (!$adminExists) {

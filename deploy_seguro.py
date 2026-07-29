@@ -42,10 +42,15 @@ SERVIDOR_IP = "46.225.153.115"
 SERVIDOR_USUARIO = "root"
 RUTA_PROYECTO = "/var/www/talent360-v2"
 CONTENEDOR_BACKEND = "talent360-v2-backend"
-CONTENEDOR_DB = "talent360-v2-postgres"
-BD_NOMBRE = "talent360_v2"
+# Nombres REALES confirmados en el servidor (2026-07-29): el compose V2 usa guiones bajos
+# para postgres y la BD se llama talent360_v2_saas (el compose la fija por variable de
+# entorno, que PISA al .env del Backend).
+CONTENEDOR_DB = "talent360_v2_postgres"
+BD_NOMBRE = "talent360_v2_saas"
 BD_USUARIO = "postgres"
 RUTA_RESPALDOS = "/var/backups/talent360-v2"
+# La instancia V2 se opera con su propio archivo compose.
+COMPOSE = "docker compose -f docker-compose.v2.yml"
 
 # Repositorio del que despliega EL SERVIDOR (git pull). El push local va a los DOS remotos:
 # el propio (origin = Adan717/Talent-360) y el del jefe (Talent-360-V2).
@@ -311,8 +316,8 @@ def reiniciar(ssh, ensayo):
 
     for c in ["config:clear", "cache:clear"]:
         cmd_remoto(ssh, f"docker exec -u www-data {CONTENEDOR_BACKEND} php artisan {c}", permitir_fallo=True)
-    cmd_remoto(ssh, f"cd {RUTA_PROYECTO} && docker compose restart backend backend-web reverb")
-    cmd_remoto(ssh, f"cd {RUTA_PROYECTO} && docker compose up -d --build frontend")
+    cmd_remoto(ssh, f"cd {RUTA_PROYECTO} && {COMPOSE} restart backend backend-web reverb")
+    cmd_remoto(ssh, f"cd {RUTA_PROYECTO} && {COMPOSE} up -d --build frontend")
     cmd_remoto(
         ssh,
         f"docker exec {CONTENEDOR_BACKEND} chmod -R 777 /var/www/storage /var/www/bootstrap/cache",

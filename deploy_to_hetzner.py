@@ -83,8 +83,8 @@ def main():
         # --- Verificación §65: el catálogo de 12 capacidades quedó sembrado por tenant ---
         print("\n--- Verificando siembra de catálogo de permisos §65 por tenant ---", flush=True)
         run_remote_cmd(ssh, """docker exec -u www-data talent360-backend php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo DB::table('permissions')->whereIn('name', ['manage_payroll','view_salaries','manage_tasks','manage_documents','manage_employees','manage_schedules','manage_store_opening','approve_operations','manage_academy','manage_recruitment','manage_org_chart','view_reports'])->select('tenant_id', DB::raw('count(*) as c'))->groupBy('tenant_id')->get()->toJson();" """)
-        # Sincronización de puestos y colaboradores para DecorArte S.A. de C.V. (Tenant #33)
-        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php scripts_utilidad/sync_decorarte_sa_roles_employees.php")
+        # Depuración en cascada de inquilinos de prueba (preservando solo a DecorArte 360 - Tenant #1)
+        run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan tenant:purge-test-tenants --force")
         # Clear config and cache as www-data
         run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan config:clear")
         run_remote_cmd(ssh, "docker exec -u www-data talent360-backend php artisan cache:clear")

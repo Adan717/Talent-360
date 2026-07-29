@@ -124,8 +124,15 @@ const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
         isAutoActive 
           ? cardStyle.container 
           : 'bg-slate-50/80 border-slate-250 text-slate-700 opacity-90'
-      } ${isInCenter ? 'scale-[1.02] shadow-lg -translate-y-0.5 border-opacity-100 ring-2 ring-indigo-400/20' : ''}`}
+      } ${isInCenter ? 'scale-[1.02] shadow-lg -translate-y-0.5 border-opacity-100 ring-2 ring-indigo-400/30' : ''}`}
     >
+       {/* Destello Cristalino Shimmer Beam Trail al Scroll/Hover */}
+       <div className="absolute inset-0 overflow-hidden rounded-2xl sm:rounded-3xl pointer-events-none z-0">
+          <div className={`w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent absolute top-0 -left-1/2 transition-opacity duration-500 ${
+            isInCenter ? 'animate-shimmer-trail opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:animate-shimmer-trail'
+          }`} />
+       </div>
+
        {/* Marca de Agua (Watermark Vectorial del Monito Alusivo) con animación dinámica al scroll */}
        <div className={`absolute -right-4 -bottom-4 transition-all duration-700 pointer-events-none ${
          isInCenter 
@@ -163,10 +170,10 @@ const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
              </button>
           </div>
 
-          {/* Ficha Principal con Puro Monito Icono y animación orgánica al scroll móvil */}
+          {/* Ficha Principal con Puro Monito Icono y flotación 3D orgánica al scroll móvil */}
           <div className="flex items-center gap-3 relative z-10 mb-2">
              <div className={`shrink-0 transition-transform duration-500 ${
-               isInCenter ? 'scale-125 rotate-3' : 'group-hover:scale-115 group-hover:rotate-3'
+               isInCenter ? 'scale-125 rotate-3 animate-float-subtle' : 'group-hover:scale-115 group-hover:rotate-3'
              }`}>
                 <JobRoleIconBadge role={rol} isActive={isAutoActive} size={36} />
              </div>

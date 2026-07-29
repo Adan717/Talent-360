@@ -455,7 +455,7 @@ export function PanelTareasRutinas() {
                 subActions={[
                   {
                     id: 'search',
-                    label: 'Buscar Tarea / Rutina',
+                    label: 'Buscar',
                     icon: <Search size={18} />,
                     onClick: () => {
                       setShowMobileSearch(!showMobileSearch);
@@ -465,7 +465,7 @@ export function PanelTareasRutinas() {
                   },
                   {
                     id: 'create',
-                    label: 'Crear Tarea / Rutina',
+                    label: 'Crear',
                     icon: <Plus size={18} />,
                     onClick: handleOpenCreator,
                     colorClass: 'bg-blue-100 text-blue-600'

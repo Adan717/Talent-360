@@ -170,7 +170,7 @@ export function AtsManager() {
         subActions={[
           {
             id: 'interview',
-            label: 'Agendar Entrevista',
+            label: 'Entrevista',
             icon: <Calendar size={18} />,
             onClick: () => {
               setActiveTab('entrevistas');
@@ -180,7 +180,7 @@ export function AtsManager() {
           },
           {
             id: 'vacancy',
-            label: 'Crear Nueva Vacante',
+            label: 'Vacante',
             icon: <Plus size={18} />,
             onClick: () => {
               setActiveTab('vacantes');

@@ -338,14 +338,14 @@ export const GestorAcademia = () => {
         subActions={[
           {
             id: 'new_template',
-            label: 'Diseñar Diploma',
+            label: 'Diploma',
             icon: <FileBadge size={18} />,
             onClick: openNewTemplate,
             colorClass: 'bg-indigo-100 text-indigo-600'
           },
           {
             id: 'new_course',
-            label: 'Crear Nuevo Curso',
+            label: 'Curso',
             icon: <Plus size={18} />,
             onClick: openNewCourse,
             colorClass: 'bg-sky-100 text-sky-600'

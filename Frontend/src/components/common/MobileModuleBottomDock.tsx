@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, X } from 'lucide-react';
 
 export interface MobileDockItem {
@@ -124,19 +125,21 @@ export function MobileModuleBottomDock({
   };
 
   return (
-    <div 
-      className="fixed bottom-1 inset-x-0 z-40 shrink-0 flex items-center justify-center px-2 sm:hidden pointer-events-none"
-      style={{ transform: 'scale(0.92)', transformOrigin: 'bottom center' }}
-    >
-      <div className="relative w-full max-w-sm flex items-center justify-between pointer-events-auto filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.15)]">
-        
-        {/* Backdrop for open subActions menu */}
-        {isMenuOpen && (
-          <div 
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-30" 
-            onClick={() => setIsMenuOpen(false)}
-          />
-        )}
+    <>
+      {/* Full-screen Glassmorphism Backdrop when subActions menu is open */}
+      {isMenuOpen && createPortal(
+        <div 
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-md transition-all duration-300 animate-in fade-in cursor-pointer pointer-events-auto" 
+          onClick={() => setIsMenuOpen(false)}
+        />,
+        document.body
+      )}
+
+      <div 
+        className="fixed bottom-1 inset-x-0 z-40 shrink-0 flex items-center justify-center px-2 sm:hidden pointer-events-none"
+        style={{ transform: 'scale(0.92)', transformOrigin: 'bottom center' }}
+      >
+        <div className="relative w-full max-w-sm flex items-center justify-between pointer-events-auto filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.15)]">
 
         {/* SVG Container with Concave Right Notch for Floating Action Button */}
         <svg
@@ -231,5 +234,6 @@ export function MobileModuleBottomDock({
         )}
       </div>
     </div>
+    </>
   );
 }

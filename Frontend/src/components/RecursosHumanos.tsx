@@ -1742,7 +1742,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           subActions={[
             {
               id: 'search',
-              label: 'Buscar Colaborador',
+              label: 'Buscar',
               icon: <Search size={18} />,
               onClick: () => {
                 setShowMobileSearch(!showMobileSearch);
@@ -1752,14 +1752,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
             },
             {
               id: 'new_job_role',
-              label: 'Crear Puesto de Trabajo',
+              label: 'Puesto',
               icon: <Briefcase size={18} />,
               onClick: () => setEditingJobRole({}),
               colorClass: 'bg-indigo-100 text-indigo-600'
             },
             {
               id: 'new_employee',
-              label: 'Alta de Colaborador',
+              label: 'Alta',
               icon: <UserPlus size={18} />,
               onClick: () => setShowForm(true),
               colorClass: 'bg-emerald-100 text-emerald-600'

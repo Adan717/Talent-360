@@ -9,7 +9,26 @@ DURANTE ese recorrido; ninguno impide operar, pero el #1 afecta dinero.
 
 ---
 
-## 🔴 H1 — El sueldo capturado en el alta NUNCA llega a la nómina ni al costo de tareas
+## 🔴 H1 — El sueldo capturado en el alta NUNCA llega al dinero — ✅ CORREGIDO (`50125cc`)
+
+**Fix en 3 piezas:** (1) helper `espejarSueldo()` en `EmployeeController::store/update` que
+sincroniza `salary` ↔ `base_salary` venga la que venga (si llegan ambas, `base_salary` manda);
+(2) migración `2026_07_29_120000_backfill_base_salary_from_salary` que repara a los
+colaboradores ya existentes sin pisar valores capturados a mano; (3) `EmployeeSalaryMirrorTest`
+(4 casos, rojo→verde).
+
+**Verificado en la instancia V2 tras desplegar** (con respaldo previo de la BD): los 3
+colaboradores quedaron con `base_salary` = su sueldo real, y una tarea de 60 min de Marisol
+(sueldo 18,000) registró:
+
+```
+costo = $2,250.00   (18000/480*60, el sueldo REAL)
+antes = $37.50      (300/480*60, el default)
+```
+
+Una diferencia de 60×. Suite: 837 passed / 0 failed.
+
+### Descripción original del defecto
 
 **Qué pasa:** el formulario "Alta de Colaborador" envía el sueldo en el campo `salary`
 (`RecursosHumanos.tsx:1132`) y `EmployeeController::store` lo persiste tal cual. Pero **todo el

@@ -402,6 +402,48 @@ peticiones; conviene revisar qué endpoint del monitor está pidiendo el dial qu
 
 ---
 
+# Cuarta tanda — jornada completa de regresión (2026-07-30, con los 12 fixes aplicados)
+
+Se corrió la jornada de punta a punta con día en blanco. **Todo lo verificado funciona**, y de
+paso quedaron a la vista los controles de negocio (que actúan como deben):
+
+| Paso | Resultado |
+|---|---|
+| Login y contexto | Marisol / Admin / DecorArte S.A. de C.V. |
+| Fichar entrada | `check_in @ 10:06:58`, **sin retardo**, cronómetro corriendo |
+| Crear y completar tarea (40 pts) | `completed` · **4.00 coins / 40 XP** · **1 sola transacción** |
+| Comida | **Bloqueada correctamente**: "Disponible a partir de las 11:36" — la ventana respeta el horario |
+| Salida anticipada | **Bloqueada correctamente**: exige motivo **y** validación por QR del supervisor |
+| Salida ordinaria | **Bloqueada** hasta completar el checklist de cierre; tras completarlo (luces, caja fuerte, alarma) → `check_out @ 10:14:09` |
+| Bitácora | 2 eventos registrados |
+| Pre-nómina semanal | 4 empleados, **0 errores**, cada uno con SU sueldo real (14,000 / 9,000 / 18,000 / 8,500) y Marisol con una falta menos por haber trabajado hoy |
+
+Los tres "bloqueos" no son fallos: son los candados de negocio del Reloj haciendo su trabajo.
+
+## 🟡 H13 — El estado de apertura queda `failed` mientras el dial dice "ABIERTO"
+
+Durante esta jornada, `store_daily_opening_statuses.status` quedó en **`failed`** (nadie abrió
+dentro de la ventana) mientras el dial mostraba **"ESTADO DE LA SUCURSAL: ABIERTO"**, porque esa
+etiqueta se deriva del HORARIO configurado, no del registro real de apertura.
+
+Es exactamente la contradicción que el propio código advierte en `logic/storeSchedule.ts`
+("esto NO decide por sí solo si la tienda está operando… quien consuma esto debe combinar
+ambas"). No bloqueó la operación en esta prueba, pero deja el tablero del gerente diciendo lo
+contrario de lo que registró el sistema.
+
+**Fix sugerido:** que la etiqueta combine ambas fuentes — horario **y**
+`store_daily_opening_status` — mostrando algo como "En horario, pendiente de apertura" cuando
+el registro no exista o haya quedado `failed`.
+
+## 🟡 H14 — El dial no reacciona al cambio de horario del turno
+
+Al mover el fin de turno para probar la salida ordinaria, el dial siguió ofreciendo "Salida
+Anticipada" y "Tomar Comida" con la ventana vieja: conserva la configuración horaria de la carga
+inicial. En operación normal el horario no cambia a media jornada, así que el impacto es bajo,
+pero conviene que el motor relea la configuración cuando el estado se refresca.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

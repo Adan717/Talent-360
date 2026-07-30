@@ -292,7 +292,32 @@ colaborador está en turno y el backend tiene todo consistente. Se destraba reca
 el estado, pero es el mismo síntoma que H8: el recálculo posterior al regreso de comida vuelve a
 usar una referencia horaria equivocada.
 
-## 🟡 H12 — Una empresa nueva ve el nombre de OTRA en la bienvenida
+## 🟡 H12 — Una empresa nueva ve el nombre de OTRA — ✅ CORREGIDO (`039cb9d`)
+
+**Backend:** `TenantInitializationService` siembra `company_name` con el nombre del tenant. Va
+FUERA del bucle de `$defaults` a propósito — aquel usa `updateOrInsert` y re-aplica el valor en
+cada llamada, y este dato es editable por el cliente desde Configuración: una re-inicialización
+no debe revertir su marca (hay test que lo fija). Migración de reparación para las empresas ya
+creadas, sólo donde falta la clave.
+
+**Frontend:** el nombre ajeno estaba hardcodeado en 3 lugares, y uno era más serio de lo que
+parecía:
+
+- `MonitorActividadesTiempoReal`: el saludo — ahora usa el nombre real y cae a algo neutro.
+- **`AtsPortalSettings`**: el estado inicial traía `name: 'DecorArte 360'` y
+  `public_slug: 'decorarte360'`. Si la carga de configuración fallaba, el admin veía —**y podía
+  GUARDAR**— la marca y el slug público de otra empresa como suyos.
+- `WebPublicaOrganizacion`: la web **pública** enseñaba la marca equivocada a visitantes
+  externos mientras cargaba la real.
+
+**Verificado en vivo:** la Panadería ahora saluda con *"Bienvenido a Panaderia La Espiga QA"*.
+
+*Nota de formato:* `company_name` convive en dos formatos en BD — `json_encode` (lo que siembran
+el servicio y la migración) y texto crudo (lo que guarda `POST /sync/settings`). El backend ya
+tolera ambos (`json_decode` con fallback al crudo en `getState`), pero conviene unificarlo si
+algún día se toca ese endpoint.
+
+### Descripción original del defecto
 
 Detectado al verificar H2: al registrar "Panaderia La Espiga QA", el encabezado del Monitor 360
 saludaba con **"Bienvenido a DecorArte 360"** — el nombre del tenant 1. La causa es que el alta

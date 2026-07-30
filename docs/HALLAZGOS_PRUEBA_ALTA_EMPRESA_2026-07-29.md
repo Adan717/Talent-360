@@ -98,7 +98,20 @@ sub-giro "Insumos para Repostería & Panadería" → 7 puestos + 92 checklists.)
 **Fix sugerido:** anclar el fallback a algo que solo exista DESPUÉS del wizard (p. ej. `tasks`
 del tenant > 0), o marcar `onboarding_completed=false` explícitamente al crear el tenant.
 
-## 🟠 H3 — Los correos autogenerados conservan acentos
+## 🟠 H3 — Los correos autogenerados conservan acentos — ✅ CORREGIDO (`cf04214`)
+
+Estaba en **cinco** generadores, no en uno. Se corrigió en dos capas:
+
+- **Backend** (`App\Support\EmailNormalizer`): normaliza la parte local al dar de alta **y al
+  editar**, venga el correo autogenerado o escrito a mano. Es la red de seguridad final.
+- **Frontend** (`lib/emailSlug`): lo genera bien desde el origen, para que el admin vea en
+  pantalla el mismo correo que se guardará. Incluye el panel de plataforma, donde el **dominio**
+  salía con acentos si la empresa los tenía en el nombre (`@panadería.com`).
+
+**Verificado en producción:** se envió `joséramírezpeña@pruebaqa360.com` y quedó guardado como
+`joseramirezpena@pruebaqa360.com`.
+
+### Descripción original del defecto
 
 **Qué pasa:** `RecursosHumanos.tsx:1129` arma el correo con
 `name.toLowerCase().replace(/\s/g,'')` + dominio, sin normalizar diacríticos:
@@ -284,7 +297,30 @@ rompe la confianza en la gamificación (el usuario cree que cobró).
 (comprobar si se está omitiendo el sync cuando la acción viene del TaskRunner del Reloj, y si
 algún `catch` silencioso se está tragando el error).
 
-## 🟠 H10 — El dial se vuelve a bloquear después de `meal_end`
+## 🟠 H10 — El dial se vuelve a bloquear después de `meal_end` — ✅ CAUSA LATENTE CORREGIDA (`cf04214`)
+
+**Nota honesta:** el síntoma exacto **no se pudo reproducir** al reintentarlo con datos
+consistentes — se sembró la jornada completa (`check_in → meal_start → meal_end`) con retardo y
+se verificó por API que llega correcta al frontend (`date = '2026-07-30'`, secuencia íntegra).
+
+Pero sí se encontró una **causa latente que produce exactamente ese síntoma**:
+`useAppStore.fetchState` filtraba los fichajes del día con la fecha del **dispositivo**
+(`new Date()`), mientras el backend los fecha con la zona horaria del **tenant**. Cuando ambas
+no coinciden —un colaborador de viaje, un dispositivo con la zona mal puesta, una empresa que
+opera en otra región— el filtro descarta **todos** los fichajes del día: sin `check_in` el motor
+cae a `inactive` y, si hay retardo, aparece el candado sin salida. Es la misma familia del bug
+que ya se corrigió en el backend (corte del día por tenant, A5/M5), y el mismo patrón estaba
+también en el filtro de la bitácora del día.
+
+**Fix:** `lib/jornadaDelDia` (función pura, 10 tests) corta el día con la zona del tenant y
+tolera que la fecha venga en ISO completo.
+
+**Defensa en profundidad añadida:** quien ya registró su entrada hoy no puede ver el candado de
+"no puedes entrar" — ese candado existe para impedir ENTRAR fuera de tolerancia, no aplica a
+quien ya está dentro. Si el estado del motor se recalcula mal por cualquier motivo, el dato
+autoritativo del backend manda (3 casos nuevos en `accessBlock.test.ts`).
+
+### Descripción original del síntoma
 
 Tras terminar la comida (secuencia correcta en BD: `check_in → meal_reservation → meal_start →
 meal_end`), el dial regresó a "🔒 ACCESO BLOQUEADO / TOLERANCIA VENCIDA" pese a que el

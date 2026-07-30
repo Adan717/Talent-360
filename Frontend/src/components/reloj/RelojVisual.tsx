@@ -19,6 +19,7 @@ import MealPhotoCapture from './MealPhotoCapture';
 import MealQueue from './MealQueue';
 import { SillaRequestsPanel } from './SillaRequestsPanel';
 import { getStoreScheduleState, formatWait } from './logic/storeSchedule';
+import { resolverEstadoSucursal } from './logic/estadoSucursal';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -3972,23 +3973,46 @@ export default function RelojVisual({
                 <div className={`p-5 rounded-3xl border flex flex-col gap-3 transition-colors ${
                   isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Estado de la Sucursal</h4>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${storeStatus === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
-                      <span className={`w-1 h-1 rounded-full ${storeStatus === 'open' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                      {storeStatus === 'open' ? 'Abierto' : 'Cerrado'}
-                    </span>
-                  </div>
+                  {/* H13: la píldora combina el HORARIO con el registro REAL de apertura del
+                      día. Antes salía de `storeStatus` a secas, así que decía "Abierto" aunque
+                      `store_daily_opening_statuses` estuviera en `failed` — el tablero del
+                      gerente contradecía lo que el sistema tenía registrado. */}
+                  {(() => {
+                    const est = resolverEstadoSucursal({
+                      storeStatus,
+                      aperturaDelDia: openingStatus?.status,
+                      aperturaPremium: isOpeningPremium,
+                    });
+                    const estilos = {
+                      verde: { pill: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', dot: 'bg-emerald-500 animate-pulse' },
+                      ambar: { pill: 'bg-amber-500/10 text-amber-500 border-amber-500/20', dot: 'bg-amber-500 animate-pulse' },
+                      rojo:  { pill: 'bg-rose-500/10 text-rose-500 border-rose-500/20', dot: 'bg-rose-500' },
+                    }[est.tono];
+                    return (
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Estado de la Sucursal</h4>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${estilos.pill}`}>
+                          <span className={`w-1 h-1 rounded-full ${estilos.dot}`}></span>
+                          {est.etiqueta}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {isOpeningPremium && (() => {
                     const responsibleId = openingStatus ? openingStatus.current_responsible_employee_id : 1;
                     const responsibleUser = globalUsers.find((u: any) => u.id === responsibleId) || { name: 'Encargado' };
+                    // H13: el texto también se ancla al registro real, no al horario.
+                    const yaAbrio = openingStatus?.status === 'opened';
+                    const fallida = openingStatus?.status === 'failed';
                     return (
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                        {storeStatus === 'open'
+                        {yaAbrio
                           ? `Apertura de hoy a cargo de ${responsibleUser.name}.`
-                          : Number(currentUser.id) === Number(responsibleId)
-                            ? 'Tú eres el responsable de abrir hoy.'
-                            : `Esperando apertura por: ${responsibleUser.name}.`}
+                          : fallida
+                            ? `La apertura de hoy no se completó a tiempo (responsable: ${responsibleUser.name}).`
+                            : Number(currentUser.id) === Number(responsibleId)
+                              ? 'Tú eres el responsable de abrir hoy.'
+                              : `Esperando apertura por: ${responsibleUser.name}.`}
                       </p>
                     );
                   })()}

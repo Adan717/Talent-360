@@ -450,8 +450,15 @@ export function useClockEngine(overrideUser?: any) {
   // cualquier empresa cuyo turno no fuera 09:00-18:00. Reproducido con turno 15:49-23:30:
   // el backend fichaba bien (200) mientras el dial seguía bloqueado.
   //
-  // Se hidrata cuando llegan/cambian los usuarios, PRESERVANDO lo que el usuario ya editó en
-  // la sesión (los valores existentes ganan sobre los del servidor).
+  // Se hidrata cuando llegan/cambian los usuarios.
+  //
+  // H14 (jornada de regresión 2026-07-30): la primera versión sólo rellenaba los huecos
+  // (`if (!merged[userId])`), así que si RRHH corregía el horario de alguien a media jornada el
+  // dial seguía con el viejo hasta recargar: ofrecía "Salida Anticipada" con un turno que ya
+  // había terminado y la ventana de comida equivocada. Ahora, cuando el valor que manda el
+  // SERVIDOR cambia respecto a la última hidratación, se adopta el nuevo; lo que el usuario
+  // haya editado en la sesión se conserva mientras el servidor no cambie.
+  const ultimoShiftDelServidor = useRef<Record<string, string>>({});
   useEffect(() => {
     if (!globalUsers || globalUsers.length === 0) return;
     setShiftConfigs(prev => {
@@ -459,10 +466,14 @@ export function useClockEngine(overrideUser?: any) {
       let changed = false;
       for (const [userId, cfg] of Object.entries(initialShifts as Record<string, any>)) {
         if (userId === 'isGlobalLoading') continue;
-        if (!merged[userId]) {
+        const huella = `${cfg?.start ?? ''}|${cfg?.end ?? ''}`;
+        const servidorCambio = ultimoShiftDelServidor.current[userId] !== undefined
+          && ultimoShiftDelServidor.current[userId] !== huella;
+        if (!merged[userId] || servidorCambio) {
           merged[userId] = cfg;
           changed = true;
         }
+        ultimoShiftDelServidor.current[userId] = huella;
       }
       return changed ? merged : prev;
     });

@@ -15,6 +15,15 @@ class TenantInitializationService
     public function initializeSettingsForTenant(int $tenantId)
     {
         $defaults = [
+            // H2 (prueba en vivo 2026-07-29): el asistente de Giro Comercial —la puerta de
+            // entrada del producto, que precarga puestos, tareas y cursos— NUNCA se abría solo
+            // en una empresa nueva. `ClockController::getState` trae un fallback pensado para
+            // que el wizard no reaparezca en empresas ya configuradas ("si el tenant tiene
+            // job_roles, dalo por completado"), pero el alta SIEMBRA puestos por defecto, así
+            // que ese fallback se cumplía desde el primer login. Al dejar la clave presente y
+            // en `false`, el fallback (`!isset(...)`) ya no aplica a los tenants nuevos y sigue
+            // vigente para los antiguos, que es justo para lo que se escribió.
+            'onboarding_completed' => false,
             'storeSchedule' => [
                 'openTime' => '08:00',
                 'closeTime' => '18:00',

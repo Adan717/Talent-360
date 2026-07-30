@@ -36,6 +36,24 @@ class StoreOpeningController extends Controller
     }
 
     /**
+     * H15 (jornada de regresión 2026-07-30): la sucursal sobre la que opera CUALQUIER escritura
+     * de apertura, resuelta del tenant.
+     *
+     * R52 (merge F3) ya había quitado el `store_id` del cliente en la LECTURA (`getTodayStatus`),
+     * pero las escrituras se quedaron con `$request->input('store_id', 1)`. Como el dial no manda
+     * ese campo, todas caían al **1 hardcodeado** —la sucursal del tenant 1—: la empresa 2 abría
+     * su tienda escribiendo en la sucursal de OTRA empresa, y su propio tablero, que sí lee la
+     * suya, seguía diciendo "SIN ABRIR". El día terminaba con dos filas contradictorias.
+     *
+     * Con `stores` los ids son GLOBALES, así que aceptar el del cliente era además una superficie
+     * de escritura cross-empresa. Se ignora a propósito.
+     */
+    private function sucursalDelTenant(?int $tenantId): int
+    {
+        return TenantStore::defaultIdFor($tenantId ?? 1);
+    }
+
+    /**
      * Check if features are active for company.
      */
     public function getCompanyFeatures(Request $request)
@@ -176,7 +194,7 @@ class StoreOpeningController extends Controller
         $validated['employee_id'] = $employee->id;
         $validated['tenant_id'] = $tenantId;
         $validated['company_id'] = 1;
-        $validated['store_id'] = $request->input('store_id', 1);
+        $validated['store_id'] = $this->sucursalDelTenant($tenantId); // H15
 
         $assignment = StoreOpeningAssignment::create($validated);
         
@@ -301,7 +319,7 @@ class StoreOpeningController extends Controller
     public function openStoreAndClockIn(Request $request)
     {
         $user = Auth::user();
-        $storeId = $request->input('store_id', 1);
+        $storeId = $this->sucursalDelTenant($user->tenant_id); // H15
         $simTime = $request->input('simTime');
 
         // Permitir suplantación de usuario para el simulador Matrix QA si tiene permisos
@@ -329,9 +347,9 @@ class StoreOpeningController extends Controller
     public function reportAbsence(Request $request)
     {
         $user = Auth::user();
-        $storeId = $request->input('store_id', 1);
         $simTime = $request->input('simTime');
         $tenantId = $user->tenant_id ?? 1;
+        $storeId = $this->sucursalDelTenant($tenantId); // H15
 
         // R93 (D2, merge F3): este flujo es específico del ENCARGADO de apertura (dispara la
         // cascada de delegación de llaves) → lo gatea su switch. Antes apagar el toggle sólo
@@ -366,7 +384,7 @@ class StoreOpeningController extends Controller
     public function reportLate(Request $request)
     {
         $user = Auth::user();
-        $storeId = $request->input('store_id', 1);
+        $storeId = $this->sucursalDelTenant($user->tenant_id); // H15
         $simTime = $request->input('simTime');
         
         $validated = $request->validate([
@@ -412,7 +430,7 @@ class StoreOpeningController extends Controller
 
         $fromUser = auth()->user();
         $tenantId = $fromUser->tenant_id;
-        $storeId = $validated['store_id'] ?? 1;
+        $storeId = $this->sucursalDelTenant($tenantId); // H15
 
         $toEmployeeId = $validated['responsible_employee_id'] ?? null;
         if (!$toEmployeeId) {
@@ -484,7 +502,7 @@ class StoreOpeningController extends Controller
                 auth()->id(),
                 $validated['date'],
                 $validated['ratings'],
-                $validated['store_id'] ?? 1
+                $this->sucursalDelTenant(auth()->user()->tenant_id) // H15
             );
             return response()->json($result);
         } catch (\Exception $e) {
@@ -521,7 +539,7 @@ class StoreOpeningController extends Controller
             $result = $this->openingService->submitClosingChecklist(
                 $validated['user_id'],
                 $validated['checks'],
-                $validated['store_id'] ?? 1
+                $this->sucursalDelTenant(auth()->user()->tenant_id) // H15
             );
             return response()->json($result);
         } catch (\Exception $e) {
@@ -573,7 +591,7 @@ class StoreOpeningController extends Controller
                 $validated['witness_1_pin'],
                 $validated['witness_2_id'],
                 $validated['witness_2_pin'],
-                $validated['store_id'] ?? 1
+                $this->sucursalDelTenant(auth()->user()->tenant_id) // H15
             );
             return response()->json($result);
         } catch (\Exception $e) {
@@ -702,7 +720,7 @@ class StoreOpeningController extends Controller
     public function reportStoreStillClosed(Request $request)
     {
         $user = Auth::user();
-        $storeId = $request->input('store_id', 1);
+        $storeId = $this->sucursalDelTenant($user->tenant_id); // H15
         $simTime = $request->input('simTime');
 
         try {

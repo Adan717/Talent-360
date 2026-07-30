@@ -17,7 +17,8 @@ class SillaController extends Controller
 
     public function request(Request $request)
     {
-        $storeId = $request->input('store_id', 1);
+        // H15: la sucursal se resuelve del tenant, no del cliente (con `stores` los ids son globales).
+        $storeId = \App\Helpers\TenantStore::defaultIdFor($request->user()->tenant_id ?? 1);
 
         try {
             $result = $this->clockService->createSillaRequest($request->user(), $storeId);
@@ -73,7 +74,7 @@ class SillaController extends Controller
         $tenantId = $request->user()->tenant_id ?? 1;
         $status = $request->query('status', 'pending');
         $date = $request->query('date');
-        $storeId = $request->query('store_id', 1);
+        $storeId = \App\Helpers\TenantStore::defaultIdFor($tenantId); // H15
 
         $requests = $this->clockService->listSillaRequests($tenantId, $status, $date, $storeId);
 
@@ -84,7 +85,7 @@ class SillaController extends Controller
     {
         $tenantId = $request->user()->tenant_id ?? 1;
         $date = $request->query('date', now()->format('Y-m-d'));
-        $storeId = $request->query('store_id', 1);
+        $storeId = \App\Helpers\TenantStore::defaultIdFor($tenantId); // H15
 
         $status = $this->clockService->getSillaStatus($tenantId, $date, $storeId);
 

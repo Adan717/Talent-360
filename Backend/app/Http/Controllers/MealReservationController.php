@@ -320,7 +320,8 @@ class MealReservationController extends Controller
         $user     = Auth::user();
         $tenantId = $user->tenant_id ?? 1;
         $date     = $request->input('date', Carbon::today()->toDateString());
-        $storeId  = $request->input('store_id', 1);
+        // H15: la sucursal se resuelve del tenant, no del cliente (con `stores` los ids son globales).
+        $storeId  = \App\Helpers\TenantStore::defaultIdFor($tenantId);
 
         $round = DB::table('meal_queue_rounds')
             ->where('tenant_id', $tenantId)
@@ -404,7 +405,7 @@ class MealReservationController extends Controller
         $user     = Auth::user();
         $tenantId = $user->tenant_id ?? 1;
         $date     = $request->date;
-        $storeId  = $request->input('store_id', 1);
+        $storeId  = \App\Helpers\TenantStore::defaultIdFor($tenantId); // H15
         $slotStart= $request->slot_start;
 
         return DB::transaction(function () use ($user, $tenantId, $date, $storeId, $slotStart) {

@@ -479,6 +479,59 @@ pero conviene que el motor relea la configuración cuando el estado se refresca.
 
 ---
 
+## 🔴 H15 — Abrir la sucursal escribía en la sucursal de OTRA empresa — ✅ CORREGIDO
+
+**Encontrado en la SEGUNDA jornada de regresión (2026-07-30), después de dar H13 por cerrado.**
+
+### Cómo salió
+
+Con el escenario limpio (tienda 11:18–19:23, turno 11:20, día en blanco) el dial mostró
+correctamente **"PENDIENTE DE APERTURA"** — el arreglo de H13 funcionando. Al llamar
+`POST /store-opening/open-and-clock-in` el backend respondió **200 "Tienda abierta con éxito y
+entrada registrada"**… y el dial pasó a **"SIN ABRIR"**.
+
+La tabla del día tenía **dos filas contradictorias para el mismo tenant**:
+
+```
+id=8  store_id=1  tenant=2  status=opened   prog=11:18
+id=7  store_id=2  tenant=2  status=failed   prog=11:18
+fichajes: check_in @ 11:24:06
+```
+
+### Causa
+
+`R52` (merge F3) había quitado el `store_id` del cliente en la **LECTURA**
+(`getTodayStatus` → `TenantStore::defaultIdFor($tenantId)`), pero las **ESCRITURAS** se quedaron
+con `$request->input('store_id', 1)`. El dial no manda ese campo, así que **las 9 escrituras
+caían al `1` hardcodeado**, que es la sucursal del tenant 1.
+
+Resultado: la empresa 2 abría su tienda escribiendo sobre la sucursal de **otra empresa**,
+mientras su propio tablero —que sí lee la suya— la seguía viendo sin abrir. La apertura era
+funcionalmente **imposible de reflejar**, y el registro propio quedaba en `failed` al vencer la
+ventana. Esto explica también por qué en la primera jornada la apertura se quedó en `failed`.
+
+Doble consecuencia:
+1. **Funcional**: abrir la sucursal no surtía efecto para nadie.
+2. **Aislamiento**: con `stores` de ids GLOBALES, el `store_id` del cliente era además una
+   superficie de escritura cross-empresa.
+
+### Arreglo
+
+Un único resolvedor `sucursalDelTenant()` en `StoreOpeningController`, cableado en los **9**
+puntos de escritura: `createAssignment`, `openStoreAndClockIn`, `reportAbsence`, `reportLate`,
+`doorNotice`, `submitPaseListaRatings`, `closingChecklist`, `emergencyOpen`,
+`reportStoreStillClosed`. El `store_id` que mande el cliente se ignora a propósito.
+
+El mismo patrón vivía en `MealReservationController` (2) y `SillaController` (3). Ahí lectura y
+escritura coincidían en el `1`, así que no rompía la función, pero la fila apuntaba igual a una
+sucursal ajena — unificados al mismo criterio.
+
+Cubierto por `StoreOpeningStoreIdIsolationTest` (4 casos), incluido uno que comprueba que **lo
+que se abre es lo que el dial lee** —el extremo que faltaba— y otro que un `store_id: 999`
+enviado por el cliente no desvía la escritura.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

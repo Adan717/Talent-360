@@ -125,7 +125,14 @@ teclearlo en el login. Además, si dos nombres difieren solo por acentos colisio
 
 **Fix sugerido:** normalizar (`NFD` + quitar diacríticos) antes de armar el correo.
 
-## 🟡 H4 — El alta no permite elegir el rol y arrastra el puesto anterior
+## 🟡 H4 — El alta no permite elegir el rol y arrastra el puesto anterior — ✅ CORREGIDO (`f2a5745`)
+
+Se añadió el selector **Nivel de Acceso** (Colaborador / Supervisor / Administrador) al alta —
+el backend ya validaba `in:admin,supervisor,empleado`, sólo faltaba exponerlo— y el formulario
+ahora se limpia **completo** al guardar (antes sólo nombre y sueldo, así que el siguiente
+colaborador heredaba el puesto del anterior). Test que fija que el backend honra los tres roles.
+
+### Descripción original del defecto
 
 - `role: 'empleado'` está **hardcodeado** en el payload del alta: todo colaborador nace como
   empleado y hay que editar su ficha después para volverlo supervisor/admin.
@@ -364,7 +371,30 @@ hardcodeado con el nombre de la empresa original del producto.
 `TenantInitializationService` (donde ya se siembra el resto), y cambiar el default del FE por
 algo neutro (p. ej. el `tenant.name` del usuario, o "Tu Empresa").
 
-## 🟡 H11 — `GET` del monitor devuelve 404 en bucle
+## 🔴 H11 — El Monitor 360 estaba funcionalmente MUERTO — ✅ CORREGIDO (`f2a5745`)
+
+**Era mucho más que "un 404 molesto".** Las llamadas del monitor llevaban `/api/v1/`
+**duplicado** (`axiosInstance` ya trae esa base), así que salían como
+`/api/v1/api/v1/admin/dashboard/monitor` → 404. Y no era sólo el sondeo: eran **5 llamadas**,
+es decir el módulo entero:
+
+| Llamada | Qué dejaba de funcionar |
+|---|---|
+| `GET /admin/dashboard/monitor` | El sondeo cada 5s → el monitor siempre en ceros |
+| `POST .../suggest-work-plan` | Sugerir el plan del día con IA |
+| `POST .../create-task` | Crear tarea desde el monitor |
+| `POST .../vendors` | Registrar proveedor en sitio |
+| `POST .../send-message` | Enviar mensaje al equipo |
+
+Como el `catch` sólo hacía `console.error`, todo fallaba **en silencio**: los botones parecían
+no hacer nada y el panel se veía vacío como si no hubiera actividad.
+
+**Verificado en vivo tras el fix:** el sondeo responde `200`, el monitor muestra datos reales
+("Personal 1/1", "Eficiencia 94%", Marisol Herrera / Administrador Gerente en el listado) y el
+registro de proveedores funciona de punta a punta — `POST .../vendors → 200` y el proveedor
+aparece en el panel con su hora de llegada y quién lo atendió. Cero errores en consola.
+
+### Descripción original del síntoma
 
 La consola del navegador registra `Error al cargar datos del monitor: 404` repetido cada pocos
 segundos mientras el Reloj está abierto. No rompe la pantalla, pero ensucia el log y consume

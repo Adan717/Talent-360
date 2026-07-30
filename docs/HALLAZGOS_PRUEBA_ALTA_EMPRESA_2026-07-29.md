@@ -603,6 +603,61 @@ equivocadas que causaron el bug no cuelan como turno**.
 
 ---
 
+## 🟠 H17 — La pantalla del comedor decía "0 ocupados" siempre — ✅ CORREGIDO
+
+**Encontrado en la TERCERA jornada de regresión (2026-07-30), recorriendo el dial como empleado
+raso (Adán Cuéllar) en vez de como admin.**
+
+### Cómo salió
+
+Con dos reservas activas en base de datos (13:00 de Marisol, 15:00 de Adán), el endpoint de
+bloques respondía `booked: 0` y `available: 5` en **todos** los bloques, y marcaba
+`is_my_reservation: false` en el mismo bloque que `my_reservation` sí reconocía como propio.
+
+### Causa
+
+Desajuste de formato entre dos representaciones de la misma hora.
+`meal_reservations.slot_start` es de tipo TIME, así que el `groupBy('slot_start')` devuelve
+claves **`"13:00:00"`**, mientras los bloques configurados
+(`meal_capacity_settings.available_slots`) son **`"13:00"`**. El `keyBy` compara STRINGS en PHP,
+así que `$reservationCounts['13:00']` nunca acertaba y `$booked` caía a su `?? 0`. Igual en
+`is_my_reservation`: `'15:00:00' === '15:00'` es false.
+
+Misma clase de defecto que H16 (`09:00` vs `09:00:00`): dos grafías de la misma hora comparadas
+como texto.
+
+### Alcance honesto
+
+El aforo **sí** se aplicaba al reservar: el chequeo de `store()` cuenta en SQL, y ahí Postgres
+castea el literal a TIME y compara bien. El daño era de LECTURA — se ofrecían "5 disponibles" en
+un bloque lleno y la reserva moría con un 422 "está lleno", y cualquier panel de ocupación del
+comedor mostraba cero permanente.
+
+Pero eso destapó algo peor de fondo: **la regla de aforo dependía de una conversión implícita
+del motor**. Se comparaba `where('slot_start', '12:00')` contra una columna TIME y funcionaba
+por el cast de Postgres, no por diseño.
+
+### Arreglo
+
+Dos helpers en el controlador: `hhmm()` normaliza a HH:MM todo lo que se compare en PHP, y
+`grafiasDelBloque()` hace que los **5** conteos en SQL busquen ambas grafías, para que la regla
+de aforo se sostenga sola en vez de depender del motor.
+
+Cubierto por `MealSlotsBookedCountTest` (4 casos), incluido el extremo que faltaba: **lo que se
+ofrece en pantalla coincide con lo que el alta acepta**.
+
+### ⚠️ Lo que este hallazgo dice de la suite
+
+Los 4 tests **pasaban antes del arreglo**. La suite corre en **sqlite**, que guarda TIME como el
+texto que le des (`'13:00'`), mientras producción es **Postgres**, que lo normaliza a
+`'13:00:00'`. En sqlite las dos grafías coinciden por accidente y el bug es invisible.
+
+El test tuvo que insertar la reserva con la grafía real de Postgres (`reservaComoEnProduccion()`)
+para reproducirlo. **Toda esta familia de defectos —tipos TIME/DATE, casts implícitos— es ciega
+para la suite actual.** Vale la pena valorar una pasada de la suite contra Postgres en CI.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

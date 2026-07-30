@@ -26,6 +26,44 @@ class MealReservationController extends Controller
     // GET /api/v1/meal-reservations/slots
     // Retorna los bloques de comida disponibles para el día con aforo
     // =========================================================
+    /**
+     * "13:00:00" → "13:00" (H17).
+     *
+     * Los bloques de comedor viajan por dos caminos con grafías distintas: la configuración
+     * (`meal_capacity_settings.available_slots`) los guarda como HH:MM y la columna TIME de
+     * `meal_reservations` los devuelve como HH:MM:SS. Comparar esas dos formas como texto —que
+     * es lo que hacían el `keyBy` y el `is_my_reservation`— nunca acierta. Todo lo que compare
+     * bloques en PHP pasa por aquí primero.
+     *
+     * Devuelve `null` para un valor ausente, para que dos "sin dato" NO se consideren el mismo
+     * bloque: sin eso, un usuario sin reserva vería marcado como suyo un bloque sin horario.
+     */
+    private static function hhmm($valor): ?string
+    {
+        if (!is_string($valor)) return null;
+        $limpio = trim($valor);
+        if ($limpio === '') return null;
+        $partes = explode(':', $limpio);
+        return count($partes) >= 2
+            ? sprintf('%02d:%02d', (int) $partes[0], (int) $partes[1])
+            : $limpio;
+    }
+
+    /**
+     * Las dos grafías con las que un mismo bloque puede estar guardado (H17).
+     *
+     * Los conteos de aforo comparaban en SQL con `where('slot_start', '12:00')` y funcionaban
+     * SÓLO porque Postgres castea implícitamente el literal a TIME. Es decir: la regla de aforo
+     * —la que evita que la sucursal se quede sin gente a la misma hora— dependía de una
+     * conversión implícita del motor. Comparando contra ambas grafías, la regla se sostiene sola
+     * y deja de ser sensible al motor o al formato con que llegue el bloque.
+     */
+    private static function grafiasDelBloque($slotStart): array
+    {
+        $corto = self::hhmm($slotStart);
+        return $corto === null ? [$slotStart] : array_unique([$corto, "{$corto}:00"]);
+    }
+
     public function getSlots(Request $request)
     {
         $user     = Auth::user();
@@ -43,7 +81,12 @@ class MealReservationController extends Controller
 
         $slotDuration = $settings?->slot_duration_minutes ?? 60;
 
-        // Contar reservas activas por slot
+        // Contar reservas activas por slot.
+        //
+        // H17: la clave se normaliza a HH:MM. `slot_start` es de tipo TIME, así que Postgres lo
+        // devuelve como "13:00:00" mientras los bloques configurados son "13:00" — y el `keyBy`
+        // compara STRINGS en PHP, así que nunca acertaba y `$booked` caía a su `?? 0` para todos
+        // los bloques. En sqlite (la suite) coincidían por accidente, de ahí que no saltara.
         $reservationCounts = DB::table('meal_reservations')
             ->where('tenant_id', $tenantId)
             ->where('reservation_date', $date)
@@ -51,7 +94,7 @@ class MealReservationController extends Controller
             ->select('slot_start', DB::raw('count(*) as count'))
             ->groupBy('slot_start')
             ->get()
-            ->keyBy('slot_start');
+            ->keyBy(fn ($fila) => self::hhmm($fila->slot_start));
 
         // Reserva actual del usuario
         $employee = Employee::where('user_id', $user->id)->first();
@@ -64,7 +107,7 @@ class MealReservationController extends Controller
         $slotData = [];
         foreach ($availableSlots as $slotStart) {
             $slotEnd   = Carbon::parse($slotStart)->addMinutes($slotDuration)->format('H:i');
-            $booked    = $reservationCounts[$slotStart]->count ?? 0;
+            $booked    = (int) ($reservationCounts[self::hhmm($slotStart)]->count ?? 0); // H17
             $available = max(0, $maxCapacity - $booked);
 
             // Verificar restricción de mismo rol (piso vacío)
@@ -74,7 +117,7 @@ class MealReservationController extends Controller
                     ->where('tenant_id', $tenantId)
                     ->where('reservation_date', $date)
                     ->where('job_role_id', $employee->job_role_id)
-                    ->where('slot_start', $slotStart)
+                    ->whereIn('slot_start', self::grafiasDelBloque($slotStart)) // H17
                     ->whereIn('status', ['reserved', 'confirmed'])
                     ->count();
             }
@@ -87,7 +130,7 @@ class MealReservationController extends Controller
                 'available'           => $available,
                 'is_full'             => $available <= 0,
                 'same_role_blocked'   => $sameRoleCount > 0, // Restricción piso vacío
-                'is_my_reservation'   => $myReservation?->slot_start === $slotStart,
+                'is_my_reservation'   => self::hhmm($myReservation?->slot_start) === self::hhmm($slotStart), // H17
             ];
         }
 
@@ -145,7 +188,7 @@ class MealReservationController extends Controller
             $booked = DB::table('meal_reservations')
                 ->where('tenant_id', $tenantId)
                 ->where('reservation_date', $date)
-                ->where('slot_start', $slotStart)
+                ->whereIn('slot_start', self::grafiasDelBloque($slotStart)) // H17
                 ->whereIn('status', ['reserved', 'confirmed'])
                 ->count();
 
@@ -162,7 +205,7 @@ class MealReservationController extends Controller
                     ->where('tenant_id', $tenantId)
                     ->where('reservation_date', $date)
                     ->where('job_role_id', $employee->job_role_id)
-                    ->where('slot_start', $slotStart)
+                    ->whereIn('slot_start', self::grafiasDelBloque($slotStart)) // H17
                     ->whereIn('status', ['reserved', 'confirmed'])
                     ->count();
 
@@ -439,7 +482,7 @@ class MealReservationController extends Controller
             $booked = DB::table('meal_reservations')
                 ->where('tenant_id', $tenantId)
                 ->where('reservation_date', $date)
-                ->where('slot_start', $slotStart)
+                ->whereIn('slot_start', self::grafiasDelBloque($slotStart)) // H17
                 ->whereIn('status', ['reserved', 'confirmed'])
                 ->count();
 
@@ -452,7 +495,7 @@ class MealReservationController extends Controller
                     ->where('tenant_id', $tenantId)
                     ->where('reservation_date', $date)
                     ->where('job_role_id', $employee->job_role_id)
-                    ->where('slot_start', $slotStart)
+                    ->whereIn('slot_start', self::grafiasDelBloque($slotStart)) // H17
                     ->whereIn('status', ['reserved', 'confirmed'])
                     ->count();
 

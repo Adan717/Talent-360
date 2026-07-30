@@ -36,9 +36,17 @@ describe('estado de la sucursal (H13) — combina horario y registro real', () =
     expect(resolverEstadoSucursal({ storeStatus: 'closed', aperturaDelDia: 'failed', aperturaPremium: true }).operando).toBe(false);
   });
 
-  it('sin la operativa de apertura contratada manda sólo el horario', () => {
+  it('sin operativa de apertura NI registro, manda sólo el horario', () => {
     expect(resolverEstadoSucursal({ storeStatus: 'open', aperturaDelDia: null, aperturaPremium: false }))
       .toEqual({ operando: true, etiqueta: 'Abierto', tono: 'verde' });
     expect(resolverEstadoSucursal({ storeStatus: 'closed', aperturaPremium: false }).etiqueta).toBe('Cerrado');
+  });
+
+  it('si HAY registro del día, manda el registro aunque el flag premium venga apagado', () => {
+    // Caso real de la V2: el registro existía en `failed` mientras
+    // isFeatureUnlocked('store_opening') devolvía false, y la píldora decía "Abierto".
+    const r = resolverEstadoSucursal({ storeStatus: 'open', aperturaDelDia: 'failed', aperturaPremium: false });
+    expect(r.operando).toBe(false);
+    expect(r.etiqueta).toBe('Sin abrir');
   });
 });

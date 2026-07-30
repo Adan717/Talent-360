@@ -36,18 +36,21 @@ export interface EstadoSucursalResult {
 
 export function resolverEstadoSucursal(input: EstadoSucursalInput): EstadoSucursalResult {
   const enHorario = input.storeStatus === 'open';
-
-  // Sin la operativa de apertura contratada no hay registro que consultar: manda el horario.
-  if (!input.aperturaPremium) {
-    return enHorario
-      ? { operando: true, etiqueta: 'Abierto', tono: 'verde' }
-      : { operando: false, etiqueta: 'Cerrado', tono: 'rojo' };
-  }
+  // Si el día TIENE registro de apertura, manda ese dato aunque el flag premium venga apagado
+  // (así lo pide la realidad: en la V2 el registro existía —`failed`— mientras
+  // `isFeatureUnlocked('store_opening')` devolvía false, y la píldora seguía diciendo
+  // "Abierto"). El flag sólo decide qué hacer cuando NO hay registro que consultar.
+  const hayRegistro = input.aperturaDelDia !== null && input.aperturaDelDia !== undefined;
 
   // Fuera del horario la sucursal está cerrada, se haya abierto o no por la mañana: el
   // registro `opened` es del EVENTO de apertura, no significa "sigue operando ahora".
   if (!enHorario) {
     return { operando: false, etiqueta: 'Cerrado', tono: 'rojo' };
+  }
+
+  // En horario y sin operativa de apertura ni registro: no hay nada que contrastar.
+  if (!hayRegistro && !input.aperturaPremium) {
+    return { operando: true, etiqueta: 'Abierto', tono: 'verde' };
   }
 
   // En horario y alguien la abrió de verdad: único caso plenamente "abierto".

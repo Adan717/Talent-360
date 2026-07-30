@@ -13,6 +13,7 @@ import { useKeyholderDelegation } from './hooks/useKeyholderDelegation';
 import { useClockUIState } from './hooks/useClockUIState';
 import { calculateClockState } from './logic/clockStateCalculator';
 import { evaluateCheckIn, resolveTolerance } from './logic/attendance';
+import { shouldBlockForLateTolerance } from './logic/accessBlock';
 
 export function useClockEngine(overrideUser?: any) {
   const assignments = useTaskStore(s => s.assignments);
@@ -3343,12 +3344,18 @@ export function useClockEngine(overrideUser?: any) {
     // cerrada y este usuario es quien puede abrirla, se deja pasar a la rama de apertura —
     // que es la acción que destraba a todo el equipo. Su retardo se sigue registrando
     // server-side al fichar; lo que se evita es el candado que no ofrece ninguna salida.
-    const tengoAutorizacionAprobada = (lateAuthorizedUserIds || []).includes(Number(currentUser?.id));
-    const puedoAbrirLaTienda = storeStatus === 'closed'
-      && (Number(currentUser?.id) === Number(responsibleId) || currentUser?.esAperturador === true);
-
-    if (!hasCheckedIn && isLate && clockState === 'inactive'
-        && !tengoAutorizacionAprobada && !puedoAbrirLaTienda) {
+    // La decisión vive en `logic/accessBlock.ts` (función pura, con tests): estaba enterrada
+    // en esta cadena de ifs y no había forma de verificarla sin abrir la app a la hora exacta.
+    if (shouldBlockForLateTolerance({
+      hasCheckedIn,
+      isLate,
+      clockState,
+      storeStatus,
+      currentUserId: currentUser?.id,
+      responsibleId,
+      esAperturador: currentUser?.esAperturador === true,
+      lateAuthorizedUserIds,
+    })) {
       return {
         text: '🔒 Acceso Bloqueado',
         bg: 'bg-slate-700 text-slate-300 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',

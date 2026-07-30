@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Drop foreign key first if exists
+        try {
+            Schema::table('store_opening_assignments', function (Blueprint $table) {
+                $table->dropForeign(['employee_id']);
+            });
+        } catch (\Throwable $e) {}
+
         // 1. Migrar datos de user_id a employee_id de forma quirúrgica
         $assignments = Illuminate\Support\Facades\DB::table('store_opening_assignments')->get();
         foreach ($assignments as $assignment) {
@@ -26,7 +33,6 @@ return new class extends Migration
 
         // 2. Cambiar la clave foránea
         Schema::table('store_opening_assignments', function (Blueprint $table) {
-            $table->dropForeign(['employee_id']);
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
         });
     }

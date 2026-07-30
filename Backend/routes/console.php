@@ -29,3 +29,13 @@ Schedule::command('payroll:calculate-weekly')
     ->name('weekly-payroll-calculation')
     ->withoutOverlapping();
 
+/**
+ * Procesamiento de registros inconclusos y envío de correos de recuperación.
+ * Ejecuta cada hora para notificar a prospectos y limpiar registros viejos.
+ */
+Schedule::command('pending:process-abandoned')
+    ->hourly()
+    ->name('process-abandoned-registrations')
+    ->withoutOverlapping();
+
+

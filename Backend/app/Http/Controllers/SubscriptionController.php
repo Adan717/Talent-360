@@ -110,13 +110,38 @@ class SubscriptionController extends Controller
             $payload['billing_cycle'] = $request->input('billing_cycle', 'monthly');
         }
 
-        $regId = (string) Str::uuid();
+        $payload['subdomain'] = strtolower($payload['subdomain'] ?? '');
+        $adminEmail = strtolower($payload['admin_email'] ?? '');
+        $subdomain = $payload['subdomain'];
 
-        // Save pending registration payload
-        PendingRegistration::create([
-            'id' => $regId,
-            'payload' => json_encode($payload)
-        ]);
+        // Re-use or Create Pending Registration
+        $existingPending = null;
+        if ($adminEmail || $subdomain) {
+            $existingPending = PendingRegistration::where('status', 'pending')
+                ->forEmailOrSubdomain($adminEmail, $subdomain)
+                ->first();
+        }
+
+        if ($existingPending) {
+            $regId = $existingPending->id;
+            $existingPending->update([
+                'admin_email' => $adminEmail,
+                'subdomain' => $subdomain,
+                'payload' => json_encode($payload),
+                'status' => 'pending',
+                'updated_at' => now(),
+            ]);
+            $pendingRecord = $existingPending;
+        } else {
+            $regId = (string) Str::uuid();
+            $pendingRecord = PendingRegistration::create([
+                'id' => $regId,
+                'admin_email' => $adminEmail,
+                'subdomain' => $subdomain,
+                'status' => 'pending',
+                'payload' => json_encode($payload)
+            ]);
+        }
 
         $price = 0;
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
@@ -139,7 +164,7 @@ class SubscriptionController extends Controller
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
         if (!$isUpgrade && (strtolower($payload['plan']) === 'freemium' || $price <= 0)) {
             try {
-                $tenant = $this->provisionTenant($payload);
+                $tenant = $this->provisionTenant($payload, $regId);
                 $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
                 return response()->json([
                     'status' => 'success',
@@ -190,6 +215,8 @@ class SubscriptionController extends Controller
                 $preference->auto_return = "approved";
                 $preference->save();
 
+                $pendingRecord->update(['checkout_url' => $preference->init_point]);
+
                 return response()->json([
                     'status' => 'success',
                     'init_point' => $preference->init_point,
@@ -202,6 +229,8 @@ class SubscriptionController extends Controller
 
         // Fallback to simulated checkout URL
         $simulatedUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
+        $pendingRecord->update(['checkout_url' => $simulatedUrl]);
+
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -606,6 +635,19 @@ class SubscriptionController extends Controller
 
             if (method_exists(\Auth::guard(), 'logout')) {
                 \Auth::logout();
+            }
+
+            // Mark Pending Registration as Completed
+            if ($prefId) {
+                PendingRegistration::where('id', $prefId)->update(['status' => 'completed']);
+            } else {
+                $adminEmail = strtolower($payload['admin_email'] ?? '');
+                $subdomain = strtolower($payload['subdomain'] ?? '');
+                if ($adminEmail || $subdomain) {
+                    PendingRegistration::where('status', 'pending')
+                        ->forEmailOrSubdomain($adminEmail, $subdomain)
+                        ->update(['status' => 'completed']);
+                }
             }
 
             return [

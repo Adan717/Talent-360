@@ -52,7 +52,29 @@ Marisol Herrera | salary=18000.00 | base_salary=NULL
 `salary → base_salary` donde esté nulo. Conviene test que cubra "alta con sueldo → el costo de
 tarea usa ese sueldo, no 300".
 
-## 🟠 H2 — El wizard de giro NUNCA se abre solo en una empresa nueva
+## 🟠 H2 — El wizard de giro NUNCA se abre solo — ✅ CORREGIDO (`595412c`)
+
+**Fix sin tocar la heurística del fallback** (que sigue protegiendo a las empresas antiguas):
+toda empresa nueva nace con `onboarding_completed = false` EXPLÍCITO, sembrado desde
+`TenantInitializationService` — que corre en el hook `Tenant::created`, o sea para **cualquier**
+vía de alta (checkout, `TenantController`, cloner). Con la clave presente, el `!isset(...)` del
+fallback ya no aplica a las nuevas.
+
+**Verificado en vivo** registrando "Panaderia La Espiga QA" en la instancia V2:
+
+```
+#3 Panaderia La Espiga QA | onboarding_completed='false' | puestos=4
+```
+
+es decir, el escenario exacto del bug (4 puestos sembrados) y aun así pendiente. Al entrar,
+el asistente **"¡Bienvenido a Talent 360! — Configura tu sucursal en 4 sencillos pasos"** se
+abre solo. Antes había que descubrir el botón a mano.
+
+`OnboardingWizardAppearsForNewTenantTest` (4 casos) cubre las dos direcciones: que aparezca en
+empresa nueva incluso con puestos sembrados, que NO reaparezca en las antiguas sin la clave, y
+que quede marcado al completarlo.
+
+### Descripción original del defecto
 
 **Qué pasa:** `App.tsx` está bien (`if (!onboarding_completed) setShowOnboarding(true)`), pero
 `ClockController::getState` trae un fallback:
@@ -269,6 +291,17 @@ meal_end`), el dial regresó a "🔒 ACCESO BLOQUEADO / TOLERANCIA VENCIDA" pese
 colaborador está en turno y el backend tiene todo consistente. Se destraba recargando/renovando
 el estado, pero es el mismo síntoma que H8: el recálculo posterior al regreso de comida vuelve a
 usar una referencia horaria equivocada.
+
+## 🟡 H12 — Una empresa nueva ve el nombre de OTRA en la bienvenida
+
+Detectado al verificar H2: al registrar "Panaderia La Espiga QA", el encabezado del Monitor 360
+saludaba con **"Bienvenido a DecorArte 360"** — el nombre del tenant 1. La causa es que el alta
+no siembra `company_name` en `system_settings` (queda NULL) y el frontend cae a un default
+hardcodeado con el nombre de la empresa original del producto.
+
+**Fix sugerido:** sembrar `company_name` con el nombre del tenant en
+`TenantInitializationService` (donde ya se siembra el resto), y cambiar el default del FE por
+algo neutro (p. ej. el `tenant.name` del usuario, o "Tu Empresa").
 
 ## 🟡 H11 — `GET` del monitor devuelve 404 en bucle
 

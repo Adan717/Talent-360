@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Building2, Briefcase, UserPlus, Clock, CheckCircle2, ChevronRight, AlertCircle, Loader2, MessageSquare, Send, BookOpen, BarChart3, Users } from 'lucide-react';
+import { Sparkles, Building2, Briefcase, UserPlus, Clock, CheckCircle2, ChevronRight, AlertCircle, Loader2, MessageSquare, Send, BookOpen, BarChart3, Users, Key, ShieldCheck, Lock, Database, Scale, FileText, Receipt, ListTodo, GraduationCap, Crown, Zap, Check, CheckSquare } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
@@ -18,14 +18,87 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { fetchState, updateSetting, currentUser, setCurrentUser, isModuleUnlocked, globalRoles } = useAppStore();
 
-  const activePlanModules = [
-    { id: 'rrhh', name: 'Recursos Humanos', icon: Users, tag: 'Gratis', color: 'emerald' },
-    { id: 'reloj', name: 'Reloj Checador (PWA)', icon: Clock, tag: 'Gratis', color: 'emerald' },
-    { id: 'operativo', name: 'Bolsa de Trabajo', icon: Briefcase, tag: 'Gratis', color: 'emerald' },
-    { id: 'ats', name: 'Reclutamiento ATS', icon: UserPlus, tag: 'Prueba', color: 'indigo' },
-    { id: 'academia', name: 'Academia LMS', icon: BookOpen, tag: 'Prueba', color: 'indigo' },
-    { id: 'reportes', name: 'Reportes & Analítica', icon: BarChart3, tag: 'Prueba', color: 'indigo' }
-  ].filter(mod => isModuleUnlocked(mod.id));
+  const [activeRoleFilterTab, setActiveRoleFilterTab] = useState<string>('all');
+
+  const allPlatformModules = [
+    { id: 'rrhh', name: 'Recursos Humanos', desc: 'Expedientes, puestos y organigrama', icon: Users, tag: 'Gratis', color: 'emerald' },
+    { id: 'reloj', name: 'Reloj Checador (PWA)', desc: 'Asistencia con PIN, retardo y GPS', icon: Clock, tag: 'Gratis', color: 'emerald' },
+    { id: 'tareas', name: 'Tareas & Rutinas 360', desc: 'Checklists con foto y números', icon: ListTodo, tag: 'Incluido', color: 'emerald' },
+    { id: 'llaves', name: 'Control de Llaves N1-N5', desc: 'Jerarquías y aperturadores', icon: Key, tag: 'Pro / Ent', color: 'indigo' },
+    { id: 'ats', name: 'Reclutamiento ATS', desc: 'Portal de vacantes y candidatos', icon: UserPlus, tag: 'Pro / Ent', color: 'indigo' },
+    { id: 'academia', name: 'Academia LMS', desc: 'Cursos en video, PDFs e inducción', icon: GraduationCap, tag: 'Pro / Ent', color: 'indigo' },
+    { id: 'reportes', name: 'IA Asistente & Analítica', desc: 'Fotos por IA, voz y KPIs', icon: Sparkles, tag: 'Pro / Ent', color: 'purple' },
+    { id: 'vault', name: 'Bóveda Cifrada Vault', desc: 'Firmas, contratos y respaldos', icon: Lock, tag: 'Enterprise', color: 'amber' },
+    { id: 'simulador', name: 'Simulador LFT', desc: 'Ley Silla, horas extra y turnos', icon: Scale, tag: 'Pro / Ent', color: 'indigo' },
+    { id: 'billing', name: 'Facturación & Timbres SAT', desc: 'Nómina fiscal, CSD y facturas', icon: Receipt, tag: 'Pro / Ent', color: 'blue' }
+  ];
+
+  const activePlanModules = allPlatformModules.filter(mod => isModuleUnlocked(mod.id));
+
+  const getPlanBadgeInfo = () => {
+    const rawPlan = (currentUser?.tenant?.plan || 'enterprise').toLowerCase();
+    if (rawPlan === 'enterprise') {
+      return {
+        title: 'Plan Enterprise Activado ⚡',
+        subtitle: 'Acceso Total Ilimitado a la Suite Completa 360',
+        badge: 'ENTERPRISE',
+        badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
+        iconBg: 'bg-amber-50 text-amber-600',
+        borderColor: 'border-amber-200',
+        features: [
+          'Matriz de Aperturas & Jerarquía de Llaves Nivel 1 a Nivel 5',
+          'Asistente IA para Evidencia Fotográfica y Captura de Números',
+          'Academia LMS ilimitada con Plantillas de Cursos e Inducción',
+          'Bóveda Vault Cifrada con Resguardos y Respaldos en la Nube'
+        ]
+      };
+    } else if (rawPlan === 'pro') {
+      return {
+        title: 'Plan Pro Activado 🚀',
+        subtitle: 'Módulos Avanzados, Inteligencia Artificial & Analítica',
+        badge: 'PLAN PRO',
+        badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
+        iconBg: 'bg-blue-50 text-blue-600',
+        borderColor: 'border-blue-200',
+        features: [
+          'IA Asistente Operativo para Validación de Tareas y Fotos',
+          'Control de Llaves & Protocolos de Apertura de Sucursal',
+          'Academia LMS para Inducción y Capacitación del Personal',
+          'Reclutamiento ATS con Publicación de Vacantes en Línea'
+        ]
+      };
+    } else if (rawPlan === 'standard') {
+      return {
+        title: 'Plan Standard Activado 💼',
+        subtitle: 'Gestión Operativa Profesional & Reloj Checador PWA',
+        badge: 'STANDARD',
+        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        iconBg: 'bg-emerald-50 text-emerald-600',
+        borderColor: 'border-emerald-200',
+        features: [
+          'Reloj Checador PWA en Kiosko Móvil con PIN de Seguridad',
+          'Asignación de Tareas y Rutinas Operativas Diarias',
+          'Expedientes Digitales de Colaboradores y Puestos',
+          'Reportes de Asistencia y Control de Puntualidad'
+        ]
+      };
+    } else {
+      return {
+        title: 'Prueba Premium / Plan Inicial 🎁',
+        subtitle: '30 Días de Evaluación Completa de la Suite 360',
+        badge: 'DEMO PRO',
+        badgeColor: 'bg-purple-100 text-purple-800 border-purple-300',
+        iconBg: 'bg-purple-50 text-purple-600',
+        borderColor: 'border-purple-200',
+        features: [
+          'Acceso completo a todos los módulos durante el periodo de prueba',
+          'Sin necesidad de ingresar tarjeta durante la evaluación',
+          'Al finalizar conservas el plan de por vida para tu empresa',
+          'Asistencia y soporte directo para la configuración inicial'
+        ]
+      };
+    }
+  };
 
   const [isEmailEdited, setIsEmailEdited] = useState(false);
   const [qrIpOverride, setQrIpOverride] = useState(localStorage.getItem('qr_origin_override') || '');
@@ -787,60 +860,86 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 Configura tu sucursal en 4 sencillos pasos y ponla a funcionar en menos de 2 minutos.
               </p>
 
-              {/* Tarjeta de Notificación del Periodo de Prueba - Rediseñada */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-6 text-left max-w-lg mx-auto shadow-sm relative overflow-hidden transition-all duration-300">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full blur-2xl -mr-8 -mt-8 opacity-60"></div>
-                
-                <div className="flex items-start gap-3 relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 shadow-inner">
-                    <Sparkles size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="font-extrabold text-slate-800 text-sm sm:text-base">Prueba Premium Activada</h4>
-                      <span className="bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0">
-                        30 Días
-                      </span>
+              {/* Tarjeta Dinámica de Plan Contratado & Módulos Integrales */}
+              {(() => {
+                const planInfo = getPlanBadgeInfo();
+                return (
+                  <div className={`bg-slate-50 border ${planInfo.borderColor} rounded-2xl sm:rounded-3xl p-4 sm:p-5 mb-6 text-left max-w-xl mx-auto shadow-sm relative overflow-hidden transition-all duration-300`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-70"></div>
+                    
+                    <div className="flex items-start gap-3 relative z-10 mb-3">
+                      <div className={`w-11 h-11 rounded-2xl ${planInfo.iconBg} flex items-center justify-center shrink-0 shadow-sm border border-slate-200/50`}>
+                        <Crown size={22} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h4 className="font-black text-slate-800 text-sm sm:text-base tracking-tight">{planInfo.title}</h4>
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${planInfo.badgeColor}`}>
+                            {planInfo.badge}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                          {planInfo.subtitle}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      Accede a todas las herramientas premium sin costo. Al finalizar el plazo, volverás automáticamente al plan gratuito de por vida sin cargos.
-                    </p>
-                  </div>
-                </div>
 
-                {/* Acordeón de Características */}
-                <div className="mt-4 pt-3 border-t border-slate-200/60 relative z-10 flex flex-col gap-3">
-                  <button
-                    onClick={() => setShowPlanDetails(!showPlanDetails)}
-                    className="flex items-center justify-between w-full text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors focus:outline-none"
-                  >
-                    <span>{showPlanDetails ? "Ocultar módulos incluidos" : `Ver módulos incluidos (${activePlanModules.length})`}</span>
-                    <span className="text-slate-400 font-normal">
-                      {showPlanDetails ? "▲" : "▼"}
-                    </span>
-                  </button>
-
-                  {showPlanDetails && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                      {activePlanModules.map((mod) => {
-                        const IconComponent = mod.icon;
-                        const colorClass = mod.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600';
-                        return (
-                          <div key={mod.id} className="bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2.5 animate-in fade-in duration-300">
-                            <div className={`w-8 h-8 rounded-lg ${colorClass} flex items-center justify-center shrink-0`}>
-                              <IconComponent size={16} />
-                            </div>
-                            <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
-                              <span className="text-[11px] font-bold text-slate-700 truncate">{mod.name}</span>
-                              <span className={`text-[8px] font-extrabold ${colorClass} px-1.5 py-0.5 rounded-md shrink-0`}>{mod.tag}</span>
-                            </div>
+                    {/* Bloque Destacado de Funciones Clave Incluidas */}
+                    <div className="bg-white/80 backdrop-blur-sm border border-slate-200/80 rounded-2xl p-3 sm:p-4 relative z-10 mb-4 shadow-inner">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
+                        <Zap size={13} className="text-amber-500 fill-amber-500" /> Funciones Clave Activadas en tu Cuenta:
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                        {planInfo.features.map((feat, idx) => (
+                          <div key={idx} className="flex items-start gap-1.5 leading-tight">
+                            <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                            <span className="font-semibold text-slate-700 text-[11px]">{feat}</span>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+
+                    {/* Acordeón de Catálogo Completo de 10 Módulos */}
+                    <div className="pt-2 border-t border-slate-200/80 relative z-10 flex flex-col gap-2.5">
+                      <button
+                        onClick={() => setShowPlanDetails(!showPlanDetails)}
+                        className="flex items-center justify-between w-full text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors focus:outline-none py-1"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <BookOpen size={14} /> {showPlanDetails ? "Ocultar catálogo completo" : `Ver los 10 Módulos de Talent360 incluidos (${activePlanModules.length} activos)`}
+                        </span>
+                        <span className="text-slate-400 font-bold text-sm">
+                          {showPlanDetails ? "▲" : "▼"}
+                        </span>
+                      </button>
+
+                      {showPlanDetails && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 animate-in fade-in slide-in-from-top-1 duration-200 max-h-64 overflow-y-auto custom-scrollbar p-0.5">
+                          {allPlatformModules.map((mod) => {
+                            const IconComponent = mod.icon;
+                            const unlocked = isModuleUnlocked(mod.id);
+                            const badgeColor = unlocked ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500';
+                            return (
+                              <div key={mod.id} className={`p-2.5 rounded-xl border transition-all flex items-start gap-2.5 ${unlocked ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-100/50 border-slate-200/60 opacity-60'}`}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${unlocked ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                                  <IconComponent size={16} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                                    <span className="text-[11px] font-extrabold text-slate-800 truncate">{mod.name}</span>
+                                    <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${badgeColor}`}>{unlocked ? 'Activo' : mod.tag}</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 line-clamp-1">{mod.desc}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="pt-2">
                 <button 
@@ -1040,38 +1139,94 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     </div>
                   </div>
 
-                  {/* Panel Tareas / Checklists */}
-                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-                    <div className="flex items-center justify-between">
+                  {/* Panel Tareas / Checklists con Filtrado Táctil por Puesto (Mobile-First) */}
+                  <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
                         <span>✅</span> Checklists Operativas ({selectedTareas.length}/{activePreset.tareas.length})
                       </span>
-                      <span className="text-[10px] text-purple-600 font-bold">Checklists de apertura/cierre</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTareas(activePreset.tareas.map(t => t.title))}
+                          className="text-[10px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-lg"
+                        >
+                          Todas
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTareas([])}
+                          className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded-lg"
+                        >
+                          Ninguna
+                        </button>
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      {activePreset.tareas.map((tarea) => {
-                        const isChecked = selectedTareas.includes(tarea.title);
+
+                    {/* Chips / Pestañas de Filtro Táctil Desplazables Horizontalmente */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 custom-scrollbar -mx-1 px-1">
+                      <button
+                        type="button"
+                        onClick={() => setActiveRoleFilterTab('all')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all ${
+                          activeRoleFilterTab === 'all'
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Todos ({activePreset.tareas.length})
+                      </button>
+                      {activePreset.puestos.map((p) => {
+                        const roleTaskCount = activePreset.tareas.filter(t => t.target_role_name === p.name).length;
+                        if (roleTaskCount === 0) return null;
+                        const isTabActive = activeRoleFilterTab === p.name;
                         return (
-                          <label
-                            key={tarea.title}
-                            onClick={() => toggleTareaSelection(tarea.title)}
-                            className={`p-2 rounded-xl border flex items-center gap-2.5 cursor-pointer select-none transition-all ${
-                              isChecked 
-                                ? 'border-purple-200 bg-purple-50/30 text-slate-800' 
-                                : 'border-slate-100 bg-slate-50/30 text-slate-400 opacity-60'
+                          <button
+                            key={p.name}
+                            type="button"
+                            onClick={() => setActiveRoleFilterTab(p.name)}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 ${
+                              isTabActive
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {}}
-                              className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
-                            />
-                            <span className="text-xs font-medium truncate flex-1">{tarea.title}</span>
-                            <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold shrink-0">{tarea.target_role_name}</span>
-                          </label>
+                            <span>{p.name.split(' ')[0]}</span>
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${isTabActive ? 'bg-purple-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                              {roleTaskCount}
+                            </span>
+                          </button>
                         );
                       })}
+                    </div>
+
+                    {/* Lista de Tareas Filtrada con Touch Targets >= 44px */}
+                    <div className="space-y-1.5 max-h-64 sm:max-h-80 overflow-y-auto custom-scrollbar pr-1">
+                      {activePreset.tareas
+                        .filter(t => activeRoleFilterTab === 'all' || t.target_role_name === activeRoleFilterTab)
+                        .map((tarea) => {
+                          const isChecked = selectedTareas.includes(tarea.title);
+                          return (
+                            <label
+                              key={tarea.title}
+                              onClick={() => toggleTareaSelection(tarea.title)}
+                              className={`p-2.5 sm:p-2 rounded-xl border flex items-center gap-3 cursor-pointer select-none transition-all min-h-[44px] active:scale-[0.99] ${
+                                isChecked 
+                                  ? 'border-purple-300 bg-purple-50/40 text-slate-800 font-semibold' 
+                                  : 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 shrink-0"
+                              />
+                              <span className="text-xs font-medium leading-tight flex-1">{tarea.title}</span>
+                              <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold shrink-0">{tarea.target_role_name}</span>
+                            </label>
+                          );
+                        })}
                     </div>
                   </div>
 

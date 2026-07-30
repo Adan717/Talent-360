@@ -420,7 +420,34 @@ paso quedaron a la vista los controles de negocio (que actúan como deben):
 
 Los tres "bloqueos" no son fallos: son los candados de negocio del Reloj haciendo su trabajo.
 
-## 🟡 H13 — El estado de apertura queda `failed` mientras el dial dice "ABIERTO"
+## 🟡 H13 — Estado de apertura contradictorio — ✅ CORREGIDO (`189eee9`, `df01826`)
+
+Nueva `logic/estadoSucursal.ts` (función pura, 8 tests) que **combina las dos fuentes** en vez
+de mirar sólo el horario:
+
+| Situación | Antes | Ahora |
+|---|---|---|
+| En horario y alguien abrió | Abierto | **Abierto** (verde) |
+| En horario, sin registro aún | Abierto | **Pendiente de apertura** (ámbar) |
+| En horario, la apertura falló | Abierto ❌ | **Sin abrir** (rojo) |
+| Fuera de horario | Cerrado | **Cerrado** — el registro `opened` es del EVENTO, no significa que siga operando |
+
+El texto de abajo también se ancla al registro e informa cuando la apertura no se completó a
+tiempo, en vez de decir "Apertura a cargo de X" como si todo estuviera bien.
+
+**Dos correcciones que salieron de probar el propio fix:**
+
+1. Un test propio cazó que mi primera versión priorizaba el registro sobre el horario (decía
+   "Abierto" a las 23:00 si se había abierto en la mañana).
+2. Al verificar en vivo, el bug **seguía intacto**: en la V2 el registro existía (`failed`)
+   mientras `isFeatureUnlocked('store_opening')` devolvía `false`, así que la lógica caía al
+   camino "sólo horario". Ahora, si el día **tiene** registro, ese dato manda; el flag premium
+   sólo decide qué hacer cuando no hay registro que contrastar.
+
+**Verificado en vivo:** la píldora pasó de decir "ABIERTO" a **"SIN ABRIR"**, coherente con el
+`failed` que tenía el sistema.
+
+### Descripción original del defecto
 
 Durante esta jornada, `store_daily_opening_statuses.status` quedó en **`failed`** (nadie abrió
 dentro de la ventana) mientras el dial mostraba **"ESTADO DE LA SUCURSAL: ABIERTO"**, porque esa
@@ -435,7 +462,15 @@ contrario de lo que registró el sistema.
 `store_daily_opening_status` — mostrando algo como "En horario, pendiente de apertura" cuando
 el registro no exista o haya quedado `failed`.
 
-## 🟡 H14 — El dial no reacciona al cambio de horario del turno
+## 🟡 H14 — El dial no reacciona al cambio de horario del turno — ✅ CORREGIDO (`189eee9`)
+
+El `useEffect` que hidrata `shiftConfigs` sólo rellenaba huecos (`if (!merged[userId])`), así
+que si RRHH corregía el horario de alguien a media jornada el dial seguía con el viejo hasta
+recargar. Ahora se guarda una huella del valor que mandó el **servidor**: cuando cambia, se
+adopta el nuevo; lo que el usuario editó en la sesión se conserva mientras el servidor no
+cambie.
+
+### Descripción original del defecto
 
 Al mover el fin de turno para probar la salida ordinaria, el dial siguió ofreciendo "Salida
 Anticipada" y "Tomar Comida" con la ventana vieja: conserva la configuración horaria de la carga

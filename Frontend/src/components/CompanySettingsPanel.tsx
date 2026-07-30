@@ -1074,7 +1074,11 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                         {/* Nombre y Cargo */}
                         <div>
                           <p className="font-bold text-sm text-slate-800 leading-tight">{ass.employee?.name || 'Cargando...'}</p>
-                          <p className="text-[10px] text-slate-455 font-extrabold uppercase mt-0.5 tracking-wider">{ass.employee?.role || 'Colaborador'}</p>
+                          {/* H19: `employee.role` NO existe en `employees` (el puesto vive en
+                              `job_role_id`). El backend pedía esa columna en el eager-load y
+                              devolvía 500 al asignar un portador de llaves; ahora manda el puesto
+                              resuelto. */}
+                          <p className="text-[10px] text-slate-455 font-extrabold uppercase mt-0.5 tracking-wider">{ass.employee?.job_role?.name || 'Colaborador'}</p>
                         </div>
                       </div>
 

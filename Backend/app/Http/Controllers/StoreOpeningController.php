@@ -128,7 +128,7 @@ class StoreOpeningController extends Controller
 
         $assignments = StoreOpeningAssignment::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
-            ->with('employee:id,name,email,role,user_id')
+            ->with('employee:id,name,email,job_role_id,user_id', 'employee.jobRole:id,name') // H19
             ->orderBy('priority_order', 'asc')
             ->get();
 
@@ -199,7 +199,7 @@ class StoreOpeningController extends Controller
         $assignment = StoreOpeningAssignment::create($validated);
         
         // Cargar relación
-        $assignment->load('employee:id,name,email,role,user_id');
+        $assignment->load('employee:id,name,email,job_role_id,user_id', 'employee.jobRole:id,name'); // H19
 
         return response()->json([
             'success' => true,
@@ -229,7 +229,7 @@ class StoreOpeningController extends Controller
         ]);
 
         $assignment->update($validated);
-        $assignment->load('employee:id,name,email,role,user_id');
+        $assignment->load('employee:id,name,email,job_role_id,user_id', 'employee.jobRole:id,name'); // H19
 
         return response()->json([
             'success' => true,

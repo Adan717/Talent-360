@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Corre la MISMA suite contra Postgres, que es el motor de producción.
+
+  POR QUÉ EXISTE (H17, 2026-07-30): `phpunit.xml` usa sqlite en memoria porque es rápido, pero
+  sqlite y Postgres no tratan igual los tipos. sqlite guarda un TIME como el texto que le des
+  ("13:00"); Postgres lo normaliza ("13:00:00"). El bug del aforo del comedor —que comparaba esas
+  dos grafías como texto— **pasaba los 4 tests en sqlite** y estaba roto en producción. Toda esa
+  familia de defectos (TIME/DATE, casts implícitos, orden de nulos, mayúsculas en LIKE) es ciega
+  para la suite de sqlite.
+
+  USO:
+      php artisan test -c phpunit.postgres.xml
+  y para un archivo suelto, añadiendo el filtro habitual de artisan.
+
+  Requiere la base `talent360_test` creada en el mismo Postgres del entorno de desarrollo. Se
+  crea una vez con un CREATE DATABASE talent360_test sobre el contenedor de Postgres.
+
+  Es más lenta que sqlite (`RefreshDatabase` migra de verdad), así que no sustituye a
+  `phpunit.xml` para el ciclo rápido: se usa antes de publicar y en CI.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+
+        <!-- La única diferencia real con phpunit.xml: el motor. -->
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_HOST" value="talent360_postgres" force="true"/>
+        <env name="DB_PORT" value="5432" force="true"/>
+        <env name="DB_DATABASE" value="talent360_test" force="true"/>
+        <env name="DB_USERNAME" value="postgres" force="true"/>
+        <env name="DB_PASSWORD" value="Master" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="PULSE_ENABLED" value="false" force="true"/>
+        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
+    </php>
+</phpunit>

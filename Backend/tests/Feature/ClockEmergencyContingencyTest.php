@@ -35,8 +35,12 @@ class ClockEmergencyContingencyTest extends TestCase
         $user->refresh();
 
         // store_opening_assignments.employee_id referencia employees.id, no users.id
-        // (migración 2026_07_07_192928). Se crea 1:1 en el mismo orden para que ambos ids
-        // coincidan, igual que asume el resto del código de StoreOpeningService.
+        // (migración 2026_07_07_192928).
+        //
+        // Antes este helper CONFIABA en que ambos ids coincidieran por crearse "en el mismo
+        // orden". Esa suposición sólo se sostiene si las dos secuencias van a la par: en sqlite
+        // arrancan en 1 las dos y coincide por accidente; en Postgres, con la base ya sembrada,
+        // van desfasadas y el insert violaba la FK. Se resuelve el id real con `employeeId()`.
         // security_pin (distinto de pin_code) vive en employees, no en users.
         DB::table('employees')->insert([
             'tenant_id' => 1,
@@ -51,6 +55,12 @@ class ClockEmergencyContingencyTest extends TestCase
         return $user;
     }
 
+    /** El `employees.id` real del colaborador, que es lo que exige la FK de las asignaciones. */
+    private function employeeId(User $user): int
+    {
+        return (int) DB::table('employees')->where('user_id', $user->id)->value('id');
+    }
+
     public function test_emergency_open_succeeds_with_valid_witness_pins(): void
     {
         $requester = $this->makeEmployee();
@@ -60,7 +70,7 @@ class ClockEmergencyContingencyTest extends TestCase
         DB::table('store_opening_assignments')->insert([
             'tenant_id' => 1,
             'store_id' => 1,
-            'employee_id' => $requester->id,
+            'employee_id' => $this->employeeId($requester),
             'priority_order' => 1,
             'can_open_store' => true,
             'can_close_store' => true,
@@ -157,7 +167,7 @@ class ClockEmergencyContingencyTest extends TestCase
         DB::table('store_opening_assignments')->insert([
             'tenant_id' => 1,
             'store_id' => 1,
-            'employee_id' => $requester->id,
+            'employee_id' => $this->employeeId($requester),
             'priority_order' => 1,
             'has_keys' => true,
             'is_active' => true,
@@ -191,7 +201,7 @@ class ClockEmergencyContingencyTest extends TestCase
         DB::table('store_opening_assignments')->insert([
             'tenant_id' => 1,
             'store_id' => 1,
-            'employee_id' => $requester->id,
+            'employee_id' => $this->employeeId($requester),
             'priority_order' => 1,
             'has_keys' => true,
             'is_active' => true,

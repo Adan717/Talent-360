@@ -791,6 +791,87 @@ publicación, aunque sea más lento (~8 min contra ~5).
 
 ---
 
+## ✅ Turno partido — VERIFICADO, sin defectos
+
+Probado en vivo con dos colaboradores (entrada → salida → segunda entrada el mismo día):
+
+- El guard de "un check-in por día" **permite** la segunda entrada.
+- El retardo **no se vuelve a cobrar** en la segunda mitad (`is_late: false`).
+- La nómina cuenta **un solo día asistido**: el sueldo es diario (`base/6`) y se paga por
+  `attendedDates`, no por horas, así que un turno partido no puede inflar el pago. Confirmado:
+  tras el turno partido, los colaboradores siguen con 5 faltas de 6, no con 4.
+
+---
+
+## 🔴 H21 — Turnos que CRUZAN MEDIANOCHE: una jornada se paga como dos días, y los retardos de madrugada no se cobran — ⚠️ ABIERTO
+
+**Encontrado al probar el escenario nocturno (2026-07-30).** Reproducido en vivo con la tienda
+en 22:00–02:00 y un colaborador con ese mismo turno.
+
+### Defecto 1: una jornada cuenta como dos días
+
+`processPunch` asigna `$date = $now->format('Y-m-d')` — el día **calendario** en la zona del
+tenant, **sin corte de jornada**. La conversión de zona es correcta; lo que falta es el concepto
+de "día de negocio".
+
+Una sola noche trabajada queda partida:
+
+```
+date        type       time
+2026-07-29  check_in   22:00:00
+2026-07-30  check_out  02:00:00
+```
+
+Como la nómina cuenta `attendedDates` (días con al menos un check_in/check_out), **una noche
+genera DOS días asistidos**. Medido en la nómina real:
+
+| | faltas | neto |
+|---|---|---|
+| antes de la noche | 5 | 1 652.78 |
+| después de UNA noche | **4** | **3 305.56** |
+
+El neto se **duplicó** por una sola jornada. Un turno nocturno de 6 noches cobraría días que no
+existieron. Y de paso, cada día queda con un turno a medias: el 29 con una entrada sin cerrar
+(dispara los flags de turno incompleto) y el 30 con una salida huérfana.
+
+### Defecto 2: los retardos después de medianoche nunca se cobran
+
+Con turno 22:00–02:00, un check-in a las **00:30** —dos horas y media tarde— se registra como
+**puntual**:
+
+```
+date        type      time      is_late  late_minutes
+2026-07-30  check_in  00:30:00  f        0
+```
+
+El cálculo compara 00:30 (30 minutos desde medianoche) contra un `shiftStart` de 22:00
+(1 320 minutos). Como 30 < 1 320, concluye que llegó **temprano**. En un turno nocturno, todo lo
+que se fiche pasada la medianoche es impune.
+
+### Alcance
+
+Los dos defectos **favorecen al trabajador y perjudican a la empresa**, y ninguno deja rastro
+visible. Sólo afectan a operaciones con turnos que cruzan medianoche: DecorArte cierra a las
+19:23, así que **hoy no le afecta al negocio actual**, pero sí a cualquier cliente 24h, farmacia,
+gasolinera o tienda de conveniencia.
+
+### Por qué no se arregló en el momento
+
+El arreglo correcto es introducir un **corte de jornada**: cuando el turno del colaborador cruza
+medianoche (`shiftStart > shiftEnd`), los fichajes anteriores a `shiftEnd` se atribuyen al día
+anterior, y el retardo se mide contra el `shiftStart` de esa jornada, no contra el reloj del día
+calendario.
+
+Eso cambia la semántica de la fecha de **todos** los fichajes del sistema y toca nómina, faltas,
+flags de turno incompleto, el estado del dial y los reportes. Es un cambio de fondo con riesgo
+real de regresión, y no es una corrección que deba colarse sin decisión de producto — sobre todo
+cuando la operación actual no tiene turnos nocturnos.
+
+**Queda documentado y pendiente de decisión.** Si se adopta, debe ir con tests de frontera
+(23:59/00:00/00:01, turno que no cruza, cambio de horario de verano) antes de tocar `processPunch`.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

@@ -706,6 +706,91 @@ pregunta obligada es **qué pasa con lo ya generado**.
 
 ---
 
+## 🔴 H19 — El módulo de apertura nunca se pudo configurar (500 al asignar llaves) — ✅ CORREGIDO
+
+**Encontrado en la CUARTA pasada (2026-07-30), al intentar montar la jerarquía de portadores de
+llaves para probar la cascada.**
+
+`POST /store-opening/assignments` devolvía **"Server Error"** siempre. Los tres endpoints de
+gestión hacían `('employee:id,name,email,role,user_id')` y **`employees` no tiene columna
+`role`** — el puesto vive en `job_role_id`. Postgres respondía
+`SQLSTATE[42703]: Undefined column: role`.
+
+### Por qué no saltó antes
+
+Dos motivos que se reforzaban:
+
+1. **sqlite lo toleraba.** Ante unas comillas dobles que no resuelven a una columna, sqlite las
+   trata como **literal de texto**: devolvía una columna `"role"` con el valor `'role'`. Postgres
+   las trata como identificador estricto. Los tests pasaban.
+2. `getAssignments` **no fallaba con la lista vacía**, porque Eloquent no ejecuta el eager-load si
+   no hay filas. El listado "funcionaba" mientras el módulo estaba muerto.
+
+### Lo que arrastraba
+
+Sin asignaciones, la apertura del día se crea **sin responsable** y el sistema estampa
+`failed_no_responsibles`. Ese patrón llevaba **tres jornadas** apareciendo en los eventos sin que
+se entendiera de dónde salía. Con ello quedaban también inalcanzables:
+
+- toda la cascada de delegación de llaves (reportar falta/retardo, traspaso al suplente),
+- el botón "Llamar a Encargado de Llaves" (R100), que nunca tenía a quién llamar,
+- el checklist y el pase de lista de apertura, que sólo se activan para el responsable.
+
+**Arreglo**: se pide `job_role_id` y se carga la relación del puesto. Ojo con la clave: la
+relación se carga como `jobRole` pero Eloquent la **serializa en snake_case**, así que al panel
+le llega `employee.job_role.name` — que además es mejor dato que el anterior (muestra "Supervisor
+de Producción" en vez del rol de sistema). Cubierto por `StoreOpeningAssignmentCrudTest` (5 casos).
+
+---
+
+## 🔴 H20 — El modo OFFLINE estaba roto por UN carácter — ✅ CORREGIDO
+
+`tenant_offline_secrets.secret` se creó como `$table->string('secret')` → **varchar(255)**, y
+`Crypt::encryptString()` devuelve **256** caracteres. Postgres rechaza el INSERT con
+`value too long`; **sqlite no aplica los límites de longitud de VARCHAR**, así que la suite lo
+daba por bueno.
+
+`GET /clock/offline-secret` devolvía error, y sin secreto el dial **no puede firmar la cola
+offline** — es decir, fichar sin internet, que es justo el caso para el que esa cola existe. En
+una tienda con mala conexión, el reloj se queda sin su red de seguridad.
+
+**Arreglo**: la columna pasa a `text`. El error de origen fue poner un límite fijo a un valor
+cuyo tamaño depende del algoritmo de cifrado y del padding, y que puede cambiar al actualizar
+Laravel. Cubierto por `OfflineSecretCabeEnLaColumnaTest`.
+
+---
+
+## 🛠️ El arnés que destapó H19 y H20: la suite contra Postgres
+
+`phpunit.postgres.xml` (nuevo) corre la MISMA suite contra Postgres, que es el motor de
+producción:
+
+```
+php artisan test -c phpunit.postgres.xml
+```
+
+Primera ejecución: **10 fallos** que la suite de sqlite daba por verdes. Tres causas raíz:
+
+| Causa | Tests | Veredicto |
+|---|---|---|
+| `column "role" does not exist` | 3 | **Bug real de producción** (H19) |
+| `value too long for varchar(255)` | 3 | **Bug real de producción** (H20) |
+| FK `store_opening_assignments_employee_id` | 3+1 | Defecto de los tests |
+
+El tercer grupo merece nota aparte: tres tests de apertura de emergencia asumían que
+`users.id == employees.id` "por crearse en el mismo orden". Eso sólo se sostiene si las dos
+secuencias van a la par — cierto en sqlite, falso en Postgres con la base ya sembrada. Ahora
+resuelven el id real.
+
+Tras los arreglos: **875 tests, 0 fallos contra Postgres**.
+
+**Familias de defectos que sqlite no puede ver**, y que conviene tener presentes: tipos TIME/DATE
+(H17), identificadores entre comillas dobles (H19), límites de longitud de VARCHAR (H20),
+integridad referencial y orden de secuencias. Merece la pena correr este arnés antes de cada
+publicación, aunque sea más lento (~8 min contra ~5).
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

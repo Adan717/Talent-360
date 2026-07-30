@@ -658,6 +658,54 @@ para la suite actual.** Vale la pena valorar una pasada de la suite contra Postg
 
 ---
 
+## 🔴 H18 — Los colaboradores con acento en el nombre NO PUEDEN INICIAR SESIÓN — ✅ CORREGIDO
+
+**Encontrado en la TERCERA jornada de regresión (2026-07-30), al entrar por el formulario real
+en vez de por la API.**
+
+### Cómo salió
+
+Al intentar entrar como Adán Cuéllar (`adáncuéllar@pruebaqa360.com`) desde la pantalla de login,
+el formulario no hacía nada. La petición **nunca sale del navegador**: la validación nativa de
+`<input type="email">` rechaza el valor.
+
+```
+El texto seguido del signo "@" no debe incluir el símbolo "á".
+```
+
+### Por qué se pasó por alto la primera vez
+
+H3 corrigió la GENERACIÓN de correos, pero no tocó los ya existentes. Al detectarlo se probó el
+login **por API** (curl) y funcionó —el backend compara bytes—, así que se anotó como "dato
+sucio pendiente de limpiar". Esa lectura era incorrecta: una persona no entra por curl, entra
+por el formulario, y ahí está bloqueada.
+
+En una plantilla mexicana —Adán, José, María, Hernández, Muñoz, Íñiguez— esto deja fuera del
+sistema a buena parte de la empresa, sin más síntoma que un botón que no responde.
+
+### Arreglo
+
+Migración `2026_07_30_190000_backfill_emails_con_acentos`: normaliza con el
+`EmailNormalizer` de H3 los correos que quedaron atrás, en `users` y en la copia que guarda
+`employees`.
+
+**Regla ante colisiones**: si el correo normalizado ya pertenece a otra fila (`josé@x` →
+`jose@x` cuando ese `jose@x` ya existe), se deja el original **intacto** y se registra en el log
+para resolverlo a mano. Pisar el correo de otra persona —o fusionar dos accesos distintos— es
+más grave que el bloqueo que se viene a arreglar.
+
+Cubierto por `BackfillEmailsConAcentosTest` (6 casos): normalización, arrastre del expediente,
+no reescribir filas que ya están bien, colisión, idempotencia y el caso de dos empresas.
+
+### Patrón que se repite
+
+Es la **tercera** vez en esta ronda que un arreglo corrige el comportamiento pero deja los datos
+viejos como estaban: H15 (filas cruzadas de sucursal), H3/H18 (correos con acentos) y, en su
+momento, H1 (`base_salary`, que sí llevó su backfill). Al corregir algo que genera datos, la
+pregunta obligada es **qué pasa con lo ya generado**.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

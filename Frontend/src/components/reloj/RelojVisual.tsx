@@ -20,6 +20,7 @@ import MealQueue from './MealQueue';
 import { SillaRequestsPanel } from './SillaRequestsPanel';
 import { getStoreScheduleState, formatWait } from './logic/storeSchedule';
 import { resolverEstadoSucursal } from './logic/estadoSucursal';
+import { resolverEtiquetaTurno } from './logic/etiquetaTurno';
 
 export default function RelojVisual({ 
   isMobileFrame = false,
@@ -3775,7 +3776,13 @@ export default function RelojVisual({
                         </span>
                       </h2>
                       <p className="text-xs text-indigo-200/80 font-medium">
-                        Turno de hoy: <strong className="text-white">{shiftConfigs[currentUser?.id]?.shiftStart || '09:00'} - {shiftConfigs[currentUser?.id]?.shiftEnd || '18:00'} hrs</strong>
+                        {/* H16: leía `.shiftStart`/`.shiftEnd` de un objeto que se guarda con
+                            `.start`/`.end` — nunca acertaba y anunciaba 09:00-18:00 a todo el
+                            mundo, mientras el backend cobraba contra el turno real. */}
+                        Turno de hoy: <strong className="text-white">{(() => {
+                          const t = resolverEtiquetaTurno(shiftConfigs[currentUser?.id], currentUser);
+                          return `${t.inicio} - ${t.fin}`;
+                        })()} hrs</strong>
                       </p>
                     </div>
                   </div>

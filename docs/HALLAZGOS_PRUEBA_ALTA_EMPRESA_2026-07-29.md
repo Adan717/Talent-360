@@ -532,6 +532,48 @@ enviado por el cliente no desvía la escritura.
 
 ---
 
+## 🟠 H16 — El dial anunciaba un turno y el sistema cobraba contra otro — ✅ CORREGIDO
+
+**Encontrado en la SEGUNDA jornada de regresión (2026-07-30), al cerrar el recorrido.**
+
+### Cómo salió
+
+Con Marisol ya fichada y su expediente en **11:20 – 19:23**, el encabezado del dial mostraba
+**"Turno de hoy: 09:00 - 18:00 hrs"**. El mismo `check_out` de las 11:50 devolvió del backend:
+
+```json
+"early_departure": { "minutes_early": 452, "authorized": false }
+```
+
+452 minutos antes de las 11:50 son las **19:22** — el backend estaba midiendo contra el turno
+REAL del expediente, no contra el 18:00 que el colaborador tenía delante.
+
+### Causa
+
+Discrepancia de grafía dentro del mismo objeto. `useClockEngine` construye cada configuración
+como `{ start, end, ... }` (`initialShifts`, línea 433), y la etiqueta la leía como
+`shiftConfigs[id]?.shiftStart` / `?.shiftEnd`. Esas claves **no existen nunca**, así que la
+etiqueta caía **siempre** a su literal `'09:00'`/`'18:00'` — para todos los colaboradores de
+todas las empresas, con cualquier horario. Era el único sitio con la grafía mala: los otros diez
+usos de `shiftConfigs` del módulo ya leían `.start`/`.end`.
+
+No es cosmético: el backend calcula retardo y salida anticipada contra
+`employees.shiftStart/shiftEnd`. Un colaborador de turno 11:20–19:23 que leyera "18:00" en su
+propio dial y se fuera a esa hora se llevaba **83 minutos de salida anticipada** estampados. La
+app le decía una hora y le cobraba por otra.
+
+### Arreglo
+
+`logic/etiquetaTurno.ts` centraliza la cascada que el resto del motor ya usaba
+(`?.start || currentUser?.shiftStart || '09:00'`, RelojVisual:841), recorta los segundos que
+trae el expediente y marca `esReal: false` cuando está mostrando el valor por defecto — incluido
+el caso de un solo extremo conocido, que era justo lo que hacía parecer fiable el dato.
+
+Cubierto por `etiquetaTurno.test.ts` (9 casos), incluido uno que comprueba que **las claves
+equivocadas que causaron el bug no cuelan como turno**.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

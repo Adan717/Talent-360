@@ -530,6 +530,35 @@ Cubierto por `StoreOpeningStoreIdIsolationTest` (4 casos), incluido uno que comp
 que se abre es lo que el dial lee** —el extremo que faltaba— y otro que un `store_id: 999`
 enviado por el cliente no desvía la escritura.
 
+### Limpieza del histórico (2026-07-30)
+
+El arreglo evita que se creen filas nuevas, pero **no borra las que el bug ya había dejado**. Se
+barrió la instancia V2 con este criterio: fila cuyo `tenant_id` NO coincide con el dueño de su
+`store_id`.
+
+De las **8 tablas** con columna `store_id` (`contingency_declarations`, `meal_queue_rounds`,
+`pase_lista_ratings`, `silla_requests`, `store_daily_opening_statuses`,
+`store_opening_assignments`, `store_opening_events`, `store_opening_settings`), sólo 3 tenían
+filas cruzadas — **7 en total**, todas del tenant 2 sobre la sucursal del tenant 1:
+
+| Tabla | Filas | Detalle |
+|---|---|---|
+| `store_daily_opening_statuses` | 1 | id 8 (`opened`, 30-jul) |
+| `store_opening_events` | 5 | ids 2, 3, 6, 8, 9 (open_store / closing_checklist / failed) |
+| `store_opening_settings` | 1 | id 3 (duplicado de la id 2, que sí está en la sucursal correcta) |
+
+Antes de borrar se comprobó que **ninguna era el único registro de nada**: el tenant 2 ya tenía
+su `status` (id 7), sus `settings` (id 2) y sus `events` (10 y 11) en su propia sucursal. Y que
+**cero foreign keys** apuntan a esas tres tablas, así que el borrado no arrastra nada.
+
+Respaldadas en el servidor antes del `DELETE` (`/root/respaldos/h15_huerfanas_*.csv`) y borradas
+en una sola transacción. Resultado: **0 filas cruzadas en las 8 tablas**, y la app sigue leyendo
+lo suyo (`status` id 7 `opened`, `settings` id 2).
+
+⚠️ Si el bug estuvo activo en la producción del jefe, **ahí hay que repetir este barrido** — el
+código corregido no lo hace solo. Un tenant sin fila en `stores` no reabre el agujero:
+`TenantStore::defaultIdFor()` siembra la sucursal del tenant en vez de caer al `1`.
+
 ---
 
 ## 🟠 H16 — El dial anunciaba un turno y el sistema cobraba contra otro — ✅ CORREGIDO

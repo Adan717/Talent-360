@@ -18,6 +18,36 @@ class EmployeeController extends Controller
         return response()->json($employees);
     }
 
+    /**
+     * H1 (prueba en vivo 2026-07-29) — sincroniza `salary` y `base_salary`.
+     *
+     * `base_salary` es la columna de verdad del dinero: el costo financiero de cada tarea
+     * (`base_salary > 0 ? base_salary : 300.00` en TaskAssignmentController y
+     * TaskSyncController) y el snapshot inmutable del ponche (`base_salary_at_time`) sólo
+     * la leen a ella. Pero la pantalla de alta manda `salary`, así que `base_salary` quedaba
+     * NULL y TODOS los colaboradores se calculaban con el default de $300/día.
+     *
+     * Se espeja en ambos sentidos: si llega una, se copia a la otra; si llegan las dos,
+     * `base_salary` manda (es la autoritativa). Un `null` explícito se respeta en ambas.
+     */
+    private function espejarSueldo(array $data): array
+    {
+        $tieneSalary = array_key_exists('salary', $data);
+        $tieneBase = array_key_exists('base_salary', $data);
+
+        if ($tieneBase && $data['base_salary'] !== null) {
+            $data['salary'] = $data['base_salary'];
+        } elseif ($tieneSalary && $data['salary'] !== null) {
+            $data['base_salary'] = $data['salary'];
+        } elseif ($tieneBase && $data['base_salary'] === null && !$tieneSalary) {
+            $data['salary'] = null;
+        } elseif ($tieneSalary && $data['salary'] === null && !$tieneBase) {
+            $data['base_salary'] = null;
+        }
+
+        return $data;
+    }
+
     public function store(Request $request)
     {
         $currentUser = auth()->user() ?? auth('sanctum')->user();
@@ -163,6 +193,11 @@ class EmployeeController extends Controller
             'base_salary' => 'nullable|numeric',
             'avatar' => 'sometimes|nullable|string',
         ]);
+
+        // H1: `base_salary` es la COLUMNA DE VERDAD del dinero (costo de tarea y snapshot
+        // `base_salary_at_time` del ponche la leen; con NULL caen al default de $300). El FE
+        // del alta manda `salary`, así que se espejan ambas venga la que venga.
+        $data = $this->espejarSueldo($data);
 
         try {
             DB::beginTransaction();
@@ -319,6 +354,9 @@ class EmployeeController extends Controller
             'allowed_modules' => 'sometimes|nullable|array',
             'allowed_features' => 'sometimes|nullable|array',
         ]);
+
+        // H1: misma sincronía de sueldo que en el alta (ver espejarSueldo()).
+        $data = $this->espejarSueldo($data);
 
         try {
             DB::beginTransaction();

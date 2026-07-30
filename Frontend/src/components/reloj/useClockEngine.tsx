@@ -48,6 +48,8 @@ export function useClockEngine(overrideUser?: any) {
     activeEncargadoId, setActiveEncargadoId,
     globalSimDay, setGlobalSimDay,
     isSandboxMode,
+    // H6: ids con entrada tardía ya autorizada por un mando (viene de /sync/state).
+    lateAuthorizedUserIds,
     currentTier,
     punctualityStatus,
     fetchPunctualityStatus
@@ -3325,8 +3327,28 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
 
-    // Límite de retardo ordinario vencido
-    if (!hasCheckedIn && isLate && clockState === 'inactive') {
+    // Límite de retardo ordinario vencido.
+    //
+    // H6 (prueba en vivo 2026-07-29): NO bloquear a quien ya tiene la entrada tardía
+    // AUTORIZADA. El backend ya lo deja fichar (ClockService consulta
+    // `late_authorization_requests` con status `approved`), pero el dial no conocía ese
+    // estado y seguía mostrando el candado: el colaborador autorizado se quedaba sin poder
+    // registrar su entrada aunque el servidor sí se lo permitía.
+    //
+    // H7 (mismo día): este bloqueo se evaluaba ANTES de la rama de tienda cerrada, así que
+    // el encargado de apertura que llegaba fuera de tolerancia nunca alcanzaba el botón de
+    // abrir la sucursal → nadie abría, y con la tienda cerrada NADIE del equipo podía fichar
+    // (deadlock: el primer día de una empresa, o cualquier día que el encargado llegue tarde,
+    // el Reloj quedaba inoperable hasta intervenir por backend). Ahora, si la tienda está
+    // cerrada y este usuario es quien puede abrirla, se deja pasar a la rama de apertura —
+    // que es la acción que destraba a todo el equipo. Su retardo se sigue registrando
+    // server-side al fichar; lo que se evita es el candado que no ofrece ninguna salida.
+    const tengoAutorizacionAprobada = (lateAuthorizedUserIds || []).includes(Number(currentUser?.id));
+    const puedoAbrirLaTienda = storeStatus === 'closed'
+      && (Number(currentUser?.id) === Number(responsibleId) || currentUser?.esAperturador === true);
+
+    if (!hasCheckedIn && isLate && clockState === 'inactive'
+        && !tengoAutorizacionAprobada && !puedoAbrirLaTienda) {
       return {
         text: '🔒 Acceso Bloqueado',
         bg: 'bg-slate-700 text-slate-300 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',

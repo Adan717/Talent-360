@@ -405,7 +405,23 @@ class ClockController extends Controller
             }));
         }
 
+        // H6 (prueba en vivo 2026-07-29): el backend YA respeta la autorización de entrada
+        // tardía aprobada (ClockService deja fichar pese al Retardo Extremo si existe una fila
+        // `approved` para el usuario y la fecha), pero el dial nunca conocía ese estado y
+        // seguía mostrando "ACCESO BLOQUEADO" — el colaborador autorizado no podía fichar
+        // aunque el servidor ya se lo permitía. Se expone la lista de ids autorizados HOY
+        // (en la zona del tenant, igual que el resto de lo fechado).
+        $hoyTenant = \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString();
+        $lateAuthorizedUserIds = DB::table('late_authorization_requests')
+            ->where('tenant_id', $tenantId)
+            ->where('date', $hoyTenant)
+            ->where('status', 'approved')
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
         return response()->json([
+            'late_authorized_user_ids' => $lateAuthorizedUserIds,
             'time_entries' => $timeEntries,
             'store_logs' => $storeLogs,
             'contingencies' => $contingencies,

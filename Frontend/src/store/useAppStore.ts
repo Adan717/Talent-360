@@ -20,6 +20,8 @@ interface AppState {
   matrixTimeline: any[];
   isSandboxMode: boolean;
   activeEncargadoId: number;
+  /** H6: ids de colaboradores con autorización de entrada tardía APROBADA hoy (del backend). */
+  lateAuthorizedUserIds: number[];
   hasAlertedStoreDelay: boolean;
   globalSimDay: string;
   setGlobalSimDay: (day: string) => void;
@@ -117,6 +119,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // explícitamente (toggle de RelojVisual o al entrar a Matrix QA).
   isSandboxMode: false,
   activeEncargadoId: 1,
+  lateAuthorizedUserIds: [],
   globalSimDay: 'Sábado',
   globalBreakStartTimes: {},
   globalBreakEndTimes: {},
@@ -507,6 +510,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (data.active_encargado_id) {
            set({ activeEncargadoId: data.active_encargado_id });
         }
+
+        // H6: ids con autorización de entrada tardía APROBADA hoy. El backend ya deja fichar
+        // a esta gente pese al Retardo Extremo; el dial necesita saberlo para no seguir
+        // mostrando "ACCESO BLOQUEADO" a quien ya fue autorizado.
+        set({ lateAuthorizedUserIds: Array.isArray(data.late_authorized_user_ids) ? data.late_authorized_user_ids.map(Number) : [] });
 
         if (data.job_roles) {
            set({ globalRoles: toArr(data.job_roles) });

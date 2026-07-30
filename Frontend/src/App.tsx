@@ -226,7 +226,9 @@ function MainLayout() {
                             systemSettings?.onboarding_completed === 1 || 
                             systemSettings?.onboarding_completed === '1';
 
-      if (completedFlag) {
+      const isAdmin = currentUser?.role === 'admin' || currentUser?.system_role === 'platform_admin' || currentUser?.role === 'Gerente General';
+
+      if (completedFlag || !isAdmin) {
         setShowOnboarding(false);
       } else {
         setShowOnboarding(true);

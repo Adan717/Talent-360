@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Building2, ShieldCheck } from 'lucide-react';
+import { X, Building2, ShieldCheck, Sparkles } from 'lucide-react';
 import { SaaSAccountSettings } from './SaaSAccountSettings';
 
 interface CompanyProfileModalProps {
@@ -35,13 +35,26 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-            title="Cerrar"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                onClose();
+                window.dispatchEvent(new CustomEvent('open-onboarding-wizard'));
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-colors shadow-sm"
+              title="Reconfigurar giro comercial, puestos y tareas"
+            >
+              <Sparkles size={14} /> Wizard de Giro
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              title="Cerrar"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}

@@ -544,6 +544,12 @@ class SubscriptionController extends Controller
             // Set context for traits
             session(['tenant_id' => $tenant->id]);
 
+            // Explicitly set onboarding_completed to false for new tenant so OnboardingWizard is triggered
+            DB::table('system_settings')->updateOrInsert(
+                ['key' => 'onboarding_completed', 'tenant_id' => $tenant->id],
+                ['value' => json_encode(false), 'created_at' => now(), 'updated_at' => now()]
+            );
+
             // 2. Associate or Create Admin User
             $currentUser = auth('sanctum')->user();
             if ($currentUser && $currentUser->tenant_id === null) {

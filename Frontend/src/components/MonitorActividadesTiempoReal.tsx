@@ -430,7 +430,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
           <div className="space-y-3 relative z-10 max-w-4xl mx-auto">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-3 flex-wrap leading-tight">
-              Bienvenido a <span className="bg-gradient-to-r from-blue-300 via-white to-sky-200 bg-clip-text text-transparent">{currentUser?.tenant?.name || 'DecorArte 360'}</span>
+              {/* H12: el default era 'DecorArte 360' — una empresa recién registrada saludaba
+                  con el nombre de OTRA en su primera pantalla. Se prefiere el nombre real
+                  (tenant o company_name de settings) y, si aún no cargó, algo neutro. */}
+              Bienvenido a <span className="bg-gradient-to-r from-blue-300 via-white to-sky-200 bg-clip-text text-transparent">{currentUser?.tenant?.name || systemSettings?.company_name || 'tu empresa'}</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed italic">

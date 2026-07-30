@@ -64,6 +64,32 @@ class TenantInitializationService
             );
         }
 
+        // H12 (prueba en vivo 2026-07-29): el alta no sembraba `company_name`, así que quedaba
+        // NULL y el frontend caía a un default hardcodeado — una empresa recién registrada
+        // saludaba con "Bienvenido a DecorArte 360", el nombre de OTRA empresa, en su primera
+        // pantalla. Se siembra con el nombre del propio tenant.
+        //
+        // Va fuera del bucle de $defaults a propósito: aquel usa updateOrInsert (re-aplica el
+        // valor en cada llamada) y este dato es EDITABLE por el cliente desde Configuración —
+        // una re-inicialización no debe revertir la marca que ya personalizó.
+        $yaTieneNombre = DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'company_name')
+            ->exists();
+
+        if (!$yaTieneNombre) {
+            $nombreTenant = DB::table('tenants')->where('id', $tenantId)->value('name');
+            if (!empty($nombreTenant)) {
+                DB::table('system_settings')->insert([
+                    'tenant_id' => $tenantId,
+                    'key' => 'company_name',
+                    'value' => json_encode($nombreTenant),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
         $this->seedPermissionCatalog($tenantId);
     }
 

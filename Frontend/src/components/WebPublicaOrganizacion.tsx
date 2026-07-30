@@ -139,7 +139,9 @@ export function WebPublicaOrganizacion() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   const [tenant, setTenant] = useState<any>({
-    name: 'DecorArte 360',
+    // H12: el placeholder era el nombre de OTRA empresa; en la web PÚBLICA eso significa
+    // enseñarle a un visitante la marca equivocada mientras carga la real.
+    name: '',
     logo_url: '',
     brand_color: '#8b102e'
   });

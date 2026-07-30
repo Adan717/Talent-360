@@ -15,8 +15,11 @@ const Linkedin = ({ size = 16 }: { size?: number }) => (
 
 export default function AtsPortalSettings() {
   const [settings, setSettings] = useState({
-    name: 'DecorArte 360',
-    public_slug: 'decorarte360',
+    // H12: el estado inicial traía el nombre y el slug de OTRA empresa. Si la carga de la
+    // configuración fallaba, el admin veía —y podía GUARDAR— esa marca ajena como suya.
+    // En blanco: se rellenan con lo que responda el backend.
+    name: '',
+    public_slug: '',
     brand_color: '#8b5cf6',
     logo_url: '',
     public_portal_enabled: true,

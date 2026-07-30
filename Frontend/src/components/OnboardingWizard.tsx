@@ -18,7 +18,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { fetchState, updateSetting, currentUser, setCurrentUser, isModuleUnlocked, globalRoles } = useAppStore();
 
-  const [subStep, setSubStep] = useState<'giro' | 'puestos' | 'tareas'>('giro');
+  const [subStep, setSubStep] = useState<'giro' | 'puestos' | 'tareas' | 'cursos'>('giro');
   const [activeRoleFilterTab, setActiveRoleFilterTab] = useState<string>('all');
 
   const allPlatformModules = [
@@ -160,6 +160,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [selectedRoleId, setSelectedRoleId] = useState<number | string>('');
   const [createdRoleId, setCreatedRoleId] = useState<number | null>(null);
 
+
   // Mappings y presets interactivos para la precarga del wizard
   const SUB_NICHOS: Record<string, { id: string; label: string; icon: string }[]> = {
     materias_primas: [
@@ -197,7 +198,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     puestos: { name: string; area: string; esAperturador: boolean; jerarquiaLlaves: number }[];
     tareas: { title: string; category: string; priority: string; assistant_type: string; assistant_prompt: string; target_role_name: string }[];
     vacantes: { title: string; salary: string }[];
-    cursos: { title: string; type: string }[];
+    cursos: { title: string; type?: string; role?: string; category?: string }[];
   }> = {
     materias_primas: {
       puestos: [
@@ -414,6 +415,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const activePreset = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
   const [selectedPuestos, setSelectedPuestos] = useState<string[]>(() => activePreset.puestos.map(p => p.name));
   const [selectedTareas, setSelectedTareas] = useState<string[]>(() => activePreset.tareas.map(t => t.title));
+  const [selectedCursos, setSelectedCursos] = useState<string[]>(() => activePreset.cursos.map(c => c.title));
 
   // Al cambiar de giro, resetear selección de puestos y tareas
   const handleSelectNicho = (nichoKey: 'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
@@ -422,6 +424,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     const preset = PRESET_DATA[nichoKey] || PRESET_DATA.retail;
     setSelectedPuestos(preset.puestos.map(p => p.name));
     setSelectedTareas(preset.tareas.map(t => t.title));
+    setSelectedCursos(preset.cursos.map(c => c.title));
     if (SUB_NICHOS[nichoKey]?.length) {
       setSelectedSubNicho(SUB_NICHOS[nichoKey][0].id);
     }
@@ -995,6 +998,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   >
                     3. Tareas
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubStep('cursos')}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'cursos' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                  >
+                    4. Cursos
+                  </button>
                 </div>
               </div>
 
@@ -1344,12 +1354,105 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     >
                       ← Puestos
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setSubStep('cursos')}
+                      className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                    >
+                      Ver Cursos LMS & LFT ({selectedCursos.length}) <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* BLOQUE 1D: CURSOS DE CAPACITACIÓN LMS (LFT & GIRO) */}
+              {subStep === 'cursos' && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Selecciona los cursos de inducción y capacitación que se precargarán en la <strong>Academia LMS</strong> de tus colaboradores (incluye Ley Federal del Trabajo y Ley Silla).
+                  </p>
+
+                  <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <span>🎓</span> Cursos LMS a Inyectar ({selectedCursos.length}/{activePreset.cursos.length})
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCursos(activePreset.cursos.map(c => c.title))}
+                          className="text-[10px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-2 py-1 rounded-lg"
+                        >
+                          Todos
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCursos([])}
+                          className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded-lg"
+                        >
+                          Ninguno
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                      {activePreset.cursos.map((curso) => {
+                        const isChecked = selectedCursos.includes(curso.title);
+                        const isLft = curso.title.includes('LFT') || curso.title.includes('Ley Silla');
+                        return (
+                          <label
+                            key={curso.title}
+                            onClick={() => {
+                              if (isChecked) {
+                                setSelectedCursos(selectedCursos.filter((c: string) => c !== curso.title));
+                              } else {
+                                setSelectedCursos([...selectedCursos, curso.title]);
+                              }
+                            }}
+                            className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer select-none transition-all min-h-[50px] active:scale-[0.99] ${
+                              isChecked 
+                                ? 'border-purple-300 bg-purple-50/40 text-slate-800 font-semibold' 
+                                : 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 shrink-0 mt-0.5"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold leading-tight mb-1">{curso.title}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`text-[9px] px-2 py-0.5 rounded font-black ${isLft ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-100'}`}>
+                                  {isLft ? '📜 Ley Silla / LFT' : '🧁 Capacitación Giro'}
+                                </span>
+                                {curso.role && (
+                                  <span className="text-[9px] text-slate-500 font-medium">Dirigido a: {curso.role}</span>
+                                )}
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Acciones Finales del Bloque 1D */}
+                  <div className="pt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSubStep('tareas')}
+                      className="py-3.5 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs shrink-0"
+                    >
+                      ← Tareas
+                    </button>
                     <button 
                       onClick={handleConfigureNicho}
                       disabled={loading || (selectedNicho === 'custom' && !customNichoDesc.trim()) || (selectedNicho !== 'custom' && selectedPuestos.length === 0)}
                       className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
-                      {loading ? <Loader2 size={18} className="animate-spin" /> : <>Confirmar y Cargar Estructura Completa <ChevronRight size={18} /></>}
+                      {loading ? <Loader2 size={18} className="animate-spin" /> : <>Confirmar e Inyectar Estructura Completa <ChevronRight size={18} /></>}
                     </button>
                   </div>
                 </div>

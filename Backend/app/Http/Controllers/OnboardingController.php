@@ -510,7 +510,8 @@ class OnboardingController extends Controller
             'sub_nicho' => 'nullable|string',
             'custom_nicho_description' => 'nullable|string',
             'selected_puestos' => 'nullable|array',
-            'selected_tareas' => 'nullable|array'
+            'selected_tareas' => 'nullable|array',
+            'selected_cursos' => 'nullable|array'
         ]);
 
         $tenantId = auth()->user()->tenant_id ?? 1;
@@ -798,21 +799,49 @@ class OnboardingController extends Controller
             }
 
             // 4. Inyectar Cursos Iniciales en Academia LMS (`academy_courses`)
+            $selectedCursos = $request->input('selected_cursos');
             $coursesData = [];
-            if ($nicho === 'retail') {
-                $coursesData = [
-                    ['title' => 'Protocolo de Apertura y Operación Comercial', 'description' => 'Aprende los pasos clave para abrir la tienda, verificar cajas y dar la bienvenida al primer cliente.', 'course_type' => 'induction'],
-                    ['title' => 'Excelencia en Servicio al Cliente y Venta Cruzada', 'description' => 'Técnicas de venta en piso, abordaje al cliente y sugerencias de productos complementarios.', 'course_type' => 'training']
-                ];
-            } elseif ($nicho === 'restaurante') {
-                $coursesData = [
-                    ['title' => 'Manejo Higiénico de Alimentos (NOM-251)', 'description' => 'Reglas sanitarias para la preparación de insumos y prevención de contaminación cruzada.', 'course_type' => 'induction'],
-                    ['title' => 'Seguridad e Inspección de Válvulas de Gas', 'description' => 'Protocolos de encendido y cierre seguro de estufas y cilindros de gas.', 'course_type' => 'training']
-                ];
+
+            if (!empty($selectedCursos)) {
+                foreach ($selectedCursos as $cTitle) {
+                    $coursesData[] = [
+                        'title' => $cTitle,
+                        'description' => 'Curso de capacitación inicial precargado desde el Wizard de Onboarding.',
+                        'course_type' => (str_contains($cTitle, 'Inducción') || str_contains($cTitle, 'Protocolo')) ? 'induction' : 'training'
+                    ];
+                }
             } else {
-                $coursesData = [
-                    ['title' => 'Inducción al Software Corporativo y Gestión del Tiempo', 'description' => 'Uso de herramientas internas, registro de asistencia y coordinación de tareas.', 'course_type' => 'induction']
+                // Cursos Normativos de Ley Federal del Trabajo (LFT) y Ley Silla obligatorios para todos los giros
+                $lftCourses = [
+                    ['title' => 'Derechos Laborales & Ley Federal del Trabajo (LFT)', 'description' => 'Fundamentos de la jornada laboral, descansos, aguinaldo y derechos del trabajador en México.', 'course_type' => 'training'],
+                    ['title' => 'Ley Silla & Salud Ocupacional (LFT / NOM-035)', 'description' => 'Protocolo de ergonomía en piso de ventas y mostrador, descansos en silla con respaldo y salud laboral.', 'course_type' => 'training']
                 ];
+
+                if ($nicho === 'materias_primas' || $nicho === 'reposteria') {
+                    $coursesData = array_merge($lftCourses, [
+                        ['title' => 'Protocolo de Operación Comercial y Calidad Decorarte 360', 'description' => 'Manual operativo y estándares de calidad para la tienda de materias primas y repostería.', 'course_type' => 'induction'],
+                        ['title' => 'Manejo e Higiene de Materias Primas, Fraccionado y Conservación PEPS', 'description' => 'Buenas prácticas de manipulación de insumos a granel, fraccionado y caducidades.', 'course_type' => 'training'],
+                        ['title' => 'Técnicas de Venta Asistida en Insumos de Repostería y Panadería', 'description' => 'Asesoría técnica al cliente sobre rendimiento de coberturas, esencias e insumos especializadados.', 'course_type' => 'training']
+                    ]);
+                } elseif ($nicho === 'retail') {
+                    $coursesData = array_merge($lftCourses, [
+                        ['title' => 'Protocolo de Apertura y Operación Comercial', 'description' => 'Aprende los pasos clave para abrir la tienda, verificar cajas y dar la bienvenida al primer cliente.', 'course_type' => 'induction'],
+                        ['title' => 'Excelencia en Servicio al Cliente y Venta Cruzada', 'description' => 'Técnicas de venta en piso, abordaje al cliente y sugerencias de productos complementarios.', 'course_type' => 'training']
+                    ]);
+                } elseif ($nicho === 'restaurante') {
+                    $coursesData = array_merge($lftCourses, [
+                        ['title' => 'Manejo Higiénico de Alimentos (NOM-251)', 'description' => 'Reglas sanitarias para la preparación de insumos y prevención de contaminación cruzada.', 'course_type' => 'induction'],
+                        ['title' => 'Seguridad e Inspección de Válvulas de Gas', 'description' => 'Protocolos de encendido y cierre seguro de estufas y cilindros de gas.', 'course_type' => 'training']
+                    ]);
+                } elseif ($nicho === 'taller') {
+                    $coursesData = array_merge($lftCourses, [
+                        ['title' => 'Protocolo de Seguridad Industrial y Uso de EPP', 'description' => 'Inspección de equipo de protección personal, prevención de riesgos e higiene en taller.', 'course_type' => 'induction']
+                    ]);
+                } else {
+                    $coursesData = array_merge($lftCourses, [
+                        ['title' => 'Inducción al Software Corporativo y Gestión del Tiempo', 'description' => 'Uso de herramientas internas, registro de asistencia y coordinación de tareas.', 'course_type' => 'induction']
+                    ]);
+                }
             }
 
             foreach ($coursesData as $course) {

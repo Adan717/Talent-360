@@ -205,7 +205,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const fetchData = async () => {
     try {
       setRefreshing(true);
-      const res = await axiosInstance.get('/api/v1/admin/dashboard/monitor');
+      const res = await axiosInstance.get('/admin/dashboard/monitor');
       if (res.data?.status === 'success' && res.data?.data) {
         setUsers(res.data.data.users || []);
         setAvailableTasks(res.data.data.available_tasks || []);
@@ -266,7 +266,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     setShowAiModal(true);
     setAiLoading(true);
     try {
-      const res = await axiosInstance.post('/api/v1/admin/dashboard/suggest-work-plan', {
+      const res = await axiosInstance.post('/admin/dashboard/suggest-work-plan', {
         date: new Date().toISOString().split('T')[0]
       });
       if (res.data?.success && (res.data?.suggestion || res.data?.plan)) {
@@ -309,7 +309,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const handleAssignExpressTask = async () => {
     if (!selectedUserForAssign || !customTaskTitle) return;
     try {
-      await axiosInstance.post('/api/v1/admin/dashboard/create-task', {
+      await axiosInstance.post('/admin/dashboard/create-task', {
         title: customTaskTitle,
         estimated_mins: customTaskMins,
         points: Math.max(5, Math.round(customTaskMins / 3)),
@@ -329,7 +329,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const handleRegisterVendor = async () => {
     if (!newVendorName) return;
     try {
-      await axiosInstance.post('/api/v1/admin/dashboard/vendors', {
+      await axiosInstance.post('/admin/dashboard/vendors', {
         vendor_name: newVendorName,
         driver_name: newVendorDriver || 'Repartidor',
         order_ref: newVendorOrderRef || 'S/N'
@@ -367,7 +367,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
     try {
-      const res = await axiosInstance.post('/api/v1/admin/dashboard/send-message', {
+      const res = await axiosInstance.post('/admin/dashboard/send-message', {
         content: chatInput,
         type: 'general'
       });

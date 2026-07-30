@@ -921,6 +921,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [editingJobRole, setEditingJobRole] = useState<any>(null);
   const [editingJobRoleTab, setEditingJobRoleTab] = useState<'perfil'|'reglas'>('perfil');
   const [newUserRole, setNewUserRole] = useState('');
+  // H4: rol de SISTEMA (permisos), distinto del puesto. Antes iba 'empleado' fijo y para
+  // nombrar un supervisor había que dar de alta y luego editar la ficha.
+  const [newUserSystemRole, setNewUserSystemRole] = useState('empleado');
   const [contractType, setContractType] = useState('Fijo'); // Fijo o Destajo
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [selectedRoleForUsersModal, setSelectedRoleForUsersModal] = useState<any | null>(null);
@@ -1131,12 +1134,20 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         // diacríticos exige SMTPUTF8 y la invitación de bienvenida fallaba en silencio.
         email: `${slugParaCorreo(newUserName)}${companyDomain}`,
         password: 'password123',
-        role: 'empleado',
+        // H4: antes iba 'empleado' fijo — para nombrar un supervisor o un admin había que dar
+        // de alta y DESPUÉS editar su ficha. El backend ya valida in:admin,supervisor,empleado.
+        role: newUserSystemRole,
         salary: newUserSalary ? parseFloat(newUserSalary) : null
       });
       setShowForm(false);
+      // H4: limpiar TODO el formulario. Antes sólo se reseteaban nombre y sueldo, así que al
+      // dar de alta al siguiente colaborador el <select> conservaba el puesto del anterior —
+      // fácil registrar a alguien con el puesto equivocado por descuido.
       setNewUserName('');
       setNewUserSalary('');
+      setNewUserRole('');
+      setNewUserSystemRole('empleado');
+      setContractType('Fijo');
       await fetchData(); // Recargar
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (e: any) {
@@ -2339,6 +2350,30 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                        {jobRoles.filter((role: any) => role.is_active !== false).map((role: any) => (
                                           <option key={role.id} value={role.id}>{role.name}</option>
                                        ))}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                                       <span className="text-[10px]">▼</span>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Campo: Nivel de acceso (H4) — antes el alta creaba SIEMPRE
+                                  'empleado' y había que editar la ficha después para nombrar
+                                  un supervisor o un admin. */}
+                              <div className="group">
+                                 <label className="block text-[11px] font-black text-slate-400 group-focus-within:text-blue-600 uppercase tracking-wider mb-1.5 transition-colors">Nivel de Acceso</label>
+                                 <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                       <Shield size={18} />
+                                    </div>
+                                    <select
+                                       value={newUserSystemRole}
+                                       onChange={e => setNewUserSystemRole(e.target.value)}
+                                       className="pl-10 w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all duration-300 appearance-none cursor-pointer"
+                                    >
+                                       <option value="empleado">Colaborador (acceso estándar)</option>
+                                       <option value="supervisor">Supervisor (valida y autoriza)</option>
+                                       <option value="admin">Administrador (acceso total)</option>
                                     </select>
                                     <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
                                        <span className="text-[10px]">▼</span>

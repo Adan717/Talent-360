@@ -98,6 +98,26 @@ class EmployeeSalaryMirrorTest extends TestCase
     }
 
     /**
+     * H4: el alta debe respetar el nivel de acceso elegido. El formulario mandaba siempre
+     * 'empleado' y había que editar la ficha después para nombrar a un supervisor o admin;
+     * ya expone el selector, así que se fija que el backend lo honre.
+     */
+    public function test_el_alta_respeta_el_rol_de_sistema_elegido(): void
+    {
+        $admin = $this->admin();
+
+        foreach (['supervisor', 'admin', 'empleado'] as $rol) {
+            $this->actingAs($admin)->postJson('/api/v1/employees', [
+                'name' => "Persona {$rol}",
+                'email' => "{$rol}@decorarte.test",
+                'role' => $rol,
+            ])->assertStatus(201);
+
+            $this->assertDatabaseHas('users', ['email' => "{$rol}@decorarte.test", 'role' => $rol]);
+        }
+    }
+
+    /**
      * El punto de la historia: que el sueldo capturado se USE en el dinero. Antes, con
      * `base_salary` nulo, el costo caía al default de $300/día.
      */

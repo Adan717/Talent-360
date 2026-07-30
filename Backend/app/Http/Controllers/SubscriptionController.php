@@ -121,14 +121,14 @@ class SubscriptionController extends Controller
         $price = 0;
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         if (strtolower($payload['plan']) === 'pro') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 24 * 12); // $24/emp/mo billed annually
             } else {
                 $price = (float) ($employees * 29); // $29/emp/mo
             }
         } elseif (strtolower($payload['plan']) === 'enterprise') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 55 * 12); // $55/emp/mo billed annually
             } else {
@@ -221,14 +221,14 @@ class SubscriptionController extends Controller
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         $price = 0;
         if (strtolower($plan) === 'pro') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 24 * 12);
             } else {
                 $price = (float) ($employees * 29);
             }
         } elseif (strtolower($plan) === 'enterprise') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 55 * 12);
             } else {

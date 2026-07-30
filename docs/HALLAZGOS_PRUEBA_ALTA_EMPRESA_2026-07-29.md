@@ -127,7 +127,19 @@ Autorizar deja la solicitud en `approved`.
 **Lección para futuros resyncs:** no basta con resolver el conflicto dentro de un archivo; hay que
 verificar que el archivo **siga montado** cuando el otro lado reemplaza pantallas completas.
 
-## 🟠 H6 — La autorización aprobada NO desbloquea el dial del colaborador
+## 🟠 H6 — La autorización aprobada NO desbloquea el dial — ✅ CORREGIDO (`efcf0cc`, `be3b971`)
+
+`/sync/state` expone ahora `late_authorized_user_ids` (aprobadas de HOY, en la zona horaria del
+tenant y scopeadas por empresa) y el dial levanta el candado para esa gente.
+
+**Verificado end-to-end en la instancia V2**, con el ciclo completo:
+
+1. Marisol llega 43 min tarde (tolerancia 10) → dial con "🔒 ACCESO BLOQUEADO"
+2. Solicita autorización desde el propio dial → queda `pending`
+3. El admin la aprueba en el panel del Monitor 360 → `approved`
+4. Marisol recarga → **el candado desapareció** y el dial quedó operativo
+
+### Descripción original del defecto
 
 `ClockService` (l.848) respeta correctamente la aprobación: si existe una fila `approved` en
 `late_authorization_requests` para ese usuario y fecha, permite el `check_in` pese al Retardo
@@ -141,7 +153,28 @@ sin poder registrar su entrada aunque el servidor ya se lo permite.
 **Fix sugerido:** exponer el estado de la solicitud al dial (o incluirlo en el payload de
 `/clock/state`) y levantar el bloqueo del FE cuando esté `approved`.
 
-## 🟠 H7 — Deadlock de apertura: si nadie abrió la sucursal a tiempo, nadie puede fichar
+## 🟠 H7 — Deadlock de apertura — ✅ CORREGIDO (`efcf0cc`, `be3b971`)
+
+**Causa:** el candado por tolerancia se evaluaba ANTES de la rama de tienda cerrada, así que el
+encargado de apertura que llegaba fuera de tolerancia nunca alcanzaba el botón de abrir la
+sucursal. Nadie abría → con la tienda cerrada nadie del equipo podía fichar.
+
+**Fix:** con la tienda cerrada, quien puede abrirla (el responsable del día o cualquiera con
+`esAperturador`) pasa a la rama de apertura — la acción que destraba a todo el equipo. Su retardo
+se sigue registrando server-side al fichar; lo que se elimina es el candado sin salida.
+
+La regla se extrajo a `Frontend/src/components/reloj/logic/accessBlock.ts` (función pura, junto a
+las otras 5 del Reloj) con **12 tests** que fijan tanto los arreglos como que no se abrieron
+agujeros:
+
+- el colaborador **sin** llaves sigue bloqueado aunque la tienda esté cerrada
+- ser aperturador **no** da paso libre si la tienda ya está abierta (ahí no hay deadlock)
+- la autorización de OTRO colaborador no levanta tu candado
+
+Antes esa decisión vivía enterrada en ~500 líneas de condiciones dentro de `useClockEngine` y
+sólo se podía comprobar abriendo la app a la hora exacta del escenario.
+
+### Descripción original del defecto
 
 Configuración por defecto de una empresa nueva: `storeSchedule = {openTime: 08:00, closeTime:
 20:00}`, `clockOpConfig.arrivalWindowMins = 30`. Si la sucursal no se abre dentro de esa ventana,

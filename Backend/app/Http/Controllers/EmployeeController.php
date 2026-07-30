@@ -103,7 +103,14 @@ class EmployeeController extends Controller
             }
         }
 
-        $email = $request->input('email');
+        // H3: normalizar ANTES de todo (búsqueda de duplicados, validación y guardado). El
+        // correo autogenerado por el alta salía con acentos (`adáncuéllar@...`), que exige
+        // SMTPUTF8 para viajar: la invitación de bienvenida y las notificaciones fallaban en
+        // silencio. Se normaliza en el request para que todo el flujo vea el mismo valor.
+        $email = \App\Support\EmailNormalizer::normalizar($request->input('email'));
+        if ($email !== null) {
+            $request->merge(['email' => $email]);
+        }
         $password = $request->input('password', 'password123');
 
         // 3. Verificar si ya existe un colaborador con este email en el tenant
@@ -295,6 +302,11 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
         $currentUser = auth()->user() ?? auth('sanctum')->user();
         $tenant = $currentUser ? $currentUser->tenant : null;
+
+        // H3: misma normalización que en el alta (ver EmailNormalizer).
+        if ($request->has('email')) {
+            $request->merge(['email' => \App\Support\EmailNormalizer::normalizar($request->input('email'))]);
+        }
 
         // Validar límite de cuentas administrativas (Seats) por plan en actualización
         $role = $request->input('role');

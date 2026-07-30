@@ -9,6 +9,7 @@ import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
 import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
+import { slugParaCorreo } from '../lib/emailSlug';
 
 interface JobRoleCardItemProps {
   rol: any;
@@ -1126,7 +1127,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         name: newUserName,
         job_role_id: newUserRole,
         contract_type: contractType,
-        email: `${newUserName.toLowerCase().replace(/\s/g, '')}${companyDomain}`,
+        // H3: sin normalizar, "Adán Cuéllar" generaba `adáncuéllar@...` — un correo con
+        // diacríticos exige SMTPUTF8 y la invitación de bienvenida fallaba en silencio.
+        email: `${slugParaCorreo(newUserName)}${companyDomain}`,
         password: 'password123',
         role: 'empleado',
         salary: newUserSalary ? parseFloat(newUserSalary) : null

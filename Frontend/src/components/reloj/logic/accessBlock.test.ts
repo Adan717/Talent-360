@@ -55,6 +55,25 @@ describe('H6 — autorización de entrada tardía aprobada', () => {
   });
 });
 
+describe('H10 — quien ya fichó no debe ver el candado de entrada', () => {
+  it('no bloquea si el motor ya registró su entrada', () => {
+    expect(shouldBlockForLateTolerance({ ...base, hasCheckedIn: true })).toBe(false);
+  });
+
+  it('no bloquea si el BACKEND tiene su check_in aunque el motor se haya recalculado mal', () => {
+    // El caso real: jornada con comida terminada, pero el estado del motor volvió a 'inactive'.
+    expect(shouldBlockForLateTolerance({
+      ...base, hasCheckedIn: false, tieneCheckInEnBackend: true, clockState: 'inactive',
+    })).toBe(false);
+  });
+
+  it('sigue bloqueando a quien de verdad no ha fichado', () => {
+    expect(shouldBlockForLateTolerance({
+      ...base, hasCheckedIn: false, tieneCheckInEnBackend: false,
+    })).toBe(true);
+  });
+});
+
 describe('H7 — deadlock de apertura', () => {
   it('deja pasar al responsable de la apertura cuando la tienda está cerrada', () => {
     expect(shouldBlockForLateTolerance({

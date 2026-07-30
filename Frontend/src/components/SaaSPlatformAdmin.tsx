@@ -11,6 +11,7 @@ import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
+import { slugParaCorreo } from '../lib/emailSlug';
 
 const moduleAudits = [
   {
@@ -668,7 +669,9 @@ export const SaaSPlatformAdmin = () => {
         plan: newTenantPlan.toLowerCase(),
         company_name: newTenantName,
         admin_name: 'Admin ' + newTenantName,
-        admin_email: `admin_${Math.floor(Math.random() * 10000)}@${newTenantName.toLowerCase().replace(/\s/g, '')}.com`,
+        // H3: el DOMINIO también salía con acentos si la empresa los llevaba en el nombre
+        // ("Panadería" → @panadería.com), produciendo un correo inservible para SMTP.
+        admin_email: `admin_${Math.floor(Math.random() * 10000)}@${slugParaCorreo(newTenantName)}.com`,
         admin_password: 'password123'
       });
       

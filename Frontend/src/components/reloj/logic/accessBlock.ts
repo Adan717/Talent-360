@@ -38,6 +38,11 @@ export interface AccessBlockInput {
   esAperturador?: boolean;
   /** Ids con autorización de entrada tardía APROBADA hoy (de /sync/state). */
   lateAuthorizedUserIds?: Array<number | string> | null;
+  /**
+   * H10: ¿el backend tiene un `check_in` suyo para hoy? Es el dato autoritativo; `hasCheckedIn`
+   * sale del estado del motor, que puede quedar desincronizado tras un refresco a medias.
+   */
+  tieneCheckInEnBackend?: boolean;
 }
 
 /** ¿Este colaborador puede destrabar la sucursal cerrada abriéndola él mismo? */
@@ -48,6 +53,16 @@ export function canOpenClosedStore(input: AccessBlockInput): boolean {
     input.responsibleId != null &&
     Number(input.currentUserId) === Number(input.responsibleId);
   return soyElResponsable || input.esAperturador === true;
+}
+
+/**
+ * H10 — defensa en profundidad: el candado es para impedir ENTRAR fuera de tolerancia, así que
+ * no tiene sentido para quien YA registró su entrada hoy. Si por cualquier razón el estado del
+ * motor se recalcula mal (un refresco a medias, una jornada con comida ya terminada), el dato
+ * autoritativo del backend —tiene `check_in` de hoy— manda sobre el estado local.
+ */
+export function yaRegistroEntradaHoy(input: AccessBlockInput): boolean {
+  return input.hasCheckedIn === true || input.tieneCheckInEnBackend === true;
 }
 
 /** ¿Tiene la entrada tardía ya autorizada por un mando? */
@@ -61,8 +76,10 @@ export function hasApprovedLateAuthorization(input: AccessBlockInput): boolean {
  * Decisión final: ¿se muestra el candado "Acceso Bloqueado / Tolerancia vencida"?
  */
 export function shouldBlockForLateTolerance(input: AccessBlockInput): boolean {
-  const aplicaElCandado =
-    !input.hasCheckedIn && input.isLate && input.clockState === 'inactive';
+  // H10: quien ya registró su entrada hoy no puede quedar bloqueado por "no puedes entrar".
+  if (yaRegistroEntradaHoy(input)) return false;
+
+  const aplicaElCandado = input.isLate && input.clockState === 'inactive';
   if (!aplicaElCandado) return false;
 
   // H6: ya lo autorizaron → el servidor lo deja fichar, el dial también.

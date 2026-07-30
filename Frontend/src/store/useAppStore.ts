@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import axiosInstance from '../lib/axios';
 import { useTaskStore } from './useTaskStore';
 import type { User, Tenant } from '../types';
+import { fichajesDeHoy, hoyEnZona, fechaDeFichaje } from '../lib/jornadaDelDia';
 
 interface AppState {
   isLoadingDB: boolean;
@@ -553,8 +554,13 @@ export const useAppStore = create<AppState>((set, get) => ({
           }
 
           if (data.time_entries) {
-            const todayStr = new Date().toLocaleDateString('sv-SE');
-            const todayEntries = data.time_entries.filter((entry: any) => entry.date === todayStr);
+            // H10: el filtro usaba la fecha del DISPOSITIVO (`new Date()`), pero el backend
+            // fecha cada ponche con la zona horaria del TENANT. Si no coinciden —colaborador
+            // de viaje, dispositivo con la zona mal puesta, empresa de otra región— se
+            // descartaban TODOS los fichajes del día: sin `check_in` el motor caía a
+            // `inactive` y, con retardo, aparecía el candado sin salida. Misma familia que el
+            // corte del día por tenant ya corregido en el backend (A5/M5).
+            const todayEntries = fichajesDeHoy(data.time_entries, data.system_settings?.timezone);
 
             const clockStates: Record<number, string> = {};
             const checkInTimes: Record<number, number> = {};
@@ -713,11 +719,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
          // Cargar QA Matrix desde audit_logs del Backend (solo si no estamos en Sandbox)
          if (data.audit_logs && !get().isSandboxMode) {
-            const todayStr = new Date().toLocaleDateString('sv-SE');
+            // H10 (mismo patrón que los fichajes): el día se corta con la zona del TENANT,
+            // no con la del dispositivo, o la bitácora del día sale vacía en cuanto ambas
+            // difieren.
+            const todayStr = hoyEnZona(data.system_settings?.timezone);
             // Si hay sesión de simulación activa, incluir todos los logs traídos para esa sesión simulada
             const targetLogs = activeSimSession
               ? data.audit_logs
-              : data.audit_logs.filter((log: any) => log.date === todayStr);
+              : data.audit_logs.filter((log: any) => fechaDeFichaje(log.date) === todayStr);
 
             const mappedLogs = targetLogs.map((log: any) => ({
                 id: log.id,

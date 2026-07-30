@@ -3355,6 +3355,8 @@ export function useClockEngine(overrideUser?: any) {
       responsibleId,
       esAperturador: currentUser?.esAperturador === true,
       lateAuthorizedUserIds,
+      // H10: dato autoritativo del backend, por si el estado del motor se recalculó mal.
+      tieneCheckInEnBackend: arrivalTimes?.[currentUser?.id] !== undefined,
     })) {
       return {
         text: '🔒 Acceso Bloqueado',

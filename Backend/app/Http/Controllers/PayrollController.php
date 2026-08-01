@@ -69,9 +69,12 @@ class PayrollController extends Controller
                 'role' => $employee->role ?? 'Colaborador',
                 'lates' => $payroll['incidents']['lates'],
                 'absences' => $payroll['incidents']['total_absences'],
-                'base' => $payroll['salary']['base'],
-                'penalty' => $payroll['deductions_breakdown']['total'],
-                'net' => $payroll['salary']['net'],
+                // Importes redondeados a centavos: son dinero. Sin esto salían con la cola del
+                // float (`2722.222222222221`), que el panel pintaba como "2,722.222" —tres
+                // decimales en pesos— y que también viajaba al Excel y al PDF de prenómina.
+                'base' => round((float) $payroll['salary']['base'], 2),
+                'penalty' => round((float) $payroll['deductions_breakdown']['total'], 2),
+                'net' => round((float) $payroll['salary']['net'], 2),
                 'salary_pending' => ($payroll['salary']['base'] === null || $payroll['salary']['base'] <= 0),
                 'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
                 'approval_status' => $payroll['approval']['status']

@@ -141,6 +141,38 @@ class EmployeePayrollController extends Controller
             $tenantId = auth()->user()->tenant_id ?? 1;
             [$startDate, $endDate] = $this->getCurrentWeekRange();
 
+            // H22: antes esto recalculaba y sobrescribía la fila SIEMPRE, mirara o no en qué
+            // estado estaba. Dos daños reales:
+            //  - firmar dos veces PISABA la fecha de la primera firma, así que la constancia de
+            //    conformidad pasaba a decir la fecha de la última pulsación;
+            //  - una nómina ya autorizada por la empresa volvía a "firmada por el empleado" con
+            //    un importe recalculado, sin que quedara rastro.
+            $existente = WeeklyPayroll::where('tenant_id', $tenantId)
+                ->where('employee_id', $employee->id)
+                ->where('start_date', $startDate)
+                ->where('end_date', $endDate)
+                ->first();
+
+            // Una vez que la empresa autorizó el pago, el periodo está cerrado: la firma del
+            // trabajador ya se recogió y volver atrás cambiaría un importe ya aprobado.
+            if ($existente && !in_array($existente->status, ['draft', 'pending_employee'], true)
+                && $existente->status !== 'approved_by_employee') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esta nómina ya fue autorizada por la empresa y no admite cambios.',
+                ], 409);
+            }
+
+            // Ya firmada: idempotente. Se devuelve la MISMA fila, con su fecha y su importe
+            // originales — que es exactamente lo que el trabajador aceptó.
+            if ($existente && $existente->status === 'approved_by_employee' && $existente->employee_approved_at) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Esta nómina ya estaba firmada de conformidad.',
+                    'data' => $existente,
+                ]);
+            }
+
             // Calcular datos finales reales
             $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
 

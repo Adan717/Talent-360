@@ -885,6 +885,72 @@ integración, incluido el control de turno diurno).
 
 ---
 
+## 🔴 H22 — Una nómina ya firmada podía recalcularse y revertirse — ✅ CORREGIDO
+
+**Encontrado al recorrer el ciclo de aprobación de nómina (2026-08-01).**
+
+`EmployeePayrollController::approvePayrollWeekly` hacía un `updateOrCreate` que **recalculaba y
+sobrescribía todos los campos** —importe incluido— y forzaba `status = 'approved_by_employee'`,
+sin mirar en qué estado estaba la fila. Dos daños, medidos en vivo:
+
+1. **Firmar dos veces pisaba la fecha de la primera firma.** Comprobado: `21:58:32` → `21:58:52`.
+   `employee_approved_at` es la constancia de que el trabajador aceptó de conformidad ESE cálculo
+   en ESE momento; pasaba a decir la fecha de la última pulsación.
+2. **Una nómina ya autorizada por la empresa volvía atrás.** Al forzar el estado, un periodo
+   aprobado por el administrador regresaba a "firmada por el empleado" con un importe recalculado.
+
+Lo que sí funcionaba: el comando `payroll:calculate-weekly` **respeta** las nóminas firmadas —se
+verificó en vivo que un recálculo no las toca—. El agujero estaba sólo en este endpoint.
+
+**Arreglo**: si ya está firmada, la respuesta es idempotente y devuelve la fila original, con su
+fecha y su importe. Si la empresa ya autorizó el pago, responde `409` y no toca nada.
+
+---
+
+## 🔴 H23 — La aprobación de nómina del administrador NO SE GUARDABA — ✅ CORREGIDO
+
+`PayrollController::approvePayroll` era un **stub**:
+
+```php
+public function approvePayroll(Request $request)
+{
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Nómina aprobada y lista para timbrar.'
+    ]);
+}
+```
+
+Devolvía éxito **sin tocar la base de datos**. Verificado en vivo: tras aprobar, el estado seguía
+en `approved_by_employee`. La pantalla confirmaba una autorización de pago que no existía — sin
+estado, sin fecha y sin responsable.
+
+Es la clase de defecto más difícil de detectar mirando la aplicación: no hay error, no hay
+pantalla rota, y el mensaje afirma justo lo que el usuario esperaba leer.
+
+**Arreglo**: migración con `admin_approved_at` y `admin_approved_by`, y el método ahora
+(1) exige rol de administrador o supervisor, (2) acota el `employee_id` al tenant —los ids son
+globales—, (3) **impide autorizar el pago propio**, (4) exige que el trabajador haya firmado
+antes, porque no se autoriza un cálculo que él no ha visto, y (5) es idempotente: reautorizar no
+reescribe quién ni cuándo fue la primera vez.
+
+**Cuidado con el consumidor real.** El botón "Aprobar y Timbrar (CFDI)" de `ReportesManager`
+llama a este endpoint **sin `employee_id`**: aprueba el periodo completo. Exigir el campo habría
+roto el único camino que la empresa usa de verdad. El endpoint soporta los dos modos; el masivo
+salta las que aún no ha firmado el trabajador y **dice cuántas quedaron fuera**, en vez de dar un
+"listo" que oculte que media plantilla sigue pendiente.
+
+Cubierto por `NominaAprobacionTest` (12 casos).
+
+### Nota aparte, no corregida
+
+`BillingController::timbrarNomina` toma el `net_salary` **del cliente** en vez de leerlo de la
+nómina aprobada. Requiere ser administrador y emite un CFDI real ante el SAT, así que conviene
+que el importe timbrado salga de la fila autorizada y no del payload. Queda anotado como mejora
+de endurecimiento, no se tocó en esta ronda.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

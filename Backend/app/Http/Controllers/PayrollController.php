@@ -147,11 +147,151 @@ class PayrollController extends Controller
         }, 'prenomina_' . $startDate . '_' . $endDate . '.xlsx');
     }
 
+    /**
+     * Autorización de pago por parte de la EMPRESA.
+     *
+     * H23: este método era un stub. Devolvía `"Nómina aprobada y lista para timbrar."` **sin
+     * tocar la base de datos**, así que la pantalla confirmaba una autorización que no existía:
+     * ni estado, ni fecha, ni responsable. Un periodo podía darse por aprobado sin que quedara
+     * constancia de quién lo autorizó.
+     *
+     * Ahora exige que el trabajador haya firmado antes (no se autoriza un cálculo que él no ha
+     * visto), deja registrado quién y cuándo, y no permite que nadie autorice su propio pago.
+     */
     public function approvePayroll(Request $request)
     {
+        $validated = $request->validate([
+            'employee_id' => 'nullable|integer',
+        ]);
+
+        $actor = auth()->user();
+        $tenantId = $actor->tenant_id ?? 1;
+
+        if (!in_array($actor->role ?? '', ['admin', 'supervisor', 'platform_admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sólo un administrador o supervisor puede autorizar el pago de una nómina.',
+            ], 403);
+        }
+
+        [$startDate, $endDate] = $this->getPeriodDates($request);
+
+        // Sin `employee_id` se autoriza el PERIODO COMPLETO: es lo que hace el botón "Aprobar y
+        // Timbrar" del panel de reportes, que no manda a nadie en concreto. Se autorizan sólo las
+        // nóminas que el trabajador ya firmó, y nunca la del propio actor.
+        if (empty($validated['employee_id'])) {
+            return $this->autorizarPeriodoCompleto($tenantId, $actor, $startDate, $endDate);
+        }
+
+        // Acotado al tenant: `employee_id` viene del cliente y los ids son globales.
+        $empleado = Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('id', $validated['employee_id'])
+            ->first();
+
+        if (!$empleado) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Colaborador no encontrado en tu empresa.',
+            ], 404);
+        }
+
+        // Nadie firma el cheque de su propio sueldo: la autorización es el segundo par de ojos.
+        if ((int) $empleado->user_id === (int) $actor->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes autorizar el pago de tu propia nómina. Debe hacerlo otro administrador.',
+            ], 403);
+        }
+
+        $nomina = \App\Models\WeeklyPayroll::where('tenant_id', $tenantId)
+            ->where('employee_id', $empleado->id)
+            ->where('start_date', $startDate)
+            ->where('end_date', $endDate)
+            ->first();
+
+        if (!$nomina || !$nomina->employee_approved_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El colaborador aún no ha firmado de conformidad esta nómina.',
+            ], 422);
+        }
+
+        // Idempotente: reautorizar no reescribe quién ni cuándo se autorizó la primera vez.
+        if ($nomina->status === 'approved_by_admin' && $nomina->admin_approved_at) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Esta nómina ya estaba autorizada.',
+                'data' => $nomina,
+            ]);
+        }
+
+        $nomina->update([
+            'status' => 'approved_by_admin',
+            'admin_approved_at' => Carbon::now(),
+            'admin_approved_by' => $actor->id,
+        ]);
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Nómina aprobada y lista para timbrar.'
+            'message' => 'Nómina aprobada y lista para timbrar.',
+            'data' => $nomina->fresh(),
+        ]);
+    }
+
+    /**
+     * Autoriza de una vez todas las nóminas FIRMADAS del periodo (H23).
+     *
+     * Se salta a propósito las que el trabajador aún no ha firmado —no se autoriza un cálculo que
+     * él no ha visto— y la del propio actor, para que la autorización siga siendo un segundo par
+     * de ojos también en el modo masivo. Informa de cuántas quedaron fuera y por qué, en vez de
+     * dar un "listo" que oculte que media plantilla sigue pendiente.
+     */
+    private function autorizarPeriodoCompleto(int $tenantId, $actor, string $startDate, string $endDate)
+    {
+        $miEmpleadoId = Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $actor->id)
+            ->value('id');
+
+        $delPeriodo = \App\Models\WeeklyPayroll::where('tenant_id', $tenantId)
+            ->where('start_date', $startDate)
+            ->where('end_date', $endDate)
+            ->get();
+
+        $autorizadas = 0;
+        $sinFirmar = 0;
+
+        foreach ($delPeriodo as $nomina) {
+            if ($miEmpleadoId && (int) $nomina->employee_id === (int) $miEmpleadoId) {
+                continue; // la propia nunca
+            }
+            if (!$nomina->employee_approved_at) {
+                $sinFirmar++;
+                continue;
+            }
+            if ($nomina->status === 'approved_by_admin' && $nomina->admin_approved_at) {
+                continue; // ya autorizada: no se reescribe quién ni cuándo
+            }
+
+            $nomina->update([
+                'status' => 'approved_by_admin',
+                'admin_approved_at' => Carbon::now(),
+                'admin_approved_by' => $actor->id,
+            ]);
+            $autorizadas++;
+        }
+
+        $mensaje = "Nómina aprobada y lista para timbrar. {$autorizadas} autorizada(s).";
+        if ($sinFirmar > 0) {
+            $mensaje .= " {$sinFirmar} sin autorizar: el colaborador aún no ha firmado de conformidad.";
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $mensaje,
+            'approved' => $autorizadas,
+            'pending_employee_signature' => $sinFirmar,
         ]);
     }
 

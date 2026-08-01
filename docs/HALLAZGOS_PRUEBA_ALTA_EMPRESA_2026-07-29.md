@@ -803,7 +803,7 @@ Probado en vivo con dos colaboradores (entrada → salida → segunda entrada el
 
 ---
 
-## 🔴 H21 — Turnos que CRUZAN MEDIANOCHE: una jornada se paga como dos días, y los retardos de madrugada no se cobran — ⚠️ ABIERTO
+## 🔴 H21 — Turnos que CRUZAN MEDIANOCHE: una jornada se pagaba como dos días, y los retardos de madrugada no se cobraban — ✅ CORREGIDO
 
 **Encontrado al probar el escenario nocturno (2026-07-30).** Reproducido en vivo con la tienda
 en 22:00–02:00 y un colaborador con ese mismo turno.
@@ -855,20 +855,33 @@ visible. Sólo afectan a operaciones con turnos que cruzan medianoche: DecorArte
 19:23, así que **hoy no le afecta al negocio actual**, pero sí a cualquier cliente 24h, farmacia,
 gasolinera o tienda de conveniencia.
 
-### Por qué no se arregló en el momento
+### El arreglo
 
-El arreglo correcto es introducir un **corte de jornada**: cuando el turno del colaborador cruza
-medianoche (`shiftStart > shiftEnd`), los fichajes anteriores a `shiftEnd` se atribuyen al día
-anterior, y el retardo se mide contra el `shiftStart` de esa jornada, no contra el reloj del día
-calendario.
+`App\Support\JornadaLaboral` introduce el **día de negocio**. La regla se aplica **sólo** si el
+turno del colaborador cruza medianoche (`shiftStart` posterior a `shiftEnd`); en cualquier otro
+caso —o si falta el horario— devuelve la fecha calendario, exactamente como antes. Los turnos
+diurnos, que son la inmensa mayoría, no pueden verse afectados.
 
-Eso cambia la semántica de la fecha de **todos** los fichajes del sistema y toca nómina, faltas,
-flags de turno incompleto, el estado del dial y los reportes. Es un cambio de fondo con riesgo
-real de regresión, y no es una corrección que deba colarse sin decisión de producto — sobre todo
-cuando la operación actual no tiene turnos nocturnos.
+El corte es el **punto medio del hueco** entre el fin de un turno y el inicio del siguiente. Con
+22:00–02:00 cae a las 12:00, así que fichar a las 22:00 abre la jornada del día, y a las 02:00
+—o a las 03:00 si se salió tarde— la cierra. Se eligió el punto medio en vez de un margen fijo
+porque se adapta solo a cualquier turno (con 23:00–07:00 el corte queda a las 15:00) sin números
+mágicos por caso.
 
-**Queda documentado y pendiente de decisión.** Si se adopta, debe ir con tests de frontera
-(23:59/00:00/00:01, turno que no cruza, cambio de horario de verano) antes de tocar `processPunch`.
+**El retardo se corrigió de paso, sin tocarlo.** `processPunch` ancla la hora esperada a `$date`
+(`"$date $shiftStart"`), así que con la fecha de jornada correcta un fichaje de las 00:30 se
+compara contra las 22:00 de AYER y da 150 minutos, en vez de compararse contra las 22:00 del
+mismo día y dar cero. Un solo cambio en lugar de dos.
+
+**Efecto colateral detectado y cerrado:** varios puntos reconstruyen un instante pegando
+`"$date $time"`. Como la madrugada se guarda con la fecha del día anterior, eso apuntaba a un
+instante 24 h antes del real — el mínimo de turno para poder comer daba ~24 h y dejaba pasar la
+comida al momento. `JornadaLaboral::instanteDe()` deshace el desfase, y un test de ida y vuelta
+comprueba que archivar y reconstruir devuelve el instante intacto.
+
+**Cobertura**: `JornadaLaboralTest` (20 casos: fronteras del corte, 23:59/00:00/00:01, cambio de
+mes y de año, horario de verano, ida y vuelta) y `TurnoNocturnoCruzaMedianocheTest` (4 casos de
+integración, incluido el control de turno diurno).
 
 ---
 

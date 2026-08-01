@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hoyEnZona, fechaDeFichaje, fichajesDeHoy } from './jornadaDelDia';
+import { hoyEnZona, fechaDeFichaje, fichajesDeHoy, turnoCruzaMedianoche, jornadaVigente } from './jornadaDelDia';
 
 describe('fechaDeFichaje (H10)', () => {
   it('deja pasar el formato normal del backend', () => {
@@ -66,5 +66,78 @@ describe('fichajesDeHoy (H10)', () => {
     expect(fichajesDeHoy([], 'America/Mexico_City')).toEqual([]);
     expect(fichajesDeHoy(null, 'America/Mexico_City')).toEqual([]);
     expect(fichajesDeHoy(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe('jornada nocturna en el cliente (H21)', () => {
+  const MX = 'America/Mexico_City';
+
+  it('reconoce el turno que cruza medianoche', () => {
+    expect(turnoCruzaMedianoche('22:00:00', '02:00:00')).toBe(true);
+    expect(turnoCruzaMedianoche('09:00', '18:00')).toBe(false);
+    expect(turnoCruzaMedianoche(null, '02:00')).toBe(false);
+    expect(turnoCruzaMedianoche('basura', '02:00')).toBe(false);
+  });
+
+  it('antes del corte la jornada sigue siendo la de AYER', () => {
+    // 07:30Z = 01:30 en Ciudad de México: plena madrugada del turno nocturno.
+    const madrugada = new Date('2026-07-30T07:30:00Z');
+    expect(jornadaVigente(MX, '22:00', '02:00', madrugada)).toBe('2026-07-29');
+  });
+
+  it('despues del corte ya es la jornada de hoy', () => {
+    // 04:00Z = 22:00 del 29: arranca la jornada del 29.
+    const noche = new Date('2026-07-30T04:00:00Z');
+    expect(jornadaVigente(MX, '22:00', '02:00', noche)).toBe('2026-07-29');
+
+    // 20:00Z = 14:00 del 30, ya pasado el corte de las 12:00.
+    const tarde = new Date('2026-07-30T20:00:00Z');
+    expect(jornadaVigente(MX, '22:00', '02:00', tarde)).toBe('2026-07-30');
+  });
+
+  it('un turno diurno usa siempre el dia calendario', () => {
+    const madrugada = new Date('2026-07-30T07:30:00Z');
+    expect(jornadaVigente(MX, '09:00', '18:00', madrugada)).toBe('2026-07-30');
+    expect(jornadaVigente(MX, null, null, madrugada)).toBe('2026-07-30');
+  });
+
+  it('cruza bien el cambio de mes', () => {
+    // 07:00Z del 1 de agosto = 01:00 local: pertenece al 31 de julio.
+    const finDeMes = new Date('2026-08-01T07:00:00Z');
+    expect(jornadaVigente(MX, '22:00', '02:00', finDeMes)).toBe('2026-07-31');
+  });
+
+  it('EL CASO DEL BUG: cada quien se filtra con SU turno', () => {
+    // Mismo tenant, dos turnos. El backend fecha al nocturno bajo la jornada de ayer.
+    const hoy = hoyEnZona('America/Mexico_City');
+    const ayer = (() => {
+      const [a, m, d] = hoy.split('-').map(Number);
+      const x = new Date(Date.UTC(a, m - 1, d));
+      x.setUTCDate(x.getUTCDate() - 1);
+      return x.toISOString().slice(0, 10);
+    })();
+
+    const entries = [
+      { user_id: 1, type: 'check_in', date: hoy },   // diurno, fichó hoy
+      { user_id: 2, type: 'check_in', date: ayer },  // nocturno, su jornada empezó ayer
+    ];
+    const turnos: Record<number, { shiftStart: string; shiftEnd: string }> = {
+      1: { shiftStart: '09:00:00', shiftEnd: '18:00:00' },
+      2: { shiftStart: '22:00:00', shiftEnd: '02:00:00' },
+    };
+
+    const filtrados = fichajesDeHoy(entries, MX, e => turnos[(e as any).user_id]);
+
+    // El diurno siempre entra. El nocturno entra sólo si AHORA estamos en su madrugada; lo que
+    // se comprueba aquí es que se le aplica SU turno y no el del otro.
+    expect(filtrados.some(e => (e as any).user_id === 1)).toBe(true);
+    const esperadoNocturno = jornadaVigente(MX, '22:00', '02:00') === ayer;
+    expect(filtrados.some(e => (e as any).user_id === 2)).toBe(esperadoNocturno);
+  });
+
+  it('sin resolvedor de turno se comporta como antes', () => {
+    const hoy = hoyEnZona(MX);
+    const entries = [{ user_id: 1, type: 'check_in', date: hoy }];
+    expect(fichajesDeHoy(entries, MX)).toHaveLength(1);
   });
 });

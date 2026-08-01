@@ -8,30 +8,28 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * H21 — turnos que CRUZAN MEDIANOCHE. Test de CARACTERIZACIÓN: fija el comportamiento ACTUAL,
- * que es defectuoso, para que el día que se corrija haya con qué comparar.
+ * H21 — turnos que CRUZAN MEDIANOCHE, ya corregidos con el corte de jornada de
+ * `App\Support\JornadaLaboral`. Nació como test de caracterización del defecto; estas
+ * aserciones son las que entonces estaban comentadas.
  *
- * `processPunch` asigna `date = now->format('Y-m-d')`: el día CALENDARIO en la zona del tenant,
- * sin concepto de "día de negocio". Con un turno 22:00–02:00 eso parte cada jornada en dos:
+ * ANTES, `processPunch` asignaba `date = now->format('Y-m-d')`: el día CALENDARIO, sin concepto
+ * de "día de negocio". Con un turno 22:00–02:00 eso partía cada jornada en dos:
  *
  *   2026-07-29  check_in   22:00
  *   2026-07-30  check_out  02:00
  *
- * Dos consecuencias, ambas medidas en vivo (ver el doc de hallazgos):
+ * Dos daños, ambos medidos en vivo (ver el doc de hallazgos):
  *
- *  1. La nómina cuenta `attendedDates`, así que UNA noche genera DOS días asistidos: las faltas
- *     de la semana bajaron de 5 a 4 y el neto se duplicó (1 652.78 → 3 305.56) por una sola
+ *  1. La nómina cuenta `attendedDates`, así que UNA noche generaba DOS días asistidos: las faltas
+ *     de la semana bajaban de 5 a 4 y el neto se duplicaba (1 652.78 → 3 305.56) por una sola
  *     jornada.
- *  2. El retardo se mide contra el reloj del día calendario, así que un check-in a las 00:30 con
- *     turno de 22:00 —2h30 tarde— sale PUNTUAL: 30 < 1320.
+ *  2. El retardo se medía contra el reloj del día calendario, así que un check-in a las 00:30 con
+ *     turno de 22:00 —2h30 tarde— salía PUNTUAL: 30 < 1320.
  *
- * NO se corrige aquí a propósito. El arreglo exige un corte de jornada (si `shiftStart >
- * shiftEnd`, lo anterior a `shiftEnd` pertenece al día previo), y eso cambia la semántica de la
- * fecha de TODOS los fichajes: toca nómina, faltas, flags de turno incompleto, el dial y los
- * reportes. Es decisión de producto, y la operación actual no tiene turnos nocturnos.
- *
- * CUANDO SE CORRIJA: estos tests deben empezar a fallar. Ese es su propósito — invertir las
- * aserciones marcadas y el sistema quedará descrito correctamente.
+ * El arreglo ancla el fichaje al día en que EMPEZÓ la jornada. Como `processPunch` construye la
+ * hora esperada sobre `$date`, corregir la fecha corrigió el retardo de paso — un solo cambio.
+ * El último caso es el control que protege a los turnos diurnos, que son la inmensa mayoría y no
+ * deben notar nada.
  */
 class TurnoNocturnoCruzaMedianocheTest extends TestCase
 {
@@ -81,7 +79,7 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
         ])->assertStatus(200);
     }
 
-    public function test_la_jornada_nocturna_queda_partida_en_dos_dias(): void
+    public function test_la_jornada_nocturna_queda_en_un_solo_dia(): void
     {
         $velador = $this->veladorNocturno();
 
@@ -95,17 +93,15 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
 
         $this->assertCount(2, $filas);
 
-        // COMPORTAMIENTO ACTUAL (defectuoso): entrada y salida en días distintos.
+        // Ambos extremos pertenecen a la jornada que EMPEZÓ el 29.
         $this->assertSame('2026-07-29', (string) $filas[0]->date);
         $this->assertSame('check_in', $filas[0]->type);
-        $this->assertSame('2026-07-30', (string) $filas[1]->date);
+        $this->assertSame('2026-07-29', (string) $filas[1]->date,
+            'La salida de madrugada cierra la jornada de ayer, no abre la de hoy.');
         $this->assertSame('check_out', $filas[1]->type);
-
-        // AL CORREGIR: ambas filas deben caer en 2026-07-29 (el día en que EMPEZÓ la jornada).
-        // $this->assertSame('2026-07-29', (string) $filas[1]->date);
     }
 
-    public function test_una_sola_noche_genera_dos_dias_asistidos(): void
+    public function test_una_sola_noche_cuenta_como_un_dia_asistido(): void
     {
         $velador = $this->veladorNocturno();
 
@@ -117,15 +113,12 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
             ->whereIn('type', ['check_in', 'check_out'])
             ->distinct()->count('date');
 
-        // COMPORTAMIENTO ACTUAL: 2 días asistidos por UNA noche. Como la nómina paga por día
-        // (`base/6` sobre `attendedDates`), esa noche se cobra dos veces.
-        $this->assertSame(2, $diasConAsistencia);
-
-        // AL CORREGIR: 1.
-        // $this->assertSame(1, $diasConAsistencia);
+        // UNA noche, UN día asistido. Antes eran dos, y como la nómina paga por día
+        // (`base/6` sobre `attendedDates`), esa noche se cobraba dos veces.
+        $this->assertSame(1, $diasConAsistencia);
     }
 
-    public function test_el_retardo_de_madrugada_no_se_cobra(): void
+    public function test_el_retardo_de_madrugada_si_se_cobra(): void
     {
         $velador = $this->veladorNocturno();
 
@@ -136,13 +129,10 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
 
         $this->assertSame('00:30:00', substr((string) $fila->time, 0, 8));
 
-        // COMPORTAMIENTO ACTUAL: puntual. Se compara 30 min contra 1320 y "llegó temprano".
-        $this->assertFalse((bool) $fila->is_late);
-        $this->assertSame(0, (int) $fila->late_minutes);
-
-        // AL CORREGIR: 150 minutos de retardo.
-        // $this->assertTrue((bool) $fila->is_late);
-        // $this->assertSame(150, (int) $fila->late_minutes);
+        // 2h30 de retardo. Antes salía puntual: se comparaba 30 min contra 1320 y el sistema
+        // concluía que había llegado temprano.
+        $this->assertTrue((bool) $fila->is_late);
+        $this->assertSame(150, (int) $fila->late_minutes);
     }
 
     public function test_un_turno_que_NO_cruza_medianoche_sigue_bien(): void

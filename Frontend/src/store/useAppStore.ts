@@ -560,7 +560,18 @@ export const useAppStore = create<AppState>((set, get) => ({
             // descartaban TODOS los fichajes del día: sin `check_in` el motor caía a
             // `inactive` y, con retardo, aparecía el candado sin salida. Misma familia que el
             // corte del día por tenant ya corregido en el backend (A5/M5).
-            const todayEntries = fichajesDeHoy(data.time_entries, data.system_settings?.timezone);
+            // H21: la jornada se resuelve con el turno de CADA colaborador. Con un turno que
+            // cruza medianoche el backend fecha los ponches por el día en que EMPEZÓ la jornada,
+            // así que a la 01:00 sus fichajes viven bajo la fecha de ayer; filtrarlos por "hoy"
+            // los descartaría y el motor lo daría por no fichado a media noche de trabajo.
+            const turnoPorUsuario = new Map<number, { shiftStart?: string | null; shiftEnd?: string | null }>(
+              (data.users || []).map((u: any) => [Number(u.id), { shiftStart: u.shiftStart, shiftEnd: u.shiftEnd }])
+            );
+            const todayEntries = fichajesDeHoy(
+              data.time_entries,
+              data.system_settings?.timezone,
+              (e: any) => turnoPorUsuario.get(Number(e.user_id)),
+            );
 
             const clockStates: Record<number, string> = {};
             const checkInTimes: Record<number, number> = {};

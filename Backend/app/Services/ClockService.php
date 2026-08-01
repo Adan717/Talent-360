@@ -7,6 +7,7 @@ use App\Models\TimeEntry;
 use App\Models\User;
 use App\Models\UserCourseProgress;
 use App\Helpers\TenantTimezone;
+use App\Support\JornadaLaboral;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -364,15 +365,26 @@ class ClockService
         $isOfflineSyncFlag = isset($details['offline_sync']) && $details['offline_sync'] === true;
         $isOffline = $occurredAt !== null || $isOfflineSyncFlag;
 
+        // H21: el turno del colaborador se lee AQUÍ porque decide a qué DÍA pertenece el fichaje.
+        // Con un turno que cruza medianoche (22:00–02:00), la salida de las 02:00 es el cierre de
+        // la jornada de AYER, no el comienzo de la de hoy. Ver `JornadaLaboral` para la regla y
+        // para lo que costaba no tenerla (una noche se pagaba como dos días).
+        $turnoDelColaborador = \DB::table('employees')
+            ->where('tenant_id', $user->tenant_id)
+            ->where('user_id', $user->id)
+            ->first(['shiftStart', 'shiftEnd']);
+        $turnoInicio = $turnoDelColaborador->shiftStart ?? null;
+        $turnoFin = $turnoDelColaborador->shiftEnd ?? null;
+
         if ($occurredAt !== null) {
             $now = Carbon::parse($occurredAt)->setTimezone($timezone);
-            $date = $now->format('Y-m-d');
+            $date = JornadaLaboral::fechaDeNegocio($now, $turnoInicio, $turnoFin);
             $time = $now->format('H:i:s');
         } else {
             $now = Carbon::now($timezone);
             $date = $simulatorSession
                 ? Carbon::parse($simulatorSession->simulated_date)->format('Y-m-d')
-                : $now->format('Y-m-d');
+                : JornadaLaboral::fechaDeNegocio($now, $turnoInicio, $turnoFin);
 
             if (($isSimulated || $isSimulatorPunch || $isOfflineSyncFlag) && $simTime) {
                 // El simulador/batch envía algo como "09:30:00". Se normaliza a H:i:s: algunos
@@ -380,8 +392,18 @@ class ClockService
                 // formato no se reconoce, se cae a la hora del servidor, sin reventar.
                 $simHis = strlen(trim((string) $simTime)) === 5 ? trim((string) $simTime) . ':00' : trim((string) $simTime);
                 try {
-                    $now = Carbon::createFromFormat('Y-m-d H:i:s', "$date $simHis", $timezone);
+                    // La hora simulada se ancla al día calendario que el cliente tenía delante;
+                    // el corte de jornada se aplica DESPUÉS sobre ese instante ya construido.
+                    $diaBase = $simulatorSession
+                        ? $date
+                        : $now->format('Y-m-d');
+                    $now = Carbon::createFromFormat('Y-m-d H:i:s', "$diaBase $simHis", $timezone);
                     $time = $simHis;
+                    // El simulador fija su propia fecha a propósito (§13: replay sobre fechas
+                    // arbitrarias); fuera de él, la jornada manda.
+                    if (!$simulatorSession) {
+                        $date = JornadaLaboral::fechaDeNegocio($now, $turnoInicio, $turnoFin);
+                    }
                 } catch (\Exception $e) {
                     $time = $now->format('H:i:s');
                 }
@@ -413,7 +435,12 @@ class ClockService
                 if (!$lastAttendance || $lastAttendance->type !== 'check_in') {
                     throw new \Exception('No puedes iniciar tu comida: no tienes un turno abierto.');
                 }
-                $checkInAt = Carbon::createFromFormat('Y-m-d H:i:s', "$date {$lastAttendance->time}", $timezone);
+                // H21: pegar "$date $time" a secas coloca los fichajes de madrugada 24 h antes de
+                // cuando ocurrieron (se guardan con la fecha de la jornada, que empezó ayer), y el
+                // "llevas X min de turno" salía disparado. `instanteDe` deshace ese desfase.
+                $checkInAt = JornadaLaboral::instanteDe(
+                    $date, $lastAttendance->time, $turnoInicio, $turnoFin, $timezone
+                );
                 $worked = (int) abs($checkInAt->diffInMinutes($now));
                 if ($worked < $minWork) {
                     $faltan = $minWork - $worked;
@@ -731,10 +758,12 @@ class ClockService
         // America/Mexico_City volvía "tarde" a todo el mundo y late_minutes negativo con
         // decimales reventaba en Postgres 22P02). OJO: el turno vive en employees.shiftStart,
         // NO en users; lectura directa con filtro explícito de tenant (no depende del scope).
-        $expectedTimeStr = \DB::table('employees')
-            ->where('tenant_id', $user->tenant_id)
-            ->where('user_id', $user->id)
-            ->value('shiftStart') ?? '09:00:00';
+        // H21: se reutiliza el turno ya leído arriba (el mismo que decidió `$date`), en vez de
+        // volver a consultarlo. Que la hora esperada y la fecha salgan de la MISMA lectura es lo
+        // que hace que el retardo nocturno se corrija solo: `$expectedTime` se ancla a `$date`, y
+        // con la fecha de negocio correcta un fichaje de las 00:30 se compara contra las 22:00 de
+        // AYER —150 minutos— en vez de contra las 22:00 de hoy, que daba cero.
+        $expectedTimeStr = $turnoInicio ?? '09:00:00';
         // Fallback del jefe: shiftStart malformado no debe tumbar el fichaje.
         try {
             $expectedTime = Carbon::createFromFormat('Y-m-d H:i:s', "$date $expectedTimeStr", $timezone);

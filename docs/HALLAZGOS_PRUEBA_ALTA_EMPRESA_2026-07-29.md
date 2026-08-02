@@ -1016,6 +1016,66 @@ ninguna** hasta que alguien la cree, y el módulo se anuncia como "Automatiza Ru
 
 ---
 
+## 🔴 H26 — La firma del supervisor NO se exigía nunca — ✅ CORREGIDO
+
+**Encontrado al probar la validación jerárquica en vivo (2026-08-01).**
+
+Una tarea en modo `forced` ("requiere firma del supervisor") se completaba y **pagaba de
+inmediato**, sin pasar por `awaiting_validation`.
+
+### Causa
+
+`TaskValidationPolicy::requiresValidation` resolvía el puesto del colaborador con
+`JobRole::find($id)` — **sin** `withoutGlobalScopes()`. `JobRole` lleva `TenantScope`, y ese
+`find` devolvía `null`. Con el puesto invisible, la política concluía que el colaborador "no
+reporta a nadie" y devolvía `false`: sin supervisor a quien pedirle la firma, no se exige nada.
+
+Aislado en el servidor, con sesión autenticada y todo lo demás correcto:
+
+```
+JobRole::find(4)      : NULL          ← aquí muere
+find(4) sin scopes    : 'Asesor de Ventas'
+feature supervisor    : true
+tarea 7001            : forced
+requiresValidation    : false
+```
+
+El resto del módulo ya usa el patrón contrario **a propósito** —"lectura directa con filtro
+explícito de tenant, no depende del scope"—; aquí se había quedado la versión frágil.
+
+### Alcance
+
+La validación jerárquica es una función de control **y de plan de pago**, y estaba inerte para
+todo el mundo: ninguna tarea la exigía, sin importar su `validation_mode`. Con ella muerta, el
+pago de una tarea ocurre sin que nadie firme.
+
+### Verificado en vivo, antes y después
+
+Misma tarea, mismo colaborador:
+
+```
+val-adan-2 | completed            | 3.00   ← antes: pagó sin firma
+val-adan-3 | awaiting_validation  | 0.00   ← después: espera al supervisor
+```
+
+Cubierto por `ValidacionSupervisorSeExigeTest` (4 casos), incluido uno que fija que **la respuesta
+no puede depender del contexto de ejecución**: la política se consulta también desde comandos y
+jobs en cola, donde no hay sesión.
+
+⚠️ **Nota sobre los tests**: en el entorno de pruebas el `TenantScope` está desactivado, así que
+este defecto **no era reproducible con la suite** — igual que H17/H19 con sqlite. Se aisló
+ejecutando la política contra la base real.
+
+### Lo que este hallazgo destapó de paso
+
+El wizard de giro no construye el organigrama: los **7 puestos que crea quedan sin
+`reports_to_role_id`**, mientras los 4 sembrados al dar de alta la empresa sí lo tienen. Aunque el
+lookup ya funciona, un colaborador con puesto del giro sigue sin supervisor y por tanto sin
+validación. Es coherente con lo ya anotado sobre las rutinas: **el wizard deja la configuración a
+medias**, y dos funciones dependen de lo que no crea. Queda como decisión de producto.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

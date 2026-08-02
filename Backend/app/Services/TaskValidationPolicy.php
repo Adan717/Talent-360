@@ -32,17 +32,27 @@ class TaskValidationPolicy
             return false;
         }
 
-        $user = $userId ? User::find($userId) : null;
+        $user = $userId ? User::withoutGlobalScopes()->find($userId) : null;
 
+        // H26: el puesto se resuelve SIN depender del global scope y con el filtro de tenant
+        // explícito — el patrón que el resto del módulo ya usa a propósito.
+        //
+        // Con `JobRole::find()` a secas el `TenantScope` devolvía **null** (comprobado en el
+        // servidor, incluso dentro de una sesión autenticada), así que la política concluía que el
+        // colaborador "no reporta a nadie" y **dejaba pasar la tarea sin firma del supervisor**:
+        // una tarea en modo `forced` se completaba y pagaba de inmediato. La validación
+        // jerárquica, que además es una función de plan, quedaba inerte.
         $reportsTo = false;
         if ($user && $user->employee && $user->employee->job_role_id) {
-            $role = JobRole::find($user->employee->job_role_id);
+            $role = JobRole::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->find($user->employee->job_role_id);
             if ($role && $role->reports_to_role_id) {
                 $reportsTo = true;
             }
         }
 
-        $tenant = Tenant::find($tenantId);
+        $tenant = Tenant::withoutGlobalScopes()->find($tenantId);
         $supervisorUnlocked = $tenant ? $tenant->isFeatureUnlocked('supervisor_validation') : false;
 
         if (!($supervisorUnlocked && $reportsTo)) {

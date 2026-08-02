@@ -1076,6 +1076,65 @@ medias**, y dos funciones dependen de lo que no crea. Queda como decisión de pr
 
 ---
 
+## 🟠 H27 — El wizard de giro dejaba la configuración a medias — ✅ CORREGIDO
+
+`configureNicho` creaba los puestos y las 96 tareas del catálogo, pero **ni organigrama ni
+rutinas**. Dos funciones del producto dependían justo de lo que no creaba:
+
+- Sin `reports_to_role_id`, `TaskValidationPolicy` concluye que nadie tiene supervisor y **no
+  exige la firma de nadie** (ver H26).
+- Sin una rutina con `trigger='apertura'`, `triggerOpeningChecklist` **no reparte nada** al abrir
+  la tienda: no hay asignación automática, en un módulo llamado "Automatiza Rutinas".
+
+Verificado en la V2: los 7 puestos del giro tenían `reports_to_role_id` NULL —mientras los 4
+sembrados al crear la empresa sí lo tenían— y **no había una sola rutina en toda la base**.
+
+### El organigrama
+
+El catálogo ya traía el nivel de cada puesto en `jerarquiaLlaves` (1 mando, 2 supervisión, 3 piso,
+4 eventual); sólo no se usaba. Ahora cada puesto se enlaza con el primero del nivel inmediatamente
+superior que exista.
+
+Cuando un nivel tiene varios candidatos —tres supervisores, por ejemplo— la elección es
+**convencional a propósito**: deja una jerarquía coherente de arranque y el admin la ajusta desde
+el módulo de Organigrama, que para eso está. Lo que no era defendible es dejarlos todos huérfanos.
+
+### Las rutinas
+
+Se crean la de **apertura** y la de **cierre**, a cargo del puesto APERTURADOR (quien tiene
+llaves).
+
+Sobre qué tarea va en cada una: el catálogo **no declara el momento del día** —sólo `category` y
+`priority`, y "seguridad" cubre tanto *desactivar* la alarma al abrir como *activarla* al
+cerrar—. En vez de adivinar por el título o por el orden, se añadió un campo `momento` explícito
+a las 14 tareas del puesto aperturador cuyo enunciado es inequívoco. **Las tareas sin `momento` no
+entran en ninguna rutina**: se quedan en el catálogo para que el admin las organice, que es
+preferible a repartirlas por corazonada.
+
+### Verificado en vivo (tenant 3, giro de repostería)
+
+```
+Checklist Diario de Apertura | apertura | Administrador Gerente | 7 tareas
+Checklist Diario de Cierre   | cierre   | Administrador Gerente | 7 tareas
+
+Administrador Gerente    nivel 1  → sin jefe
+Supervisor de Compras    nivel 2  → Administrador Gerente
+Supervisor de Ventas     nivel 2  → Administrador Gerente
+Supervisor de Producción nivel 2  → Administrador Gerente
+Asesor de Ventas         nivel 3  → Supervisor de Compras
+Apoyo Eventual           nivel 4  → Asesor de Ventas
+```
+
+En ese tenant la firma del supervisor sigue sin exigirse, pero **por el motivo correcto**: es
+plan `freemium` y `supervisor_validation` es una función de pago. En el tenant enterprise sí se
+activa (verificado en H26).
+
+Cubierto por `WizardGiroDejaListoTest` (9 casos), incluidos los dos que protegen la reaplicación:
+que no duplique rutinas y que los vínculos no queden apuntando a tareas borradas —el wizard borra
+y recrea el catálogo cada vez—.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

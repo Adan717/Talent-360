@@ -538,25 +538,25 @@ class OnboardingController extends Controller
                     ];
                     $tareas = [
                         // Administrador Gerente (22 Tareas)
-                        ['title' => 'Desactivar alarma perimetral y encender switch principal de energía', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Tome foto de la pantalla de alarma desactivada.'],
-                        ['title' => 'Verificar funcionamiento de las luces del piso de ventas y clima', 'estimated_mins' => 5, 'priority' => 'alta', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
-                        ['title' => 'Realizar conteo del fondo de caja inicial y apertura en punto de venta', 'estimated_mins' => 15, 'priority' => 'bloqueante', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Ingrese el monto del fondo inicial.'],
-                        ['title' => 'Inspeccionar estado exterior de la sucursal y tomar foto de la fachada frontal', 'estimated_mins' => 10, 'priority' => 'alta', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto de la fachada frontal despejada.'],
-                        ['title' => 'Apertura de caja fuerte/tómbola y asignación de fondos a cajas registradoras', 'estimated_mins' => 15, 'priority' => 'bloqueante', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Monto asignado a cajas.'],
-                        ['title' => 'Verificar el grupo de trabajo del día y confirmar asistencia del personal (Pase de lista)', 'estimated_mins' => 10, 'priority' => 'alta', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
-                        ['title' => 'Recorrer pasillos asegurando que el piso esté libre de cajas u obstáculos', 'estimated_mins' => 15, 'priority' => 'normal', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
+                        ['title' => 'Desactivar alarma perimetral y encender switch principal de energía', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Tome foto de la pantalla de alarma desactivada.', 'momento' => 'apertura'],
+                        ['title' => 'Verificar funcionamiento de las luces del piso de ventas y clima', 'estimated_mins' => 5, 'priority' => 'alta', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => '', 'momento' => 'apertura'],
+                        ['title' => 'Realizar conteo del fondo de caja inicial y apertura en punto de venta', 'estimated_mins' => 15, 'priority' => 'bloqueante', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Ingrese el monto del fondo inicial.', 'momento' => 'apertura'],
+                        ['title' => 'Inspeccionar estado exterior de la sucursal y tomar foto de la fachada frontal', 'estimated_mins' => 10, 'priority' => 'alta', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto de la fachada frontal despejada.', 'momento' => 'apertura'],
+                        ['title' => 'Apertura de caja fuerte/tómbola y asignación de fondos a cajas registradoras', 'estimated_mins' => 15, 'priority' => 'bloqueante', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Monto asignado a cajas.', 'momento' => 'apertura'],
+                        ['title' => 'Verificar el grupo de trabajo del día y confirmar asistencia del personal (Pase de lista)', 'estimated_mins' => 10, 'priority' => 'alta', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => '', 'momento' => 'apertura'],
+                        ['title' => 'Recorrer pasillos asegurando que el piso esté libre de cajas u obstáculos', 'estimated_mins' => 15, 'priority' => 'normal', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => '', 'momento' => 'apertura'],
                         ['title' => 'Validar que el personal esté portando el gafete y uniforme limpios', 'estimated_mins' => 10, 'priority' => 'normal', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
                         ['title' => 'Auditoría de puntualidad, retardos y justificantes en el reloj checador', 'estimated_mins' => 15, 'priority' => 'normal', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
                         ['title' => 'Revisión de bitácora de novedades de la jornada anterior', 'estimated_mins' => 15, 'priority' => 'normal', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
                         ['title' => 'Supervisión de clima laboral y atención a incidencias de personal', 'estimated_mins' => 20, 'priority' => 'normal', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
                         ['title' => 'Revisión de flujo de caja diario, retiros parciales y depósitos', 'estimated_mins' => 20, 'priority' => 'alta', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Ingrese el total de retiros parciales.'],
-                        ['title' => 'Ejecutar corte X/Y y validar retiros de efectivo con cajeros (Arqueo gerencial)', 'estimated_mins' => 25, 'priority' => 'bloqueante', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Total arqueado en cajas.'],
-                        ['title' => 'Realizar conciliación bancaria diaria y voucher de terminales', 'estimated_mins' => 20, 'priority' => 'alta', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto de vouchers de terminales.'],
-                        ['title' => 'Resguardo de efectivo sobrante en la tómbola de seguridad', 'estimated_mins' => 15, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Monto resguardado en tómbola.'],
-                        ['title' => 'Apagar equipos de cómputo, clima y luces de piso de venta', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
-                        ['title' => 'Verificación de cierre seguro de puertas de emergencia y accesos', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
-                        ['title' => 'Cierre de cortina metálica principal y colocación de candados reforzados', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto del candado metálico cerrado.'],
-                        ['title' => 'Activar alarma perimetral y verificar reporte de armado en sistema', 'estimated_mins' => 5, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto de pantalla de alarma armada.'],
+                        ['title' => 'Ejecutar corte X/Y y validar retiros de efectivo con cajeros (Arqueo gerencial)', 'estimated_mins' => 25, 'priority' => 'bloqueante', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Total arqueado en cajas.', 'momento' => 'cierre'],
+                        ['title' => 'Realizar conciliación bancaria diaria y voucher de terminales', 'estimated_mins' => 20, 'priority' => 'alta', 'category' => 'operativo', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto de vouchers de terminales.', 'momento' => 'cierre'],
+                        ['title' => 'Resguardo de efectivo sobrante en la tómbola de seguridad', 'estimated_mins' => 15, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'captura_numero', 'assistant_prompt' => 'Monto resguardado en tómbola.', 'momento' => 'cierre'],
+                        ['title' => 'Apagar equipos de cómputo, clima y luces de piso de venta', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => '', 'momento' => 'cierre'],
+                        ['title' => 'Verificación de cierre seguro de puertas de emergencia y accesos', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => '', 'momento' => 'cierre'],
+                        ['title' => 'Cierre de cortina metálica principal y colocación de candados reforzados', 'estimated_mins' => 10, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto del candado metálico cerrado.', 'momento' => 'cierre'],
+                        ['title' => 'Activar alarma perimetral y verificar reporte de armado en sistema', 'estimated_mins' => 5, 'priority' => 'bloqueante', 'category' => 'seguridad', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'evidencia_foto', 'assistant_prompt' => 'Foto de pantalla de alarma armada.', 'momento' => 'cierre'],
                         ['title' => 'Envío de reporte diario de ventas y asistencia a dirección general', 'estimated_mins' => 15, 'priority' => 'alta', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
                         ['title' => 'Supervisión de cumplimiento de metas de venta semanales', 'estimated_mins' => 20, 'priority' => 'normal', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
                         ['title' => 'Autorización de compras de insumos operativos extraordinarios', 'estimated_mins' => 15, 'priority' => 'normal', 'category' => 'supervision', 'target_role_name' => 'Administrador Gerente', 'assistant_type' => 'ninguno', 'assistant_prompt' => ''],
@@ -738,12 +738,27 @@ class OnboardingController extends Controller
                 }
             }
 
+            // 1.b H27: construir el ORGANIGRAMA con la jerarquía que el propio catálogo ya trae.
+            //
+            // Antes los puestos del giro nacían con `reports_to_role_id` NULL —todos huérfanos—, y
+            // eso dejaba muerta la validación jerárquica: `TaskValidationPolicy` concluye que un
+            // colaborador sin supervisor no necesita firma, así que NINGUNA tarea la exigía.
+            //
+            // `jerarquiaLlaves` ya expresa el nivel (1 mando, 2 supervisión, 3 piso, 4 eventual):
+            // cada puesto reporta al PRIMERO del nivel inmediatamente superior que exista. Cuando
+            // un nivel tiene varios candidatos —tres supervisores, por ejemplo— la elección es
+            // convencional a propósito: deja una jerarquía coherente de arranque, y el admin la
+            // ajusta desde el módulo de Organigrama, que para eso está.
+            $this->construirOrganigrama($tenantId, $puestos, $roleIdsMap);
+
             // 2. Inyectar Tareas en base de datos (`tasks`)
+            $taskIdsPorTitulo = [];
             if (!empty($tareas)) {
                 foreach ($tareas as $t) {
                     $targetRoleId = isset($roleIdsMap[$t['target_role_name']]) ? $roleIdsMap[$t['target_role_name']] : $firstGerenteRole;
                     if ($targetRoleId) {
-                        \DB::table('tasks')->insert([
+                        // H27: se conserva el id para poder colgar la tarea de una rutina.
+                        $taskIdsPorTitulo[$t['title']] = \DB::table('tasks')->insertGetId([
                             'tenant_id' => $tenantId,
                             'title' => $t['title'],
                             'estimated_mins' => $t['estimated_mins'] ?? 15,
@@ -760,6 +775,13 @@ class OnboardingController extends Controller
                     }
                 }
             }
+
+            // 2.b H27: dejar creadas las RUTINAS del día, que son el motor de la asignación
+            // automática. Sin una rutina con `trigger='apertura'`,
+            // `StoreOpeningService::triggerOpeningChecklist` no reparte nada al abrir la tienda y
+            // toda tarea hay que darla de alta a mano — en un módulo que se anuncia como
+            // "Automatiza Rutinas".
+            $this->crearRutinasDelGiro($tenantId, $tareas, $taskIdsPorTitulo, $roleIdsMap, $puestos, $firstGerenteRole);
 
             // 3. Inyectar Vacantes Iniciales en Bolsa de Trabajo (`vacancies`)
             $vacanciesData = [];
@@ -868,6 +890,148 @@ class OnboardingController extends Controller
                 'status' => 'error',
                 'message' => 'Error al configurar el nicho: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * H27: enlaza cada puesto con el de nivel inmediatamente superior (`jerarquiaLlaves`).
+     *
+     * El puesto de mando queda sin jefe; el resto cuelga del primer puesto que exista en un nivel
+     * por encima. No inventa niveles: si el giro sólo trae dos, la cadena tiene dos eslabones.
+     */
+    private function construirOrganigrama(int $tenantId, array $puestos, array $roleIdsMap): void
+    {
+        // Nivel → ids de los puestos que lo ocupan, en el orden del catálogo.
+        $porNivel = [];
+        foreach ($puestos as $p) {
+            $id = $roleIdsMap[$p['name']] ?? null;
+            if (!$id) {
+                continue;
+            }
+            $nivel = (int) ($p['jerarquiaLlaves'] ?? 0);
+            $porNivel[$nivel][] = $id;
+        }
+
+        if (empty($porNivel)) {
+            return;
+        }
+
+        $niveles = array_keys($porNivel);
+        sort($niveles);
+
+        foreach ($niveles as $nivel) {
+            // El jefe es el primer puesto del nivel superior MÁS CERCANO que exista.
+            $jefeId = null;
+            foreach (array_reverse($niveles) as $candidato) {
+                if ($candidato < $nivel) {
+                    $jefeId = $porNivel[$candidato][0];
+                    break;
+                }
+            }
+
+            if ($jefeId === null) {
+                continue; // nivel más alto: no reporta a nadie
+            }
+
+            foreach ($porNivel[$nivel] as $puestoId) {
+                \DB::table('job_roles')->where('id', $puestoId)->update([
+                    'reports_to_role_id' => $jefeId,
+                    'org_parent_role_id' => $jefeId,
+                    'nivel_mando' => $nivel,
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * H27: crea las rutinas del día y les cuelga sus tareas.
+     *
+     * QUÉ TAREA VA EN QUÉ RUTINA. El catálogo del giro no declara el momento del día —sólo
+     * `category` y `priority`, y "seguridad" cubre tanto *desactivar* la alarma al abrir como
+     * *activarla* al cerrar—, así que el reparto se hace con el campo `momento` que las entradas
+     * de apertura/cierre llevan ahora explícito. Las tareas sin `momento` NO entran en ninguna
+     * rutina: se quedan en el catálogo para que el admin las organice, que es preferible a
+     * repartirlas adivinando.
+     *
+     * La rutina de apertura va a cargo del puesto APERTURADOR, que es quien tiene llaves.
+     */
+    private function crearRutinasDelGiro(
+        int $tenantId,
+        $tareas,
+        array $taskIdsPorTitulo,
+        array $roleIdsMap,
+        array $puestos,
+        $firstGerenteRole
+    ): void {
+        if (empty($tareas) || empty($taskIdsPorTitulo)) {
+            return;
+        }
+
+        // El puesto con llaves; si el giro no marca ninguno, el de mando.
+        $puestoAperturador = $firstGerenteRole;
+        foreach ($puestos as $p) {
+            if (($p['esAperturador'] ?? false) && isset($roleIdsMap[$p['name']])) {
+                $puestoAperturador = $roleIdsMap[$p['name']];
+                break;
+            }
+        }
+
+        if (!$puestoAperturador) {
+            return;
+        }
+
+        // Agrupar los títulos por momento declarado.
+        $porMomento = [];
+        foreach ($tareas as $t) {
+            $momento = $t['momento'] ?? null;
+            if (!$momento || !isset($taskIdsPorTitulo[$t['title']])) {
+                continue;
+            }
+            $porMomento[$momento][] = $taskIdsPorTitulo[$t['title']];
+        }
+
+        $definiciones = [
+            'apertura' => 'Checklist Diario de Apertura',
+            'cierre' => 'Checklist Diario de Cierre',
+        ];
+
+        foreach ($definiciones as $trigger => $titulo) {
+            $taskIds = $porMomento[$trigger] ?? [];
+            if (empty($taskIds)) {
+                continue;
+            }
+
+            // Reaplicar el giro no debe duplicar rutinas; y como las tareas se borran y recrean,
+            // los vínculos se rehacen para no apuntar a filas que ya no existen.
+            $rutina = \App\Models\Routine::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('trigger', $trigger)
+                ->first();
+
+            if ($rutina) {
+                $rutina->update([
+                    'title' => $titulo,
+                    'target_role_id' => $puestoAperturador,
+                    'assign_mode' => 'fijo',
+                ]);
+            } else {
+                $rutina = \App\Models\Routine::create([
+                    'tenant_id' => $tenantId,
+                    'title' => $titulo,
+                    'trigger' => $trigger,
+                    'assign_mode' => 'fijo',
+                    'target_role_id' => $puestoAperturador,
+                ]);
+            }
+
+            \DB::table('routine_task')->where('routine_id', $rutina->id)->delete();
+            foreach ($taskIds as $taskId) {
+                \DB::table('routine_task')->insert([
+                    'routine_id' => $rutina->id,
+                    'task_id' => $taskId,
+                ]);
+            }
         }
     }
 }

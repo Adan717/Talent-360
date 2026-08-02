@@ -56,7 +56,7 @@ class SuggestWorkPlanTest extends TestCase
         DB::table('time_entries')->insert([
             'user_id' => $user->id,
             'tenant_id' => 1,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
             'type' => 'check_in',
             'time' => '08:00:00',
             'is_late' => false,
@@ -78,7 +78,7 @@ class SuggestWorkPlanTest extends TestCase
         $task = Task::create(['title' => 'Tarea pendiente', 'tenant_id' => 1, 'validation_mode' => 'auto']);
         TaskAssignment::create([
             'id' => 'wp-1', 'task_id' => $task->id, 'user_id' => $present->id,
-            'status' => 'pending', 'tenant_id' => 1, 'date' => now()->toDateString(),
+            'status' => 'pending', 'tenant_id' => 1, 'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->toDateString(),
         ]);
 
         \App\Models\ObsidianDocument::withoutGlobalScopes()->create([

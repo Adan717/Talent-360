@@ -98,7 +98,7 @@ class UnfinishedTaskFlowTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseHas('task_assignments', [
             'id' => 'inc-2', 'status' => 'pending', 'origin' => 'carried_over',
-            'date' => now()->toDateString(), 'flagged_incomplete' => false,
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->toDateString(), 'flagged_incomplete' => false,
         ]);
     }
 

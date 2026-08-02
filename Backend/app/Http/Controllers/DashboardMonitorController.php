@@ -455,7 +455,10 @@ class DashboardMonitorController extends Controller
                 'user_id' => $assignedUserId,
                 'status' => 'pending',
                 'tenant_id' => $tenantId,
-                'date' => Carbon::today()->toDateString(),
+                // H25: la fecha va en la zona del TENANT. Con `Carbon::today()` —UTC— una tarea
+                // creada a las 19:00 locales nacía fechada MAÑANA y desaparecía del tablero del
+                // día en que se creó.
+                'date' => Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString(),
             ]);
 
             event(new MonitorUpdated($tenantId));
@@ -711,7 +714,10 @@ class DashboardMonitorController extends Controller
 
         $user = auth()->user() ?? auth('sanctum')->user();
         $tenantId = $user ? $user->tenant_id : 1;
-        $date = $request->input('date', Carbon::today()->toDateString());
+        // H25: el "hoy" del Monitor es el del TENANT. Con `Carbon::today()` —UTC— el tablero se
+        // adelantaba al día siguiente a partir de las 18:00 locales y se vaciaba de golpe en
+        // plena jornada.
+        $date = $request->input('date', Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString());
 
         // 1. Asistencia: presentes (con check_in hoy) vs. roster completo.
         $checkedInUserIds = DB::table('time_entries')

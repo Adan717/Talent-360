@@ -92,7 +92,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
             'user_id' => $admin->id,
             'status' => 'completed',
             'points_awarded' => 25,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
         ]);
     }
 
@@ -121,7 +121,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
         $this->assertDatabaseHas('task_assignments', [
             'task_id' => $task->id,
             'user_id' => $employee->id,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
         ]);
     }
 
@@ -149,7 +149,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
         // La asignación inicial queda sin user_id (disponible), igual que para 'role'.
         $this->assertDatabaseHas('task_assignments', [
             'user_id' => null,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
         ]);
     }
 
@@ -164,7 +164,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
         DB::table('time_entries')->insert([
             'user_id' => $admin->id,
             'tenant_id' => 1,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
             'type' => 'check_in',
             'time' => '09:00:00',
             'is_late' => false,
@@ -183,7 +183,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
             'user_id' => $admin->id,
             'status' => 'in_progress',
             'tenant_id' => 1,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -199,7 +199,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
             'user_id' => $admin->id,
             'status' => 'in_progress',
             'tenant_id' => 2,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -222,7 +222,7 @@ class TaskAndSequencePendingItemsTest extends TestCase
         DB::table('time_entries')->insert([
             'user_id' => $admin->id,
             'tenant_id' => 1,
-            'date' => now()->format('Y-m-d'),
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
             'type' => 'check_in',
             'time' => '08:00:00',
             'is_late' => false,

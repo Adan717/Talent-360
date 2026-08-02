@@ -23,7 +23,14 @@ class TaskAssignmentController extends Controller
         }
         
         $tenantId = $user->tenant_id ?? 1;
-        $date = $request->input('date', Carbon::now()->format('Y-m-d'));
+
+        // H25: el día por defecto es el del TENANT, no el del servidor. Con `Carbon::now()` —UTC—
+        // y una empresa en UTC-6, desde las 18:00 locales el filtro preguntaba por MAÑANA mientras
+        // las asignaciones de la jornada en curso están bajo HOY: el listado salía vacío las
+        // últimas seis horas de cada día. El dial llena con esto el checklist de apertura, así que
+        // una tienda de horario vespertino lo veía vacío y nunca lo daba por completo.
+        // Misma familia que A5/M5 (corte por tenant) y H10 (el dial usaba la fecha del dispositivo).
+        $date = $request->input('date', Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->format('Y-m-d'));
         
         $query = TaskAssignment::where('tenant_id', $tenantId)
             ->where('date', $date);

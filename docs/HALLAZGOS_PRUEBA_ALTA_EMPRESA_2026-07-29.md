@@ -951,6 +951,71 @@ de endurecimiento, no se tocó en esta ronda.
 
 ---
 
+# Tercera tanda — módulo de TAREAS Y RUTINAS (2026-08-01)
+
+## ✅ Lo que se verificó funcionando
+
+- **Rutina de apertura → asignación automática**: creada la rutina con `trigger='apertura'` y sus
+  tareas, al abrir la tienda el sistema repartió las 3 solo, con ids deterministas
+  (`open_{task}_{user}_{fecha}`).
+- **Idempotencia**: abrir dos veces no duplica asignaciones.
+- **El ancla anti-doble-pago** sigue aguantando (verificado en la tanda anterior con 3 re-syncs).
+
+## 🔴 H25 — El listado de tareas se vaciaba las últimas 6 horas de cada día — ✅ CORREGIDO
+
+`GET /task-assignments` filtraba por `Carbon::now()` —la fecha del **servidor**, en UTC— mientras
+las asignaciones se guardan con la fecha de la zona del **tenant**. Con una empresa en UTC-6, a
+partir de las 18:00 locales el filtro preguntaba por MAÑANA y las asignaciones de la jornada en
+curso están bajo HOY.
+
+Medido en vivo con el servidor en `2026-08-02 01:41 UTC` (19:41 local):
+
+| | |
+|---|---|
+| sin `?date` | **0 filas** |
+| con `?date=2026-08-01` (el día del tenant) | **3 filas** |
+
+**A quién le duele**: el dial llena con esto el **checklist de apertura**
+(`RelojVisual::fetchOpeningAssignments`). En esa franja el modal sale vacío y, como el "¿ya está
+todo hecho?" exige `length > 0`, el checklist tampoco llega a marcarse completo. Una tienda de
+horario vespertino abre justo dentro de ese hueco.
+
+El mismo patrón vivía en **cuatro** sitios, dos de lectura y dos de **escritura** —que es peor,
+porque graban el dato mal:
+
+| Sitio | Qué hacía |
+|---|---|
+| `TaskAssignmentController::index` | filtraba el listado por el día del servidor |
+| `DashboardMonitorController` (monitor) | el tablero se adelantaba de día a las 18:00 locales |
+| `TaskSyncController` | una asignación sin fecha nacía fechada **mañana** |
+| `DashboardMonitorController::createTask` | una tarea creada a las 19:00 nacía fechada **mañana** |
+
+Es la MISMA familia ya cerrada en A5/M5 (corte por tenant en el flag nocturno y el reagendado) y
+en H10 (el dial filtraba con la fecha del dispositivo). Había quedado viva en estos cuatro.
+
+Cubierto por `TaskAssignmentsDiaDelTenantTest` (4 casos, con el reloj congelado a 01:41 UTC —la
+hora exacta del fallo— y un control a mediodía).
+
+### De paso: 4 tests que ya eran inestables
+
+Al alinear la convención saltaron 5 tests. Se comprobó revirtiendo los cambios que **4 de ellos
+fallaban igual sin tocar nada**: sembraban la fecha con `now()` en UTC y sólo pasaban fuera de la
+franja 00:00–06:00 UTC. Eran flakes preexistentes que en un CI nocturno habrían fallado de forma
+aparentemente aleatoria. Ahora siembran con la zona del tenant, como hace producción.
+
+## Observación de producto, sin corregir
+
+El wizard de giro (`configureNicho`) crea los puestos y las **96 tareas** del catálogo, pero
+**ninguna rutina** — de hecho no había una sola rutina en toda la base de datos, en ninguna de las
+tres empresas. Sin rutinas nada se asigna solo: hay que crearlas a mano desde el panel de Tareas
+(la pantalla existe y funciona, se probó).
+
+No se tocó porque es una decisión de producto: puede ser deliberado que cada empresa arme sus
+propias rutinas. Pero conviene saber que **una empresa recién configurada no tiene automatización
+ninguna** hasta que alguien la cree, y el módulo se anuncia como "Automatiza Rutinas".
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

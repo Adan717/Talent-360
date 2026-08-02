@@ -321,7 +321,11 @@ class TaskSyncController extends Controller
                     }
 
                     // §14.1: date/points_awarded existen en la tabla pero nunca se poblaban.
-                    $mappedData['date'] = $assignment['date'] ?? ($existing->date ?? \Carbon\Carbon::today()->toDateString());
+                    // H25: el día por defecto sale de la zona del TENANT. Con `Carbon::today()`
+                    // —UTC— una asignación creada a las 19:00 locales nacía fechada MAÑANA y ya no
+                    // aparecía en el listado de su propia jornada.
+                    $mappedData['date'] = $assignment['date']
+                        ?? ($existing->date ?? \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString());
 
                     // Cálculo del Costo Financiero de la Tarea basándose en el salario del empleado:
                     // Costo = (Salario Base Diario / 480 min) * Minutos Acumulados Invertidos

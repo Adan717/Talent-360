@@ -52,7 +52,10 @@ class TaskSyncAssignmentGuardTest extends TestCase
             'task_id' => $taskId,
             'user_id' => $user->id,
             'status' => 'pending',
-            'date' => now()->toDateString(),
+            // H25: la fecha va en la zona del TENANT, como la escribe producción. Con `now()`
+            // —UTC— este test sólo pasaba fuera de la franja 00:00–06:00 UTC, que es cuando el
+            // día del servidor y el del tenant dejan de coincidir.
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->toDateString(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

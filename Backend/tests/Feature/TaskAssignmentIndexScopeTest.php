@@ -53,7 +53,11 @@ class TaskAssignmentIndexScopeTest extends TestCase
             'task_id' => $taskId,
             'user_id' => $userId,
             'status' => 'in_progress',
-            'date' => now()->format('Y-m-d'),
+            // H25: la fecha se siembra con la zona del TENANT, que es como la escribe producción
+            // (`triggerOpeningChecklist` y el sync). Con `now()` a secas —UTC— este test sólo
+            // pasaba fuera de la franja 00:00–06:00 UTC, que es cuando el día del servidor y el
+            // del tenant dejan de coincidir.
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for(1))->format('Y-m-d'),
             'tenant_id' => 1,
         ]);
     }

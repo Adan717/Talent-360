@@ -62,21 +62,16 @@ El catálogo de periodicidad del SAT es cerrado y tiene un valor por cada caso: 
 `04` quincenal, `05` mensual. Para el piloto de DecorArte —que **paga por semana**— los tres
 campos son incorrectos: la periodicidad, los 15 días trabajados y la división entre 15.
 
-Esto no requiere criterio contable para saber que está mal; el valor debe corresponder a la
-periodicidad real de pago.
+Esto no requiere criterio contable para saber que está mal: **la periodicidad declarada en un CFDI
+de nómina debe corresponder con la forma real en que la empresa paga.**
 
-Esto no es sólo una inconsistencia técnica. **La periodicidad declarada en un CFDI de nómina debe
-corresponder con la forma real en que la empresa paga.** Si una empresa paga por semana y sus
-comprobantes se timbran como quincenales, lo que queda ante el SAT es una declaración que no
-coincide con la realidad — y el comprobante ya está emitido y sellado, no es algo que se corrija
-después con un cambio de código.
-
-Conviene que lo revise quien lleve la parte fiscal antes de timbrar para un cliente real; aquí
-sólo se señala el riesgo, no se resuelve.
+Lo que sí conviene consultar con contabilidad es otra cosa: **qué hacer si ya se timbró algo así**.
+Un comprobante emitido queda sellado y no se corrige con un cambio de código — se cancela y se
+reexpide, y eso tiene sus reglas y plazos.
 
 ---
 
-## Los números (4 colaboradores reales del entorno de pruebas)
+## Los números (4 colaboradores del entorno de pruebas)
 
 | Colaborador | Capturado | Bruto semanal **hoy** | Bruto semanal **si el sueldo fuera mensual** |
 |---|---|---|---|

@@ -27,22 +27,119 @@
     ],
     "tareas": [
         {
+            "title": "Desactivar alarma, encender energía y revisar novedades de la noche",
+            "estimated_mins": 10,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Gerente de Restaurante",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la pantalla de alarma desactivada.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Conteo del fondo de caja y apertura del punto de venta",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "operativo",
+            "target_role_name": "Gerente de Restaurante",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el monto del fondo inicial.",
+            "momento": "apertura"
+        },
+        {
             "title": "Verificación de temperatura de congeladores",
             "estimated_mins": 15,
-            "priority": "alta",
-            "category": "operativo",
+            "priority": "bloqueante",
+            "category": "calidad",
             "target_role_name": "Chef / Jefe de Cocina",
             "assistant_type": "captura_numero",
-            "assistant_prompt": "Ingrese la temperatura actual en °C."
+            "assistant_prompt": "Ingrese la temperatura actual en °C.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Revisión de perecederos, caducidades y mise en place para el servicio del día",
+            "estimated_mins": 25,
+            "priority": "bloqueante",
+            "category": "calidad",
+            "target_role_name": "Chef / Jefe de Cocina",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Encendido de equipos de cocina y verificación de fugas de gas",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Ayudante de Cocina",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
         },
         {
             "title": "Montaje y sanitización de mesas de comedor",
             "estimated_mins": 20,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Mesero / Atención al Cliente",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la estación limpia.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Supervisión del servicio en piso y atención de quejas de comensales",
+            "estimated_mins": 45,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Gerente de Restaurante",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Registro de mermas de cocina y control de porciones",
+            "estimated_mins": 20,
+            "priority": "normal",
+            "category": "calidad",
+            "target_role_name": "Chef / Jefe de Cocina",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Kilogramos o piezas de merma del turno."
+        },
+        {
+            "title": "Revisión de limpieza de baños por turno",
+            "estimated_mins": 10,
             "priority": "normal",
             "category": "operativo",
             "target_role_name": "Mesero / Atención al Cliente",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto de la estación limpia."
+            "assistant_prompt": "Tome foto del baño después de la revisión."
+        },
+        {
+            "title": "Reposición de estaciones de servicio: salsas, cubiertos y servilletas",
+            "estimated_mins": 15,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Mesero / Atención al Cliente",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Lavado de loza y limpieza continua de estaciones de cocina",
+            "estimated_mins": 40,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Ayudante de Cocina",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Almacenar y etiquetar sobrantes con fecha, verificando cadena de frío",
+            "estimated_mins": 20,
+            "priority": "bloqueante",
+            "category": "calidad",
+            "target_role_name": "Chef / Jefe de Cocina",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto de los contenedores etiquetados en refrigeración.",
+            "momento": "cierre"
         },
         {
             "title": "Inspección y cierre de llaves de gas principal",
@@ -51,7 +148,28 @@
             "category": "seguridad",
             "target_role_name": "Chef / Jefe de Cocina",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto de la válvula de gas cerrada."
+            "assistant_prompt": "Tome foto de la válvula de gas cerrada.",
+            "momento": "cierre"
+        },
+        {
+            "title": "Limpieza profunda de cocina, plancha y trampa de grasa; apagado de equipos",
+            "estimated_mins": 40,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Ayudante de Cocina",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto de la plancha y estaciones ya limpias.",
+            "momento": "cierre"
+        },
+        {
+            "title": "Corte de caja, resguardo de efectivo y activación de alarma",
+            "estimated_mins": 25,
+            "priority": "bloqueante",
+            "category": "operativo",
+            "target_role_name": "Gerente de Restaurante",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el total del corte del día.",
+            "momento": "cierre"
         }
     ]
 }

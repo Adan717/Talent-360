@@ -184,7 +184,7 @@ class CatalogoOnboardingValidoTest extends TestCase
      * **Al llenar un giro hay que quitarlo de esta lista**, y `test_la_lista_de_giros_a_medias_no_miente`
      * avisa si a alguien se le olvida.
      */
-    private const GIROS_SIN_APERTURA = ['oficina', 'restaurante', 'retail', 'taller'];
+    private const GIROS_SIN_APERTURA = ['oficina', 'retail', 'taller'];
 
     #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
     public function test_el_giro_tiene_tareas_de_apertura(string $giro): void

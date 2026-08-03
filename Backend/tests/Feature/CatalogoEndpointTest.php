@@ -172,4 +172,30 @@ class CatalogoEndpointTest extends TestCase
             'Aplicar exactamente lo servido debe crear exactamente esas tareas.'
         );
     }
+
+    public function test_restaurante_ya_deja_rutina_de_apertura_H28(): void
+    {
+        // H28: restaurante tenía 3 tareas y NINGUNA de apertura — el asistente creaba las tareas
+        // pero nada las repartía al abrir; el empleado llegaba a un panel vacío. Este test fija
+        // el cierre para este giro: el catálogo redactado el 2026-08-03 debe producir rutina.
+        $catalogo = $this->pedir('restaurante')->json();
+
+        $this->actingAs($this->usuario('admin'))
+            ->postJson('/api/v1/admin/onboarding/configure-nicho', [
+                'nicho' => 'restaurante',
+                'selected_puestos' => $catalogo['puestos'],
+                'selected_tareas' => $catalogo['tareas'],
+            ])
+            ->assertStatus(200);
+
+        $apertura = DB::table('routines')->where('tenant_id', $this->tenantId)
+            ->where('trigger', 'apertura')->first();
+
+        $this->assertNotNull($apertura,
+            'Restaurante volvió a quedarse sin rutina de apertura: H28 habría regresado.');
+
+        $this->assertGreaterThan(0,
+            DB::table('routine_task')->where('routine_id', $apertura->id)->count(),
+            'La rutina de apertura de restaurante existe pero no reparte ninguna tarea.');
+    }
 }

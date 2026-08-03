@@ -27,31 +27,129 @@
     ],
     "tareas": [
         {
-            "title": "Conteo y validación de fondo de caja",
-            "estimated_mins": 15,
-            "priority": "alta",
-            "category": "operativo",
-            "target_role_name": "Supervisor de Cajas",
-            "assistant_type": "captura_numero",
-            "assistant_prompt": "Ingrese el monto contado del fondo de caja."
-        },
-        {
             "title": "Desactivación de alarma y encendido de switch",
             "estimated_mins": 10,
             "priority": "alta",
             "category": "seguridad",
             "target_role_name": "Gerente de Tienda",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto de la pantalla de la alarma desactivada."
+            "assistant_prompt": "Tome foto de la pantalla de la alarma desactivada.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Pase de lista y asignación de zonas del día",
+            "estimated_mins": 10,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Gerente de Tienda",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Conteo y validación de fondo de caja",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Supervisor de Cajas",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el monto contado del fondo de caja.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Limpieza de entrada, vitrinas y piso de ventas antes de abrir",
+            "estimated_mins": 20,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Asesor de Ventas y Piso",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la entrada lista para abrir.",
+            "momento": "apertura"
         },
         {
             "title": "Alineación de precios y frenteo de mercancía",
-            "estimated_mins": 20,
+            "estimated_mins": 25,
             "priority": "normal",
             "category": "operativo",
             "target_role_name": "Asesor de Ventas y Piso",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto del exhibidor ordenado."
+            "assistant_prompt": "Tome foto del exhibidor ordenado.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Revisión de indicadores de venta del día anterior",
+            "estimated_mins": 15,
+            "priority": "normal",
+            "category": "supervision",
+            "target_role_name": "Gerente de Tienda",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Arqueo parcial sorpresivo a cajas en turno",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Supervisor de Cajas",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el monto encontrado en el arqueo."
+        },
+        {
+            "title": "Recepción de mercancía y registro de entradas en sistema",
+            "estimated_mins": 30,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Almacenista / Inventarios",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto de la mercancía recibida contra remisión."
+        },
+        {
+            "title": "Conteo cíclico de productos de alta rotación",
+            "estimated_mins": 30,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Almacenista / Inventarios",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Piezas contadas en el ciclo de hoy."
+        },
+        {
+            "title": "Reposición de anaqueles desde bodega y reporte de faltantes",
+            "estimated_mins": 30,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Asesor de Ventas y Piso",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Corte de cajas y conciliación de vouchers de terminales",
+            "estimated_mins": 25,
+            "priority": "bloqueante",
+            "category": "operativo",
+            "target_role_name": "Supervisor de Cajas",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el total del corte del día.",
+            "momento": "cierre"
+        },
+        {
+            "title": "Orden final del piso de ventas y bodega",
+            "estimated_mins": 20,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Asesor de Ventas y Piso",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "cierre"
+        },
+        {
+            "title": "Resguardo de efectivo en caja fuerte y activación de alarma",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Gerente de Tienda",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Monto resguardado en caja fuerte.",
+            "momento": "cierre"
         },
         {
             "title": "Cierre de cortina metálica y candado",
@@ -60,7 +158,8 @@
             "category": "seguridad",
             "target_role_name": "Gerente de Tienda",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto del candado cerrado."
+            "assistant_prompt": "Tome foto del candado cerrado.",
+            "momento": "cierre"
         }
     ]
 }

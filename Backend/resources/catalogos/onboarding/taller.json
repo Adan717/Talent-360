@@ -27,13 +27,109 @@
     ],
     "tareas": [
         {
+            "title": "Apertura de portón, desactivación de alarma y revisión del patio de maniobras",
+            "estimated_mins": 10,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Jefe de Taller",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto del patio despejado.",
+            "momento": "apertura"
+        },
+        {
             "title": "Inspección de equipo de protección personal (EPP)",
             "estimated_mins": 10,
             "priority": "alta",
             "category": "seguridad",
             "target_role_name": "Supervisor de Seguridad",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto grupal del equipo portando su EPP."
+            "assistant_prompt": "Tome foto grupal del equipo portando su EPP.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Inspección de extintores, salidas de emergencia y áreas despejadas",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Supervisor de Seguridad",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Encendido y prueba de compresor y herramienta neumática",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Técnico Operador / Mecánico",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Revisión de órdenes de trabajo del día y asignación a técnicos",
+            "estimated_mins": 25,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Jefe de Taller",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Registro de avance por orden de trabajo con evidencia",
+            "estimated_mins": 25,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Técnico Operador / Mecánico",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto del avance del trabajo en la unidad."
+        },
+        {
+            "title": "Control de entradas y salidas de refacciones en almacén",
+            "estimated_mins": 25,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Ayudante de Almacén",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Número de vales registrados en el turno."
+        },
+        {
+            "title": "Contacto con clientes: autorizaciones de trabajos y entregas",
+            "estimated_mins": 30,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Jefe de Taller",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Supervisión del manejo de residuos peligrosos (aceites y solventes)",
+            "estimated_mins": 20,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Supervisor de Seguridad",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto de los contenedores de residuos cerrados y rotulados."
+        },
+        {
+            "title": "Orden y limpieza continua de pasillos y bancos de trabajo",
+            "estimated_mins": 20,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Ayudante de Almacén",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Resguardo de herramienta y candado de almacén",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Ayudante de Almacén",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "cierre"
         },
         {
             "title": "Apagado de disyuntores de alta tensión y soldadoras",
@@ -42,7 +138,28 @@
             "category": "seguridad",
             "target_role_name": "Técnico Operador / Mecánico",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto del disyuntor apagado."
+            "assistant_prompt": "Tome foto del disyuntor apagado.",
+            "momento": "cierre"
+        },
+        {
+            "title": "Cierre de caja y facturación del día; resguardo de llaves de vehículos",
+            "estimated_mins": 20,
+            "priority": "bloqueante",
+            "category": "operativo",
+            "target_role_name": "Jefe de Taller",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el total facturado del día.",
+            "momento": "cierre"
+        },
+        {
+            "title": "Ronda final: llaves de gas y aire cerradas, unidades bajo techo y alarma activada",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Supervisor de Seguridad",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto de la alarma armada.",
+            "momento": "cierre"
         }
     ]
 }

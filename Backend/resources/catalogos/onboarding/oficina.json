@@ -27,13 +27,34 @@
     ],
     "tareas": [
         {
+            "title": "Apertura de oficina: accesos, luces, clima y sala de espera presentable",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Recepcionista / Asistente",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la recepción lista.",
+            "momento": "apertura"
+        },
+        {
             "title": "Encendido y verificación de servidores locales",
             "estimated_mins": 15,
             "priority": "alta",
             "category": "tecnología",
             "target_role_name": "Coordinador de Operaciones",
             "assistant_type": "ninguno",
-            "assistant_prompt": ""
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Verificación del respaldo nocturno y estado de sistemas",
+            "estimated_mins": 10,
+            "priority": "bloqueante",
+            "category": "tecnología",
+            "target_role_name": "Coordinador de Operaciones",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Captura del reporte de respaldo exitoso.",
+            "momento": "apertura"
         },
         {
             "title": "Revisión y distribución de correspondencia",
@@ -42,7 +63,93 @@
             "category": "operativo",
             "target_role_name": "Recepcionista / Asistente",
             "assistant_type": "evidencia_foto",
-            "assistant_prompt": "Tome foto de la bitácora de firmas."
+            "assistant_prompt": "Tome foto de la bitácora de firmas.",
+            "momento": "apertura"
+        },
+        {
+            "title": "Revisión de agenda del día y prioridades con el equipo",
+            "estimated_mins": 20,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Director General",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "apertura"
+        },
+        {
+            "title": "Atención de conmutador y registro de visitantes",
+            "estimated_mins": 30,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Recepcionista / Asistente",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Actualización de avances de cuentas en el CRM",
+            "estimated_mins": 30,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Consultor / Ejecutivo de Cuenta",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Seguimiento de pendientes y compromisos con clientes",
+            "estimated_mins": 40,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Consultor / Ejecutivo de Cuenta",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Seguimiento a requerimientos internos y proveedores",
+            "estimated_mins": 25,
+            "priority": "normal",
+            "category": "supervision",
+            "target_role_name": "Coordinador de Operaciones",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Revisión de flujo de caja y autorización de pagos del día",
+            "estimated_mins": 25,
+            "priority": "alta",
+            "category": "supervision",
+            "target_role_name": "Director General",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Cierre de recepción: archivo de acuses y mensajería del día",
+            "estimated_mins": 15,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Recepcionista / Asistente",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "cierre"
+        },
+        {
+            "title": "Apagado de equipos comunes e impresoras; verificación de respaldo programado",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "tecnología",
+            "target_role_name": "Coordinador de Operaciones",
+            "assistant_type": "ninguno",
+            "assistant_prompt": "",
+            "momento": "cierre"
+        },
+        {
+            "title": "Cierre de accesos y activación de alarma de oficina",
+            "estimated_mins": 10,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Coordinador de Operaciones",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Foto de la alarma armada.",
+            "momento": "cierre"
         }
     ]
 }

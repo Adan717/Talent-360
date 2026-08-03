@@ -170,64 +170,22 @@ class CatalogoOnboardingValidoTest extends TestCase
             . 'no entrarían en ninguna rutina: ' . implode(' | ', $desconocidos));
     }
 
-    /**
-     * Giros que hoy NO tienen ninguna tarea de apertura.
-     *
-     * NO ES UNA EXCEPCIÓN DE ESTILO, ES UN PENDIENTE CON NOMBRE. Un giro sin tareas de apertura
-     * no genera rutina, y sin rutina el asistente crea las tareas pero **nada las reparte al abrir
-     * la sucursal**: hay que darlas de alta a mano una por una. El módulo se vende como
-     * "Automatiza Rutinas", así que un cliente de estos cuatro giros no recibe lo que compró.
-     *
-     * Se descubrió al sacar el catálogo a JSON: sólo repostería marca `momento`, y por eso era la
-     * única con automatización real. Antes no se veía porque estaba repartido en 165 líneas de PHP.
-     *
-     * **Al llenar un giro hay que quitarlo de esta lista**, y `test_la_lista_de_giros_a_medias_no_miente`
-     * avisa si a alguien se le olvida.
-     */
-    private const GIROS_SIN_APERTURA = ['oficina', 'retail', 'taller'];
-
     #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
     public function test_el_giro_tiene_tareas_de_apertura(string $giro): void
     {
-        $apertura = self::tareasDeApertura($giro);
-
-        if (in_array($giro, self::GIROS_SIN_APERTURA, true)) {
-            $this->assertSame([], $apertura,
-                "El giro '{$giro}' YA tiene tareas de apertura: quítalo de GIROS_SIN_APERTURA "
-                . 'para que esta prueba empiece a protegerlo.');
-
-            return;
-        }
+        // H28: hubo una época (hasta 2026-08-03) en que 4 de los 5 giros no marcaban ninguna
+        // tarea de apertura — el asistente creaba las tareas pero nada las repartía al abrir, y
+        // existía aquí una lista GIROS_SIN_APERTURA con ese pendiente. Los 4 se llenaron y la
+        // lista se borró. Desde entonces la regla es pareja: TODO giro que se ofrezca debe
+        // generar su rutina de apertura, sin excepciones nuevas.
+        $apertura = array_filter(
+            CatalogoOnboarding::para($giro)['tareas'],
+            fn ($t) => ($t['momento'] ?? null) === 'apertura'
+        );
 
         $this->assertNotEmpty($apertura,
             "El giro '{$giro}' no tiene ninguna tarea marcada con momento='apertura': al abrir la "
-            . 'sucursal no se repartiría nada y habría que dar de alta todo a mano.');
-    }
-
-    public function test_la_lista_de_giros_a_medias_no_miente(): void
-    {
-        // Que la lista no acumule giros que ya se llenaron ni giros que ya no existen.
-        foreach (self::GIROS_SIN_APERTURA as $giro) {
-            $this->assertTrue(CatalogoOnboarding::existe($giro),
-                "GIROS_SIN_APERTURA menciona '{$giro}', que ya no tiene catálogo.");
-        }
-
-        $pendientes = array_values(array_intersect(self::GIROS_SIN_APERTURA, CatalogoOnboarding::giros()));
-
-        $this->assertNotEmpty($pendientes,
-            'Si ya no queda ningún giro sin tareas de apertura, borra GIROS_SIN_APERTURA y con '
-            . 'ella este comentario: el pendiente estaría cerrado.');
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private static function tareasDeApertura(string $giro): array
-    {
-        $catalogo = CatalogoOnboarding::para($giro);
-
-        return array_values(array_filter(
-            $catalogo['tareas'],
-            fn ($t) => ($t['momento'] ?? null) === 'apertura'
-        ));
+            . 'sucursal no se repartiría nada y habría que dar de alta todo a mano (H28).');
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('giros')]

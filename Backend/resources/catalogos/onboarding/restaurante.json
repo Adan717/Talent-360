@@ -58,7 +58,7 @@
         },
         {
             "title": "Revisión de perecederos, caducidades y mise en place para el servicio del día",
-            "estimated_mins": 25,
+            "estimated_mins": 35,
             "priority": "bloqueante",
             "category": "calidad",
             "target_role_name": "Chef / Jefe de Cocina",

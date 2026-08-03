@@ -412,18 +412,61 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   };
 
-  const activePreset = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
-  const [selectedPuestos, setSelectedPuestos] = useState<string[]>(() => activePreset.puestos.map(p => p.name));
-  const [selectedTareas, setSelectedTareas] = useState<string[]>(() => activePreset.tareas.map(t => t.title));
-  const [selectedCursos, setSelectedCursos] = useState<string[]>(() => activePreset.cursos.map(c => c.title));
+  // ── Catálogo servido desde el backend ─────────────────────────────────────────────────────
+  // Los puestos y tareas ya NO salen del PRESET_DATA local: los sirve
+  // `GET /admin/onboarding/catalogo` (contrato: docs/CONTRATO_API_CATALOGO_2026-08-03.md), y
+  // llegan con los dos campos que este archivo nunca declaró — `momento` y `estimated_mins` —
+  // sin los cuales el backend no crea la rutina de apertura y el costo por tarea sale mal.
+  // Al reenviar la selección en handleConfigureNicho esos campos viajan de vuelta solos.
+  //
+  // `cursos` y `vacantes` sí siguen saliendo del PRESET_DATA: son dominio de este wizard.
+  //
+  // `activePreset` conserva su nombre y su FORMA a propósito: todos los usos del JSX de abajo
+  // siguen funcionando sin tocarse; sólo cambió de dónde sale su contenido.
+  type PuestoCatalogo = { name: string; area: string; esAperturador: boolean; jerarquiaLlaves: number };
+  type TareaCatalogo = {
+    title: string; category: string; priority: string; assistant_type: string;
+    assistant_prompt: string; target_role_name: string; estimated_mins?: number; momento?: string | null;
+  };
 
-  // Al cambiar de giro, resetear selección de puestos y tareas
+  const [catalogo, setCatalogo] = useState<{ puestos: PuestoCatalogo[]; tareas: TareaCatalogo[] } | null>(null);
+  const [catalogoError, setCatalogoError] = useState(false);
+  const [reintentoCatalogo, setReintentoCatalogo] = useState(0);
+
+  const presetLocal = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
+  const activePreset = {
+    puestos: catalogo?.puestos ?? [],
+    tareas: catalogo?.tareas ?? [],
+    cursos: presetLocal.cursos,
+    vacantes: presetLocal.vacantes
+  };
+  const [selectedPuestos, setSelectedPuestos] = useState<string[]>([]);
+  const [selectedTareas, setSelectedTareas] = useState<string[]>([]);
+  const [selectedCursos, setSelectedCursos] = useState<string[]>(() => presetLocal.cursos.map(c => c.title));
+
+  // Pide el catálogo del giro y preselecciona todo, igual que antes hacía PRESET_DATA de forma
+  // síncrona. Para un giro sin catálogo (p. ej. 'custom') el servidor devuelve retail, que es
+  // exactamente lo que hacía el `|| PRESET_DATA.retail` local.
+  useEffect(() => {
+    let vigente = true;
+    setCatalogo(null);
+    setCatalogoError(false);
+    axiosInstance.get('/admin/onboarding/catalogo', { params: { nicho: selectedNicho } })
+      .then(({ data }) => {
+        if (!vigente) return;
+        setCatalogo({ puestos: data.puestos, tareas: data.tareas });
+        setSelectedPuestos(data.puestos.map((p: PuestoCatalogo) => p.name));
+        setSelectedTareas(data.tareas.map((t: TareaCatalogo) => t.title));
+      })
+      .catch(() => { if (vigente) setCatalogoError(true); });
+    return () => { vigente = false; };
+  }, [selectedNicho, reintentoCatalogo]);
+
+  // Al cambiar de giro, resetear selección; puestos y tareas los repone el efecto del catálogo
   const handleSelectNicho = (nichoKey: 'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
     setSelectedNicho(nichoKey);
     setSubStep('giro');
     const preset = PRESET_DATA[nichoKey] || PRESET_DATA.retail;
-    setSelectedPuestos(preset.puestos.map(p => p.name));
-    setSelectedTareas(preset.tareas.map(t => t.title));
     setSelectedCursos(preset.cursos.map(c => c.title));
     if (SUB_NICHOS[nichoKey]?.length) {
       setSelectedSubNicho(SUB_NICHOS[nichoKey][0].id);
@@ -615,16 +658,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleConfigureNicho = async () => {
+    // Sin catálogo cargado no hay nada que mandar: mejor un aviso claro que enviar listas
+    // vacías y dejar la empresa configurada a medias.
+    if (selectedNicho !== 'custom' && !catalogo) {
+      setErrorMsg('El catálogo del giro aún no termina de cargar. Espera un momento e intenta de nuevo.');
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     try {
-      const preset = PRESET_DATA[selectedNicho] || PRESET_DATA.retail;
-      const filteredPuestos = selectedNicho === 'custom' 
-        ? undefined 
-        : preset.puestos.filter(p => selectedPuestos.includes(p.name));
-      const filteredTareas = selectedNicho === 'custom' 
-        ? undefined 
-        : preset.tareas.filter(t => selectedTareas.includes(t.title));
+      // Se filtra sobre el catálogo del SERVIDOR: así lo seleccionado viaja de vuelta con
+      // `momento` y `estimated_mins` incluidos, que es la razón de ser de todo el contrato.
+      const filteredPuestos = selectedNicho === 'custom'
+        ? undefined
+        : (catalogo?.puestos ?? []).filter(p => selectedPuestos.includes(p.name));
+      const filteredTareas = selectedNicho === 'custom'
+        ? undefined
+        : (catalogo?.tareas ?? []).filter(t => selectedTareas.includes(t.title));
 
       await axiosInstance.post('/admin/onboarding/configure-nicho', {
         nicho: selectedNicho,
@@ -1153,8 +1204,34 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
               )}
 
+              {/* Guarda del catálogo: los pasos de puestos y tareas pintan lo que sirve el
+                  backend, así que mientras no llegue (o si la red falló) se muestra el estado
+                  en vez de listas vacías que parecen un giro sin contenido. */}
+              {(subStep === 'puestos' || subStep === 'tareas') && !catalogo && (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center gap-3 text-center animate-in fade-in duration-200">
+                  {catalogoError ? (
+                    <>
+                      <AlertCircle className="text-red-500" size={22} />
+                      <p className="text-xs font-bold text-slate-700">No se pudo cargar el catálogo del giro.</p>
+                      <button
+                        type="button"
+                        onClick={() => setReintentoCatalogo(r => r + 1)}
+                        className="text-[11px] font-black text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100"
+                      >
+                        Reintentar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="animate-spin text-purple-600" size={22} />
+                      <p className="text-xs font-bold text-slate-500">Cargando el catálogo del giro…</p>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* BLOQUE 1B: SELECCIÓN DE PUESTOS DE TRABAJO */}
-              {subStep === 'puestos' && (
+              {subStep === 'puestos' && catalogo && (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Selecciona los puestos de trabajo para tu sucursal. Marca o desmarca según las necesidades de tu equipo.
@@ -1237,7 +1314,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               )}
 
               {/* BLOQUE 1C: CHECKLISTS OPERATIVAS & RUTINAS POR PUESTO */}
-              {subStep === 'tareas' && (
+              {subStep === 'tareas' && catalogo && (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   <p className="text-xs text-slate-500 leading-relaxed">
                     Filtra y selecciona las rutinas operativas para cada puesto. Se cargarán automáticamente en el sistema.

@@ -43,10 +43,19 @@ No es sólo el campo del sueldo. Es la tabla (`weekly_payrolls`), el comando noc
 
 **Una empresa que pague quincenal o mensual recibe hoy 4 o 5 recibos semanales al mes.**
 
-### d) El timbrado CFDI va fijo a "quincenal"
+### d) El timbrado CFDI va fijo a "quincenal" — riesgo de cumplimiento
 
 `BillingController:216` manda `'periodicity' => '04' // Quincenal` **hardcodeado**, para todas las
-empresas, mientras el cálculo es semanal. Los dos no pueden ser correctos.
+empresas, mientras el cálculo es semanal.
+
+Esto no es sólo una inconsistencia técnica. **La periodicidad declarada en un CFDI de nómina debe
+corresponder con la forma real en que la empresa paga.** Si una empresa paga por semana y sus
+comprobantes se timbran como quincenales, lo que queda ante el SAT es una declaración que no
+coincide con la realidad — y el comprobante ya está emitido y sellado, no es algo que se corrija
+después con un cambio de código.
+
+Conviene que lo revise quien lleve la parte fiscal antes de timbrar para un cliente real; aquí
+sólo se señala el riesgo, no se resuelve.
 
 ---
 
@@ -100,15 +109,37 @@ y el timbrado la respeten en lugar de asumir semanal y timbrar quincenal.
 **3. Migración explícita para lo ya capturado.** No se puede inferir la periodicidad mirando el
 número: hay que registrar con cuál se capturó cada sueldo existente.
 
+### Cómo se migra sin depender de la memoria de nadie
+
+Preguntarle a cada dueño con qué periodicidad capturó cada sueldo no escala: con 50 empresas de
+200 colaboradores serían 10 000 preguntas. La estrategia depende de en qué momento se haga:
+
+**Durante el piloto (pocas empresas) — confirmación obligatoria.**
+Al migrar, cada empresa queda marcada como "periodicidad sin confirmar", y **el administrador
+tiene que confirmarla antes de poder generar su siguiente nómina**. Son pocos clientes, la
+respuesta la da quien sí la sabe, y el sistema no calcula nada con una suposición.
+
+**Para el despliegue masivo — etiquetar y permitir corrección.**
+Se etiqueta todo lo histórico con la periodicidad que el sistema venía asumiendo de facto
+(semanal), que es lo único cierto que se sabe de esos datos, y cada empresa puede corregirla caso
+por caso. Evita bloquear a cientos de clientes por un dato que la mayoría no va a revisar.
+
+Lo que **no** debe hacerse en ninguno de los dos casos es adivinar la periodicidad a partir del
+importe.
+
 ---
 
 ## Qué hace falta antes de tocar la fórmula
 
-Un **test de regresión financiera**: poder decir *"estos N recibos cambian, por estas cantidades
-exactas"* antes de aplicar nada, y que esa lista sea revisable.
+Un **informe de impacto**, no un test de los que corren en integración continua.
 
-No basta con que la suite pase. Si el cálculo actual está mal, "que dé lo mismo que antes" sería
-justamente lo que no queremos.
+En concreto: un comando que tome los recibos ya emitidos, los recalcule con la fórmula nueva y
+**exporte una tabla comparativa** —colaborador, periodo, importe anterior, importe nuevo,
+diferencia—. Eso no lo revisa un desarrollador: lo revisa quien lleve la nómina, y su visto bueno
+es lo que autoriza la migración.
+
+La suite de pruebas sigue haciendo falta, pero no basta: si el cálculo actual está mal, un test
+que exija *"que dé lo mismo que antes"* estaría fijando el error.
 
 ---
 

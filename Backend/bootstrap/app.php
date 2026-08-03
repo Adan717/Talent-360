@@ -23,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'device.security' => \App\Http\Middleware\DeviceSecurityMiddleware::class,
         ]);
 
+        // Una API pura siempre responde JSON: sin este forzado, una petición sin
+        // "Accept: application/json" que falla la autenticación termina en 500
+        // ("Route [login] not defined") en vez de 401. Ver ForceJsonResponse.
+        $middleware->prependToGroup('api', \App\Http\Middleware\ForceJsonResponse::class);
+
         // §43: el token de auth puede llegar en la cookie httpOnly `talent_auth_token`
         // (protección XSS); este middleware la copia al header Authorization antes de que
         // Sanctum evalúe el token. Se antepone a todo el grupo `api`.

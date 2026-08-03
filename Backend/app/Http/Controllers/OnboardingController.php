@@ -501,6 +501,49 @@ class OnboardingController extends Controller
     }
 
     /**
+     * Sirve el catálogo de puestos y tareas del giro, con TODOS los campos.
+     *
+     * Es la mitad "de ida" del contrato con el wizard (`CONTRATO_API_CATALOGO_2026-08-03.md`):
+     * el wizard pide el catálogo aquí, el dueño selecciona, y lo elegido vuelve por
+     * `configureNicho`. Como los datos nacieron aquí, viajan de vuelta con `momento` y
+     * `estimated_mins` — los dos campos que el `PRESET_DATA` del frontend no declara, y sin los
+     * cuales no se crea la rutina de apertura y el costo de cada tarea sale mal.
+     *
+     * Los nombres de campo son deliberadamente los que el `PRESET_DATA` ya usa: el filtrado y el
+     * envío del wizard funcionan sin tocarse.
+     *
+     * Un giro sin catálogo devuelve el de retail, replicando el `|| PRESET_DATA.retail` del
+     * wizard, para que el caso 'custom' siga comportándose exactamente igual que hoy.
+     */
+    public function catalogo(Request $request)
+    {
+        $request->validate(['nicho' => 'required|string|max:64']);
+
+        $nicho = strtolower(trim($request->query('nicho')));
+        $catalogo = \App\Support\CatalogoOnboarding::para($nicho);
+
+        if ($catalogo === null) {
+            $nicho = 'retail';
+            $catalogo = \App\Support\CatalogoOnboarding::para('retail');
+        }
+
+        if ($catalogo === null) {
+            // Sólo posible si falta el propio retail.json: instalación rota, no petición mala.
+            return response()->json([
+                'success' => false,
+                'message' => 'No hay catálogos instalados en el servidor.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'nicho' => $nicho,
+            'puestos' => $catalogo['puestos'],
+            'tareas' => $catalogo['tareas'],
+        ]);
+    }
+
+    /**
      * Configura el nicho de negocio, inyectando puestos, tareas, vacantes y cursos seleccionados en el wizard.
      */
     public function configureNicho(Request $request)

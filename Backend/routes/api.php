@@ -307,6 +307,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/employees/{id}/generate-pin', [OnboardingController::class, 'generateInvitePin']);
         Route::post('/admin/onboarding/send-whatsapp', [OnboardingController::class, 'sendWhatsAppNotifications']);
         Route::post('/admin/onboarding/inject-demo', [OnboardingController::class, 'injectDemoData']);
+        // El catálogo del giro con TODOS los campos (momento, estimated_mins): la mitad "de ida"
+        // del contrato con el wizard. Ver CONTRATO_API_CATALOGO_2026-08-03.md.
+        Route::get('/admin/onboarding/catalogo', [OnboardingController::class, 'catalogo']);
         Route::post('/admin/onboarding/configure-nicho', [OnboardingController::class, 'configureNicho']);
 
         // Validación de Tareas (Aprobación/Rechazo)

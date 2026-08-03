@@ -12,8 +12,19 @@
 # vuelta atrás si algo salía mal. Con el repo apuntando por SSH, un despliegue es un `push` más
 # este script, y revertir es `git reset --hard HEAD~1` y volver a ejecutarlo.
 #
-#   Uso:  ./deploy_v2.sh            → despliega origin/main
-#         ./deploy_v2.sh <commit>   → despliega un commit concreto (para revertir)
+#   Uso:  deploy-v2            → despliega origin/main
+#         deploy-v2 <commit>   → despliega un commit concreto (para revertir)
+#
+# EJECUTAR SIEMPRE LA COPIA DE `/usr/local/bin/deploy-v2`, NO LA DEL REPOSITORIO.
+#
+# Motivo, encontrado probando la reversión: este script vive dentro del árbol que él mismo
+# resetea. Al revertir a un commit anterior a su propia existencia, `git reset --hard` lo borra a
+# mitad de ejecución y la vuelta atrás queda a medias — justo en el momento en que más falta hace.
+# Por eso se instala fuera del árbol:
+#
+#     install -m 755 deploy_v2.sh /usr/local/bin/deploy-v2
+#
+# Al cambiar este archivo hay que volver a ejecutar esa línea para actualizar la copia instalada.
 #
 set -euo pipefail
 

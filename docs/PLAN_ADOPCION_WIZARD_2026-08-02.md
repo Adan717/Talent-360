@@ -33,7 +33,7 @@ ninguna de las dos, y sin tocar nada durante la ventana del piloto.
   jerárquica**: sin él, ninguna tarea pide firma del supervisor.
 - Crea la rutina de apertura, que es lo que hace que **el checklist se reparta solo** al abrir.
 - Calcula el **costo de cada tarea**: `sueldo / 480 × minutos`.
-- Catálogo por giro cubriendo **6 giros** completos.
+- Guarda por tarea los dos campos que el frontend no declara: `momento` y `estimated_mins`.
 
 ---
 
@@ -57,18 +57,22 @@ funciona con su wizard sin tocar nada**.
 
 ### Y un hallazgo que decide el diseño
 
-Su catálogo del frontend **sólo está completo para un giro**:
+Se contaron los dos catálogos, y salen casi idénticos:
 
-| Giro | Su frontend | Backend actual |
+| Giro | Su frontend | Backend |
 |---|---|---|
-| materias_primas / repostería | 92 tareas | completo |
-| retail | **4** | completo |
-| restaurante | **5** | completo |
-| taller | **3** | completo |
-| oficina | — | completo |
+| materias_primas / repostería | 92 | 92 |
+| retail | 4 | 4 |
+| restaurante | 3 | 3 |
+| oficina | 2 | 2 |
+| taller | 5 | 4 |
 
-Adoptar su catálogo tal cual dejaría a un cliente de restaurante con **5 tareas**. Esto no es un
-argumento contra su wizard: es la prueba de que **el catálogo no debe vivir en el frontend**.
+**No son dos catálogos: es el mismo catálogo escrito dos veces.** Eso descarta el argumento de
+"adoptar el más completo" —ninguno lo es— y deja el argumento real: mientras existan dos copias
+del mismo dato, hay que sincronizarlas a mano y cada resincronización repite este choque.
+
+*(Nota aparte: sólo repostería está trabajada de verdad. Un cliente de restaurante termina el
+asistente con 3 tareas. Es un hueco de producto, no de arquitectura, y no lo resuelve este plan.)*
 
 ---
 
@@ -111,7 +115,8 @@ lógica de selección, su stepper y sus cursos: **sólo cambia de dónde salen l
 Al reenviar lo seleccionado, los campos `momento` y `estimated_mins` viajan de vuelta porque
 vinieron del backend. El choque desaparece por construcción, no por parche.
 
-Beneficio secundario: los 6 giros quedan completos en el wizard sin escribir un solo catálogo más.
+El contrato de este endpoint —forma de la respuesta y los tres puntos exactos que hay que tocar en
+el wizard— está en `CONTRATO_API_CATALOGO_2026-08-03.md`, listo para que él lo valide.
 
 ### Fase 3 — Guardarraíl *(backend, pequeño)*
 

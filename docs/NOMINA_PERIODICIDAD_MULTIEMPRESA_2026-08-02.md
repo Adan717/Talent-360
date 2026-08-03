@@ -2,15 +2,19 @@
 
 **Fecha:** 2026-08-02
 **Naturaleza:** decisión de producto, no corrección puntual.
-**Urgencia:** no bloquea el entorno de pruebas. **Sí conviene resolverlo antes de facturarle a un
-cliente real**, porque cambia recibos.
+**Urgencia:** no hay error activo. El piloto de DecorArte **paga por semana**, que coincide con lo
+que el sistema asume hoy. **Sí conviene resolverlo antes del siguiente cliente**, porque el sistema
+acierta por coincidencia, no por diseño.
+**Estado:** propuesta **aprobada** por el responsable de producto (2026-08-03) — guardar el salario
+en diario, elegir la periodicidad al capturar y configurarla por empresa.
 
 ---
 
 ## Resumen en tres líneas
 
 1. El sueldo se captura sin decir si es semanal, quincenal o mensual.
-2. La nómina lo toma **siempre como semanal**; si una empresa captura mensual, calcula **5× de más**.
+2. La nómina lo toma **siempre como semanal**. Con DecorArte coincide —paga semanal—, pero una
+   empresa que capture mensual recibiría un cálculo **5× mayor**.
 3. El producto se vende **multi-empresa** y cada empresa paga distinto, así que no existe una
    respuesta única: hace falta que la periodicidad sea configurable.
 
@@ -45,8 +49,21 @@ No es sólo el campo del sueldo. Es la tabla (`weekly_payrolls`), el comando noc
 
 ### d) El timbrado CFDI va fijo a "quincenal" — riesgo de cumplimiento
 
-`BillingController:216` manda `'periodicity' => '04' // Quincenal` **hardcodeado**, para todas las
-empresas, mientras el cálculo es semanal.
+`BillingController` manda **tres valores quincenales fijos** para todas las empresas, mientras el
+cálculo es semanal:
+
+```php
+'periodicity'  => '04',   // Quincenal, del catálogo del SAT
+'working_days' => 15,
+'salary_rate'  => $validated['net_salary'] / 15,
+```
+
+El catálogo de periodicidad del SAT es cerrado y tiene un valor por cada caso: **`02` es semanal**,
+`04` quincenal, `05` mensual. Para el piloto de DecorArte —que **paga por semana**— los tres
+campos son incorrectos: la periodicidad, los 15 días trabajados y la división entre 15.
+
+Esto no requiere criterio contable para saber que está mal; el valor debe corresponder a la
+periodicidad real de pago.
 
 Esto no es sólo una inconsistencia técnica. **La periodicidad declarada en un CFDI de nómina debe
 corresponder con la forma real en que la empresa paga.** Si una empresa paga por semana y sus
@@ -79,18 +96,30 @@ Y lo que la nómina pagó de verdad esta semana:
 | Adán Cuéllar | 5 | 8 750.00 | **1 750.00** |
 | Jose Ramírez | 5 | 8 263.89 | **1 652.78** |
 
-### Cómo leer estos números
+### Cómo leer estos números — y qué NO demuestran
 
-A una gerente con 18 000 capturados, el sistema le calcula **21 000 brutos por semana** — unos
-91 000 al mes.
+**Estos cuatro colaboradores son datos de prueba**, capturados durante la auditoría. No son la
+plantilla real de ningún cliente. La tabla **ilustra la ambigüedad**; no documenta un daño en
+producción.
 
-El indicio más claro está en el sueldo más bajo: 8 500 da un diario de **283.33** si se interpreta
-como mensual —el orden del salario mínimo vigente— frente a **1 416.67** si se interpreta como
-semanal, cinco veces el mínimo para un puesto de apoyo. El primero es un sueldo real; el segundo
-no lo es.
+Y hay un dato que acota el alcance: **el piloto de DecorArte paga por semana**, así que para ese
+cliente la interpretación que hace hoy el sistema coincide con su realidad. **No hay un error
+activo pagando de más a nadie.**
 
-Dicho esto: **en un producto multi-empresa esto no se resuelve eligiendo una interpretación.** Una
-empresa puede capturar mensual y otra semanal, y ambas tienen razón.
+Lo que la tabla sí muestra es el tamaño del error cuando la interpretación no coincide: **5×**.
+Y el sistema no tiene forma de saber cuál es la correcta, porque **no lo pregunta**. Hoy acierta
+con DecorArte por coincidencia, no por diseño.
+
+Conviene además no confundir dos cosas distintas:
+
+- **Cada cuánto se paga** (semanal, quincenal, mensual) → es lo que el cliente configura.
+- **Qué representa el número capturado** → es la unidad del dato, y es lo que hoy falta declarar.
+
+No van siempre juntas: es habitual cobrar **cada semana** un sueldo pactado **al mes**. Por eso la
+solución no es asumir que quien paga semanal captura semanal.
+
+**En un producto multi-empresa esto no se resuelve eligiendo una interpretación**: una empresa
+puede capturar mensual y otra semanal, y ambas tienen razón.
 
 ---
 

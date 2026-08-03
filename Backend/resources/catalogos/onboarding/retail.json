@@ -1,0 +1,66 @@
+{
+    "puestos": [
+        {
+            "name": "Gerente de Tienda",
+            "esAperturador": true,
+            "jerarquiaLlaves": 1,
+            "area": "Gerencia"
+        },
+        {
+            "name": "Supervisor de Cajas",
+            "esAperturador": true,
+            "jerarquiaLlaves": 2,
+            "area": "Cajas"
+        },
+        {
+            "name": "Asesor de Ventas y Piso",
+            "esAperturador": false,
+            "jerarquiaLlaves": 3,
+            "area": "Piso de Ventas"
+        },
+        {
+            "name": "Almacenista / Inventarios",
+            "esAperturador": false,
+            "jerarquiaLlaves": 4,
+            "area": "Almacén"
+        }
+    ],
+    "tareas": [
+        {
+            "title": "Conteo y validación de fondo de caja",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Supervisor de Cajas",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese el monto contado del fondo de caja."
+        },
+        {
+            "title": "Desactivación de alarma y encendido de switch",
+            "estimated_mins": 10,
+            "priority": "alta",
+            "category": "seguridad",
+            "target_role_name": "Gerente de Tienda",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la pantalla de la alarma desactivada."
+        },
+        {
+            "title": "Alineación de precios y frenteo de mercancía",
+            "estimated_mins": 20,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Asesor de Ventas y Piso",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto del exhibidor ordenado."
+        },
+        {
+            "title": "Cierre de cortina metálica y candado",
+            "estimated_mins": 10,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Gerente de Tienda",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto del candado cerrado."
+        }
+    ]
+}

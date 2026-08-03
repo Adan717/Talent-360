@@ -1,0 +1,48 @@
+{
+    "puestos": [
+        {
+            "name": "Jefe de Taller",
+            "esAperturador": true,
+            "jerarquiaLlaves": 1,
+            "area": "Administración"
+        },
+        {
+            "name": "Supervisor de Seguridad",
+            "esAperturador": true,
+            "jerarquiaLlaves": 2,
+            "area": "Calidad"
+        },
+        {
+            "name": "Técnico Operador / Mecánico",
+            "esAperturador": false,
+            "jerarquiaLlaves": 3,
+            "area": "Producción"
+        },
+        {
+            "name": "Ayudante de Almacén",
+            "esAperturador": false,
+            "jerarquiaLlaves": 4,
+            "area": "Logística"
+        }
+    ],
+    "tareas": [
+        {
+            "title": "Inspección de equipo de protección personal (EPP)",
+            "estimated_mins": 10,
+            "priority": "alta",
+            "category": "seguridad",
+            "target_role_name": "Supervisor de Seguridad",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto grupal del equipo portando su EPP."
+        },
+        {
+            "title": "Apagado de disyuntores de alta tensión y soldadoras",
+            "estimated_mins": 15,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Técnico Operador / Mecánico",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto del disyuntor apagado."
+        }
+    ]
+}

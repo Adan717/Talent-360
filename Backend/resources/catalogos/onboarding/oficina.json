@@ -1,0 +1,48 @@
+{
+    "puestos": [
+        {
+            "name": "Director General",
+            "esAperturador": true,
+            "jerarquiaLlaves": 1,
+            "area": "Dirección"
+        },
+        {
+            "name": "Coordinador de Operaciones",
+            "esAperturador": true,
+            "jerarquiaLlaves": 2,
+            "area": "Operaciones"
+        },
+        {
+            "name": "Consultor / Ejecutivo de Cuenta",
+            "esAperturador": false,
+            "jerarquiaLlaves": 3,
+            "area": "Operaciones"
+        },
+        {
+            "name": "Recepcionista / Asistente",
+            "esAperturador": false,
+            "jerarquiaLlaves": 4,
+            "area": "Administración"
+        }
+    ],
+    "tareas": [
+        {
+            "title": "Encendido y verificación de servidores locales",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "tecnología",
+            "target_role_name": "Coordinador de Operaciones",
+            "assistant_type": "ninguno",
+            "assistant_prompt": ""
+        },
+        {
+            "title": "Revisión y distribución de correspondencia",
+            "estimated_mins": 10,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Recepcionista / Asistente",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la bitácora de firmas."
+        }
+    ]
+}

@@ -1,0 +1,57 @@
+{
+    "puestos": [
+        {
+            "name": "Gerente de Restaurante",
+            "esAperturador": true,
+            "jerarquiaLlaves": 1,
+            "area": "Administración"
+        },
+        {
+            "name": "Chef / Jefe de Cocina",
+            "esAperturador": true,
+            "jerarquiaLlaves": 2,
+            "area": "Cocina"
+        },
+        {
+            "name": "Mesero / Atención al Cliente",
+            "esAperturador": false,
+            "jerarquiaLlaves": 3,
+            "area": "Servicio"
+        },
+        {
+            "name": "Ayudante de Cocina",
+            "esAperturador": false,
+            "jerarquiaLlaves": 4,
+            "area": "Cocina"
+        }
+    ],
+    "tareas": [
+        {
+            "title": "Verificación de temperatura de congeladores",
+            "estimated_mins": 15,
+            "priority": "alta",
+            "category": "operativo",
+            "target_role_name": "Chef / Jefe de Cocina",
+            "assistant_type": "captura_numero",
+            "assistant_prompt": "Ingrese la temperatura actual en °C."
+        },
+        {
+            "title": "Montaje y sanitización de mesas de comedor",
+            "estimated_mins": 20,
+            "priority": "normal",
+            "category": "operativo",
+            "target_role_name": "Mesero / Atención al Cliente",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la estación limpia."
+        },
+        {
+            "title": "Inspección y cierre de llaves de gas principal",
+            "estimated_mins": 10,
+            "priority": "bloqueante",
+            "category": "seguridad",
+            "target_role_name": "Chef / Jefe de Cocina",
+            "assistant_type": "evidencia_foto",
+            "assistant_prompt": "Tome foto de la válvula de gas cerrada."
+        }
+    ]
+}

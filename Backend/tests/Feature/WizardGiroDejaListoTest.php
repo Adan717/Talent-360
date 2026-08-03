@@ -181,6 +181,40 @@ class WizardGiroDejaListoTest extends TestCase
             'Una rutina no puede apuntar a tareas de otra empresa.');
     }
 
+    public function test_no_se_crea_ninguna_rutina_que_nadie_dispare(): void
+    {
+        // Sólo deben existir rutinas cuyo disparador algún punto del backend CONSULTE de verdad.
+        // Hoy el único es 'apertura' (`StoreOpeningService::triggerOpeningChecklist`).
+        //
+        // Este test nació de un defecto propio: se creó una rutina de 'cierre' que aparecía en el
+        // panel del gerente y no repartía ninguna tarea. Si mañana alguien vuelve a añadir un
+        // disparador al wizard sin cablear quien lo consuma, este test lo detiene.
+        $this->aplicarGiro()->assertStatus(200);
+
+        $disparadoresConsumidos = ['apertura'];
+
+        foreach ($this->rutinas() as $rutina) {
+            $this->assertContains($rutina->trigger, $disparadoresConsumidos,
+                "La rutina '{$rutina->title}' usa el disparador '{$rutina->trigger}', que ningún "
+                . 'código consume: se vería en el panel sin repartir nada.');
+        }
+    }
+
+    public function test_las_tareas_de_cierre_conservan_su_momento_en_el_catalogo(): void
+    {
+        // El dato se conserva a propósito aunque hoy no se use: deja el trabajo hecho para cuando
+        // se cablee el disparador de cierre. Lo que no se crea es la RUTINA, no la información.
+        $this->aplicarGiro()->assertStatus(200);
+
+        $hayTareasDeCierre = DB::table('tasks')
+            ->where('tenant_id', $this->tenantId)
+            ->where('title', 'like', '%alarma perimetral y verificar reporte%')
+            ->exists();
+
+        $this->assertTrue($hayTareasDeCierre,
+            'Las tareas de cierre siguen cargándose en el catálogo; sólo no se agrupan en rutina.');
+    }
+
     public function test_reaplicar_el_giro_no_duplica_rutinas(): void
     {
         $this->aplicarGiro()->assertStatus(200);

@@ -991,9 +991,21 @@ class OnboardingController extends Controller
             $porMomento[$momento][] = $taskIdsPorTitulo[$t['title']];
         }
 
+        // SÓLO se crean rutinas cuyo disparador alguien CONSUME de verdad.
+        //
+        // Aquí llegó a haber también una de `cierre`. Se retiró porque ningún punto del backend
+        // busca ese disparador —`StoreOpeningService::triggerOpeningChecklist` sólo consulta
+        // `trigger='apertura'`—, así que la rutina se creaba, aparecía en el panel del gerente y
+        // no repartía ni una tarea: una promesa vacía en pantalla, que es justo la clase de
+        // defecto que esta ronda de auditoría vino a eliminar (H19 el módulo de apertura, H23 la
+        // aprobación de nómina que decía "listo" sin guardar nada).
+        //
+        // Las tareas de cierre CONSERVAN su `momento` en el catálogo: son metadatos correctos y
+        // dejan el trabajo hecho para el día que se cablee el disparador —el enganche natural es
+        // `StoreOpeningController::closingChecklist`—. Cuando eso exista, basta con volver a
+        // añadir la línea de 'cierre' aquí.
         $definiciones = [
             'apertura' => 'Checklist Diario de Apertura',
-            'cierre' => 'Checklist Diario de Cierre',
         ];
 
         foreach ($definiciones as $trigger => $titulo) {

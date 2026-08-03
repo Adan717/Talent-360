@@ -1135,6 +1135,41 @@ y recrea el catálogo cada vez—.
 
 ---
 
+## 🔴 H28 — 4 de 5 giros no generan NINGUNA rutina: el flujo está roto, no incompleto — ⛔ ABIERTO
+
+**Fecha:** 2026-08-03. **Encontrado por**: `CatalogoOnboardingValidoTest`, el primer día que corrió.
+
+Al extraer el catálogo del PHP a JSON (día 1 del plan del catálogo único), la prueba de
+validación reveló algo que 165 líneas de arreglos en medio de un controlador habían escondido:
+**sólo `materias_primas`/`reposteria` marca el campo `momento` en sus tareas.**
+
+| Giro | Tareas | Con `momento` | Rutina de apertura |
+|---|---|---|---|
+| materias_primas / repostería | 92 | 14 (7 apertura, 7 cierre) | ✅ se crea |
+| retail | 4 | **0** | ❌ nunca |
+| restaurante | 3 | **0** | ❌ nunca |
+| oficina | 2 | **0** | ❌ nunca |
+| taller | 2 | **0** | ❌ nunca |
+
+**Por qué es grave y no un simple "catálogo corto":** la cadena de automatización es
+`momento='apertura'` → `crearRutinasDelGiro` arma la rutina → `StoreOpeningService` la reparte al
+abrir la sucursal. Sin una sola tarea marcada, la cadena no arranca: el asistente crea las tareas
+en la base, pero **el empleado llega, abre la sucursal, y su panel está vacío**. Todo se tendría
+que asignar a mano — en un módulo que se anuncia como "Automatiza Rutinas".
+
+Para 4 de los 5 giros ofrecidos, el producto que el asistente entrega no es el que se vende.
+
+**Qué NO lo arregla:** ni el endpoint del catálogo, ni la fusión con el wizard del jefe, ni
+ninguna arquitectura. Es **contenido que falta**: marcar `momento` (y revisar `estimated_mins`)
+en los cuatro catálogos JSON, tarea de quien conozca cada giro, no de un programador.
+
+**Estado:** nombrado en `GIROS_SIN_APERTURA` (`CatalogoOnboardingValidoTest`), con una prueba que
+obliga a quitar cada giro de la lista al llenarlo — el pendiente no puede perderse en silencio.
+Primer paso acordado con el jefe: redactar **restaurante** completo y que él lo revise, para medir
+el costo real de revisión antes de comprometer los otros tres.
+
+---
+
 ## Contexto operativo de la prueba
 
 - El checkout simulado requirió el opt-in `ALLOW_SIMULATED_CHECKOUT` (commit `99b7fce`): la

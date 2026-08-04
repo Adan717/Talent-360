@@ -1033,18 +1033,58 @@ DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
         ]);
     }
 
-    private function resolvePublicUser(Request $request)
+    /**
+     * Usuario de la Wiki pública detrás del token, SI pertenece a la empresa que se está
+     * consultando. El segundo parámetro (Academia AC8, auditoría 2026-08-04) cierra un
+     * cruce de empresas: la función devolvía cualquier `ObsidianUser` con token válido sin
+     * mirar su `tenant_id`, y los llamadores solo comprobaban `role === 'admin'`. Un admin
+     * de la Wiki de la empresa A podía por tanto aprobar propuestas, leer sugerencias y
+     * reescribir documentos en la Wiki de la empresa B con solo cambiar el slug de la URL.
+     */
+    private function resolvePublicUser(Request $request, $tenant = null)
     {
         $token = $request->bearerToken() ?: $request->token ?: $request->passcode;
-        if ($token) {
-            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($tokenModel && ($tokenModel->tokenable_type === 'App\Models\ObsidianUser' || is_a($tokenModel->tokenable_type, \App\Models\ObsidianUser::class, true))) {
-                return \App\Models\ObsidianUser::withoutGlobalScopes()
-                    ->where('id', $tokenModel->tokenable_id)
-                    ->first();
-            }
+        if (!$token) {
+            return null;
         }
-        return null;
+
+        $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+        if (!$tokenModel || !($tokenModel->tokenable_type === 'App\Models\ObsidianUser' || is_a($tokenModel->tokenable_type, \App\Models\ObsidianUser::class, true))) {
+            return null;
+        }
+
+        $user = \App\Models\ObsidianUser::withoutGlobalScopes()
+            ->where('id', $tokenModel->tokenable_id)
+            ->first();
+
+        if (!$user) {
+            return null;
+        }
+
+        // La empresa de la URL manda: si no se pasó, se resuelve del slug de la ruta para
+        // que el candado aplique en los ocho llamadores sin depender de su orden interno.
+        $tenant = $tenant ?: $this->findTenantBySlug($request->route('tenantSlug'));
+
+        if ($tenant && (int) $user->tenant_id !== (int) $tenant->id) {
+            return null;
+        }
+
+        return $user;
+    }
+
+    /**
+     * Empresa detrás de un slug público (mismo criterio que usan los métodos públicos:
+     * `public_slug` o, en su defecto, el subdominio).
+     */
+    private function findTenantBySlug($tenantSlug)
+    {
+        if (!$tenantSlug) {
+            return null;
+        }
+
+        return Tenant::withoutGlobalScopes()->where(function ($q) use ($tenantSlug) {
+            $q->where('public_slug', $tenantSlug)->orWhere('subdomain', $tenantSlug);
+        })->first();
     }
 
     /**
@@ -1394,7 +1434,7 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             return response()->json(['error' => 'Usuario o contraseña incorrectos.'], 401);
         }
 
-        $token = $user->createToken('vault-user-token')->plainTextToken;
+        $token = $user->createToken('vault-user-token', ['org-vault'])->plainTextToken;
 
         return response()->json([
             'valid' => true,
@@ -1646,13 +1686,20 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             return response()->json(['error' => 'El correo o usuario ya se encuentra registrado.'], 400);
         }
 
+        // Academia AC7 (auditoría 2026-08-04): ANTES el rol se deducía del `job_role_id` que
+        // mandaba el propio solicitante — elegir el puesto cuyo nombre contuviera
+        // "administrador" (ids consecutivos, sin sesión ni passcode) daba role='admin' en el
+        // acto. Ese rol es el que abre aprobar/rechazar propuestas y reescribir el manual de
+        // la empresa. El registro público ahora SIEMPRE nace como colaborador; el rol admin
+        // solo puede venir de `publicLogin`, que verifica la contraseña real del usuario de
+        // la plataforma. El puesto declarado se conserva (es informativo, no da permisos).
         $role = 'colaborador';
         $jobRole = null;
         if ($request->job_role_id) {
-            $jobRole = DB::table('job_roles')->where('id', $request->job_role_id)->first();
-            if ($jobRole && str_contains(mb_strtolower(Str::ascii($jobRole->name), 'UTF-8'), 'administrador')) {
-                $role = 'admin';
-            }
+            $jobRole = DB::table('job_roles')
+                ->where('id', $request->job_role_id)
+                ->where('tenant_id', $tenant->id)
+                ->first();
         }
 
         $user = ObsidianUser::create([
@@ -1660,11 +1707,15 @@ Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'job_role_id' => $request->job_role_id,
+            // Solo se guarda el puesto si de verdad es de ESTA empresa (un id de otro
+            // tenant colgaba un puesto ajeno del expediente público).
+            'job_role_id' => $jobRole?->id,
             'role' => $role
         ]);
 
-        $token = $user->createToken('vault-user-token')->plainTextToken;
+        // El token de la Wiki queda marcado con su habilidad: no sirve para la API privada
+        // (ver el candado de AppServiceProvider) y deja rastro de su origen en la tabla.
+        $token = $user->createToken('vault-user-token', ['org-vault'])->plainTextToken;
 
         return response()->json([
             'valid' => true,

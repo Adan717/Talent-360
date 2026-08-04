@@ -68,20 +68,35 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
     
     // Pública (Wiki/Organigrama de la Empresa)
-    Route::post('/public/org-vault/{tenantSlug}/login', [ObsidianController::class, 'publicLogin']);
-    Route::post('/public/org-vault/{tenantSlug}/register', [ObsidianController::class, 'publicRegister']);
-    Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
-    Route::post('/public/org-vault/{tenantSlug}/copilot', [ObsidianController::class, 'copilot']);
-    Route::post('/public/org-vault/{tenantSlug}/validate-passcode', [ObsidianController::class, 'validatePublicPasscode']);
-    Route::post('/public/org-vault/{tenantSlug}/suggestions', [ObsidianController::class, 'getPublicSuggestions']);
-    Route::post('/public/org-vault/{tenantSlug}/suggestions/create', [ObsidianController::class, 'createPublicSuggestion']);
-    Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/approve', [ObsidianController::class, 'approvePublicSuggestion']);
-    Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/reject', [ObsidianController::class, 'rejectPublicSuggestion']);
-    Route::post('/public/org-vault/{tenantSlug}/scribe', [ObsidianController::class, 'scribe']);
-    Route::post('/public/org-vault/{tenantSlug}/progress', [ObsidianController::class, 'recordReadProgress']);
-    Route::post('/public/org-vault/{tenantSlug}/exam/status', [ObsidianController::class, 'getExamStatus']);
-    Route::post('/public/org-vault/{tenantSlug}/exam/generate', [ObsidianController::class, 'generateExam']);
-    Route::post('/public/org-vault/{tenantSlug}/exam/submit', [ObsidianController::class, 'submitExam']);
+    // Academia AC9 (auditoría 2026-08-04): estas 14 rutas viven SIN sesión y no tenían
+    // ningún throttle — se podían martillar para adivinar contraseñas del vault, passcodes
+    // e ids de puestos, y las tres que llaman a Gemini (copilot/scribe/exam) se pagan con
+    // la clave de la empresa o la del .env. Mismo criterio que §52 en login/forgot-password:
+    // las puertas de credenciales van a 5/min, la IA a 10/min y la lectura a 60/min.
+    Route::middleware('throttle:5,1')->group(function () {
+        Route::post('/public/org-vault/{tenantSlug}/login', [ObsidianController::class, 'publicLogin']);
+        Route::post('/public/org-vault/{tenantSlug}/register', [ObsidianController::class, 'publicRegister']);
+        Route::post('/public/org-vault/{tenantSlug}/validate-passcode', [ObsidianController::class, 'validatePublicPasscode']);
+    });
+
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/public/org-vault/{tenantSlug}/copilot', [ObsidianController::class, 'copilot']);
+        Route::post('/public/org-vault/{tenantSlug}/scribe', [ObsidianController::class, 'scribe']);
+        Route::post('/public/org-vault/{tenantSlug}/exam/generate', [ObsidianController::class, 'generateExam']);
+        Route::post('/public/org-vault/{tenantSlug}/exam/submit', [ObsidianController::class, 'submitExam']);
+    });
+
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::post('/public/org-vault/{tenantSlug}/suggestions', [ObsidianController::class, 'getPublicSuggestions']);
+        Route::post('/public/org-vault/{tenantSlug}/suggestions/create', [ObsidianController::class, 'createPublicSuggestion']);
+        Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/approve', [ObsidianController::class, 'approvePublicSuggestion']);
+        Route::post('/public/org-vault/{tenantSlug}/suggestions/{id}/reject', [ObsidianController::class, 'rejectPublicSuggestion']);
+        Route::post('/public/org-vault/{tenantSlug}/progress', [ObsidianController::class, 'recordReadProgress']);
+        Route::post('/public/org-vault/{tenantSlug}/exam/status', [ObsidianController::class, 'getExamStatus']);
+        // La lectura del documento va al final: su {docSlug?} opcional capturaría a las
+        // demás rutas si se declarara antes (Laravel resuelve por orden de registro).
+        Route::get('/public/org-vault/{tenantSlug}/{docSlug?}', [ObsidianController::class, 'getPublicDocument']);
+    });
 
     // Plantillas de puestos globales
     Route::get('/job-role-templates', [JobRoleTemplateController::class, 'index']);

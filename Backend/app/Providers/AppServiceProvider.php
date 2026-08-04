@@ -40,5 +40,24 @@ class AppServiceProvider extends ServiceProvider
             $modelClass::saved($invalidate);
             $modelClass::deleted($invalidate);
         }
+
+        // Academia AC7 (auditoría 2026-08-04): los tokens que emite la Wiki pública
+        // (`ObsidianUser`, registro/login de org-vault SIN sesión) son tokens Sanctum
+        // normales. El guard `sanctum` de este proyecto no fija `provider`, así que
+        // `hasValidProvider()` los daba por buenos y ABRÍAN LA API PRIVADA: quien supiera
+        // el slug público de una empresa se registraba solo, obtenía token y hacía
+        // POST /employees o PUT /company/payroll-settings. Se cortan aquí, en el guard,
+        // que es el único punto por el que pasan todas las rutas `auth:sanctum`.
+        // La Wiki sigue funcionando: resuelve su usuario leyendo el token a mano
+        // (ObsidianController::resolvePublicUser), sin pasar por este guard.
+        \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(
+            function ($accessToken, bool $isValid) {
+                if ($accessToken->tokenable instanceof \App\Models\ObsidianUser) {
+                    return false;
+                }
+
+                return $isValid;
+            }
+        );
     }
 }

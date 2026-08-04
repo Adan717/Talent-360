@@ -122,4 +122,25 @@ class Employee extends Model
     {
         return $this->job_role_id !== null && $this->user_id !== null;
     }
+
+    /**
+     * Costo por minuto trabajado, para `task_cost`.
+     *
+     * Usa `salario_diario` (unidad LFT, jornada de 480 min) cuando el expediente lo declara.
+     * Para expedientes LEGADOS conserva el statu quo (`base_salary/480`, default $300) — que
+     * esta INFLADO ~6x cuando lo capturado era semanal (documentado en
+     * docs/NOMINA_PERIODICIDAD_MULTIEMPRESA_2026-08-02.md como "no confiable"). Se corrige
+     * recapturando el sueldo con periodicidad, no adivinando aqui: task_cost no paga nomina
+     * (verificado), asi que el legado mantiene su valor historico hasta la recaptura.
+     */
+    public function costoPorMinuto(): float
+    {
+        if ($this->salario_diario !== null && (float) $this->salario_diario > 0) {
+            return (float) $this->salario_diario / 480.0;
+        }
+
+        $legado = (float) ($this->base_salary ?? 0) > 0 ? (float) $this->base_salary : 300.00;
+
+        return $legado / 480.0;
+    }
 }

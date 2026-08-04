@@ -329,9 +329,9 @@ class TaskSyncController extends Controller
 
                     // Cálculo del Costo Financiero de la Tarea basándose en el salario del empleado:
                     // Costo = (Salario Base Diario / 480 min) * Minutos Acumulados Invertidos
-                    $baseSalary = ($user && $user->employee && $user->employee->base_salary > 0) ? (float)$user->employee->base_salary : 300.00;
+                    $costoPorMinuto = ($user && $user->employee) ? $user->employee->costoPorMinuto() : 300.00 / 480.0;
                     $accumulatedMins = (float)($mappedData['accumulated_mins'] ?? 15);
-                    $taskCost = round(($baseSalary / 480) * $accumulatedMins, 2);
+                    $taskCost = round($costoPorMinuto * $accumulatedMins, 2);
                     $mappedData['task_cost'] = $taskCost;
 
                     if ($mappedData['status'] === 'completed') {

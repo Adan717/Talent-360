@@ -183,4 +183,26 @@ class PeriodicidadNominaTest extends TestCase
             ->expectsOutputToContain('Comparado')
             ->assertExitCode(0);
     }
+
+    // ---------------- costo por minuto de tarea (task_cost) ----------------
+
+    public function test_el_costo_por_minuto_usa_el_salario_diario_cuando_existe(): void
+    {
+        $e = new \App\Models\Employee(['salario_diario' => 400, 'base_salary' => 12000]);
+
+        // 400 diarios / 480 min de jornada — ya no el base_salary completo (inflado 6x).
+        $this->assertEqualsWithDelta(0.8333, $e->costoPorMinuto(), 0.0001);
+    }
+
+    public function test_el_costo_por_minuto_legado_conserva_su_statu_quo(): void
+    {
+        // task_cost no paga nomina: el legado mantiene su valor historico (documentado como no
+        // confiable) hasta que el sueldo se recapture con periodicidad. Cambiarlo aqui seria
+        // migrar por formula, que es exactamente lo que se decidio NO hacer.
+        $legado = new \App\Models\Employee(['base_salary' => 1400]);
+        $this->assertEqualsWithDelta(1400 / 480, $legado->costoPorMinuto(), 0.0001);
+
+        $sinSueldo = new \App\Models\Employee([]);
+        $this->assertEqualsWithDelta(300 / 480, $sinSueldo->costoPorMinuto(), 0.0001);
+    }
 }

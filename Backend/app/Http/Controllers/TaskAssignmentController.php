@@ -125,11 +125,11 @@ class TaskAssignmentController extends Controller
                 $validated['status'] = 'awaiting_validation';
             }
 
-            $baseSalary = ($assignmentUser && $assignmentUser->employee && $assignmentUser->employee->base_salary > 0)
-                ? (float) $assignmentUser->employee->base_salary
-                : 300.00;
+            $costoPorMinuto = ($assignmentUser && $assignmentUser->employee)
+                ? $assignmentUser->employee->costoPorMinuto()
+                : 300.00 / 480.0;
             $accumulatedMins = (float) ($validated['accumulated_mins'] ?? $assignment->accumulated_mins ?? 15);
-            $validated['task_cost'] = round(($baseSalary / 480) * $accumulatedMins, 2);
+            $validated['task_cost'] = round($costoPorMinuto * $accumulatedMins, 2);
 
             // El pago sólo ocurre si esta assignment NUNCA se pagó (ancla anti-doble-pago del
             // §33, ahora explícita: `coins_awarded` es la marca del pago, no el status).
@@ -327,9 +327,9 @@ class TaskAssignmentController extends Controller
         }
 
         if (!empty($result['match'])) {
-            $baseSalary = ($assignmentUser && $assignmentUser->employee && $assignmentUser->employee->base_salary > 0)
-                ? (float) $assignmentUser->employee->base_salary
-                : 300.00;
+            $costoPorMinuto = ($assignmentUser && $assignmentUser->employee)
+                ? $assignmentUser->employee->costoPorMinuto()
+                : 300.00 / 480.0;
             $accumulatedMins = (float) ($assignment->accumulated_mins ?? 15);
             $basePoints = $task->points ?? 10;
             $coinsEarned = round($basePoints * 0.10, 2);
@@ -342,7 +342,7 @@ class TaskAssignmentController extends Controller
             $assignment->update([
                 'status' => 'completed',
                 'ai_validation_result' => $result,
-                'task_cost' => round(($baseSalary / 480) * $accumulatedMins, 2),
+                'task_cost' => round($costoPorMinuto * $accumulatedMins, 2),
                 'points_awarded' => $yaPagada ? $assignment->points_awarded : $basePoints,
                 'coins_awarded' => $yaPagada ? $assignment->coins_awarded : $coinsEarned,
             ]);
@@ -563,9 +563,9 @@ class TaskAssignmentController extends Controller
             // que ya estuviera completada (no se paga dos veces).
             if ($assignment->status !== 'completed') {
                 $assignmentUser = $assignment->user_id ? User::find($assignment->user_id) : null;
-                $baseSalary = ($assignmentUser && $assignmentUser->employee && $assignmentUser->employee->base_salary > 0)
-                    ? (float) $assignmentUser->employee->base_salary
-                    : 300.00;
+                $costoPorMinuto = ($assignmentUser && $assignmentUser->employee)
+                ? $assignmentUser->employee->costoPorMinuto()
+                : 300.00 / 480.0;
                 $accumulatedMins = (float) ($assignment->accumulated_mins ?? 15);
                 $basePoints = $task?->points ?? 10;
                 $coinsEarned = round($basePoints * 0.10, 2);
@@ -580,7 +580,7 @@ class TaskAssignmentController extends Controller
                     'flagged_incomplete' => false,
                     'validation_feedback' => $validated['feedback'] ?? null,
                     'validated_by' => $user->id,
-                    'task_cost' => round(($baseSalary / 480) * $accumulatedMins, 2),
+                    'task_cost' => round($costoPorMinuto * $accumulatedMins, 2),
                     'points_awarded' => $yaPagada ? $assignment->points_awarded : $basePoints,
                     'coins_awarded' => $yaPagada ? $assignment->coins_awarded : $coinsEarned,
                 ]);

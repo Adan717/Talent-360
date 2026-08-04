@@ -579,6 +579,28 @@ class OnboardingController extends Controller
                 }
             }
 
+            // GUARDARRAÍL: toda tarea debe declarar sus minutos. La alternativa era el default
+            // silencioso de 15 min — que durante meses hizo que el costo en pesos de cada tarea
+            // saliera mal SIN ningún error visible (H28 y el plan del catálogo único nacieron de
+            // ahí). Un frontend viejo que mande tareas cojas recibe este error claro en vez de
+            // datos financieros incorrectos: los defectos caros no son los que fallan, son los
+            // que siguen funcionando.
+            $sinMinutos = collect($tareas ?? [])
+                ->filter(fn ($t) => !isset($t['estimated_mins']) || (int) $t['estimated_mins'] <= 0)
+                ->map(fn ($t) => $t['title'] ?? '(sin título)')
+                ->values();
+
+            if ($sinMinutos->isNotEmpty()) {
+                \DB::rollBack();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Estas tareas no declaran estimated_mins y sin ese dato su costo '
+                        . 'saldría mal en silencio: ' . $sinMinutos->implode(' | ')
+                        . '. Actualiza el catálogo o la versión del asistente.',
+                ], 422);
+            }
+
             // Limpiar los puestos por defecto de la plantilla inicial que NO tengan empleados ni usuarios asignados,
             // para sustituirlos limpiamente por la estructura de puestos elegida por el usuario en el wizard.
             $existingRoles = \App\Models\JobRole::where('tenant_id', $tenantId)->get();
@@ -647,7 +669,9 @@ class OnboardingController extends Controller
                         $taskIdsPorTitulo[$t['title']] = \DB::table('tasks')->insertGetId([
                             'tenant_id' => $tenantId,
                             'title' => $t['title'],
-                            'estimated_mins' => $t['estimated_mins'] ?? 15,
+                            // Sin fallback: el guardarraíl de arriba ya rechazó cualquier tarea
+                            // sin minutos, y un `?? 15` aquí sería reabrir la puerta en silencio.
+                            'estimated_mins' => $t['estimated_mins'],
                             'priority' => $t['priority'] ?? 'normal',
                             'category' => $t['category'] ?? 'operativo',
                             'target_type' => 'role',

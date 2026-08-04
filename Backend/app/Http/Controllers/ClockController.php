@@ -323,9 +323,14 @@ class ClockController extends Controller
             }
         }
 
-        // Fallback: Para tenant 1 (Decorarte 360) es true por defecto; para empresas nuevas es false hasta completar el wizard
+        // Fallback (UNIÓN resync 4): H2 protege a las empresas ANTIGUAS sin la clave — si ya
+        // tienen puestos creados, el wizard no debe reaparecerles; y el default del jefe cubre
+        // al tenant 1 demo aunque estuviera vacío. Las empresas nuevas nacen con la clave en
+        // false explícito desde TenantInitializationService, así que este fallback solo toca
+        // a las de antes de ese fix.
         if (!isset($systemSettings['onboarding_completed'])) {
-            $systemSettings['onboarding_completed'] = ($tenantId === 1);
+            $hasJobRoles = DB::table('job_roles')->where('tenant_id', $tenantId)->exists();
+            $systemSettings['onboarding_completed'] = $hasJobRoles || ($tenantId === 1);
         }
 
         // Calculate activeEncargadoId based on yesterday's check_out details

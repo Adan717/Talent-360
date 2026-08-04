@@ -289,7 +289,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
 
-    subdomain = subdomain || 'decorarte360';
+    subdomain = subdomain || s.currentUser?.tenant?.subdomain || 'empresa';
 
     const newUser = {
       id: newId,

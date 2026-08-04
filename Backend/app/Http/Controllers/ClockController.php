@@ -323,12 +323,9 @@ class ClockController extends Controller
             }
         }
 
-        // Fallback: Si el tenant ya cuenta con puestos de trabajo creados, considerar onboarding completado
+        // Fallback: Para tenant 1 (Decorarte 360) es true por defecto; para empresas nuevas es false hasta completar el wizard
         if (!isset($systemSettings['onboarding_completed'])) {
-            $hasJobRoles = DB::table('job_roles')->where('tenant_id', $tenantId)->exists();
-            if ($hasJobRoles) {
-                $systemSettings['onboarding_completed'] = true;
-            }
+            $systemSettings['onboarding_completed'] = ($tenantId === 1);
         }
 
         // Calculate activeEncargadoId based on yesterday's check_out details

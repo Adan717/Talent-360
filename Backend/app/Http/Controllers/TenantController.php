@@ -95,6 +95,11 @@ class TenantController extends Controller
                 'updated_at' => now()
             ]);
 
+            DB::table('system_settings')->updateOrInsert(
+                ['key' => 'onboarding_completed', 'tenant_id' => $tenant->id],
+                ['value' => json_encode(false), 'created_at' => now(), 'updated_at' => now()]
+            );
+
             // 2. Associate or Create Admin User
             $adminEmail = strtolower(trim($request->admin_email));
             $existingAdmin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)

@@ -26,3 +26,13 @@ Schedule::job(new PurgeChatJob())->dailyAt('03:00')->name('purge-chat-messages')
 // día de inicio configurado). Se conserva sólo la variante diaria de bootstrap; un sábado
 // fijo global contradice la semana configurable (Sección 2 #1).
 
+/**
+ * Procesamiento de registros inconclusos y envío de correos de recuperación.
+ * Ejecuta cada hora para notificar a prospectos y limpiar registros viejos.
+ */
+Schedule::command('pending:process-abandoned')
+    ->hourly()
+    ->name('process-abandoned-registrations')
+    ->withoutOverlapping();
+
+

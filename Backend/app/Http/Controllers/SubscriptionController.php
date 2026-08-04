@@ -123,25 +123,50 @@ class SubscriptionController extends Controller
             $payload['billing_cycle'] = $request->input('billing_cycle', 'monthly');
         }
 
-        $regId = (string) Str::uuid();
+        $payload['subdomain'] = strtolower($payload['subdomain'] ?? '');
+        $adminEmail = strtolower($payload['admin_email'] ?? '');
+        $subdomain = $payload['subdomain'];
 
-        // Save pending registration payload
-        PendingRegistration::create([
-            'id' => $regId,
-            'payload' => json_encode($payload)
-        ]);
+        // Re-use or Create Pending Registration
+        $existingPending = null;
+        if ($adminEmail || $subdomain) {
+            $existingPending = PendingRegistration::where('status', 'pending')
+                ->forEmailOrSubdomain($adminEmail, $subdomain)
+                ->first();
+        }
+
+        if ($existingPending) {
+            $regId = $existingPending->id;
+            $existingPending->update([
+                'admin_email' => $adminEmail,
+                'subdomain' => $subdomain,
+                'payload' => json_encode($payload),
+                'status' => 'pending',
+                'updated_at' => now(),
+            ]);
+            $pendingRecord = $existingPending;
+        } else {
+            $regId = (string) Str::uuid();
+            $pendingRecord = PendingRegistration::create([
+                'id' => $regId,
+                'admin_email' => $adminEmail,
+                'subdomain' => $subdomain,
+                'status' => 'pending',
+                'payload' => json_encode($payload)
+            ]);
+        }
 
         $price = 0;
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         if (strtolower($payload['plan']) === 'pro') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 24 * 12); // $24/emp/mo billed annually
             } else {
                 $price = (float) ($employees * 29); // $29/emp/mo
             }
         } elseif (strtolower($payload['plan']) === 'enterprise') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 55 * 12); // $55/emp/mo billed annually
             } else {
@@ -152,7 +177,7 @@ class SubscriptionController extends Controller
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
         if (!$isUpgrade && (strtolower($payload['plan']) === 'freemium' || $price <= 0)) {
             try {
-                $tenant = $this->provisionTenant($payload);
+                $tenant = $this->provisionTenant($payload, $regId);
                 $token = $tenant['admin']->createToken('auth_token')->plainTextToken;
                 return response()->json([
                     'status' => 'success',
@@ -203,6 +228,8 @@ class SubscriptionController extends Controller
                 $preference->auto_return = "approved";
                 $preference->save();
 
+                $pendingRecord->update(['checkout_url' => $preference->init_point]);
+
                 return response()->json([
                     'status' => 'success',
                     'init_point' => $preference->init_point,
@@ -215,6 +242,8 @@ class SubscriptionController extends Controller
 
         // Fallback to simulated checkout URL
         $simulatedUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-checkout?pref_id=' . $regId;
+        $pendingRecord->update(['checkout_url' => $simulatedUrl]);
+
         return response()->json([
             'status' => 'success',
             'init_point' => $simulatedUrl,
@@ -236,14 +265,14 @@ class SubscriptionController extends Controller
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
         $price = 0;
         if (strtolower($plan) === 'pro') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 24 * 12);
             } else {
                 $price = (float) ($employees * 29);
             }
         } elseif (strtolower($plan) === 'enterprise') {
-            $employees = isset($payload['employees']) ? max(10, intval($payload['employees'])) : 10;
+            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
             if ($billingCycle === 'yearly') {
                 $price = (float) round($employees * 55 * 12);
             } else {
@@ -269,45 +298,46 @@ class SubscriptionController extends Controller
             <html lang='es'>
             <head>
                 <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
                 <title>MercadoPago Sandbox - Talent360</title>
                 <script src='https://cdn.tailwindcss.com'></script>
                 <style>
-                    .tab-active { border-color: #2563eb; color: #2563eb; font-weight: 800; }
+                    .tab-active { border-color: #2563eb; color: #3b82f6; font-weight: 800; }
                 </style>
             </head>
-            <body class='bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen font-sans p-4'>
-                <div class='bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6'>
-                    <div class='flex items-center justify-between'>
-                        <div class='flex items-center gap-2'>
-                            <div class='w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-xl text-white shadow-lg shadow-blue-500/20'>
+            <body class='bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen font-sans p-3 sm:p-6'>
+                <div class='bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-md w-full shadow-2xl space-y-5 sm:space-y-6 my-auto border-t-4 border-t-blue-600'>
+                    <div class='flex items-center justify-between gap-2'>
+                        <div class='flex items-center gap-2.5 min-w-0'>
+                            <div class='w-9 h-9 sm:w-10 sm:h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-lg sm:text-xl text-white shadow-lg shadow-blue-500/20 shrink-0'>
                                 MP
                             </div>
-                            <span class='font-extrabold text-sm text-slate-300'>MercadoPago Sandbox</span>
+                            <span class='font-extrabold text-xs sm:text-sm text-slate-200 truncate'>MercadoPago Sandbox</span>
                         </div>
-                        <span class='bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full'>
+                        <span class='bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full shrink-0 whitespace-nowrap'>
                             Modo Sandbox
                         </span>
                     </div>
 
-                    <div class='space-y-2 text-center'>
-                        <h2 class='text-2xl font-black tracking-tight text-white'>Procesar Suscripción</h2>
-                        <p class='text-xs text-slate-400'>Estás pagando la suscripción de Talent360</p>
+                    <div class='space-y-1.5 text-center'>
+                        <h2 class='text-xl sm:text-2xl font-black tracking-tight text-white'>Procesar Suscripción</h2>
+                        <p class='text-xs sm:text-sm text-slate-400'>Estás pagando la suscripción de Talent360</p>
                     </div>
 
-                    <div class='bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 text-left space-y-3 text-sm'>
-                        <div class='flex justify-between'><span class='text-slate-400 font-bold'>Concepto:</span><span>Plan " . ucfirst($plan) . "</span></div>
-                        <div class='flex justify-between'><span class='text-slate-400 font-bold'>Importe:</span><span class='text-emerald-400 font-black'>$" . $price . " " . $priceUnit . "</span></div>
-                        <div class='flex justify-between'><span class='text-slate-400 font-bold'>Empresa:</span><span>" . htmlspecialchars($payload['company_name']) . "</span></div>
-                        <div class='flex justify-between'><span class='text-slate-400 font-bold'>Admin Email:</span><span>" . htmlspecialchars($payload['admin_email']) . "</span></div>
+                    <div class='bg-slate-950/60 border border-slate-800 rounded-2xl p-4 sm:p-5 text-left space-y-2.5 text-xs sm:text-sm'>
+                        <div class='flex justify-between items-center gap-2'><span class='text-slate-400 font-bold shrink-0'>Concepto:</span><span class='font-semibold text-slate-200 text-right truncate'>Plan " . ucfirst($plan) . "</span></div>
+                        <div class='flex justify-between items-center gap-2'><span class='text-slate-400 font-bold shrink-0'>Importe:</span><span class='text-emerald-400 font-black text-sm sm:text-base text-right'>$" . $price . " " . $priceUnit . "</span></div>
+                        <div class='flex justify-between items-start gap-2'><span class='text-slate-400 font-bold shrink-0'>Empresa:</span><span class='font-semibold text-slate-200 text-right break-words max-w-[65%]'>" . htmlspecialchars($payload['company_name']) . "</span></div>
+                        <div class='flex justify-between items-start gap-2'><span class='text-slate-400 font-bold shrink-0'>Admin Email:</span><span class='font-semibold text-slate-200 text-right break-all max-w-[65%]'>" . htmlspecialchars($payload['admin_email']) . "</span></div>
                     </div>
 
                     <!-- Pestañas de método de pago -->
-                    <div class='flex border-b border-slate-700 text-xs font-semibold'>
+                    <div class='flex border-b border-slate-800 text-xs sm:text-sm font-semibold'>
                         <button id='tab-card' onclick='switchTab(\"card\")' class='flex-1 py-3 text-center border-b-2 tab-active transition-all focus:outline-none'>
-                            💳 Tarjeta de Crédito/Débito
+                            💳 Tarjeta
                         </button>
                         <button id='tab-spei' onclick='switchTab(\"spei\")' class='flex-1 py-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all focus:outline-none " . ($bankActive ? '' : 'hidden') . "'>
-                            🏦 Transferencia SPEI
+                            🏦 SPEI / Transferencia
                         </button>
                     </div>
 
@@ -316,59 +346,59 @@ class SubscriptionController extends Controller
                         <p class='text-xs text-slate-400 text-left leading-relaxed'>
                             Simula un pago inmediato y exitoso utilizando una tarjeta bancaria en modo sandbox. Tu cuenta será activada de inmediato.
                         </p>
-                        <a href='{$confirmUrl}' class='block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-98 transition-all uppercase tracking-wider text-sm text-center'>
+                        <a href='{$confirmUrl}' class='block w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black py-3.5 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg shadow-emerald-500/20 transition-all uppercase tracking-wider text-xs sm:text-sm text-center cursor-pointer'>
                             Confirmar Pago con Tarjeta
                         </a>
                     </div>
 
                     <!-- Contenido Pestaña SPEI -->
                     <div id='content-spei' class='hidden space-y-4 animate-in fade-in duration-200 text-left'>
-                        <div class='bg-slate-900/60 border border-slate-700 rounded-2xl p-4 space-y-3 text-xs'>
+                        <div class='bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs'>
                             <p class='text-[10px] font-bold uppercase tracking-wider text-blue-400'>Datos de Transferencia Bancaria</p>
                             <div>
                                 <span class='text-slate-400 block'>Banco Receptor:</span>
-                                <span class='font-bold text-white text-sm' id='bank-name'></span>
+                                <span class='font-bold text-white text-xs sm:text-sm' id='bank-name'></span>
                             </div>
                             <div>
                                 <span class='text-slate-400 block'>Beneficiario:</span>
-                                <span class='font-bold text-white text-sm' id='bank-holder'></span>
+                                <span class='font-bold text-white text-xs sm:text-sm' id='bank-holder'></span>
                             </div>
-                            <div class='flex justify-between items-end'>
-                                <div>
+                            <div class='flex justify-between items-end gap-2'>
+                                <div class='min-w-0 flex-1'>
                                     <span class='text-slate-400 block'>CLABE Interbancaria:</span>
-                                    <span class='font-black text-emerald-400 text-base tracking-wider' id='bank-clabe'></span>
+                                    <span class='font-black text-emerald-400 text-sm sm:text-base tracking-wider break-all' id='bank-clabe'></span>
                                 </div>
-                                <button onclick='copyText(\"bank-clabe\")' class='text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-2 py-1 rounded transition-colors'>
+                                <button onclick='copyText(\"bank-clabe\")' class='text-[10px] sm:text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-lg transition-colors shrink-0'>
                                     Copiar
                                 </button>
                             </div>
-                            <div class='flex justify-between items-end' id='card-container'>
-                                <div>
+                            <div class='flex justify-between items-end gap-2' id='card-container'>
+                                <div class='min-w-0 flex-1'>
                                     <span class='text-slate-400 block'>Número de Tarjeta:</span>
-                                    <span class='font-bold text-white' id='bank-card'></span>
+                                    <span class='font-bold text-white text-xs sm:text-sm break-all' id='bank-card'></span>
                                 </div>
-                                <button onclick='copyText(\"bank-card\")' class='text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold px-2 py-1 rounded transition-colors'>
+                                <button onclick='copyText(\"bank-card\")' class='text-[10px] sm:text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-lg transition-colors shrink-0'>
                                     Copiar
                                 </button>
                             </div>
-                            <div class='border-t border-slate-800 pt-2'>
-                                <span class='text-slate-400 block mb-1'>Instrucciones:</span>
+                            <div class='border-t border-slate-800/80 pt-2'>
+                                <span class='text-slate-400 block mb-1 text-[11px] font-semibold'>Instrucciones:</span>
                                 <p class='text-[11px] text-slate-300 leading-relaxed' id='bank-instructions'></p>
                             </div>
                         </div>
 
                         <div class='space-y-2'>
-                            <a href='{$confirmUrl}&method=spei' class='block w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/20 active:scale-98 transition-all uppercase tracking-wider text-sm text-center'>
+                            <a href='{$confirmUrl}&method=spei' class='block w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-black py-3.5 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg shadow-blue-500/20 transition-all uppercase tracking-wider text-xs sm:text-sm text-center cursor-pointer'>
                                 ⏱ Registrar Transferencia Simulada
                             </a>
-                            <p class='text-[10px] text-slate-400 text-center leading-relaxed'>
+                            <p class='text-[10px] sm:text-xs text-slate-400 text-center leading-relaxed'>
                                 Al hacer clic, registrarás la transferencia simulada. El sistema simulará la confirmación del SPEI y provisionará tu base de datos de inmediato.
                             </p>
                         </div>
                     </div>
 
                     <div>
-                        <a href='" . $this->getFrontendUrl($request) . "/register' class='block w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors text-sm text-center'>
+                        <a href='" . $this->getFrontendUrl($request) . "/register' class='block w-full bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-slate-300 font-bold py-3 rounded-xl sm:rounded-2xl transition-colors text-xs sm:text-sm text-center'>
                             Cancelar pago y volver
                         </a>
                     </div>
@@ -561,6 +591,12 @@ class SubscriptionController extends Controller
             // Set context for traits
             session(['tenant_id' => $tenant->id]);
 
+            // Explicitly set onboarding_completed to false for new tenant so OnboardingWizard is triggered
+            DB::table('system_settings')->updateOrInsert(
+                ['key' => 'onboarding_completed', 'tenant_id' => $tenant->id],
+                ['value' => json_encode(false), 'created_at' => now(), 'updated_at' => now()]
+            );
+
             // 2. Associate or Create Admin User
             $currentUser = auth('sanctum')->user();
             if ($currentUser && $currentUser->tenant_id === null) {
@@ -616,6 +652,19 @@ class SubscriptionController extends Controller
 
             if (method_exists(\Auth::guard(), 'logout')) {
                 \Auth::logout();
+            }
+
+            // Mark Pending Registration as Completed
+            if ($prefId) {
+                PendingRegistration::where('id', $prefId)->update(['status' => 'completed']);
+            } else {
+                $adminEmail = strtolower($payload['admin_email'] ?? '');
+                $subdomain = strtolower($payload['subdomain'] ?? '');
+                if ($adminEmail || $subdomain) {
+                    PendingRegistration::where('status', 'pending')
+                        ->forEmailOrSubdomain($adminEmail, $subdomain)
+                        ->update(['status' => 'completed']);
+                }
             }
 
             return [

@@ -1753,15 +1753,40 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         </div>
       )}
 
-      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y FAB índigo) */}
+      {/* DOCK FLOTANTE INFERIOR MÓVIL (Estilo Reloj Checador con muesca SVG y subacciones) */}
       {!readOnly && (
         <MobileModuleBottomDock
           colorTheme="indigo"
           activeTab={activeTab}
           onSelectTab={(tab) => setActiveTab(tab as any)}
           fabIcon={<UserPlus size={28} className="text-white relative z-10 animate-pulse" />}
-          onFabClick={() => activeTab === 'puestos' ? setEditingJobRole({}) : setShowForm(true)}
-          fabTitle="Registrar Colaborador / Puesto"
+          fabTitle="Acciones Rápidas RRHH"
+          subActions={[
+            {
+              id: 'search',
+              label: 'Buscar',
+              icon: <Search size={18} />,
+              onClick: () => {
+                setShowMobileSearch(!showMobileSearch);
+                setTimeout(() => searchInputRef.current?.focus(), 300);
+              },
+              colorClass: 'bg-slate-100 text-slate-700'
+            },
+            {
+              id: 'new_job_role',
+              label: 'Puesto',
+              icon: <Briefcase size={18} />,
+              onClick: () => setEditingJobRole({}),
+              colorClass: 'bg-indigo-100 text-indigo-600'
+            },
+            {
+              id: 'new_employee',
+              label: 'Alta',
+              icon: <UserPlus size={18} />,
+              onClick: () => setShowForm(true),
+              colorClass: 'bg-emerald-100 text-emerald-600'
+            }
+          ]}
           items={[
             { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.length },
             { id: 'puestos', label: 'Puestos', icon: <Briefcase />, badge: jobRoles.length },
@@ -3445,77 +3470,6 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         </div>
       )}
 
-      {/* Botón de Acción Flotante (FAB) Responsivo */}
-      <div className="fixed bottom-6 right-6 z-40 block sm:hidden">
-        {showFabMenu && (
-          <div className="flex flex-col items-center gap-3.5 mb-3.5">
-            {activeTab === 'directorio' && (
-              <>
-                {directorioSubTab === 'activos' && (
-                  <button
-                    onClick={() => {
-                      setShowForm(true);
-                      setShowFabMenu(false);
-                    }}
-                    className="w-12 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 active:scale-90 transition-all duration-300 animate-fade-in-up-1"
-                  >
-                    <UserPlus size={20} />
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setShowMobileSearch(!showMobileSearch);
-                    setTimeout(() => searchInputRef.current?.focus(), 300);
-                    setShowFabMenu(false);
-                  }}
-                  className="w-12 h-12 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all duration-300 animate-fade-in-up-2"
-                >
-                  <Search size={20} />
-                </button>
-              </>
-            )}
-            {activeTab === 'puestos' && (
-              <>
-                <button
-                  onClick={() => {
-                    handleCreateJobRoleClick();
-                    setShowFabMenu(false);
-                  }}
-                  className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-600/20 active:scale-90 transition-all duration-300 animate-fade-in-up-1"
-                >
-                  <Plus size={20} />
-                </button>
-                <button
-                  onClick={() => {
-                    setShowTemplateModal(true);
-                    setShowFabMenu(false);
-                  }}
-                  className="w-12 h-12 bg-white hover:bg-slate-50 text-amber-500 border border-slate-200 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all duration-300 animate-fade-in-up-2"
-                >
-                  <Sparkles size={20} />
-                </button>
-              </>
-            )}
-            {activeTab === 'organigrama' && (
-              <button
-                onClick={() => {
-                  setActiveTab('directorio');
-                  setShowFabMenu(false);
-                }}
-                className="w-12 h-12 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all duration-300 animate-fade-in-up-1"
-              >
-                <Users size={20} />
-              </button>
-            )}
-          </div>
-        )}
-        <button 
-          onClick={() => setShowFabMenu(!showFabMenu)}
-          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-600/35 transition-transform active:scale-95 z-50 relative"
-        >
-          <Plus size={24} className={`transition-transform duration-300 ${showFabMenu ? 'rotate-45' : ''}`} />
-        </button>
-      </div>
 
       {/* Drawer lateral de Detalles del Puesto */}
       {isRoleDrawerOpen && selectedRoleForDrawer && (

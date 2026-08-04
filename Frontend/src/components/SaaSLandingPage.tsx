@@ -349,7 +349,7 @@ export const SaaSLandingPage = () => {
         company_name: formData.company_name,
         subdomain: formData.subdomain,
         plan: selectedPlan.toLowerCase(),
-        employees: selectedPlan.toLowerCase() === 'pro' ? proEmployeesCount : null,
+        employees: (selectedPlan.toLowerCase() === 'pro' || selectedPlan.toLowerCase() === 'enterprise') ? proEmployeesCount : null,
         billing_cycle: billingCycle,
         ...(googleUser ? {
           admin_name: googleUser.name,
@@ -1581,7 +1581,7 @@ export const SaaSLandingPage = () => {
                     <div>
                       <p className="text-xs text-blue-800 font-extrabold uppercase">Plan Seleccionado</p>
                       <h5 className="text-sm font-black text-slate-900 mt-0.5">
-                        {selectedPlan === 'PRO' ? `Profesional (${proEmployeesCount} colab.)` : selectedPlan === 'Enterprise' ? 'Enterprise (Ilimitado)' : 'Plan Gratuito'}
+                        {selectedPlan === 'PRO' ? `Profesional (${proEmployeesCount} colab.)` : selectedPlan === 'Enterprise' ? `Enterprise (${proEmployeesCount} colab.)` : 'Plan Gratuito'}
                       </h5>
                     </div>
                     <div className="text-right">

@@ -21,6 +21,8 @@ class Employee extends Model
         'job_role_id',
         'salary',
         'base_salary',
+        'salario_diario',
+        'periodicidad_captura',
         'curp',
         'rfc',
         'nss',
@@ -59,6 +61,7 @@ class Employee extends Model
         'is_active_employee' => 'boolean',
         'salary' => 'decimal:2',
         'base_salary' => 'decimal:2',
+        'salario_diario' => 'decimal:2',
         'mealMinutes' => 'integer',
         // R87: garantiza int en el payload de auth (0 = alarma desactivada). El cast lo fija a
         // nivel de modelo independientemente del driver/versión de PHP; el FE distingue 0 (off)

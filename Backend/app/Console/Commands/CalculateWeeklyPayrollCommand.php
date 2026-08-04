@@ -49,6 +49,20 @@ class CalculateWeeklyPayrollCommand extends Command
         $errors         = 0;
 
         foreach ($tenants as $tenant) {
+            // CANDADO de periodicidad (2026-08-03): este comando SOLO sabe calcular semanas.
+            // A una empresa que declaró pagar quincenal o mensual, generarle recibos semanales
+            // no es un cálculo incompleto — es el defecto exacto que la periodicidad
+            // configurable vino a impedir (4-5 recibos semanales al mes que nadie pidió).
+            // Mejor no generar nada y decirlo, hasta que exista el ciclo correspondiente.
+            $periodicidad = \App\Http\Controllers\PayrollSettingsController::periodicidadDe($tenant->id);
+
+            if ($periodicidad !== 'semanal') {
+                $this->warn("⏸ Tenant #{$tenant->id}: paga '{$periodicidad}' y este comando es semanal. "
+                    . 'Se omite — el ciclo ' . $periodicidad . ' aún no existe; no se le generan recibos incorrectos.');
+                \Log::warning("payroll:calculate-weekly omitió al tenant {$tenant->id}: periodicidad '{$periodicidad}'.");
+                continue;
+            }
+
             // Semana laboral de ESTE tenant (domingo→sábado, lunes→domingo, etc.).
             [$weekStart, $weekEnd] = $this->weekService->weekRangeFor($tenant->id, $refDate->copy());
             $this->info("🧮 Tenant #{$tenant->id}: semana {$weekStart->toDateString()} → {$weekEnd->toDateString()}");

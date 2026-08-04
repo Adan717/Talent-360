@@ -1552,8 +1552,20 @@ class ClockService
             ]);
         }
 
-        $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
-        $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
+        // Periodicidad configurable (2026-08-03): si el expediente ya declara su SALARIO DIARIO
+        // (capturado con periodicidad explícita y convertido por `App\Support\SalarioDiario`),
+        // ésa es la verdad y se usa tal cual.
+        //
+        // Si no, fórmula HISTÓRICA intacta: base_salary/6. Ese /6 asume que base_salary es
+        // semanal e INFLA el diario (convierte 6 días de trabajo en 7 pagados) — pero cambiarlo
+        // a los expedientes legados sin el informe de impacto revisado alteraría pagos ya
+        // acordados en silencio. La migración es por recaptura explícita, no por fórmula.
+        if ($employee->salario_diario !== null && (float) $employee->salario_diario > 0) {
+            $dailySalary = (float) $employee->salario_diario;
+        } else {
+            $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
+            $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
+        }
 
         // 2. Registros de asistencia (excluyendo auxiliares como reservas de comida). Reales por
         // defecto (ExcludeSimulationScope global); modo "Reportes de Prueba" con $simulationSessionId.

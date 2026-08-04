@@ -916,6 +916,11 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [showForm, setShowForm] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserSalary, setNewUserSalary] = useState('');
+  // Con qué periodicidad viene el monto capturado. Visible SIEMPRE junto al campo de sueldo:
+  // que el capturista vea "semanal" y lo cambie si no aplica es el arreglo entero — antes el
+  // sistema asumía semanal sin decírselo a nadie, y una empresa que capturara mensual habría
+  // cobrado 5× de más. El backend convierte y almacena el salario DIARIO (unidad LFT).
+  const [newUserSalaryPeriodicidad, setNewUserSalaryPeriodicidad] = useState('semanal');
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingUserTab, setEditingUserTab] = useState<'personal'|'laboral'|'accesos'|'expediente'>('personal');
   const [editingJobRole, setEditingJobRole] = useState<any>(null);
@@ -1137,7 +1142,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         // H4: antes iba 'empleado' fijo — para nombrar un supervisor o un admin había que dar
         // de alta y DESPUÉS editar su ficha. El backend ya valida in:admin,supervisor,empleado.
         role: newUserSystemRole,
-        salary: newUserSalary ? parseFloat(newUserSalary) : null
+        salary: newUserSalary ? parseFloat(newUserSalary) : null,
+        // El backend convierte a salario diario con esta periodicidad; sin ella el expediente
+        // quedaría "legado" (fórmula histórica).
+        salary_periodicity: newUserSalary ? newUserSalaryPeriodicidad : undefined
       });
       setShowForm(false);
       // H4: limpiar TODO el formulario. Antes sólo se reseteaban nombre y sueldo, así que al
@@ -2042,8 +2050,26 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                  </select>
                               </div>
                               <div>
-                                 <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1.5">Salario Base (por período)</label>
-                                 <input type="number" value={editingUser.salary || ''} onChange={e => setEditingUser({...editingUser, salary: e.target.value})} className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200" placeholder="Ej. 12000" />
+                                 <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1.5">Salario Base</label>
+                                 <div className="flex gap-2">
+                                    <input type="number" value={editingUser.salary || ''} onChange={e => setEditingUser({...editingUser, salary: e.target.value})} className="flex-1 w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200" placeholder="Ej. 12000" />
+                                    {/* Al editar se muestra la periodicidad con que se capturó; cambiarla (o
+                                        confirmarla) re-deriva el salario diario en el backend. */}
+                                    <select
+                                       value={editingUser.salary_periodicity ?? editingUser.periodicidad_captura ?? 'semanal'}
+                                       onChange={e => setEditingUser({...editingUser, salary_periodicity: e.target.value})}
+                                       title="¿Este monto es por semana, quincena o mes? El sistema lo convierte a salario diario (LFT)."
+                                       className="px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200"
+                                    >
+                                       <option value="semanal">Semanal</option>
+                                       <option value="quincenal">Quincenal</option>
+                                       <option value="mensual">Mensual</option>
+                                       <option value="diario">Diario</option>
+                                    </select>
+                                 </div>
+                                 {!editingUser.periodicidad_captura && (
+                                    <p className="mt-1 text-[10px] text-amber-600 font-bold">Sueldo capturado sin periodicidad declarada: al guardar se registrará la seleccionada.</p>
+                                 )}
                               </div>
                            </div>
                         )}
@@ -2405,18 +2431,31 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                            {/* Campo: Salario Base */}
                            <div className="group">
-                              <label className="block text-[11px] font-black text-slate-400 group-focus-within:text-blue-600 uppercase tracking-wider mb-1.5 transition-colors">Salario Base (por período)</label>
-                              <div className="relative">
-                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                                    <DollarSign size={18} />
+                              <label className="block text-[11px] font-black text-slate-400 group-focus-within:text-blue-600 uppercase tracking-wider mb-1.5 transition-colors">Salario Base</label>
+                              <div className="flex gap-2">
+                                 <div className="relative flex-1">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                       <DollarSign size={18} />
+                                    </div>
+                                    <input
+                                       type="number"
+                                       value={newUserSalary}
+                                       onChange={e => setNewUserSalary(e.target.value)}
+                                       className="pl-10 w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all duration-300 placeholder-slate-400/60"
+                                       placeholder="Ej. 12000"
+                                    />
                                  </div>
-                                 <input 
-                                    type="number" 
-                                    value={newUserSalary} 
-                                    onChange={e => setNewUserSalary(e.target.value)} 
-                                    className="pl-10 w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all duration-300 placeholder-slate-400/60" 
-                                    placeholder="Ej. 12000" 
-                                 />
+                                 <select
+                                    value={newUserSalaryPeriodicidad}
+                                    onChange={e => setNewUserSalaryPeriodicidad(e.target.value)}
+                                    title="¿Este monto es por semana, quincena o mes? El sistema lo convierte a salario diario (LFT)."
+                                    className="px-3 py-3 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all duration-300"
+                                 >
+                                    <option value="semanal">Semanal</option>
+                                    <option value="quincenal">Quincenal</option>
+                                    <option value="mensual">Mensual</option>
+                                    <option value="diario">Diario</option>
+                                 </select>
                               </div>
                            </div>
                         </div>

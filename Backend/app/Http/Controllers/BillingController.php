@@ -191,6 +191,20 @@ class BillingController extends Controller
             return response()->json(['error' => 'Colaborador no encontrado'], 404);
         }
 
+        // Periodicidad configurable (2026-08-03): antes se timbraba TODO como quincenal
+        // ('04', 15 días, neto/15) sin importar cómo pagara la empresa — para el piloto,
+        // que paga semanal, los tres campos salían mal en un comprobante FISCAL. El
+        // catálogo del SAT es cerrado: la periodicidad declarada debe corresponder con la
+        // forma real de pago. Ahora los tres se derivan de la configuración del tenant.
+        $mapaSat = [
+            'semanal' => ['02', 7],
+            'quincenal' => ['04', 15],
+            'mensual' => ['05', 30],
+        ];
+        [$periodicidadSat, $diasDelPeriodo] = $mapaSat[
+            \App\Http\Controllers\PayrollSettingsController::periodicidadDe($tenantId)
+        ];
+
         // Estructurar un payload mínimo para SAT CFDI 4.0 Nómina en Facturapi
         $payrollPayload = [
             'customer' => [
@@ -207,17 +221,17 @@ class BillingController extends Controller
                 'payment_date' => now()->toIso8601String(),
                 'start_date' => $validated['period_start'],
                 'end_date' => $validated['period_end'],
-                'working_days' => 15,
+                'working_days' => $diasDelPeriodo,
                 'employee' => [
                     'curp' => $employee->curp ?? 'AAAA000000HHHHHH00',
                     'contract_type' => '01', // Contrato de trabajo por tiempo indeterminado
                     'regime_type' => '02', // Sueldos
                     'employee_number' => (string)$employee->id,
-                    'periodicity' => '04', // Quincenal
+                    'periodicity' => $periodicidadSat,
                     'risk_position' => '1', // Clase I
                     'bank' => '012', // BBVA Bancomer
                     'bank_account' => $employee->clabe ?? '012180000000000000',
-                    'salary_rate' => $validated['net_salary'] / 15,
+                    'salary_rate' => round($validated['net_salary'] / $diasDelPeriodo, 2),
                     'state' => 'MEX'
                 ]
             ]

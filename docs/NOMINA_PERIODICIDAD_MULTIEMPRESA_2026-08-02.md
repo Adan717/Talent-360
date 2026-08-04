@@ -7,6 +7,13 @@ que el sistema asume hoy. **Sí conviene resolverlo antes del siguiente cliente*
 acierta por coincidencia, no por diseño.
 **Estado:** propuesta **aprobada** por el responsable de producto (2026-08-03) — guardar el salario
 en diario, elegir la periodicidad al capturar y configurarla por empresa.
+**IMPLEMENTADA (2026-08-03):** captura con periodicidad → `salario_diario` (`App\Support\SalarioDiario`,
+divisores LFT 7/15/30); expedientes legados intactos (ClockService sólo prefiere el diario si existe);
+periodicidad por empresa en `payroll-settings` (arranca "semanal sin confirmar"); candado en
+`payroll:calculate-weekly` (una empresa quincenal/mensual NO recibe recibos semanales — se omite con
+aviso); el CFDI timbra la periodicidad real (02/04/05 + días del periodo, ya no '04' fijo); e informe
+de impacto `php artisan nomina:informe-impacto` para revisión humana ANTES de migrar sueldos viejos.
+Pendiente por diseño: los ciclos de CÁLCULO quincenal/mensual no existen aún — el candado lo avisa.
 
 ---
 

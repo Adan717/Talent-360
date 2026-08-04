@@ -45,6 +45,34 @@ class EmployeeController extends Controller
             $data['base_salary'] = null;
         }
 
+        return $this->derivarSalarioDiario($data);
+    }
+
+    /**
+     * Periodicidad configurable (2026-08-03, aprobada por producto): si la captura declara con
+     * qué periodicidad viene el monto, se convierte y almacena el SALARIO DIARIO — la unidad
+     * única que la nómina consume (ver `App\Support\SalarioDiario`).
+     *
+     * Sin `salary_periodicity` no se toca nada: el expediente queda como legado (salario_diario
+     * NULL) y la nómina sigue usando la fórmula histórica. La migración de lo ya capturado es
+     * una decisión con informe de impacto de por medio, no un efecto colateral de esta función.
+     */
+    private function derivarSalarioDiario(array $data): array
+    {
+        $periodicidad = $data['salary_periodicity'] ?? null;
+        unset($data['salary_periodicity']); // no es columna de `employees`
+
+        if (!\App\Support\SalarioDiario::esValida($periodicidad)) {
+            return $data;
+        }
+
+        $monto = $data['base_salary'] ?? null;
+
+        if ($monto !== null) {
+            $data['salario_diario'] = \App\Support\SalarioDiario::desde((float) $monto, $periodicidad);
+            $data['periodicidad_captura'] = $periodicidad;
+        }
+
         return $data;
     }
 
@@ -142,6 +170,7 @@ class EmployeeController extends Controller
                 'mealMinutes' => 'nullable|integer',
                 'restDay' => 'nullable|string',
                 'base_salary' => 'nullable|numeric',
+                'salary_periodicity' => 'nullable|string|in:diario,semanal,quincenal,mensual',
                 'avatar' => 'sometimes|nullable|string',
             ]);
 
@@ -198,6 +227,7 @@ class EmployeeController extends Controller
             'mealMinutes' => 'nullable|integer',
             'restDay' => 'nullable|string',
             'base_salary' => 'nullable|numeric',
+                'salary_periodicity' => 'nullable|string|in:diario,semanal,quincenal,mensual',
             'avatar' => 'sometimes|nullable|string',
         ]);
 
@@ -362,6 +392,7 @@ class EmployeeController extends Controller
             'mealMinutes' => 'sometimes|nullable|integer',
             'restDay' => 'sometimes|nullable|string',
             'base_salary' => 'sometimes|nullable|numeric',
+            'salary_periodicity' => 'sometimes|nullable|string|in:diario,semanal,quincenal,mensual',
             'avatar' => 'sometimes|nullable|string',
             'allowed_modules' => 'sometimes|nullable|array',
             'allowed_features' => 'sometimes|nullable|array',

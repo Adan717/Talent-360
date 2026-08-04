@@ -492,6 +492,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/store-opening/report-absence', [StoreOpeningController::class, 'reportAbsence']);
         Route::post('/store-opening/report-late', [StoreOpeningController::class, 'reportLate']);
         Route::post('/store-opening/report-store-still-closed', [StoreOpeningController::class, 'reportStoreStillClosed']);
+        // Boton "Cerrar sucursal" (P1-P3): registra quien/cuando y reparte trigger='cierre'.
+        // NO bloquea nada; la autorizacion (responsable o mando) vive en el service.
+        Route::post('/store-opening/close', [StoreOpeningController::class, 'closeStore']);
         Route::post('/store-opening/closing-checklist', [StoreOpeningController::class, 'closingChecklist']);
         Route::post('/clock/pase-lista/ratings', [StoreOpeningController::class, 'submitPaseListaRatings']);
         Route::post('/clock/door-notice', [StoreOpeningController::class, 'doorNotice']);

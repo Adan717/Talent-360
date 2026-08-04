@@ -516,6 +516,25 @@ class StoreOpeningController extends Controller
     /**
      * Checklist de Cierre Seguro (luces, caja fuerte, alarma) antes de registrar salida.
      */
+    /**
+     * Boton "Cerrar sucursal" (P1-P3): declara el cierre del dia. La autorizacion real
+     * (responsable del dia o mando) vive en el service, con el mismo candado que la apertura.
+     * Siempre actua sobre el usuario AUTENTICADO: el cierre no se declara por terceros.
+     */
+    public function closeStore(Request $request)
+    {
+        $user = auth()->user();
+        $storeId = $this->sucursalDelTenant($user->tenant_id); // H15
+
+        try {
+            $result = $this->openingService->closeStore($user->id, $storeId);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
     public function closingChecklist(Request $request)
     {
         $validated = $request->validate([

@@ -261,6 +261,81 @@ class StoreOpeningService
     }
 
     /**
+     * Boton "Cerrar sucursal" (decision de producto P1-P3, 2026-08-03).
+     *
+     * - Autoriza con EL MISMO candado que la apertura: el responsable asignado del dia, o un
+     *   mando (admin/supervisor) como override.
+     * - Registra quien y cuando (closed_by_employee_id/closed_at) — el registro formal que se
+     *   pidio — y reparte las rutinas trigger='cierre'.
+     * - A PROPOSITO NO cambia `status` ni bloquea nada: el gate de tienda-cerrada lee status,
+     *   y tocarlo impediria fichar la salida a quienes siguen dentro ("candado a la salida =
+     *   conflicto laboral"). Un cierre con checklist incompleto NO estorba: las tareas
+     *   pendientes caen solas al panel de incompletas (flag-unfinished -> M3), que es la
+     *   incidencia de seguimiento operativo acordada.
+     */
+    public function closeStore($userId, $storeId = 1, $simTime = null)
+    {
+        $user = User::withoutGlobalScopes()->findOrFail($userId);
+        $tenantId = $user->tenant_id ?? 1;
+
+        return DB::transaction(function () use ($user, $storeId, $tenantId, $simTime) {
+            $status = $this->getTodayOpeningStatus($tenantId, $storeId, $simTime);
+
+            if ($status->status !== 'opened') {
+                throw new \Exception('La sucursal no está abierta: no hay nada que cerrar.');
+            }
+
+            if ($status->closed_at !== null) {
+                throw new \Exception('La sucursal ya fue cerrada hoy por '
+                    . (User::withoutGlobalScopes()->find($status->closed_by_employee_id)?->name ?? 'otro encargado') . '.');
+            }
+
+            // Mismo candado que la apertura (ver openStoreAndClockIn): responsable o mando.
+            if (intval($status->current_responsible_employee_id) !== intval($user->id)) {
+                if (!in_array($user->role, ['admin', 'supervisor', 'platform_admin'])) {
+                    throw new \Exception('No eres el encargado responsable: no puedes declarar el cierre.');
+                }
+            }
+
+            $status->closed_by_employee_id = $user->id;
+            $status->closed_at = Carbon::now();
+            $status->save();
+
+            // Reparte el checklist de cierre (idempotente: repetir no duplica assignments).
+            $this->triggerClosingChecklist($tenantId, $user);
+
+            StoreOpeningEvent::create([
+                'tenant_id' => $tenantId,
+                'company_id' => 1,
+                'store_id' => $storeId,
+                'employee_id' => $user->id,
+                'event_type' => 'close_store',
+                'event_status' => 'success',
+                'event_time' => Carbon::now(),
+                'notes' => 'Cierre de sucursal declarado; checklist de cierre repartido.',
+            ]);
+
+            StoreLog::create([
+                'tenant_id' => $tenantId,
+                'user_id' => $user->id,
+                'date' => Carbon::now($this->tenantTimezone($tenantId))->format('Y-m-d'),
+                'type' => 'close',
+                'time' => $this->getCurrentTimeStr($simTime, $tenantId),
+                'notes' => 'Cierre de sucursal declarado por ' . $user->name . '.',
+            ]);
+
+            event(new \App\Events\MonitorUpdated($tenantId));
+
+            return [
+                'success' => true,
+                'message' => 'Cierre declarado: el checklist de cierre quedó repartido.',
+                'closed_by' => $user->name,
+                'closed_at' => $status->closed_at->toIso8601String(),
+            ];
+        });
+    }
+
+    /**
      * Apertura de Emergencia (estado #9 de la matriz del dialer): un suplente con llaves
      * autoriza la apertura fuera de la ventana normal mediante la co-validación presencial
      * de 2 testigos (PIN). No requiere que el responsable original haya fallado por completo,
@@ -482,12 +557,27 @@ class StoreOpeningService
      */
     protected function triggerOpeningChecklist($tenantId, User $user)
     {
+        $this->repartirChecklist($tenantId, $user, 'apertura', 'open');
+    }
+
+    /**
+     * Espejo del checklist de apertura para el CIERRE (decision P1-P2, 2026-08-03): al pulsar
+     * "Cerrar sucursal" se reparten las rutinas trigger='cierre' — las tareas ya viven en los
+     * catalogos de los 5 giros con momento='cierre' desde H28.
+     */
+    protected function triggerClosingChecklist($tenantId, User $user)
+    {
+        $this->repartirChecklist($tenantId, $user, 'cierre', 'close');
+    }
+
+    protected function repartirChecklist($tenantId, User $user, string $trigger, string $prefijo)
+    {
         try {
             // TODAS las rutinas de apertura del tenant (no solo la primera): una
             // sucursal puede tener varias (ej. "Apertura Piso" + "Apertura Caja").
             $routines = DB::table('routines')
                 ->where('tenant_id', $tenantId)
-                ->where('trigger', 'apertura')
+                ->where('trigger', $trigger)
                 ->get();
 
             if ($routines->isEmpty()) {
@@ -515,7 +605,7 @@ class StoreOpeningService
                     // en varias rutinas de apertura se asigna UNA vez (mismo criterio
                     // de dedup del código original). Dos aperturas concurrentes → una
                     // inserta, la otra es no-op por conflicto de PK.
-                    $assignmentId = "open_{$taskId}_{$user->id}_{$date}";
+                    $assignmentId = "{$prefijo}_{$taskId}_{$user->id}_{$date}";
 
                     DB::table('task_assignments')->insertOrIgnore([
                         'id' => $assignmentId,
@@ -535,7 +625,7 @@ class StoreOpeningService
             // Fail-safe: no bloquear la apertura si el checklist falla, pero dejar
             // rastro (antes se tragaba en silencio y ocultaba fallos reales).
             \Illuminate\Support\Facades\Log::error(
-                "triggerOpeningChecklist falló para tenant {$tenantId}, user {$user->id}: " . $e->getMessage(),
+                "repartirChecklist({$trigger}) falló para tenant {$tenantId}, user {$user->id}: " . $e->getMessage(),
                 ['exception' => $e]
             );
         }

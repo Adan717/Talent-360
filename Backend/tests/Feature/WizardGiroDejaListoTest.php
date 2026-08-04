@@ -191,7 +191,9 @@ class WizardGiroDejaListoTest extends TestCase
         // disparador al wizard sin cablear quien lo consuma, este test lo detiene.
         $this->aplicarGiro()->assertStatus(200);
 
-        $disparadoresConsumidos = ['apertura'];
+        // 'cierre' entro el 2026-08-03: su consumidor es StoreOpeningService::closeStore
+        // (boton "Cerrar sucursal") -> triggerClosingChecklist.
+        $disparadoresConsumidos = ['apertura', 'cierre'];
 
         foreach ($this->rutinas() as $rutina) {
             $this->assertContains($rutina->trigger, $disparadoresConsumidos,
@@ -213,6 +215,14 @@ class WizardGiroDejaListoTest extends TestCase
 
         $this->assertTrue($hayTareasDeCierre,
             'Las tareas de cierre siguen cargándose en el catálogo; sólo no se agrupan en rutina.');
+
+        // Desde 2026-08-03 ADEMAS se agrupan: el wizard crea la rutina de cierre porque ya
+        // existe quien la dispare (closeStore). Debe traer tareas vinculadas.
+        $cierre = $this->rutinas()->firstWhere('trigger', 'cierre');
+        $this->assertNotNull($cierre, 'El giro debe dejar una rutina de cierre.');
+        $this->assertGreaterThan(0,
+            DB::table('routine_task')->where('routine_id', $cierre->id)->count(),
+            'La rutina de cierre debe repartir tareas al declararse el cierre.');
     }
 
     public function test_reaplicar_el_giro_no_duplica_rutinas(): void

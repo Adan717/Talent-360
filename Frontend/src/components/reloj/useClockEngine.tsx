@@ -2909,6 +2909,18 @@ export function useClockEngine(overrideUser?: any) {
         user_id: currentUser.id,
         checks
       });
+
+      // Cierre FORMAL de la sucursal (decisión P1-P3, 2026-08-03): registra quién/cuándo y
+      // reparte las rutinas trigger='cierre'. BEST-EFFORT a propósito: si falla (otro
+      // encargado ya declaró el cierre, o este usuario no es el responsable), la salida del
+      // colaborador NO se frena — el cierre registra, nunca bloquea.
+      try {
+        const cierre = await axiosInstance.post('/store-opening/close');
+        if (cierre.data?.success) {
+          showCustomAlert('🔒 Sucursal cerrada: quedó registrado y el checklist de cierre fue repartido.');
+        }
+      } catch { /* no responsable o ya cerrada: la salida sigue su curso */ }
+
       setClosingChecklistCompleted(true);
       localStorage.setItem('closing_checklist_completed', 'true');
       setShowClosingChecklistModal(false);

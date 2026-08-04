@@ -903,19 +903,16 @@ class OnboardingController extends Controller
 
         // SÓLO se crean rutinas cuyo disparador alguien CONSUME de verdad.
         //
-        // Aquí llegó a haber también una de `cierre`. Se retiró porque ningún punto del backend
-        // busca ese disparador —`StoreOpeningService::triggerOpeningChecklist` sólo consulta
-        // `trigger='apertura'`—, así que la rutina se creaba, aparecía en el panel del gerente y
-        // no repartía ni una tarea: una promesa vacía en pantalla, que es justo la clase de
-        // defecto que esta ronda de auditoría vino a eliminar (H19 el módulo de apertura, H23 la
-        // aprobación de nómina que decía "listo" sin guardar nada).
-        //
-        // Las tareas de cierre CONSERVAN su `momento` en el catálogo: son metadatos correctos y
-        // dejan el trabajo hecho para el día que se cablee el disparador —el enganche natural es
-        // `StoreOpeningController::closingChecklist`—. Cuando eso exista, basta con volver a
-        // añadir la línea de 'cierre' aquí.
+        // La de `cierre` se retiró en su momento porque ningún código consumía ese disparador
+        // (rutina en pantalla que no repartía nada = promesa vacía, familia H19/H23) y se
+        // reincorporó el 2026-08-03 cuando nació su consumidor real:
+        // `StoreOpeningService::closeStore` → `triggerClosingChecklist` (botón "Cerrar
+        // sucursal", decisión de producto P1-P2). La regla sigue viva: aquí solo entran
+        // disparadores que ALGUIEN consulta de verdad, y el test
+        // `no_se_crea_ninguna_rutina_que_nadie_dispare` la vigila.
         $definiciones = [
             'apertura' => 'Checklist Diario de Apertura',
+            'cierre' => 'Checklist Diario de Cierre',
         ];
 
         foreach ($definiciones as $trigger => $titulo) {

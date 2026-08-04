@@ -15,6 +15,106 @@ use App\Jobs\LogTaskValidationJob;
 
 class TaskAssignmentController extends Controller
 {
+    /**
+     * §31 — Tarea al vuelo (decisión de producto P5-P7, 2026-08-03).
+     *
+     * Un mando lanza una tarea instantánea ("revisa la gotera del baño") sin pasar por el
+     * catálogo. Decisiones textuales del jefe:
+     *  - P6: SOLO supervisor/admin, y NUNCA para uno mismo — crear y cobrar la propia tarea
+     *    es una máquina de auto-pago; el permiso es el candado anti-fraude.
+     *  - P7: paga monedas con las MISMAS reglas que una tarea de rutina: estimated_mins
+     *    obligatorio en la puerta (el mismo guardarraíl del catálogo), la evidencia se elige
+     *    AL CREARLA (assistant_type), y exige firma del supervisor (validation_mode=forced).
+     *    El pago viaja por las puertas ya endurecidas (ancla coins_awarded): aquí no se paga
+     *    nada, solo se crea.
+     */
+    public function alVuelo(Request $request)
+    {
+        $user = auth()->user();
+        $tenantId = $user->tenant_id ?? 1;
+
+        if (!in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo un supervisor o admin puede lanzar tareas al vuelo.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'target_user_id' => 'required|integer',
+            'estimated_mins' => 'required|integer|min:1',
+            'priority' => 'nullable|string|in:bloqueante,alta,normal,baja',
+            'category' => 'nullable|string|max:50',
+            'assistant_type' => 'nullable|string|in:ninguno,evidencia_foto,captura_numero',
+            'assistant_prompt' => 'nullable|string|max:500',
+        ]);
+
+        if ((int) $validated['target_user_id'] === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes lanzarte una tarea al vuelo a ti mismo: quien crea no se cobra.',
+            ], 422);
+        }
+
+        $destino = User::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->find($validated['target_user_id']);
+
+        if (!$destino) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El colaborador destino no pertenece a tu empresa.',
+            ], 404);
+        }
+
+        return DB::transaction(function () use ($validated, $user, $tenantId, $destino) {
+            $now = now();
+            $taskId = DB::table('tasks')->insertGetId([
+                'tenant_id' => $tenantId,
+                'title' => $validated['title'],
+                'estimated_mins' => $validated['estimated_mins'],
+                'priority' => $validated['priority'] ?? 'normal',
+                'category' => $validated['category'] ?? 'operativo',
+                'target_type' => 'user',
+                'target_id' => $destino->id,
+                'assistant_type' => $validated['assistant_type'] ?? 'ninguno',
+                'assistant_prompt' => $validated['assistant_prompt'] ?? '',
+                'is_auto_capture' => false,
+                // P7: igual de formal que una rutina — la firma del supervisor no es opcional.
+                'validation_mode' => 'forced',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $date = \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString();
+
+            // Mismo patrón determinista/race-safe que los checklists (open_/close_): repetir la
+            // creación idéntica el mismo día no duplica la asignación.
+            $assignmentId = "fly_{$taskId}_{$destino->id}_{$date}";
+
+            DB::table('task_assignments')->insertOrIgnore([
+                'id' => $assignmentId,
+                'task_id' => $taskId,
+                'user_id' => $destino->id,
+                'tenant_id' => $tenantId,
+                'date' => $date,
+                'status' => 'pending',
+                'origin' => 'extra',
+                'points_awarded' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Tarea lanzada a {$destino->name}.",
+                'task_id' => $taskId,
+                'assignment_id' => $assignmentId,
+            ], 201);
+        });
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();

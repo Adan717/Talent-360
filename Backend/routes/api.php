@@ -509,6 +509,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Sincronización de tareas y checklists
         Route::post('/sync/tasks', [TaskSyncController::class, 'sync']);
         Route::get('/task-assignments', [TaskAssignmentController::class, 'index']);
+        // §31 Tarea al vuelo (P5-P7): solo mandos, nunca a si mismo, firma forzada. El 403 de
+        // rol vive en el controller (esta en el grupo comun para que el FE del Monitor la use).
+        Route::post('/task-assignments/al-vuelo', [TaskAssignmentController::class, 'alVuelo']);
         Route::put('/task-assignments/{id}', [TaskAssignmentController::class, 'update']);
         Route::post('/task-assignments/{id}/omit', [TaskAssignmentController::class, 'omit']);
         Route::post('/task-assignments/{id}/ai-validate', [TaskAssignmentController::class, 'aiValidate']);

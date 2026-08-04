@@ -578,6 +578,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/academy/courses/{id}', [AcademyController::class, 'getCourse']);
             Route::post('/academy/courses/{id}/progress', [AcademyController::class, 'updateProgress']);
             Route::post('/academy/progress', [AcademyController::class, 'saveProgress']);
+            // AC3: el examen se califica en el servidor. Es la única vía para completar un
+            // curso que tenga evaluación.
+            Route::post('/academy/courses/{id}/quiz-attempt', [AcademyController::class, 'submitQuizAttempt']);
         });
 
         // Evaluación 360°

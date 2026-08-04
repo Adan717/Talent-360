@@ -87,7 +87,7 @@ equivalente (id 17). El frontend filtra por ese campo (`Academia.tsx:423`), así
 colaboradores del tenant 2, **dos ven cero cursos** (Asesor de Ventas y Supervisor de
 Producción). La inducción del cajero nuevo no existe.
 
-### AC3 — confirmado y más grave de lo anotado: el examen se califica en el navegador
+### AC3 — CORREGIDO en la ronda 2 (abajo). Lo que se encontró:
 
 `submitQuiz` (`Academia.tsx:229-306`) compara las respuestas en el cliente y, si aprueba,
 postea `{status:'completed', score:100}`. El `score` es un literal; las respuestas del usuario
@@ -103,9 +103,8 @@ retardos a partir de `completed_at` del curso de puntualidad configurado. Con lo
 colaborador se desbloquea el checador solo**, cuantas veces quiera. El castigo por impuntualidad
 es hoy voluntario.
 
-*(Pendiente de decisión: la calificación server-side implica dejar de mandar `correctAnswer` al
-cliente y añadir un endpoint que reciba respuestas. Toca el contenido de los cursos, que es
-dominio del jefe — se propone, no se rediseña por iniciativa.)*
+*(Corregido en la ronda 2. El contenido de los cursos no se tocó: cambió quién califica, no qué
+se pregunta.)*
 
 ### AC5 — confirmado: la inducción no se asigna sola
 
@@ -153,11 +152,59 @@ cliente ancla dentro del producto SaaS.
 `obsidian_users`: **0 filas**. El módulo está intacto: cualquier corrección que cambie cómo se
 generan los datos no tiene datos viejos que reparar.
 
+---
+
+## Ronda 2 — 2026-08-04: AC3 cerrado (el examen se califica en el servidor)
+
+Cambió **quién califica**, no qué se pregunta: el contenido de los cursos sigue intacto.
+
+1. **Las respuestas correctas dejan de salir del servidor.** `getCourses` y `getCourse` quitan
+   `correctAnswer`/`answer` de `quiz_data` para quien no administra cursos. El gestor
+   (admin/supervisor) las sigue viendo, porque las edita.
+2. **Nuevo `POST /academy/courses/{id}/quiz-attempt`**: recibe las respuestas del alumno,
+   califica contra `quiz_data`, calcula el score real y escribe el progreso. Entiende los tres
+   formatos que conviven en los cursos (`correctAnswer` por índice, `answer` por texto y
+   `answer` por índice); si una pregunta no declara respuesta, no se puede acertar y el curso
+   no se aprueba hasta que su administrador la configure.
+3. **La puerta vieja se cierra donde importa**: `updateProgress`/`saveProgress` rechazan con 422
+   un `status: completed` en cursos **con examen**. Los cursos sin examen se siguen completando
+   viendo el video — de eso depende el gate de la Academia dentro de Tareas (§38, TaskRunner).
+4. **Los intentos fallidos los cuenta el servidor** (columna nueva `failed_attempts`). Antes
+   vivían en una variable del navegador que se reiniciaba al cerrar y reabrir el curso, así que
+   ni el "Vidas: 2/2" ni el "se ha notificado a tu Administrador" tenían nada detrás. El texto
+   que prometía un bloqueo inexistente se corrigió; **si debe haber un bloqueo real tras N
+   intentos, es decisión del jefe** y hoy no lo hay.
+5. De paso: el progreso se busca por `(user_id, course_id)`, que es el único índice de la tabla.
+   Los métodos viejos metían `tenant_id` en la clave, así que una fila con otro tenant no se
+   encontraba y el insert siguiente chocaba contra el unique (500 latente).
+
+Efecto en el Reloj: el bloqueo por 3 retardos ya no se levanta declarándose aprobado. Hay una
+prueba que lo recorre entero — tres retardos, intento reprobado (sigue bloqueado), intento
+aprobado (se desbloquea).
+
+### AC10 — corregido: el curso fantasma de Puntualidad rompía la Academia
+
+El frontend inyectaba un "Curso de Puntualidad y Compromiso Laboral" con id 999 que solo existía
+en el navegador, siempre que ningún curso real llevara "puntualidad" en el título — o sea,
+**en todas las empresas creadas por el wizard**, y visible para todos los puestos
+(`target_job_role_id: null`). Estaba roto de tres formas: su `quiz_data` era un texto JSON y no
+un arreglo, así que abrir su evaluación reventaba la pantalla en el `.map`; no podía desbloquear
+el checador, porque eso depende del progreso del curso REAL configurado en
+`punctuality_course_id` y un id inventado no puede tener progreso; y le mostraba a cualquier
+empresa un texto con la marca DecorArte y, como video, el rickroll de prueba. Se retiró.
+
+**Pruebas:** `AcademiaExamenServidorTest` (7). Suite 1042/0 sqlite, 1043/0 Postgres, vitest
+137/137.
+
+---
+
 ## Siguiente
 
-1. Desplegar los tres candados de AC7–AC9 a la V2 (es seguridad viva).
-2. Llevar AC1/AC2/AC6 al jefe como decisión de producto: los cursos son suyos. Propuesta
+1. Llevar AC1/AC2/AC6 al jefe como decisión de producto: los cursos son suyos. Propuesta
    mínima: mandar `selected_cursos` desde el wizard, mover los cursos al catálogo JSON por giro
    (como puestos y tareas), repartir por puesto en vez de todo al gerente, y sacar la marca
    DecorArte y el video de prueba de las plantillas.
-3. AC3 (examen server-side) como siguiente hallazgo con test, una vez decidido el punto 2.
+2. Decidir con él si un colaborador que reprueba N veces debe quedar bloqueado (hoy el conteo se
+   guarda pero no bloquea) y si el bono `incentive_bonus_cents` que promete la interfaz debe
+   pagarse de verdad o quitarse.
+3. Certificados: hoy son un `window.print()` sin folio ni registro (familia H23).

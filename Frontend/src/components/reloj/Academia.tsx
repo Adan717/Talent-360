@@ -94,28 +94,17 @@ function ProgressRing({ percentage, color = '#6366F1', size = 96, strokeWidth = 
 
 function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; autoOpenCourseId?: number | null }) {
   const [courses, setCourses] = useState<any[]>([]);
+  // Academia AC10 (auditoría 2026-08-04): aquí se inyectaba un "Curso de Puntualidad" que solo
+  // existía en el navegador (id 999) cuando ningún curso real llevaba "puntualidad" en el
+  // título — que es el caso de las empresas creadas por el wizard. Se retiró porque estaba
+  // roto de tres formas a la vez: su `quiz_data` era un TEXTO JSON y no un arreglo, así que
+  // abrir su evaluación reventaba la pantalla en el `.map`; no podía desbloquear el checador,
+  // porque el bloqueo se levanta con el progreso del curso REAL que configure la empresa
+  // (`punctuality_course_id`) y un id de mentira no puede tener progreso; y le mostraba a
+  // cualquier empresa un texto con la marca DecorArte y, como video, un rickroll de prueba.
+  // Si la empresa no ha configurado su curso de puntualidad, el reloj ya lo dice por su lado.
   const setCoursesSafe = (rawList: any[]) => {
-    let list = Array.isArray(rawList) ? rawList : [];
-    if (!list.some(c => c.title && c.title.toLowerCase().includes('puntualidad'))) {
-      list = [
-        ...list,
-        {
-          id: 999,
-          title: 'Curso de Puntualidad y Compromiso Laboral',
-          description: 'Aprende sobre la importancia de la puntualidad en DecorArte y el impacto de los retardos en el equipo.',
-          course_type: 'training',
-          target_job_role_id: null,
-          incentive_bonus_cents: 0,
-          video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-          quiz_data: JSON.stringify([
-            { question: '¿Cuál es la tolerancia establecida en DecorArte?', options: ['10-15 minutos según el puesto', 'No hay tolerancia', '30 minutos'], answer: '10-15 minutos según el puesto' },
-            { question: '¿Qué consecuencia tiene acumular 3 retardos?', options: ['Ninguna', 'Bloqueo del checador y curso obligatorio', 'Despido directo'], answer: 'Bloqueo del checador y curso obligatorio' }
-          ]),
-          is_active: true
-        }
-      ];
-    }
-    setCourses(list);
+    setCourses(Array.isArray(rawList) ? rawList : []);
   };
   const [roles, setRoles] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any[]>([]);
@@ -211,7 +200,10 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
     setActiveCourse(course);
     setShowQuiz(false);
     setVideoFinished(false);
-    setFailedAttempts(0);
+    // AC3: los intentos fallidos vienen del servidor. Antes se reiniciaban aquí, así que
+    // cerrar y reabrir el curso devolvía las dos "vidas" y el conteo no significaba nada.
+    const progreso = userProgress.find((p: any) => p.course_id === course.id);
+    setFailedAttempts(Number(progreso?.failed_attempts ?? 0));
     setSelectedAnswers({});
   };
 
@@ -226,48 +218,57 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
     setVideoFinished(true);
   };
 
+  // Academia AC3 (auditoría 2026-08-04): antes este mismo método comparaba las respuestas AQUÍ
+  // y, si le salía que el alumno aprobaba, posteaba `{status:'completed', score:100}`. Las
+  // respuestas correctas venían en `quiz_data`, o sea que estaban a la vista en el navegador
+  // antes de contestar, y el backend no tenía con qué recalificar. Ahora se mandan las
+  // respuestas y el servidor dice si aprobó y con cuánto; el frontend solo obedece.
   const submitQuiz = () => {
     const questions = activeCourse.quiz_data || [];
-    let passed = true;
 
-    if (questions.length > 0) {
-      for (let i = 0; i < questions.length; i++) {
-        if (selectedAnswers[i] === undefined) {
-          alert("Por favor responde todas las preguntas antes de enviar.");
-          return;
-        }
+    for (let i = 0; i < questions.length; i++) {
+      if (selectedAnswers[i] === undefined) {
+        alert("Por favor responde todas las preguntas antes de enviar.");
+        return;
       }
-
-      let correctCount = 0;
-      questions.forEach((q: any, i: number) => {
-        const selected = selectedAnswers[i];
-        let correctOptionIndex = q.correctAnswer;
-        if (correctOptionIndex === undefined && q.answer !== undefined) {
-          if (typeof q.answer === 'string') {
-            correctOptionIndex = q.options.indexOf(q.answer);
-          } else if (typeof q.answer === 'number') {
-            correctOptionIndex = q.answer;
-          }
-        }
-        if (selected === correctOptionIndex) {
-          correctCount++;
-        }
-      });
-      passed = correctCount === questions.length;
     }
 
-    if (passed) {
-      axiosInstance.post(`/academy/courses/${activeCourse.id}/progress`, {
-        status: 'completed',
-        score: 100
-      })
-      .then(() => {
-        alert('¡Felicidades! Aprobaste el examen con 100%. Nivel Completado.');
+    // Sin evaluación, el curso se completa con solo verlo, como siempre.
+    const veredicto: Promise<{ passed: boolean; score: number; failed_attempts?: number }> =
+      questions.length === 0
+        ? axiosInstance
+            .post(`/academy/courses/${activeCourse.id}/progress`, { status: 'completed' })
+            .then(() => ({ passed: true, score: 100 }))
+        : axiosInstance
+            .post(`/academy/courses/${activeCourse.id}/quiz-attempt`, {
+              answers: questions.map((_q: any, i: number) => selectedAnswers[i])
+            })
+            .then(res => res.data);
+
+    veredicto
+      .then(resultado => {
+        if (!resultado.passed) {
+          // El conteo de intentos ahora lo lleva el servidor: reabrir el curso ya no lo borra.
+          const intentos = resultado.failed_attempts ?? failedAttempts + 1;
+          setFailedAttempts(intentos);
+          setShowQuiz(false);
+          setVideoFinished(false);
+          alert(
+            intentos >= 2
+              ? `Volviste a reprobar (${intentos} intentos, ${resultado.score}% en el último). Repasa el video con calma antes de intentarlo de nuevo; tu administrador puede ver tus intentos.`
+              : `Respuesta incorrecta (${resultado.score}%). Vuelve a ver el video y préstale más atención antes de reintentar.`
+          );
+          return null;
+        }
+
+        alert(`¡Felicidades! Aprobaste el examen con ${resultado.score}%. Nivel Completado.`);
         setShowQuiz(false);
         setActiveCourse(null);
         return axiosInstance.get('/academy/courses');
       })
       .then(res => {
+        if (!res) return;
+
         const data = res.data;
         if (data && data.courses) {
           setCoursesSafe(data.courses);
@@ -288,21 +289,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
       })
       .catch(err => {
         console.error("Error saving progress:", err);
-        alert("Error al guardar tu progreso en el servidor.");
+        alert(err?.response?.data?.message || "Error al guardar tu progreso en el servidor.");
       });
-    } else {
-      const newAttempts = failedAttempts + 1;
-      if (newAttempts >= 2) {
-        alert('Has reprobado por segunda vez. Tu curso ha sido bloqueado temporalmente y se ha notificado a tu Administrador.');
-        setShowQuiz(false);
-        setActiveCourse(null);
-      } else {
-        alert('Respuesta incorrecta. Tu progreso ha sido reiniciado por seguridad. Debes volver a ver el video y prestar más atención.');
-        setShowQuiz(false);
-        setVideoFinished(false);
-        setFailedAttempts(newAttempts);
-      }
-    }
   };
 
   if (loading) {
@@ -327,7 +315,9 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
             <span className="text-xl mr-2">←</span> Volver al Plan
           </button>
           <div className="flex gap-2">
-            {failedAttempts > 0 && <span className="text-[10px] font-bold px-2 py-1 bg-rose-100 text-rose-700 rounded-md border border-rose-200">Vidas: {2 - failedAttempts}/2</span>}
+            {/* AC3: el conteo es el del servidor, así que ya no se puede pasar de 2 "vidas"
+                cerrando el curso. Se muestra el número real de intentos fallidos. */}
+            {failedAttempts > 0 && <span className="text-[10px] font-bold px-2 py-1 bg-rose-100 text-rose-700 rounded-md border border-rose-200">{failedAttempts === 1 ? '1 intento fallido' : `${failedAttempts} intentos fallidos`}</span>}
             <span className="text-[10px] font-bold px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-200 uppercase tracking-widest">EN CURSO</span>
           </div>
         </div>

@@ -9,10 +9,52 @@ use App\Models\JobRole;
 
 class AcademyController extends Controller
 {
+    /**
+     * ¿Este usuario administra los cursos? Solo admin y supervisor (los mismos que pueden
+     * crear/editar/borrar, ver el grupo `role:admin,supervisor` de routes/api.php). Es quien
+     * necesita ver las respuestas correctas del examen; al colaborador se le ocultan.
+     */
+    private function puedeAdministrarCursos(): bool
+    {
+        $role = auth()->user()->role ?? null;
+
+        return in_array($role, ['admin', 'supervisor', 'platform_admin'], true);
+    }
+
+    /**
+     * Academia AC3 (auditoría 2026-08-04): el examen se calificaba en el navegador y la
+     * respuesta correcta viajaba dentro de `quiz_data` en esta misma respuesta — se veía en
+     * las herramientas del navegador antes de contestar. Aquí se quita para quien no
+     * administra cursos: quedan la pregunta y las opciones, que es lo que hace falta para
+     * presentar el examen. La calificación la hace el servidor (`submitQuizAttempt`).
+     */
+    private function ocultarRespuestas($quizData)
+    {
+        if (!is_array($quizData)) {
+            return $quizData;
+        }
+
+        return array_map(function ($pregunta) {
+            if (!is_array($pregunta)) {
+                return $pregunta;
+            }
+
+            unset($pregunta['correctAnswer'], $pregunta['answer']);
+
+            return $pregunta;
+        }, $quizData);
+    }
+
     public function getCourses(Request $request)
     {
         $courses = AcademyCourse::all();
         $roles = JobRole::all();
+
+        if (!$this->puedeAdministrarCursos()) {
+            $courses->each(function ($course) {
+                $course->quiz_data = $this->ocultarRespuestas($course->quiz_data);
+            });
+        }
 
         $userProgress = [];
         if (auth()->check()) {
@@ -29,6 +71,11 @@ class AcademyController extends Controller
     public function getCourse($id)
     {
         $course = AcademyCourse::findOrFail($id);
+
+        if (!$this->puedeAdministrarCursos()) {
+            $course->quiz_data = $this->ocultarRespuestas($course->quiz_data);
+        }
+
         return response()->json($course);
     }
 
@@ -87,6 +134,152 @@ class AcademyController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+    /**
+     * Academia AC3 — el examen se califica AQUÍ, con las respuestas que manda el colaborador.
+     *
+     * Antes: `submitQuiz` del frontend comparaba en el navegador y, si le salía que aprobaba,
+     * posteaba `{status:'completed', score:100}` a `updateProgress`. El `score` era un literal,
+     * las respuestas del alumno no viajaban nunca y el backend no podía recalificar; además las
+     * respuestas correctas se le mandaban al navegador dentro de `quiz_data`. Completar un
+     * curso era, en los hechos, apretar un botón. Y como el bloqueo del checador por 3 retardos
+     * se levanta con el `completed_at` del curso de puntualidad
+     * (`ClockService::getPunctualityStatus`), el colaborador se desbloqueaba el reloj solo.
+     *
+     * El progreso se busca por (user_id, course_id), que es el único índice de la tabla —
+     * meter `tenant_id` en la clave, como hacen los métodos viejos, deja fuera cualquier fila
+     * anterior con otro tenant y el insert siguiente choca contra el unique.
+     */
+    public function submitQuizAttempt(Request $request, $id)
+    {
+        $request->validate([
+            'answers' => 'required|array',
+            'answers.*' => 'nullable|integer',
+        ]);
+
+        $course = AcademyCourse::find($id);
+        if (!$course) {
+            return response()->json(['status' => 'error', 'message' => 'Curso no encontrado.'], 404);
+        }
+
+        $preguntas = is_array($course->quiz_data) ? $course->quiz_data : [];
+        if (count($preguntas) === 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Este curso no tiene evaluación.',
+            ], 422);
+        }
+
+        $respuestas = $request->input('answers');
+        $correctas = 0;
+
+        foreach ($preguntas as $i => $pregunta) {
+            $esperada = $this->indiceCorrecto($pregunta);
+            $dada = $respuestas[$i] ?? null;
+
+            if ($esperada !== null && $dada !== null && (int) $dada === $esperada) {
+                $correctas++;
+            }
+        }
+
+        $total = count($preguntas);
+        // Mismo criterio de aprobación que tenía el frontend: se aprueba con todas.
+        $aprobado = $correctas === $total;
+        $score = (int) round($correctas / $total * 100);
+
+        $userId = auth()->id();
+        $tenantId = auth()->user()->tenant_id ?? 1;
+
+        $progreso = UserCourseProgress::where('user_id', $userId)
+            ->where('course_id', $course->id)
+            ->first();
+
+        $intentosFallidos = (int) ($progreso->failed_attempts ?? 0);
+        if (!$aprobado) {
+            $intentosFallidos++;
+        }
+
+        UserCourseProgress::updateOrInsert(
+            ['user_id' => $userId, 'course_id' => $course->id],
+            [
+                'tenant_id' => $tenantId,
+                'status' => $aprobado ? 'completed' : 'failed',
+                'score' => $score,
+                'failed_attempts' => $intentosFallidos,
+                'completed_at' => $aprobado ? now() : null,
+                'updated_at' => now(),
+                'created_at' => $progreso->created_at ?? now(),
+            ]
+        );
+
+        if ($aprobado && $course->course_type === 'induction') {
+            auth()->user()->update(['has_completed_induction' => true]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'passed' => $aprobado,
+            'score' => $score,
+            'correct_count' => $correctas,
+            'total' => $total,
+            'failed_attempts' => $intentosFallidos,
+        ]);
+    }
+
+    /**
+     * Índice de la opción correcta de una pregunta. El formato no es uniforme (los cursos
+     * nacieron de fuentes distintas): unos traen `correctAnswer` con el índice, otros `answer`
+     * con el TEXTO de la opción y otros `answer` con el índice. Devuelve null si la pregunta
+     * no declara respuesta — esas no se pueden acertar, así que el curso no se aprueba hasta
+     * que su administrador la configure.
+     */
+    private function indiceCorrecto($pregunta): ?int
+    {
+        if (!is_array($pregunta)) {
+            return null;
+        }
+
+        if (isset($pregunta['correctAnswer']) && is_numeric($pregunta['correctAnswer'])) {
+            return (int) $pregunta['correctAnswer'];
+        }
+
+        if (!isset($pregunta['answer'])) {
+            return null;
+        }
+
+        if (is_numeric($pregunta['answer'])) {
+            return (int) $pregunta['answer'];
+        }
+
+        $opciones = $pregunta['options'] ?? [];
+        if (is_array($opciones)) {
+            $indice = array_search($pregunta['answer'], $opciones, true);
+            if ($indice !== false) {
+                return (int) $indice;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ¿El curso exige aprobar un examen para darse por completado? (AC3) Si lo exige, la única
+     * vía es `submitQuizAttempt`; `updateProgress`/`saveProgress` dejan de aceptar 'completed'.
+     * Los cursos SIN examen conservan el comportamiento de siempre: se completan viendo el
+     * video, que es de lo que depende el gate de la Academia en Tareas (§38, TaskRunner).
+     */
+    private function exigeExamen(?AcademyCourse $course): bool
+    {
+        return $course && is_array($course->quiz_data) && count($course->quiz_data) > 0;
+    }
+
+    private function respuestaExamenObligatorio()
+    {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Este curso se completa aprobando su evaluación.',
+        ], 422);
+    }
+
     public function updateProgress(Request $request, $id)
     {
         $data = $request->validate([
@@ -101,6 +294,11 @@ class AcademyController extends Controller
         $course = \App\Models\AcademyCourse::find($id);
         if (!$course) {
             return response()->json(['status' => 'error', 'message' => 'Curso no encontrado.'], 404);
+        }
+
+        // AC3: si el curso tiene examen, aprobarlo es la ÚNICA vía para completarlo.
+        if ($data['status'] === 'completed' && $this->exigeExamen($course)) {
+            return $this->respuestaExamenObligatorio();
         }
 
         $userId = auth()->id();
@@ -132,6 +330,11 @@ class AcademyController extends Controller
             'status' => 'required|string|in:enrolled,in_progress,completed,failed',
             'score' => 'nullable|integer'
         ]);
+
+        // AC3: mismo candado que en updateProgress — con examen, solo se completa aprobándolo.
+        if ($data['status'] === 'completed' && $this->exigeExamen(AcademyCourse::find($data['course_id']))) {
+            return $this->respuestaExamenObligatorio();
+        }
 
         $userId = auth()->id();
         $tenantId = auth()->user()->tenant_id ?? 1;

@@ -2933,6 +2933,22 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
 
+  // Botón suelto "Cerrar sucursal" (P1-P3): declara el cierre SIN estar saliendo — registra
+  // quién/cuándo y reparte el checklist de cierre. No bloquea nada; el backend rechaza si no
+  // eres el responsable/mando o si ya estaba cerrada, y aquí solo se informa.
+  const [cierreDeclarado, setCierreDeclarado] = useState(false);
+  const declararCierreSucursal = async () => {
+    try {
+      const res = await axiosInstance.post('/store-opening/close');
+      if (res.data?.success) {
+        setCierreDeclarado(true);
+        showCustomAlert('🔒 Sucursal cerrada: quedó registrado y el checklist de cierre fue repartido.');
+      }
+    } catch (e: any) {
+      showCustomAlert(e.response?.data?.message || 'No se pudo declarar el cierre.');
+    }
+  };
+
   const authorizeClockOutWithPendingTasks = async () => {
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     
@@ -3835,6 +3851,8 @@ export function useClockEngine(overrideUser?: any) {
     setShowClosingChecklistModal,
     closingChecklistSubmitting,
     submitClosingChecklist,
+    declararCierreSucursal,
+    cierreDeclarado,
     securityPinSubmitting,
     handleUpdateSecurityPin,
     isOpeningPremium,

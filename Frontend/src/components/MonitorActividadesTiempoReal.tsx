@@ -170,6 +170,11 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [selectedUserForAssign, setSelectedUserForAssign] = useState<UserMonitorItem | null>(null);
   const [customTaskTitle, setCustomTaskTitle] = useState('');
   const [customTaskMins, setCustomTaskMins] = useState(30);
+  const [customTaskPriority, setCustomTaskPriority] = useState('normal');
+  // P7: la evidencia se elige AL CREARLA, no tras el incumplimiento.
+  const [customTaskEvidencia, setCustomTaskEvidencia] = useState('ninguno');
+  const [customTaskPrompt, setCustomTaskPrompt] = useState('');
+  const [assignError, setAssignError] = useState('');
 
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [newVendorName, setNewVendorName] = useState('');
@@ -305,23 +310,28 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     }
   };
 
-  // Assign Express Task
+  // Tarea al vuelo (§31, P5-P7): va por la puerta ENDURECIDA — solo mandos, nunca a uno
+  // mismo, minutos obligatorios, evidencia elegida aquí y firma del supervisor forzada.
+  // (Antes iba a /admin/dashboard/create-task, que aceptaba points arbitrarios del cliente.)
   const handleAssignExpressTask = async () => {
     if (!selectedUserForAssign || !customTaskTitle) return;
+    setAssignError('');
     try {
-      await axiosInstance.post('/admin/dashboard/create-task', {
+      await axiosInstance.post('/task-assignments/al-vuelo', {
         title: customTaskTitle,
+        target_user_id: selectedUserForAssign.id,
         estimated_mins: customTaskMins,
-        points: Math.max(5, Math.round(customTaskMins / 3)),
-        priority: 'high',
-        target_type: 'user',
-        target_id: selectedUserForAssign.id
+        priority: customTaskPriority,
+        assistant_type: customTaskEvidencia,
+        assistant_prompt: customTaskEvidencia === 'ninguno' ? '' : customTaskPrompt
       });
       setShowAssignModal(false);
       setCustomTaskTitle('');
+      setCustomTaskPrompt('');
       fetchData();
-    } catch (err) {
-      console.error("Error al asignar tarea express:", err);
+    } catch (err: any) {
+      // El backend explica el candado (p. ej. "no puedes lanzarte una tarea a ti mismo").
+      setAssignError(err.response?.data?.message || 'No se pudo lanzar la tarea.');
     }
   };
 
@@ -1427,15 +1437,62 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 />
               </div>
 
-              <div>
-                <label className="text-xs text-slate-700 font-bold mb-1 block">Tiempo Estimado (minutos)</label>
-                <input 
-                  type="number"
-                  value={customTaskMins}
-                  onChange={e => setCustomTaskMins(Number(e.target.value))}
-                  className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-700 font-bold mb-1 block">Tiempo Estimado (min)</label>
+                  <input 
+                    type="number"
+                    min={1}
+                    value={customTaskMins}
+                    onChange={e => setCustomTaskMins(Number(e.target.value))}
+                    className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-700 font-bold mb-1 block">Prioridad</label>
+                  <select
+                    value={customTaskPriority}
+                    onChange={e => setCustomTaskPriority(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="alta">Alta</option>
+                    <option value="bloqueante">Bloqueante</option>
+                  </select>
+                </div>
               </div>
+
+              <div>
+                <label className="text-xs text-slate-700 font-bold mb-1 block">Evidencia al completar</label>
+                <select
+                  value={customTaskEvidencia}
+                  onChange={e => setCustomTaskEvidencia(e.target.value)}
+                  className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
+                >
+                  <option value="ninguno">Sin evidencia</option>
+                  <option value="evidencia_foto">📷 Foto</option>
+                  <option value="captura_numero">🔢 Capturar un número</option>
+                </select>
+              </div>
+
+              {customTaskEvidencia !== 'ninguno' && (
+                <div>
+                  <label className="text-xs text-slate-700 font-bold mb-1 block">Instrucción de la evidencia</label>
+                  <input
+                    type="text"
+                    placeholder={customTaskEvidencia === 'evidencia_foto' ? 'Ej: Foto de la reparación terminada.' : 'Ej: Ingrese las piezas contadas.'}
+                    value={customTaskPrompt}
+                    onChange={e => setCustomTaskPrompt(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
+                  />
+                </div>
+              )}
+
+              <p className="text-[10px] text-slate-400 font-medium">La tarea exigirá la firma del supervisor al validarse — paga monedas con las mismas reglas que una rutina.</p>
+
+              {assignError && (
+                <p className="text-[11px] text-red-600 font-bold bg-red-50 rounded-xl p-2.5">{assignError}</p>
+              )}
             </div>
 
             <div className="flex gap-2">

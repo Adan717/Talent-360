@@ -309,6 +309,8 @@ export default function RelojVisual({
     setShowClosingChecklistModal,
     closingChecklistSubmitting,
     submitClosingChecklist,
+    declararCierreSucursal,
+    cierreDeclarado,
     securityPinSubmitting,
     handleUpdateSecurityPin,
     isOpeningPremium,
@@ -1245,6 +1247,24 @@ export default function RelojVisual({
         icon: <ClipboardList className="text-amber-500 w-4 h-4" />,
         action: () => setShowOpeningChecklistModal(true),
         actionText: 'Completar'
+      });
+    }
+
+    // Botón suelto "Cerrar sucursal" (P1-P3): visible para el responsable del día o un mando
+    // mientras la sucursal siga abierta y nadie haya declarado el cierre. Declararlo registra
+    // quién/cuándo y reparte el checklist de cierre — NUNCA bloquea la salida de nadie.
+    const puedeCerrarSucursal = storeStatus === 'open' && openingStatus && !openingStatus.closed_at
+      && !cierreDeclarado
+      && (Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) || isSupervisor);
+    if (puedeCerrarSucursal) {
+      notificationsList.push({
+        id: 'cerrar_sucursal',
+        type: 'warning',
+        title: 'Cerrar Sucursal',
+        desc: 'Declara el cierre del día: queda registrado y se reparte el checklist de cierre.',
+        icon: <Lock className="text-rose-500 w-4 h-4" />,
+        action: declararCierreSucursal,
+        actionText: '🔒 Cerrar'
       });
     }
 

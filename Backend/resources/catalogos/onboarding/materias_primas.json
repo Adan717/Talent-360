@@ -43,6 +43,103 @@
             "area": "Operaciones"
         }
     ],
+    "cursos": [
+        {
+            "title": "Derechos Laborales & Ley Federal del Trabajo (LFT)",
+            "description": "Fundamentos de la jornada laboral, descansos, aguinaldo y derechos del trabajador en México.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Ley Silla & Salud Ocupacional (LFT / NOM-035)",
+            "description": "Protocolo de ergonomía en piso de ventas y mostrador, descansos en silla con respaldo y salud laboral.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Protocolo de Operación Comercial y Calidad",
+            "description": "Manual operativo y estándares de calidad para la tienda de materias primas y repostería.",
+            "course_type": "induction",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Manejo e Higiene de Materias Primas, Fraccionado y Conservación PEPS",
+            "description": "Buenas prácticas de manipulación de insumos a granel, fraccionado y caducidades.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Técnicas de Venta Asistida en Insumos de Repostería y Panadería",
+            "description": "Asesoría técnica al cliente sobre rendimiento de coberturas, esencias e insumos especializados.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        }
+    ],
     "tareas": [
         {
             "title": "Desactivar alarma perimetral y encender switch principal de energía",

@@ -200,6 +200,94 @@ class CatalogoOnboardingValidoTest extends TestCase
             "{$giro}.json tiene tareas repetidas: " . implode(' | ', $repetidos));
     }
 
+    #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
+    public function test_el_giro_trae_los_cursos_normativos(string $giro): void
+    {
+        // AC1: los cursos salieron del PHP al catálogo. Los dos de ley aplican a cualquier
+        // empresa mexicana, así que ningún giro puede quedarse sin ellos por un descuido al
+        // editar — es lo que le pasó a los tenants creados antes de este cambio, que terminaron
+        // con un solo curso genérico.
+        $titulos = array_column(CatalogoOnboarding::para($giro)['cursos'], 'title');
+
+        foreach (['Ley Federal del Trabajo', 'Ley Silla'] as $normativo) {
+            $this->assertNotEmpty(
+                array_filter($titulos, fn ($t) => str_contains($t, $normativo)),
+                "El giro '{$giro}' no incluye el curso normativo de '{$normativo}'. Cursos: "
+                . implode(' | ', $titulos)
+            );
+        }
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
+    public function test_cada_curso_declara_titulo_y_tipo_conocido(string $giro): void
+    {
+        $catalogo = CatalogoOnboarding::para($giro);
+
+        foreach ($catalogo['cursos'] as $i => $c) {
+            $titulo = $c['title'] ?? "#{$i}";
+
+            $this->assertArrayHasKey('title', $c, "{$giro}.json, curso #{$i}: falta 'title'.");
+            $this->assertNotEmpty($c['title'], "{$giro}.json, curso #{$i}: 'title' vacío.");
+            $this->assertContains($c['course_type'] ?? 'training',
+                ['induction', 'training', 'promotion', 'recertification'],
+                "{$giro}.json, '{$titulo}': tipo de curso desconocido; la columna no lo acepta.");
+        }
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
+    public function test_ningun_curso_apunta_a_un_puesto_inexistente(string $giro): void
+    {
+        // AC2: un `target_role_name` mal escrito deja el curso colgado de nadie. `null` es
+        // válido y significa "toda la plantilla" — es el default a propósito, porque el defecto
+        // que se corrigió fue justamente que TODOS los cursos colgaban del puesto de mando.
+        $catalogo = CatalogoOnboarding::para($giro);
+        $nombres = array_column($catalogo['puestos'], 'name');
+
+        $huerfanos = [];
+
+        foreach ($catalogo['cursos'] as $c) {
+            $puesto = $c['target_role_name'] ?? null;
+
+            if ($puesto !== null && !in_array($puesto, $nombres, true)) {
+                $huerfanos[] = "'{$c['title']}' → '{$puesto}'";
+            }
+        }
+
+        $this->assertSame([], $huerfanos,
+            "{$giro}.json tiene cursos que apuntan a un puesto inexistente, así que no le "
+            . 'llegarían a nadie: ' . implode(' | ', $huerfanos)
+            . '. Puestos válidos: ' . implode(', ', $nombres));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
+    public function test_no_hay_cursos_repetidos(string $giro): void
+    {
+        // El asistente actualiza por título al reaplicar el giro: dos cursos con el mismo
+        // título se pisarían entre sí.
+        $titulos = array_column(CatalogoOnboarding::para($giro)['cursos'], 'title');
+
+        $repetidos = array_keys(array_filter(array_count_values($titulos), fn ($n) => $n > 1));
+
+        $this->assertEmpty($repetidos,
+            "{$giro}.json tiene cursos repetidos: " . implode(' | ', $repetidos));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('giros')]
+    public function test_ningun_curso_lleva_la_marca_de_otra_empresa(string $giro): void
+    {
+        // AC6/H12: el catálogo es de TODOS los clientes. Un curso llamado "...Calidad Decorarte
+        // 360" se le inyectaba a cualquier empresa del giro de repostería.
+        $catalogo = CatalogoOnboarding::para($giro);
+
+        foreach ($catalogo['cursos'] as $c) {
+            $texto = mb_strtolower($c['title'] . ' ' . ($c['description'] ?? ''));
+
+            $this->assertStringNotContainsString('decorarte', $texto,
+                "{$giro}.json, '{$c['title']}': lleva el nombre de una empresa cliente dentro del "
+                . 'catálogo que se le carga a todas.');
+        }
+    }
+
     public function test_reposteria_sigue_resolviendo_al_catalogo_de_materias_primas(): void
     {
         // El alias evita duplicar 92 tareas. Si alguien lo quita sin querer, el giro se queda sin

@@ -25,6 +25,84 @@
             "area": "Cocina"
         }
     ],
+    "cursos": [
+        {
+            "title": "Derechos Laborales & Ley Federal del Trabajo (LFT)",
+            "description": "Fundamentos de la jornada laboral, descansos, aguinaldo y derechos del trabajador en México.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Ley Silla & Salud Ocupacional (LFT / NOM-035)",
+            "description": "Protocolo de ergonomía en piso de ventas y mostrador, descansos en silla con respaldo y salud laboral.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Manejo Higiénico de Alimentos (NOM-251)",
+            "description": "Reglas sanitarias para la preparación de insumos y prevención de contaminación cruzada.",
+            "course_type": "induction",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Seguridad e Inspección de Válvulas de Gas",
+            "description": "Protocolos de encendido y cierre seguro de estufas y cilindros de gas.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        }
+    ],
     "tareas": [
         {
             "title": "Desactivar alarma, encender energía y revisar novedades de la noche",

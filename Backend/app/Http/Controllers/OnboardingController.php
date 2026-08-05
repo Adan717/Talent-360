@@ -539,6 +539,9 @@ class OnboardingController extends Controller
             'success' => true,
             'nicho' => $nicho,
             'puestos' => $catalogo['puestos'],
+            // AC1: los cursos también salen del catálogo (antes estaban escritos a mano en
+            // `configureNicho`, y la selección del asistente no llegaba nunca al servidor).
+            'cursos' => $catalogo['cursos'] ?? [],
             'tareas' => $catalogo['tareas'],
         ]);
     }
@@ -731,69 +734,73 @@ class OnboardingController extends Controller
             }
 
             // 4. Inyectar Cursos Iniciales en Academia LMS (`academy_courses`)
-            $selectedCursos = $request->input('selected_cursos');
-            $coursesData = [];
+            //
+            // AC1 (auditoría de Academia, 2026-08-04): el bloque 1D del asistente dejaba elegir
+            // cursos, pero `handleConfigureNicho` NUNCA mandaba `selected_cursos`; el servidor
+            // caía siempre a una lista escrita a mano aquí, con la que el dueño no tenía nada
+            // que ver. Además esa lista sólo mandaba títulos: las descripciones se sustituían
+            // por "Curso de capacitación inicial precargado desde el Wizard" y el tipo se
+            // adivinaba buscando las palabras "Inducción" o "Protocolo" en el título.
+            //
+            // Ahora los cursos son parte del catálogo del giro, igual que puestos y tareas: los
+            // edita quien conoce el negocio y viajan completos de ida y vuelta.
+            $cursos = $request->input('selected_cursos');
 
-            if (!empty($selectedCursos)) {
-                foreach ($selectedCursos as $cTitle) {
-                    $coursesData[] = [
-                        'title' => $cTitle,
-                        'description' => 'Curso de capacitación inicial precargado desde el Wizard de Onboarding.',
-                        'course_type' => (str_contains($cTitle, 'Inducción') || str_contains($cTitle, 'Protocolo')) ? 'induction' : 'training'
-                    ];
-                }
-            } else {
-                // Cursos Normativos de Ley Federal del Trabajo (LFT) y Ley Silla obligatorios para todos los giros
-                $lftCourses = [
-                    ['title' => 'Derechos Laborales & Ley Federal del Trabajo (LFT)', 'description' => 'Fundamentos de la jornada laboral, descansos, aguinaldo y derechos del trabajador en México.', 'course_type' => 'training'],
-                    ['title' => 'Ley Silla & Salud Ocupacional (LFT / NOM-035)', 'description' => 'Protocolo de ergonomía en piso de ventas y mostrador, descansos en silla con respaldo y salud laboral.', 'course_type' => 'training']
-                ];
-
-                if ($nicho === 'materias_primas' || $nicho === 'reposteria') {
-                    $coursesData = array_merge($lftCourses, [
-                        ['title' => 'Protocolo de Operación Comercial y Calidad Decorarte 360', 'description' => 'Manual operativo y estándares de calidad para la tienda de materias primas y repostería.', 'course_type' => 'induction'],
-                        ['title' => 'Manejo e Higiene de Materias Primas, Fraccionado y Conservación PEPS', 'description' => 'Buenas prácticas de manipulación de insumos a granel, fraccionado y caducidades.', 'course_type' => 'training'],
-                        ['title' => 'Técnicas de Venta Asistida en Insumos de Repostería y Panadería', 'description' => 'Asesoría técnica al cliente sobre rendimiento de coberturas, esencias e insumos especializadados.', 'course_type' => 'training']
-                    ]);
-                } elseif ($nicho === 'retail') {
-                    $coursesData = array_merge($lftCourses, [
-                        ['title' => 'Protocolo de Apertura y Operación Comercial', 'description' => 'Aprende los pasos clave para abrir la tienda, verificar cajas y dar la bienvenida al primer cliente.', 'course_type' => 'induction'],
-                        ['title' => 'Excelencia en Servicio al Cliente y Venta Cruzada', 'description' => 'Técnicas de venta en piso, abordaje al cliente y sugerencias de productos complementarios.', 'course_type' => 'training']
-                    ]);
-                } elseif ($nicho === 'restaurante') {
-                    $coursesData = array_merge($lftCourses, [
-                        ['title' => 'Manejo Higiénico de Alimentos (NOM-251)', 'description' => 'Reglas sanitarias para la preparación de insumos y prevención de contaminación cruzada.', 'course_type' => 'induction'],
-                        ['title' => 'Seguridad e Inspección de Válvulas de Gas', 'description' => 'Protocolos de encendido y cierre seguro de estufas y cilindros de gas.', 'course_type' => 'training']
-                    ]);
-                } elseif ($nicho === 'taller') {
-                    $coursesData = array_merge($lftCourses, [
-                        ['title' => 'Protocolo de Seguridad Industrial y Uso de EPP', 'description' => 'Inspección de equipo de protección personal, prevención de riesgos e higiene en taller.', 'course_type' => 'induction']
-                    ]);
-                } else {
-                    $coursesData = array_merge($lftCourses, [
-                        ['title' => 'Inducción al Software Corporativo y Gestión del Tiempo', 'description' => 'Uso de herramientas internas, registro de asistencia y coordinación de tareas.', 'course_type' => 'induction']
-                    ]);
-                }
+            if (empty($cursos)) {
+                // Un giro sin catálogo propio (p. ej. 'custom') hereda el de oficina, que es la
+                // lista que le tocaba antes en la rama `else`: los dos cursos normativos de LFT
+                // más la inducción al software. Sin esto, una empresa personalizada se quedaría
+                // sin los cursos de ley.
+                $catalogoCursos = \App\Support\CatalogoOnboarding::para($nicho)
+                    ?? \App\Support\CatalogoOnboarding::para('oficina');
+                $cursos = $catalogoCursos['cursos'] ?? [];
             }
 
-            foreach ($coursesData as $course) {
-                \DB::table('academy_courses')->insert([
+            foreach ($cursos as $course) {
+                // Compatibilidad con un asistente viejo que todavía mande sólo títulos.
+                if (is_string($course)) {
+                    $course = ['title' => $course];
+                }
+
+                if (empty($course['title'])) {
+                    continue;
+                }
+
+                // AC2: antes TODOS los cursos se colgaban del puesto de mando
+                // (`target_job_role_id = $firstGerenteRole`) y el resto de la plantilla no veía
+                // ninguno — el cajero nuevo no tenía inducción. Ahora manda el catálogo: el
+                // puesto que declare, y si no declara ninguno el curso queda sin puesto, que es
+                // como la Academia muestra un curso a TODA la plantilla.
+                $targetRoleId = null;
+                if (!empty($course['target_role_name'])) {
+                    $targetRoleId = $roleIdsMap[$course['target_role_name']] ?? null;
+                }
+
+                $datosCurso = [
                     'tenant_id' => $tenantId,
                     'title' => $course['title'],
-                    'description' => $course['description'],
-                    'course_type' => $course['course_type'],
-                    'target_job_role_id' => $firstGerenteRole,
-                    'video_url' => '',
-                    'quiz_data' => json_encode([
-                        [
-                            'question' => '¿Cuál es el objetivo principal de este protocolo?',
-                            'options' => ['Garantizar la seguridad y calidad', 'Aumentar tiempos de espera', 'Omitir registros', 'Ninguna'],
-                            'correctAnswer' => 0
-                        ]
-                    ]),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
+                    'description' => $course['description'] ?? '',
+                    'course_type' => $course['course_type'] ?? 'training',
+                    'target_job_role_id' => $targetRoleId,
+                    'video_url' => $course['video_url'] ?? '',
+                    'quiz_data' => json_encode($course['quiz'] ?? []),
+                    'updated_at' => now(),
+                ];
+
+                // Reaplicar el giro no debe duplicar cursos (las tareas y vacantes se borran
+                // antes de reinyectar, pero los cursos no: se acumulaban en cada pasada). Se
+                // actualiza el que ya exista con ese título y se conserva el progreso que los
+                // colaboradores ya tengan de él.
+                $existente = \DB::table('academy_courses')
+                    ->where('tenant_id', $tenantId)
+                    ->where('title', $course['title'])
+                    ->first();
+
+                if ($existente) {
+                    \DB::table('academy_courses')->where('id', $existente->id)->update($datosCurso);
+                } else {
+                    \DB::table('academy_courses')->insert($datosCurso + ['created_at' => now()]);
+                }
             }
 
             // 5. Configurar Horarios y Valores de Sistema (`system_settings`)

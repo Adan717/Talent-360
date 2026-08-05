@@ -42,7 +42,18 @@ class CatalogoOnboarding
         'reposteria' => 'materias_primas',
     ];
 
-    /** Devuelve `['puestos' => [...], 'tareas' => [...]]`, o `null` si el giro no tiene catálogo. */
+    /**
+     * Devuelve `['puestos' => [...], 'cursos' => [...], 'tareas' => [...]]`, o `null` si el giro
+     * no tiene catálogo.
+     *
+     * `cursos` se añadió con la auditoría de Academia (AC1): antes los cursos del giro estaban
+     * escritos a mano dentro de `configureNicho` y la selección que hacía el dueño en el
+     * asistente no llegaba nunca al servidor. Cada curso declara `title`, `description`,
+     * `course_type` (induction/training/promotion/recertification), `video_url`, su `quiz` y un
+     * `target_role_name`: el puesto que debe cursarlo, o `null` para toda la plantilla — que es
+     * el default, porque antes TODOS los cursos se colgaban del puesto de mando y nadie más los
+     * veía (AC2). Un catálogo sin `cursos` es válido: se trata como lista vacía.
+     */
     public static function para(string $nicho): ?array
     {
         $ruta = self::rutaDe($nicho);
@@ -56,6 +67,8 @@ class CatalogoOnboarding
         if (!is_array($datos) || !isset($datos['puestos'], $datos['tareas'])) {
             return null;
         }
+
+        $datos['cursos'] = $datos['cursos'] ?? [];
 
         return $datos;
     }

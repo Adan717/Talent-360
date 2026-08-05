@@ -419,7 +419,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   // sin los cuales el backend no crea la rutina de apertura y el costo por tarea sale mal.
   // Al reenviar la selección en handleConfigureNicho esos campos viajan de vuelta solos.
   //
-  // `cursos` y `vacantes` sí siguen saliendo del PRESET_DATA: son dominio de este wizard.
+  // `cursos` también los sirve el catálogo desde la auditoría de Academia (AC1): antes salían
+  // del PRESET_DATA local, la selección del dueño no se mandaba nunca y el backend inyectaba su
+  // propia lista escrita a mano. `vacantes` sí sigue siendo del PRESET_DATA.
   //
   // `activePreset` conserva su nombre y su FORMA a propósito: todos los usos del JSX de abajo
   // siguen funcionando sin tocarse; sólo cambió de dónde sale su contenido.
@@ -428,8 +430,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     title: string; category: string; priority: string; assistant_type: string;
     assistant_prompt: string; target_role_name: string; estimated_mins?: number; momento?: string | null;
   };
+  type CursoCatalogo = {
+    title: string; description?: string; course_type?: string; video_url?: string;
+    target_role_name?: string | null; quiz?: unknown[];
+  };
 
-  const [catalogo, setCatalogo] = useState<{ puestos: PuestoCatalogo[]; tareas: TareaCatalogo[] } | null>(null);
+  const [catalogo, setCatalogo] = useState<{ puestos: PuestoCatalogo[]; cursos: CursoCatalogo[]; tareas: TareaCatalogo[] } | null>(null);
   const [catalogoError, setCatalogoError] = useState(false);
   const [reintentoCatalogo, setReintentoCatalogo] = useState(0);
 
@@ -437,12 +443,19 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const activePreset = {
     puestos: catalogo?.puestos ?? [],
     tareas: catalogo?.tareas ?? [],
-    cursos: presetLocal.cursos,
+    // El JSX de abajo pinta `curso.title` y `curso.type`: se mantiene esa forma.
+    cursos: (catalogo?.cursos ?? []).map(c => ({
+      title: c.title,
+      type: c.course_type === 'induction' ? 'Inducción'
+        : c.course_type === 'promotion' ? 'Promoción'
+        : c.course_type === 'recertification' ? 'Recertificación'
+        : 'Entrenamiento'
+    })),
     vacantes: presetLocal.vacantes
   };
   const [selectedPuestos, setSelectedPuestos] = useState<string[]>([]);
   const [selectedTareas, setSelectedTareas] = useState<string[]>([]);
-  const [selectedCursos, setSelectedCursos] = useState<string[]>(() => presetLocal.cursos.map(c => c.title));
+  const [selectedCursos, setSelectedCursos] = useState<string[]>([]);
 
   // Pide el catálogo del giro y preselecciona todo, igual que antes hacía PRESET_DATA de forma
   // síncrona. Para un giro sin catálogo (p. ej. 'custom') el servidor devuelve retail, que es
@@ -454,9 +467,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     axiosInstance.get('/admin/onboarding/catalogo', { params: { nicho: selectedNicho } })
       .then(({ data }) => {
         if (!vigente) return;
-        setCatalogo({ puestos: data.puestos, tareas: data.tareas });
+        const cursos: CursoCatalogo[] = data.cursos ?? [];
+        setCatalogo({ puestos: data.puestos, cursos, tareas: data.tareas });
         setSelectedPuestos(data.puestos.map((p: PuestoCatalogo) => p.name));
         setSelectedTareas(data.tareas.map((t: TareaCatalogo) => t.title));
+        setSelectedCursos(cursos.map(c => c.title));
       })
       .catch(() => { if (vigente) setCatalogoError(true); });
     return () => { vigente = false; };
@@ -466,8 +481,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleSelectNicho = (nichoKey: 'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
     setSelectedNicho(nichoKey);
     setSubStep('giro');
-    const preset = PRESET_DATA[nichoKey] || PRESET_DATA.retail;
-    setSelectedCursos(preset.cursos.map(c => c.title));
+    // Los cursos del giro nuevo los repone el efecto del catálogo, igual que puestos y tareas.
+    setSelectedCursos([]);
     if (SUB_NICHOS[nichoKey]?.length) {
       setSelectedSubNicho(SUB_NICHOS[nichoKey][0].id);
     }
@@ -676,13 +691,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       const filteredTareas = selectedNicho === 'custom'
         ? undefined
         : (catalogo?.tareas ?? []).filter(t => selectedTareas.includes(t.title));
+      // AC1: los cursos elegidos también viajan, y COMPLETOS (descripción, tipo, puesto al que
+      // van y su examen). Antes esta selección no salía del navegador: el dueño marcaba
+      // casillas y el servidor inyectaba de todos modos su propia lista.
+      const filteredCursos = selectedNicho === 'custom'
+        ? undefined
+        : (catalogo?.cursos ?? []).filter(c => selectedCursos.includes(c.title));
 
       await axiosInstance.post('/admin/onboarding/configure-nicho', {
         nicho: selectedNicho,
         sub_nicho: selectedSubNicho,
         custom_nicho_description: customNichoDesc,
         selected_puestos: filteredPuestos,
-        selected_tareas: filteredTareas
+        selected_tareas: filteredTareas,
+        selected_cursos: filteredCursos
       });
       
       // Persistir la bandera de onboarding completado para que el wizard no se vuelva a mostrar en login

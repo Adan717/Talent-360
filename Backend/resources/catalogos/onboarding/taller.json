@@ -25,6 +25,65 @@
             "area": "Logística"
         }
     ],
+    "cursos": [
+        {
+            "title": "Derechos Laborales & Ley Federal del Trabajo (LFT)",
+            "description": "Fundamentos de la jornada laboral, descansos, aguinaldo y derechos del trabajador en México.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Ley Silla & Salud Ocupacional (LFT / NOM-035)",
+            "description": "Protocolo de ergonomía en piso de ventas y mostrador, descansos en silla con respaldo y salud laboral.",
+            "course_type": "training",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        },
+        {
+            "title": "Protocolo de Seguridad Industrial y Uso de EPP",
+            "description": "Inspección de equipo de protección personal, prevención de riesgos e higiene en taller.",
+            "course_type": "induction",
+            "target_role_name": null,
+            "video_url": "",
+            "quiz": [
+                {
+                    "question": "¿Cuál es el objetivo principal de este protocolo?",
+                    "options": [
+                        "Garantizar la seguridad y calidad",
+                        "Aumentar tiempos de espera",
+                        "Omitir registros",
+                        "Ninguna"
+                    ],
+                    "correctAnswer": 0
+                }
+            ]
+        }
+    ],
     "tareas": [
         {
             "title": "Apertura de portón, desactivación de alarma y revisión del patio de maniobras",

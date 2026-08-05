@@ -198,13 +198,60 @@ empresa un texto con la marca DecorArte y, como video, el rickroll de prueba. Se
 
 ---
 
+---
+
+## Ronda 3 — 2026-08-04: AC1 y AC2 cerrados (los cursos son del catálogo y llegan a todos)
+
+**Los cursos salieron del PHP y entraron al catálogo del giro**, junto a puestos y tareas
+(`resources/catalogos/onboarding/<giro>.json`, clave `cursos`). Es el mismo contenido de
+siempre: los mismos títulos, descripciones y tipos que estaban escritos a mano en
+`configureNicho`, sin inventar cursos nuevos. Ahora los edita quien conoce el negocio, sin
+programar, y `CatalogoOnboardingValidoTest` avisa en el momento si algo queda mal.
+
+**AC1 — el asistente ya manda lo que el dueño eligió.** `GET /admin/onboarding/catalogo`
+devuelve también `cursos`, el wizard los preselecciona igual que puestos y tareas, y
+`handleConfigureNicho` los reenvía **completos** en `selected_cursos`. Antes viajaban como mucho
+títulos sueltos: el servidor sustituía la descripción por "Curso de capacitación inicial
+precargado desde el Wizard de Onboarding" y adivinaba el tipo buscando las palabras "Inducción"
+o "Protocolo" en el título. Un giro sin catálogo propio (el 'custom') hereda el de oficina, que
+es la lista que le tocaba antes: los dos cursos de ley más la inducción al software.
+
+**AC2 — los cursos ya no cuelgan todos del puesto de mando.** Cada curso declara en el catálogo
+el `target_role_name` que debe cursarlo; si no declara ninguno, el curso queda sin puesto, que es
+como la Academia lo muestra a **toda la plantilla**. Hoy todos los cursos del catálogo salen sin
+puesto a propósito: la asignación fina por puesto es contenido, y el catálogo ya la soporta para
+cuando producto quiera afinarla. Lo que se corrigió es el defecto: que sólo el gerente veía algo.
+
+**De paso, dos cosas que aparecieron al hacerlo:**
+
+- *Reaplicar el giro duplicaba los cursos.* Las tareas y las vacantes se borran antes de
+  reinyectar, pero los cursos no: se acumulaban en cada pasada del asistente. Ahora se actualiza
+  el que ya exista con ese título, en vez de borrar y reinsertar, **para no llevarse por delante
+  el progreso** que los colaboradores ya tengan (la FK borra en cascada). Hay prueba de las dos
+  cosas.
+- *AC6, la mitad que sí es nuestra:* el curso "Protocolo de Operación Comercial y Calidad
+  **Decorarte 360**" se le inyectaba a cualquier empresa del giro de repostería. En el catálogo
+  quedó con nombre neutro, y una prueba impide que vuelva a colarse el nombre de una empresa
+  cliente en el catálogo que se le carga a todas.
+
+**Pruebas:** `WizardCursosDelGiroTest` (9) y 5 validaciones nuevas de catálogo por giro.
+
+Sigue abierto de AC6: `video_url` vacío en todos los cursos del catálogo (no hay videos que
+poner; es contenido) y el rickroll `dQw4w9WgXcQ` que aún vive en las plantillas de
+`AcademyController::getTemplatesData`, junto con "Inducción DecorArte 360".
+
+---
+
 ## Siguiente
 
-1. Llevar AC1/AC2/AC6 al jefe como decisión de producto: los cursos son suyos. Propuesta
-   mínima: mandar `selected_cursos` desde el wizard, mover los cursos al catálogo JSON por giro
-   (como puestos y tareas), repartir por puesto en vez de todo al gerente, y sacar la marca
-   DecorArte y el video de prueba de las plantillas.
-2. Decidir con él si un colaborador que reprueba N veces debe quedar bloqueado (hoy el conteo se
-   guarda pero no bloquea) y si el bono `incentive_bonus_cents` que promete la interfaz debe
-   pagarse de verdad o quitarse.
-3. Certificados: hoy son un `window.print()` sin folio ni registro (familia H23).
+1. **Los tenants que ya existen no se reparan solos.** Los cursos de los tenants 2 y 3 de la V2
+   siguen colgados de su "Administrador Gerente" y son el curso genérico único. Se arreglan
+   reaplicando el giro desde el asistente (ya es idempotente y conserva el progreso) o con una
+   reparación puntual, como se hizo con las rutinas de cierre (`33d15bd`). **Decidir cuál.**
+2. Decisiones del jefe: si un colaborador que reprueba N veces debe quedar bloqueado (hoy el
+   conteo se guarda pero no bloquea); si el bono `incentive_bonus_cents` que promete la interfaz
+   ("$500.00 MXN al completarlo") debe pagarse de verdad o quitarse; y si quiere afinar el
+   `target_role_name` de cada curso ahora que el catálogo lo permite.
+3. Limpiar las plantillas de `getTemplatesData` (marca DecorArte + video rickroll) — es el resto
+   de AC6.
+4. Certificados: hoy son un `window.print()` sin folio ni registro (familia H23).

@@ -443,13 +443,16 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const activePreset = {
     puestos: catalogo?.puestos ?? [],
     tareas: catalogo?.tareas ?? [],
-    // El JSX de abajo pinta `curso.title` y `curso.type`: se mantiene esa forma.
+    // El JSX de abajo pinta `curso.title`, `curso.type` y `curso.role`: se mantiene esa forma.
+    // `role` sale del `target_role_name` del catálogo; sin puesto declarado el curso es para
+    // toda la plantilla, que es lo que el asistente dice ahora en vez de callarse (AC2).
     cursos: (catalogo?.cursos ?? []).map(c => ({
       title: c.title,
       type: c.course_type === 'induction' ? 'Inducción'
         : c.course_type === 'promotion' ? 'Promoción'
         : c.course_type === 'recertification' ? 'Recertificación'
-        : 'Entrenamiento'
+        : 'Entrenamiento',
+      role: c.target_role_name || 'Toda la plantilla'
     })),
     vacantes: presetLocal.vacantes
   };

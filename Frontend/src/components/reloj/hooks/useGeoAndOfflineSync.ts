@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axiosInstance from '../../../lib/axios';
 import { offlineDb } from '../../../lib/offlineDb';
 import { useAppStore } from '../../../store/useAppStore';
+import { resolveStoreGeofenceConfig } from '../logic/geofence';
 
 // Espejo de Backend/app/Services/ClockService::ALLOWED_TYPES (más temp_exit_start/temp_exit_end,
 // ya agregados por backend). Se usa para filtrar defensivamente antes de mandar el batch: si un
@@ -114,13 +115,16 @@ export function useGeoAndOfflineSync({
 
   // BUG FIX (coordenadas hardcodeadas): antes STORE_LAT/STORE_LNG apuntaban fijo al Zócalo de CDMX,
   // rompiendo el geofence para cualquier tenant/sucursal fuera de esas coordenadas exactas.
-  // Ahora se leen de systemSettings.clockOpConfig (misma fuente que ya usa el backend en
-  // ClockService.php: clockOpConfig.store_latitude / store_longitude / geo_radius_meters).
-  // Se conserva un fallback a los valores antiguos solo para no romper tenants sin configurar aún
-  // (ver docs/BACKEND_INTERFACES.md §7 — pendiente que el backend garantice default sensato).
-  const STORE_LAT = Number(clockOpConfig.store_latitude) || 19.4326;
-  const STORE_LNG = Number(clockOpConfig.store_longitude) || -99.1332;
-  const ALLOWED_RADIUS_METERS = Number(clockOpConfig.geo_radius_meters) || 50;
+  // R105 (línea Reloj): la resolución vive en logic/geofence.ts (resolveStoreGeofenceConfig) y
+  // contempla las DOS familias de claves del servidor (store_latitude/store_longitude planas y
+  // storeLocation{lat,lng}) MÁS el caso "sin capturar": ahí hasStoreLocation=false y la geocerca
+  // NO aplica (ver isGpsValidationBypassed abajo) — espejo del fail-open de processPunch. El
+  // fallback Zócalo queda solo como centro de display; ya no decide ningún gate.
+  const storeGeofence = resolveStoreGeofenceConfig(clockOpConfig);
+  const hasStoreLocation = storeGeofence.hasStoreLocation;
+  const STORE_LAT = storeGeofence.store.latitude;
+  const STORE_LNG = storeGeofence.store.longitude;
+  const ALLOWED_RADIUS_METERS = storeGeofence.radiusMeters;
 
   const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3; // Earth radius in meters
@@ -137,7 +141,10 @@ export function useGeoAndOfflineSync({
     return R * c; // in meters
   };
 
-  const isGpsValidationBypassed = clockOpConfig.gpsValidationEnabled === false || !!clockOpConfig.allowManualCheckIn || isSandboxMode;
+  // !hasStoreLocation ⇒ bypass: sin ubicación capturada el servidor no valida geocerca
+  // (GeofencePunchTest::test_unconfigured_store_location_skips_geofence) y el cliente tampoco
+  // debe bloquear. No cambia nada para tenants con ubicación configurada.
+  const isGpsValidationBypassed = clockOpConfig.gpsValidationEnabled === false || !!clockOpConfig.allowManualCheckIn || isSandboxMode || !hasStoreLocation;
   const gpsDistance = getDistanceInMeters(gpsCoordinates.latitude, gpsCoordinates.longitude, STORE_LAT, STORE_LNG);
   const isWithinPerimeter = isGpsValidationBypassed ? true : (gpsDistance <= ALLOWED_RADIUS_METERS && gpsStatus === 'success');
 
@@ -287,6 +294,7 @@ export function useGeoAndOfflineSync({
     requestGPS,
     isSimulatedOffline, setIsSimulatedOffline,
     STORE_LAT, STORE_LNG, ALLOWED_RADIUS_METERS,
+    hasStoreLocation,
     isGpsValidationBypassed,
     gpsDistance,
     isWithinPerimeter,

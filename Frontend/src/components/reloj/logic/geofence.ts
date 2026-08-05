@@ -91,6 +91,68 @@ export function resolveRadius(value?: number | null): number {
   return value;
 }
 
+export interface StoreGeofenceConfig {
+  /** true solo si el tenant capturó una ubicación de sucursal utilizable. */
+  hasStoreLocation: boolean;
+  /** Centro efectivo de la geocerca (o el fallback legacy si no hay captura — solo display). */
+  store: Coordinates;
+  /** Radio efectivo en metros, espejo del gate del servidor que corresponde a la clave usada. */
+  radiusMeters: number;
+}
+
+/** Fallback legacy (Zócalo CDMX): solo para DISPLAY cuando no hay ubicación capturada. */
+export const LEGACY_FALLBACK_STORE: Coordinates = { latitude: 19.4326, longitude: -99.1332 };
+
+/**
+ * Resuelve la configuración de geocerca del tenant desde clockOpConfig, contemplando las DOS
+ * familias de claves que coexisten (ver ClockService::processPunch, gates 3 y 3.b):
+ * - línea §1–§42: store_latitude/store_longitude + geo_radius_meters. El servidor las lee con
+ *   truthiness ($storeLat && $storeLng) — 0/''/null cuentan como "sin configurar"; se espeja.
+ * - línea Reloj: storeLocation{lat,lng} + gpsAlertRangeMeters (el gate que BLOQUEA el ponche
+ *   en el servidor). Lo lee con isset — null/ausente cuentan como "sin configurar".
+ *
+ * Sin ninguna de las dos, hasStoreLocation=false: la geocerca NO aplica — mismo fail-open que
+ * el servidor ("sin ubicación no hay contra qué validar") — y el centro devuelto es el fallback
+ * legacy, útil solo para display. Antes el gate del cliente caía SIEMPRE a ese fallback y un
+ * tenant recién sembrado (gpsValidationEnabled=true sin ubicación, el default de
+ * TenantInitializationService) quedaba con el dial bloqueado para todo GPS real a >50 m del
+ * Zócalo de CDMX, aunque el servidor sí aceptaba el ponche.
+ */
+export function resolveStoreGeofenceConfig(clockOpConfig: unknown): StoreGeofenceConfig {
+  const cfg = (clockOpConfig ?? {}) as Record<string, any>;
+
+  const flatLat = cfg.store_latitude;
+  const flatLng = cfg.store_longitude;
+  const hasFlat = !!flatLat && !!flatLng
+    && Number.isFinite(Number(flatLat)) && Number.isFinite(Number(flatLng));
+  if (hasFlat) {
+    return {
+      hasStoreLocation: true,
+      store: { latitude: Number(flatLat), longitude: Number(flatLng) },
+      radiusMeters: Number(cfg.geo_radius_meters) || DEFAULT_RADIUS_METERS,
+    };
+  }
+
+  const nestedLat = cfg.storeLocation?.lat;
+  const nestedLng = cfg.storeLocation?.lng;
+  const hasNested = nestedLat != null && nestedLng != null
+    && Number.isFinite(Number(nestedLat)) && Number.isFinite(Number(nestedLng));
+  if (hasNested) {
+    return {
+      hasStoreLocation: true,
+      store: { latitude: Number(nestedLat), longitude: Number(nestedLng) },
+      // Radio espejo del gate 3 del servidor para esta clave (default 100 m, no 50).
+      radiusMeters: Number(cfg.gpsAlertRangeMeters) || 100,
+    };
+  }
+
+  return {
+    hasStoreLocation: false,
+    store: LEGACY_FALLBACK_STORE,
+    radiusMeters: Number(cfg.geo_radius_meters) || DEFAULT_RADIUS_METERS,
+  };
+}
+
 export function evaluateGeofence(input: GeofenceInput): GeofenceResult {
   const radiusMeters = resolveRadius(input.radiusMeters);
   const coordsOk = isValidCoordinate(input.current) && isValidCoordinate(input.store);

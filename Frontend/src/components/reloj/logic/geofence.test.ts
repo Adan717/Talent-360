@@ -4,8 +4,10 @@ import {
   evaluateGeofence,
   isValidCoordinate,
   resolveRadius,
+  resolveStoreGeofenceConfig,
   isApproaching,
   DEFAULT_RADIUS_METERS,
+  LEGACY_FALLBACK_STORE,
 } from './geofence';
 
 const TIENDA = { latitude: 20.6736, longitude: -101.3564 }; // Irapuato, Gto.
@@ -113,6 +115,66 @@ describe('evaluateGeofence', () => {
     const r = evaluateGeofence({ ...base, current: norte(TIENDA, 200), radiusMeters: -1 });
     expect(r.radiusMeters).toBe(DEFAULT_RADIUS_METERS);
     expect(r.isWithinPerimeter).toBe(false);
+  });
+});
+
+describe('resolveStoreGeofenceConfig (R105: sin ubicación capturada la geocerca NO aplica)', () => {
+  it('sin ninguna clave de ubicación: hasStoreLocation=false y el centro es solo el fallback de display', () => {
+    for (const cfg of [undefined, null, {}, { gpsValidationEnabled: true, gpsAlertRangeMeters: 100 }]) {
+      const r = resolveStoreGeofenceConfig(cfg);
+      expect(r.hasStoreLocation).toBe(false);
+      expect(r.store).toEqual(LEGACY_FALLBACK_STORE);
+    }
+  });
+
+  it('claves planas (línea §1–§42): centro y radio geo_radius_meters', () => {
+    const r = resolveStoreGeofenceConfig({
+      store_latitude: TIENDA.latitude, store_longitude: TIENDA.longitude, geo_radius_meters: 80,
+    });
+    expect(r.hasStoreLocation).toBe(true);
+    expect(r.store).toEqual(TIENDA);
+    expect(r.radiusMeters).toBe(80);
+  });
+
+  it('claves planas sin radio: default 50 (el vigente de esa línea)', () => {
+    const r = resolveStoreGeofenceConfig({ store_latitude: TIENDA.latitude, store_longitude: TIENDA.longitude });
+    expect(r.radiusMeters).toBe(DEFAULT_RADIUS_METERS);
+  });
+
+  it('storeLocation (línea Reloj): centro anidado y radio gpsAlertRangeMeters con default 100 — espejo del gate del servidor', () => {
+    const conRadio = resolveStoreGeofenceConfig({
+      storeLocation: { lat: TIENDA.latitude, lng: TIENDA.longitude }, gpsAlertRangeMeters: 120,
+    });
+    expect(conRadio.hasStoreLocation).toBe(true);
+    expect(conRadio.store).toEqual(TIENDA);
+    expect(conRadio.radiusMeters).toBe(120);
+    const sinRadio = resolveStoreGeofenceConfig({ storeLocation: { lat: TIENDA.latitude, lng: TIENDA.longitude } });
+    expect(sinRadio.radiusMeters).toBe(100);
+  });
+
+  it('con las dos familias configuradas gana la plana (comportamiento vigente del gate)', () => {
+    const r = resolveStoreGeofenceConfig({
+      store_latitude: TIENDA.latitude, store_longitude: TIENDA.longitude, geo_radius_meters: 80,
+      storeLocation: { lat: 1, lng: 2 }, gpsAlertRangeMeters: 200,
+    });
+    expect(r.store).toEqual(TIENDA);
+    expect(r.radiusMeters).toBe(80);
+  });
+
+  it('captura a medias o basura no cuenta como ubicación', () => {
+    for (const cfg of [
+      { store_latitude: TIENDA.latitude },                           // falta longitud
+      { storeLocation: { lat: TIENDA.latitude } },                   // falta lng
+      { storeLocation: { lat: null, lng: null } },                   // limpiada desde el panel
+      { store_latitude: 'abc', store_longitude: 'def' },             // basura no numérica
+    ]) {
+      expect(resolveStoreGeofenceConfig(cfg).hasStoreLocation).toBe(false);
+    }
+  });
+
+  it('espeja el criterio del servidor en los ceros: plana con 0 no aplica (truthiness PHP), storeLocation con 0 sí (isset)', () => {
+    expect(resolveStoreGeofenceConfig({ store_latitude: 0, store_longitude: 0 }).hasStoreLocation).toBe(false);
+    expect(resolveStoreGeofenceConfig({ storeLocation: { lat: 0, lng: 0 } }).hasStoreLocation).toBe(true);
   });
 });
 

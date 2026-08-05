@@ -79,6 +79,7 @@ export function useClockEngine(overrideUser?: any) {
     requestGPS,
     isSimulatedOffline, setIsSimulatedOffline,
     STORE_LAT, STORE_LNG, ALLOWED_RADIUS_METERS,
+    hasStoreLocation,
     isGpsValidationBypassed,
     gpsDistance,
     isWithinPerimeter,
@@ -819,7 +820,10 @@ export function useClockEngine(overrideUser?: any) {
   };
 
   useEffect(() => {
-    if (clockState === 'active' && gpsStatus === 'success' && currentUser?.id) {
+    // Solo con geocerca capturada: sin storeLocation/store_latitude, gpsDistance se mide contra
+    // el fallback legacy (Zócalo CDMX) y esta alerta disparaba en falso a todo tenant sin
+    // ubicación configurada (R105, misma familia que el gate del dial).
+    if (clockState === 'active' && gpsStatus === 'success' && currentUser?.id && hasStoreLocation) {
       const alertThreshold = clockOpConfig.gpsAlertRangeMeters || 100;
       if (gpsDistance > alertThreshold) {
         const now = Date.now();
@@ -835,7 +839,7 @@ export function useClockEngine(overrideUser?: any) {
         }
       }
     }
-  }, [gpsDistance, clockState, gpsStatus, currentUser?.name, currentUser?.id, clockOpConfig.gpsAlertRangeMeters]);
+  }, [gpsDistance, clockState, gpsStatus, currentUser?.name, currentUser?.id, clockOpConfig.gpsAlertRangeMeters, hasStoreLocation]);
 
   const [paseListaEmployees, setPaseListaEmployees] = useState<any[]>([]);
   // §23: evidencia fotográfica de comedor

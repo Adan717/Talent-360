@@ -15,11 +15,13 @@ use Illuminate\Support\Facades\DB;
  * rickroll de Rick Astley) y el bono de $500 que ningún circuito paga, porque si alguien lo
  * corriera sobre una base real dejaría eso dentro.
  *
- * Sigue teniendo dos defectos de fondo que no se tocan porque el archivo está muerto: **no
- * escribe `tenant_id`** (los cursos caerían en la empresa 1) y apunta a los puestos 3 y 5 **por
- * id fijo**, que en cada empresa son puestos distintos. Si se va a usar de verdad hay que
- * rehacerlo; si no, lo suyo es borrarlo (queda a decisión de producto, como se hizo con
- * `ProductivityBonusService`).
+ * 2026-08-05: al escribirle una prueba se descubrió que además **no podía correr**: apuntaba a
+ * los puestos 3 y 5 por id fijo, que en una base limpia no existen, así que reventaba con una
+ * violación de llave foránea. Ahora los cursos nacen sin puesto (visibles para toda la plantilla,
+ * criterio de AC2) y el seeder es ejecutable.
+ *
+ * Le queda un defecto de fondo: **no escribe `tenant_id`**, así que los cursos caen en la empresa
+ * 1. Mientras nadie lo llame da igual; si se va a usar de verdad hay que pasarle el tenant.
  */
 class AcademySeeder extends Seeder
 {
@@ -46,7 +48,7 @@ class AcademySeeder extends Seeder
             'title' => 'Entrenamiento: Manejo de Caja Registradora',
             'description' => 'Aprende a usar el sistema de cobro, cortes de caja y devoluciones.',
             'course_type' => 'training',
-            'target_job_role_id' => 5, // Cajero
+            'target_job_role_id' => null, // antes: 5 por id fijo, que en base limpia no existe
             'prerequisite_course_id' => $inductionId,
             'video_url' => '',
             'quiz_data' => json_encode([
@@ -62,7 +64,7 @@ class AcademySeeder extends Seeder
             'title' => 'Liderazgo y Supervisión de Cajas',
             'description' => 'Desarrolla habilidades de liderazgo para resolver conflictos, autorizar devoluciones complejas y supervisar al equipo.',
             'course_type' => 'promotion',
-            'target_job_role_id' => 3, // Sup. Cajas
+            'target_job_role_id' => null, // antes: 3 por id fijo, que en base limpia no existe
             'prerequisite_course_id' => $cajasId, // Requiere el curso básico de cajas
             // AC6: eran 50000 (=$500 MXN) y la Academia se lo anuncia al colaborador como bono
             // al completar el curso, pero nada en el sistema lo paga.

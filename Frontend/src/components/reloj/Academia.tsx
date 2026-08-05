@@ -1085,17 +1085,15 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                 </p>
               </div>
 
-              {course.incentive_bonus_cents > 0 && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 flex items-center gap-3">
-                  <span className="text-2xl">🎁</span>
-                  <div>
-                    <p className="text-xs font-black text-emerald-800 uppercase tracking-wider">¡Premio por Certificación!</p>
-                    <p className="text-sm font-extrabold text-emerald-600">
-                      Bono de incentivo de ${(course.incentive_bonus_cents / 100).toFixed(2)} MXN al completarlo.
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* DECISIÓN DE PRODUCTO (2026-08-05): aquí se le anunciaba al colaborador
+                  "¡Premio por Certificación! Bono de incentivo de $X MXN al completarlo" leyendo
+                  `incentive_bonus_cents`. NADA en el sistema paga ese bono: no hay regla de quién
+                  lo gana ni cable a nómina que lo ejecute. Se quitó la promesa, no se dejó en
+                  cero, porque un valor en la columna la resucitaba sola. Quien termina un curso
+                  esperando $500 que nunca llegan no vuelve a creerle a la plataforma.
+                  VUELVE cuando haya: regla de negocio (quién, cuánto, cuándo, de qué presupuesto)
+                  y pago automático desde nómina con ancla anti-doble-pago, como las 6 puertas de
+                  Tareas. Mientras tanto la recompensa del curso es el certificado (con folio). */}
 
               <div>
                 <div className="flex justify-between items-center text-xs font-bold mb-1.5">

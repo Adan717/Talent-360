@@ -205,6 +205,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // 2. admin/supervisor (Administración y Supervisión de la Empresa/Tenant)
     // =========================================================================
     Route::middleware(['auth:sanctum', 'role:admin,supervisor', 'tenant.active'])->group(function () {
+        // Tablero de pendientes del encargado (decisión de producto 2026-08-05: nada bloquea,
+        // todo avisa). El aviso es una consulta, no mensajería — ver el controlador.
+        Route::get('/supervisor/pendientes', [\App\Http\Controllers\SupervisorPendientesController::class, 'index']);
+        Route::post('/supervisor/pendientes/{progressId}/atendido', [\App\Http\Controllers\SupervisorPendientesController::class, 'marcarAtendido']);
+
         // §53: cumplimiento freemium — el admin del tenant sube su comprobante del mes.
         Route::post('/me/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'submit']);
         Route::get('/me/freemium-compliance', [\App\Http\Controllers\FreemiumComplianceController::class, 'mine']);

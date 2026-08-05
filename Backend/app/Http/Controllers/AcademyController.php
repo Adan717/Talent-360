@@ -206,6 +206,10 @@ class AcademyController extends Controller
                 'status' => $aprobado ? 'completed' : 'failed',
                 'score' => $score,
                 'failed_attempts' => $intentosFallidos,
+                // Un intento nuevo reabre el caso en el tablero del encargado: si ya lo había
+                // marcado como atendido y la persona vuelve a reprobar, tiene que volver a
+                // enterarse. Y si aprueba, el caso se cierra solo.
+                'supervisor_atendido_at' => null,
                 'completed_at' => $aprobado ? now() : null,
                 'updated_at' => now(),
                 'created_at' => $progreso->created_at ?? now(),

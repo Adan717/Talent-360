@@ -118,16 +118,50 @@ class SupervisorPendientesController extends Controller
             return $colaboradores;
         }
 
-        // Puestos que reportan al puesto de quien pregunta.
-        $puestosACargo = JobRole::withoutGlobalScopes()
-            ->where('tenant_id', $tenantId)
-            ->where('reports_to_role_id', $user->job_role_id)
-            ->pluck('id')
-            ->all();
+        $puestosACargo = $this->puestosQueReportanA($user->job_role_id, $tenantId);
 
         return $colaboradores->filter(
             fn ($c) => $c->id === $user->id || in_array($c->job_role_id, $puestosACargo, true)
         );
+    }
+
+    /**
+     * Qué puestos le reportan a `$puestoId`.
+     *
+     * El organigrama guarda la relación DOS veces y hay que mirar las dos, porque se llenan por
+     * caminos distintos:
+     *
+     *   - `reports_to_role_ids` (arreglo) es la que el organigrama de Directorio > Puestos llama
+     *     "la jerarquía operativa real": la línea PUNTEADA, y un puesto puede tener varios
+     *     superiores. Es la que escribe el admin al arrastrar la conexión.
+     *   - `reports_to_role_id` (uno solo) es el primero de esa lista... salvo cuando el
+     *     organigrama lo armó el asistente de alta, que escribe SÓLO éste y deja el arreglo en
+     *     nulo.
+     *
+     * Mirar únicamente el singular dejaba fuera al segundo jefe de un puesto con dos líneas
+     * dibujadas: el caso le llegaba a uno y el otro no se enteraba nunca.
+     */
+    private function puestosQueReportanA(?int $puestoId, int $tenantId): array
+    {
+        if (!$puestoId) {
+            return [];
+        }
+
+        return JobRole::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->get()
+            ->filter(function ($puesto) use ($puestoId) {
+                $lista = is_array($puesto->reports_to_role_ids) ? $puesto->reports_to_role_ids : [];
+
+                if (!empty($lista)) {
+                    return in_array((int) $puestoId, array_map('intval', $lista), true);
+                }
+
+                return (int) $puesto->reports_to_role_id === (int) $puestoId;
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**

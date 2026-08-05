@@ -273,6 +273,37 @@ class SupervisorPendientesTest extends TestCase
         $this->assertContains('De otra área', $nombres);
     }
 
+    public function test_si_el_puesto_tiene_DOS_jefes_el_caso_les_llega_a_los_dos(): void
+    {
+        // El organigrama de Directorio > Puestos deja dibujar varias líneas punteadas desde un
+        // mismo puesto: es "la jerarquía operativa real". El backend guarda esa lista en
+        // `reports_to_role_ids` y deja en `reports_to_role_id` sólo el PRIMERO.
+        //
+        // Mirando únicamente el singular, el segundo jefe no se enteraba nunca de nada.
+        $gerencia = $this->puesto('Gerente');
+        $supervisionCajas = $this->puesto('Supervisor de Cajas');
+        $cajero = $this->puesto('Cajero');
+
+        DB::table('job_roles')->where('id', $cajero->id)->update([
+            'reports_to_role_id' => $gerencia->id,
+            'reports_to_role_ids' => json_encode([$gerencia->id, $supervisionCajas->id]),
+        ]);
+
+        $ana = $this->persona('Ana', 'empleado', $cajero->id);
+        $this->reprobar($ana, $this->curso(), 2);
+
+        $primerJefe = $this->persona('Gerenta', 'supervisor', $gerencia->id);
+        $segundoJefe = $this->persona('Jefa de Cajas', 'supervisor', $supervisionCajas->id);
+
+        foreach ([$primerJefe, $segundoJefe] as $jefe) {
+            $nombres = collect($this->actingAs($jefe)->getJson('/api/v1/supervisor/pendientes')
+                ->json('cursos_reprobados'))->pluck('nombre');
+
+            $this->assertContains('Ana', $nombres,
+                "'{$jefe->name}' está en el organigrama de Ana y no vio su caso");
+        }
+    }
+
     public function test_un_encargado_no_puede_atender_un_caso_ajeno(): void
     {
         $gerencia = $this->puesto('Gerente');

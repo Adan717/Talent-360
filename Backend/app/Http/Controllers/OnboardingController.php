@@ -882,6 +882,13 @@ class OnboardingController extends Controller
             foreach ($porNivel[$nivel] as $puestoId) {
                 \DB::table('job_roles')->where('id', $puestoId)->update([
                     'reports_to_role_id' => $jefeId,
+                    // El organigrama de Directorio > Puestos dibuja la línea PUNTEADA —"la
+                    // jerarquía operativa real", la que dice quién se acerca a quién— leyendo
+                    // el ARREGLO, no este campo suelto. Escribir sólo el singular dejaba a cada
+                    // empresa nueva sin ninguna línea punteada: el organigrama se veía armado
+                    // (la línea sólida sí estaba) pero la jerarquía operativa nacía vacía, y de
+                    // ella cuelga a quién le llegan los pendientes de su equipo.
+                    'reports_to_role_ids' => json_encode([$jefeId]),
                     'org_parent_role_id' => $jefeId,
                     'nivel_mando' => $nivel,
                     'updated_at' => now(),

@@ -82,21 +82,39 @@ $COMPOSE restart backend >/dev/null
 if git --no-pager diff --name-only "${ANTERIOR}..${NUEVA}" | grep -q '^Frontend/'; then
     echo "▸ El frontend cambió: reconstruyendo…"
     $COMPOSE up -d --build frontend >/dev/null
+
+    # `up --build` puede RECREAR también el backend, y al recrearse cambia de IP dentro de la red
+    # de Docker. Nginx resuelve el upstream una sola vez, al arrancar, así que se queda hablándole
+    # a la IP vieja y TODA la API responde 502: la web carga pero no se puede ni iniciar sesión
+    # (pasó el 2026-08-05 desplegando los cursos del catálogo). Reiniciar nginx lo obliga a
+    # resolver de nuevo; es barato y no interrumpe nada más.
+    echo "▸ Reiniciando nginx para que resuelva la IP nueva del backend…"
+    $COMPOSE restart backend-web >/dev/null 2>&1 || docker restart talent360-v2-backend-web >/dev/null
 else
     echo "▸ El frontend no cambió: se omite la reconstrucción."
 fi
 
 # ── Comprobación ──────────────────────────────────────────────────────────────────────────────
+# Se comprueban las DOS mitades. Antes sólo se pedía `/`, que nginx sirve desde el disco: daba 200
+# y el despliegue se declaraba bueno aunque la API entera estuviera caída detrás.
 echo "▸ Comprobando que responde…"
 sleep 6
 CODIGO="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:3002/ || echo 000)"
+# Sin credenciales esta ruta contesta 401/422: cualquiera de las dos demuestra que PHP está vivo.
+# Un 502 (o un 000) significa que nginx no está alcanzando al backend.
+CODIGO_API="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST \
+    -H 'Accept: application/json' http://localhost:3002/api/v1/login || echo 000)"
 
-if [ "$CODIGO" = "200" ]; then
+if [ "$CODIGO" = "200" ] && [ "$CODIGO_API" != "502" ] && [ "$CODIGO_API" != "000" ]; then
     echo ""
-    echo "✔ Desplegado ${NUEVA} — la aplicación responde."
+    echo "✔ Desplegado ${NUEVA} — la aplicación responde (web ${CODIGO}, API ${CODIGO_API})."
 else
     echo ""
-    echo "✘ La aplicación devolvió HTTP ${CODIGO} tras desplegar ${NUEVA}."
+    echo "✘ Tras desplegar ${NUEVA}: la web devolvió HTTP ${CODIGO} y la API HTTP ${CODIGO_API}."
+    if [ "$CODIGO_API" = "502" ] || [ "$CODIGO_API" = "000" ]; then
+        echo "  Un 502 en la API suele ser nginx apuntando a la IP vieja del backend:"
+        echo "      docker restart talent360-v2-backend-web"
+    fi
     echo "  Para volver a la versión anterior:"
     echo "      ./deploy_v2.sh ${ANTERIOR}"
     exit 1

@@ -234,7 +234,18 @@ cuando producto quiera afinarla. Lo que se corrigió es el defecto: que sólo el
   quedó con nombre neutro, y una prueba impide que vuelva a colarse el nombre de una empresa
   cliente en el catálogo que se le carga a todas.
 
-**Pruebas:** `WizardCursosDelGiroTest` (9) y 5 validaciones nuevas de catálogo por giro.
+**Qué pasa con lo ya generado.** Los tenants configurados antes de este cambio no se reparan
+solos: siguen con su curso genérico único colgado del puesto de mando. Para eso está
+`php artisan academia:reparar-cursos-del-giro [--dry-run] [--tenant=]`, mismo patrón que la
+reparación de rutinas de cierre (`33d15bd`): repone los cursos del giro que falten y saca del
+puesto de mando los que ya estaban, **sin borrar nada** — ni los cursos que el administrador
+haya dado de alta por su cuenta ni el progreso de los colaboradores (borrar un curso se lo
+llevaría en cascada). Es un comando y no una migración a propósito: toca empresas vivas, así que
+quien opera decide cuándo y sobre qué tenant, después de verlo en seco. Reasignar sólo AMPLÍA
+quién ve el curso; nunca se lo quita a nadie.
+
+**Pruebas:** `WizardCursosDelGiroTest` (9), `RepararCursosDelGiroTest` (5) y 5 validaciones
+nuevas de catálogo por giro.
 
 Sigue abierto de AC6: `video_url` vacío en todos los cursos del catálogo (no hay videos que
 poner; es contenido) y el rickroll `dQw4w9WgXcQ` que aún vive en las plantillas de
@@ -244,11 +255,7 @@ poner; es contenido) y el rickroll `dQw4w9WgXcQ` que aún vive en las plantillas
 
 ## Siguiente
 
-1. **Los tenants que ya existen no se reparan solos.** Los cursos de los tenants 2 y 3 de la V2
-   siguen colgados de su "Administrador Gerente" y son el curso genérico único. Se arreglan
-   reaplicando el giro desde el asistente (ya es idempotente y conserva el progreso) o con una
-   reparación puntual, como se hizo con las rutinas de cierre (`33d15bd`). **Decidir cuál.**
-2. Decisiones del jefe: si un colaborador que reprueba N veces debe quedar bloqueado (hoy el
+1. Decisiones del jefe: si un colaborador que reprueba N veces debe quedar bloqueado (hoy el
    conteo se guarda pero no bloquea); si el bono `incentive_bonus_cents` que promete la interfaz
    ("$500.00 MXN al completarlo") debe pagarse de verdad o quitarse; y si quiere afinar el
    `target_role_name` de cada curso ahora que el catálogo lo permite.

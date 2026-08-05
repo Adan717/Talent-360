@@ -248,17 +248,63 @@ quién ve el curso; nunca se lo quita a nadie.
 nuevas de catálogo por giro.
 
 Sigue abierto de AC6: `video_url` vacío en todos los cursos del catálogo (no hay videos que
-poner; es contenido) y el rickroll `dQw4w9WgXcQ` que aún vive en las plantillas de
-`AcademyController::getTemplatesData`, junto con "Inducción DecorArte 360".
+poner; es contenido). El resto de AC6 se cerró en la ronda 4.
+
+---
+
+## Ronda 4 — 2026-08-05: AC5 y AC6 cerrados
+
+### AC5 — la inducción sí llega sola; lo que no existía era el bloqueo que la interfaz anunciaba
+
+La pregunta de AC5 era si al dar de alta a un colaborador le aparece su inducción sin que nadie
+se la asigne. **Ahora sí**, y no por una asignación nueva sino como efecto de AC2: los cursos del
+giro ya no cuelgan del puesto de mando, así que el ayudante recién contratado ve la inducción por
+el solo hecho de existir en la empresa. Queda fijado con una prueba que da de alta al puesto más
+bajo del giro y comprueba que ve al menos un curso de tipo `induction`.
+
+Lo que sí era falso es lo que la Academia le decía al terminarla: *"Recursos Humanos ha sido
+notificado. Tu BLOQUEO OPERATIVO ha sido levantado. Ya puedes registrar tu entrada en el Reloj
+Checador"*. **Ninguna de las dos cosas ocurre**: nadie recibe aviso alguno, y
+`has_completed_induction` no gobierna ninguna puerta del backend — sólo pinta un recordatorio. El
+propio dial lo dice bien ("puedes registrar tu entrada normalmente"), o sea que las dos pantallas
+se contradecían y el colaborador quedaba creyendo que había estado impedido de fichar. El aviso
+ahora dice lo que de verdad pasa. Hay una prueba que deja constancia de que la inducción **no**
+bloquea el fichaje, para que el día que producto decida que sí, se vea que cambió.
+
+*Nota:* la tabla `induction_courses` (migración de junio) **no la lee ni la escribe nadie**. Es
+un resto del diseño original; borrarla es decisión de producto.
+
+### AC6 — la marca de un cliente dentro del producto que se le vende a todos
+
+| Dónde | Qué decía | Qué dice |
+|---|---|---|
+| Certificado imprimible | Sin logo configurado imprimía **"DecorArte"** en el diploma que el colaborador se lleva a casa | El nombre de su propia empresa |
+| Modal de bienvenida de la Academia | "En **DecorArte**, cada paso de aprendizaje…" | El nombre de su empresa, o una frase neutra |
+| Clave de `localStorage` | `decorarte_academy_welcome_dismissed` | `academy_welcome_dismissed` |
+| Plantilla #1 de `getTemplatesData` | "Inducción **DecorArte** 360", con la pregunta "¿Cuál es el valor principal de DecorArte?" y "¿En qué año se fundó la empresa?" (respuesta: 2010) | "Inducción a la Empresa", con una pregunta que sirve a cualquiera |
+| Videos de las plantillas #1, #2 y #3 | `dQw4w9WgXcQ` (el rickroll de Rick Astley), `tgbNymZ7vqY`, `1k8craCGv14` | Vacío: cada empresa sube el suyo |
+| Puesto de 12 plantillas | 'Cajeros' y 'Sup. Tienda y Compras' — puestos de un solo cliente, que en otra empresa no resuelven a nada | Sin puesto: el curso importado lo ve toda la plantilla (AC2) |
+| Bono de la plantilla #3 | `incentive_bonus_cents = 50000`, y la Academia lo anuncia como "Bono de incentivo de $500.00 MXN al completarlo" | 0, hasta que exista el circuito de pago o se quite la promesa de la interfaz |
+
+`AcademySeeder` traía lo mismo (rickroll y los $500). **No lo llama nadie** —no está registrado en
+`DatabaseSeeder`— pero se limpió igual, porque correrlo a mano sobre una base real dejaría eso
+dentro. Se le dejó anotado que además no escribe `tenant_id` y apunta a puestos por id fijo: si se
+va a usar hay que rehacerlo, y si no, lo suyo es borrarlo.
+
+**Pruebas:** `AcademiaInduccionYMarcaTest` (6). `AcademyCourseTemplateTest` se actualizó: sus tres
+casos fijaban justamente la marca y el reparto viejos (esperaban el título con DecorArte y que el
+curso importado quedara colgado de 'Sup. Tienda y Compras'). Ahora fija que el curso importado
+nace visible para toda la plantilla.
 
 ---
 
 ## Siguiente
 
 1. Decisiones del jefe: si un colaborador que reprueba N veces debe quedar bloqueado (hoy el
-   conteo se guarda pero no bloquea); si el bono `incentive_bonus_cents` que promete la interfaz
-   ("$500.00 MXN al completarlo") debe pagarse de verdad o quitarse; y si quiere afinar el
+   conteo se guarda pero no bloquea); si la inducción debe impedir fichar de verdad; si el bono
+   `incentive_bonus_cents` debe pagarse o se quita de la interfaz; y si quiere afinar el
    `target_role_name` de cada curso ahora que el catálogo lo permite.
-3. Limpiar las plantillas de `getTemplatesData` (marca DecorArte + video rickroll) — es el resto
-   de AC6.
-4. Certificados: hoy son un `window.print()` sin folio ni registro (familia H23).
+2. Certificados: hoy son un `window.print()` sin folio ni registro (familia H23). Es lo único de
+   peso que queda abierto del módulo.
+3. Restos menores: la tabla muerta `induction_courses`, el `AcademySeeder` sin `tenant_id`, y los
+   `video_url` vacíos del catálogo (contenido).

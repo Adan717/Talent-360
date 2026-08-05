@@ -55,8 +55,12 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
           {logoUrl ? (
             <img src={logoUrl} alt="Company Logo" className="w-full h-full object-contain p-2" />
           ) : (
-            <div className="font-black text-2xl tracking-tighter leading-none text-center" style={{ color: primaryColor }}>
-              Decor<br/><span style={{ color: secondaryColor }}>Arte</span>
+            /* Academia AC6 (auditoría 2026-08-04): sin logo configurado, aquí se imprimía
+               literalmente "DecorArte" — el nombre de OTRA empresa, en el diploma que el
+               colaborador se lleva a su casa. Ahora se usa el nombre de su propia empresa,
+               que ya se muestra al pie del certificado. */
+            <div className="font-black text-xl tracking-tight leading-tight text-center px-2 break-words" style={{ color: primaryColor }}>
+              {companyName}
             </div>
           )}
         </div>

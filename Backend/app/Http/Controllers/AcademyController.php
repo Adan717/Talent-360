@@ -404,27 +404,33 @@ class AcademyController extends Controller
         ], 201);
     }
 
+    /**
+     * Plantillas que cualquier empresa puede importar a su Academia desde el gestor.
+     *
+     * Academia AC6 (auditoría 2026-08-04): esta lista se le ofrece a TODOS los clientes y venía
+     * con el nombre y la historia de una empresa concreta —"Inducción DecorArte 360", "¿Cuál es
+     * el valor principal de DecorArte?", "¿En qué año se fundó la empresa?" con la respuesta
+     * 2010— y con tres videos que eran marcadores de prueba, uno de ellos el rickroll de Rick
+     * Astley (`dQw4w9WgXcQ`). Importar la inducción dejaba a la empresa con un curso sobre otra
+     * empresa y un video troll. Los títulos y preguntas quedaron neutros; los videos, vacíos
+     * (no hay video que poner: cada empresa sube el suyo). Misma familia que H12.
+     */
     private function getTemplatesData()
     {
         return [
             [
                 'id' => 1,
-                'title' => 'Inducción DecorArte 360',
-                'description' => 'Conoce nuestra historia, misión, visión y los valores fundamentales que nos hacen la mejor empresa.',
+                'title' => 'Inducción a la Empresa',
+                'description' => 'Conoce la historia, misión, visión y los valores fundamentales de tu empresa.',
                 'course_type' => 'induction',
                 'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
-                'video_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                'video_url' => '',
                 'quiz_data' => [
                     [
-                        'question' => '¿Cuál es el valor principal de DecorArte?',
-                        'options' => ['Puntualidad', 'Creatividad', 'Velocidad'],
-                        'answer' => 'Creatividad',
-                    ],
-                    [
-                        'question' => '¿En qué año se fundó la empresa?',
-                        'options' => ['1999', '2010', '2020'],
-                        'answer' => '2010',
+                        'question' => '¿Dónde puedes consultar los valores y las reglas de tu empresa?',
+                        'options' => ['En la Wiki y el manual de operaciones', 'En ningún lado', 'Solo preguntando'],
+                        'answer' => 'En la Wiki y el manual de operaciones',
                     ],
                 ],
                 'is_active' => true,
@@ -434,9 +440,9 @@ class AcademyController extends Controller
                 'title' => 'Entrenamiento: Manejo de Caja Registradora',
                 'description' => 'Aprende a usar el sistema de cobro, cortes de caja y devoluciones.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Cajeros',
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
-                'video_url' => 'https://www.youtube.com/embed/tgbNymZ7vqY',
+                'video_url' => '',
                 'quiz_data' => [
                     [
                         'question' => '¿Qué debes hacer al final del turno?',
@@ -451,9 +457,13 @@ class AcademyController extends Controller
                 'title' => 'Liderazgo y Supervisión de Cajas',
                 'description' => 'Desarrolla habilidades de liderazgo para resolver conflictos, autorizar devoluciones complejas y supervisar al equipo.',
                 'course_type' => 'promotion',
-                'target_job_role_name' => 'Sup. Cajas',
-                'incentive_bonus_cents' => 50000,
-                'video_url' => 'https://www.youtube.com/embed/1k8craCGv14',
+                'target_job_role_name' => null,
+                // AC6: venía con 50000 (=$500 MXN) y la Academia se lo anuncia al colaborador
+                // como "Bono de incentivo de $500.00 MXN al completarlo" — pero NADA en el
+                // sistema paga ese bono. Se deja en 0 hasta que exista el circuito de pago o se
+                // decida quitar la promesa de la interfaz (decisión de producto, ver bitácora).
+                'incentive_bonus_cents' => 0,
+                'video_url' => '',
                 'quiz_data' => [
                     [
                         'question' => '¿Cómo resuelves una queja?',
@@ -468,7 +478,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 06: Protocolo de Apertura de Operación',
                 'description' => 'Aprende los pasos vitales para iniciar el día en la tienda. Garantiza que las luces, la caja y el ambiente estén listos para el primer cliente.',
                 'course_type' => 'induction',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [
@@ -485,7 +497,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 07: Protocolo de Recepción de Mercancía',
                 'description' => 'Reglas de oro para recibir a los proveedores, validar cantidades, caducidades y reportar mermas inmediatamente.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -496,7 +510,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 08: Protocolo de Captura de Compras en SICAR',
                 'description' => 'Guía paso a paso para dar de alta en el sistema los productos recién recibidos, asegurando que el costo y precio de venta sean correctos.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -507,7 +523,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 09: Protocolo de Captura de Gastos',
                 'description' => 'Registra adecuadamente las salidas de efectivo para mantener las finanzas cuadradas al final del día.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -518,7 +536,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 10: Protocolo de Generación de Pedidos',
                 'description' => 'Aprende a analizar los faltantes y máximos/mínimos en SICAR para pedirle al proveedor solo lo que necesitamos vender.',
                 'course_type' => 'promotion',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -529,7 +549,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 11: Protocolo de Ajustes de Inventario',
                 'description' => 'Técnicas de conteo y cómo solicitar una autorización de ajuste cuando sobra o falta mercancía en el sistema.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -540,7 +562,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 12: Protocolo de Diferencias de Inventario',
                 'description' => 'Investigación de diferencias: cómo rastrear facturas y tickets para hallar el descuadre.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -551,7 +575,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 13: Productos Dañados o Caducados',
                 'description' => 'Qué hacer con la merma, cómo registrarla en el sistema y cómo separarla físicamente para evitar contaminación.',
                 'course_type' => 'training',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -562,7 +588,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 14: Protocolo de Supervisión Comercial',
                 'description' => 'Caminata de tienda: supervisa pasillos, góndolas y garantiza que el piso de venta sea atractivo visualmente.',
                 'course_type' => 'promotion',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -573,7 +601,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 15: Coordinación de Personal',
                 'description' => 'Desarrolla tus habilidades blandas. Aprende a delegar tareas y dar retroalimentación a tu equipo.',
                 'course_type' => 'promotion',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],
@@ -584,7 +614,9 @@ class AcademyController extends Controller
                 'title' => 'Documento 16: Protocolo de Cierre Diario',
                 'description' => 'Asegura la tienda, realiza el corte de caja, deposita en la tómbola y deja la bitácora lista para mañana.',
                 'course_type' => 'induction',
-                'target_job_role_name' => 'Sup. Tienda y Compras',
+                // AC6: apuntaba a 'Sup. Tienda y Compras', un puesto que sólo existe en el
+                // organigrama de una empresa concreta; en cualquier otra no resolvía a nada.
+                'target_job_role_name' => null,
                 'incentive_bonus_cents' => 0,
                 'video_url' => '',
                 'quiz_data' => [],

@@ -118,7 +118,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [selectedPrintTemplate, setSelectedPrintTemplate] = useState<any>(null);
   const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
-  const [showWelcomeModal, setShowWelcomeModal] = useState(() => localStorage.getItem('decorarte_academy_welcome_dismissed') !== 'true');
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => localStorage.getItem('academy_welcome_dismissed') !== 'true');
 
   const { currentUser: loggedUser, systemSettings, completeInduction } = useAppStore();
 
@@ -276,7 +276,14 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
         }
         if (activeCourse.course_type === 'induction' && loggedUser) {
           completeInduction(loggedUser.id);
-          alert('Recursos Humanos ha sido notificado. Tu BLOQUEO OPERATIVO ha sido levantado. Ya puedes registrar tu entrada en el Reloj Checador.');
+          // Academia AC5 (auditoría 2026-08-04): este aviso decía "Recursos Humanos ha sido
+          // notificado. Tu BLOQUEO OPERATIVO ha sido levantado. Ya puedes registrar tu entrada
+          // en el Reloj Checador". Las dos cosas eran falsas: nadie recibe aviso alguno, y
+          // nunca hubo bloqueo — `has_completed_induction` sólo pinta un recordatorio, y el
+          // propio dial lo dice ("puedes registrar tu entrada normalmente"). El colaborador
+          // que leía esto creía que había estado impedido de fichar. Si la inducción debe
+          // bloquear el fichaje de verdad, es decisión de producto y hoy no existe.
+          alert('¡Inducción completada! Queda registrada en tu expediente y tu administrador puede verla en la Academia.');
         }
         // Auditoría reloj checador (2026-07-22), Hallazgo 1: ya no se detecta el curso de puntualidad
         // por coincidencia de texto en el título (frágil) sino por el id real configurado por el
@@ -1116,7 +1123,13 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
            endDate="15"
            month="Agosto"
            year="2026"
-           template={selectedPrintTemplate?.template || null}
+           // AC6: si la plantilla no trae nombre de empresa, manda el de la empresa del
+           // colaborador — antes el certificado caía a 'Talent360' en el pie y a "DecorArte"
+           // en el logo, ninguno de los dos suyo.
+           template={{
+             ...(selectedPrintTemplate?.template || {}),
+             company_name: selectedPrintTemplate?.template?.company_name || loggedUser?.tenant?.name
+           }}
         />
       </div>
 
@@ -1156,7 +1169,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
               className="p-3.5 rounded-2xl border mb-4 text-[11px] font-medium leading-relaxed"
               style={{ backgroundColor: `${activeColor.hex}08`, borderColor: `${activeColor.hex}25`, color: activeColor.hex }}
             >
-              🚀 <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> En DecorArte, cada paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
+              {/* AC6: decía "En DecorArte" a los colaboradores de cualquier empresa. */}
+              🚀 <strong>¡Hola, {loggedUser?.name?.split(' ')[0]}!</strong> {loggedUser?.tenant?.name ? `En ${loggedUser.tenant.name}, cada` : 'Cada'} paso de aprendizaje te acerca al puesto de tus sueños. ¡Sigue adelante, certifícate hoy y alcanza tu máximo potencial!
             </div>
 
             {/* Checkbox No volver a mostrar */}
@@ -1166,9 +1180,9 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                 id="dontShowAgain" 
                 onChange={(e) => {
                   if (e.target.checked) {
-                    localStorage.setItem('decorarte_academy_welcome_dismissed', 'true');
+                    localStorage.setItem('academy_welcome_dismissed', 'true');
                   } else {
-                    localStorage.removeItem('decorarte_academy_welcome_dismissed');
+                    localStorage.removeItem('academy_welcome_dismissed');
                   }
                 }}
                 className="w-3.5 h-3.5 text-violet-600 border-slate-300 rounded focus:ring-violet-500 cursor-pointer"

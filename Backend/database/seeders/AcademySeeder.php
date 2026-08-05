@@ -6,6 +6,21 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Siembra tres cursos de demostración en la Academia.
+ *
+ * OJO (Academia AC6, auditoría 2026-08-04): **hoy no lo llama nadie** — no está registrado en
+ * `DatabaseSeeder` ni en ningún comando; sólo corre a mano con
+ * `php artisan db:seed --class=AcademySeeder`. Se le quitaron los videos de prueba (uno era el
+ * rickroll de Rick Astley) y el bono de $500 que ningún circuito paga, porque si alguien lo
+ * corriera sobre una base real dejaría eso dentro.
+ *
+ * Sigue teniendo dos defectos de fondo que no se tocan porque el archivo está muerto: **no
+ * escribe `tenant_id`** (los cursos caerían en la empresa 1) y apunta a los puestos 3 y 5 **por
+ * id fijo**, que en cada empresa son puestos distintos. Si se va a usar de verdad hay que
+ * rehacerlo; si no, lo suyo es borrarlo (queda a decisión de producto, como se hizo con
+ * `ProductivityBonusService`).
+ */
 class AcademySeeder extends Seeder
 {
     public function run(): void
@@ -16,7 +31,7 @@ class AcademySeeder extends Seeder
             'description' => 'Conoce nuestra historia, misión, visión y los valores fundamentales que nos hacen la mejor empresa.',
             'course_type' => 'induction',
             'target_job_role_id' => null, // Aplica para todos al inicio
-            'video_url' => 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Dummy video
+            'video_url' => '',
             'quiz_data' => json_encode([
                 ['question' => '¿Cuál es el valor principal de Talent360?', 'options' => ['Puntualidad', 'Creatividad', 'Velocidad'], 'answer' => 'Creatividad'],
                 ['question' => '¿En qué año se fundó la empresa?', 'options' => ['1999', '2010', '2020'], 'answer' => '2010']
@@ -33,7 +48,7 @@ class AcademySeeder extends Seeder
             'course_type' => 'training',
             'target_job_role_id' => 5, // Cajero
             'prerequisite_course_id' => $inductionId,
-            'video_url' => 'https://www.youtube.com/embed/tgbNymZ7vqY',
+            'video_url' => '',
             'quiz_data' => json_encode([
                 ['question' => '¿Qué debes hacer al final del turno?', 'options' => ['Irte', 'Corte de Caja', 'Limpiar vidrios'], 'answer' => 'Corte de Caja']
             ]),
@@ -49,8 +64,10 @@ class AcademySeeder extends Seeder
             'course_type' => 'promotion',
             'target_job_role_id' => 3, // Sup. Cajas
             'prerequisite_course_id' => $cajasId, // Requiere el curso básico de cajas
-            'incentive_bonus_cents' => 50000, // $500.00 de bono al pasar
-            'video_url' => 'https://www.youtube.com/embed/1k8craCGv14',
+            // AC6: eran 50000 (=$500 MXN) y la Academia se lo anuncia al colaborador como bono
+            // al completar el curso, pero nada en el sistema lo paga.
+            'incentive_bonus_cents' => 0,
+            'video_url' => '',
             'quiz_data' => json_encode([
                 ['question' => '¿Cómo resuelves una queja?', 'options' => ['Gritando', 'Ignorando', 'Escucha Activa'], 'answer' => 'Escucha Activa']
             ]),

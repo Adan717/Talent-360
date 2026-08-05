@@ -333,9 +333,18 @@ flujo asigna**: en la práctica nadie tenía certificados, la sección estaba si
 
 ## Siguiente
 
-1. **Decisiones del jefe** (ver el mensaje que se le preparó): si reprobar N veces debe bloquear
-   el curso; si la inducción debe impedir fichar de verdad; si el bono `incentive_bonus_cents`
-   se paga o se quita de la interfaz; y si quiere afinar el `target_role_name` de cada curso.
+1. **Decisiones del jefe: YA CONTESTADAS** (2026-08-05, ver
+   `MENSAJE_JEFE_DECISIONES_BLOQUEOS.md`). Resumen: **nada bloquea**, todo avisa.
+   - *Bono de $500*: **quitado de la pantalla** (`61f14f2`, desplegado). Vuelve sólo con regla de
+     negocio y cable a nómina.
+   - *Examen*: intentos libres + **aviso al encargado de área a la segunda reprobada** — falta
+     construirlo. El contador ya se guarda (`failed_attempts`); el aviso tiene que salir **una
+     sola vez** por (colaborador, curso), o al tercer intento vuelve a sonar.
+   - *Inducción*: no bloquea fichar; falta **alerta en el tablero del encargado** ("2 días sin
+     inducción") y **recordatorio diario** al colaborador con plazo de 3 días.
+   - Antes de construir esos dos hay que definir **quién es el "encargado de área"** (el sistema
+     tiene organigrama, no esa figura, y el que arma el asistente es una convención de arranque) y
+     **desde cuándo se cuentan los días** (`employees.hire_date` es opcional y el alta no la fija).
 2. Restos menores: la tabla muerta `induction_courses`, el `AcademySeeder` sin `tenant_id`, y los
    `video_url` vacíos del catálogo (contenido).
 3. Opcional, cuando haya tiempo: una página pública de verificación de certificados (hoy la

@@ -74,7 +74,24 @@ se pague de verdad y armamos cómo?
    cuando haya regla de negocio clara (quién lo gana, cuánto, cuándo se paga, de qué presupuesto)
    y cable a nómina que lo ejecute automáticamente.
 
-### Lo que hace falta definir antes de construir 1 y 2
+### Estado de construcción (2026-08-05)
+
+- **Bono**: quitado de la pantalla (`61f14f2`). ✅
+- **`hire_date` obligatoria** en el alta, con relleno de los expedientes viejos (`304da64`). ✅
+  Era el requisito para poder contar "N días sin inducción".
+- **Tablero de pendientes** (`bbfaf2c`): `GET /supervisor/pendientes` devuelve las dos listas
+  —inducción pendiente con sus días, y cursos con 2+ reprobadas— y
+  `POST /supervisor/pendientes/{id}/atendido` deja que el encargado cierre el caso. ✅ Backend.
+  **Falta el panel en el frontend** que lo pinte, y el recordatorio al colaborador.
+
+**Cómo se decidió el canal del aviso**: NO por mensajería. `internal_messages` es el Chat
+Operativo del Monitor 360 —está vivo y en uso— y meterle avisos automáticos ensuciaría una
+conversación entre personas. El aviso es una consulta que el tablero pide. *(De paso apareció un
+bug del Reloj, sin relación con Academia: el mensaje privado del admin a un colaborador se
+guarda y se devuelve, pero el reloj nunca lo muestra — `setPrivateMessages` jamás se llama con
+datos del servidor. La pantalla del admin miente: cree que lo mandó.)*
+
+### Lo que hizo falta definir antes de construir 1 y 2
 
 - **Quién es el "encargado de área".** El sistema no tiene esa figura: tiene el **organigrama**
   (`reports_to_role_id`) y el campo `area` del puesto. Y el organigrama que arma el asistente usa

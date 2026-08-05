@@ -298,13 +298,45 @@ nace visible para toda la plantilla.
 
 ---
 
+---
+
+## Ronda 5 — 2026-08-05: los certificados existen de verdad (familia H23)
+
+El certificado era un `div` que se mandaba a la impresora: **sin folio, sin registro y con las
+fechas escritas a mano** en el código —"del 01 al 15 de Agosto, 2026", iguales para todos—.
+Cualquiera podía imprimir uno editando el HTML y la empresa no tenía cómo distinguirlo de uno
+real. Y encima la lista sólo mostraba cursos con `certificate_template_id`, un campo que **ningún
+flujo asigna**: en la práctica nadie tenía certificados, la sección estaba siempre vacía.
+
+- **Registro real**: tabla `course_certificates` con folio único (`TAL-<año>-<8 caracteres>`),
+  fecha de emisión y una **foto de los datos** (nombre del colaborador, título del curso, nombre
+  de la empresa) — si mañana el curso se renombra o el colaborador se da de baja, el papel ya
+  entregado sigue diciendo lo mismo. El alfabeto del folio no usa 0/O ni 1/I/L, que son las que
+  se confunden al copiar de un impreso.
+- **Se emite al aprobar** (y al completar un curso sin examen), y es **idempotente**: volver a
+  aprobar no emite otro ni cambia el folio que el colaborador ya tiene impreso. Reprobar no
+  certifica nada.
+- **Verificación pública por folio**: `GET /api/v1/public/certificates/{folio}`, sin sesión,
+  porque es justo lo que necesita quien recibe el papel. Devuelve **sólo lo que ya está impreso**
+  —nombre, curso, empresa, fecha, calificación— y nada más del expediente; con throttle (20/min)
+  y folio aleatorio para que no se puedan ir probando folios ajenos (lección de AC7). Hay prueba
+  de que no filtra el correo ni ids.
+- **Datos ya generados**: `GET /academy/certificates` emite de paso los que falten por cursos ya
+  completados antes de que existiera el registro, así que quien aprobó antes no se queda sin el
+  suyo y no hace falta ninguna reparación aparte.
+- El papel ahora imprime **el folio y la fecha real** de emisión, y ya no depende de
+  `certificate_template_id`: la plantilla sólo decide el diseño.
+
+**Pruebas:** `AcademiaCertificadosTest` (8). Suite 1094/0 sqlite, vitest 137/137.
+
+---
+
 ## Siguiente
 
-1. Decisiones del jefe: si un colaborador que reprueba N veces debe quedar bloqueado (hoy el
-   conteo se guarda pero no bloquea); si la inducción debe impedir fichar de verdad; si el bono
-   `incentive_bonus_cents` debe pagarse o se quita de la interfaz; y si quiere afinar el
-   `target_role_name` de cada curso ahora que el catálogo lo permite.
-2. Certificados: hoy son un `window.print()` sin folio ni registro (familia H23). Es lo único de
-   peso que queda abierto del módulo.
-3. Restos menores: la tabla muerta `induction_courses`, el `AcademySeeder` sin `tenant_id`, y los
+1. **Decisiones del jefe** (ver el mensaje que se le preparó): si reprobar N veces debe bloquear
+   el curso; si la inducción debe impedir fichar de verdad; si el bono `incentive_bonus_cents`
+   se paga o se quita de la interfaz; y si quiere afinar el `target_role_name` de cada curso.
+2. Restos menores: la tabla muerta `induction_courses`, el `AcademySeeder` sin `tenant_id`, y los
    `video_url` vacíos del catálogo (contenido).
+3. Opcional, cuando haya tiempo: una página pública de verificación de certificados (hoy la
+   verificación existe como endpoint, sin pantalla).

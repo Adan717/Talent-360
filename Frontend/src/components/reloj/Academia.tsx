@@ -117,6 +117,7 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
   const [videoFinished, setVideoFinished] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [selectedPrintTemplate, setSelectedPrintTemplate] = useState<any>(null);
+  const [certificados, setCertificados] = useState<any[]>([]);
   const [selectedCourseForDrawer, setSelectedCourseForDrawer] = useState<any | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(() => localStorage.getItem('academy_welcome_dismissed') !== 'true');
 
@@ -184,6 +185,16 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
         setLoading(false);
       });
   }, []);
+
+  // Certificados emitidos (con folio). El endpoint también emite los que falten por cursos ya
+  // completados antes de que existiera el registro, así que no hay que repararlos a mano.
+  const recargarCertificados = () => {
+    axiosInstance.get('/academy/certificates')
+      .then(res => setCertificados(Array.isArray(res.data?.certificates) ? res.data.certificates : []))
+      .catch(err => console.error('Error fetching certificates', err));
+  };
+
+  useEffect(() => { recargarCertificados(); }, []);
 
   // Auditoría reloj checador (2026-07-22), Hallazgo 1: el botón "Ir a la Academia" del estado #1
   // (Fichaje Bloqueado) navega aquí con el required_course_id real del backend — este efecto abre
@@ -274,6 +285,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
           setCoursesSafe(data.courses);
           setUserProgress(data.user_progress || []);
         }
+        // El curso aprobado acaba de emitir su certificado: que aparezca sin recargar.
+        recargarCertificados();
         if (activeCourse.course_type === 'induction' && loggedUser) {
           completeInduction(loggedUser.id);
           // Academia AC5 (auditoría 2026-08-04): este aviso decía "Recursos Humanos ha sido
@@ -868,34 +881,39 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
               </div>
             </div>
 
-            {/* Certificados individuales */}
+            {/* Certificados individuales.
+                Antes esta lista salía de los cursos completados que además tuvieran
+                `certificate_template_id` — un campo que ningún flujo asigna, así que en la
+                práctica estaba SIEMPRE vacía; y lo que imprimía era un papel sin folio ni
+                registro, con las fechas escritas a mano. Ahora sale del registro real de
+                certificados emitidos (`GET /academy/certificates`), cada uno con su folio. */}
             <div>
               <h3 className="font-black text-xl text-slate-900 mb-4 tracking-tight">Mis Certificados</h3>
               <div className="space-y-3">
-                {filteredCourses.filter(course => {
-                  const prog = userProgress.find((p: any) => p.course_id === course.id);
-                  return prog?.status === 'completed' && course.certificate_template_id;
-                }).map((course, idx) => {
+                {certificados.map((cert: any) => {
                   let template = null;
                   if (systemSettings?.certificate_templates) {
                     try {
                       const parsed = JSON.parse(systemSettings.certificate_templates);
-                      template = parsed.find((t: any) => t.id === course.certificate_template_id);
+                      const curso = courses.find((c: any) => c.id === cert.course_id);
+                      template = parsed.find((t: any) => t.id === curso?.certificate_template_id) || parsed[0] || null;
                     } catch { }
                   }
-                  
+
                   return (
-                    <div key={idx} className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
+                    <div key={cert.id} className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden flex items-center justify-between animate-fade-in text-left">
                       <div className="absolute top-0 right-0 p-6 opacity-5 text-slate-900 pointer-events-none">
                         <Trophy size={60} />
                       </div>
                       <div className="relative z-10 flex-1 min-w-0 pr-4">
-                        <h4 className="text-xs font-black text-slate-800 mb-0.5 leading-tight truncate">{course.title}</h4>
-                        <p className="text-[9.5px] text-emerald-600 font-extrabold uppercase tracking-wider">Completado con Excelencia ✓</p>
+                        <h4 className="text-xs font-black text-slate-800 mb-0.5 leading-tight truncate">{cert.course_title}</h4>
+                        <p className="text-[9.5px] text-emerald-600 font-extrabold uppercase tracking-wider">
+                          Folio {cert.folio}
+                        </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => {
-                          setSelectedPrintTemplate({ course, template });
+                          setSelectedPrintTemplate({ cert, template });
                           setTimeout(() => {
                             window.print();
                           }, 100);
@@ -907,11 +925,8 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
                     </div>
                   );
                 })}
-                
-                {filteredCourses.filter(course => {
-                  const prog = userProgress.find((p: any) => p.course_id === course.id);
-                  return prog?.status === 'completed' && course.certificate_template_id;
-                }).length === 0 ? (
+
+                {certificados.length === 0 ? (
                   <div className="bg-slate-100/60 rounded-2xl p-5 text-center border border-slate-200/50 shadow-inner">
                     <Trophy size={36} className="text-slate-300 mx-auto mb-2" />
                     <p className="text-slate-400 font-bold text-[10.5px]">Aún no tienes certificados disponibles.</p>
@@ -1116,19 +1131,21 @@ function AcademiaContent({ onBack, autoOpenCourseId }: { onBack: () => void; aut
 
       {/* Certificado Oculto para Impresión */}
       <div className="fixed inset-0 pointer-events-none opacity-0 print:opacity-100 print:z-[9999] bg-white flex items-center justify-center">
-        <CertificadoImprimible 
-           participantName={loggedUser?.name || 'Empleado de Prueba'}
-           courseName={selectedPrintTemplate?.course?.title || 'Programa Integral de Capacitación'}
-           startDate="01"
-           endDate="15"
-           month="Agosto"
-           year="2026"
+        <CertificadoImprimible
+           participantName={selectedPrintTemplate?.cert?.participant_name || loggedUser?.name || 'Empleado de Prueba'}
+           courseName={selectedPrintTemplate?.cert?.course_title || 'Programa Integral de Capacitación'}
+           folio={selectedPrintTemplate?.cert?.folio}
+           issuedAt={selectedPrintTemplate?.cert?.issued_at}
            // AC6: si la plantilla no trae nombre de empresa, manda el de la empresa del
            // colaborador — antes el certificado caía a 'Talent360' en el pie y a "DecorArte"
            // en el logo, ninguno de los dos suyo.
            template={{
              ...(selectedPrintTemplate?.template || {}),
-             company_name: selectedPrintTemplate?.template?.company_name || loggedUser?.tenant?.name
+             // La foto del certificado emitido manda sobre el nombre actual de la empresa: un
+             // certificado viejo debe seguir diciendo lo que decía cuando se entregó.
+             company_name: selectedPrintTemplate?.template?.company_name
+               || selectedPrintTemplate?.cert?.company_name
+               || loggedUser?.tenant?.name
            }}
         />
       </div>

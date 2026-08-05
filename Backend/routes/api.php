@@ -67,6 +67,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/public/onboarding/complete', [OnboardingController::class, 'completeActivation']);
     Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
     
+    // Verificación pública de un certificado de la Academia por su folio. Devuelve sólo lo que
+    // ya está impreso en el papel; el throttle y los 8 caracteres aleatorios del folio impiden
+    // ir probando folios ajenos (lección de AC7).
+    Route::middleware('throttle:20,1')->get('/public/certificates/{folio}', [AcademyController::class, 'verifyCertificate']);
+
     // Pública (Wiki/Organigrama de la Empresa)
     // Academia AC9 (auditoría 2026-08-04): estas 14 rutas viven SIN sesión y no tenían
     // ningún throttle — se podían martillar para adivinar contraseñas del vault, passcodes
@@ -581,6 +586,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             // AC3: el examen se califica en el servidor. Es la única vía para completar un
             // curso que tenga evaluación.
             Route::post('/academy/courses/{id}/quiz-attempt', [AcademyController::class, 'submitQuizAttempt']);
+            // Certificados del colaborador, con su folio real (familia H23).
+            Route::get('/academy/certificates', [AcademyController::class, 'myCertificates']);
         });
 
         // Evaluación 360°

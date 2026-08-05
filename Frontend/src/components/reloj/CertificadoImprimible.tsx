@@ -3,20 +3,18 @@ import React from 'react';
 interface CertificadoProps {
   participantName: string;
   courseName: string;
-  startDate: string;
-  endDate: string;
-  month: string;
-  year: string;
+  /** Folio de verificación del certificado emitido. Sin él, el papel no prueba nada. */
+  folio?: string;
+  /** Fecha de emisión real (ISO). Antes las fechas venían escritas a mano en el código. */
+  issuedAt?: string;
   template?: any;
 }
 
 export const CertificadoImprimible: React.FC<CertificadoProps> = ({
   participantName,
   courseName,
-  startDate,
-  endDate,
-  month,
-  year,
+  folio,
+  issuedAt,
   template
 }) => {
   const companyName = template?.company_name || 'Talent360';
@@ -29,6 +27,12 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
   
   const primaryColor = template?.primary_color || '#6b1e2e';
   const secondaryColor = template?.secondary_color || '#b58c4c';
+
+  const fechaEmision = issuedAt
+    ? new Date(issuedAt + (issuedAt.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-MX', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      })
+    : '—';
 
   return (
     <div className="printable-certificate w-[297mm] h-[210mm] mx-auto bg-[#fffdf8] relative flex flex-col justify-between overflow-hidden" style={{ fontFamily: 'Times New Roman, serif' }}>
@@ -104,7 +108,10 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
           Cubriendo satisfactoriamente todos los módulos teóricos y prácticos requeridos.
         </p>
         <p className="text-sm text-slate-700 leading-relaxed mb-4 shrink-0">
-          Impartido del <strong>{startDate}</strong> al <strong>{endDate}</strong> de <strong>{month}</strong>, <strong>{year}</strong>, en las instalaciones de {companyName}, {location}.
+          {/* Antes esta línea decía "del 01 al 15 de Agosto, 2026" en TODOS los certificados:
+              las fechas venían escritas a mano en el código de la Academia. Ahora es la fecha
+              real de emisión que guarda el registro. */}
+          Expedido el <strong>{fechaEmision}</strong>, en las instalaciones de {companyName}, {location}.
         </p>
 
         <p className="text-sm text-slate-800 italic font-medium shrink-0">
@@ -158,6 +165,14 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
             </div>
           </div>
         </div>
+
+        {/* FOLIO — lo que convierte el papel en algo comprobable. Antes no existía: cualquiera
+            podía imprimir un certificado y la empresa no tenía cómo distinguirlo de uno real. */}
+        {folio && (
+          <p className="text-[10px] text-slate-500 tracking-widest mt-3 shrink-0">
+            FOLIO DE VERIFICACIÓN: <strong className="text-slate-700">{folio}</strong>
+          </p>
+        )}
 
       </div>
     </div>

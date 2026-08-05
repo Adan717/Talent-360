@@ -46,6 +46,7 @@ class EmployeeEmailNormalizationTest extends TestCase
             'name' => 'Adán Cuéllar',
             'email' => 'adáncuéllar@pruebaqa360.com',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
         ]);
 
         $res->assertStatus(201);
@@ -59,6 +60,7 @@ class EmployeeEmailNormalizationTest extends TestCase
             'name' => 'Íñigo Muñoz',
             'email' => 'ÍÑIGOmuñoz@empresa.com',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
         ]);
 
         $res->assertStatus(201);
@@ -71,6 +73,7 @@ class EmployeeEmailNormalizationTest extends TestCase
             'name' => 'Ana Lopez',
             'email' => 'ana.lopez+turno1@empresa.com.mx',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
         ]);
 
         $res->assertStatus(201);
@@ -82,6 +85,7 @@ class EmployeeEmailNormalizationTest extends TestCase
         $admin = $this->admin();
         $this->actingAs($admin)->postJson('/api/v1/employees', [
             'name' => 'Rosa Perez', 'email' => 'rosa@empresa.com', 'role' => 'empleado',
+            'hire_date' => '2026-08-01',
         ])->assertStatus(201);
 
         $id = DB::table('employees')->where('email', 'rosa@empresa.com')->value('id');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
@@ -930,6 +930,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   // nombrar un supervisor había que dar de alta y luego editar la ficha.
   const [newUserSystemRole, setNewUserSystemRole] = useState('empleado');
   const [contractType, setContractType] = useState('Fijo'); // Fijo o Destajo
+  // Fecha de ingreso: obligatoria en el alta desde 2026-08-05. Se propone hoy y se cambia si la
+  // persona empieza otro día — el alta del viernes para entrar el lunes son fechas distintas.
+  const [newUserHireDate, setNewUserHireDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [selectedRoleForUsersModal, setSelectedRoleForUsersModal] = useState<any | null>(null);
   const [selectedRoleForVacanciesModal, setSelectedRoleForVacanciesModal] = useState<any | null>(null);
@@ -1145,7 +1148,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         salary: newUserSalary ? parseFloat(newUserSalary) : null,
         // El backend convierte a salario diario con esta periodicidad; sin ella el expediente
         // quedaría "legado" (fórmula histórica).
-        salary_periodicity: newUserSalary ? newUserSalaryPeriodicidad : undefined
+        salary_periodicity: newUserSalary ? newUserSalaryPeriodicidad : undefined,
+        // Obligatoria desde 2026-08-05: el día que empieza a trabajar. Este formulario tampoco
+        // la mandaba, y por eso el 100% de los expedientes vivos la tenía vacía.
+        hire_date: newUserHireDate
       });
       setShowForm(false);
       // H4: limpiar TODO el formulario. Antes sólo se reseteaban nombre y sueldo, así que al
@@ -1156,6 +1162,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       setNewUserRole('');
       setNewUserSystemRole('empleado');
       setContractType('Fijo');
+      setNewUserHireDate(new Date().toISOString().slice(0, 10));
       await fetchData(); // Recargar
       window.dispatchEvent(new Event('db_sync_updated'));
     } catch (e: any) {
@@ -2452,6 +2459,28 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                     </div>
                                  </div>
                               </div>
+                           </div>
+
+                           {/* Campo: Fecha de Ingreso (obligatoria desde 2026-08-05).
+                               Es el día que la persona empieza a trabajar: de ahí salen su
+                               antigüedad y el seguimiento de su inducción. Antes este campo sólo
+                               existía al EDITAR el expediente, no al darlo de alta, y por eso
+                               estaba vacío en todos. */}
+                           <div className="group">
+                              <label className="block text-[11px] font-black text-slate-400 group-focus-within:text-blue-600 uppercase tracking-wider mb-1.5 transition-colors">Fecha de Ingreso</label>
+                              <div className="relative">
+                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                    <Calendar size={18} />
+                                 </div>
+                                 <input
+                                    type="date"
+                                    required
+                                    value={newUserHireDate}
+                                    onChange={e => setNewUserHireDate(e.target.value)}
+                                    className="pl-10 w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all duration-300"
+                                 />
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-1 pl-1">El día que empieza a trabajar, que no siempre es hoy.</p>
                            </div>
 
                            {/* Campo: Salario Base */}

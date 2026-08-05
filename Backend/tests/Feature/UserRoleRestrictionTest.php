@@ -39,6 +39,7 @@ class UserRoleRestrictionTest extends TestCase
             'name' => 'Intento Escalada',
             'email' => 'escalada@x.com',
             'role' => 'platform_admin', // §49: no permitido en la tabla users
+            'hire_date' => '2026-08-01',
             'job_role_id' => $jobRole->id,
         ]);
 
@@ -55,6 +56,7 @@ class UserRoleRestrictionTest extends TestCase
             'name' => 'Empleado Normal',
             'email' => 'normal@x.com',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
             'job_role_id' => $jobRole->id,
         ]);
 

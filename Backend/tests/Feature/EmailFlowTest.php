@@ -44,6 +44,7 @@ class EmailFlowTest extends TestCase
             'name' => 'Nuevo Colaborador',
             'email' => 'colab@empresa.com',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
             'job_role_id' => $jobRole->id,
         ]);
 

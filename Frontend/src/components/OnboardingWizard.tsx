@@ -518,6 +518,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     return 'T360-' + Array.from(bytes, (b) => chars[b % chars.length]).join('');
   });
   const [empPhone, setEmpPhone] = useState('');
+  // Fecha de ingreso: obligatoria en el alta desde 2026-08-05. Se propone HOY porque en el
+  // asistente el colaborador normalmente ya está entrando, pero se puede cambiar — el caso del
+  // alta en viernes para empezar el lunes es justo el que hace que no valga usar la fecha del
+  // registro como si fuera la de ingreso.
+  const [empHireDate, setEmpHireDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [createdEmpId, setCreatedEmpId] = useState<number | null>(null);
   // employees.id y users.id son DISTINTOS: el primero sirve para /admin/employees/{id}/generate-pin,
   // el segundo es el que espera /clock/punch. Confundirlos ficha a la persona equivocada.
@@ -739,6 +744,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       setErrorMsg("Debes seleccionar un puesto de trabajo para el colaborador.");
       return;
     }
+    if (!empHireDate) {
+      setErrorMsg("Falta la fecha de ingreso del colaborador.");
+      return;
+    }
     setLoading(true);
     setErrorMsg(null);
     try {
@@ -754,7 +763,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         is_active_employee: true,
         shiftStart: storeOpenTime,
         shiftEnd: storeCloseTime,
-        phone: empPhone
+        phone: empPhone,
+        // Obligatoria desde 2026-08-05: es la fecha en que la persona empieza a trabajar, de la
+        // que cuelgan antigüedad y aviso de inducción pendiente. Este formulario nunca la mandaba.
+        hire_date: empHireDate
       });
       if (res.data && res.data.id) {
         const empId = res.data.id;
@@ -1802,6 +1814,27 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
                   <p className="text-[9px] text-slate-400 mt-1 pl-1">
                     Solo ingresa los 10 dígitos. El prefijo de México (+52) se agrega automáticamente.
+                  </p>
+                </div>
+
+                {/* Fecha de ingreso: obligatoria. Viene propuesta con hoy, pero se cambia si el
+                    colaborador empieza otro día (el alta del viernes para entrar el lunes). */}
+                <div className="relative">
+                  <input
+                    type="date"
+                    id="empHireDate"
+                    value={empHireDate}
+                    onChange={(e) => setEmpHireDate(e.target.value)}
+                    className="w-full px-4 pt-5 pb-1.5 outline-none text-slate-800 text-sm font-medium border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 rounded-xl bg-white"
+                  />
+                  <label
+                    htmlFor="empHireDate"
+                    className="absolute left-4 text-xs font-bold text-slate-500 pointer-events-none top-1.5"
+                  >
+                    Fecha de Ingreso (Obligatoria)
+                  </label>
+                  <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                    El día que empieza a trabajar. De aquí salen su antigüedad y el seguimiento de su inducción.
                   </p>
                 </div>
 

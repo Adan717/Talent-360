@@ -65,7 +65,8 @@ class PeriodicidadNominaTest extends TestCase
     {
         $r = $this->actingAs($this->admin())->postJson('/api/v1/employees', [
             'name' => 'Colaborador Mensual', 'email' => 'mensual@perqa.mx',
-            'role' => 'empleado', 'base_salary' => 12000, 'salary_periodicity' => 'mensual',
+            'role' => 'empleado', 'hire_date' => '2026-08-01',
+            'base_salary' => 12000, 'salary_periodicity' => 'mensual',
         ]);
 
         $r->assertStatus(201);
@@ -82,7 +83,7 @@ class PeriodicidadNominaTest extends TestCase
         // Compatibilidad: el frontend viejo no manda periodicidad; NADA debe cambiar para él.
         $this->actingAs($this->admin())->postJson('/api/v1/employees', [
             'name' => 'Colaborador Legado', 'email' => 'legado@perqa.mx',
-            'role' => 'empleado', 'base_salary' => 12000,
+            'role' => 'empleado', 'hire_date' => '2026-08-01', 'base_salary' => 12000,
         ])->assertStatus(201);
 
         $e = DB::table('employees')->where('email', 'legado@perqa.mx')->first();
@@ -95,7 +96,8 @@ class PeriodicidadNominaTest extends TestCase
     {
         $this->actingAs($this->admin())->postJson('/api/v1/employees', [
             'name' => 'X', 'email' => 'x@perqa.mx', 'role' => 'empleado',
-            'base_salary' => 9000, 'salary_periodicity' => 'catorcenal',
+            'hire_date' => '2026-08-01', 'base_salary' => 9000,
+            'salary_periodicity' => 'catorcenal',
         ])->assertStatus(422);
     }
 

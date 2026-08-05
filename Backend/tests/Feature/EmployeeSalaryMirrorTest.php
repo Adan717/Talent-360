@@ -49,6 +49,7 @@ class EmployeeSalaryMirrorTest extends TestCase
             'name' => 'Francisco Vega',
             'email' => 'francisco@decorarte.test',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
             'salary' => 14000,
         ]);
 
@@ -66,6 +67,7 @@ class EmployeeSalaryMirrorTest extends TestCase
             'name' => 'Marisol Herrera',
             'email' => 'marisol@decorarte.test',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
             'base_salary' => 18000,
         ]);
 
@@ -84,6 +86,7 @@ class EmployeeSalaryMirrorTest extends TestCase
             'name' => 'Adán Cuéllar',
             'email' => 'adan@decorarte.test',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
             'salary' => 9000,
         ])->assertStatus(201);
 
@@ -111,6 +114,7 @@ class EmployeeSalaryMirrorTest extends TestCase
                 'name' => "Persona {$rol}",
                 'email' => "{$rol}@decorarte.test",
                 'role' => $rol,
+                'hire_date' => '2026-08-01',
             ])->assertStatus(201);
 
             $this->assertDatabaseHas('users', ['email' => "{$rol}@decorarte.test", 'role' => $rol]);
@@ -128,6 +132,7 @@ class EmployeeSalaryMirrorTest extends TestCase
             'name' => 'Costoso Pérez',
             'email' => 'costoso@decorarte.test',
             'role' => 'empleado',
+            'hire_date' => '2026-08-01',
             'salary' => 4800, // 4800/480 = 10.00 por minuto
         ])->assertStatus(201);
 

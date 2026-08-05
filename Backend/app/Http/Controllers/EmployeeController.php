@@ -223,7 +223,14 @@ class EmployeeController extends Controller
             'address' => 'nullable|string',
             'emergency_contact_name' => 'nullable|string',
             'emergency_contact_phone' => 'nullable|string',
-            'hire_date' => 'nullable|date',
+            // OBLIGATORIA desde 2026-08-05. Es un dato de NEGOCIO —cuándo empezó a trabajar la
+            // persona—, del que cuelgan la antigüedad, el aguinaldo y el finiquito el día que
+            // existan, y de la que ya depende el aviso de "lleva N días sin su inducción".
+            // Estaba en `nullable` y ningún formulario la mandaba: el 100% de los colaboradores
+            // vivos la tenía vacía. No se acepta `created_at` como sustituto silencioso: esa es
+            // la fecha en que se creó el registro, y un alta el viernes para entrar el lunes son
+            // días distintos.
+            'hire_date' => 'required|date',
             'mealMinutes' => 'nullable|integer',
             'restDay' => 'nullable|string',
             'base_salary' => 'nullable|numeric',

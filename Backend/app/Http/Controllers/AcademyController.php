@@ -394,6 +394,14 @@ class AcademyController extends Controller
             'plazo' => $plazo,
         ];
 
+        // Los administradores no ven banner, igual que no salen en el tablero del encargado
+        // (decisión de producto 2026-08-06). Nadie va a darle seguimiento a la dueña de la
+        // empresa, así que recordárselo cada día es ruido — y las dos puntas de la regla tienen
+        // que decir lo mismo: si no aparece en el tablero, tampoco se le presiona a ella.
+        if (in_array($user->role, ['admin', 'platform_admin'], true)) {
+            return response()->json($sinPendiente);
+        }
+
         if ($user->has_completed_induction) {
             return response()->json($sinPendiente);
         }

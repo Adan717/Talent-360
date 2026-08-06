@@ -103,6 +103,33 @@ class BannerInduccionPendienteTest extends TestCase
             ->assertJson(['blocked' => false]);
     }
 
+    public function test_los_administradores_no_ven_banner(): void
+    {
+        // Las dos puntas de la regla dicen lo mismo: si el admin no sale en el tablero del
+        // encargado (porque nadie va a darle seguimiento a la dueña), tampoco se le recuerda a
+        // ella todos los días. Un supervisor SÍ lo ve: a él sí lo siguen.
+        $this->cursoDeInduccion();
+
+        $jefa = User::factory()->create(['role' => 'admin']);
+        DB::table('users')->where('id', $jefa->id)->update([
+            'tenant_id' => $this->tenantId, 'has_completed_induction' => false,
+        ]);
+        DB::table('employees')->insert([
+            'tenant_id' => $this->tenantId, 'user_id' => $jefa->id, 'name' => $jefa->name,
+            'email' => $jefa->email, 'hire_date' => now()->subDays(9)->toDateString(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($jefa->fresh())->getJson('/api/v1/academy/mi-induccion')
+            ->assertJson(['pendiente' => false]);
+
+        $encargado = $this->colaborador(now()->subDays(9)->toDateString());
+        DB::table('users')->where('id', $encargado->id)->update(['role' => 'supervisor']);
+
+        $this->actingAs($encargado->fresh())->getJson('/api/v1/academy/mi-induccion')
+            ->assertJson(['pendiente' => true]);
+    }
+
     public function test_quien_ya_la_completo_no_ve_banner(): void
     {
         $this->cursoDeInduccion();

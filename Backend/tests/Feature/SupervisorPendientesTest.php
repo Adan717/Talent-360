@@ -215,6 +215,25 @@ class SupervisorPendientesTest extends TestCase
         $this->assertFalse($fila['urge'], 'no se persigue a alguien en su primer día');
     }
 
+    public function test_los_administradores_no_salen_en_el_tablero(): void
+    {
+        // Decisión de producto (2026-08-06): "excluye a los admin del tablero, es ruido".
+        // Medido en vivo: el tablero del primer día listaba a toda la plantilla incluida la
+        // dueña, que no es alguien a quien su encargado tenga que perseguir. Los SUPERVISORES
+        // sí siguen apareciendo: son personal como cualquier otro.
+        $jefa = $this->persona('Jefa', 'admin', null, now()->subDays(9)->toDateString());
+        $encargado = $this->persona('Encargada', 'supervisor', null, now()->subDays(9)->toDateString());
+        $piso = $this->persona('De piso', 'empleado', null, now()->subDays(9)->toDateString());
+        $this->curso('Inducción a la Empresa', 'induction');
+
+        $nombres = collect($this->actingAs($jefa)->getJson('/api/v1/supervisor/pendientes')
+            ->json('induccion_pendiente'))->pluck('nombre');
+
+        $this->assertNotContains('Jefa', $nombres, 'la dueña no se persigue a sí misma');
+        $this->assertContains('Encargada', $nombres, 'un supervisor sí es personal a seguir');
+        $this->assertContains('De piso', $nombres);
+    }
+
     public function test_el_rojo_entra_al_cumplirse_el_plazo_de_tres_dias_y_no_antes(): void
     {
         // El jefe fijó el plazo en 3 días: "a los 3 días sin completar, el caso se pone rojo en

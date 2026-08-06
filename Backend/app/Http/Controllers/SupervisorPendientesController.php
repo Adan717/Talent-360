@@ -111,12 +111,21 @@ class SupervisorPendientesController extends Controller
      *
      * El admin ve toda la empresa. El supervisor ve a quienes ocupan un puesto que reporta al
      * suyo — y también a sí mismo, para que no se le escondan sus propios pendientes.
+     *
+     * Los administradores no aparecen en ninguna de las dos listas: el tablero es para seguir a
+     * la plantilla operativa, no a la dueña de la empresa.
      */
     private function equipoDe(User $user, int $tenantId)
     {
         $colaboradores = User::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
+            // Los administradores quedan fuera del tablero (decisión de producto 2026-08-06:
+            // "excluye a los admin del tablero, es ruido"). Al medirlo en vivo, el tablero del
+            // primer día listaba a TODA la plantilla incluida la dueña, que no es alguien a
+            // quien su encargado tenga que perseguir para que haga la inducción. Los
+            // supervisores SÍ siguen apareciendo: son personal como cualquier otro.
+            ->whereNotIn('role', ['admin', 'platform_admin'])
             ->get()
             ->keyBy('id');
 

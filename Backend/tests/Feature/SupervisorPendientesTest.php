@@ -215,6 +215,25 @@ class SupervisorPendientesTest extends TestCase
         $this->assertFalse($fila['urge'], 'no se persigue a alguien en su primer día');
     }
 
+    public function test_el_rojo_entra_al_cumplirse_el_plazo_de_tres_dias_y_no_antes(): void
+    {
+        // El jefe fijó el plazo en 3 días: "a los 3 días sin completar, el caso se pone rojo en
+        // mi tablero". Dentro del plazo el caso se ve, pero no urge — es el colaborador quien
+        // tiene sus días, no el encargado quien tiene que perseguirlo desde el primer momento.
+        $jefe = $this->persona('Jefa', 'admin');
+        $this->curso('Inducción a la Empresa', 'induction');
+
+        $enPlazo = $this->persona('Aún en plazo', 'empleado', null, now()->subDays(2)->toDateString());
+        $vencido = $this->persona('Se le venció', 'empleado', null, now()->subDays(3)->toDateString());
+
+        $lista = collect($this->actingAs($jefe)->getJson('/api/v1/supervisor/pendientes')->json('induccion_pendiente'));
+
+        $this->assertFalse($lista->firstWhere('user_id', $enPlazo->id)['urge'],
+            'al segundo día todavía está dentro de su plazo');
+        $this->assertTrue($lista->firstWhere('user_id', $vencido->id)['urge'],
+            'al tercero se le acabó: ahí entra el encargado');
+    }
+
     public function test_quien_ya_la_completo_desaparece(): void
     {
         $jefe = $this->persona('Jefa', 'admin');

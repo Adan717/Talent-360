@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle } from 'lucide-react';
+import PendientesDeMiEquipo from './PendientesDeMiEquipo';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
@@ -1755,6 +1756,20 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 <Network size={18} className={activeTab === 'organigrama' ? 'text-purple-600' : 'text-slate-400'} />
                 <span className="whitespace-nowrap text-center leading-tight">Organigrama</span>
               </button>
+              {/* Pendientes del equipo (decisión de producto 2026-08-06). Va aquí y no en un
+                  tablero nuevo: "ahí está el organigrama, ahí está la gestión de gente".
+                  El rol `supervisor` ya entra a este módulo, así que no hizo falta tocar permisos. */}
+              <button
+                onClick={() => setActiveTab('pendientes')}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
+                  activeTab === 'pendientes'
+                    ? 'bg-white text-rose-700 shadow-sm border border-slate-150'
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <AlertTriangle size={18} className={activeTab === 'pendientes' ? 'text-rose-600' : 'text-slate-400'} />
+                <span className="whitespace-nowrap text-center leading-tight">Mi Equipo</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1797,7 +1812,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           items={[
             { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.length },
             { id: 'puestos', label: 'Puestos', icon: <Briefcase />, badge: jobRoles.length },
-            { id: 'organigrama', label: 'Organigrama', icon: <Network /> }
+            { id: 'organigrama', label: 'Organigrama', icon: <Network /> },
+            // También en el dock móvil: el encargado de piso trae el celular, no una laptop —
+            // si el tablero sólo existiera en la barra de escritorio, no lo vería nunca.
+            { id: 'pendientes', label: 'Mi Equipo', icon: <AlertTriangle /> }
           ]}
         />
       )}
@@ -2590,6 +2608,8 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
             </div>
           </div>
         )}
+
+        {activeTab === 'pendientes' && <PendientesDeMiEquipo />}
 
         {activeTab === 'organigrama' && (
           <div>

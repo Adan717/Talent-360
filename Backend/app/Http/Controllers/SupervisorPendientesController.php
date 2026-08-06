@@ -31,14 +31,20 @@ use Illuminate\Support\Facades\DB;
 class SupervisorPendientesController extends Controller
 {
     /**
-     * A los cuántos días de su ingreso un colaborador sin inducción se pinta en rojo.
-     * El endpoint devuelve TODOS los pendientes con su cuenta de días; el umbral sólo marca
-     * cuáles urgen, para que el tablero no tenga que saber la regla.
+     * El plazo que se le da al colaborador para completar su inducción. Es el mismo número que
+     * ve él en su app ("tienes N días") y el que decide cuándo el caso se pinta ROJO en el
+     * tablero del encargado: **al cumplirse el plazo, no antes**. Decisión del jefe: "a los 3
+     * días sin completar, el caso se pone rojo en mi tablero... no quiero que el sistema
+     * castigue al nuevo; quiero que me presione a mí para acercarme a él".
      */
-    private const DIAS_PARA_ALERTA = 2;
-
-    /** Días que se le dan al colaborador para completar su inducción antes de que el encargado hable con él. */
     private const DIAS_DE_PLAZO = 3;
+
+    /**
+     * A los cuántos días se pinta en rojo. El endpoint devuelve TODOS los pendientes con su
+     * cuenta de días; el umbral sólo marca cuáles urgen, para que el tablero no tenga que
+     * conocer la regla ni repetirla.
+     */
+    private const DIAS_PARA_ALERTA = self::DIAS_DE_PLAZO;
 
     public function index(Request $request)
     {

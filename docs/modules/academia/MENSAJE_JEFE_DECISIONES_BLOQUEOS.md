@@ -111,7 +111,40 @@ datos del servidor. La pantalla del admin miente: cree que lo mandó.)*
    organigramas vacíos que se reparan después con comandos.
 
 **Orden de trabajo:** hoy la reparación de DecorArte · mañana el panel en RRHH · pasado el
-recordatorio en la app · después el bug del Reloj.
+recordatorio en la app · después el bug del Reloj · el paso de confirmación del organigrama se
+diseña esta semana y se implementa la siguiente.
+
+### Correcciones manuales sobre DecorArte (2026-08-06, aprobadas por el jefe)
+
+La convención mecánica conectaba cada puesto con el PRIMERO del nivel superior, y ese primero
+salía *Supervisor de Compras*. Dos líneas quedaban absurdas en operación real y él las corrigió:
+
+| Puesto | Antes | Ahora |
+|---|---|---|
+| Asesor de Ventas (Adán Cuéllar) | Supervisor de Compras | **Supervisor de Ventas** |
+| Ayudante Integral | Supervisor de Compras | **Administrador Gerente** |
+
+Se cambiaron por `PUT /job-roles/{id}` —el mismo endpoint que usa el lienzo al arrastrar—, así que
+las dos representaciones quedaron sincronizadas (`org_parent_role_id` sólida y
+`reports_to_role_ids` punteada). *Apoyo Eventual* sigue bajo *Asesor de Ventas*, que no se
+mencionó. Validado contra los datos que carga Directorio > Puestos: el lienzo dibuja exactamente
+los 7 puestos del giro (los sembrados de nivel 0 no aparecen ahí).
+
+### Regla 5, ya con diseño acordado
+
+Un paso más en el asistente, **entre "Vista previa de rutinas" y "Guardar"**: *"Revisa el
+organigrama"*, con el árbol propuesto completo y un botón **"Confirmar y continuar"**.
+**No se puede saltar**: si cierra o pospone, el asistente se queda ahí. Arrastrar una línea
+activa el botón; no tocar nada también, si el árbol ya está bien. Once confirmaciones sueltas
+son tortura; una pantalla que se revisa en 30 segundos, no.
+
+### Alta de colaborador: sugerir el rol supervisor
+
+Si el puesto elegido tiene gente que le reporta (`reports_to_role_ids` apuntándole), el alta debe
+avisar: *"Este puesto tiene personas a cargo. ¿Asignar rol de supervisor?"*. **Sugerencia, no
+obligación.** Nace de una trampa real: el rol `supervisor` entra a RRHH, pero al `empleado` la app
+lo manda a otra pantalla — un encargado dado de alta como empleado nunca vería su tablero por más
+que el organigrama diga que manda.
 
 ### Lo que hizo falta definir antes de construir 1 y 2
 

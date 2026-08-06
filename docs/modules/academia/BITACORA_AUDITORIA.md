@@ -348,12 +348,23 @@ Y las dos definiciones que faltaban: el **"encargado de área"** salió del orga
 (`reports_to_role_ids`, con el admin como respaldo) y **`hire_date` se hizo obligatoria** en el
 alta, con relleno de los expedientes viejos (`304da64`).
 
-## Lo que queda ABIERTO
+## Prueba de punta a punta (2026-08-06) — el módulo funciona completo
 
-1. **Una pantalla pública para verificar certificados.** El folio y el endpoint existen
-   (`GET /api/v1/public/certificates/{folio}`), pero **no hay página**: hoy sólo se comprueba con
-   una herramienta de desarrollo. Quien recibe el papel no puede verificarlo por su cuenta. Es lo
-   único que le falta a los certificados para estar completos de cara al mundo.
+Adán Cuéllar tomó su inducción de verdad en la instancia de pruebas, y se recorrió todo el
+circuito:
+
+1. Su banner le decía que tenía la inducción pendiente (vencida, 8 días desde su ingreso).
+2. El examen le llegó **sin la respuesta correcta** dentro.
+3. Contestó mal → `passed: false`, score 0, y el intento quedó contado.
+4. Contestó bien → `passed: true`, score 100, curso completado.
+5. Se emitió su certificado con folio **TAL-2026-UNZUAVPG**.
+6. Su banner dejó de pedirle la inducción.
+7. El folio se verificó **en la pantalla pública**, sin sesión: nombre, curso, empresa, fecha y
+   calificación. Un folio inventado responde "no encontramos ese certificado".
+
+*(Ese certificado quedó vivo en el tenant de pruebas a propósito: es el primero real del sistema.)*
+
+## Lo que queda ABIERTO
 2. **Contenido de los cursos — dominio del jefe.** 10 de los 14 cursos vivos **no tienen video**,
    y el examen sigue siendo la misma pregunta genérica con la respuesta en la primera opción para
    todos. La calificación ya es honesta (servidor, respuestas ocultas); lo que falta es qué se
@@ -361,6 +372,5 @@ alta, con relleno de los expedientes viejos (`304da64`).
 3. **Restos menores, sin urgencia**: la tabla `induction_courses` no la lee ni la escribe nadie;
    `AcademySeeder` sigue sin escribir `tenant_id` (nadie lo llama); las plantillas de certificado
    viven como un JSON dentro de `system_settings` en vez de ser una entidad.
-4. **Sin ver en pantalla**: nadie ha completado nunca un curso en la V2 (0 filas de progreso), así
-   que **el certificado con folio real no se ha visto impreso**. El circuito está probado por API
-   y por pruebas, pero no con ojos.
+4. **Sin ver en pantalla**: el certificado impreso en sí (el `window.print()` con su folio y la
+   dirección de verificación). El resto del circuito ya se recorrió entero — ver arriba.

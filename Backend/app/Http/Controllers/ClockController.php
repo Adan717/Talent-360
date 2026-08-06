@@ -207,10 +207,31 @@ class ClockController extends Controller
                 ->whereDate('created_at', '>=', $oneWeekAgo)
         )->get();
 
+        // FUGA DE PRIVACIDAD, cerrada el 2026-08-06. Esta consulta devolvía TODOS los mensajes
+        // internos de la empresa a CUALQUIER colaborador que llamara a /sync/state, sin mirar a
+        // quién iban dirigidos. Comprobado en vivo antes del arreglo: se mandó un mensaje
+        // privado del admin a un colaborador y OTRO colaborador lo recibió entero —remitente,
+        // destinatario y contenido— en su carga de datos.
+        //
+        // Hoy nadie los ve porque el reloj no los pinta (la función quedó a medias: no hay
+        // pantalla para escribirlos ni código que los lea), pero viajaban igual a todos los
+        // dispositivos. Si mañana alguien construye la lectura sin esto, cada empleado leería
+        // la correspondencia de todos.
+        //
+        // Cada quien recibe: los dirigidos a él, los que él mandó, y los de difusión a toda la
+        // empresa (`receiver_id` nulo). El chat operativo del Monitor 360 NO pasa por aquí —lo
+        // sirve DashboardMonitorController—, así que no se ve afectado.
+        $userId = auth()->id();
+
         $messages = $applySimFilter(
             DB::table('internal_messages')
                 ->where('tenant_id', $tenantId)
                 ->whereDate('created_at', '>=', $oneWeekAgo)
+                ->where(function ($q) use ($userId) {
+                    $q->whereNull('receiver_id')
+                        ->orWhere('receiver_id', $userId)
+                        ->orWhere('sender_id', $userId);
+                })
         )->get();
 
         $auditLogs = $applySimFilter(

@@ -2455,6 +2455,47 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                        <span className="text-[10px]">▼</span>
                                     </div>
                                  </div>
+
+                                 {/* Aviso, NO obligación (decisión de producto 2026-08-06): si el
+                                     puesto elegido tiene gente a cargo según el organigrama, se
+                                     sugiere darle acceso de supervisor. Nace de una trampa real:
+                                     al `empleado` la aplicación lo manda a otra pantalla y nunca
+                                     ve Recursos Humanos, así que un encargado dado de alta como
+                                     colaborador no vería el tablero de pendientes de su equipo
+                                     por más que el organigrama diga que manda. */}
+                                 {(() => {
+                                    if (!newUserRole || newUserSystemRole !== 'empleado') return null;
+
+                                    const aCargo = jobRoles.filter((r: any) => {
+                                       const lista = Array.isArray(r.reports_to_role_ids) ? r.reports_to_role_ids : [];
+                                       return lista.length
+                                          ? lista.map(Number).includes(Number(newUserRole))
+                                          : Number(r.reports_to_role_id) === Number(newUserRole);
+                                    });
+
+                                    if (!aCargo.length) return null;
+
+                                    return (
+                                       <div className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
+                                          <span className="text-base leading-none mt-0.5">👤</span>
+                                          <div className="flex-1">
+                                             <p className="text-[11px] font-black text-amber-800 leading-snug">
+                                                Este puesto tiene personas a cargo ({aCargo.map((r: any) => r.name).join(', ')}).
+                                             </p>
+                                             <p className="text-[10.5px] text-amber-700/90 font-semibold mt-0.5">
+                                                Con acceso de colaborador no verá los pendientes de su equipo.
+                                             </p>
+                                             <button
+                                                type="button"
+                                                onClick={() => setNewUserSystemRole('supervisor')}
+                                                className="mt-1.5 text-[11px] font-black text-amber-900 underline underline-offset-2"
+                                             >
+                                                Asignar rol de supervisor
+                                             </button>
+                                          </div>
+                                       </div>
+                                    );
+                                 })()}
                               </div>
 
                               {/* Campo: Tipo de Contrato */}

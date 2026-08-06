@@ -373,6 +373,73 @@ class AcademyController extends Controller
     }
 
     /**
+     * ¿El colaborador en sesión trae su inducción pendiente, y cuántos días le quedan?
+     *
+     * Alimenta el banner de su app: *"Tienes N días para tu inducción. Complétala aquí."*
+     * (decisión de producto 2026-08-06: banner en la app, **no** correo).
+     *
+     * La cuenta la hace el servidor a propósito, con la misma constante que decide cuándo el
+     * caso se pinta en rojo en el tablero del encargado (`PlazoInduccion::DIAS`). Si el cliente
+     * la calculara por su cuenta, el colaborador y su jefe acabarían mirando relojes distintos.
+     *
+     * **No bloquea nada**: es un aviso. El colaborador ficha y trabaja igual.
+     */
+    public function miInduccionPendiente(Request $request)
+    {
+        $user = $request->user();
+        $plazo = \App\Support\PlazoInduccion::DIAS;
+
+        $sinPendiente = [
+            'pendiente' => false,
+            'plazo' => $plazo,
+        ];
+
+        if ($user->has_completed_induction) {
+            return response()->json($sinPendiente);
+        }
+
+        // El curso que le toca: uno de inducción visible para su puesto (sin puesto declarado =
+        // toda la plantilla, criterio de AC2). Si su empresa no tiene ninguno, no hay nada que
+        // reclamarle.
+        // El filtro por empresa va EXPLÍCITO: `TenantScope` no se aplica cuando la app corre en
+        // consola (pruebas, comandos, colas), así que confiar sólo en el scope global deja la
+        // consulta abierta justo en los contextos donde nadie la está mirando.
+        $curso = AcademyCourse::where('tenant_id', $user->tenant_id ?? 1)
+            ->where('course_type', 'induction')
+            ->where(function ($q) use ($user) {
+                $q->whereNull('target_job_role_id')
+                    ->orWhere('target_job_role_id', $user->job_role_id);
+            })
+            ->orderBy('id')
+            ->first();
+
+        if (!$curso) {
+            return response()->json($sinPendiente);
+        }
+
+        $ingreso = \Illuminate\Support\Facades\DB::table('employees')
+            ->where('tenant_id', $user->tenant_id ?? 1)
+            ->where('user_id', $user->id)
+            ->value('hire_date');
+
+        $transcurridos = $ingreso
+            ? max(0, \Carbon\Carbon::parse($ingreso)->startOfDay()->diffInDays(\Carbon\Carbon::today(), false))
+            : null;
+
+        return response()->json([
+            'pendiente' => true,
+            'course_id' => $curso->id,
+            'course_title' => $curso->title,
+            'plazo' => $plazo,
+            // Null cuando el expediente no tiene fecha de ingreso (altas viejas): el banner
+            // avisa igual, pero sin inventar una cuenta regresiva.
+            'dias_transcurridos' => $transcurridos,
+            'dias_restantes' => $transcurridos === null ? null : max(0, $plazo - $transcurridos),
+            'vencido' => $transcurridos !== null && $transcurridos >= $plazo,
+        ]);
+    }
+
+    /**
      * Verificación pública de un certificado por su folio (SIN sesión).
      *
      * Es la mitad que le faltaba al certificado para significar algo: quien lo recibe impreso

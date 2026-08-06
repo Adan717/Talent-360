@@ -31,13 +31,11 @@ use Illuminate\Support\Facades\DB;
 class SupervisorPendientesController extends Controller
 {
     /**
-     * El plazo que se le da al colaborador para completar su inducción. Es el mismo número que
-     * ve él en su app ("tienes N días") y el que decide cuándo el caso se pinta ROJO en el
-     * tablero del encargado: **al cumplirse el plazo, no antes**. Decisión del jefe: "a los 3
-     * días sin completar, el caso se pone rojo en mi tablero... no quiero que el sistema
-     * castigue al nuevo; quiero que me presione a mí para acercarme a él".
+     * El plazo que se le da al colaborador para completar su inducción. Es el MISMO número que
+     * ve él en su app ("tienes N días"), por eso vive en `PlazoInduccion` y no aquí: si se
+     * separaran, el colaborador y su encargado estarían mirando relojes distintos.
      */
-    private const DIAS_DE_PLAZO = 3;
+    private const DIAS_DE_PLAZO = \App\Support\PlazoInduccion::DIAS;
 
     /**
      * A los cuántos días se pinta en rojo. El endpoint devuelve TODOS los pendientes con su

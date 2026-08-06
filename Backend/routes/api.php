@@ -593,6 +593,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/academy/courses/{id}/quiz-attempt', [AcademyController::class, 'submitQuizAttempt']);
             // Certificados del colaborador, con su folio real (familia H23).
             Route::get('/academy/certificates', [AcademyController::class, 'myCertificates']);
+            // Banner de inducción pendiente en la app del colaborador: cuántos días le quedan.
+            Route::get('/academy/mi-induccion', [AcademyController::class, 'miInduccionPendiente']);
         });
 
         // Evaluación 360°

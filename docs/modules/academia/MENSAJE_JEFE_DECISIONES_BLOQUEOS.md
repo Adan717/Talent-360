@@ -114,6 +114,20 @@ datos del servidor. La pantalla del admin miente: cree que lo mandó.)*
 recordatorio en la app · después el bug del Reloj · el paso de confirmación del organigrama se
 diseña esta semana y se implementa la siguiente.
 
+### Construido (2026-08-06)
+
+- **Tablero "Mi Equipo"** en Recursos Humanos (`7b1e8ac`), barra de escritorio y dock móvil.
+  Inducción pendiente con días y rojo al vencerse el plazo; cursos con 2+ reprobadas y botón
+  "Ya hablé con él". Probado en vivo contra DecorArte.
+- **Los administradores no salen del tablero** (`909237e`): al verlo con datos reales listaba a
+  toda la plantilla, incluida la dueña. Los supervisores sí siguen apareciendo.
+- **Banner en la app del colaborador**: *"Tienes N días para tu inducción. Complétala aquí."*,
+  y al tocarlo abre la Academia. Vencido, se pone rojo. `GET /academy/mi-induccion` hace la
+  cuenta en el servidor con la MISMA constante que pinta el rojo del encargado
+  (`App\Support\PlazoInduccion::DIAS`), para que el colaborador y su jefe no miren relojes
+  distintos. Sin fecha de ingreso (expedientes viejos) avisa igual, pero sin inventar la cuenta.
+  La tarjeta de notificaciones del reloj dice lo mismo que el banner.
+
 ### Correcciones manuales sobre DecorArte (2026-08-06, aprobadas por el jefe)
 
 La convención mecánica conectaba cada puesto con el PRIMERO del nivel superior, y ese primero

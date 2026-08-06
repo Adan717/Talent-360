@@ -454,6 +454,26 @@ export default function RelojVisual({
 
   const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
 
+  /**
+   * Inducción pendiente del colaborador (decisión de producto 2026-08-06: un banner en su app,
+   * NO un correo). La cuenta de días la da el SERVIDOR con el mismo plazo que pinta el rojo en
+   * el tablero de su encargado — si el navegador la calculara por su cuenta, el colaborador y su
+   * jefe acabarían mirando relojes distintos.
+   *
+   * No bloquea nada: es un aviso. Puede fichar y trabajar igual.
+   */
+  const [miInduccion, setMiInduccion] = useState<{
+    pendiente: boolean; course_id?: number; plazo?: number;
+    dias_restantes?: number | null; vencido?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (isSimulated || !currentUser?.id) return;
+    axiosInstance.get('/academy/mi-induccion')
+      .then(res => setMiInduccion(res.data))
+      .catch(err => console.error('Error al consultar la inducción pendiente:', err));
+  }, [isSimulated, currentUser?.id, currentUser?.has_completed_induction]);
+
   useEffect(() => {
     if (isSimulated) {
       setPendingCoursesCount(currentUser?.has_completed_induction ? 0 : 2);
@@ -1327,11 +1347,19 @@ export default function RelojVisual({
     }
 
     if (currentUser?.has_completed_induction === false) {
+      // Misma cuenta de días que el banner del hub: las dos pantallas tienen que decir lo mismo.
+      const diasRestantes = miInduccion?.pendiente ? miInduccion.dias_restantes : null;
       notificationsList.push({
         id: 'induction_pending',
         type: 'warning',
         title: 'Inducción Pendiente',
-        desc: 'Completa tu inducción en la Academia.',
+        desc: miInduccion?.vencido
+          ? 'Ya se pasó la fecha. Complétala en la Academia.'
+          : diasRestantes === null || diasRestantes === undefined
+            ? 'Completa tu inducción en la Academia.'
+            : diasRestantes === 0
+              ? 'Hoy es el último día. Complétala en la Academia.'
+              : `Te quedan ${diasRestantes} ${diasRestantes === 1 ? 'día' : 'días'} para completarla.`,
         icon: <GraduationCap className="text-amber-500 w-4 h-4" />,
         action: () => { setInnerTool(null); setPhoneTab('academia'); },
         actionText: 'Completar'
@@ -4096,7 +4124,9 @@ export default function RelojVisual({
                   
                   let alertMsg = null;
                   let alertBg = isDark ? "bg-violet-500/10 border-violet-500/20 text-violet-400" : "bg-violet-50 border-violet-100 text-violet-600";
-                  
+                  // El banner de inducción lleva a la Academia de un toque: "complétala aquí".
+                  let alertAction: (() => void) | null = null;
+
                   if (privateMessages[currentUser.id]) {
                     alertMsg = `🚨 Mensaje del Admin: ${privateMessages[currentUser.id]}`;
                     alertBg = "bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse";
@@ -4106,17 +4136,44 @@ export default function RelojVisual({
                   } else if (needsMealRes) {
                     alertMsg = "🍔 Tienes pendiente apartar tu comida del día.";
                     alertBg = "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400";
-                  } else if (currentUser?.has_completed_induction === false) {
-                    alertMsg = "💡 Sugerencia: Puedes registrar tu entrada normalmente, pero te recomendamos completar tu Inducción en la Academia para habilitar más opciones.";
-                    alertBg = isDark ? "bg-amber-500/10 border-amber-500/25 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-700";
+                  } else if (miInduccion?.pendiente) {
+                    // Antes decía "Sugerencia: ...te recomendamos completar tu Inducción...para
+                    // habilitar más opciones" — vago y además falso (no habilita ninguna opción).
+                    // Ahora dice cuánto tiempo le queda, que es lo que mueve a hacerla, y sigue
+                    // sin bloquear nada.
+                    const dias = miInduccion.dias_restantes;
+                    alertMsg = miInduccion.vencido
+                      ? '🎓 Tu inducción sigue pendiente y ya se pasó la fecha. Complétala aquí.'
+                      : dias === null || dias === undefined
+                        ? '🎓 Tienes tu inducción pendiente. Complétala aquí.'
+                        : dias === 0
+                          ? '🎓 Hoy es el último día para tu inducción. Complétala aquí.'
+                          : `🎓 Tienes ${dias} ${dias === 1 ? 'día' : 'días'} para tu inducción. Complétala aquí.`;
+                    alertBg = miInduccion.vencido
+                      ? (isDark ? "bg-rose-500/10 border-rose-500/25 text-rose-400" : "bg-rose-50 border-rose-200 text-rose-700")
+                      : (isDark ? "bg-amber-500/10 border-amber-500/25 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-700");
+                    alertAction = () => { setInnerTool(null); setPhoneTab('academia'); };
                   }
 
                   if (!alertMsg) return null;
 
-                  return (
-                    <div className={`px-4 py-2.5 rounded-xl border text-xs font-bold text-left flex items-start gap-2 shrink-0 ${alertBg}`}>
+                  const contenido = (
+                    <>
                       <span>📢</span>
                       <span className="flex-1 whitespace-normal">{alertMsg}</span>
+                    </>
+                  );
+
+                  return alertAction ? (
+                    <button
+                      onClick={alertAction}
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold text-left flex items-start gap-2 shrink-0 w-full hover:brightness-95 active:scale-[0.99] transition-all ${alertBg}`}
+                    >
+                      {contenido}
+                    </button>
+                  ) : (
+                    <div className={`px-4 py-2.5 rounded-xl border text-xs font-bold text-left flex items-start gap-2 shrink-0 ${alertBg}`}>
+                      {contenido}
                     </div>
                   );
                 })()}

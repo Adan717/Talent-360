@@ -43,6 +43,23 @@ class CerrarSucursalTest extends TestCase
         return $user->fresh();
     }
 
+    /**
+     * "Hoy" según el NEGOCIO, no según el servidor.
+     *
+     * `StoreOpeningService::getTodayOpeningStatus` busca la fila del día con
+     * `Carbon::now($this->tenantTimezone($tenantId))` — la zona del tenant, `America/Mexico_City`
+     * por defecto. Esta prueba sembraba la fila con `now()`, que en pruebas es UTC. Entre las
+     * 18:00 y la medianoche de México (00:00–06:00 UTC) son DÍAS DISTINTOS: la prueba abría la
+     * sucursal el día 6 y el servicio la buscaba el día 5, así que fallaba con "la sucursal no
+     * está abierta". Pasaba de día y fallaba de noche, sin que nada del código cambiara.
+     *
+     * El código de producción está bien; lo que estaba mal era la siembra.
+     */
+    private function hoyDelNegocio(): \Carbon\Carbon
+    {
+        return \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($this->tenantId));
+    }
+
     /** Deja la sucursal ABIERTA hoy con $responsable como encargado del día. */
     private function abrirHoy(User $responsable): int
     {
@@ -52,7 +69,7 @@ class CerrarSucursalTest extends TestCase
 
         return DB::table('store_daily_opening_statuses')->insertGetId([
             'tenant_id' => $this->tenantId, 'company_id' => 1, 'store_id' => $storeId,
-            'date' => now()->format('Y-m-d'),
+            'date' => $this->hoyDelNegocio()->format('Y-m-d'),
             'scheduled_opening_time' => '09:00', 'pre_opening_window_start' => '08:30',
             'report_deadline' => '09:30',
             'current_responsible_employee_id' => $responsable->id,
@@ -89,7 +106,7 @@ class CerrarSucursalTest extends TestCase
             ->assertJson(['success' => true]);
 
         $fila = DB::table('store_daily_opening_statuses')
-            ->where('tenant_id', $this->tenantId)->whereDate('date', now())->first();
+            ->where('tenant_id', $this->tenantId)->whereDate('date', $this->hoyDelNegocio())->first();
 
         $this->assertSame($encargado->id, (int) $fila->closed_by_employee_id,
             'El registro formal del QUIÉN es la razón de ser de la P3.');
@@ -107,7 +124,7 @@ class CerrarSucursalTest extends TestCase
         $this->actingAs($encargado)->postJson('/api/v1/store-opening/close')->assertStatus(200);
 
         $fila = DB::table('store_daily_opening_statuses')
-            ->where('tenant_id', $this->tenantId)->whereDate('date', now())->first();
+            ->where('tenant_id', $this->tenantId)->whereDate('date', $this->hoyDelNegocio())->first();
 
         $this->assertSame('opened', $fila->status,
             'El cierre registra, no bloquea: status intacto para que la salida siga libre.');
@@ -140,7 +157,7 @@ class CerrarSucursalTest extends TestCase
 
         $this->assertNull(
             DB::table('store_daily_opening_statuses')
-                ->where('tenant_id', $this->tenantId)->whereDate('date', now())->value('closed_at'),
+                ->where('tenant_id', $this->tenantId)->whereDate('date', $this->hoyDelNegocio())->value('closed_at'),
             'El mismo candado que la apertura: solo el responsable o un mando.'
         );
     }
@@ -154,7 +171,7 @@ class CerrarSucursalTest extends TestCase
         $this->actingAs($admin)->postJson('/api/v1/store-opening/close')->assertStatus(200);
 
         $this->assertSame($admin->id, (int) DB::table('store_daily_opening_statuses')
-            ->where('tenant_id', $this->tenantId)->whereDate('date', now())->value('closed_by_employee_id'));
+            ->where('tenant_id', $this->tenantId)->whereDate('date', $this->hoyDelNegocio())->value('closed_by_employee_id'));
     }
 
     public function test_no_se_puede_cerrar_dos_veces_el_mismo_dia(): void

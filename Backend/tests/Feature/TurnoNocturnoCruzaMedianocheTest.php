@@ -67,6 +67,33 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
         return $user->fresh();
     }
 
+    /**
+     * La NOCHE del caso, en hora local del negocio: empieza a las 22:00 y termina a las 02:00 del
+     * día siguiente.
+     *
+     * Antes las fechas iban escritas a mano ('2026-07-30T04:00:00Z'). `PunchBatchController` sólo
+     * acepta ponches offline de los últimos `MAX_AGE_DAYS = 7` días (R84, anti-backdating), así
+     * que la prueba **caducó**: el 6 de agosto a las 04:54 UTC el check_in del 30 de julio cumplió
+     * 7 días con 54 minutos y empezó a rechazarse —mientras el check_out, cuatro horas más tarde,
+     * todavía entraba—. Resultado: una sola fila en vez de dos, y una prueba que pasaba de día y
+     * fallaba de madrugada sin que nadie tocara el código.
+     *
+     * Se ancla a hace dos días para que la noche completa quede siempre en el pasado (a cualquier
+     * hora que corra la suite) y muy dentro de la ventana de 7 días.
+     */
+    private function noche(): \Carbon\Carbon
+    {
+        return \Carbon\Carbon::now('America/Mexico_City')->startOfDay()->subDays(2);
+    }
+
+    /** Un instante de esa noche, en UTC, que es como viaja `occurred_at`. */
+    private function instante(int $horasDesdeLaMedianocheDeLaNoche, int $minutos = 0): string
+    {
+        return $this->noche()->copy()
+            ->addHours($horasDesdeLaMedianocheDeLaNoche)->addMinutes($minutos)
+            ->utc()->format('Y-m-d\TH:i:s\Z');
+    }
+
     /** Ficha en un instante concreto usando la vía offline, que fija el momento real. */
     private function fichaEn(User $user, string $instanteUtc, string $tipo, string $sello): void
     {
@@ -83,20 +110,22 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
     {
         $velador = $this->veladorNocturno();
 
-        // 04:00Z = 22:00 del día 29 en Ciudad de México (UTC-6).
-        $this->fichaEn($velador, '2026-07-30T04:00:00Z', 'check_in', 'noct-in');
-        // 08:00Z = 02:00 del día 30. Misma jornada, día calendario distinto.
-        $this->fichaEn($velador, '2026-07-30T08:00:00Z', 'check_out', 'noct-out');
+        // 22:00 local: entra a su turno.
+        $this->fichaEn($velador, $this->instante(22), 'check_in', 'noct-in');
+        // 02:00 local del día siguiente. Misma jornada, día calendario distinto.
+        $this->fichaEn($velador, $this->instante(26), 'check_out', 'noct-out');
 
         $filas = DB::table('time_entries')->where('user_id', $velador->id)
-            ->orderBy('date')->get(['date', 'type']);
+            ->orderBy('id')->get(['date', 'type']);
 
         $this->assertCount(2, $filas);
 
-        // Ambos extremos pertenecen a la jornada que EMPEZÓ el 29.
-        $this->assertSame('2026-07-29', (string) $filas[0]->date);
+        // Ambos extremos pertenecen a la jornada que EMPEZÓ la noche anterior.
+        $diaDeLaJornada = $this->noche()->toDateString();
+
+        $this->assertSame($diaDeLaJornada, (string) $filas[0]->date);
         $this->assertSame('check_in', $filas[0]->type);
-        $this->assertSame('2026-07-29', (string) $filas[1]->date,
+        $this->assertSame($diaDeLaJornada, (string) $filas[1]->date,
             'La salida de madrugada cierra la jornada de ayer, no abre la de hoy.');
         $this->assertSame('check_out', $filas[1]->type);
     }
@@ -105,8 +134,8 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
     {
         $velador = $this->veladorNocturno();
 
-        $this->fichaEn($velador, '2026-07-30T04:00:00Z', 'check_in', 'n2-in');
-        $this->fichaEn($velador, '2026-07-30T08:00:00Z', 'check_out', 'n2-out');
+        $this->fichaEn($velador, $this->instante(22), 'check_in', 'n2-in');
+        $this->fichaEn($velador, $this->instante(26), 'check_out', 'n2-out');
 
         $diasConAsistencia = DB::table('time_entries')
             ->where('user_id', $velador->id)
@@ -122,8 +151,8 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
     {
         $velador = $this->veladorNocturno();
 
-        // 06:30Z = 00:30 local. Con turno de 22:00, son 2h30 de retardo.
-        $this->fichaEn($velador, '2026-07-30T06:30:00Z', 'check_in', 'tarde-in');
+        // 00:30 local del día siguiente. Con turno de 22:00, son 2h30 de retardo.
+        $this->fichaEn($velador, $this->instante(24, 30), 'check_in', 'tarde-in');
 
         $fila = DB::table('time_entries')->where('user_id', $velador->id)->first();
 
@@ -148,13 +177,13 @@ class TurnoNocturnoCruzaMedianocheTest extends TestCase
         ]);
         $user = $user->fresh();
 
-        // 15:00Z = 09:00 local; 23:00Z = 17:00 local. Mismo día.
-        $this->fichaEn($user, '2026-07-30T15:00:00Z', 'check_in', 'dia-in');
-        $this->fichaEn($user, '2026-07-30T23:00:00Z', 'check_out', 'dia-out');
+        // 09:00 y 17:00 locales del MISMO día (el siguiente al de la noche del caso).
+        $this->fichaEn($user, $this->instante(33), 'check_in', 'dia-in');
+        $this->fichaEn($user, $this->instante(41), 'check_out', 'dia-out');
 
         $dias = DB::table('time_entries')->where('user_id', $user->id)->distinct()->pluck('date');
 
         $this->assertCount(1, $dias, 'Un turno diurno debe quedar en un solo día.');
-        $this->assertSame('2026-07-30', (string) $dias[0]);
+        $this->assertSame($this->noche()->copy()->addDay()->toDateString(), (string) $dias[0]);
     }
 }

@@ -121,6 +121,23 @@ class RepararOrganigramaTest extends TestCase
         $this->assertSame($primera, $piso->fresh()->reports_to_role_id);
     }
 
+    public function test_el_puesto_de_mando_no_termina_colgado_de_un_puesto_viejo(): void
+    {
+        // LO QUE ATRAPÓ EL --dry-run CONTRA LOS DATOS REALES: al crear la empresa quedan puestos
+        // sembrados con `jerarquiaLlaves` 0 —"sin nivel declarado"—, y tomarlos como un nivel
+        // superior al 1 hacía que la CABEZA de la empresa reportara a uno de ellos.
+        $viejo = $this->puesto('Gerente de Sucursal (sembrado)', 0);
+        $mando = $this->puesto('Administrador Gerente', 1);
+        $piso = $this->puesto('Asesor', 3);
+
+        $this->reparar();
+
+        $this->assertNull($mando->fresh()->reports_to_role_id,
+            'la cabeza de la empresa no reporta a nadie, y menos a un puesto sin nivel declarado');
+        $this->assertSame($mando->id, $piso->fresh()->reports_to_role_id);
+        $this->assertNull($viejo->fresh()->reports_to_role_id, 'el puesto sin nivel se deja como está');
+    }
+
     public function test_el_tablero_encuentra_al_encargado_despues_de_reparar(): void
     {
         // La razón de ser del comando: sin organigrama, el encargado no ve a su equipo.

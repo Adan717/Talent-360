@@ -110,9 +110,17 @@ class RepararOrganigramaCommand extends Command
      */
     private function calcularCambios($puestos): array
     {
+        // `jerarquiaLlaves` 0 o nulo significa "sin nivel declarado", no "el nivel más alto".
+        // Son los puestos que quedaron sembrados al crear la empresa, antes de aplicar el giro.
+        // Meterlos en el cálculo hacía que el puesto de MANDO (nivel 1) terminara reportándole a
+        // un puesto viejo de nivel 0 — lo detectó el --dry-run contra los datos reales antes de
+        // escribir nada. El asistente no tiene este problema porque sólo recorre los puestos del
+        // catálogo que está creando; aquí se mira toda la empresa, así que hay que excluirlos.
+        $conNivel = $puestos->filter(fn ($p) => (int) ($p->jerarquiaLlaves ?? 0) >= 1);
+
         $porNivel = [];
-        foreach ($puestos as $p) {
-            $porNivel[(int) ($p->jerarquiaLlaves ?? 0)][] = (int) $p->id;
+        foreach ($conNivel as $p) {
+            $porNivel[(int) $p->jerarquiaLlaves][] = (int) $p->id;
         }
 
         $niveles = array_keys($porNivel);
@@ -143,6 +151,13 @@ class RepararOrganigramaCommand extends Command
             }
 
             $nivel = (int) ($p->jerarquiaLlaves ?? 0);
+
+            if ($nivel < 1) {
+                // Sin nivel declarado no hay dónde colgarlo: se deja como está y que lo acomode
+                // quien conoce la empresa, arrastrándolo en el organigrama.
+                continue;
+            }
+
             $jefeId = null;
 
             foreach (array_reverse($niveles) as $candidato) {

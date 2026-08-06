@@ -12,10 +12,12 @@ use Carbon\Carbon;
 class EmployeePayrollController extends Controller
 {
     protected ClockService $clockService;
+    protected \App\Services\PayrollWeekService $weekService;
 
-    public function __construct(ClockService $clockService)
+    public function __construct(ClockService $clockService, \App\Services\PayrollWeekService $weekService)
     {
         $this->clockService = $clockService;
+        $this->weekService = $weekService;
     }
 
     /**
@@ -35,13 +37,23 @@ class EmployeePayrollController extends Controller
     }
 
     /**
-     * Helper para obtener el rango de fechas de la semana actual (Lunes a Domingo).
+     * Semana laboral del tenant que contiene HOY (para la vista diaria en vivo).
+     * Antes esto era lunes→domingo fijo, en conflicto con la semana configurable del
+     * batch (PayrollWeekService): dos definiciones de semana para la misma fila.
      */
-    private function getCurrentWeekRange()
+    private function currentWeekRange(int $tenantId): array
     {
-        $now = Carbon::now();
-        $start = $now->copy()->startOfWeek(); // Lunes
-        $end = $now->copy()->endOfWeek(); // Domingo
+        [$start, $end] = $this->weekService->weekRangeFor($tenantId, Carbon::now());
+        return [$start->toDateString(), $end->toDateString()];
+    }
+
+    /**
+     * Última semana CERRADA del tenant: el único periodo firmable (N3 — firmar la semana
+     * en curso congelaba netos calculados con días futuros contados como faltas).
+     */
+    private function closedWeekRange(int $tenantId): array
+    {
+        [$start, $end] = $this->weekService->lastClosedWeekFor($tenantId, Carbon::now());
         return [$start->toDateString(), $end->toDateString()];
     }
 
@@ -52,7 +64,7 @@ class EmployeePayrollController extends Controller
     {
         try {
             $employee = $this->getAuthEmployee();
-            [$startDate, $endDate] = $this->getCurrentWeekRange();
+            [$startDate, $endDate] = $this->currentWeekRange(auth()->user()->tenant_id ?? 1);
 
             $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
 
@@ -110,12 +122,17 @@ class EmployeePayrollController extends Controller
 
     /**
      * Retorna el desglose de nómina semanal y estado de aprobación del colaborador.
+     * `?period=closed` devuelve la última semana CERRADA (la firmable); default: la
+     * semana en curso, que es sólo vista informativa en vivo.
      */
     public function getPayrollWeekly(Request $request)
     {
         try {
             $employee = $this->getAuthEmployee();
-            [$startDate, $endDate] = $this->getCurrentWeekRange();
+            $tenantId = auth()->user()->tenant_id ?? 1;
+            [$startDate, $endDate] = $request->query('period') === 'closed'
+                ? $this->closedWeekRange($tenantId)
+                : $this->currentWeekRange($tenantId);
 
             $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
 
@@ -132,14 +149,18 @@ class EmployeePayrollController extends Controller
     }
 
     /**
-     * Firma de conformidad digital la nómina semanal el sábado.
+     * Firma de conformidad digital de la nómina semanal.
+     *
+     * N3: la firma aplica SIEMPRE a la última semana CERRADA del tenant — el servidor decide
+     * el periodo, el cliente no manda fechas. Antes se firmaba la semana EN CURSO: un neto de
+     * $0 (días futuros contados como faltas) podía quedar congelado a media semana.
      */
     public function approvePayrollWeekly(Request $request)
     {
         try {
             $employee = $this->getAuthEmployee();
             $tenantId = auth()->user()->tenant_id ?? 1;
-            [$startDate, $endDate] = $this->getCurrentWeekRange();
+            [$startDate, $endDate] = $this->closedWeekRange($tenantId);
 
             // H22: antes esto recalculaba y sobrescribía la fila SIEMPRE, mirara o no en qué
             // estado estaba. Dos daños reales:

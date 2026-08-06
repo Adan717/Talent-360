@@ -10,7 +10,7 @@ import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export const FacturacionManager = () => {
   const [activeTab, setActiveTab] = useState<'fiscal' | 'timbrado' | 'historial'>('fiscal');
-  const { currentUser, globalUsers, systemSettings } = useAppStore();
+  const { currentUser } = useAppStore();
 
   // Estados de datos fiscales
   const [rfc, setRfc] = useState('');
@@ -25,28 +25,32 @@ export const FacturacionManager = () => {
   const [keyName, setKeyName] = useState('');
   const [csdPassword, setCsdPassword] = useState('');
 
-  // Estados de timbrado
+  // Estados de timbrado. Los ids seleccionados son de EXPEDIENTE (employees), que es la
+  // llave real de weekly_payrolls — antes se iteraban usuarios y los ids no correspondían.
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
   const [timbrando, setTimbrando] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [selectedPeriod, setSelectedPeriod] = useState('2026-07-1'); // 1ra quincena de Julio
-  const [payrollStatus, setPayrollStatus] = useState<Record<number, { status: 'pending' | 'success' | 'failed', uuid?: string, pdfUrl?: string }>>({});
+  const [payrollStatus, setPayrollStatus] = useState<Record<number, { status: 'pending' | 'success' | 'failed', uuid?: string, error?: string, pdfUrl?: string }>>({});
 
   // Estados de historial
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [invoicesError, setInvoicesError] = useState('');
 
   // Estados de mensajería
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Estados de nómina y ticket LFT
+  // Nómina del periodo operativo (la última semana cerrada del tenant, N3): el backend
+  // manda {period, employees} — el periodo REAL, no una quincena inventada en el cliente.
   const [payrollSummary, setPayrollSummary] = useState<any[]>([]);
+  const [payrollPeriod, setPayrollPeriod] = useState<{ start_date: string; end_date: string } | null>(null);
   const fetchPayrollSummary = async () => {
     try {
       const res = await axiosInstance.get('/admin/payroll');
-      setPayrollSummary(res.data || []);
+      setPayrollSummary(res.data?.employees || []);
+      setPayrollPeriod(res.data?.period || null);
     } catch (e) {
       console.error("Error al obtener resúmenes de nómina", e);
     }
@@ -101,15 +105,21 @@ export const FacturacionManager = () => {
 
   const fetchInvoices = async () => {
     setLoadingInvoices(true);
+    setInvoicesError('');
     try {
       const res = await axiosInstance.get('/billing/invoices');
-      if (res.data && res.data.success) {
+      // N8: el backend ya no inventa facturas — si el proveedor falla (p. ej. sin
+      // credenciales), se muestra el error real y la lista queda vacía.
+      if (res.data?.success && Array.isArray(res.data.data)) {
         setInvoices(res.data.data);
-      } else if (res.data) {
-        setInvoices(res.data);
+      } else {
+        setInvoices([]);
+        setInvoicesError(res.data?.error || 'No se pudo consultar el historial del proveedor fiscal.');
       }
     } catch (e) {
       console.error("Error al obtener facturas", e);
+      setInvoices([]);
+      setInvoicesError('No se pudo consultar el historial del proveedor fiscal.');
     } finally {
       setLoadingInvoices(false);
     }
@@ -194,29 +204,32 @@ export const FacturacionManager = () => {
     }
   };
 
-  // Simular timbrado masivo
+  // N1: sólo es timbrable una nómina AUTORIZADA por la empresa y aún sin folio fiscal.
+  const esTimbrable = (emp: any) =>
+    emp.approval_status === 'approved_by_admin' && !emp.cfdi_uuid && payrollStatus[emp.id]?.status !== 'success';
+
+  const timbrables = payrollSummary.filter(esTimbrable);
+
+  // Timbrado masivo real: el monto lo pone el servidor desde la nómina autorizada; aquí
+  // sólo viaja QUIÉN y QUÉ periodo (el periodo operativo que reportó el backend).
   const handleTimbrarMasivo = async () => {
-    if (selectedEmployees.length === 0) return;
+    if (selectedEmployees.length === 0 || !payrollPeriod) return;
     setTimbrando(true);
     setProgress(0);
     setSuccessMsg('');
     setErrorMsg('');
-
-    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     const chunkLength = selectedEmployees.length;
     let successCount = 0;
 
     for (let i = 0; i < chunkLength; i++) {
       const empId = selectedEmployees[i];
-      const emp = globalUsers.find(u => u.id === empId);
-      
+
       try {
         const res = await axiosInstance.post('/billing/payroll/timbrar', {
           employee_id: empId,
-          period_start: selectedPeriod === '2026-07-1' ? '2026-07-01' : '2026-06-15',
-          period_end: selectedPeriod === '2026-07-1' ? '2026-07-15' : '2026-06-30',
-          net_salary: emp?.base_salary || 8500.00
+          period_start: payrollPeriod.start_date,
+          period_end: payrollPeriod.end_date
         });
 
         if (res.data && res.data.success) {
@@ -225,43 +238,48 @@ export const FacturacionManager = () => {
             ...prev,
             [empId]: {
               status: 'success',
-              uuid: res.data.receipt?.uuid || res.data.uuid,
-              pdfUrl: res.data.receipt?.pdf_url || '#'
+              uuid: res.data.receipt?.uuid,
+              pdfUrl: res.data.receipt?.pdf_url
             }
           }));
         } else {
-          setPayrollStatus(prev => ({ ...prev, [empId]: { status: 'failed' } }));
+          setPayrollStatus(prev => ({ ...prev, [empId]: { status: 'failed', error: res.data?.error } }));
         }
-      } catch (e) {
-        setPayrollStatus(prev => ({ ...prev, [empId]: { status: 'failed' } }));
+      } catch (e: any) {
+        setPayrollStatus(prev => ({
+          ...prev,
+          [empId]: { status: 'failed', error: e.response?.data?.error || 'Error de conexión con el proveedor fiscal' }
+        }));
       }
 
       setProgress(Math.round(((i + 1) / chunkLength) * 100));
-      await delay(800); // Demora para simular timbrado CFDI del SAT
     }
 
     setTimbrando(false);
-    setSuccessMsg(`Timbrado completado. Se timbraron con éxito ${successCount} de ${chunkLength} recibos de nómina.`);
+    setSelectedEmployees([]);
+    if (successCount === chunkLength) {
+      setSuccessMsg(`Timbrado completado: ${successCount} de ${chunkLength} recibos de nómina.`);
+    } else {
+      setErrorMsg(`Se timbraron ${successCount} de ${chunkLength} recibos. Revisa el detalle de los que fallaron en la tabla.`);
+    }
+    fetchPayrollSummary(); // Refrescar folios sellados
     fetchInvoices(); // Refrescar lista de facturas
   };
 
-  // Seleccionar/Deseleccionar todos los colaboradores
+  // Seleccionar/Deseleccionar todos los TIMBRABLES (autorizados y sin folio)
   const toggleSelectAll = () => {
-    const activeCollaborators = globalUsers.filter(u => u.role !== 'platform_admin' && u.id !== currentUser?.id);
-    if (selectedEmployees.length === activeCollaborators.length) {
+    if (selectedEmployees.length === timbrables.length) {
       setSelectedEmployees([]);
     } else {
-      setSelectedEmployees(activeCollaborators.map(u => u.id));
+      setSelectedEmployees(timbrables.map(e => e.id));
     }
   };
 
   const toggleSelectEmployee = (id: number) => {
-    setSelectedEmployees(prev => 
+    setSelectedEmployees(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
-
-  const activeCollaborators = globalUsers.filter(u => u.role !== 'platform_admin' && u.id !== currentUser?.id);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
@@ -506,19 +524,16 @@ export const FacturacionManager = () => {
         {/* CONTENIDO TAB: TIMBRADO DE NÓMINA */}
         {activeTab === 'timbrado' && (
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            {/* Header del timbrado */}
+            {/* Header del timbrado: el periodo operativo REAL (última semana cerrada) */}
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/30 flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <select
-                  value={selectedPeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="px-3 py-1.5 bg-white border border-slate-250 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-500"
-                >
-                  <option value="2026-07-1">1ra Quincena Julio 2026 (01/07 - 15/07)</option>
-                  <option value="2026-06-2">2da Quincena Junio 2026 (16/06 - 30/06)</option>
-                </select>
+                <span className="px-3 py-1.5 bg-white border border-slate-250 rounded-xl text-xs font-bold text-slate-700">
+                  {payrollPeriod
+                    ? `Semana del ${payrollPeriod.start_date} al ${payrollPeriod.end_date}`
+                    : 'Cargando periodo...'}
+                </span>
                 <span className="text-xs font-black text-slate-400">
-                  {activeCollaborators.length} Colaboradores Activos
+                  {payrollSummary.length} Colaboradores · {timbrables.length} listos para timbrar
                 </span>
               </div>
 
@@ -559,29 +574,31 @@ export const FacturacionManager = () => {
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider w-12 text-center">
                       <input
                         type="checkbox"
-                        checked={selectedEmployees.length === activeCollaborators.length && activeCollaborators.length > 0}
+                        checked={selectedEmployees.length === timbrables.length && timbrables.length > 0}
                         onChange={toggleSelectAll}
                         className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                       />
                     </th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Colaborador</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">RFC / CURP</th>
-                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Salario Base</th>
-                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Percepciones / Deducciones</th>
-                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Firma Colaborador</th>
+                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Neto de la Semana</th>
+                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Deducciones</th>
+                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado Nómina</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado Timbrado</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150">
-                  {activeCollaborators.map((emp) => {
+                  {payrollSummary.map((emp) => {
                     const isSelected = selectedEmployees.includes(emp.id);
                     const status = payrollStatus[emp.id];
-                    const baseSalary = emp.base_salary || 8500.00;
-                    const summary = payrollSummary.find(p => p.id === emp.id);
-                    
+                    const timbrable = esTimbrable(emp);
+                    const yaTimbrada = !!emp.cfdi_uuid || status?.status === 'success';
+                    // El neto que se timbra es el GUARDADO en la nómina firmada/autorizada.
+                    const netoMostrado = emp.net_firmado ?? emp.net;
+
                     return (
-                      <tr 
+                      <tr
                         key={emp.id}
                         className={`hover:bg-slate-50/50 transition-all ${
                           isSelected ? 'bg-emerald-50/10' : ''
@@ -591,8 +608,9 @@ export const FacturacionManager = () => {
                           <input
                             type="checkbox"
                             checked={isSelected}
+                            disabled={!timbrable}
                             onChange={() => toggleSelectEmployee(emp.id)}
-                            className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                            className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                           />
                         </td>
                         <td className="py-4 px-6">
@@ -607,47 +625,66 @@ export const FacturacionManager = () => {
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          <span className="text-xs font-mono font-bold text-slate-700 block">{emp.rfc || 'XAXX010101000'}</span>
-                          <span className="text-[10px] font-mono text-slate-400 font-semibold block">{emp.curp || 'AAAA000000HHHHHH00'}</span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="text-sm font-black text-slate-800">
-                            ${baseSalary.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-xs text-slate-500 font-bold space-y-0.5">
-                          <div>➕ Sueldo Quincenal: ${ (baseSalary / 2).toFixed(2) }</div>
-                          <div>➖ Retención ISR: ${ (baseSalary * 0.08).toFixed(2) }</div>
-                          <div>➖ Retención IMSS: ${ (baseSalary * 0.035).toFixed(2) }</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          {summary?.approval_status === 'approved_by_employee' || summary?.approval_status === 'finalized' ? (
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50">
-                              🟢 Aceptado
-                            </span>
+                          {emp.rfc ? (
+                            <span className="text-xs font-mono font-bold text-slate-700 block">{emp.rfc}</span>
                           ) : (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
-                              🟡 Pendiente
+                            <span className="text-[10px] font-bold text-amber-600 block">Sin RFC (se usará genérico)</span>
+                          )}
+                          {emp.curp && (
+                            <span className="text-[10px] font-mono text-slate-400 font-semibold block">{emp.curp}</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6">
+                          {emp.salary_pending ? (
+                            <span className="text-[10px] font-bold text-amber-600">Salario sin capturar</span>
+                          ) : (
+                            <span className="text-sm font-black text-slate-800">
+                              ${Number(netoMostrado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           )}
                         </td>
                         <td className="py-4 px-6">
-                          {!status ? (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
-                              Pendiente Timbrar
+                          <span className="text-xs font-bold text-rose-600">
+                            {emp.penalty > 0 ? `-$${Number(emp.penalty).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          {emp.approval_status === 'approved_by_admin' ? (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50">
+                              🟢 Autorizada
                             </span>
-                          ) : status.status === 'success' ? (
+                          ) : emp.approval_status === 'approved_by_employee' || emp.approval_status === 'finalized' ? (
+                            <span className="px-2.5 py-1 bg-sky-50 text-sky-700 text-[10px] font-extrabold uppercase rounded-full border border-sky-200/50">
+                              🔵 Firmada · falta autorizar
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
+                              🟡 Sin firma del colaborador
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6">
+                          {yaTimbrada ? (
                             <div className="space-y-0.5">
                               <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase rounded-full border border-emerald-200/50 flex items-center gap-1 w-fit">
                                 <CheckCircle size={10} /> Timbrado SAT
                               </span>
-                              <span className="text-[9px] font-mono font-bold text-slate-450 block truncate max-w-[120px]">
-                                {status.uuid}
+                              <span className="text-[9px] font-mono font-bold text-slate-450 block truncate max-w-[120px]" title={emp.cfdi_uuid || status?.uuid || ''}>
+                                {emp.cfdi_uuid || status?.uuid || 'Folio en proceso'}
                               </span>
                             </div>
+                          ) : status?.status === 'failed' ? (
+                            <div className="space-y-0.5">
+                              <span className="px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-extrabold uppercase rounded-full border border-rose-200/50 flex items-center gap-1 w-fit">
+                                <AlertCircle size={10} /> Falló Timbrado
+                              </span>
+                              {status.error && (
+                                <span className="text-[9px] font-bold text-rose-500 block max-w-[180px]">{status.error}</span>
+                              )}
+                            </div>
                           ) : (
-                            <span className="px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-extrabold uppercase rounded-full border border-rose-200/50 flex items-center gap-1 w-fit">
-                              <AlertCircle size={10} /> Falló Timbrado
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase rounded-full border border-amber-200/50">
+                              Pendiente Timbrar
                             </span>
                           )}
                         </td>
@@ -660,31 +697,15 @@ export const FacturacionManager = () => {
                             >
                               <Printer size={12} />
                             </button>
-                            {status?.status === 'success' ? (
-                              <>
-                                <button
-                                  title="Descargar PDF"
-                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
-                                >
-                                  <Download size={12} />
-                                </button>
-                                <button
-                                  title="Ver XML"
-                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
-                                >
-                                  <FileCode size={12} />
-                                </button>
-                              </>
-                            ) : null}
                           </div>
                         </td>
                       </tr>
                     );
                   })}
-                  {activeCollaborators.length === 0 && (
+                  {payrollSummary.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400 font-semibold text-xs">
-                        No hay colaboradores de prueba activos. Agrega un colaborador en Recursos Humanos primero.
+                      <td colSpan={8} className="py-8 text-center text-slate-400 font-semibold text-xs">
+                        No hay colaboradores activos con nómina en el periodo. Agrega colaboradores en Recursos Humanos primero.
                       </td>
                     </tr>
                   )}
@@ -713,6 +734,12 @@ export const FacturacionManager = () => {
               <div className="py-12 flex flex-col items-center justify-center gap-3">
                 <RefreshCw size={24} className="text-slate-400 animate-spin" />
                 <span className="text-xs font-bold text-slate-500">Consultando API de Facturapi...</span>
+              </div>
+            ) : invoicesError ? (
+              <div className="py-10 px-8 text-center">
+                <AlertCircle size={28} className="text-amber-500 mx-auto mb-3" />
+                <p className="text-xs font-bold text-slate-600 mb-1">No se pudo consultar el historial fiscal</p>
+                <p className="text-[10.5px] text-slate-400 font-medium max-w-md mx-auto">{invoicesError}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">

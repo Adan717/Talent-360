@@ -13,8 +13,11 @@ use Carbon\Carbon;
 /**
  * Comando: payroll:calculate-weekly
  *
- * Calcula automáticamente la nómina semanal de todos los empleados activos
- * del tenant. Se ejecuta cada sábado a las 23:59 vía el scheduler de Laravel.
+ * Calcula la nómina semanal de todos los empleados activos del tenant sobre la última
+ * semana CERRADA (auditoría N3: calcular la semana en curso contaba los días futuros
+ * como faltas y dejaba borradores con neto $0). Corre cada noche vía el scheduler: los
+ * drafts de la semana recién cerrada absorben justificantes/contingencias tardíos hasta
+ * que el trabajador firma; lo firmado es inmutable para el batch.
  *
  * Uso manual: php artisan payroll:calculate-weekly [--tenant_id=1] [--week=2026-07-07]
  */
@@ -22,7 +25,7 @@ class CalculateWeeklyPayrollCommand extends Command
 {
     protected $signature = 'payroll:calculate-weekly
                             {--tenant_id= : ID del tenant (omitir para todos)}
-                            {--week=      : Fecha de inicio de semana YYYY-MM-DD (default: semana actual)}';
+                            {--week=      : Fecha dentro de la semana a calcular YYYY-MM-DD (default: la última semana cerrada de cada tenant)}';
 
     protected $description = 'Calcula la nómina semanal LFT para todos los empleados activos';
 
@@ -33,9 +36,9 @@ class CalculateWeeklyPayrollCommand extends Command
 
     public function handle(): int
     {
-        // Fecha de referencia (default: hoy). La semana concreta se resuelve POR TENANT
-        // según su día de inicio configurado (Sección 2 #1).
-        $refDate  = $this->option('week') ? Carbon::parse($this->option('week')) : Carbon::now();
+        // Con --week se calcula la semana que CONTIENE esa fecha, tal cual (backfill/manual).
+        // Sin opción, cada tenant resuelve su última semana cerrada (N3): nunca la corriente.
+        $explicitWeek = $this->option('week') ? Carbon::parse($this->option('week')) : null;
         $tenantId = $this->option('tenant_id');
 
         // Obtener tenants activos
@@ -64,7 +67,9 @@ class CalculateWeeklyPayrollCommand extends Command
             }
 
             // Semana laboral de ESTE tenant (domingo→sábado, lunes→domingo, etc.).
-            [$weekStart, $weekEnd] = $this->weekService->weekRangeFor($tenant->id, $refDate->copy());
+            [$weekStart, $weekEnd] = $explicitWeek
+                ? $this->weekService->weekRangeFor($tenant->id, $explicitWeek->copy())
+                : $this->weekService->lastClosedWeekFor($tenant->id, Carbon::now());
             $this->info("🧮 Tenant #{$tenant->id}: semana {$weekStart->toDateString()} → {$weekEnd->toDateString()}");
 
             $employees = Employee::where('is_active_employee', true)
@@ -142,7 +147,7 @@ class CalculateWeeklyPayrollCommand extends Command
         $this->info("\n📊 Resultado: {$totalEmployees} nóminas calculadas, {$errors} errores.");
 
         Log::info('CalculateWeeklyPayrollCommand completado', [
-            'ref_date'        => $refDate->toDateString(),
+            'ref_date'        => ($explicitWeek ?? Carbon::now())->toDateString(),
             'total_employees' => $totalEmployees,
             'errors'          => $errors,
         ]);

@@ -173,7 +173,8 @@ class FacturapiBillingProvider implements BillingProviderInterface
                 return [
                     'success' => true,
                     'id' => $invoice['id'],
-                    'uuid' => $invoice['uuid'] ?? 'sandbox-uuid-' . uniqid(),
+                    // Sin UUID del PAC se devuelve null, no un folio inventado (N1).
+                    'uuid' => $invoice['uuid'] ?? null,
                     'status' => $invoice['status'] ?? 'valid',
                     'pdf_url' => "{$this->baseUrl}/invoices/{$invoice['id']}/pdf",
                     'xml_url' => "{$this->baseUrl}/invoices/{$invoice['id']}/xml",
@@ -218,7 +219,8 @@ class FacturapiBillingProvider implements BillingProviderInterface
                 return [
                     'success' => true,
                     'id' => $invoice['id'],
-                    'uuid' => $invoice['uuid'] ?? 'sandbox-uuid-' . uniqid(),
+                    // Sin UUID del PAC se devuelve null, no un folio inventado (N1).
+                    'uuid' => $invoice['uuid'] ?? null,
                     'status' => $invoice['status'] ?? 'valid',
                     'pdf_url' => "{$this->baseUrl}/invoices/{$invoice['id']}/pdf",
                     'xml_url' => "{$this->baseUrl}/invoices/{$invoice['id']}/xml",

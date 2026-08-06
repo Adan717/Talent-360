@@ -15,6 +15,7 @@ class WeeklyPayroll extends Model
     protected $casts = [
         'employee_approved_at' => 'datetime',
         'admin_approved_at' => 'datetime', // H23
+        'timbrada_at' => 'datetime', // N1
     ];
 
     public function employee()

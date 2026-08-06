@@ -73,6 +73,17 @@ class PayrollWeekService
         return [$start->copy()->startOfDay(), $end];
     }
 
+    /**
+     * Semana del tenant más reciente que YA TERMINÓ a la fecha dada (la anterior a la que
+     * contiene $date). Es el periodo operativo de nómina: lo que se firma, se autoriza y se
+     * timbra es siempre una semana completa, nunca una en curso (auditoría N3: calcular la
+     * semana corriente contaba los días futuros como faltas y dejaba netos en $0).
+     */
+    public function lastClosedWeekFor(int $tenantId, Carbon $date): array
+    {
+        return $this->weekRangeFor($tenantId, $date->copy()->subDays(7));
+    }
+
     /** ¿La semana del tenant CIERRA en la fecha dada? (último día de su semana) */
     public function weekClosesOn(int $tenantId, Carbon $date): bool
     {

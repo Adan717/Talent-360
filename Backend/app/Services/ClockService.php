@@ -1501,28 +1501,6 @@ class ClockService
     }
 
     /**
-     * Calcular deducciones monetarias para la pre-nómina.
-     */
-    public function calculateLatePenalty(User $user, $startDate, $endDate)
-    {
-        $entries = TimeEntry::where('user_id', $user->id)
-            ->whereBetween('date', [$startDate, $endDate])
-            ->where('is_late', true)
-            ->get();
-
-        $totalLateMinutes = $entries->sum('late_minutes');
-
-        // Simulación: $2 MXN de descuento por cada minuto de retardo
-        $penaltyAmount = $totalLateMinutes * 2;
-
-        return [
-            'total_late_minutes' => $totalLateMinutes,
-            'penalty_amount' => $penaltyAmount,
-            'lates_count' => $entries->count()
-        ];
-    }
-
-    /**
      * Calcula la nómina detallada y el desglose de LFT de un colaborador.
      *
      * @param int|null $simulationSessionId "Reportes de Prueba" (§13): si se especifica, incluye
@@ -1560,10 +1538,12 @@ class ClockService
         // semanal e INFLA el diario (convierte 6 días de trabajo en 7 pagados) — pero cambiarlo
         // a los expedientes legados sin el informe de impacto revisado alteraría pagos ya
         // acordados en silencio. La migración es por recaptura explícita, no por fórmula.
+        // $baseSalary se define SIEMPRE: antes sólo existía en la rama legada, y para un
+        // expediente con salario_diario `salary.base` salía indefinido (0 en pantalla).
+        $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
         if ($employee->salario_diario !== null && (float) $employee->salario_diario > 0) {
             $dailySalary = (float) $employee->salario_diario;
         } else {
-            $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
             $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
         }
 
@@ -1701,6 +1681,11 @@ class ClockService
         // para quien no tiene capacidad de fichar.
         $canTrackAttendance = !is_null($employee->user_id);
 
+        // N3: una falta sólo puede existir en un día que YA TERMINÓ (en la zona horaria del
+        // tenant). El día en curso y los futuros no son faltas — todavía no ocurren. Sin este
+        // guard, calcular la semana corriente un jueves fabricaba 6 faltas y netos de $0.
+        $todayStr = Carbon::now(TenantTimezone::for($tenantId))->toDateString();
+
         $current = $start->copy();
         $analysedDates = [];
         while ($current->lte($end)) {
@@ -1718,6 +1703,7 @@ class ClockService
                     $expectedDaysCount++;
                     // R83: contingencia aprobada (o eventualidad activa §1–§42) NO es falta.
                     if (!isset($attendedDates[$dateStr])
+                        && $dateStr < $todayStr // N3: sólo días ya transcurridos
                         && !$contingencyDates->has($dateStr)
                         && !in_array($dateStr, $activeDeclarationDates, true)
                         && $canTrackAttendance) {
@@ -1849,6 +1835,8 @@ class ClockService
                 'is_rest_day' => $isRestDay,
                 'has_entries' => $hasEntries,
                 'attended' => $attended,
+                // N3: sin asistencia + day_over=false NO es falta — el día no ha terminado.
+                'day_over' => $dStr < $todayStr,
                 'late_justified' => $justifiedDates->has(Carbon::parse($dStr)->format('Y-m-d')),
                 'contingency' => $contingencyDates->has(Carbon::parse($dStr)->format('Y-m-d'))
                     || in_array($dStr, $activeDeclarationDates, true),
@@ -1947,9 +1935,16 @@ class ClockService
             ],
             'days_details' => $datesDetails,
             'approval' => [
-                'is_approved' => $weeklyPayrollRecord ? ($weeklyPayrollRecord->status === 'approved_by_employee' || $weeklyPayrollRecord->status === 'finalized') : false,
+                'is_approved' => $weeklyPayrollRecord
+                    ? in_array($weeklyPayrollRecord->status, ['approved_by_employee', 'approved_by_admin', 'finalized'], true)
+                    : false,
                 'status' => $weeklyPayrollRecord ? $weeklyPayrollRecord->status : 'pending_employee',
-                'approved_at' => $weeklyPayrollRecord ? $weeklyPayrollRecord->employee_approved_at : null
+                'approved_at' => $weeklyPayrollRecord ? $weeklyPayrollRecord->employee_approved_at : null,
+                'cfdi_uuid' => $weeklyPayrollRecord->cfdi_uuid ?? null,
+                'timbrada_at' => $weeklyPayrollRecord->timbrada_at ?? null,
+                // Neto GUARDADO de la fila (el que se firmó/autorizó y el que se timbra);
+                // puede diferir del neto vivo si una incidencia cambió después de la firma.
+                'net_registrado' => isset($weeklyPayrollRecord->net_pay) ? (float) $weeklyPayrollRecord->net_pay : null
             ]
         ];
     }

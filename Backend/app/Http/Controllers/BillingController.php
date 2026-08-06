@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\Billing\BillingProviderInterface;
 use Illuminate\Support\Facades\DB;
@@ -117,58 +116,22 @@ class BillingController extends Controller
             'page' => $request->input('page', 1)
         ];
 
-        $res = $this->billingProvider->forTenant($tenant)->listInvoices($params);
-
-        if (isset($res['success']) && !$res['success']) {
-            // Generar datos ficticios/sandbox si no hay API Key real configurada
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    [
-                        'id' => 'invoice_sandbox_1',
-                        'uuid' => 'C1B58C11-9A3E-4B07-A595-D4E087D2FA68',
-                        'legal_name' => 'JUAN PEREZ LOPEZ',
-                        'rfc' => 'PELJ8001011A0',
-                        'total' => 12500.00,
-                        'created_at' => now()->subDays(2)->toIso8601String(),
-                        'status' => 'valid',
-                        'type' => 'payroll',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ],
-                    [
-                        'id' => 'invoice_sandbox_2',
-                        'uuid' => 'F2E58C11-9A3E-4B07-A595-D4E087D2FB99',
-                        'legal_name' => 'MARIA GOMEZ DIAZ',
-                        'rfc' => 'GODM8505052B3',
-                        'total' => 14200.00,
-                        'created_at' => now()->subDays(5)->toIso8601String(),
-                        'status' => 'valid',
-                        'type' => 'payroll',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ],
-                    [
-                        'id' => 'invoice_sandbox_3',
-                        'uuid' => '99D58C11-9A3E-4B07-A595-D4E087D2FC11',
-                        'legal_name' => 'CARLOS SANCHEZ RUIZ',
-                        'rfc' => 'SARC9010103C5',
-                        'total' => 9800.00,
-                        'created_at' => now()->subDays(12)->toIso8601String(),
-                        'status' => 'cancelled',
-                        'type' => 'payroll',
-                        'pdf_url' => '#',
-                        'xml_url' => '#'
-                    ]
-                ]
-            ]);
-        }
-
-        return response()->json($res);
+        // N8: sin credenciales configuradas aquí salían tres facturas FICTICIAS ("JUAN PEREZ
+        // LOPEZ", RFC inventado) marcadas como vigentes — un dueño podía creer que ya tenía
+        // timbres emitidos. El resultado del proveedor se devuelve tal cual: si no hay
+        // credenciales, el historial dice la verdad (vacío / error).
+        return response()->json($this->billingProvider->forTenant($tenant)->listInvoices($params));
     }
 
     /**
-     * Realiza la simulación de timbrado de un recibo de nómina de colaborador.
+     * Timbra el recibo de nómina CFDI de un colaborador.
+     *
+     * Auditoría N1: esto "fingía éxito" — si el proveedor fallaba con un error que
+     * contuviera la palabra `key`, devolvía success:true con un UUID inventado que además
+     * no se guardaba en ninguna tabla, y el monto venía DEL CLIENTE (net_salary editable
+     * desde el navegador). Ahora sólo se timbra una nómina AUTORIZADA por la empresa, con
+     * su net_pay guardado, el resultado real del proveedor se propaga tal cual, y el folio
+     * fiscal queda sellado en la fila (cfdi_uuid / timbrada_at).
      */
     public function timbrarNomina(Request $request)
     {
@@ -180,15 +143,47 @@ class BillingController extends Controller
         }
 
         $validated = $request->validate([
-            'employee_id' => 'required|integer',
+            'employee_id' => 'required|integer', // id del EXPEDIENTE (employees), el sujeto de la nómina
             'period_start' => 'required|date',
             'period_end' => 'required|date',
-            'net_salary' => 'required|numeric'
         ]);
 
-        $employee = User::find($validated['employee_id']);
-        if (!$employee || (int)$employee->tenant_id !== (int)$tenantId) {
-            return response()->json(['error' => 'Colaborador no encontrado'], 404);
+        // Acotado al tenant: los ids son globales y vienen del cliente.
+        $empleado = \App\Models\Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('id', $validated['employee_id'])
+            ->with('user')
+            ->first();
+        if (!$empleado) {
+            return response()->json(['success' => false, 'error' => 'Colaborador no encontrado'], 404);
+        }
+
+        $nomina = \App\Models\WeeklyPayroll::where('tenant_id', $tenantId)
+            ->where('employee_id', $empleado->id)
+            ->where('start_date', $validated['period_start'])
+            ->where('end_date', $validated['period_end'])
+            ->first();
+
+        if (!$nomina || $nomina->status !== 'approved_by_admin') {
+            return response()->json([
+                'success' => false,
+                'error' => 'Sólo se timbra una nómina autorizada por la empresa. '
+                    . ($nomina
+                        ? 'Estado actual del periodo: ' . $nomina->status . '.'
+                        : 'No existe nómina para ese colaborador y periodo.'),
+            ], 422);
+        }
+
+        // Idempotencia: un recibo fiscal no se emite dos veces.
+        if ($nomina->timbrada_at) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Esta nómina ya fue timbrada el ' . $nomina->timbrada_at->format('Y-m-d H:i') . '.',
+                'receipt' => [
+                    'id' => $nomina->cfdi_receipt_id,
+                    'uuid' => $nomina->cfdi_uuid,
+                ],
+            ], 409);
         }
 
         // Periodicidad configurable (2026-08-03): antes se timbraba TODO como quincenal
@@ -205,15 +200,16 @@ class BillingController extends Controller
             \App\Http\Controllers\PayrollSettingsController::periodicidadDe($tenantId)
         ];
 
-        // Estructurar un payload mínimo para SAT CFDI 4.0 Nómina en Facturapi
+        // Estructurar un payload mínimo para SAT CFDI 4.0 Nómina en Facturapi. El monto sale
+        // de la nómina autorizada (net_pay), nunca del cliente.
         $payrollPayload = [
             'customer' => [
-                'legal_name' => $employee->name,
-                'rfc' => $employee->rfc ?? 'XAXX010101000', // RFC genérico si no tiene
+                'legal_name' => $empleado->name,
+                'rfc' => $empleado->rfc ?? 'XAXX010101000', // RFC genérico si no tiene
                 'tax_system' => '605', // Régimen de Sueldos y Salarios
-                'email' => $employee->email,
+                'email' => $empleado->user->email ?? $empleado->email,
                 'address' => [
-                    'zip' => $employee->postal_code ?? $tenant->postal_code ?? '01000'
+                    'zip' => $tenant->postal_code ?? '01000'
                 ]
             ],
             'payroll' => [
@@ -223,15 +219,15 @@ class BillingController extends Controller
                 'end_date' => $validated['period_end'],
                 'working_days' => $diasDelPeriodo,
                 'employee' => [
-                    'curp' => $employee->curp ?? 'AAAA000000HHHHHH00',
+                    'curp' => $empleado->curp ?? 'AAAA000000HHHHHH00',
                     'contract_type' => '01', // Contrato de trabajo por tiempo indeterminado
                     'regime_type' => '02', // Sueldos
-                    'employee_number' => (string)$employee->id,
+                    'employee_number' => (string)$empleado->id,
                     'periodicity' => $periodicidadSat,
                     'risk_position' => '1', // Clase I
                     'bank' => '012', // BBVA Bancomer
-                    'bank_account' => $employee->clabe ?? '012180000000000000',
-                    'salary_rate' => round($validated['net_salary'] / $diasDelPeriodo, 2),
+                    'bank_account' => $empleado->clabe ?? '012180000000000000',
+                    'salary_rate' => round(((float) $nomina->net_pay) / $diasDelPeriodo, 2),
                     'state' => 'MEX'
                 ]
             ]
@@ -239,21 +235,28 @@ class BillingController extends Controller
 
         $res = $this->billingProvider->forTenant($tenant)->createPayrollReceipt($payrollPayload);
 
-        // Si falló por falta de credenciales reales, devolvemos simulación exitosa en sandbox
-        if (isset($res['success']) && !$res['success'] && str_contains(strtolower($res['error']), 'key')) {
-            $sandboxId = 'pr_sandbox_' . uniqid();
-            return response()->json([
-                'success' => true,
-                'message' => 'Nómina timbrada exitosamente (Modo Simulador SAT)',
-                'receipt' => [
-                    'id' => $sandboxId,
-                    'uuid' => 'SAT-CFDI-UUID-' . strtoupper(uniqid()),
-                    'pdf_url' => '#',
-                    'xml_url' => '#'
-                ]
-            ]);
+        // N1: sin "modo simulador". Si el proveedor falla (credenciales, red, rechazo del
+        // PAC), el error se propaga tal cual — un timbre que no ocurrió no se reporta como
+        // ocurrido, y nada se sella en la fila.
+        if (empty($res['success'])) {
+            return response()->json($res, 502);
         }
 
-        return response()->json($res);
+        $nomina->update([
+            'cfdi_uuid' => $res['uuid'] ?? null,
+            'cfdi_receipt_id' => $res['id'] ?? null,
+            'timbrada_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Recibo de nómina timbrado.',
+            'receipt' => [
+                'id' => $res['id'] ?? null,
+                'uuid' => $res['uuid'] ?? null,
+                'pdf_url' => $res['pdf_url'] ?? null,
+                'xml_url' => $res['xml_url'] ?? null,
+            ],
+        ]);
     }
 }

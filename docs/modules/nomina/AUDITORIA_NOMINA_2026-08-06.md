@@ -1,7 +1,9 @@
 # Auditoría de Nómina — hallazgos
 
 **Fecha:** 2026-08-06 · **Alcance:** lo que EXISTE hoy, sin modificar nada.
-**Estado:** sólo lectura. Ningún archivo de código fue tocado. La implementación se decide después.
+**Estado:** ~~sólo lectura~~ → **Ronda 1 de implementación CERRADA (2026-08-06, mismo día).**
+Ver la sección "Ronda 1" al final: N1, N3, N8 y N9 corregidos; N2 en su mitad de pantalla.
+Quedan N4/N5 (decisión de producto del jefe — preguntas redactadas), N6, N2-real y N7.
 
 Todo lo de aquí está verificado contra el código y, donde se podía, contra las **8 nóminas reales**
 que ya existen en la instancia de pruebas.
@@ -180,3 +182,84 @@ No se tocó nada; esto es sólo la propuesta de por dónde empezar cuando se dec
 4. **N2** y **N7**: ISR/IMSS y conceptos de ley — es construir, no arreglar, y probablemente
    necesita asesoría contable.
 5. **N8**, **N9**, **N10**: limpieza.
+
+---
+
+## Ronda 1 de implementación (2026-08-06) — N1 + N3 + N8 + N9 + N2-pantalla
+
+Verificada con suite completa (1162/1163, 1 skip preexistente), pruebas nuevas dirigidas
+(`PayrollSemanaCerradaTest`, `TimbradoNominaTest` — el timbrado tenía CERO pruebas) y
+recorrido en vivo del flujo entero en el entorno local (batch → firma → autorización →
+timbrado) con datos reales sembrados.
+
+### N3 — cerrado (la raíz, en el cálculo compartido)
+
+- **Una falta sólo existe en un día que YA TERMINÓ** (zona horaria del tenant). El guard vive
+  en `calculatePayrollForEmployee`, así que cubre a TODOS los callers (batch, firma, vistas
+  admin y colaborador, exportes, ticket). Un jueves ya no hay 6 faltas ni netos $0.
+- **El periodo operativo es la última semana CERRADA**, en todo el flujo:
+  el batch nocturno la calcula (recalcula el draft cada noche — absorbe justificantes
+  tardíos — hasta que el trabajador firma); la FIRMA del colaborador aplica siempre a esa
+  semana (el servidor decide el periodo, el cliente ya no manda fechas); el default del panel
+  admin (`getPeriodDates`) apunta ahí; `getPayrollData` ahora responde `{period, employees}`.
+- **Murió la doble definición de semana**: `getCurrentWeekRange()` (lunes-domingo fijo) se
+  reemplazó por `PayrollWeekService` en los 3 endpoints del colaborador — antes la firma y el
+  batch podían crear filas DISTINTAS para la misma semana en tenants con inicio ≠ lunes.
+- `days_details[*].day_over` distingue "falta" de "día que aún no ocurre"; las 3 pantallas
+  pintaban "Falta Registrada" en días futuros y ya no.
+- La pantalla del colaborador separa **vista en vivo** (semana en curso, estimado) de
+  **firma** (semana cerrada, con su neto y su desglose de días). El candado de la firma ya no
+  exige "todos los días aprobados": una FALTA no tiene botón de firma diaria y bloqueaba la
+  firma semanal PARA SIEMPRE — ahora las faltas no bloquean; un día en aclaración sí.
+- De pasada: `$baseSalary` quedaba indefinida para expedientes con `salario_diario`
+  (`salary.base` = 0 en pantalla), e `is_approved` no incluía `approved_by_admin` (tras
+  autorizar la empresa, al colaborador le reaparecía el botón de firmar y recibía 409).
+
+### N1 — cerrado (el timbre ya no miente y queda registrado)
+
+- **La rama del "Modo Simulador SAT" se borró.** Un fallo del proveedor se propaga tal cual
+  (502) y no sella nada. El caso exacto del bug (error con la palabra "key") tiene prueba.
+- **Sólo se timbra una nómina AUTORIZADA por la empresa** (`approved_by_admin`) y **el monto
+  sale de la fila** (`net_pay`), no del cliente — antes `net_salary` venía del navegador y se
+  podía timbrar cualquier cifra sobre cualquier periodo.
+- **El folio queda sellado en la fila** (migración: `cfdi_uuid`, `cfdi_receipt_id`,
+  `timbrada_at` en `weekly_payrolls`) y re-timbrar da 409 con el folio original.
+- El RFC/CURP ahora salen del EXPEDIENTE (la pantalla leía usuarios, donde esas columnas no
+  existen, y siempre mandaba el genérico). El contrato del endpoint cambió a id de employee.
+- El provider ya no inventa `sandbox-uuid-…` cuando Facturapi no trae UUID: null honesto.
+- FacturacionManager: fuera las quincenas hardcodeadas de junio/julio y el `net_salary` del
+  cliente; las filas salen de `/admin/payroll` (ids de EXPEDIENTE — antes iteraba usuarios y
+  los ids no correspondían a las nóminas), sólo lo autorizado es seleccionable, y el error
+  real del proveedor se muestra por fila.
+- ReportesManager: el modal que decía "¡Nómina Timbrada! Se han generado 3 facturas XML"
+  (número inventado, y el endpoint sólo APRUEBA) ahora reporta el resultado real de la
+  autorización y aclara que el timbrado es el paso siguiente en Facturación.
+
+### N8 — cerrado. N9 — cerrado. N2 — mitad de pantalla
+
+- N8: `getInvoices` ya no fabrica facturas de "JUAN PEREZ LOPEZ"; el historial dice la verdad
+  (vacío o el error del proveedor).
+- N9: `calculateLatePenalty` (código muerto con $2/min a mano) borrado.
+- N2-pantalla: la columna de ISR 8% / IMSS 3.5% / "sueldo quincenal" inventados se borró; se
+  muestra el neto autorizado y las deducciones reales. **N2-real (tablas de ISR/IMSS) sigue
+  pendiente y es construcción con asesoría contable, no un arreglo.**
+
+### Datos viejos (patrón conocido: el arreglo deja datos rotos atrás)
+
+Los drafts de la semana en curso con faltas fantasma **se auto-reparan**: al cerrar la semana
+el batch los recalcula (updateOrCreate sobre la misma fila). Lo único que NO se auto-repara
+es una nómina FIRMADA con neto congelado en $0 — **al desplegar a la V2 hay que revisar**:
+`SELECT id, employee_id, start_date, net_pay, status FROM weekly_payrolls WHERE net_pay = 0
+AND status != 'draft';` y decidir (borrar la fila o revertirla a draft; es tenant de pruebas,
+nadie ha cobrado).
+
+### Pendiente tras esta ronda
+
+- **N4/N5**: decisión de producto del jefe (preguntas redactadas — ver
+  `DECISIONES_PENDIENTES_N4_N5.md` en esta carpeta).
+- **N6**: el bruto sigue siendo `daily × 7` fijo; con la ronda 1 el DEFAULT de todas las
+  pantallas es una semana de 7 días, pero un `start_date/end_date` explícito de quincena
+  sigue descontando 15 días de faltas contra un bruto de 7. Siguiente ronda.
+- **N2-real y N7**: construir (ISR/IMSS, aguinaldo, vacaciones, prima, antigüedad) — con
+  contador y decisión de producto.
+- **N10**: las 424 líneas (ahora ~440) de `calculatePayrollForEmployee` — refactor de limpieza.

@@ -43,9 +43,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sección 2 #2: cada noche a las 00:30, marcar tareas inconclusas de días
         // anteriores como pendientes de validación gerencial.
         $schedule->command('tasks:flag-unfinished')->dailyAt('00:30');
-        // Sección 2 #1: pre-nómina semanal. Corre cada noche a las 23:00 recalculando
-        // la semana en curso de cada tenant (según su día de inicio configurado); al
-        // cerrar la semana queda el draft final listo para revisar.
+        // Sección 2 #1 + N3: pre-nómina semanal. Corre cada noche a las 23:00 calculando
+        // la última semana CERRADA de cada tenant (según su día de inicio configurado) —
+        // nunca la corriente, que contaba días futuros como faltas y dejaba netos en $0.
+        // El draft se recalcula cada noche (absorbe justificantes/contingencias tardíos)
+        // hasta que el trabajador lo firma; lo firmado es inmutable para el batch.
         $schedule->command('payroll:calculate-weekly')->dailyAt('23:00');
         // §67.D / §23: purga de fotos (datos personales sensibles) a los 90 días. El
         // comando de comedor existía pero nunca se había agendado; se programan ambos.

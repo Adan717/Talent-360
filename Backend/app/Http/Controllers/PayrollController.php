@@ -15,10 +15,12 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class PayrollController extends Controller
 {
     protected ClockService $clockService;
+    protected \App\Services\PayrollWeekService $weekService;
 
-    public function __construct(ClockService $clockService)
+    public function __construct(ClockService $clockService, \App\Services\PayrollWeekService $weekService)
     {
         $this->clockService = $clockService;
+        $this->weekService = $weekService;
     }
 
     private function getPeriodDates(Request $request)
@@ -27,10 +29,13 @@ class PayrollController extends Controller
         $endDate = $request->query('end_date');
 
         if (!$startDate || !$endDate) {
-            // Predeterminado a la semana actual (Lunes a Domingo)
-            $now = Carbon::now();
-            $startDate = $now->copy()->startOfWeek()->toDateString();
-            $endDate = $now->copy()->endOfWeek()->toDateString();
+            // Predeterminado: la última semana CERRADA del tenant (N3). Es el periodo que el
+            // batch calcula, el trabajador firma y la empresa autoriza — la semana en curso
+            // no tiene nada autorizable.
+            $tenantId = auth()->user()->tenant_id ?? 1;
+            [$start, $end] = $this->weekService->lastClosedWeekFor($tenantId, Carbon::now());
+            $startDate = $start->toDateString();
+            $endDate = $end->toDateString();
         }
 
         return [$startDate, $endDate];
@@ -67,6 +72,10 @@ class PayrollController extends Controller
                 'id' => $employee->id,
                 'name' => $employee->name,
                 'role' => $employee->role ?? 'Colaborador',
+                // La pantalla de timbrado necesita el RFC/CURP REALES del expediente (antes
+                // leía usuarios, donde no existen esas columnas, y pintaba siempre el genérico).
+                'rfc' => $employee->rfc,
+                'curp' => $employee->curp,
                 'lates' => $payroll['incidents']['lates'],
                 'absences' => $payroll['incidents']['total_absences'],
                 // Importes redondeados a centavos: son dinero. Sin esto salían con la cola del
@@ -77,7 +86,9 @@ class PayrollController extends Controller
                 'net' => round((float) $payroll['salary']['net'], 2),
                 'salary_pending' => ($payroll['salary']['base'] === null || $payroll['salary']['base'] <= 0),
                 'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
-                'approval_status' => $payroll['approval']['status']
+                'approval_status' => $payroll['approval']['status'],
+                'cfdi_uuid' => $payroll['approval']['cfdi_uuid'],
+                'net_firmado' => $payroll['approval']['net_registrado']
             ];
 
             if ($request->query('detailed') === 'true') {
@@ -94,7 +105,14 @@ class PayrollController extends Controller
 
     public function getPayrollData(Request $request)
     {
-        return response()->json($this->calculatePayrollData($request));
+        // {period, employees} en vez del arreglo pelón: las pantallas mostraban "Quincena
+        // Actual" y periodos inventados porque el backend jamás les decía QUÉ periodo era.
+        [$startDate, $endDate] = $this->getPeriodDates($request);
+
+        return response()->json([
+            'period' => ['start_date' => $startDate, 'end_date' => $endDate],
+            'employees' => $this->calculatePayrollData($request),
+        ]);
     }
 
     public function exportReport(Request $request)

@@ -11,8 +11,12 @@ export default function ReportesManager() {
   // [MODO DEMO]: Permite alternar la suscripción desde la UI para mostrar ambas caras a los clientes.
   const [demoTier, setDemoTier] = useState<'freemium' | 'pro'>('freemium');
   
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  // Resultado REAL de la autorización (cuántas se autorizaron, cuántas faltan de firma):
+  // el modal viejo inventaba "3 facturas XML generadas" sin que nada se hubiera timbrado.
+  const [approveResult, setApproveResult] = useState<{ approved: number; pending: number; message: string } | null>(null);
   const [payrollData, setPayrollData] = useState<any[]>([]);
+  // Periodo operativo que reporta el backend: la última semana CERRADA del tenant (N3).
+  const [period, setPeriod] = useState<{ start_date: string; end_date: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedEmpId, setExpandedEmpId] = useState<number | null>(null);
@@ -26,12 +30,28 @@ export default function ReportesManager() {
     setError(null);
     try {
       const res = await axiosInstance.get('/admin/payroll?detailed=true');
-      setPayrollData(res.data || []);
+      setPayrollData(res.data?.employees || []);
+      setPeriod(res.data?.period || null);
     } catch (e) {
       console.error(e);
       setError("No se pudieron cargar los datos de la nómina. Por favor, intenta de nuevo.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleApprovePayroll = async () => {
+    try {
+      const res = await axiosInstance.post('/admin/payroll/approve');
+      setApproveResult({
+        approved: res.data?.approved ?? 0,
+        pending: res.data?.pending_employee_signature ?? 0,
+        message: res.data?.message || 'Autorización procesada.'
+      });
+      fetchPayroll(); // refrescar los estados de firma/autorización en la tabla
+    } catch (err) {
+      console.error(err);
+      alert("Error al autorizar la nómina");
     }
   };
 
@@ -231,7 +251,9 @@ export default function ReportesManager() {
                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                      <h3 className="font-bold text-slate-800 flex items-center gap-2"><Table size={18}/> Desglose Analítico por Empleado</h3>
-                     <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wider">Quincena Actual</span>
+                     <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wider">
+                       {period ? `Semana del ${period.start_date} al ${period.end_date}` : 'Cargando periodo...'}
+                     </span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -321,8 +343,11 @@ export default function ReportesManager() {
                                                   return null;
                                                 })}
                                               </div>
-                                            ) : (
+                                            ) : day.day_over ? (
                                               <div className="text-[10.5px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded inline-block">Falta / Inasistencia</div>
+                                            ) : (
+                                              /* N3: día aún no terminado — no es falta */
+                                              <div className="text-[10.5px] text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded inline-block">Sin registro aún</div>
                                             )}
                                             
                                             <div className="flex justify-between items-center text-[10px] pt-2 border-t border-slate-100">
@@ -362,19 +387,11 @@ export default function ReportesManager() {
                   >
                     <FileText size={18} className="text-rose-600" /> Exportar PDF
                   </button>
-                  <button 
-                    onClick={async () => {
-                      try {
-                        await axiosInstance.post('/admin/payroll/approve');
-                        setShowInvoiceModal(true);
-                      } catch (err) {
-                        console.error(err);
-                        alert("Error al timbrar la nómina");
-                      }
-                    }}
+                  <button
+                    onClick={handleApprovePayroll}
                     className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all hover:-translate-y-0.5"
                   >
-                    <DollarSign size={20} /> Aprobar y Timbrar (CFDI)
+                    <DollarSign size={20} /> Autorizar Pago de Nómina
                   </button>
                 </div>
               </div>
@@ -384,22 +401,35 @@ export default function ReportesManager() {
 
       </div>
 
-      {/* Modal de Timbrado Exitoso */}
-      {showInvoiceModal && (
+      {/* Resultado REAL de la autorización: qué se autorizó y qué quedó pendiente. El
+          timbrado CFDI es un paso aparte, en Facturación Electrónica. */}
+      {approveResult && (
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
-              <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 size={48} />
+              <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                approveResult.approved > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+              }`}>
+                {approveResult.approved > 0 ? <CheckCircle2 size={48} /> : <AlertCircle size={48} />}
               </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-2">¡Nómina Timbrada!</h2>
-              <p className="text-slate-500 mb-8 text-sm">
-                Se han generado 3 facturas XML y PDFs de nómina (CFDI 4.0). Los recibos han sido enviados automáticamente al portal de los colaboradores.
+              <h2 className="text-2xl font-black text-slate-800 mb-2">
+                {approveResult.approved > 0 ? 'Pago Autorizado' : 'Nada que Autorizar'}
+              </h2>
+              <p className="text-slate-500 mb-2 text-sm">
+                {approveResult.approved} nómina(s) autorizada(s) para pago.
               </p>
-              <button 
-                onClick={() => {setShowInvoiceModal(false);}} 
+              {approveResult.pending > 0 && (
+                <p className="text-amber-600 mb-2 text-xs font-bold">
+                  {approveResult.pending} sin autorizar: el colaborador aún no firma de conformidad.
+                </p>
+              )}
+              <p className="text-slate-400 mb-8 text-xs">
+                El timbrado CFDI se hace en el módulo de Facturación Electrónica, sobre las nóminas ya autorizadas.
+              </p>
+              <button
+                onClick={() => setApproveResult(null)}
                 className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors"
               >
-                Cerrar y Finalizar
+                Entendido
               </button>
            </div>
         </div>

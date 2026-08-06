@@ -65,10 +65,13 @@ class WeeklyPayrollCommandTest extends TestCase
         return [$user->fresh(), $employeeId];
     }
 
-    /** Semana del tenant 1 (DecorArte: domingo→sábado) que contiene hoy. */
-    private function currentWeekStart(): string
+    /**
+     * Última semana CERRADA del tenant 1 (DecorArte: domingo→sábado). N3: el batch calcula
+     * la semana que ya terminó, nunca la corriente (contaba días futuros como faltas).
+     */
+    private function closedWeekStart(): string
     {
-        [$start] = app(\App\Services\PayrollWeekService::class)->weekRangeFor(1, Carbon::now());
+        [$start] = app(\App\Services\PayrollWeekService::class)->lastClosedWeekFor(1, Carbon::now());
         return $start->toDateString();
     }
 
@@ -82,7 +85,7 @@ class WeeklyPayrollCommandTest extends TestCase
         $this->assertDatabaseHas('weekly_payrolls', [
             'tenant_id' => 1,
             'employee_id' => $employeeId,
-            'start_date' => $this->currentWeekStart(),
+            'start_date' => $this->closedWeekStart(),
             'status' => 'draft',
         ]);
         $this->assertSame(1, WeeklyPayroll::where('employee_id', $employeeId)->count());
@@ -91,7 +94,7 @@ class WeeklyPayrollCommandTest extends TestCase
     public function test_fila_firmada_no_se_toca_ni_se_duplica(): void
     {
         [, $employeeId] = $this->makeEmployee();
-        $weekStart = $this->currentWeekStart();
+        $weekStart = $this->closedWeekStart();
         $weekEnd = Carbon::parse($weekStart)->addDays(6)->toDateString();
 
         WeeklyPayroll::create([
@@ -121,7 +124,7 @@ class WeeklyPayrollCommandTest extends TestCase
     public function test_draft_existente_se_recalcula_sin_duplicar(): void
     {
         [, $employeeId] = $this->makeEmployee();
-        $weekStart = $this->currentWeekStart();
+        $weekStart = $this->closedWeekStart();
         $weekEnd = Carbon::parse($weekStart)->addDays(6)->toDateString();
 
         WeeklyPayroll::create([

@@ -13,18 +13,21 @@ interface NominaColaboradorProps {
 
 export default function NominaColaborador({ isDark = false }: NominaColaboradorProps) {
   const [payroll, setPayroll] = useState<any>(null);
+  // N3: lo firmable es la última semana CERRADA — se pide aparte (?period=closed).
+  // `payroll` (semana en curso) es sólo la vista informativa en vivo.
+  const [closedPayroll, setClosedPayroll] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  
+
   // Estado para la aprobación diaria
   const [approvingDate, setApprovingDate] = useState<string | null>(null);
-  
+
   // Estado para disputar/aclarar registro
   const [disputingDate, setDisputingDate] = useState<string | null>(null);
   const [disputeComment, setDisputeComment] = useState('');
   const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
-  
+
   // Estado para la aceptación de nómina semanal
   const [isApprovingWeekly, setIsApprovingWeekly] = useState(false);
 
@@ -32,9 +35,15 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
     setIsLoading(true);
     setErrorMsg('');
     try {
-      const res = await axiosInstance.get('/employee/payroll-weekly');
-      if (res.data && res.data.success) {
-        setPayroll(res.data.data);
+      const [current, closed] = await Promise.all([
+        axiosInstance.get('/employee/payroll-weekly'),
+        axiosInstance.get('/employee/payroll-weekly?period=closed'),
+      ]);
+      if (current.data && current.data.success) {
+        setPayroll(current.data.data);
+      }
+      if (closed.data && closed.data.success) {
+        setClosedPayroll(closed.data.data);
       }
     } catch (e) {
       console.error(e);
@@ -140,8 +149,18 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
   if (!payroll) return null;
 
-  const isSaturday = new Date().getDay() === 6; // Sábado
-  const allDaysApproved = payroll.days_details.every((d: any) => d.is_rest_day || d.approval_status === 'approved');
+  // Candado de la firma semanal, sobre la semana CERRADA (N3):
+  //  - un día ASISTIDO debe tener su firma diaria;
+  //  - una FALTA no bloquea (no hay nada que firmar en un día sin asistencia — antes
+  //    bloqueaba la firma para siempre, porque un día de falta no tiene botón de firma);
+  //  - un día EN ACLARACIÓN sí bloquea hasta resolverse.
+  const closedDays: any[] = closedPayroll?.days_details ?? [];
+  const closedDaysReady = closedDays.every((d: any) =>
+    d.is_rest_day || (d.attended ? d.approval_status === 'approved' : d.approval_status !== 'disputed')
+  );
+  const closedPeriodLabel = closedPayroll
+    ? `${closedPayroll.period.start} al ${closedPayroll.period.end}`
+    : '';
 
   return (
     <div className="space-y-4 pb-24 max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -164,11 +183,14 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
         
         <div className="flex items-center justify-between mb-3.5">
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Neto a Recibir</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Semana en Curso (estimado)</h3>
             <div className="flex items-baseline gap-0.5">
               <span className="text-2xl font-black">${payroll.salary.net.toFixed(2)}</span>
               <span className="text-[9px] text-slate-400 font-bold">MXN</span>
             </div>
+            <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
+              {payroll.period.start} al {payroll.period.end} · el neto final se firma al cerrar la semana
+            </p>
           </div>
           <div className="p-2 bg-violet-50 text-violet-600 rounded-xl border border-violet-100/50">
             <DollarSign size={18} className="text-[#8a2be2]" />
@@ -306,8 +328,11 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                         <span className="flex items-center gap-0.5"><Clock size={10} /> Ent: {day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</span>
                         <span className="flex items-center gap-0.5"><Clock size={10} /> Sal: {day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</span>
                       </div>
-                    ) : (
+                    ) : day.day_over ? (
                       <span className="text-[10px] text-rose-500 font-bold bg-rose-50 dark:bg-rose-950/20 px-1.5 py-0.5 rounded-md mt-1 inline-block">Falta Registrada</span>
+                    ) : (
+                      /* N3: un día que no ha terminado no es falta — todavía no ocurre. */
+                      <span className="text-[10px] text-slate-400 font-bold bg-slate-100 dark:bg-slate-800/40 px-1.5 py-0.5 rounded-md mt-1 inline-block">Sin registro aún</span>
                     )}
                   </div>
 
@@ -341,9 +366,13 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                           Reclamar
                         </button>
                       </div>
-                    ) : (
+                    ) : day.day_over ? (
                       <span className="text-[10.5px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <AlertCircle size={10} /> Falta
+                      </span>
+                    ) : (
+                      <span className="text-[10.5px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/40 px-2 py-0.5 rounded-full">
+                        Pendiente
                       </span>
                     )}
                   </div>
@@ -391,15 +420,18 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
         </div>
       </div>
 
-      {/* Firmar Nómina Semanal (Sábado de corte) */}
-      {payroll.approval.is_approved ? (
+      {/* Firma de la última semana CERRADA (N3: nunca se firma una semana en curso) */}
+      {!closedPayroll ? null : closedPayroll.approval.is_approved ? (
         <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-2">
           <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 size={24} />
           </div>
           <h4 className="text-sm font-black text-emerald-900">Nómina Aceptada</h4>
           <p className="text-[10.5px] text-emerald-700/80 leading-relaxed">
-            Has firmado de conformidad esta nómina el {new Date(payroll.approval.approved_at).toLocaleString('es-MX')}. Tu ticket impreso ya está disponible para recolección.
+            Firmaste de conformidad la semana del {closedPeriodLabel}
+            {closedPayroll.approval.approved_at
+              ? ` el ${new Date(closedPayroll.approval.approved_at).toLocaleString('es-MX')}`
+              : ''}. Tu ticket impreso ya está disponible para recolección.
           </p>
         </div>
       ) : (
@@ -411,31 +443,72 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
             <div>
               <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Firma de Nómina Semanal</h4>
               <p className="text-[10.5px] text-slate-400 mt-0.5">
-                Para cerrar el periodo del sábado, primero debes firmar de conformidad tus asistencias diarias y la liquidación calculada.
+                Semana cerrada del {closedPeriodLabel}. Revisa el desglose y firma de conformidad la liquidación calculada.
               </p>
             </div>
           </div>
 
+          {/* Neto de la semana cerrada: ESTE es el importe que se firma */}
+          <div className="flex items-baseline justify-between px-3 py-2 bg-violet-50/60 dark:bg-violet-950/20 rounded-xl border border-violet-100/60 dark:border-violet-900/40">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Neto a Firmar</span>
+            <span className="text-lg font-black text-[#8a2be2]">${closedPayroll.salary.net.toFixed(2)} <span className="text-[9px] text-slate-400">MXN</span></span>
+          </div>
+
+          {/* Días de la semana cerrada: qué se está firmando */}
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
+            {closedDays.map((d: any) => (
+              <div key={d.date} className="flex items-center justify-between px-3 py-1.5 text-[10px]">
+                <span className="font-bold text-slate-500 capitalize">{d.day_name} <span className="text-slate-400 font-medium">{d.date}</span></span>
+                {d.is_rest_day ? (
+                  <span className="font-black text-emerald-600">Descanso</span>
+                ) : d.approval_status === 'disputed' ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="font-black text-rose-500">En aclaración</span>
+                    <button
+                      disabled={approvingDate === d.date}
+                      onClick={() => handleApproveDaily(d.date)}
+                      className="px-1.5 py-0.5 bg-slate-100 hover:bg-violet-50 text-slate-500 hover:text-[#8a2be2] rounded-md font-black border border-slate-200 cursor-pointer"
+                    >
+                      Retirar y firmar
+                    </button>
+                  </span>
+                ) : !d.attended ? (
+                  <span className="font-black text-rose-500">Falta</span>
+                ) : d.approval_status === 'approved' ? (
+                  <span className="font-black text-emerald-600 flex items-center gap-0.5"><Check size={10} /> Firmado</span>
+                ) : (
+                  <button
+                    disabled={approvingDate === d.date}
+                    onClick={() => handleApproveDaily(d.date)}
+                    className="px-2 py-0.5 bg-[#8a2be2] hover:bg-violet-700 text-white rounded-md font-black border-none cursor-pointer disabled:opacity-50"
+                  >
+                    {approvingDate === d.date ? '...' : 'Firmar día'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
           <button
-            disabled={isApprovingWeekly || !allDaysApproved}
+            disabled={isApprovingWeekly || !closedDaysReady}
             onClick={handleApproveWeekly}
             className={`w-full py-3 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border-none ${
-              allDaysApproved 
-                ? 'bg-gradient-to-r from-violet-600 to-[#8a2be2] text-white hover:opacity-90 active:scale-95' 
+              closedDaysReady
+                ? 'bg-gradient-to-r from-violet-600 to-[#8a2be2] text-white hover:opacity-90 active:scale-95'
                 : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             }`}
           >
             {isApprovingWeekly ? 'Procesando firma...' : 'Firmar Nómina de Conformidad'}
           </button>
 
-          {!allDaysApproved && (
+          {!closedDaysReady && (
             <p className="text-[9.5px] text-rose-500 font-bold text-center">
-              *Debes firmar todos tus registros de asistencia diarios antes de firmar la nómina semanal.
+              *Firma tus días asistidos (y resuelve los días en aclaración) antes de firmar la semana.
             </p>
           )}
         </div>
       )}
-      
+
     </div>
   );
 }

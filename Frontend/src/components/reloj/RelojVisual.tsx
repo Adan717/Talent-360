@@ -33,7 +33,7 @@ export default function RelojVisual({
   simulatedTier?: 'free' | 'pro';
   setSimulatedTier?: (tier: 'free' | 'pro') => void;
 }) {
-  const { currentTier, isFeatureUnlocked: isFeatureUnlockedReal, isSandboxMode } = useAppStore();
+  const { currentTier, isFeatureUnlocked: isFeatureUnlockedReal, isSandboxMode, misMensajesPrivados } = useAppStore();
   const isFeatureUnlocked = (featureId: string) => {
     if (isSimulated) {
       if (simulatedTier === 'pro') return true;
@@ -201,7 +201,6 @@ export default function RelojVisual({
     phoneTab,
     playAlarm,
     playedAlarms,
-    privateMessages,
     processFinalClockOut,
     realSeconds,
     removeAlert,
@@ -1198,7 +1197,8 @@ export default function RelojVisual({
                           currentUser?.role?.toLowerCase()?.includes('gerente') || 
                           ['Encargado Titular', 'Segundo Encargado', 'Supervisor', 'Administrador / Gerente'].includes(userPositionName);
     const pendingBreakReqs = isSupervisor ? Object.entries(pendingBreakRequests || {}) : [];
-    const pm = privateMessages[currentUser.id];
+    // El mensaje privado más reciente que le escribió un mando desde el Chat Operativo.
+    const pm = misMensajesPrivados.length ? misMensajesPrivados[misMensajesPrivados.length - 1].content : undefined;
     const bAlerts = buddyAlerts[currentUser.id] || [];
 
     const notificationsList: any[] = [];
@@ -4159,8 +4159,12 @@ export default function RelojVisual({
                   // El banner de inducción lleva a la Academia de un toque: "complétala aquí".
                   let alertAction: (() => void) | null = null;
 
-                  if (privateMessages[currentUser.id]) {
-                    alertMsg = `🚨 Mensaje del Admin: ${privateMessages[currentUser.id]}`;
+                  const miUltimoPrivado = misMensajesPrivados.length
+                    ? misMensajesPrivados[misMensajesPrivados.length - 1].content
+                    : null;
+
+                  if (miUltimoPrivado) {
+                    alertMsg = `🚨 Mensaje del Admin: ${miUltimoPrivado}`;
                     alertBg = "bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse";
                   } else if (alerts.length > 0) {
                     alertMsg = `⚠️ ${alerts[0].msg}`;

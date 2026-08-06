@@ -183,6 +183,15 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
   const [showChatDrawer, setShowChatDrawer] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  /**
+   * A quién va el mensaje: vacío = a todo el equipo (el chat operativo de siempre); con un id,
+   * es privado y sólo lo ven esa persona y quien escribe.
+   *
+   * Nace de un diagnóstico: el "mensaje privado" del Reloj no existía —no había dónde escribirlo
+   * ni código que lo leyera— y se decidió no resucitar aquel camino, sino darle modo privado al
+   * chat que sí funciona. Mantener dos canales de mensajería sería duplicar el problema.
+   */
+  const [chatDestinatario, setChatDestinatario] = useState<number | ''>('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll slider ref and logic for adoption modules
@@ -379,7 +388,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     try {
       const res = await axiosInstance.post('/admin/dashboard/send-message', {
         content: chatInput,
-        type: 'general'
+        type: 'general',
+        // Modo privado (2026-08-06): con destinatario el mensaje es sólo para esa persona y le
+        // llega a SU reloj. Sin destinatario es del equipo, como toda la vida.
+        receiver_id: chatDestinatario || undefined
       });
       if (res.data?.data) {
         setChatMessages([...chatMessages, res.data.data]);
@@ -1600,11 +1612,25 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
               <p className="text-slate-400 italic text-center py-8">Inicia la conversación con tu equipo...</p>
             ) : (
               chatMessages.map((msg, idx) => (
-                <div key={msg.id || idx} className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                <div
+                  key={msg.id || idx}
+                  className={`p-2.5 rounded-xl border ${
+                    msg.receiver_id
+                      ? 'bg-violet-50 border-violet-200'
+                      : 'bg-slate-50 border-slate-200/80'
+                  }`}
+                >
                   <div className="flex justify-between text-[10px] text-slate-500 mb-0.5 font-medium">
                     <span className="font-bold text-blue-600">{msg.sender_name}</span>
                     <span>{msg.time}</span>
                   </div>
+                  {/* Un privado se distingue a simple vista y dice para quién es: si no, nadie
+                      sabría si lo que escribió lo leyó el turno entero. */}
+                  {msg.receiver_id && (
+                    <p className="text-[10px] font-black text-violet-700 uppercase tracking-wider mb-0.5">
+                      🔒 Privado para {msg.receiver_name || 'un colaborador'}
+                    </p>
+                  )}
                   <p className="text-slate-800 font-medium">{msg.content}</p>
                 </div>
               ))
@@ -1612,21 +1638,48 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             <div ref={chatBottomRef} />
           </div>
 
-          <div className="flex gap-2 pt-2 border-t border-slate-100">
-            <input 
-              type="text"
-              placeholder="Escribir mensaje al equipo..."
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 bg-slate-50 text-slate-900 text-xs rounded-xl px-3 py-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
-            />
-            <button 
-              onClick={handleSendMessage}
-              className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0">Para</span>
+              <select
+                value={chatDestinatario}
+                onChange={e => setChatDestinatario(e.target.value ? Number(e.target.value) : '')}
+                className="flex-1 bg-slate-50 text-slate-800 text-[11px] font-bold rounded-lg px-2 py-1.5 border border-slate-200 focus:outline-none focus:border-blue-600"
+              >
+                <option value="">Todo el equipo</option>
+                {/* `user_id`, NO `id`: el de la lista es el id de EMPLEADO y el destinatario del
+                    mensaje es una cuenta de usuario. Confundirlos es la familia §29/§30. Quien
+                    no tenga cuenta no puede recibir mensajes, así que no se ofrece. */}
+                {users.filter((u: any) => u.user_id).map((u: any) => (
+                  <option key={u.user_id} value={u.user_id}>
+                    {u.name} — sólo para él/ella
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder={chatDestinatario ? 'Mensaje privado…' : 'Escribir mensaje al equipo...'}
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                className={`flex-1 text-slate-900 text-xs rounded-xl px-3 py-2 border focus:outline-none font-medium ${
+                  chatDestinatario
+                    ? 'bg-violet-50 border-violet-300 focus:border-violet-600'
+                    : 'bg-slate-50 border-slate-200 focus:border-blue-600'
+                }`}
+              />
+              <button
+                onClick={handleSendMessage}
+                className={`p-2 text-white rounded-xl shadow-sm ${
+                  chatDestinatario ? 'bg-violet-600 hover:bg-violet-700' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}

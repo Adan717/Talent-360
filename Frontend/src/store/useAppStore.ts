@@ -54,6 +54,15 @@ interface AppState {
   // SOLO en memoria (nunca localStorage — así no es evadible borrando datos del navegador).
   punctualityStatus: { blocked: boolean; lates_count: number; required_course_id: number | null; course_completed: boolean } | null;
 
+  /**
+   * Mensajes PRIVADOS dirigidos a quien está en sesión, tal como llegan en `/sync/state`.
+   *
+   * Los escribe un mando desde el Chat Operativo del Monitor eligiendo destinatario. Antes esto
+   * no existía: el reloj tenía un mapa de mensajes privados que NADIE llenaba, así que el admin
+   * creía haber escrito y el colaborador no veía nunca nada.
+   */
+  misMensajesPrivados: { id: number; content: string; sender_id: number | null; created_at?: string }[];
+
   // Setters
   setIsLoadingDB: (loading: boolean) => void;
   setGlobalUsers: (users: User[]) => void;
@@ -145,6 +154,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // El valor correcto en ausencia de simulación es `null` (= "sin override, usa el plan real").
   simulatedTierOverride: ((typeof localStorage !== 'undefined' && localStorage.getItem('qa_simulated_tier_override')) as any) || null,
   punctualityStatus: null,
+  misMensajesPrivados: [],
 
   // Initial SaaS State
   saasTenants: [],
@@ -727,6 +737,18 @@ export const useAppStore = create<AppState>((set, get) => ({
            }));
            useTaskStore.getState().setAssignments(camelCaseAssignments);
         }
+
+         // Mensajes privados dirigidos a mí. El backend ya filtra por destinatario, pero aquí se
+         // vuelve a comprobar antes de pintarlos: un mensaje de otra persona en la pantalla de
+         // alguien es de las cosas que no se pueden permitir ni por descuido.
+         if (Array.isArray(data.internal_messages)) {
+           const yo = get().currentUser?.id;
+           set({
+             misMensajesPrivados: yo
+               ? data.internal_messages.filter((m: any) => Number(m.receiver_id) === Number(yo))
+               : [],
+           });
+         }
 
          // Cargar QA Matrix desde audit_logs del Backend (solo si no estamos en Sandbox)
          if (data.audit_logs && !get().isSandboxMode) {

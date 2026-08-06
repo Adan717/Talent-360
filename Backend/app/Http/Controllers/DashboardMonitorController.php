@@ -148,6 +148,11 @@ class DashboardMonitorController extends Controller
 
                 return [
                     'id' => $u->id,
+                    // OJO: `id` es el de EMPLEADO (`employees.id`). Cuando algo necesita la
+                    // cuenta de la persona —como el destinatario de un mensaje privado, que
+                    // apunta a `users`— hay que usar éste. Confundirlos es la familia de bugs
+                    // §29/§30, la que llegó a fichar a nombre de alguien de otra empresa.
+                    'user_id' => $u->user_id,
                     'name' => $u->name,
                     'role_name' => $u->jobRole ? $u->jobRole->name : 'Colaborador',
                     'hire_date' => $u->hire_date,
@@ -278,14 +283,30 @@ class DashboardMonitorController extends Controller
                 ->take(10)
                 ->all();
 
-            // Fetch chat messages (last 50 messages of the tenant)
+            // Chat operativo: los últimos 50 mensajes que a ESTE usuario le toca ver.
+            //
+            // Modo privado (2026-08-06): un mensaje con `receiver_id` va dirigido a una sola
+            // persona. Se filtra igual que en `/sync/state` —los de equipo, los que yo mandé y
+            // los que me mandaron a mí—, porque si no un segundo admin leería la
+            // correspondencia del primero. Es la misma fuga que se cerró en el reloj: no tiene
+            // sentido taparla allá y dejarla abierta aquí.
             $chatMessages = DB::table('internal_messages')
                 ->leftJoin('users', 'users.id', '=', 'internal_messages.sender_id')
+                ->leftJoin('users as destinatarios', 'destinatarios.id', '=', 'internal_messages.receiver_id')
                 ->where('internal_messages.tenant_id', $userTenantId)
                 ->whereNull('internal_messages.simulation_session_id')
+                ->where(function ($q) use ($user) {
+                    $q->whereNull('internal_messages.receiver_id')
+                        ->orWhere('internal_messages.receiver_id', $user->id)
+                        ->orWhere('internal_messages.sender_id', $user->id);
+                })
                 ->orderBy('internal_messages.created_at', 'asc')
                 ->limit(50)
-                ->select('internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name', 'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at')
+                ->select(
+                    'internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name',
+                    'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at',
+                    'internal_messages.receiver_id', 'destinatarios.name as receiver_name'
+                )
                 ->get()
                 ->map(function ($msg) {
                     return [
@@ -294,6 +315,9 @@ class DashboardMonitorController extends Controller
                         'sender_name' => $msg->sender_name ?? 'Sistema',
                         'content' => $msg->content,
                         'type' => $msg->type,
+                        // Con destinatario, la interfaz lo marca como privado y dice para quién.
+                        'receiver_id' => $msg->receiver_id,
+                        'receiver_name' => $msg->receiver_name,
                         'time' => Carbon::parse($msg->created_at)->diffForHumans(),
                         'timestamp' => $msg->created_at,
                     ];
@@ -648,6 +672,9 @@ class DashboardMonitorController extends Controller
         $request->validate([
             'content' => 'required|string',
             'type' => 'nullable|string|in:general,permission,food_change,announcement',
+            // Modo privado (2026-08-06): con destinatario, el mensaje es para una sola persona.
+            // Sin él, es del equipo, como siempre.
+            'receiver_id' => 'nullable|integer',
         ]);
 
         try {
@@ -661,9 +688,28 @@ class DashboardMonitorController extends Controller
             $user = auth()->user() ?? auth('sanctum')->user();
             $tenantId = $user ? $user->tenant_id : 1;
 
+            // El destinatario tiene que ser de la MISMA empresa: sin esta comprobación se podría
+            // dejar un mensaje en la bandeja de alguien de otro cliente pasando su id.
+            $receiverId = $request->input('receiver_id');
+
+            if ($receiverId) {
+                $esDeLaEmpresa = DB::table('users')
+                    ->where('id', $receiverId)
+                    ->where('tenant_id', $tenantId)
+                    ->exists();
+
+                if (!$esDeLaEmpresa) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'El destinatario no pertenece a su organización.',
+                    ], 403);
+                }
+            }
+
             $messageId = DB::table('internal_messages')->insertGetId([
                 'sender_id' => $user ? $user->id : null,
-                'type' => $request->type ?? 'general',
+                'receiver_id' => $receiverId ?: null,
+                'type' => $receiverId ? 'private' : ($request->type ?? 'general'),
                 'content' => $request->content,
                 'tenant_id' => $tenantId,
                 'created_at' => now(),
@@ -672,8 +718,13 @@ class DashboardMonitorController extends Controller
 
             $msg = DB::table('internal_messages')
                 ->leftJoin('users', 'users.id', '=', 'internal_messages.sender_id')
+                ->leftJoin('users as destinatarios', 'destinatarios.id', '=', 'internal_messages.receiver_id')
                 ->where('internal_messages.id', $messageId)
-                ->select('internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name', 'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at')
+                ->select(
+                    'internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name',
+                    'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at',
+                    'internal_messages.receiver_id', 'destinatarios.name as receiver_name'
+                )
                 ->first();
 
             $chatData = [
@@ -682,11 +733,19 @@ class DashboardMonitorController extends Controller
                 'sender_name' => $msg->sender_name ?? 'Sistema',
                 'content' => $msg->content,
                 'type' => $msg->type,
+                'receiver_id' => $msg->receiver_id,
+                'receiver_name' => $msg->receiver_name,
                 'time' => Carbon::parse($msg->created_at)->diffForHumans(),
                 'timestamp' => $msg->created_at,
             ];
 
-            event(new NewChatMessage($tenantId, $chatData));
+            // OJO: `NewChatMessage` emite al canal `tenant.{id}`, que escucha TODA la empresa.
+            // Un mensaje privado no puede salir por ahí — llegaría en tiempo real a los
+            // dispositivos de todos, que es justo la fuga que acabamos de cerrar en la consulta.
+            // El destinatario lo recibe en su siguiente sincronización.
+            if (!$receiverId) {
+                event(new NewChatMessage($tenantId, $chatData));
+            }
 
             return response()->json([
                 'status' => 'success',

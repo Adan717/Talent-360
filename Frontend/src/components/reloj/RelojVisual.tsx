@@ -2501,6 +2501,38 @@ export default function RelojVisual({
             ⏳ {waitTimeText}
           </div>
         </div>
+
+        {/* El recordatorio de inducción también aquí, con la tienda cerrada. El caso que pidió el
+            jefe es justo éste: el colaborador NUEVO que abre su celular — y muchas veces lo abre
+            antes de su primer turno, cuando esta pantalla ocupa todo el reloj. Si el aviso sólo
+            viviera en el hub de la tienda abierta, no lo vería hasta que ya está trabajando.
+            La inducción se puede hacer con la tienda cerrada: no depende de fichar. */}
+        {miInduccion?.pendiente && (
+          <button
+            onClick={() => setPhoneTab('academia')}
+            className={`w-full max-w-sm mt-4 rounded-2xl border p-4 text-left transition-all hover:brightness-95 active:scale-[0.99] ${
+              miInduccion.vencido
+                ? (isDark ? 'bg-rose-500/10 border-rose-500/25 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-700')
+                : (isDark ? 'bg-amber-500/10 border-amber-500/25 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700')
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider block mb-1 opacity-70">
+              Tu inducción
+            </span>
+            <span className="text-sm font-black block leading-snug">
+              {miInduccion.vencido
+                ? '🎓 Tu inducción sigue pendiente y ya se pasó la fecha.'
+                : miInduccion.dias_restantes === null || miInduccion.dias_restantes === undefined
+                  ? '🎓 Tienes tu inducción pendiente.'
+                  : miInduccion.dias_restantes === 0
+                    ? '🎓 Hoy es el último día para tu inducción.'
+                    : `🎓 Tienes ${miInduccion.dias_restantes} ${miInduccion.dias_restantes === 1 ? 'día' : 'días'} para tu inducción.`}
+            </span>
+            <span className="text-[11px] font-bold underline block mt-1.5 opacity-80">
+              Complétala aquí →
+            </span>
+          </button>
+        )}
       </div>
     );
   };

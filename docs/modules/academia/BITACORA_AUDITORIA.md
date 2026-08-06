@@ -331,21 +331,36 @@ flujo asigna**: en la práctica nadie tenía certificados, la sección estaba si
 
 ---
 
-## Siguiente
+## Estado al 2026-08-06: lo técnico está cerrado
 
-1. **Decisiones del jefe: YA CONTESTADAS** (2026-08-05, ver
-   `MENSAJE_JEFE_DECISIONES_BLOQUEOS.md`). Resumen: **nada bloquea**, todo avisa.
-   - *Bono de $500*: **quitado de la pantalla** (`61f14f2`, desplegado). Vuelve sólo con regla de
-     negocio y cable a nómina.
-   - *Examen*: intentos libres + **aviso al encargado de área a la segunda reprobada** — falta
-     construirlo. El contador ya se guarda (`failed_attempts`); el aviso tiene que salir **una
-     sola vez** por (colaborador, curso), o al tercer intento vuelve a sonar.
-   - *Inducción*: no bloquea fichar; falta **alerta en el tablero del encargado** ("2 días sin
-     inducción") y **recordatorio diario** al colaborador con plazo de 3 días.
-   - Antes de construir esos dos hay que definir **quién es el "encargado de área"** (el sistema
-     tiene organigrama, no esa figura, y el que arma el asistente es una convención de arranque) y
-     **desde cuándo se cuentan los días** (`employees.hire_date` es opcional y el alta no la fija).
-2. Restos menores: la tabla muerta `induction_courses`, el `AcademySeeder` sin `tenant_id`, y los
-   `video_url` vacíos del catálogo (contenido).
-3. Opcional, cuando haya tiempo: una página pública de verificación de certificados (hoy la
-   verificación existe como endpoint, sin pantalla).
+**Las decisiones del jefe se contestaron y se construyeron todas** (ver
+`MENSAJE_JEFE_DECISIONES_BLOQUEOS.md`). Criterio: **nada bloquea, todo avisa**.
+
+| Lo que pidió | Cómo quedó |
+|---|---|
+| Quitar el bono de $500 | `61f14f2` — fuera de la pantalla, no en cero: un valor en la columna la resucitaba |
+| Aviso al encargado a la 2ª reprobada | `bbfaf2c` — tablero "Mi Equipo" en RRHH, con "Ya hablé con él" |
+| Alerta de inducción pendiente | Misma pantalla, en rojo al cumplirse el plazo de 3 días |
+| Recordatorio al colaborador, no correo | `2929755` — banner en su reloj, también con la tienda cerrada |
+| Nada de esto bloquea | Verificado: con la inducción vencida el colaborador ficha igual |
+
+Y las dos definiciones que faltaban: el **"encargado de área"** salió del organigrama
+(`reports_to_role_ids`, con el admin como respaldo) y **`hire_date` se hizo obligatoria** en el
+alta, con relleno de los expedientes viejos (`304da64`).
+
+## Lo que queda ABIERTO
+
+1. **Una pantalla pública para verificar certificados.** El folio y el endpoint existen
+   (`GET /api/v1/public/certificates/{folio}`), pero **no hay página**: hoy sólo se comprueba con
+   una herramienta de desarrollo. Quien recibe el papel no puede verificarlo por su cuenta. Es lo
+   único que le falta a los certificados para estar completos de cara al mundo.
+2. **Contenido de los cursos — dominio del jefe.** 10 de los 14 cursos vivos **no tienen video**,
+   y el examen sigue siendo la misma pregunta genérica con la respuesta en la primera opción para
+   todos. La calificación ya es honesta (servidor, respuestas ocultas); lo que falta es qué se
+   pregunta y qué se enseña.
+3. **Restos menores, sin urgencia**: la tabla `induction_courses` no la lee ni la escribe nadie;
+   `AcademySeeder` sigue sin escribir `tenant_id` (nadie lo llama); las plantillas de certificado
+   viven como un JSON dentro de `system_settings` en vez de ser una entidad.
+4. **Sin ver en pantalla**: nadie ha completado nunca un curso en la V2 (0 filas de progreso), así
+   que **el certificado con folio real no se ha visto impreso**. El circuito está probado por API
+   y por pruebas, pero no con ojos.

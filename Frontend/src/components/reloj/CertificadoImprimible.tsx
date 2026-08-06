@@ -169,9 +169,17 @@ export const CertificadoImprimible: React.FC<CertificadoProps> = ({
         {/* FOLIO — lo que convierte el papel en algo comprobable. Antes no existía: cualquiera
             podía imprimir un certificado y la empresa no tenía cómo distinguirlo de uno real. */}
         {folio && (
-          <p className="text-[10px] text-slate-500 tracking-widest mt-3 shrink-0">
-            FOLIO DE VERIFICACIÓN: <strong className="text-slate-700">{folio}</strong>
-          </p>
+          <div className="mt-3 shrink-0 text-center">
+            <p className="text-[10px] text-slate-500 tracking-widest">
+              FOLIO DE VERIFICACIÓN: <strong className="text-slate-700">{folio}</strong>
+            </p>
+            {/* Sin la dirección, el folio no sirve de nada: quien recibe el papel no sabría
+                dónde comprobarlo. Se imprime el origen real para que funcione igual en el
+                servidor de la empresa que en el de pruebas. */}
+            <p className="text-[9px] text-slate-400 tracking-wide mt-0.5">
+              Verifícalo en {typeof window !== 'undefined' ? window.location.origin : ''}/certificado
+            </p>
+          </div>
         )}
 
       </div>

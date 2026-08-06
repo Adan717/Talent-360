@@ -34,6 +34,7 @@ const getIndicatorColor = (modId: string, systemSettings: any) => {
 };
 
 // Mega-Módulos Cargados de Forma Dinámica (Lazy Loading)
+const VerificarCertificado = lazy(() => import('./components/VerificarCertificado'));
 const RelojChecador = lazy(() => import('./components/RelojChecador'));
 const KioskScreen = lazy(() => import('./components/KioskScreen'));
 const RecursosHumanos = lazy(() => import('./components/RecursosHumanos'));
@@ -860,6 +861,19 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Navigate to="/inicio" replace />} />
       <Route path="/inicio" element={<SaaSLandingPage />} />
+      {/* Verificación pública de un certificado de la Academia. Sin sesión a propósito: quien
+          recibe el papel —otra empresa, un candidato— tiene que poder comprobarlo. Con folio en
+          la dirección se verifica solo, para que el enlace se comparta tal cual. */}
+      <Route path="/certificado" element={
+        <Suspense fallback={<LoadingScreen message="Cargando verificación..." />}>
+          <VerificarCertificado />
+        </Suspense>
+      } />
+      <Route path="/certificado/:folio" element={
+        <Suspense fallback={<LoadingScreen message="Verificando certificado..." />}>
+          <VerificarCertificado />
+        </Suspense>
+      } />
       <Route path="/vacantes/:slug" element={
         <Suspense fallback={<LoadingScreen message="Cargando bolsa de trabajo..." />}>
           <WebPublica />

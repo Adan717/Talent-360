@@ -783,6 +783,22 @@ export function useClockEngine(overrideUser?: any) {
   const [globalBroadcastMessage, setGlobalBroadcastMessage] = useState<string | null>(null);
   const [broadcastInput, setBroadcastInput] = useState("");
   
+  // TODO: MUERTO — usar Chat Operativo modo privado.
+  //
+  // Diagnosticado el 2026-08-06: el mensaje privado del admin al colaborador NO EXISTE como
+  // función. `setPrivateMessages` no tiene ni una llamada en todo el proyecto, así que el mapa
+  // nace vacío y muere vacío, y la rama que pinta "🚨 Mensaje del Admin" en RelojVisual es
+  // inalcanzable. `privateInput`/`privateTarget` tampoco los usa ninguna pantalla: no hay dónde
+  // escribir el mensaje.
+  //
+  // Decisión de producto: NO se resucita este camino. El Chat Operativo del Monitor 360 ya
+  // funciona sobre la misma tabla (`internal_messages`) y se le añadirá modo privado; mantener
+  // dos canales sería duplicar el problema. **Estas tres líneas se borran junto con esa
+  // implementación**, no antes, para que quien pase por aquí sepa que la función no existe sin
+  // tener que volver a diagnosticarlo.
+  //
+  // (De aquí salió además la fuga ya cerrada: `/sync/state` repartía los mensajes privados de la
+  // empresa a toda la plantilla. Ver `ClockController::getState`.)
   const [privateMessages, setPrivateMessages] = useState<Record<number, string>>({});
   const [privateInput, setPrivateInput] = useState("");
   const [privateTarget, setPrivateTarget] = useState<number>(1);

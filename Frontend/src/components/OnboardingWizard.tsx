@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Building2, Briefcase, UserPlus, Clock, CheckCircle2, ChevronRight, AlertCircle, Loader2, MessageSquare, Send, BookOpen, BarChart3, Users, Key, ShieldCheck, Lock, Database, Scale, FileText, Receipt, ListTodo, GraduationCap, Crown, Zap, Check, CheckSquare } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import OrganigramaPuestos from './OrganigramaPuestos';
 import { useAppStore } from '../store/useAppStore';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 
@@ -18,7 +19,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { fetchState, updateSetting, currentUser, setCurrentUser, isModuleUnlocked, globalRoles } = useAppStore();
 
-  const [subStep, setSubStep] = useState<'giro' | 'puestos' | 'tareas' | 'cursos'>('giro');
+  const [subStep, setSubStep] = useState<'giro' | 'puestos' | 'tareas' | 'cursos' | 'organigrama'>('giro');
   const [activeRoleFilterTab, setActiveRoleFilterTab] = useState<string>('all');
 
   const allPlatformModules = [
@@ -425,7 +426,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   //
   // `activePreset` conserva su nombre y su FORMA a propósito: todos los usos del JSX de abajo
   // siguen funcionando sin tocarse; sólo cambió de dónde sale su contenido.
-  type PuestoCatalogo = { name: string; area: string; esAperturador: boolean; jerarquiaLlaves: number };
+  type PuestoCatalogo = {
+    name: string; area: string; esAperturador: boolean; jerarquiaLlaves: number;
+    /** Jefe SUGERIDO por el servidor, por nombre. El admin lo confirma o lo cambia (bloque 1E). */
+    reporta_a?: string | null;
+  };
   type TareaCatalogo = {
     title: string; category: string; priority: string; assistant_type: string;
     assistant_prompt: string; target_role_name: string; estimated_mins?: number; momento?: string | null;
@@ -434,6 +439,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     title: string; description?: string; course_type?: string; video_url?: string;
     target_role_name?: string | null; quiz?: unknown[];
   };
+
+  // Organigrama que el admin confirma antes de terminar (regla del jefe, 2026-08-06: "el
+  // asistente puede sugerir, pero el admin debe aceptar o arrastrar la línea"). Es un mapa
+  // NOMBRE DEL PUESTO → NOMBRE DE SU JEFE, porque en este momento los puestos todavía no existen
+  // en la base y no tienen id. La sugerencia inicial la calcula el servidor (`reporta_a` del
+  // catálogo), para que no haya dos implementaciones de la misma convención.
+  const [organigrama, setOrganigrama] = useState<Record<string, string | null>>({});
 
   const [catalogo, setCatalogo] = useState<{ puestos: PuestoCatalogo[]; cursos: CursoCatalogo[]; tareas: TareaCatalogo[] } | null>(null);
   const [catalogoError, setCatalogoError] = useState(false);
@@ -475,6 +487,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         setSelectedPuestos(data.puestos.map((p: PuestoCatalogo) => p.name));
         setSelectedTareas(data.tareas.map((t: TareaCatalogo) => t.title));
         setSelectedCursos(cursos.map(c => c.title));
+        // Sugerencia del servidor: el admin la revisa y la ajusta en el bloque 1E.
+        setOrganigrama(Object.fromEntries(
+          data.puestos.map((p: PuestoCatalogo) => [p.name, p.reporta_a ?? null])
+        ));
       })
       .catch(() => { if (vigente) setCatalogoError(true); });
     return () => { vigente = false; };
@@ -484,8 +500,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleSelectNicho = (nichoKey: 'materias_primas' | 'retail' | 'restaurante' | 'oficina' | 'taller' | 'custom') => {
     setSelectedNicho(nichoKey);
     setSubStep('giro');
-    // Los cursos del giro nuevo los repone el efecto del catálogo, igual que puestos y tareas.
+    // Los cursos y el organigrama del giro nuevo los repone el efecto del catálogo, igual que
+    // puestos y tareas.
     setSelectedCursos([]);
+    setOrganigrama({});
     if (SUB_NICHOS[nichoKey]?.length) {
       setSelectedSubNicho(SUB_NICHOS[nichoKey][0].id);
     }
@@ -693,9 +711,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     try {
       // Se filtra sobre el catálogo del SERVIDOR: así lo seleccionado viaja de vuelta con
       // `momento` y `estimated_mins` incluidos, que es la razón de ser de todo el contrato.
+      // Cada puesto viaja con el jefe que el admin dejó confirmado en el bloque 1E. Si el jefe
+      // elegido quedó fuera de la selección, el puesto se manda sin jefe: mejor sin línea que
+      // colgado de un puesto que no se va a crear.
       const filteredPuestos = selectedNicho === 'custom'
         ? undefined
-        : (catalogo?.puestos ?? []).filter(p => selectedPuestos.includes(p.name));
+        : (catalogo?.puestos ?? [])
+            .filter(p => selectedPuestos.includes(p.name))
+            .map(p => {
+              const jefe = organigrama[p.name] ?? null;
+              return { ...p, reporta_a: jefe && selectedPuestos.includes(jefe) ? jefe : null };
+            });
       const filteredTareas = selectedNicho === 'custom'
         ? undefined
         : (catalogo?.tareas ?? []).filter(t => selectedTareas.includes(t.title));
@@ -712,7 +738,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         custom_nicho_description: customNichoDesc,
         selected_puestos: filteredPuestos,
         selected_tareas: filteredTareas,
-        selected_cursos: filteredCursos
+        selected_cursos: filteredCursos,
+        // Una PERSONA revisó el árbol antes de crearlo. Sin esta marca, el servidor cae a la
+        // convención automática, que es justo lo que la regla viene a evitar.
+        organigrama_confirmado: selectedNicho !== 'custom'
       });
       
       // Persistir la bandera de onboarding completado para que el wizard no se vuelva a mostrar en login
@@ -1059,6 +1088,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       {subStep === 'giro' && '1A. Giro Comercial y Especialidad'}
                       {subStep === 'puestos' && '1B. Puestos de Trabajo Sugeridos'}
                       {subStep === 'tareas' && '1C. Checklists & Rutinas Operativas'}
+                      {subStep === 'organigrama' && '1E. Revisa el Organigrama'}
                     </h3>
                   </div>
                 </div>
@@ -1092,6 +1122,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'cursos' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
                   >
                     4. Cursos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSubStep('organigrama')}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${subStep === 'organigrama' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                  >
+                    5. Organigrama
                   </button>
                 </div>
               </div>
@@ -1561,14 +1598,121 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     >
                       ← Tareas
                     </button>
-                    <button 
-                      onClick={handleConfigureNicho}
+                    {/* Ya no crea la estructura aquí: primero hay que revisar el organigrama.
+                        La regla es que nadie termine el alta sin confirmar quién reporta a
+                        quién — un giro 'custom' no trae puestos de catálogo, así que se salta
+                        el paso y crea directo, como siempre. */}
+                    <button
+                      onClick={() => selectedNicho === 'custom' ? handleConfigureNicho() : setSubStep('organigrama')}
                       disabled={loading || (selectedNicho === 'custom' && !customNichoDesc.trim()) || (selectedNicho !== 'custom' && selectedPuestos.length === 0)}
                       className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
                     >
-                      {loading ? <Loader2 size={18} className="animate-spin" /> : <>Confirmar e Inyectar Estructura Completa <ChevronRight size={18} /></>}
+                      {loading
+                        ? <Loader2 size={18} className="animate-spin" />
+                        : selectedNicho === 'custom'
+                          ? <>Confirmar e Inyectar Estructura Completa <ChevronRight size={18} /></>
+                          : <>Siguiente: Revisar Organigrama <ChevronRight size={18} /></>}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* ── 1E. Revisa el organigrama ─────────────────────────────────────────────
+                  Regla del jefe (2026-08-06): "ningún puesto se da de alta sin que el admin
+                  confirme a quién reporta. El asistente puede sugerir, pero el admin debe
+                  aceptar o arrastrar la línea. No más organigramas vacíos que reparamos
+                  después con comandos."
+
+                  De este árbol dependen dos cosas que no se ven aquí: quién autoriza las
+                  tareas de cada quien (`TaskValidationPolicy` no exige firma a quien no tiene
+                  jefe) y a quién le llegan los pendientes de su equipo. La convención
+                  automática los deja donde caiga — en la empresa de pruebas dejó al Asesor de
+                  Ventas colgando de Compras.
+
+                  El lienzo es el MISMO de Directorio > Puestos: es un componente puro, así que
+                  funciona con puestos que todavía no existen pasándoles un id temporal. */}
+              {subStep === 'organigrama' && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Así queda tu estructura. <strong>Revísala antes de crearla</strong>: de aquí sale
+                    quién autoriza las tareas de cada quien y a quién le avisamos cuando alguien se
+                    atora. Arrastra de una tarjeta a otra para cambiar a quién reporta.
+                  </p>
+
+                  {(() => {
+                    const elegidos = (catalogo?.puestos ?? []).filter(p => selectedPuestos.includes(p.name));
+                    // Ids temporales: el lienzo trabaja con números, y estos puestos aún no
+                    // existen en la base. Sólo viven mientras dura esta pantalla.
+                    const idPorNombre = new Map(elegidos.map((p, i) => [p.name, i + 1]));
+                    const nombrePorId = new Map(elegidos.map((p, i) => [i + 1, p.name]));
+
+                    const comoRoles = elegidos.map((p, i) => {
+                      const jefe = organigrama[p.name] ?? null;
+                      const jefeId = jefe ? idPorNombre.get(jefe) ?? null : null;
+                      return {
+                        id: i + 1,
+                        name: p.name,
+                        area: p.area,
+                        jerarquiaLlaves: p.jerarquiaLlaves,
+                        esAperturador: p.esAperturador,
+                        is_active: true,
+                        reports_to_role_id: jefeId,
+                        reports_to_role_ids: jefeId ? [jefeId] : [],
+                        org_parent_role_id: jefeId,
+                      };
+                    });
+
+                    const sinJefe = comoRoles.filter(r => !r.reports_to_role_id);
+
+                    return (
+                      <>
+                        <div className="h-[320px] rounded-2xl border border-slate-200 overflow-hidden bg-white">
+                          <OrganigramaPuestos
+                            jobRoles={comoRoles}
+                            employees={[]}
+                            onUpdateRole={(roleId, patch) => {
+                              const puesto = nombrePorId.get(Number(roleId));
+                              if (!puesto) return;
+                              // El lienzo manda el cambio como ids; aquí se traduce de vuelta a
+                              // nombres, que es la llave con la que viaja al servidor.
+                              const nuevoId = 'reports_to_role_ids' in patch
+                                ? (patch.reports_to_role_ids?.[0] ?? null)
+                                : patch.org_parent_role_id ?? null;
+                              setOrganigrama(prev => ({
+                                ...prev,
+                                [puesto]: nuevoId ? nombrePorId.get(Number(nuevoId)) ?? null : null,
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        {sinJefe.length > 1 && (
+                          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-800">
+                            ⚠️ Hay {sinJefe.length} puestos sin nadie por encima:{' '}
+                            {sinJefe.map(r => r.name).join(', ')}. Sólo el puesto de mando debería
+                            quedar así — a los demás nadie les autorizaría sus tareas.
+                          </div>
+                        )}
+
+                        <div className="pt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSubStep('cursos')}
+                            className="py-3.5 px-4 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs shrink-0"
+                          >
+                            ← Cursos
+                          </button>
+                          <button
+                            onClick={handleConfigureNicho}
+                            disabled={loading || selectedPuestos.length === 0}
+                            className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 text-xs sm:text-sm"
+                          >
+                            {loading ? <Loader2 size={18} className="animate-spin" /> : <>Confirmar Organigrama y Crear Estructura <ChevronRight size={18} /></>}
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>

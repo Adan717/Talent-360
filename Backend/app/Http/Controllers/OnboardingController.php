@@ -535,10 +535,21 @@ class OnboardingController extends Controller
             ], 500);
         }
 
+        // Cada puesto viaja con SU JEFE SUGERIDO, por nombre (los puestos todavía no existen en
+        // la base, así que no hay ids). El asistente lo pinta, el admin lo ajusta arrastrando y
+        // lo devuelve confirmado. La convención se calcula aquí y no en el navegador para que
+        // haya una sola implementación de la regla (ver `OrganigramaSugerido`).
+        $sugerido = \App\Support\OrganigramaSugerido::para($catalogo['puestos']);
+
+        $puestos = array_map(
+            fn ($p) => $p + ['reporta_a' => $sugerido[$p['name']] ?? null],
+            $catalogo['puestos']
+        );
+
         return response()->json([
             'success' => true,
             'nicho' => $nicho,
-            'puestos' => $catalogo['puestos'],
+            'puestos' => $puestos,
             // AC1: los cursos también salen del catálogo (antes estaban escritos a mano en
             // `configureNicho`, y la selección del asistente no llegaba nunca al servidor).
             'cursos' => $catalogo['cursos'] ?? [],
@@ -556,8 +567,12 @@ class OnboardingController extends Controller
             'sub_nicho' => 'nullable|string',
             'custom_nicho_description' => 'nullable|string',
             'selected_puestos' => 'nullable|array',
+            // Cada puesto puede traer `reporta_a` con el NOMBRE de su jefe, confirmado por el
+            // admin en el asistente (ver `construirOrganigrama`).
+            'selected_puestos.*.reporta_a' => 'nullable|string',
             'selected_tareas' => 'nullable|array',
-            'selected_cursos' => 'nullable|array'
+            'selected_cursos' => 'nullable|array',
+            'organigrama_confirmado' => 'nullable|boolean'
         ]);
 
         $tenantId = auth()->user()->tenant_id ?? 1;
@@ -822,6 +837,15 @@ class OnboardingController extends Controller
                 ['value' => json_encode(true), 'updated_at' => now()]
             );
 
+            // Marca de que una PERSONA revisó el organigrama, no sólo la convención automática.
+            // Sirve para dos cosas: saber qué empresas pasaron por la revisión, y que
+            // `reloj:reparar-organigrama` pueda distinguir "nunca se armó" de "lo armó alguien
+            // a mano" — hoy no las distingue.
+            \DB::table('system_settings')->updateOrInsert(
+                ['key' => 'organigrama_confirmado', 'tenant_id' => $tenantId],
+                ['value' => json_encode((bool) $request->input('organigrama_confirmado', false)), 'updated_at' => now()]
+            );
+
             \DB::commit();
 
             return response()->json([
@@ -840,60 +864,57 @@ class OnboardingController extends Controller
     }
 
     /**
-     * H27: enlaza cada puesto con el de nivel inmediatamente superior (`jerarquiaLlaves`).
+     * Deja escrito el organigrama de la empresa recién configurada.
      *
-     * El puesto de mando queda sin jefe; el resto cuelga del primer puesto que exista en un nivel
-     * por encima. No inventa niveles: si el giro sólo trae dos, la cadena tiene dos eslabones.
+     * APLICA lo que el admin confirmó en el asistente: cada puesto puede traer `reporta_a` con el
+     * NOMBRE de su jefe —por nombre y no por id porque, cuando el asistente lo manda, los puestos
+     * todavía no existen en la base—. Es la regla que pidió el jefe el 2026-08-06: *"el asistente
+     * puede sugerir, pero el admin debe aceptar o arrastrar la línea"*.
+     *
+     * Si un puesto NO trae `reporta_a` (cliente viejo, o un giro aplicado por API), se cae a la
+     * convención de siempre: cada quien cuelga del primer puesto del nivel inmediatamente
+     * superior. Así nada de lo ya desplegado se rompe.
+     *
+     * Se escriben las TRES columnas a propósito: el organigrama guarda la relación dos veces —la
+     * línea sólida del árbol (`org_parent_role_id`) y la punteada de la jerarquía operativa
+     * (`reports_to_role_ids`, la que lee el tablero de pendientes)— más el campo suelto que
+     * conserva el primero de la lista. Escribir sólo una dejaba la otra vacía.
      */
     private function construirOrganigrama(int $tenantId, array $puestos, array $roleIdsMap): void
     {
-        // Nivel → ids de los puestos que lo ocupan, en el orden del catálogo.
-        $porNivel = [];
+        $sugerido = \App\Support\OrganigramaSugerido::para($puestos);
+
+        // ¿Alguien declaró explícitamente a quién reporta? Un solo puesto con `reporta_a` basta
+        // para saber que la petición viene del asistente nuevo y que hay que respetarla tal cual
+        // (incluido el "no reporta a nadie" de la cabeza, que llega como null).
+        $vieneConfirmado = collect($puestos)->contains(fn ($p) => array_key_exists('reporta_a', $p));
+
         foreach ($puestos as $p) {
-            $id = $roleIdsMap[$p['name']] ?? null;
-            if (!$id) {
+            $nombre = $p['name'] ?? null;
+            $puestoId = $nombre ? ($roleIdsMap[$nombre] ?? null) : null;
+
+            if (!$puestoId) {
                 continue;
             }
-            $nivel = (int) ($p['jerarquiaLlaves'] ?? 0);
-            $porNivel[$nivel][] = $id;
-        }
 
-        if (empty($porNivel)) {
-            return;
-        }
+            $jefeNombre = $vieneConfirmado
+                ? ($p['reporta_a'] ?? null)
+                : ($sugerido[$nombre] ?? null);
 
-        $niveles = array_keys($porNivel);
-        sort($niveles);
+            $jefeId = $jefeNombre ? ($roleIdsMap[$jefeNombre] ?? null) : null;
 
-        foreach ($niveles as $nivel) {
-            // El jefe es el primer puesto del nivel superior MÁS CERCANO que exista.
-            $jefeId = null;
-            foreach (array_reverse($niveles) as $candidato) {
-                if ($candidato < $nivel) {
-                    $jefeId = $porNivel[$candidato][0];
-                    break;
-                }
+            // Un puesto no se reporta a sí mismo, venga de donde venga el dato.
+            if ($jefeId === $puestoId) {
+                $jefeId = null;
             }
 
-            if ($jefeId === null) {
-                continue; // nivel más alto: no reporta a nadie
-            }
-
-            foreach ($porNivel[$nivel] as $puestoId) {
-                \DB::table('job_roles')->where('id', $puestoId)->update([
-                    'reports_to_role_id' => $jefeId,
-                    // El organigrama de Directorio > Puestos dibuja la línea PUNTEADA —"la
-                    // jerarquía operativa real", la que dice quién se acerca a quién— leyendo
-                    // el ARREGLO, no este campo suelto. Escribir sólo el singular dejaba a cada
-                    // empresa nueva sin ninguna línea punteada: el organigrama se veía armado
-                    // (la línea sólida sí estaba) pero la jerarquía operativa nacía vacía, y de
-                    // ella cuelga a quién le llegan los pendientes de su equipo.
-                    'reports_to_role_ids' => json_encode([$jefeId]),
-                    'org_parent_role_id' => $jefeId,
-                    'nivel_mando' => $nivel,
-                    'updated_at' => now(),
-                ]);
-            }
+            \DB::table('job_roles')->where('id', $puestoId)->update([
+                'reports_to_role_id' => $jefeId,
+                'reports_to_role_ids' => $jefeId ? json_encode([$jefeId]) : null,
+                'org_parent_role_id' => $jefeId,
+                'nivel_mando' => (int) ($p['jerarquiaLlaves'] ?? 0),
+                'updated_at' => now(),
+            ]);
         }
     }
 

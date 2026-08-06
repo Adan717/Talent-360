@@ -91,6 +91,28 @@ bug del Reloj, sin relación con Academia: el mensaje privado del admin a un col
 guarda y se devuelve, pero el reloj nunca lo muestra — `setPrivateMessages` jamás se llama con
 datos del servidor. La pantalla del admin miente: cree que lo mandó.)*
 
+### Órdenes del jefe del 2026-08-06 (tras ver el organigrama)
+
+1. **DecorArte (tenant 2): reparación APLICADA.** 6 puestos conectados. Se le mandó el árbol
+   resultante para que valide. **En tenants reales no se toca nada hasta que él valide DecorArte**
+   — el tenant 3 quedó intacto a propósito.
+2. **El panel va en Recursos Humanos** ("ahí está el organigrama, ahí está la gestión de gente"),
+   como sección "Mi Equipo / Pendientes". No duplicar tableros. Plan B —widget en Monitor 360—
+   sólo si se complica. *Verificado: el rol `supervisor` YA entra a RRHH (el filtro de módulos
+   sólo le quita reportes, matrix y settings), así que no hay que darle acceso nuevo.*
+3. **Recordatorio al colaborador: banner en su app, NO correo.** "Tienes 2 días para tu
+   inducción. Complétala aquí." A los 3 días sin completar, el caso se pone rojo en el tablero
+   del encargado. *"No quiero que el sistema castigue al nuevo; quiero que me presione a mí para
+   acercarme a él."*
+4. **Bug del mensaje privado del Reloj: anotado, prioridad "después del tablero".** No se toca
+   ahora. *"Si mando un mensaje y el empleado no lo ve, estoy hablando solo."*
+5. **REGLA NUEVA, permanente:** ningún puesto se da de alta sin que el admin confirme a quién
+   reporta. El asistente puede **sugerir**, pero el admin acepta o arrastra la línea. No más
+   organigramas vacíos que se reparan después con comandos.
+
+**Orden de trabajo:** hoy la reparación de DecorArte · mañana el panel en RRHH · pasado el
+recordatorio en la app · después el bug del Reloj.
+
 ### Lo que hizo falta definir antes de construir 1 y 2
 
 - **Quién es el "encargado de área".** El sistema no tiene esa figura: tiene el **organigrama**

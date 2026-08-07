@@ -1,7 +1,9 @@
 # Nómina — decisiones de producto pendientes (N4 y N5)
 
-**Fecha:** 2026-08-06 · **Estado:** esperando decisión del jefe. Sin su respuesta no se toca
-la política de descuentos: cambiar cuánto se le descuenta a la gente no es decisión técnica.
+**Fecha:** 2026-08-06 · **Estado:** ~~esperando decisión del jefe~~ → **RESUELTO 2026-08-07:
+el jefe eligió la OPCIÓN A "sin dudar"** ("es la única que podemos defender ante un
+inspector, ante un colaborador y ante nuestros propios cursos"). Implementada en la Ronda 2
+— ver la sección "Ronda 2" de `AUDITORIA_NOMINA_2026-08-06.md`.
 
 Contexto mínimo: la Ronda 1 ya corrigió lo que era mentira o error de cálculo (timbre falso,
 semana en curso, faltas fantasma). Lo que sigue es **política**: cuánto se descuenta por un

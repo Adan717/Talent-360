@@ -256,10 +256,56 @@ nadie ha cobrado).
 ### Pendiente tras esta ronda
 
 - **N4/N5**: decisión de producto del jefe (preguntas redactadas — ver
-  `DECISIONES_PENDIENTES_N4_N5.md` en esta carpeta).
+  `DECISIONES_PENDIENTES_N4_N5.md` en esta carpeta). → **RESUELTO EN RONDA 2 (abajo).**
 - **N6**: el bruto sigue siendo `daily × 7` fijo; con la ronda 1 el DEFAULT de todas las
   pantallas es una semana de 7 días, pero un `start_date/end_date` explícito de quincena
   sigue descontando 15 días de faltas contra un bruto de 7. Siguiente ronda.
+  → **CANDADO EN RONDA 2 (abajo).**
 - **N2-real y N7**: construir (ISR/IMSS, aguinaldo, vacaciones, prima, antigüedad) — con
   contador y decisión de producto.
 - **N10**: las 424 líneas (ahora ~440) de `calculatePayrollForEmployee` — refactor de limpieza.
+
+---
+
+## Ronda 2 de implementación (2026-08-07) — N4 + N5 (opción A del jefe) + candado N6
+
+**El jefe respondió el mismo día: opción A, "sin dudar".** Sus palabras: la A "es la única
+que podemos defender ante un inspector, ante un colaborador y ante nuestros propios cursos".
+Sus cuatro instrucciones, implementadas con tres ajustes de forma (la tabla real es
+`lft_settings`, no `company_payroll_settings`; el criterio de datos viejos; y la semántica
+por-retardo del cobro único).
+
+### N5 — cerrado: la multa por minuto ya no viene de fábrica
+
+- **Default $0** en los tres lugares donde nacía el 2.00: el default de columna (migración
+  `2026_08_07_100000`), el auto-create de `calculatePayrollForEmployee` y el
+  `firstOrCreate` de `LftSettingController`.
+- **Datos viejos** (el patrón de siempre): la migración baja a $0 SOLO los `2.00` exactos —
+  el default recibido en silencio. Un valor capturado a propósito (1.50, 3.00…) se respeta:
+  ésa sí fue decisión de la empresa.
+- **Activarlo avisa y queda documentado**: el guardado devuelve el aviso del art. 107 y
+  sella `late_penalty_set_by` / `late_penalty_set_at` (se limpian al volver a $0). El panel
+  LFT ahora TIENE el campo (antes era API-only) con la leyenda legal permanente cuando > 0.
+- Con el por-minuto en $0, las deducciones quedan topadas estructuralmente por los días del
+  periodo: **el neto $0 sólo es alcanzable por la vía legal** (no trabajar los días).
+
+### N4 — cerrado: un retardo se cobra UNA sola vez
+
+- Los retardos que la acumulación convierte en falta (3→1, reglamento interior) **se
+  consumen**: descuentan el día y bajan el séptimo — pero ya NO cobran además por minuto.
+  Si una empresa activa el por-minuto, sólo cobra el **residuo** cronológico que no alcanzó
+  a formar falta (4 retardos con 3→1: cobran los minutos del 4º, no los 40 totales).
+- La falta acumulada conserva el efecto de una falta real (día + séptimo): criterio
+  ratificado explícitamente por el jefe.
+- `PayrollLftTest` — que documentaba el TRIPLE cobro como comportamiento esperado ($90 de
+  minutos encima de la falta) — se actualizó al cobro único con la referencia a esta
+  decisión. Test nuevo: `MultaPorMinutoLegalTest` (escenario de aceptación del jefe, cobro
+  único con residuo, aviso+sello del art. 107, y el criterio de migración de datos).
+
+### N6 — candado (la quincena ya no se calcula mal; simplemente no se calcula)
+
+- `getPeriodDates` admin: un periodo explícito que no sea de exactamente 7 días → **422**
+  con explicación, en vez de descontar 15 días de faltas contra un bruto de 7. Mismo
+  criterio que el candado de periodicidad del batch: mejor rechazar y decirlo. El N6
+  "real" (bruto que respete periodos arbitrarios) queda absorbido por el trabajo
+  calendarizado del ciclo quincenal/mensual (nómina-periodicidad).

@@ -1526,7 +1526,9 @@ class ClockService
                 'rest_tolerance_minutes' => 10,
                 'late_action_mode' => 'deduct',
                 'paid_rest_day' => true,
-                'late_penalty_per_minute' => 2.00,
+                // N5/opción A: $0 de fábrica — el art. 107 LFT prohíbe multar el salario.
+                // Activarlo es decisión explícita y documentada de cada empresa.
+                'late_penalty_per_minute' => 0.00,
             ]);
         }
 
@@ -1607,6 +1609,10 @@ class ClockService
             ->map(fn ($d) => Carbon::parse($d)->toDateString())
             ->all();
 
+        // N4/opción A: minutos de cada retardo en orden cronológico, para poder excluir del
+        // cobro por minuto los retardos que la acumulación convierte en falta (cobro único).
+        $minutosPorRetardo = [];
+
         foreach ($entries as $entry) {
             $entryDate = Carbon::parse($entry->date)->format('Y-m-d');
             // El retardo se congela por justificante aprobado (R82), contingencia aprobada (R83) o
@@ -1617,6 +1623,7 @@ class ClockService
                 && !in_array($entryDate, $activeDeclarationDates, true)) {
                 $latesCount++;
                 $lateMinutes += $entry->late_minutes;
+                $minutosPorRetardo[] = ['date' => $entryDate, 'mins' => (int) $entry->late_minutes];
             }
         }
 
@@ -1752,7 +1759,16 @@ class ClockService
         }
         $deductionLates = 0;
         if ($lft->late_action_mode === 'deduct') {
-            $deductionLates = $lateMinutes * (float) ($lft->late_penalty_per_minute ?? 2) * $lateMultiplier;
+            // N4 — decisión del jefe (opción A): un retardo se cobra UNA sola vez. Los retardos
+            // que la acumulación ya convirtió en falta (3→1, reglamento interior) NO cobran
+            // además por minuto; sólo el residuo que no alcanzó a formar falta. Se consumen en
+            // orden cronológico. (Con el default $0 del art. 107 esto vale $0 de todas formas;
+            // aplica cuando una empresa activa el por-minuto bajo su responsabilidad.)
+            $retardosConsumidos = $absencesFromLates * max(1, (int) $lft->lates_per_absence);
+            usort($minutosPorRetardo, fn ($a, $b) => strcmp($a['date'], $b['date']));
+            $minutosCobrables = array_sum(array_column(array_slice($minutosPorRetardo, $retardosConsumidos), 'mins'));
+
+            $deductionLates = $minutosCobrables * (float) ($lft->late_penalty_per_minute ?? 0) * $lateMultiplier;
         }
 
         $totalDeductions = $deductionAbsence + $deductionRestDay + $deductionLates;

@@ -110,11 +110,14 @@ class PayrollLftTest extends TestCase
         // Descuento por descanso proporcional: (1 - 4/6) * $500 = $166.67
         $this->assertEquals(166.67, round($payroll['deductions_breakdown']['rest_day'], 2));
 
-        // Neto: Sueldo bruto ($500 * 7 = $3500) - deducciones ($1000 + $166.67 + retardos)
-        // Como modo es 'deduct', se suma penalización por minutos tarde: 45 minutos * 2 = $90 de penalización
-        // Deducciones totales: $1000 + $166.67 + $90 = $1256.67
-        // Neto esperado: $3500 - $1256.67 = $2243.33
-        $this->assertEquals(2243.33, round($payroll['salary']['net'], 2));
+        // N4 — opción A (decisión del jefe 2026-08-07): un retardo se cobra UNA sola vez.
+        // Los 3 retardos se CONSUMEN al convertirse en 1 falta (que ya descuenta el día y
+        // baja el séptimo); no cobran además por minuto. Antes aquí se esperaban $90 extra
+        // (45 min × $2): era el triple cobro del hallazgo N4 y contradecía el art. 107 LFT.
+        $this->assertEquals(0.0, (float) $payroll['deductions_breakdown']['lates']);
+
+        // Neto: bruto ($500 × 7 = $3500) − faltas ($1000) − séptimo proporcional ($166.67)
+        $this->assertEquals(2333.33, round($payroll['salary']['net'], 2));
     }
 
     public function test_holiday_blocking_and_payroll_bonus(): void

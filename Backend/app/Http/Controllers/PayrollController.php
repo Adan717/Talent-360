@@ -36,6 +36,16 @@ class PayrollController extends Controller
             [$start, $end] = $this->weekService->lastClosedWeekFor($tenantId, Carbon::now());
             $startDate = $start->toDateString();
             $endDate = $end->toDateString();
+        } else {
+            // N6 (candado): el cálculo sólo sabe hacer SEMANAS — el bruto es diario×7 y el
+            // séptimo día usa 6 fijo. Pedir una quincena descontaba 15 días de faltas contra
+            // un bruto de 7. Mismo criterio que el candado de periodicidad del batch: mejor
+            // rechazar y decirlo que calcular mal, hasta que exista el ciclo quincenal/mensual.
+            $dias = (int) round(Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate), false)) + 1;
+            if ($dias !== 7) {
+                abort(422, "El cálculo de nómina es semanal (7 días) y el periodo pedido abarca {$dias}. "
+                    . 'El ciclo quincenal/mensual aún no existe; se rechaza el periodo en lugar de calcularlo mal.');
+            }
         }
 
         return [$startDate, $endDate];

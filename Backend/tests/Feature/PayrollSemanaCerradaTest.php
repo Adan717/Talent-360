@@ -158,4 +158,27 @@ class PayrollSemanaCerradaTest extends TestCase
         $this->assertSame('2026-07-27', $res->json('period.start_date'));
         $this->assertIsArray($res->json('employees'));
     }
+
+    /**
+     * N6 (candado): el cálculo sólo sabe hacer semanas (bruto diario×7, séptimo sobre 6).
+     * Pedir una quincena descontaba 15 días de faltas contra un bruto de 7. Igual que el
+     * candado de periodicidad del batch: se rechaza en vez de calcular mal.
+     */
+    public function test_un_periodo_que_no_es_semana_se_rechaza(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-06 12:00:00'));
+        [$user] = $this->colaborador();
+        DB::table('users')->where('id', $user->id)->update(['role' => 'admin']);
+        $admin = $user->fresh();
+
+        // Una quincena explícita: 422, no un cálculo inventado.
+        $this->actingAs($admin)
+            ->getJson('/api/v1/admin/payroll?start_date=2026-07-01&end_date=2026-07-15')
+            ->assertStatus(422);
+
+        // Una semana explícita de 7 días sigue funcionando.
+        $this->actingAs($admin)
+            ->getJson('/api/v1/admin/payroll?start_date=2026-07-27&end_date=2026-08-02')
+            ->assertStatus(200);
+    }
 }

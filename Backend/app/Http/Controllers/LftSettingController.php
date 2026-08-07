@@ -30,7 +30,8 @@ class LftSettingController extends Controller
                 'rest_tolerance_minutes' => 10,
                 'late_action_mode' => 'deduct',
                 'paid_rest_day' => true,
-                'late_penalty_per_minute' => 2.00,
+                // N5/opción A: $0 de fábrica — el art. 107 LFT prohíbe multar el salario.
+                'late_penalty_per_minute' => 0.00,
                 'max_late_block_minutes' => 0,
                 'require_checkout_approval' => false,
             ]
@@ -76,16 +77,44 @@ class LftSettingController extends Controller
             'opening_bonus_per_open' => 'sometimes|numeric|min:0',   // Bono de apertura (R94)
         ]);
 
+        // N5/opción A: el descuento por minuto arranca en $0 (art. 107 LFT: las multas al
+        // salario están prohibidas). Si una empresa lo ACTIVA, es su decisión y queda
+        // documentada: quién la tomó y cuándo. Al volverlo a $0 se limpia la constancia.
+        $penaltyAnterior = (float) (LftSetting::where('tenant_id', $tenantId)
+            ->value('late_penalty_per_minute') ?? 0);
+
         $settings = LftSetting::updateOrCreate(
             ['tenant_id' => $tenantId],
             $validated
         );
 
-        return response()->json([
+        $warning = null;
+        if (array_key_exists('late_penalty_per_minute', $validated)) {
+            $penaltyNuevo = (float) $validated['late_penalty_per_minute'];
+            if ($penaltyNuevo > 0) {
+                $warning = 'Aviso legal: el descuento por minuto de retardo puede no cumplir con el '
+                    . 'art. 107 de la LFT (prohíbe imponer multas al salario). Lo activas bajo tu '
+                    . 'responsabilidad; queda registrado quién lo activó y cuándo.';
+                if ($penaltyAnterior <= 0) {
+                    $settings->forceFill([
+                        'late_penalty_set_by' => auth()->id(),
+                        'late_penalty_set_at' => now(),
+                    ])->save();
+                }
+            } elseif ($penaltyAnterior > 0) {
+                $settings->forceFill([
+                    'late_penalty_set_by' => null,
+                    'late_penalty_set_at' => null,
+                ])->save();
+            }
+        }
+
+        return response()->json(array_filter([
             'success' => true,
             'message' => 'Configuraciones de la Ley Federal del Trabajo actualizadas con éxito.',
-            'data' => $settings
-        ]);
+            'warning' => $warning,
+            'data' => $settings->fresh(),
+        ], fn ($v) => $v !== null));
     }
 
     /**

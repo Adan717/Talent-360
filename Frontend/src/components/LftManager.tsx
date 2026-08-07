@@ -18,6 +18,9 @@ export default function LftManager() {
   const [restToleranceMinutes, setRestToleranceMinutes] = useState(10);
   const [lateActionMode, setLateActionMode] = useState<'deduct' | 'extend_shift'>('deduct');
   const [paidRestDay, setPaidRestDay] = useState(true);
+  // N5/opción A: $0 de fábrica (art. 107 LFT). Activarlo es decisión explícita de la empresa.
+  const [latePenaltyPerMinute, setLatePenaltyPerMinute] = useState(0);
+  const [warnMsg, setWarnMsg] = useState('');
 
   // Estados para Días Festivos y Pestañas
   const [activeTab, setActiveTab] = useState<'variables' | 'holidays'>('variables');
@@ -114,6 +117,7 @@ export default function LftManager() {
         setRestToleranceMinutes(d.rest_tolerance_minutes);
         setLateActionMode(d.late_action_mode as 'deduct' | 'extend_shift');
         setPaidRestDay(!!d.paid_rest_day);
+        setLatePenaltyPerMinute(parseFloat(d.late_penalty_per_minute) || 0);
       }
     } catch (e) {
       console.error(e);
@@ -128,6 +132,7 @@ export default function LftManager() {
     setIsSaving(true);
     setSuccessMsg('');
     setErrorMsg('');
+    setWarnMsg('');
     try {
       const res = await axiosInstance.post('/admin/lft-settings', {
         lates_per_absence: latesPerAbsence,
@@ -140,10 +145,13 @@ export default function LftManager() {
         rest_tolerance_minutes: restToleranceMinutes,
         late_action_mode: lateActionMode,
         paid_rest_day: paidRestDay,
+        late_penalty_per_minute: latePenaltyPerMinute,
       });
 
       if (res.data && res.data.success) {
         setSuccessMsg('Configuraciones de la Ley Federal del Trabajo guardadas exitosamente.');
+        // Aviso art. 107 del servidor cuando el descuento por minuto queda activo.
+        setWarnMsg(res.data.warning || '');
         setTimeout(() => setSuccessMsg(''), 5000);
       }
     } catch (e: any) {
@@ -299,6 +307,12 @@ export default function LftManager() {
           <div className="mb-6 p-4 bg-rose-50 border border-rose-250 text-rose-800 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
             <ShieldAlert size={18} className="shrink-0 text-rose-600 animate-pulse" />
             <span className="text-xs font-bold">{errorMsg}</span>
+          </div>
+        )}
+        {warnMsg && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
+            <AlertTriangle size={18} className="shrink-0 text-amber-600" />
+            <span className="text-xs font-bold">{warnMsg}</span>
           </div>
         )}
 
@@ -515,14 +529,49 @@ export default function LftManager() {
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500">Faltas para Suspensión Temporal</label>
-                    <input 
+                    <input
                       type="number"
                       value={absencesForSuspension}
                       onChange={(e) => setAbsencesForSuspension(parseInt(e.target.value) || 4)}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500">Descuento por minuto de retardo ($ MXN)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={latePenaltyPerMinute}
+                      onChange={(e) => setLatePenaltyPerMinute(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className={`w-full px-4 py-2.5 border rounded-xl font-semibold outline-none focus:border-amber-500 ${
+                        latePenaltyPerMinute > 0
+                          ? 'bg-rose-50/60 border-rose-200 text-rose-800'
+                          : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
+                    />
+                  </div>
                 </div>
+
+                {/* N5/opción A: default $0. Si la empresa lo activa, el aviso legal es permanente. */}
+                {latePenaltyPerMinute > 0 ? (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2">
+                    <ShieldAlert size={15} className="text-rose-600 shrink-0 mt-0.5" />
+                    <span className="text-[10.5px] text-rose-800 font-semibold leading-relaxed">
+                      <strong>Aviso legal:</strong> el art. 107 de la LFT prohíbe imponer multas al salario
+                      del trabajador, y un descuento por minuto de retardo puede considerarse una multa.
+                      Lo activas bajo la responsabilidad de tu empresa; el sistema registra quién lo
+                      activó y cuándo. La vía que la LFT sí permite es la acumulación de retardos
+                      (arriba: retardos equivalentes a 1 falta).
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 font-semibold px-1">
+                    El descuento por minuto viene desactivado ($0): el art. 107 de la LFT prohíbe multar
+                    el salario. Los retardos se sancionan por acumulación (N retardos = 1 falta).
+                  </p>
+                )}
 
                 <div className="flex flex-col gap-3 pt-2">
                   <label className="relative flex items-center gap-3 cursor-pointer p-3 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">

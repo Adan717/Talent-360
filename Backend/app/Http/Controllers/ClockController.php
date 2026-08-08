@@ -923,24 +923,27 @@ class ClockController extends Controller
     public function syncMessage(Request $request)
     {
         $request->validate([
-            'sender_id' => 'required|integer',
+            // Se sigue aceptando por compatibilidad con clientes viejos, pero YA NO SE USA.
+            'sender_id' => 'nullable|integer',
             'receiver_id' => 'nullable|integer',
             'type' => 'nullable|string',
             'content' => 'required|string',
         ]);
 
         $user = auth()->user() ?? auth('sanctum')->user();
-        $tenantId = $user ? $user->tenant_id : 1;
 
-        // Verify sender belongs to active tenant
-        $senderExists = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
-            ->where('id', $request->input('sender_id'))
-            ->where('tenant_id', $tenantId)
-            ->exists();
-
-        if (!$senderExists) {
-            return response()->json(['error' => 'El remitente no pertenece a su organización.'], 403);
+        if (!$user) {
+            return response()->json(['error' => 'Sesión requerida para enviar mensajes.'], 401);
         }
+
+        $tenantId = $user->tenant_id;
+
+        // SUPLANTACIÓN (auditoría del Monitor, 2026-08-08): antes se guardaba el `sender_id`
+        // que mandaba el cliente y solo se comprobaba que fuera de la misma empresa. Con eso
+        // cualquier colaborador podía escribir un mensaje FIRMADO POR EL JEFE con solo poner
+        // su id: en el chat salía con el nombre del jefe. El remitente no es un dato del
+        // cliente, es la sesión.
+        $senderId = $user->id;
 
         // Verify receiver belongs to active tenant if specified
         $receiverId = $request->input('receiver_id');
@@ -956,7 +959,7 @@ class ClockController extends Controller
         }
 
         $id = DB::table('internal_messages')->insertGetId([
-            'sender_id' => $request->input('sender_id'),
+            'sender_id' => $senderId,
             'receiver_id' => $receiverId,
             'type' => $request->input('type', 'private'),
             'content' => $request->input('content'),

@@ -68,19 +68,26 @@ interface VendorLog {
   photo_url?: string;
 }
 
+/**
+ * Forma REAL que devuelve el backend (`suggestWorkPlan` + GeminiAIService).
+ *
+ * La interfaz anterior describía otra cosa (`assignments[]` con `suggested_tasks[]`) que el
+ * servidor nunca envió: la condición del handler exigía `res.data.suggestion || res.data.plan`,
+ * claves inexistentes, así que el 100% de las veces se descartaba la respuesta de Gemini y se
+ * pintaba un plan FABRICADO en el navegador (las mismas dos tareas de restaurante para todos,
+ * en cualquier giro) bajo el rótulo "Diagnóstico IA".
+ */
 interface AiPlanSuggestion {
-  summary: string;
-  missing_roles_impact: string[];
-  assignments: Array<{
-    user_id: number;
-    employee_name: string;
-    role_name: string;
-    suggested_tasks: Array<{
-      title: string;
-      estimated_mins: number;
-      priority: 'high' | 'medium' | 'low';
-      sop_reference?: string;
-    }>;
+  ai_available: boolean;
+  summary: string | null;
+  staffing_gap_detected: boolean;
+  suggestions: Array<{
+    task_assignment_id?: string | number | null;
+    suggested_new_task_title?: string | null;
+    suggested_target_type?: 'role' | 'user' | null;
+    suggested_target_id?: number | null;
+    estimated_mins?: number | null;
+    reason?: string | null;
   }>;
 }
 
@@ -225,6 +232,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
       if (res.data?.status === 'success' && res.data?.data) {
         setUsers(res.data.data.users || []);
         setStaff(res.data.data.staff || []);
+        // Los proveedores vienen del servidor: antes solo vivían en este navegador.
+        setVendors(res.data.data.vendors || []);
         setAvailableTasks(res.data.data.available_tasks || []);
         setFeed(res.data.data.feed || []);
         setChatMessages(res.data.data.chat || []);
@@ -257,6 +266,13 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     return () => clearInterval(interval);
   }, []);
 
+  // El hilo del chat se abre en el mensaje más reciente y baja solo cuando llega uno nuevo:
+  // sin esto había que arrastrar el scroll para ver lo último, en un panel que se refresca
+  // cada 5 segundos.
+  useEffect(() => {
+    if (showChatDrawer) chatBottomRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [chatMessages.length, showChatDrawer]);
+
   // Toggle Module Adoption
   const handleToggleModule = async (moduleKey: string, moduleName: string) => {
     setIsAdoptionSaving(true);
@@ -278,48 +294,54 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     }
   };
 
-  // Generate AI Work Plan
+  // Generate AI Work Plan. Se pinta LO QUE LA IA RESPONDIÓ, y si no respondió se dice —
+  // antes cualquier resultado (incluido el bueno) terminaba en un plan inventado en el
+  // navegador que se presentaba como diagnóstico de IA.
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const handleGenerateAiPlan = async () => {
     setShowAiModal(true);
     setAiLoading(true);
+    setAiError(null);
+    setAiPlan(null);
     try {
       const res = await axiosInstance.post('/admin/dashboard/suggest-work-plan', {
         date: new Date().toISOString().split('T')[0]
       });
-      if (res.data?.success && (res.data?.suggestion || res.data?.plan)) {
-        setAiPlan(res.data.suggestion || res.data.plan);
-      } else {
-        setAiPlan({
-          summary: "Plan de contingencia ajustado al personal presente.",
-          missing_roles_impact: ["Asignación de carga optimizada según SOPs"],
-          assignments: users.map(u => ({
-            user_id: u.id,
-            employee_name: u.name,
-            role_name: u.role_name,
-            suggested_tasks: [
-              { title: "Arqueo y Revisión Operativa (SOP-01)", estimated_mins: 25, priority: 'high', sop_reference: 'Obsidian Vault / SOP' },
-              { title: "Limpieza y Sanitización de Estación", estimated_mins: 20, priority: 'medium', sop_reference: 'Obsidian Vault / SOP' }
-            ]
-          }))
-        });
-      }
-    } catch (err) {
-      console.error("Error al generar plan IA:", err);
       setAiPlan({
-        summary: "Sugerencia basada en tareas prioritarias pendientes.",
-        missing_roles_impact: ["Verificar asistencias en turno"],
-        assignments: users.map(u => ({
-          user_id: u.id,
-          employee_name: u.name,
-          role_name: u.role_name,
-          suggested_tasks: [
-            { title: "Atención Operativa de Sucursal", estimated_mins: 30, priority: 'high' }
-          ]
-        }))
+        ai_available: !!res.data?.ai_available,
+        summary: res.data?.summary ?? null,
+        staffing_gap_detected: !!res.data?.staffing_gap_detected,
+        suggestions: Array.isArray(res.data?.suggestions) ? res.data.suggestions : []
       });
+    } catch (err: any) {
+      console.error("Error al generar plan IA:", err);
+      setAiError(err?.response?.data?.message || 'No se pudo generar el plan. Intenta de nuevo.');
     } finally {
       setAiLoading(false);
     }
+  };
+
+  // Sugerencia de función: ahora se ENVÍA (queda como ticket con el equipo). Antes el
+  // prompt() se agradecía y el texto se tiraba.
+  const handleSugerirFuncion = async () => {
+    const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
+    if (!suggestion || !suggestion.trim()) return;
+    try {
+      const res = await axiosInstance.post('/feature-suggestions', { suggestion: suggestion.trim() });
+      setToastMessage(res.data?.message || '¡Gracias! Tu sugerencia quedó registrada con el equipo de Talent360.');
+    } catch (err: any) {
+      console.error('Error al enviar la sugerencia:', err);
+      setToastMessage(err?.response?.data?.message || 'No se pudo enviar la sugerencia. Intenta de nuevo.');
+    }
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Nombre legible del destinatario que sugiere la IA (puesto o persona).
+  const nombreDestinoSugerido = (tipo?: string | null, id?: number | null) => {
+    if (!tipo || !id) return 'Sin destinatario sugerido';
+    if (tipo === 'role') return jobRoles.find((r: any) => r.id === id)?.name || `Puesto #${id}`;
+    return staff.find((s) => s.user_id === id)?.name || `Colaborador #${id}`;
   };
 
   // Tarea al vuelo (§31, P5-P7): va por la puerta ENDURECIDA — solo mandos, nunca a uno
@@ -347,7 +369,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     }
   };
 
-  // Register New Vendor Arrival
+  // Register New Vendor Arrival. El id lo pone el SERVIDOR: antes se fabricaba uno local
+  // ('v_' + Date.now()) y con él la salida nunca se podía registrar. Si el alta falla, no
+  // se pinta la tarjeta — un proveedor "registrado" que no existe en la bitácora es peor
+  // que un error visible.
   const handleRegisterVendor = async () => {
     if (!newVendorName) return;
     try {
@@ -356,33 +381,29 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         driver_name: newVendorDriver || 'Repartidor',
         order_ref: newVendorOrderRef || 'S/N'
       });
-    } catch (err) {
-      console.error("Error en backend vendor, agregando localmente:", err);
+      setNewVendorName('');
+      setNewVendorDriver('');
+      setNewVendorOrderRef('');
+      setShowVendorModal(false);
+      await fetchData();
+    } catch (err: any) {
+      console.error("Error al registrar proveedor:", err);
+      setToastMessage(err?.response?.data?.message || 'No se pudo registrar el proveedor. Intenta de nuevo.');
+      setTimeout(() => setToastMessage(null), 4000);
     }
-    const newV: VendorLog = {
-      id: 'v_' + Date.now(),
-      vendor_name: newVendorName,
-      driver_name: newVendorDriver || 'Repartidor',
-      order_ref: newVendorOrderRef || 'S/N',
-      arrival_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'in_premises',
-      received_by: currentUser?.name || 'Supervisor'
-    };
-    setVendors([newV, ...vendors]);
-    setNewVendorName('');
-    setNewVendorDriver('');
-    setNewVendorOrderRef('');
-    setShowVendorModal(false);
   };
 
-  // Complete Vendor Visit
+  // Complete Vendor Visit. La URL llevaba '/api/v1' duplicado (el baseURL de axios ya lo
+  // trae): salía a /api/v1/api/v1/... y era 404 SIEMPRE, pero la tarjeta se apagaba igual.
   const handleCompleteVendor = async (id: string) => {
     try {
-      await axiosInstance.post(`/api/v1/admin/dashboard/vendors/${id}/complete`);
-    } catch (err) {
+      await axiosInstance.post(`/admin/dashboard/vendors/${id}/complete`);
+      await fetchData();
+    } catch (err: any) {
       console.error("Error al registrar salida de proveedor:", err);
+      setToastMessage(err?.response?.data?.message || 'No se pudo registrar la salida del proveedor.');
+      setTimeout(() => setToastMessage(null), 4000);
     }
-    setVendors(vendors.map(v => v.id === id ? { ...v, status: 'completed' } : v));
   };
 
   // Send Chat Message
@@ -406,16 +427,23 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
     }
   };
 
-  // Filtered Users
+  // Filtered Users. "En Turno" incluye a los 'idle': el backend degrada a idle a TODO el
+  // que está checado sin tarea en curso, así que el filtro ocultaba a gente presente —
+  // el caso normal a media mañana, cuando nadie tiene tarea abierta.
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           u.role_name.toLowerCase().includes(searchTerm.toLowerCase());
     if (statusFilter === 'all') return matchesSearch;
+    if (statusFilter === 'active') return matchesSearch && (u.status === 'active' || u.status === 'idle');
     return matchesSearch && u.status === statusFilter;
   });
 
   // Metrics
   const activeCount = users.filter(u => u.status === 'active' || u.status === 'idle').length;
+  // Denominador = plantilla activa con cuenta, NO los que vinieron: con "1 / 1" un dueño
+  // con 10 colaboradores y uno solo checado leía asistencia completa. Las faltas son
+  // justo lo que este tablero existe para mostrar.
+  const staffCount = staff.length || users.length;
   const breakCount = users.filter(u => u.status === 'break').length;
   const inPremisesVendors = vendors.filter(v => v.status === 'in_premises').length;
   const avgEfficiency = users.length > 0 ? Math.round(users.reduce((acc, u) => acc + (u.efficiency || 100), 0) / users.length) : 100;
@@ -572,7 +600,9 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <h2 className="text-lg font-bold text-slate-900">Control Operativo en Tiempo Real</h2>
                     <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-bold text-xs flex items-center gap-1.5 shadow-2xs">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      En Vivo (3s)
+                      {/* El refresco real es cada 5 s (setInterval de fetchData); el "(3s)"
+                          era el del carrusel de módulos, otra cosa. */}
+                      En Vivo (5s)
                     </span>
                   </div>
                   <p className="text-xs text-slate-500">Supervisión de colaboradores, tareas, proveedores y chat activo</p>
@@ -637,8 +667,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                     <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-slate-900 leading-tight truncate">{activeCount} / {users.length}</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-tight truncate">Personal</div>
+                    <div className="text-sm sm:text-lg font-black text-slate-900 leading-tight truncate">{activeCount} / {staffCount}</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 font-bold tracking-tight truncate">
+                      {staffCount > activeCount + breakCount
+                        ? `Personal · ${staffCount - activeCount - breakCount} sin checar`
+                        : 'Personal'}
+                    </div>
                   </div>
                 </div>
                 <UserCheck className="absolute -right-2 -bottom-2 sm:-right-3 sm:-bottom-3 w-12 h-12 sm:w-16 sm:h-16 text-emerald-600/10 pointer-events-none group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
@@ -833,7 +867,9 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
                         <div className="space-y-1 mb-4">
                           <div className="flex justify-between text-[11px] text-slate-500 font-semibold">
-                            <span>Avance de Jornada</span>
+                            {/* Decía "Avance de Jornada" pero pinta `efficiency` (puntualidad
+                                + tareas cerradas): nada que ver con cuánto lleva del turno. */}
+                            <span>Eficiencia del día</span>
                             <span className="font-bold text-slate-800">{u.efficiency}%</span>
                           </div>
                           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
@@ -982,14 +1018,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <p className="text-xs text-slate-500 font-medium">Adopta funciones a la carta o sugiere las próximas innovaciones para tu organización</p>
               </div>
 
-              <button 
-                onClick={() => {
-                  const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
-                  if (suggestion && suggestion.trim()) {
-                    setToastMessage("¡Gracias! Tu sugerencia ha sido enviada al equipo de desarrollo de Talent360.");
-                    setTimeout(() => setToastMessage(null), 4000);
-                  }
-                }}
+              <button
+                onClick={handleSugerirFuncion}
                 className="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 border border-amber-300 shrink-0 flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
               >
                 <Sparkles size={16} />
@@ -1310,14 +1340,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                   </p>
                 </div>
 
-                <button 
-                  onClick={() => {
-                    const suggestion = prompt("💡 ¿Qué nueva función o módulo te gustaría ver en Talent360?");
-                    if (suggestion && suggestion.trim()) {
-                      setToastMessage("¡Gracias! Tu sugerencia ha sido enviada al equipo de desarrollo.");
-                      setTimeout(() => setToastMessage(null), 4000);
-                    }
-                  }}
+                <button
+                  onClick={handleSugerirFuncion}
                   className="w-full py-2.5 rounded-xl bg-white text-purple-950 font-black text-xs shadow-md hover:bg-amber-50 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 relative z-10"
                 >
                   <Sparkles size={16} className="text-amber-600" />
@@ -1369,50 +1393,92 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <p className="text-sm font-bold text-slate-800">La IA está procesando el personal presente y los SOPs...</p>
                 <p className="text-xs text-slate-500 mt-1">Generando matriz de distribución de tareas...</p>
               </div>
+            ) : aiError ? (
+              <div className="py-12 text-center space-y-4">
+                <AlertTriangle className="w-10 h-10 mx-auto text-rose-500" />
+                <p className="text-sm font-bold text-slate-800">{aiError}</p>
+                <button
+                  onClick={handleGenerateAiPlan}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
+                >
+                  Reintentar
+                </button>
+              </div>
             ) : aiPlan ? (
               <div className="space-y-4">
-                
-                <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-950 text-xs">
-                  <span className="font-extrabold text-purple-900">Diagnóstico IA:</span> {aiPlan.summary}
-                </div>
 
-                {aiPlan.missing_roles_impact && aiPlan.missing_roles_impact.length > 0 && (
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2 font-medium">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                    <span>{aiPlan.missing_roles_impact.join(', ')}</span>
+                {/* Si la IA no contestó se dice, en vez de inventar un plan y firmarlo como suyo. */}
+                {!aiPlan.ai_available ? (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>
+                      <span className="font-extrabold">El asistente de IA no está disponible en este momento.</span>{' '}
+                      No se generó ninguna sugerencia — no hay plan que mostrar. Puedes repartir el trabajo
+                      a mano desde el tablero o con "Tarea Express".
+                    </span>
                   </div>
+                ) : (
+                  <>
+                    <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-950 text-xs">
+                      <span className="font-extrabold text-purple-900">Diagnóstico IA:</span>{' '}
+                      {aiPlan.summary || 'Sin resumen.'}
+                    </div>
+
+                    {aiPlan.staffing_gap_detected && (
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2 font-medium">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                        <span>Hay huecos de personal hoy: faltó gente cuyas responsabilidades conviene cubrir.</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                        Distribución Recomendada ({aiPlan.suggestions.length})
+                      </h3>
+
+                      {aiPlan.suggestions.length === 0 ? (
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-xs text-slate-500 font-medium text-center">
+                          La IA no sugirió cambios: con el personal de hoy el trabajo pendiente está cubierto.
+                        </div>
+                      ) : (
+                        aiPlan.suggestions.map((s, idx) => (
+                          <div key={idx} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5">
+                            <div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-900">
+                              <span className="min-w-0 truncate">
+                                {s.suggested_new_task_title
+                                  ? `➕ ${s.suggested_new_task_title}`
+                                  : '🔁 Reasignar tarea pendiente'}
+                              </span>
+                              {!!s.estimated_mins && (
+                                <span className="text-[11px] text-slate-500 font-mono font-bold shrink-0">{s.estimated_mins} min</span>
+                              )}
+                            </div>
+                            <div className="text-[11px] font-bold text-purple-700">
+                              → {nombreDestinoSugerido(s.suggested_target_type, s.suggested_target_id)}
+                            </div>
+                            {s.reason && (
+                              <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{s.reason}</p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
                 )}
 
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">Distribución Recomendada</h3>
-                  
-                  {aiPlan.assignments?.map((item, idx) => (
-                    <div key={idx} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-900 mb-2">
-                        <span>👤 {item.employee_name} ({item.role_name})</span>
-                        <span className="text-purple-700 text-[11px] font-extrabold">Carga IA</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {item.suggested_tasks.map((st, sidx) => (
-                          <div key={sidx} className="flex items-center justify-between bg-white p-2.5 rounded-xl text-xs text-slate-800 border border-slate-200/80 font-medium">
-                            <span>{st.title}</span>
-                            <span className="text-[11px] text-slate-500 font-mono font-bold">{st.estimated_mins} min</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 flex gap-3">
-                  <button 
-                    onClick={() => {
-                      setShowAiModal(false);
-                      fetchData();
-                    }}
-                    className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs hover:opacity-90 transition-all shadow-md"
+                {/* El botón decía "Aprobar y Despachar Plan Diario" y solo cerraba el modal:
+                    ningún colaborador recibía nada. El plan es —por diseño del backend— una
+                    SUGERENCIA para la junta; asignar se hace desde el tablero o Tarea Express. */}
+                <div className="pt-4 border-t border-slate-200 space-y-2">
+                  <p className="text-[11px] text-slate-500 font-medium text-center">
+                    Esta es una sugerencia para tu junta: no asigna tareas por sí sola.
+                    Repártelas con "Tarea Express" o desde el tablero de tareas.
+                  </p>
+                  <button
+                    onClick={() => setShowAiModal(false)}
+                    className="w-full py-3 rounded-2xl bg-slate-900 text-white font-extrabold text-xs hover:bg-slate-800 transition-all shadow-md"
                   >
-                    Aprobar y Despachar Plan Diario
+                    Cerrar
                   </button>
                 </div>
 

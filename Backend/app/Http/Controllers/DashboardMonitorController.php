@@ -35,7 +35,13 @@ class DashboardMonitorController extends Controller
                 ->with(['jobRole'])
                 ->get()
                 ->map(function ($emp) {
-                    $emp->id = $emp->user_id ?? $emp->id; // Map ID to user_id for compatibility
+                    // El `id` que consume el resto del método vive en el espacio de `users`
+                    // (los ponches, las asignaciones y las estadísticas se llevan por user_id).
+                    // Antes, quien NO tenía cuenta conservaba su `employees.id` y ese número
+                    // podía ser el `users.id` de OTRA persona: en su tarjeta salían los
+                    // ponches y las tareas de un tercero. Familia §29/§30. Sin cuenta no hay
+                    // con qué fichar, así que se deja en null y no cruza con nada.
+                    $emp->id = $emp->user_id;
                     return $emp;
                 });
 
@@ -74,11 +80,19 @@ class DashboardMonitorController extends Controller
                 ->groupBy('user_id');
 
             // Fetch completed task assignments count and points for today
+            // El día del TENANT expresado en UTC, que es como Laravel guarda los timestamps
+            // (config app.timezone = UTC). Con `whereDate(updated_at, $today)` las tareas
+            // completadas después de ~18:00 en México caían en la fecha UTC de mañana: el
+            // contador dejaba de subir y la eficiencia se desplomaba justo en el cierre del
+            // día. Familia H10/H21 (el día se corta con la zona del negocio, no con UTC).
+            $inicioDiaUtc = Carbon::parse($today, $tz)->startOfDay()->utc();
+            $finDiaUtc = Carbon::parse($today, $tz)->endOfDay()->utc();
+
             $completedStats = DB::table('task_assignments')
                 ->join('tasks', 'tasks.id', '=', 'task_assignments.task_id')
                 ->where('tasks.tenant_id', $userTenantId)
                 ->where('task_assignments.status', 'completed')
-                ->whereDate('task_assignments.updated_at', $today)
+                ->whereBetween('task_assignments.updated_at', [$inicioDiaUtc, $finDiaUtc])
                 ->select(
                     'task_assignments.user_id', 
                     DB::raw('count(*) as total_tasks'),
@@ -123,6 +137,13 @@ class DashboardMonitorController extends Controller
                     // Merge F3: "ahora" y el fin de jornada en la tz del TENANT (no UTC).
                     $now = Carbon::now($tz);
                     $shiftEnd = Carbon::parse($u->shiftEnd, $tz);
+                    // Turno nocturno (H21): con 22:00→06:00, a las 23:00 el fin "de hoy" ya
+                    // pasó y el monitor decía "Jornada terminada" a alguien que acababa de
+                    // entrar. Si el turno cruza medianoche, el fin es el de MAÑANA.
+                    if (\App\Support\JornadaLaboral::cruzaMedianoche($u->shiftStart, $u->shiftEnd)
+                        && $now->gte($shiftEnd)) {
+                        $shiftEnd->addDay();
+                    }
                     if ($now->lt($shiftEnd)) {
                         $diff = $now->diff($shiftEnd);
                         $timeRemaining = $diff->format('%hh %im');
@@ -252,8 +273,12 @@ class DashboardMonitorController extends Controller
                     ];
                 });
 
+            // Filtra por `store_logs.tenant_id`, no por el del usuario que lo firmó: si una
+            // cuenta cambió de empresa (o el log quedó con user de otro tenant, H15), el
+            // registro de apertura/cierre se colaba en la bitácora de la empresa equivocada.
             $storeLogsFeed = DB::table('store_logs')
                 ->join('users', 'users.id', '=', 'store_logs.user_id')
+                ->where('store_logs.tenant_id', $userTenantId)
                 ->where('users.tenant_id', $userTenantId)
                 ->whereNull('store_logs.simulation_session_id')
                 ->orderBy('store_logs.created_at', 'desc')
@@ -300,7 +325,12 @@ class DashboardMonitorController extends Controller
                         ->orWhere('internal_messages.receiver_id', $user->id)
                         ->orWhere('internal_messages.sender_id', $user->id);
                 })
-                ->orderBy('internal_messages.created_at', 'asc')
+                // `desc` + limit y se invierte en memoria: con `asc` + limit SQL devolvía los 50
+                // mensajes MÁS VIEJOS, así que en cuanto una empresa pasaba de 50 el chat del
+                // Monitor se quedaba pegado en la conversación de días atrás — los mensajes de
+                // hoy no aparecían nunca y el que uno mismo enviaba se borraba de la pantalla
+                // en el siguiente refresco (el eco optimista lo pintaba, el poll lo quitaba).
+                ->orderBy('internal_messages.created_at', 'desc')
                 ->limit(50)
                 ->select(
                     'internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name',
@@ -308,6 +338,8 @@ class DashboardMonitorController extends Controller
                     'internal_messages.receiver_id', 'destinatarios.name as receiver_name'
                 )
                 ->get()
+                ->reverse() // de vuelta a orden cronológico para pintar el hilo
+                ->values()
                 ->map(function ($msg) {
                     return [
                         'id' => $msg->id,
@@ -345,11 +377,35 @@ class DashboardMonitorController extends Controller
                 ->map(fn ($u) => ['user_id' => $u->user_id, 'name' => $u->name])
                 ->values();
 
+            // Proveedores del día. La tabla existía y los dos POST escribían en ella, pero
+            // NADIE la leía: el panel "Proveedores en Sitio" solo mostraba lo que ese
+            // navegador había tecleado en esa sesión — al recargar desaparecían y dos
+            // gerentes veían paneles distintos de la misma sucursal.
+            $vendors = \App\Models\VendorLog::where('tenant_id', $userTenantId)
+                ->where(function ($q) use ($inicioDiaUtc, $finDiaUtc) {
+                    $q->where('status', 'in_premises')
+                        ->orWhereBetween('arrival_at', [$inicioDiaUtc, $finDiaUtc]);
+                })
+                ->orderByDesc('arrival_at')
+                ->limit(50)
+                ->get()
+                ->map(fn ($v) => [
+                    'id' => (string) $v->id,
+                    'vendor_name' => $v->vendor_name,
+                    'driver_name' => $v->driver_name,
+                    'order_ref' => $v->order_ref,
+                    'arrival_time' => $v->arrival_at ? Carbon::parse($v->arrival_at)->timezone($tz)->format('H:i') : '--:--',
+                    'status' => $v->status,
+                    'received_by' => $v->received_by_name_snapshot ?? 'Supervisor',
+                ])
+                ->values();
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
                     'users' => $formattedUsers,
                     'staff' => $staff,
+                    'vendors' => $vendors,
                     'available_tasks' => $availableTasks,
                     'feed' => $feed,
                     'chat' => $chatMessages,
@@ -368,20 +424,23 @@ class DashboardMonitorController extends Controller
 
     public function assignTask(Request $request)
     {
+        // Sin `exists:` (mismo criterio que forceCloseShift): con él, un id de OTRA empresa
+        // pasaba la validación y uno inexistente daba 422 — la diferencia de respuestas
+        // permitía adivinar qué ids existen en la plataforma. Ahora ambos dan el mismo 403.
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'task_id' => 'required|exists:tasks,id',
+            'user_id' => 'required|integer',
+            'task_id' => 'required|integer',
         ]);
 
         try {
             $user = auth()->user() ?? auth('sanctum')->user();
             $userTenantId = $user ? $user->tenant_id : 1;
 
-            $assignee = User::findOrFail($request->user_id);
-            $task = Task::findOrFail($request->task_id);
+            $assignee = User::find($request->user_id);
+            $task = Task::find($request->task_id);
 
             // Reforzar aislamiento de tenants
-            if ($assignee->tenant_id !== $userTenantId || $task->tenant_id !== $userTenantId) {
+            if (!$assignee || !$task || $assignee->tenant_id !== $userTenantId || $task->tenant_id !== $userTenantId) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Operación entre empresas no autorizada.'
@@ -545,8 +604,15 @@ class DashboardMonitorController extends Controller
             $firstNamePattern = '/\b' . preg_quote($firstName, '/') . '\b/i';
             
             if (preg_match($fullNamePattern, $text) || preg_match($firstNamePattern, $text)) {
+                // Sin cuenta no se le puede asignar nada: el `?? $emp->id` de antes devolvía
+                // un `employees.id` en un campo que todo lo demás lee como `users.id`, así que
+                // la tarea de voz podía caer en la cuenta de OTRA persona (familia §29/§30).
+                // Se ignora la coincidencia y se sigue buscando (o cae a puesto).
+                if (!$emp->user_id) {
+                    continue;
+                }
                 $targetType = 'user';
-                $targetId = $emp->user_id ?? $emp->id;
+                $targetId = $emp->user_id;
                 $matchedName = $emp->name;
                 break;
             }

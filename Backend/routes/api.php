@@ -276,6 +276,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/academy/course-templates/{id}/import', [AcademyController::class, 'importTemplate']);
         });
 
+        // El botón "Sugerir una función" del Monitor: antes prometía que la sugerencia
+        // llegaba al equipo y la tiraba a la basura. Aterriza en la bandeja de tickets.
+        Route::post('/feature-suggestions', [SupportTicketController::class, 'storeFeatureSuggestion']);
+
         // Archivo Digital (ronda 2026-08): expedientes y manuales corporativos REALES.
         // La pantalla existía pero era un mockup sin backend. Acceso v1 SOLO
         // admin/supervisor (decisión del usuario 2026-08-08); el colaborador no ve su
@@ -295,10 +299,18 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
 
         // Dashboard Operativo y Monitoreo (Configurable por Puesto vía Matriz de Capacidades)
         Route::get('/admin/dashboard/stats', [DashboardController::class, 'getStats']);
-        // Resync 3: el grupo de capacidades §65 del jefe envuelve el dashboard operativo;
-        // dentro va también el Kill-Switch de la línea del Reloj.
+        // Resync 3: el grupo de capacidades §65 del jefe envuelve el dashboard operativo.
+        //
+        // MIRAR el tablero y OPERAR sobre él se separaron (auditoría del Monitor 2026-08-08):
+        // `permission:` es OR, así que un puesto con SOLO `view_reports` ("Reportes y
+        // analítica operativa", una capacidad de LECTURA) podía cerrarle el turno a
+        // cualquiera con el Kill-Switch, crear y asignar tareas y escribir en el chat de la
+        // empresa. El admin sigue pasando por bypass en ambos grupos.
         Route::middleware(['permission:manage_tasks,approve_operations,manage_store_opening,view_reports'])->group(function () {
             Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
+        });
+
+        Route::middleware(['permission:manage_tasks,approve_operations,manage_store_opening'])->group(function () {
             Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);
             // Kill-Switch (línea del Reloj): el mando cierra remotamente un turno abierto.
             Route::post('/admin/dashboard/force-close-shift', [DashboardMonitorController::class, 'forceCloseShift']);

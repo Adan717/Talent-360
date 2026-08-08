@@ -25,6 +25,44 @@ class SupportTicketController extends Controller
     }
 
     /**
+     * Sugerencia de función desde el Monitor del cliente (admin/supervisor del tenant).
+     *
+     * El botón "Sugerir una función a nuestro equipo" abría un prompt() y respondía "tu
+     * sugerencia ha sido enviada al equipo de desarrollo" SIN mandar nada a ningún lado:
+     * el texto se descartaba en el acto. Ahora aterriza en la misma bandeja de tickets
+     * que ya usa Plataforma.
+     *
+     * `created_by` va NULL a propósito: esa columna apunta a `platform_users` y aquí el
+     * autor es un `users` del tenant (confundir los id-spaces es la familia §29/§30). El
+     * autor viaja en contact_name/contact_email, que es para lo que existen esas columnas.
+     */
+    public function storeFeatureSuggestion(Request $request)
+    {
+        $validated = $request->validate([
+            'suggestion' => 'required|string|max:2000',
+        ]);
+
+        $user = auth()->user();
+
+        $ticket = SupportTicket::create([
+            'title' => 'Sugerencia de función — ' . ($user->tenant->name ?? 'Cliente'),
+            'description' => $validated['suggestion'],
+            'tenant_id' => $user->tenant_id,
+            'priority' => 'low',
+            'status' => 'open',
+            'created_by' => null,
+            'contact_name' => $user->name,
+            'contact_email' => $user->email,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sugerencia recibida. Queda registrada con el equipo de Talent360.',
+            'ticket_id' => $ticket->id,
+        ], 201);
+    }
+
+    /**
      * Get list of tickets.
      */
     public function index(Request $request)

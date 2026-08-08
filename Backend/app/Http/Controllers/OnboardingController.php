@@ -151,17 +151,33 @@ class OnboardingController extends Controller
             'avatar' => $request->avatar ?? $employee->avatar
         ]);
 
-        if ($employee->user) {
-            $employee->user->update([
+        // La cuenta se resuelve SIN el scope de tenant. Con `$employee->user` esto era
+        // siempre null en una petición pública (no hay sesión que resuelva el tenant), así
+        // que la activación NO activaba la cuenta que promete activar: el colaborador
+        // terminaba el flujo de bienvenida y seguía sin poder entrar.
+        $cuenta = $employee->user_id
+            ? \App\Models\User::withoutGlobalScopes()->find($employee->user_id)
+            : null;
+
+        if ($cuenta) {
+            $cuenta->update([
                 'name' => $request->name,
-                'avatar' => $request->avatar ?? $employee->user->avatar,
+                'avatar' => $request->avatar ?? $cuenta->avatar,
                 'is_active' => true,
             ]);
         }
 
+        // FUGA DE DATOS PERSONALES (2026-08-08). Aquí se devolvía `$employee->user ?? $employee`
+        // y, como el primero era SIEMPRE null, salía el MODELO COMPLETO del expediente: CURP,
+        // RFC, NSS, domicilio, teléfono, salario y contacto de emergencia — por una ruta
+        // PÚBLICA, sin sesión, a cambio de acertar un PIN de 6 dígitos. `$hidden` sólo tapa
+        // los PIN. Se responde lo único que la pantalla de bienvenida necesita.
         return response()->json([
             'status' => 'success',
-            'user' => $employee->user ?? $employee
+            'user' => [
+                'id' => $cuenta?->id ?? $employee->id,
+                'name' => $employee->name,
+            ],
         ]);
     }
 

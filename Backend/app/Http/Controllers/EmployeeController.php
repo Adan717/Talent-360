@@ -420,14 +420,24 @@ class EmployeeController extends Controller
                     $userUpdates = [];
                     if ($request->has('name')) $userUpdates['name'] = $request->name;
                     if ($request->has('email')) $userUpdates['email'] = $request->email;
+                    // GUARDAR LA FICHA NO APAGA LA CUENTA (2026-08-08).
+                    //
+                    // Aquí había un `if ($request->role === 'empleado') $userUpdates['is_active'] = false;`
+                    // y, debajo, una condición que impedía que el `is_active` del propio formulario
+                    // lo volviera a encender. Como RRHH manda el expediente COMPLETO en cada guardado
+                    // (incluido `role`), bastaba corregirle el teléfono a alguien —o arrastrar su
+                    // tarjeta en el organigrama— para que dejara de poder entrar: el login le
+                    // respondía 403 "Usuario inactivo / archivado". Comprobado con la prueba de
+                    // EditarFichaNoApagaCuentaTest, que sin este cambio falla en el login.
+                    //
+                    // No era una decisión de producto: la línea entró en julio dentro de un commit
+                    // sobre otro tema. El colaborador ENTRA a la aplicación — el reloj es suyo.
+                    // Dar de baja de verdad sigue apagando la cuenta, en `destroy()`.
                     if ($request->has('role')) {
                         $userUpdates['role'] = $request->role;
-                        if ($request->role === 'empleado') {
-                            $userUpdates['is_active'] = false;
-                        }
                     }
                     if ($request->has('job_role_id')) $userUpdates['job_role_id'] = $request->job_role_id;
-                    if ($request->has('is_active') && (!isset($userUpdates['role']) || $userUpdates['role'] !== 'empleado')) {
+                    if ($request->has('is_active')) {
                         $userUpdates['is_active'] = $request->is_active;
                     }
                     if ($request->has('google_id')) $userUpdates['google_id'] = $request->google_id;
@@ -502,6 +512,55 @@ class EmployeeController extends Controller
         // Evitar que el administrador principal se borre a sí mismo
         if ($employee->user_id && (int)$employee->user_id === (int)$currentUser->id) {
             return response()->json(['error' => 'No puedes eliminar tu propia cuenta de administrador.'], 403);
+        }
+
+        // LA HISTORIA LABORAL NO SE BORRA (2026-08-08).
+        //
+        // Este método confiaba en que, si el colaborador tenía históricos, las claves foráneas
+        // lanzarían una excepción y el `catch` de abajo haría el archivado "para conservar la
+        // integridad histórica". Pero TODAS esas claves son ON DELETE CASCADE, no RESTRICT: la
+        // excepción nunca ocurre y el borrado se lleva por delante los fichajes, los recibos de
+        // nómina YA FIRMADOS y el expediente completo del Archivo Digital (INE, acta, CURP,
+        // RFC, comprobante), dejando además esos archivos huérfanos en el storage privado
+        // porque el cascade es SQL puro y no dispara eventos de Eloquent.
+        //
+        // Agravante: el botón vive en la pestaña de INACTIVOS —justo la población cuyos
+        // controles de asistencia y recibos obliga a conservar 5 años el art. 804 de la LFT— y
+        // la ruta la puede llamar un SUPERVISOR, no sólo el dueño.
+        //
+        // Ahora se pregunta ANTES, explícitamente. Si hay historia, se archiva y se dice.
+        $historia = [
+            'fichajes' => $employee->user_id
+                ? DB::table('time_entries')->where('user_id', $employee->user_id)->count()
+                : 0,
+            'recibos de nómina' => DB::table('weekly_payrolls')->where('employee_id', $employee->id)->count(),
+            'documentos del expediente' => DB::table('employee_documents')->where('employee_id', $employee->id)->count(),
+        ];
+        $conHistoria = array_filter($historia);
+
+        if (!empty($conHistoria)) {
+            $detalle = [];
+            foreach ($conHistoria as $que => $cuantos) {
+                $detalle[] = "{$cuantos} {$que}";
+            }
+
+            $employee->update(['is_active_employee' => false]);
+            $employee->delete();
+            if ($employee->user_id) {
+                $u = User::withoutGlobalScopes()->find($employee->user_id);
+                if ($u) {
+                    $u->update(['is_active' => false]);
+                    $u->delete();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Se archivó a ' . $employee->name . ' en vez de borrarlo: tiene '
+                    . implode(', ', $detalle) . '. Esos registros deben conservarse (art. 804 LFT) '
+                    . 'y se habrían borrado con él. Ya no aparece en el directorio ni puede entrar.',
+                'archivado' => true,
+                'historia' => $historia,
+            ]);
         }
 
         try {

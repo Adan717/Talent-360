@@ -344,6 +344,23 @@ class ClockController extends Controller
             }
         }
 
+        // UNA SOLA TOLERANCIA (2026-08-08). El dial pintaba su ventana de puntualidad con
+        // `timeBankConfigs.maxLateMinsAllowed` —que TenantInitializationService siembra en 15
+        // para toda empresa nueva— mientras el SERVIDOR decide `is_late` con
+        // `lft_settings.late_tolerance_minutes` (10 por defecto, y 10 en las empresas reales).
+        //
+        // O sea, de fábrica y sin que nadie configurara nada mal: quien llegaba a las 09:12 con
+        // turno de 09:00 veía en su reloj que seguía DENTRO de la tolerancia, fichaba tranquilo,
+        // y el servidor le anotaba retardo de 12 minutos — que se acumula hacia faltas y
+        // descuentos. Comprobado en la V2 (dial 15 vs LFT 10 en los tenants 2 y 3).
+        //
+        // La verdad es la del servidor, porque es la que se paga: el dial se alinea a ella.
+        $lftTolerancia = DB::table('lft_settings')->where('tenant_id', $tenantId)->value('late_tolerance_minutes');
+        $systemSettings['timeBankConfigs'] = array_merge(
+            is_array($systemSettings['timeBankConfigs'] ?? null) ? $systemSettings['timeBankConfigs'] : [],
+            ['maxLateMinsAllowed' => $lftTolerancia !== null ? (int) $lftTolerancia : 10]
+        );
+
         // Fallback (UNIÓN resync 4): H2 protege a las empresas ANTIGUAS sin la clave — si ya
         // tienen puestos creados, el wizard no debe reaparecerles; y el default del jefe cubre
         // al tenant 1 demo aunque estuviera vacío. Las empresas nuevas nacen con la clave en

@@ -828,7 +828,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (payload.salary) payload.salary = parseFloat(payload.salary);
       if (payload.mealMinutes) payload.mealMinutes = parseInt(payload.mealMinutes, 10);
 
-      const res = await axiosInstance.put(`/employees/${employee.employee_id || employeeId}`, payload);
+      // Mismo caso que en handleEditUser: el id de la URL es el del EXPEDIENTE, no el
+      // "Núm. Empleado" del formulario. Arrastrar una tarjeta en el organigrama reasignaba
+      // el puesto de OTRA persona si la arrastrada tenía número de empleado.
+      const res = await axiosInstance.put(`/employees/${employeeId}`, payload);
 
       if (res.status === 200) {
         await fetchData();
@@ -1360,8 +1363,14 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       if (payload.mealMinutes) payload.mealMinutes = parseInt(payload.mealMinutes, 10);
       if (payload.job_role_id) payload.job_role_id = parseInt(payload.job_role_id, 10);
 
-      const res = await axiosInstance.put('/employees/' + (editingUser.employee_id || editingUser.id), payload);
-      
+      // El id de la URL es el del EXPEDIENTE (employees.id), nunca `employee_id`, que es el
+      // "Núm. Empleado" que teclea el humano (columna string). Con el `employee_id || id`
+      // que había aquí, ponerle "3" a alguien hacía que su guardado escribiera sobre el
+      // expediente cuyo id de base es 3 — otra persona, en silencio; y con un número no
+      // numérico ("EMP-001") el guardado se perdía con un 404. Nadie lo tiene lleno todavía
+      // en la instancia real, así que no hay daño hecho: la trampa estaba armada.
+      const res = await axiosInstance.put('/employees/' + editingUser.id, payload);
+
       if (res.status !== 200) {
           throw new Error("Failed to save user");
       }

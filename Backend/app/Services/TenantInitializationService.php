@@ -28,8 +28,12 @@ class TenantInitializationService
                 'openTime' => '08:00',
                 'closeTime' => '18:00',
             ],
+            // 10, igual que el default de `lft_settings.late_tolerance_minutes`, que es con lo
+            // que el SERVIDOR decide el retardo. Nacía en 15: el dial le decía al colaborador
+            // que seguía a tiempo hasta el minuto 15 mientras el servidor lo marcaba tarde
+            // desde el 10. `/sync/state` además lo alinea en vivo por si llegan a diferir.
             'timeBankConfigs' => [
-                'maxLateMinsAllowed' => 15,
+                'maxLateMinsAllowed' => 10,
             ],
             'leySillaConfig' => [
                 'enabled' => true,

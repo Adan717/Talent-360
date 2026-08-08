@@ -63,8 +63,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::get('/public/vacancies/{slug}', [RecruitmentController::class, 'getPublicVacancies']);
     Route::post('/public/candidates', [CandidateController::class, 'store']);
     Route::post('/public/vacancy-alerts', [RecruitmentController::class, 'storeVacancyAlert']);
-    Route::post('/public/onboarding/verify', [OnboardingController::class, 'verifyPin']);
-    Route::post('/public/onboarding/complete', [OnboardingController::class, 'completeActivation']);
+    // El PIN de bienvenida son 6 dígitos: un millón de combinaciones, que sin freno se
+    // barren en minutos desde una ruta PÚBLICA. Con 10 intentos por minuto y por IP, probar
+    // el espacio completo pasa de minutos a más de dos meses. (Acertar uno daba, hasta hoy,
+    // el expediente entero de esa persona; eso ya se cerró en el controlador.)
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/public/onboarding/verify', [OnboardingController::class, 'verifyPin']);
+        Route::post('/public/onboarding/complete', [OnboardingController::class, 'completeActivation']);
+    });
     Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
     
     // Verificación pública de un certificado de la Academia por su folio. Devuelve sólo lo que

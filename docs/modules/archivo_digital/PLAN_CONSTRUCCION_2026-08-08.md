@@ -1,7 +1,11 @@
 # Archivo Digital — plan de construcción (2026-08-08)
 
-**Estado:** plan listo, decisiones tomadas. La sesión que ejecute esto debe poder escribir
-código casi sin preguntar nada. **Arrancar con `/ponytail`.**
+**Estado: EJECUTADO 2026-08-08.** Backend (2 tablas + `DocumentosController` + 9 endpoints),
+frontend reescrito (misma carrocería, motor real), `ArchivoDigitalTest` 10/10, verificado
+en navegador local (upload real, persistencia tras refresh, validar/rechazar con motivo,
+visor blob, corporativo + vínculo a curso persistido). Desviaciones del plan: ninguna de
+fondo; la tabla del FK de cursos es `academy_courses` (el plan decía `courses`) y el disco
+privado es `storage/app/private/` (root del disk `local` en esta versión de Laravel).
 **Estimación:** 3 días efectivos (backend 1, frontend 1, pruebas+deploy+e2e 1).
 
 ---

@@ -276,6 +276,23 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/academy/course-templates/{id}/import', [AcademyController::class, 'importTemplate']);
         });
 
+        // Archivo Digital (ronda 2026-08): expedientes y manuales corporativos REALES.
+        // La pantalla existía pero era un mockup sin backend. Acceso v1 SOLO
+        // admin/supervisor (decisión del usuario 2026-08-08); el colaborador no ve su
+        // expediente todavía. Los archivos viven en storage privado y solo salen por
+        // el endpoint de descarga autenticado.
+        Route::middleware('tenant.module:documentos')->group(function () {
+            Route::get('/admin/documentos/expedientes', [\App\Http\Controllers\DocumentosController::class, 'expedientes']);
+            Route::get('/admin/documentos/expedientes/{employeeId}', [\App\Http\Controllers\DocumentosController::class, 'expediente']);
+            Route::post('/admin/documentos/expedientes/{employeeId}', [\App\Http\Controllers\DocumentosController::class, 'subir']);
+            Route::get('/admin/documentos/descargar/{docId}', [\App\Http\Controllers\DocumentosController::class, 'descargar']);
+            Route::post('/admin/documentos/{docId}/validar', [\App\Http\Controllers\DocumentosController::class, 'validar']);
+            Route::delete('/admin/documentos/{docId}', [\App\Http\Controllers\DocumentosController::class, 'eliminar']);
+            Route::get('/admin/documentos/corporativos', [\App\Http\Controllers\DocumentosController::class, 'corporativos']);
+            Route::post('/admin/documentos/corporativos', [\App\Http\Controllers\DocumentosController::class, 'subirCorporativo']);
+            Route::post('/admin/documentos/corporativos/{id}/vincular', [\App\Http\Controllers\DocumentosController::class, 'vincular']);
+        });
+
         // Dashboard Operativo y Monitoreo (Configurable por Puesto vía Matriz de Capacidades)
         Route::get('/admin/dashboard/stats', [DashboardController::class, 'getStats']);
         // Resync 3: el grupo de capacidades §65 del jefe envuelve el dashboard operativo;

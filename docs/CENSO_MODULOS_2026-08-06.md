@@ -53,16 +53,20 @@ perdona.*
 
 Nadie lo ha usado nunca. Sin datos reales, una auditoría aquí sería teórica.
 
-### 3. Archivo Digital
+### 3. Archivo Digital — CONSTRUIDO en la ronda 2026-08
 
 | Señal | Dato |
 |---|---|
-| Código | `GestorDocumentos` 583 líneas |
-| Pruebas | 0 propias |
-| Marcadores de trabajo sin terminar | **7 — el más alto de todos** |
+| Código | `GestorDocumentos` reescrito con motor real + `DocumentosController` |
+| Pruebas | `ArchivoDigitalTest` (10 casos) |
+| Marcadores de trabajo sin terminar | 0 |
 
-Esos siete marcadores sugieren que hay partes declaradamente a medias. Vale una mirada rápida
-antes que una auditoría formal: puede que lo que haga falta sea terminarlo, no auditarlo.
+**Actualización 2026-08-08:** la "mirada rápida" reveló que era un mockup 100% frontend
+(upload falso con pérdida de datos, expedientes fabricados, visor "SAT" inventado). Se
+construyó completo en la ronda 2026-08: 2 tablas (`employee_documents`,
+`company_documents`), storage privado con uuid y descarga autenticada, checklist fija de
+6 con faltantes honestos, flujo pendiente→validado/rechazado, manuales corporativos con
+vínculo real a Academia. Plan: `docs/modules/archivo_digital/PLAN_CONSTRUCCION_2026-08-08.md`.
 
 ### 4. Reportes IA
 

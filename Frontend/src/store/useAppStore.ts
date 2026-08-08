@@ -3,6 +3,7 @@ import axiosInstance from '../lib/axios';
 import { useTaskStore } from './useTaskStore';
 import type { User, Tenant } from '../types';
 import { fichajesDeHoy, hoyEnZona, fechaDeFichaje } from '../lib/jornadaDelDia';
+import { avatarDe } from '../lib/avatar';
 
 interface AppState {
   isLoadingDB: boolean;
@@ -458,7 +459,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                 tenant_id: u.tenant_id ?? 1,
                 role: roleName,
                 system_role: u.role,
-                avatar: u.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + u.name,
+                avatar: avatarDe(u),
                 job_role_id: u.job_role_id,
                 shiftStart: u.shiftStart || '09:00',
                 shiftEnd: u.shiftEnd || '18:00',

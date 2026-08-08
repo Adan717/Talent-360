@@ -11,6 +11,7 @@ import OrganigramaPuestos from './OrganigramaPuestos';
 import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 import { slugParaCorreo } from '../lib/emailSlug';
+import { avatarDe } from '../lib/avatar';
 
 interface JobRoleCardItemProps {
   rol: any;
@@ -422,7 +423,7 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
           <div className="flex items-center gap-3.5 mb-3 relative z-10">
              <div className="relative shrink-0">
                 <img 
-                  src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} 
+                  src={avatarDe(u)} 
                   alt={u.name} 
                   className="w-13 h-13 sm:w-15 sm:h-15 rounded-full object-cover border-2 border-white shadow-md group-hover:scale-105 transition-transform" 
                 />
@@ -1677,7 +1678,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                   className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-2 rounded-2xl hover:bg-indigo-50/50 hover:border-indigo-100 transition-all duration-200 cursor-grab active:cursor-grabbing select-none"
                 >
                   <img 
-                    src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`} 
+                    src={avatarDe(c)} 
                     alt={c.name} 
                     className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"
                   />
@@ -2825,7 +2826,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                         }}
                                         className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100 cursor-grab active:cursor-grabbing hover:bg-indigo-50/50 transition-all duration-200"
                                       >
-                                        <img src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`} className="w-5 h-5 rounded-full border border-white" alt={c.name} />
+                                        <img src={avatarDe(c)} className="w-5 h-5 rounded-full border border-white" alt={c.name} />
                                         <span className="text-[10px] font-bold text-slate-700 truncate">{c.name} {getUserKeysIcon(c.employee_id ? Number(c.employee_id) : Number(c.id))}</span>
                                       </div>
                                     ))
@@ -3030,7 +3031,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 users.filter((u: any) => u.job_role_id === selectedRoleForUsersModal.id).map((u: any) => (
                   <div key={u.id} className="flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100">
                     <img 
-                      src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`} 
+                      src={avatarDe(u)} 
                       alt={u.name} 
                       className="w-10 h-10 rounded-full border border-slate-200 shrink-0"
                     />

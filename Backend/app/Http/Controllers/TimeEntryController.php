@@ -67,6 +67,22 @@ class TimeEntryController extends Controller
         unset($details['sandbox_bypass']);
         // R88: `via_kiosk` sólo lo puede marcar el KioskController (exime el checklist de cierre).
         unset($details['via_kiosk']);
+
+        // BORRADO ARBITRARIO DE ARCHIVOS (2026-08-08). `details.photo_url` (§67) se guardaba
+        // TAL CUAL como lo mandara el cliente, y `clock-photos:purge` —que corre solo cada día
+        // a las 03:15— hacía `@unlink(public_path(ltrim($photo_url, '/')))`. Con
+        // `photo_url = "../.env"` eso resuelve a /var/www/.env: cualquier colaborador con
+        // sesión podía marcar un fichaje y dejar programado el borrado del .env del servidor
+        // (o de un expediente del storage privado) para cuando venciera la retención.
+        //
+        // La regla de fondo: el cliente NUNCA nombra archivos del servidor. La foto tiene que
+        // subirse por un endpoint que decida la ruta el backend (como `/clock/meal-photo`);
+        // mientras §67 no tenga ese endpoint, aquí sólo se aceptan nombres seguros dentro de
+        // la carpeta esperada, que es justo lo que produciría ese endpoint.
+        if (isset($details['photo_url']) && !$this->esRutaDeFotoSegura($details['photo_url'])) {
+            unset($details['photo_url']);
+        }
+
         $details['supervisor_override'] = in_array(auth()->user()->role, ['admin', 'supervisor'], true);
 
         try {
@@ -244,6 +260,26 @@ class TimeEntryController extends Controller
 
         // Protocolo (b): delega en el flujo con gate humano de la línea del Reloj.
         return app(ContingencyController::class)->declare($request);
+    }
+
+    /**
+     * ¿Es `$ruta` una referencia de foto de fichaje que pudo haber generado el servidor?
+     *
+     * Sólo se acepta la carpeta esperada y un nombre de archivo llano: nada de `..`, ni de
+     * rutas absolutas, ni de barras invertidas de Windows. Cualquier otra cosa es un intento
+     * de nombrar un archivo ajeno y se descarta (ver el comentario de `punch`).
+     */
+    private function esRutaDeFotoSegura($ruta): bool
+    {
+        if (!is_string($ruta) || $ruta === '' || strlen($ruta) > 255) {
+            return false;
+        }
+
+        if (str_contains($ruta, '..') || str_contains($ruta, '\\') || str_contains($ruta, "\0")) {
+            return false;
+        }
+
+        return (bool) preg_match('#^/uploads/clock-photos/\d+/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$#i', $ruta);
     }
 
     /**

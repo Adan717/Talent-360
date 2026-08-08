@@ -27,13 +27,38 @@ class PurgeClockPhotos extends Command
             ->where('date', '<', $cutoff)
             ->get(['id', 'photo_url']);
 
+        // Sólo se borra DENTRO de la carpeta de fotos de fichaje, comprobado con realpath.
+        //
+        // Este comando corre solo cada día a las 03:15 y antes hacía
+        // `@unlink(public_path(ltrim($photo_url, '/')))` con el `photo_url` que hubiera
+        // guardado el cliente en `details` (§67). Un `"../.env"` resolvía a /var/www/.env:
+        // cualquier colaborador con sesión podía dejar programado el borrado del .env del
+        // servidor —o de un expediente del storage privado— para cuando venciera la
+        // retención. La entrada ya se filtra en TimeEntryController::punch; esto es el
+        // segundo cerrojo, por las filas que pudieran venir de antes.
+        $carpetaPermitida = realpath(public_path('uploads/clock-photos'));
+
         $deletedFiles = 0;
+        $sospechosos = 0;
         foreach ($old as $entry) {
-            $path = public_path(ltrim($entry->photo_url, '/'));
-            if ($entry->photo_url && file_exists($path)) {
-                @unlink($path);
-                $deletedFiles++;
+            if (!$entry->photo_url) {
+                continue;
             }
+
+            $path = realpath(public_path(ltrim($entry->photo_url, '/')));
+
+            if ($path === false) {
+                continue; // no existe: nada que borrar
+            }
+
+            if (!$carpetaPermitida || !str_starts_with($path, $carpetaPermitida . DIRECTORY_SEPARATOR)) {
+                $sospechosos++;
+                $this->warn("Ruta fuera de la carpeta de fotos, NO se borra: {$entry->photo_url} (fichaje {$entry->id})");
+                continue;
+            }
+
+            @unlink($path);
+            $deletedFiles++;
         }
 
         $cleared = TimeEntry::withoutGlobalScopes()
@@ -42,6 +67,11 @@ class PurgeClockPhotos extends Command
             ->update(['photo_url' => null]);
 
         $this->info("Purgadas {$cleared} fotos de fichaje y {$deletedFiles} archivos anteriores a {$cutoff}.");
+
+        if ($sospechosos > 0) {
+            $this->error("{$sospechosos} referencia(s) apuntaban FUERA de la carpeta de fotos y se ignoraron. "
+                . 'Eso no lo produce la aplicación: revísalas en time_entries.photo_url.');
+        }
 
         return self::SUCCESS;
     }

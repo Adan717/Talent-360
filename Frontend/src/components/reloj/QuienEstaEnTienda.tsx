@@ -2,6 +2,7 @@
 import React from 'react';
 import { Store } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { avatarDe } from '../../lib/avatar';
 
 /**
  * Reloj R95 (Fase 5 / T5.2 · N6): widget "¿Quién está en tienda?".
@@ -58,7 +59,7 @@ export default function QuienEstaEnTienda({ isDark = false }) {
             return (
               <div key={u.id} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/60">
                 <img
-                  src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.name || 'x')}`}
+                  src={avatarDe(u)}
                   alt=""
                   className="w-7 h-7 rounded-full object-cover bg-slate-200 shrink-0"
                 />

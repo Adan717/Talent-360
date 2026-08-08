@@ -616,13 +616,23 @@ class AuthController extends Controller
             'academy_assistant_enabled' => 'nullable|boolean',
         ]);
 
+        $esPlatformUser = $user instanceof \App\Models\PlatformUser;
+
         $updates = [
             'name' => $request->name,
-            'avatar' => $request->avatar,
             'updated_at' => now()
         ];
 
-        $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
+        // `platform_users` NO tiene columna `avatar` (comprobado contra el esquema: sólo
+        // id, name, email, password, role, is_active, remember_token, timestamps y 2FA).
+        // Escribirla ahí es el MISMO 500 por columna inexistente que el comentario de
+        // arriba dice haber quitado para `phone`, y aquí seguía vivo: cualquier
+        // platform_admin que guardara su perfil recibía SQLSTATE 42703.
+        if (!$esPlatformUser) {
+            $updates['avatar'] = $request->avatar;
+        }
+
+        $table = $esPlatformUser ? 'platform_users' : 'users';
         \Illuminate\Support\Facades\DB::table($table)
             ->where('id', $user->id)
             ->update($updates);
@@ -687,26 +697,53 @@ class AuthController extends Controller
 
         $user = $request->user();
 
+        // Las cuentas de PLATAFORMA no tienen dónde guardar una foto (`platform_users` no
+        // tiene columna `avatar`). Antes esto reventaba con un 500 por columna inexistente;
+        // se dice y no se sube el archivo, en vez de contestar "subido con éxito" y no
+        // guardar nada.
+        if ($user instanceof \App\Models\PlatformUser) {
+            return response()->json([
+                'message' => 'Las cuentas de plataforma no tienen foto de perfil.',
+            ], 422);
+        }
+
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            
+
+            // Nombre uuid, no `avatar_{user_id}_{time()}` (2026-08-08).
+            //
+            // La foto de perfil se sirve como estático desde `public/`, y hasta hoy su nombre
+            // era ENUMERABLE: el id de usuario es secuencial y el `time()` cae en una ventana
+            // pequeña, así que un desconocido podía barrer las caras de la plantilla probando
+            // combinaciones. Con un uuid el nombre deja de ser adivinable.
+            //
+            // ponytail: sigue siendo una URL de capacidad (quien tenga el enlace la ve). Un
+            // <img src> no puede mandar el Bearer y la cookie de sesión es Secure —
+            // inservible mientras el despliegue siga en HTTP plano. Cuando esté en HTTPS,
+            // pasarlo a URL firmada temporal o a auth por cookie, como la evidencia de
+            // comedor. Hoy no hay ni un avatar subido en ninguna instancia.
+            $extension = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+            $filename = \Illuminate\Support\Str::uuid() . '.' . $extension;
+
             $destinationPath = public_path('uploads/avatars');
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
             }
 
             $file->move($destinationPath, $filename);
-            
+
             $avatarUrl = '/uploads/avatars/' . $filename;
 
-            $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
-            \Illuminate\Support\Facades\DB::table($table)
-                ->where('id', $user->id)
-                ->update([
-                    'avatar' => $avatarUrl,
-                    'updated_at' => now()
-                ]);
+            // `platform_users` no tiene columna `avatar`: escribirla es un 500 por columna
+            // inexistente (mismo caso que en updateProfile).
+            if (!($user instanceof \App\Models\PlatformUser)) {
+                \Illuminate\Support\Facades\DB::table('users')
+                    ->where('id', $user->id)
+                    ->update([
+                        'avatar' => $avatarUrl,
+                        'updated_at' => now()
+                    ]);
+            }
 
             if (!($user instanceof \App\Models\PlatformUser)) {
                 \Illuminate\Support\Facades\DB::table('employees')

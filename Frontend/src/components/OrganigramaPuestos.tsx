@@ -17,6 +17,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { renderJobRoleIcon } from '../lib/jobRoleIcons';
+import { avatarDe } from '../lib/avatar';
 
 // Organigrama interactivo de puestos (Directorio > Puestos). Reemplaza el árbol CSS estático que
 // vivía inline en RecursosHumanos.tsx por un lienzo real donde se puede dibujar la conexión entre
@@ -251,7 +252,7 @@ function PuestoNode({ data }: NodeProps) {
               title={readOnly ? c.name : `Arrastra a otro puesto para reasignar a ${c.name}`}
             >
               <img
-                src={c.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name}`}
+                src={avatarDe(c)}
                 alt={c.name}
                 className="w-6 h-6 rounded-full border-2 border-white shadow-sm flex-shrink-0"
                 draggable={false}

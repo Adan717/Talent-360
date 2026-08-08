@@ -198,7 +198,11 @@ class DashboardMonitorController extends Controller
                     })->values()->all(),
                     'completed_tasks_count' => $completedCount,
                     'completed_points' => $completedPoints,
-                    'avatar' => $u->avatar ?? 'https://api.dicebear.com/7.x/avataaars/svg?seed=' . urlencode($u->name),
+                    // La semilla del avatar generado era el NOMBRE REAL del colaborador, así
+                    // que cada carga del monitor se lo mandaba a un tercero (dicebear) en la
+                    // query string, con la IP y el Referer de la empresa. Ahora va el id
+                    // interno, que fuera de la base no dice nada de nadie.
+                    'avatar' => $u->avatar ?? 'https://api.dicebear.com/7.x/avataaars/svg?seed=' . urlencode('t360-' . $u->id),
                     'time_remaining' => $timeRemaining,
                     'shift_start' => $u->shiftStart,
                     'shift_end' => $u->shiftEnd,

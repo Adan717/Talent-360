@@ -252,7 +252,7 @@ export default function ReportesManager() {
                   <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                      <h3 className="font-bold text-slate-800 flex items-center gap-2"><Table size={18}/> Desglose Analítico por Empleado</h3>
                      <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wider">
-                       {period ? `Semana del ${period.start_date} al ${period.end_date}` : 'Cargando periodo...'}
+                       {period ? `Periodo del ${period.start_date} al ${period.end_date}` : 'Cargando periodo...'}
                      </span>
                   </div>
                   <div className="overflow-x-auto">

@@ -529,7 +529,7 @@ export const FacturacionManager = () => {
               <div className="flex items-center gap-3">
                 <span className="px-3 py-1.5 bg-white border border-slate-250 rounded-xl text-xs font-bold text-slate-700">
                   {payrollPeriod
-                    ? `Semana del ${payrollPeriod.start_date} al ${payrollPeriod.end_date}`
+                    ? `Periodo del ${payrollPeriod.start_date} al ${payrollPeriod.end_date}`
                     : 'Cargando periodo...'}
                 </span>
                 <span className="text-xs font-black text-slate-400">
@@ -581,7 +581,7 @@ export const FacturacionManager = () => {
                     </th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Colaborador</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">RFC / CURP</th>
-                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Neto de la Semana</th>
+                    <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Neto del Periodo</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Deducciones</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado Nómina</th>
                     <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado Timbrado</th>

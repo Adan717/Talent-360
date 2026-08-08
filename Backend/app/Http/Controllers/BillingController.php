@@ -186,19 +186,21 @@ class BillingController extends Controller
             ], 409);
         }
 
-        // Periodicidad configurable (2026-08-03): antes se timbraba TODO como quincenal
-        // ('04', 15 días, neto/15) sin importar cómo pagara la empresa — para el piloto,
-        // que paga semanal, los tres campos salían mal en un comprobante FISCAL. El
-        // catálogo del SAT es cerrado: la periodicidad declarada debe corresponder con la
-        // forma real de pago. Ahora los tres se derivan de la configuración del tenant.
+        // Periodicidad configurable (2026-08-03): el código del SAT sale de la periodicidad
+        // declarada del tenant (catálogo cerrado: 02 semanal, 04 quincenal, 05 mensual).
+        // #17: los DÍAS del periodo salen del recibo REAL, no de un fijo — una quincena de
+        // febrero son 13 días y una de mes de 31 son 16; el comprobante fiscal debe decir
+        // lo que de verdad cubre.
         $mapaSat = [
-            'semanal' => ['02', 7],
-            'quincenal' => ['04', 15],
-            'mensual' => ['05', 30],
+            'semanal' => '02',
+            'quincenal' => '04',
+            'mensual' => '05',
         ];
-        [$periodicidadSat, $diasDelPeriodo] = $mapaSat[
+        $periodicidadSat = $mapaSat[
             \App\Http\Controllers\PayrollSettingsController::periodicidadDe($tenantId)
         ];
+        $diasDelPeriodo = (int) round(\Carbon\Carbon::parse($validated['period_start'])
+            ->diffInDays(\Carbon\Carbon::parse($validated['period_end']))) + 1;
 
         // Estructurar un payload mínimo para SAT CFDI 4.0 Nómina en Facturapi. El monto sale
         // de la nómina autorizada (net_pay), nunca del cliente.

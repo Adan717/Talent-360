@@ -309,3 +309,64 @@ por-retardo del cobro único).
   criterio que el candado de periodicidad del batch: mejor rechazar y decirlo. El N6
   "real" (bruto que respete periodos arbitrarios) queda absorbido por el trabajo
   calendarizado del ciclo quincenal/mensual (nómina-periodicidad).
+
+---
+
+## Ronda 3 de implementación (2026-08-07) — el ciclo quincenal/mensual (#17)
+
+Aprobada por el jefe el mismo día ("Arranca"), con sus dos reglas: **séptimo día
+proporcional por semana natural dentro del periodo**, y **cambio de periodicidad sólo
+hacia adelante** (los recibos generados no se tocan). Criterio de cierre que él fijó: el
+primer recibo quincenal timbrado con el 04 en la V2.
+
+### Lo construido
+
+- **Servicio de periodos** (`PayrollWeekService::periodRangeFor` / `lastClosedPeriodFor`):
+  semanal → semana configurable; quincenal → quincenas NATURALES 1-15 / 16-fin (13 a 16
+  días según el mes — febrero probado); mensual → mes calendario. La regla N3 generalizada:
+  nunca se opera un periodo en curso.
+- **Cálculo period-aware** en `calculatePayrollForEmployee`, con guard `>7 días`: los
+  rangos de hasta 7 días conservan la fórmula semanal histórica BYTE A BYTE (cero regresión
+  — la familia semanal completa pasó sin tocar un número). Para periodos largos: bruto =
+  diario × días reales del periodo; séptimo(s) por semana natural del tenant (misma fórmula
+  base 6, evaluada semana por semana; cada descanso DENTRO del periodo se liquida
+  proporcional a las faltas de SU semana); la falta acumulada por retardos pertenece a la
+  semana del retardo que completó el trío. `incidents.rest_days_in_period` expone cuántos
+  descansos liquida el periodo.
+- **Batch**: el candado de periodicidad se volvió despachador — cada tenant genera su
+  último periodo CERRADO. **Guard de traslape**: un recibo firmado/autorizado de otra
+  periodicidad que cubra días del periodo bloquea la generación de ese empleado (sin doble
+  pago; es la regla "hacia adelante" del jefe hecha código). ponytail: corre diario
+  recalculando el cerrado hasta la firma (absorbe justificantes tardíos); si el costo
+  molesta, el upgrade es agendar sólo los días de cierre.
+- **Firma y admin**: `closedPeriodRange`/`currentPeriodRange` por periodicidad; el candado
+  N6 evolucionó — un rango explícito debe SER un periodo real del tenant (su semana, una
+  quincena natural o un mes). CFDI: `working_days` y `salary_rate` con los días REALES del
+  recibo (quincena de febrero = 13), código del SAT por periodicidad (02/04/05, ya existía).
+- **Pantalla nueva** `NominaSettingsPanel` (Configuración → "Nómina & Periodicidad"):
+  elegir semanal/quincenal/mensual (con su código SAT visible), día de inicio de semana y
+  día de pago; aviso de "periodicidad no confirmada" (la suposición semanal etiquetada) y
+  la regla de cambio hacia adelante explicada. El backend ya lo aceptaba desde 2026-08-03;
+  faltaba la pantalla.
+- Textos de las 3 pantallas de nómina: "semana" → "periodo" donde aplica; el renglón del
+  séptimo muestra N descansos en periodos largos.
+
+### Verificación
+
+- `CicloQuincenalTest` (9 pruebas): quincenas naturales y febrero, último periodo cerrado,
+  bruto por días reales con séptimos por semana, falta acumulada a la semana del 3er
+  retardo, batch quincenal, firma en la quincena cerrada, candado por periodicidad, guard
+  de traslape, y CFDI 04 con 16 días reales y monto server-side. `PeriodicidadNominaTest`
+  actualizado: el candado que omitía a los quincenales ahora afirma que reciben SU quincena.
+- En vivo (local): pantalla de configuración guardando quincenal confirmada; batch
+  reconoce el tenant quincenal, genera la quincena 16-31 jul ($8,000 brutos = 500×16;
+  falta del miércoles baja sólo el séptimo de SU semana → neto $7,416.67) y **omite con
+  aviso al empleado cuya semana firmada traslapa** — el guard en acción.
+
+### Nota para el cierre del criterio del jefe
+
+El timbre real con 04 en la V2 depende de UNA credencial: `FACTURAPI_KEY` en el `.env` del
+servidor (hoy el proveedor rechaza honesto — ya no hay modo simulador que finja el timbre).
+El payload que sale lleva 04 + días reales + monto de la nómina autorizada (probado con el
+proveedor simulado en tests). En cuanto haya llave, el primer recibo quincenal sale sin
+tocar código.

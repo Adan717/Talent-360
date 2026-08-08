@@ -1693,8 +1693,15 @@ class ClockService
         // guard, calcular la semana corriente un jueves fabricaba 6 faltas y netos de $0.
         $todayStr = Carbon::now(TenantTimezone::for($tenantId))->toDateString();
 
+        // Ciclo quincenal/mensual (#17): un periodo de MÁS de 7 días activa la matemática
+        // por periodo (bruto por días reales, séptimos por semana natural). Los rangos de
+        // hasta 7 días conservan la fórmula semanal histórica byte a byte.
+        $periodDays = (int) round($start->diffInDays($end)) + 1;
+        $isMultiWeek = $periodDays > 7;
+
         $current = $start->copy();
         $analysedDates = [];
+        $absenceDates = []; // fechas que cuentan como falta física (para el séptimo por semana)
         while ($current->lte($end)) {
             $dateStr = $current->toDateString();
             $analysedDates[] = $dateStr;
@@ -1715,6 +1722,7 @@ class ClockService
                         && !in_array($dateStr, $activeDeclarationDates, true)
                         && $canTrackAttendance) {
                         $physicalAbsences++;
+                        $absenceDates[$dateStr] = true;
                     }
                 }
             }
@@ -1728,22 +1736,80 @@ class ClockService
 
         $totalAbsences = $physicalAbsences + $absencesFromLates;
 
+        // Orden cronológico de los retardos: lo usan el séptimo por semana (a qué semana
+        // pertenece la falta acumulada) y el cobro único de N4 (qué retardos se consumen).
+        usort($minutosPorRetardo, fn ($a, $b) => strcmp($a['date'], $b['date']));
+
         // 5. Proporcional del Séptimo Día (día de descanso)
         $restDayProportion = 1.0;
-        if ($lft->proportional_rest_day && $totalAbsences > 0) {
-            $workedDays = max(0, 6 - $totalAbsences);
-            $restDayProportion = $workedDays / 6.0;
+        $restDaysInPeriod = 1;
+        $deductionRestDay = 0.0;
+
+        if (!$isMultiWeek) {
+            // Fórmula semanal histórica, intacta: un descanso, base 6.
+            if ($lft->proportional_rest_day && $totalAbsences > 0) {
+                $workedDays = max(0, 6 - $totalAbsences);
+                $restDayProportion = $workedDays / 6.0;
+            }
+            if ($lft->paid_rest_day) {
+                $deductionRestDay = (1.0 - $restDayProportion) * $dailySalary;
+            }
+        } else {
+            // #17 — decisión del jefe (2026-08-07): en quincenal/mensual el séptimo día se
+            // evalúa POR SEMANA NATURAL del tenant dentro del periodo — la misma fórmula
+            // semanal (base 6), aplicada semana por semana. Cada semana cuyo día de descanso
+            // cae DENTRO del periodo paga su séptimo proporcional a las faltas de ESA semana.
+            // Una falta acumulada por retardos (3→1) pertenece a la semana del retardo que
+            // completó el trío. Las semanas partidas en la orilla del periodo aportan sus
+            // faltas al descuento de días, pero su descanso se liquida en el periodo que lo
+            // contiene.
+            $weekStartDay = app(\App\Services\PayrollWeekService::class)->weekStartDay($tenantId);
+
+            $semana = function (string $dateStr) use ($weekStartDay): string {
+                $d = Carbon::parse($dateStr);
+                return $d->copy()->subDays(($d->dayOfWeek - $weekStartDay + 7) % 7)->toDateString();
+            };
+
+            // Faltas físicas por semana.
+            $faltasPorSemana = [];
+            foreach (array_keys($absenceDates) as $dStr) {
+                $faltasPorSemana[$semana($dStr)] = ($faltasPorSemana[$semana($dStr)] ?? 0) + 1;
+            }
+            // Faltas acumuladas por retardos: a la semana del retardo que completa cada trío.
+            $lpa = max(1, (int) $lft->lates_per_absence);
+            for ($k = 1; $k <= $absencesFromLates; $k++) {
+                $retardoQueCompleta = $minutosPorRetardo[$k * $lpa - 1] ?? null;
+                if ($retardoQueCompleta) {
+                    $ws = $semana($retardoQueCompleta['date']);
+                    $faltasPorSemana[$ws] = ($faltasPorSemana[$ws] ?? 0) + 1;
+                }
+            }
+
+            // Días de descanso DENTRO del periodo, agrupados por su semana.
+            $props = [];
+            foreach ($analysedDates as $dStr) {
+                if (Carbon::parse($dStr)->dayOfWeek !== $restDayOfWeek) {
+                    continue;
+                }
+                $faltasSemana = $faltasPorSemana[$semana($dStr)] ?? 0;
+                $prop = 1.0;
+                if ($lft->proportional_rest_day && $faltasSemana > 0) {
+                    $prop = max(0, 6 - $faltasSemana) / 6.0;
+                }
+                $props[] = $prop;
+                if ($lft->paid_rest_day) {
+                    $deductionRestDay += (1.0 - $prop) * $dailySalary;
+                }
+            }
+
+            $restDaysInPeriod = count($props);
+            $restDayProportion = $props === [] ? 1.0 : array_sum($props) / count($props);
         }
 
         // 6. Deducciones
         $deductionAbsence = 0;
         if ($lft->deduct_absence_day) {
             $deductionAbsence = $totalAbsences * $dailySalary;
-        }
-
-        $deductionRestDay = 0;
-        if ($lft->paid_rest_day) {
-            $deductionRestDay = (1.0 - $restDayProportion) * $dailySalary;
         }
 
         // Penalización por minutos tarde: tarifa configurable (LftSetting) × factor del PUESTO
@@ -1762,10 +1828,9 @@ class ClockService
             // N4 — decisión del jefe (opción A): un retardo se cobra UNA sola vez. Los retardos
             // que la acumulación ya convirtió en falta (3→1, reglamento interior) NO cobran
             // además por minuto; sólo el residuo que no alcanzó a formar falta. Se consumen en
-            // orden cronológico. (Con el default $0 del art. 107 esto vale $0 de todas formas;
-            // aplica cuando una empresa activa el por-minuto bajo su responsabilidad.)
+            // orden cronológico ($minutosPorRetardo ya viene ordenado desde el paso 5). Con el
+            // default $0 del art. 107 esto vale $0; aplica si una empresa activa el por-minuto.
             $retardosConsumidos = $absencesFromLates * max(1, (int) $lft->lates_per_absence);
-            usort($minutosPorRetardo, fn ($a, $b) => strcmp($a['date'], $b['date']));
             $minutosCobrables = array_sum(array_column(array_slice($minutosPorRetardo, $retardosConsumidos), 'mins'));
 
             $deductionLates = $minutosCobrables * (float) ($lft->late_penalty_per_minute ?? 0) * $lateMultiplier;
@@ -1817,8 +1882,10 @@ class ClockService
 
         $complianceBonus = $punctualityBonus + $openingBonus;
 
-        // Sueldo bruto para los 7 días (6 trabajados + 1 descanso) + bono festivo
-        $grossPay = ($dailySalary * 7) + $holidayBonusPay;
+        // Sueldo bruto: semanal = 7 días fijos (6 trabajados + 1 descanso, fórmula histórica);
+        // periodos de más de una semana (#17) = días naturales REALES del periodo (una quincena
+        // de febrero vale 13 días, una de mes de 31 vale 16 — el año siempre suma diario×365).
+        $grossPay = ($dailySalary * ($isMultiWeek ? $periodDays : 7)) + $holidayBonusPay;
         $netPay = max(0, $grossPay - $totalDeductions) + $complianceBonus;
 
         // Estatus de aprobaciones diarias
@@ -1933,6 +2000,8 @@ class ClockService
                 'absences_from_lates' => $absencesFromLates,
                 'total_absences' => $totalAbsences,
                 'rest_day_proportion' => (float)$restDayProportion,
+                // #17: cuántos días de descanso liquida este periodo (semanal: 1; quincena: 2-3).
+                'rest_days_in_period' => $restDaysInPeriod,
                 'meal_excess_minutes' => $mealExcessMinutes,
                 'rest_excess_minutes' => $restExcessMinutes,
                 'holidays_worked' => $holidayWorkedDaysCount

@@ -122,13 +122,14 @@ class PeriodicidadNominaTest extends TestCase
             ->assertJson(['periodicity' => 'quincenal', 'periodicity_confirmed' => true]);
     }
 
-    // ---------------- el candado del ciclo semanal ----------------
+    // ---------------- el batch respeta la periodicidad ----------------
 
-    public function test_el_ciclo_semanal_NO_genera_recibos_a_una_empresa_quincenal(): void
+    public function test_a_una_empresa_quincenal_el_batch_le_genera_QUINCENAS_no_semanas(): void
     {
-        // EL CASO QUE EL JEFE LLAMÓ "problema de verdad": empresa quincenal recibiendo 4-5
-        // recibos semanales al mes. El comando semanal debe omitirla por completo, no
-        // calcularle "algo".
+        // EL CASO QUE EL JEFE LLAMÓ "problema de verdad" era una empresa quincenal recibiendo
+        // 4-5 recibos semanales al mes. Mientras el ciclo quincenal no existió, el candado la
+        // omitía por completo. Desde #17 (2026-08-07) el ciclo EXISTE: el batch le genera su
+        // última quincena natural cerrada — un recibo del periodo correcto, no semanas.
         $u = User::factory()->create(['role' => 'empleado']);
         DB::table('users')->where('id', $u->id)->update(['tenant_id' => $this->tenantId]);
         DB::table('employees')->insert([
@@ -146,8 +147,16 @@ class PeriodicidadNominaTest extends TestCase
             ->expectsOutputToContain('quincenal')
             ->assertExitCode(0);
 
-        $this->assertSame(0, DB::table('weekly_payrolls')->where('tenant_id', $this->tenantId)->count(),
-            'A una empresa quincenal el ciclo semanal no debe generarle NINGÚN recibo.');
+        $recibos = DB::table('weekly_payrolls')->where('tenant_id', $this->tenantId)->get();
+        $this->assertCount(1, $recibos, 'UN recibo: su quincena cerrada, no 4-5 semanas.');
+
+        // El periodo es una quincena natural (empieza el 1 o el 16 y dura 13-16 días),
+        // nunca una semana de 7.
+        $inicio = \Carbon\Carbon::parse($recibos[0]->start_date);
+        $dias = (int) round($inicio->diffInDays(\Carbon\Carbon::parse($recibos[0]->end_date))) + 1;
+        $this->assertContains($inicio->day, [1, 16], 'La quincena natural empieza el 1 o el 16.');
+        $this->assertGreaterThanOrEqual(13, $dias);
+        $this->assertLessThanOrEqual(16, $dias);
     }
 
     public function test_el_ciclo_semanal_sigue_generando_para_las_empresas_semanales(): void

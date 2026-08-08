@@ -25,26 +25,27 @@ class PayrollController extends Controller
 
     private function getPeriodDates(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id ?? 1;
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
         if (!$startDate || !$endDate) {
-            // Predeterminado: la última semana CERRADA del tenant (N3). Es el periodo que el
-            // batch calcula, el trabajador firma y la empresa autoriza — la semana en curso
-            // no tiene nada autorizable.
-            $tenantId = auth()->user()->tenant_id ?? 1;
-            [$start, $end] = $this->weekService->lastClosedWeekFor($tenantId, Carbon::now());
+            // Predeterminado: el último periodo CERRADO del tenant según su periodicidad
+            // (N3/#17). Es lo que el batch calcula, el trabajador firma y la empresa
+            // autoriza — el periodo en curso no tiene nada autorizable.
+            [$start, $end] = $this->weekService->lastClosedPeriodFor($tenantId, Carbon::now());
             $startDate = $start->toDateString();
             $endDate = $end->toDateString();
         } else {
-            // N6 (candado): el cálculo sólo sabe hacer SEMANAS — el bruto es diario×7 y el
-            // séptimo día usa 6 fijo. Pedir una quincena descontaba 15 días de faltas contra
-            // un bruto de 7. Mismo criterio que el candado de periodicidad del batch: mejor
-            // rechazar y decirlo que calcular mal, hasta que exista el ciclo quincenal/mensual.
-            $dias = (int) round(Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate), false)) + 1;
-            if ($dias !== 7) {
-                abort(422, "El cálculo de nómina es semanal (7 días) y el periodo pedido abarca {$dias}. "
-                    . 'El ciclo quincenal/mensual aún no existe; se rechaza el periodo en lugar de calcularlo mal.');
+            // N6 (candado, ahora period-aware): un rango explícito debe SER un periodo real
+            // del tenant — su semana configurable, una quincena natural o un mes, según su
+            // periodicidad. Antes cualquier quincena descontaba 15 días de faltas contra un
+            // bruto de 7; mejor rechazar y decirlo que calcular mal.
+            [$ps, $pe] = $this->weekService->periodRangeFor($tenantId, Carbon::parse($startDate));
+            if ($startDate !== $ps->toDateString() || $endDate !== $pe->toDateString()) {
+                abort(422, 'El periodo pedido no corresponde a un periodo de nómina de esta empresa '
+                    . "(su periodo que contiene {$startDate} va del {$ps->toDateString()} al {$pe->toDateString()}). "
+                    . 'Los recibos se calculan por periodos completos según la periodicidad configurada.');
             }
         }
 

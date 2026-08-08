@@ -37,23 +37,22 @@ class EmployeePayrollController extends Controller
     }
 
     /**
-     * Semana laboral del tenant que contiene HOY (para la vista diaria en vivo).
-     * Antes esto era lunes→domingo fijo, en conflicto con la semana configurable del
-     * batch (PayrollWeekService): dos definiciones de semana para la misma fila.
+     * Periodo de nómina del tenant que contiene HOY (vista informativa en vivo). #17: para
+     * un tenant semanal es su semana configurable; quincenal → 1-15/16-fin; mensual → mes.
      */
-    private function currentWeekRange(int $tenantId): array
+    private function currentPeriodRange(int $tenantId): array
     {
-        [$start, $end] = $this->weekService->weekRangeFor($tenantId, Carbon::now());
+        [$start, $end] = $this->weekService->periodRangeFor($tenantId, Carbon::now());
         return [$start->toDateString(), $end->toDateString()];
     }
 
     /**
-     * Última semana CERRADA del tenant: el único periodo firmable (N3 — firmar la semana
-     * en curso congelaba netos calculados con días futuros contados como faltas).
+     * Último periodo CERRADO del tenant: lo único firmable (N3 — firmar un periodo en
+     * curso congelaba netos calculados con días futuros contados como faltas).
      */
-    private function closedWeekRange(int $tenantId): array
+    private function closedPeriodRange(int $tenantId): array
     {
-        [$start, $end] = $this->weekService->lastClosedWeekFor($tenantId, Carbon::now());
+        [$start, $end] = $this->weekService->lastClosedPeriodFor($tenantId, Carbon::now());
         return [$start->toDateString(), $end->toDateString()];
     }
 
@@ -64,7 +63,7 @@ class EmployeePayrollController extends Controller
     {
         try {
             $employee = $this->getAuthEmployee();
-            [$startDate, $endDate] = $this->currentWeekRange(auth()->user()->tenant_id ?? 1);
+            [$startDate, $endDate] = $this->currentPeriodRange(auth()->user()->tenant_id ?? 1);
 
             $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
 
@@ -131,8 +130,8 @@ class EmployeePayrollController extends Controller
             $employee = $this->getAuthEmployee();
             $tenantId = auth()->user()->tenant_id ?? 1;
             [$startDate, $endDate] = $request->query('period') === 'closed'
-                ? $this->closedWeekRange($tenantId)
-                : $this->currentWeekRange($tenantId);
+                ? $this->closedPeriodRange($tenantId)
+                : $this->currentPeriodRange($tenantId);
 
             $payroll = $this->clockService->calculatePayrollForEmployee($employee, $startDate, $endDate);
 
@@ -160,7 +159,7 @@ class EmployeePayrollController extends Controller
         try {
             $employee = $this->getAuthEmployee();
             $tenantId = auth()->user()->tenant_id ?? 1;
-            [$startDate, $endDate] = $this->closedWeekRange($tenantId);
+            [$startDate, $endDate] = $this->closedPeriodRange($tenantId);
 
             // H22: antes esto recalculaba y sobrescribía la fila SIEMPRE, mirara o no en qué
             // estado estaba. Dos daños reales:

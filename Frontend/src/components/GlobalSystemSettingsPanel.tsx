@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { CompanyOnboardingSettings } from './CompanyOnboardingSettings';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
+import NominaSettingsPanel from './NominaSettingsPanel';
 import { useAppStore } from '../store/useAppStore';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
@@ -75,6 +76,14 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
       badge: 'Legal MX',
       badgeColor: 'bg-indigo-100 text-indigo-700',
       description: 'Límite de horas extra LFT, festivos oficiales y cálculo automático de jornadas.'
+    },
+    {
+      id: 'nomina',
+      label: 'Nómina & Periodicidad',
+      icon: <FileText size={18} />,
+      badge: 'Pagos',
+      badgeColor: 'bg-emerald-100 text-emerald-700',
+      description: 'Semanal, quincenal o mensual; día de inicio de semana y día de pago.'
     },
     {
       id: 'notificaciones',
@@ -228,6 +237,12 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
         {activeTab === 'lft' && (
           <div className="animate-in fade-in duration-200">
             <CompanySettingsPanel initialTab="general" hideSidebar={true} />
+          </div>
+        )}
+
+        {activeTab === 'nomina' && (
+          <div className="animate-in fade-in duration-200">
+            <NominaSettingsPanel />
           </div>
         )}
 

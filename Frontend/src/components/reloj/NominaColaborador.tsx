@@ -106,7 +106,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
     try {
       const res = await axiosInstance.post('/employee/payroll-weekly/approve');
       if (res.data && res.data.success) {
-        setSuccessMsg('¡Nómina semanal firmada de conformidad con éxito!');
+        setSuccessMsg('¡Nómina firmada de conformidad con éxito!');
         setTimeout(() => setSuccessMsg(''), 5000);
         fetchPayroll();
       }
@@ -183,13 +183,13 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
         
         <div className="flex items-center justify-between mb-3.5">
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Semana en Curso (estimado)</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Periodo en Curso (estimado)</h3>
             <div className="flex items-baseline gap-0.5">
               <span className="text-2xl font-black">${payroll.salary.net.toFixed(2)}</span>
               <span className="text-[9px] text-slate-400 font-bold">MXN</span>
             </div>
             <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
-              {payroll.period.start} al {payroll.period.end} · el neto final se firma al cerrar la semana
+              {payroll.period.start} al {payroll.period.end} · el neto final se firma al cerrar el periodo
             </p>
           </div>
           <div className="p-2 bg-violet-50 text-violet-600 rounded-xl border border-violet-100/50">
@@ -204,9 +204,11 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
             <span className="font-bold">${payroll.salary.base.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400 font-medium">Pago Séptimo Día (Descanso):</span>
+            <span className="text-slate-400 font-medium">
+              Pago Séptimo Día{(payroll.incidents.rest_days_in_period ?? 1) > 1 ? `s (${payroll.incidents.rest_days_in_period} descansos)` : ' (Descanso)'}:
+            </span>
             <span className="font-bold text-emerald-600">
-              +${(payroll.salary.daily * payroll.incidents.rest_day_proportion).toFixed(2)}
+              +${((payroll.incidents.rest_days_in_period ?? 1) * payroll.salary.daily * payroll.incidents.rest_day_proportion).toFixed(2)}
               <span className="text-[9px] text-slate-400 ml-1">({(payroll.incidents.rest_day_proportion * 100).toFixed(0)}%)</span>
             </span>
           </div>
@@ -245,7 +247,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <Trophy size={14} className="text-violet-600" />
-            <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400">Rendimiento Semanal</h4>
+            <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400">Rendimiento del Periodo</h4>
           </div>
           <span className={`text-sm font-black ${
             payroll.performance.performance_score >= 85 
@@ -428,7 +430,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           </div>
           <h4 className="text-sm font-black text-emerald-900">Nómina Aceptada</h4>
           <p className="text-[10.5px] text-emerald-700/80 leading-relaxed">
-            Firmaste de conformidad la semana del {closedPeriodLabel}
+            Firmaste de conformidad el periodo del {closedPeriodLabel}
             {closedPayroll.approval.approved_at
               ? ` el ${new Date(closedPayroll.approval.approved_at).toLocaleString('es-MX')}`
               : ''}. Tu ticket impreso ya está disponible para recolección.
@@ -441,9 +443,9 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           <div className="flex gap-2">
             <Fingerprint size={20} className="text-[#8a2be2] shrink-0" />
             <div>
-              <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Firma de Nómina Semanal</h4>
+              <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Firma de Nómina del Periodo</h4>
               <p className="text-[10.5px] text-slate-400 mt-0.5">
-                Semana cerrada del {closedPeriodLabel}. Revisa el desglose y firma de conformidad la liquidación calculada.
+                Periodo cerrado del {closedPeriodLabel}. Revisa el desglose y firma de conformidad la liquidación calculada.
               </p>
             </div>
           </div>
@@ -503,7 +505,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
 
           {!closedDaysReady && (
             <p className="text-[9.5px] text-rose-500 font-bold text-center">
-              *Firma tus días asistidos (y resuelve los días en aclaración) antes de firmar la semana.
+              *Firma tus días asistidos (y resuelve los días en aclaración) antes de firmar el periodo.
             </p>
           )}
         </div>

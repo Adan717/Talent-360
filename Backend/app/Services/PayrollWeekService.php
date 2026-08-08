@@ -84,6 +84,46 @@ class PayrollWeekService
         return $this->weekRangeFor($tenantId, $date->copy()->subDays(7));
     }
 
+    /**
+     * Ciclo quincenal/mensual (#17, 2026-08-07): el PERIODO de nómina del tenant que
+     * contiene la fecha dada, según su periodicidad declarada.
+     *
+     *   semanal   → su semana configurable (weekRangeFor).
+     *   quincenal → quincenas naturales: 1–15 y 16–fin de mes (13 a 16 días según el mes;
+     *               es la convención mexicana — los recibos salen el 15 y el último día).
+     *   mensual   → mes calendario.
+     *
+     * Devuelve [inicio 00:00, fin 23:59:59] como weekRangeFor.
+     */
+    public function periodRangeFor(int $tenantId, Carbon $date): array
+    {
+        $periodicidad = \App\Http\Controllers\PayrollSettingsController::periodicidadDe($tenantId);
+        $d = $date->copy()->startOfDay();
+
+        if ($periodicidad === 'quincenal') {
+            $start = $d->day <= 15 ? $d->copy()->startOfMonth() : $d->copy()->startOfMonth()->addDays(15);
+            $end = $d->day <= 15 ? $d->copy()->startOfMonth()->addDays(14) : $d->copy()->endOfMonth();
+            return [$start->startOfDay(), $end->endOfDay()];
+        }
+
+        if ($periodicidad === 'mensual') {
+            return [$d->copy()->startOfMonth()->startOfDay(), $d->copy()->endOfMonth()->endOfDay()];
+        }
+
+        return $this->weekRangeFor($tenantId, $d);
+    }
+
+    /**
+     * El periodo de nómina más reciente que YA CERRÓ a la fecha dada: el anterior al que
+     * la contiene. Regla N3 generalizada — nunca se opera (batch/firma/autorización/timbre)
+     * sobre un periodo en curso.
+     */
+    public function lastClosedPeriodFor(int $tenantId, Carbon $date): array
+    {
+        [$start] = $this->periodRangeFor($tenantId, $date);
+        return $this->periodRangeFor($tenantId, $start->copy()->subDay());
+    }
+
     /** ¿La semana del tenant CIERRA en la fecha dada? (último día de su semana) */
     public function weekClosesOn(int $tenantId, Carbon $date): bool
     {

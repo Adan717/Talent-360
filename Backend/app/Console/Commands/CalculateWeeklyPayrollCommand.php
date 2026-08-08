@@ -13,13 +13,17 @@ use Carbon\Carbon;
 /**
  * Comando: payroll:calculate-weekly
  *
- * Calcula la nómina semanal de todos los empleados activos del tenant sobre la última
- * semana CERRADA (auditoría N3: calcular la semana en curso contaba los días futuros
- * como faltas y dejaba borradores con neto $0). Corre cada noche vía el scheduler: los
- * drafts de la semana recién cerrada absorben justificantes/contingencias tardíos hasta
- * que el trabajador firma; lo firmado es inmutable para el batch.
+ * Calcula la nómina de todos los empleados activos sobre el último periodo CERRADO de
+ * cada tenant según su periodicidad (#17): semanal → su semana configurable; quincenal →
+ * quincenas naturales 1-15/16-fin; mensual → mes calendario. Nunca el periodo en curso
+ * (auditoría N3: contaba los días futuros como faltas y dejaba borradores con neto $0).
+ * Corre cada noche vía el scheduler: los drafts del periodo recién cerrado absorben
+ * justificantes/contingencias tardíos hasta que el trabajador firma; lo firmado es
+ * inmutable, y un recibo firmado de otra periodicidad que traslape bloquea la generación
+ * (cambio de periodicidad sólo hacia adelante, sin doble pago).
  *
  * Uso manual: php artisan payroll:calculate-weekly [--tenant_id=1] [--week=2026-07-07]
+ * (--week: se calcula el periodo del tenant que CONTIENE esa fecha)
  */
 class CalculateWeeklyPayrollCommand extends Command
 {
@@ -52,25 +56,18 @@ class CalculateWeeklyPayrollCommand extends Command
         $errors         = 0;
 
         foreach ($tenants as $tenant) {
-            // CANDADO de periodicidad (2026-08-03): este comando SOLO sabe calcular semanas.
-            // A una empresa que declaró pagar quincenal o mensual, generarle recibos semanales
-            // no es un cálculo incompleto — es el defecto exacto que la periodicidad
-            // configurable vino a impedir (4-5 recibos semanales al mes que nadie pidió).
-            // Mejor no generar nada y decirlo, hasta que exista el ciclo correspondiente.
+            // #17 (2026-08-07): el candado de periodicidad se convierte en despachador — cada
+            // tenant calcula su último periodo CERRADO según su periodicidad declarada
+            // (semanal → su semana configurable; quincenal → 1-15 / 16-fin; mensual → mes).
+            // ponytail: corre a diario recalculando el periodo cerrado hasta que se firma (así
+            // absorbe justificantes tardíos); si el costo molesta, el upgrade es agendar sólo
+            // los días de cierre por periodicidad.
             $periodicidad = \App\Http\Controllers\PayrollSettingsController::periodicidadDe($tenant->id);
 
-            if ($periodicidad !== 'semanal') {
-                $this->warn("⏸ Tenant #{$tenant->id}: paga '{$periodicidad}' y este comando es semanal. "
-                    . 'Se omite — el ciclo ' . $periodicidad . ' aún no existe; no se le generan recibos incorrectos.');
-                \Log::warning("payroll:calculate-weekly omitió al tenant {$tenant->id}: periodicidad '{$periodicidad}'.");
-                continue;
-            }
-
-            // Semana laboral de ESTE tenant (domingo→sábado, lunes→domingo, etc.).
             [$weekStart, $weekEnd] = $explicitWeek
-                ? $this->weekService->weekRangeFor($tenant->id, $explicitWeek->copy())
-                : $this->weekService->lastClosedWeekFor($tenant->id, Carbon::now());
-            $this->info("🧮 Tenant #{$tenant->id}: semana {$weekStart->toDateString()} → {$weekEnd->toDateString()}");
+                ? $this->weekService->periodRangeFor($tenant->id, $explicitWeek->copy())
+                : $this->weekService->lastClosedPeriodFor($tenant->id, Carbon::now());
+            $this->info("🧮 Tenant #{$tenant->id} ({$periodicidad}): periodo {$weekStart->toDateString()} → {$weekEnd->toDateString()}");
 
             $employees = Employee::where('is_active_employee', true)
                 ->whereHas('user', fn($q) => $q->where('tenant_id', $tenant->id))
@@ -98,6 +95,27 @@ class CalculateWeeklyPayrollCommand extends Command
 
                         // Lo firmado por el empleado es INMUTABLE para el batch nocturno.
                         if ($existing && $existing->status !== 'draft') {
+                            return;
+                        }
+
+                        // #17 — cambio de periodicidad sólo HACIA ADELANTE (decisión del jefe):
+                        // si algún día de este periodo ya está cubierto por un recibo de OTRO
+                        // periodo que el trabajador firmó (p. ej. semanas firmadas antes de
+                        // volverse quincenal), generarlo pagaría esos días DOS veces. Se omite
+                        // este empleado hasta que sus periodos dejen de traslaparse.
+                        $traslapado = WeeklyPayroll::where('tenant_id', $tenant->id)
+                            ->where('employee_id', $employee->id)
+                            ->where('status', '!=', 'draft')
+                            ->where('start_date', '<=', $weekEnd->toDateString())
+                            ->where('end_date', '>=', $weekStart->toDateString())
+                            ->where(function ($q) use ($weekStart, $weekEnd) {
+                                $q->where('start_date', '!=', $weekStart->toDateString())
+                                    ->orWhere('end_date', '!=', $weekEnd->toDateString());
+                            })
+                            ->exists();
+                        if ($traslapado) {
+                            $this->warn("  ⏸ Empleado #{$employee->id}: un recibo firmado de otra "
+                                . 'periodicidad traslapa este periodo; no se genera (sin doble pago).');
                             return;
                         }
 

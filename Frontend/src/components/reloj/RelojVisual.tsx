@@ -2466,6 +2466,24 @@ export default function RelojVisual({
     }
   };
 
+  // Tarjeta del mensaje privado del Chat Operativo. Vive FUERA del módulo de notificaciones
+  // del turno porque el privado típico ("pasa a la oficina mañana") llega cuando el
+  // colaborador NO está fichado: empresa cerrada, día de descanso o antes del check-in.
+  // Con el aviso solo dentro del turno, el mensaje era invisible justo cuando más se manda —
+  // el mismo argumento por el que la inducción se muestra en la pantalla de empresa cerrada.
+  const renderMensajePrivadoCard = () => {
+    if (!misMensajesPrivados.length) return null;
+    const ultimo = misMensajesPrivados[misMensajesPrivados.length - 1];
+    return (
+      <div className="w-full max-w-sm mt-4 rounded-2xl border p-4 text-left bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/25 dark:text-rose-300 animate-pulse-slow">
+        <span className="text-[10px] font-black uppercase tracking-wider block mb-1 opacity-70">
+          🚨 Mensaje de Administración
+        </span>
+        <span className="text-sm font-black block leading-snug">{ultimo.content}</span>
+      </div>
+    );
+  };
+
   const renderStoreClosedScreen = (isMobile: boolean) => {
     return (
       <div className={`flex flex-col items-center justify-center text-center p-8 transition-all animate-fade-in ${
@@ -2501,6 +2519,9 @@ export default function RelojVisual({
             ⏳ {waitTimeText}
           </div>
         </div>
+
+        {/* El mensaje privado de un mando también aquí: llega sobre todo fuera del turno. */}
+        {renderMensajePrivadoCard()}
 
         {/* El recordatorio de inducción también aquí, con la tienda cerrada. El caso que pidió el
             jefe es justo éste: el colaborador NUEVO que abre su celular — y muchas veces lo abre
@@ -3455,6 +3476,8 @@ export default function RelojVisual({
                 >
                   {isSimulatedHoliday ? 'Laborar Día Feriado' : 'Laborar Horas Extras'}
                 </button>
+                {/* Un privado del mando también se ve en el día de descanso. */}
+                {renderMensajePrivadoCard()}
               </div>
             ) : (
               <div className="flex-1 overflow-hidden px-4 pt-[82px] pb-[100px] flex flex-col justify-between gap-1.5 scrollbar-none select-none">
@@ -3839,6 +3862,8 @@ export default function RelojVisual({
                 >
                   {isSimulatedHoliday ? 'Laborar Día Feriado' : 'Laborar Horas Extras'}
                 </button>
+                {/* Un privado del mando también se ve en el día de descanso. */}
+                {renderMensajePrivadoCard()}
               </div>
             ) : (
               <>
@@ -4132,8 +4157,10 @@ export default function RelojVisual({
 
                 </div>
 
-                {/* Módulo de Notificaciones de Turno */}
-                {hasCheckedIn && (
+                {/* Módulo de Notificaciones de Turno. También ANTES del check-in cuando hay un
+                    mensaje privado esperando: si solo viviera dentro del turno, el aviso del
+                    mando sería invisible justo cuando más se manda (fuera de horario). */}
+                {(hasCheckedIn || misMensajesPrivados.length > 0) && (
                   <div className="w-full animate-fade-in">
                     {renderModuloNotificaciones(false)}
                   </div>

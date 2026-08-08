@@ -154,6 +154,27 @@ class ChatOperativoModoPrivadoTest extends TestCase
         $respuesta->assertJsonPath('data.type', 'private');
     }
 
+    public function test_el_selector_de_privados_ofrece_tambien_a_quien_no_esta_en_turno(): void
+    {
+        // Bug verificado en vivo (2026-08-08): la lista del monitor solo trae a quien está EN
+        // TURNO, así que fuera de horario el destinatario ni aparecía en el selector — no se
+        // le podía escribir. `staff` trae a TODA la plantilla con cuenta.
+        $jefa = $this->persona();
+        $colaborador = $this->persona('empleado');
+        DB::table('employees')->insert([
+            'tenant_id' => $this->tenantId, 'name' => $colaborador->name,
+            'user_id' => $colaborador->id, 'is_active_employee' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $data = $this->actingAs($jefa)->getJson('/api/v1/admin/dashboard/monitor')->json('data');
+
+        $this->assertContains($colaborador->id, collect($data['staff'])->pluck('user_id')->all(),
+            'sin fichaje hoy no está "en línea", pero SÍ debe poder recibir un privado');
+        $this->assertNotContains($colaborador->id, collect($data['users'])->pluck('user_id')->all(),
+            'la lista visible del monitor sigue siendo solo quien está en turno');
+    }
+
     public function test_el_colaborador_lo_recibe_en_su_reloj(): void
     {
         // La razón de ser de todo esto: que el mensaje LLEGUE. El reloj lo lee de /sync/state.

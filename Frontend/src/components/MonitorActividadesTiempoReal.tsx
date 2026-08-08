@@ -147,6 +147,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
   // Data States
   const [users, setUsers] = useState<UserMonitorItem[]>([]);
+  // Toda la plantilla con cuenta (en turno o no) — para el selector de mensajes privados.
+  const [staff, setStaff] = useState<{ user_id: number; name: string }[]>([]);
   const [availableTasks, setAvailableTasks] = useState<any[]>([]);
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
@@ -222,6 +224,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
       const res = await axiosInstance.get('/admin/dashboard/monitor');
       if (res.data?.status === 'success' && res.data?.data) {
         setUsers(res.data.data.users || []);
+        setStaff(res.data.data.staff || []);
         setAvailableTasks(res.data.data.available_tasks || []);
         setFeed(res.data.data.feed || []);
         setChatMessages(res.data.data.chat || []);
@@ -1647,10 +1650,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 className="flex-1 bg-slate-50 text-slate-800 text-[11px] font-bold rounded-lg px-2 py-1.5 border border-slate-200 focus:outline-none focus:border-blue-600"
               >
                 <option value="">Todo el equipo</option>
-                {/* `user_id`, NO `id`: el de la lista es el id de EMPLEADO y el destinatario del
-                    mensaje es una cuenta de usuario. Confundirlos es la familia §29/§30. Quien
-                    no tenga cuenta no puede recibir mensajes, así que no se ofrece. */}
-                {users.filter((u: any) => u.user_id).map((u: any) => (
+                {/* `staff` (TODA la plantilla con cuenta), no `users` (solo en turno): el
+                    privado típico —"pasa a la oficina mañana"— es para quien ya salió, y con
+                    la lista de en turno el destinatario ni aparecía fuera de horario.
+                    `user_id`, NO id de empleado: el destinatario es una cuenta de usuario;
+                    confundirlos es la familia §29/§30. Quien no tenga cuenta no se ofrece. */}
+                {staff.map((u) => (
                   <option key={u.user_id} value={u.user_id}>
                     {u.name} — sólo para él/ella
                   </option>

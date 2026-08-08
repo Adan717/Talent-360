@@ -337,10 +337,19 @@ class DashboardMonitorController extends Controller
                 ->whereNull('deleted_at')
                 ->count();
 
+            // Selector de mensajes privados: TODA la plantilla con cuenta, no solo quien está
+            // en turno ($formattedUsers filtra a los offline). El caso típico del privado
+            // —"pasa a la oficina mañana"— es justo para quien ya salió; con la lista de en
+            // turno el destinatario ni aparecía en el selector fuera de horario.
+            $staff = $users->filter(fn ($u) => $u->user_id)
+                ->map(fn ($u) => ['user_id' => $u->user_id, 'name' => $u->name])
+                ->values();
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
                     'users' => $formattedUsers,
+                    'staff' => $staff,
                     'available_tasks' => $availableTasks,
                     'feed' => $feed,
                     'chat' => $chatMessages,

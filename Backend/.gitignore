@@ -18,6 +18,11 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+# Nada de fotos de personas en el repositorio. El 2026-07-21 se commiteó por accidente un
+# archivo de public/uploads/meal-evidence; resultó ser el rastro de 100 bytes de una corrida
+# de pruebas y no la cara de nadie, pero de haber sido real quedaba en el historial de los
+# dos remotos para siempre. Desde 2026-08-08 la evidencia vive en storage privado.
+/public/uploads
 /storage/*.key
 /storage/pail
 /vendor

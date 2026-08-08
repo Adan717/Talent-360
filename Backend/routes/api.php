@@ -343,6 +343,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::put('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'updateMatrix']);
         });
 
+        // Reportes básicos (CSV): asistencia del día y tareas completadas. Los botones
+        // existían en la pantalla SIN handler — no bajaban nada. Sin `manage_payroll`
+        // a propósito: no traen ni un dato salarial.
+        Route::middleware('tenant.module:reportes')->group(function () {
+            Route::get('/admin/reports/asistencia.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'asistenciaDelDia']);
+            Route::get('/admin/reports/tareas.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'tareasCompletadas']);
+        });
+
         // Nómina y Reportes Avanzados
         // §65 (1er bloque sensible migrado a permisos delegables): calcular/cerrar nómina
         // exige la capacidad `manage_payroll`. El admin pasa por bypass; un supervisor ya

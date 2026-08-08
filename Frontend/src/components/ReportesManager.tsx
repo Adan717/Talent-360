@@ -4,13 +4,21 @@ import {
   Lock, Zap, Table, FileSpreadsheet, FileOutput, CheckCircle2, AlertCircle, Bot, DollarSign
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
+import { useAppStore } from '../store/useAppStore';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
 export default function ReportesManager() {
   const [activeTab, setActiveTab] = useState<'basicos' | 'avanzados'>('basicos');
-  // [MODO DEMO]: Permite alternar la suscripción desde la UI para mostrar ambas caras a los clientes.
-  const [demoTier, setDemoTier] = useState<'freemium' | 'pro'>('freemium');
-  
+
+  // El plan REAL del tenant. Antes esto era `demoTier`, un estado local que arrancaba en
+  // 'freemium' con un botón "[DEMO] Simular Mejora a PRO" en la pantalla: a un cliente
+  // enterprise se le mostraba un candado vendiéndole el plan que YA TIENE, y para ver su
+  // propia nómina tenía que pulsar un botón de demostración.
+  const { currentTier, isModuleUnlocked } = useAppStore();
+  const tieneAvanzados = currentTier === 'pro' || currentTier === 'enterprise' || isModuleUnlocked('reportes');
+
+  const [descargando, setDescargando] = useState<string | null>(null);
+
   // Resultado REAL de la autorización (cuántas se autorizaron, cuántas faltan de firma):
   // el modal viejo inventaba "3 facturas XML generadas" sin que nada se hubiera timbrado.
   const [approveResult, setApproveResult] = useState<{ approved: number; pending: number; message: string } | null>(null);
@@ -21,9 +29,17 @@ export default function ReportesManager() {
   const [error, setError] = useState<string | null>(null);
   const [expandedEmpId, setExpandedEmpId] = useState<number | null>(null);
 
-  const totalBase = payrollData.reduce((acc, curr) => acc + (curr.base || 0), 0);
-  const totalPenalties = payrollData.reduce((acc, curr) => acc + (curr.penalty || 0), 0);
-  const totalNet = totalBase - totalPenalties;
+  // Cada tarjeta es la SUMA de su columna, no una resta derivada aquí. Antes el neto se
+  // calculaba en el navegador (Σbase − Σpenalty) y no coincidía con la columna "Neto a
+  // Pagar" de la tabla de abajo: el bruto del periodo no es `base` (que es el sueldo del
+  // expediente), y el neto del backend además tiene tope en 0 y suma el bono. Dos cifras
+  // distintas para el mismo dinero, y la grande no era la que se paga.
+  const soloConSalario = payrollData.filter((e) => !e.salary_pending);
+  const totalBase = soloConSalario.reduce((acc, curr) => acc + (curr.gross || 0), 0);
+  const totalPenalties = soloConSalario.reduce((acc, curr) => acc + (curr.penalty || 0), 0);
+  const totalBonos = soloConSalario.reduce((acc, curr) => acc + (curr.compliance_bonus || 0), 0);
+  const totalNet = soloConSalario.reduce((acc, curr) => acc + (curr.net || 0), 0);
+  const pendientesDeSalario = payrollData.filter((e) => e.salary_pending).length;
 
   const fetchPayroll = async () => {
     setIsLoading(true);
@@ -32,9 +48,17 @@ export default function ReportesManager() {
       const res = await axiosInstance.get('/admin/payroll?detailed=true');
       setPayrollData(res.data?.employees || []);
       setPeriod(res.data?.period || null);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError("No se pudieron cargar los datos de la nómina. Por favor, intenta de nuevo.");
+      // El mensaje del backend importa: explica si el periodo pedido no es un periodo de
+      // nómina de la empresa, o si al puesto le falta la capacidad. Antes todo se pintaba
+      // como "Error de Conexión" y el dueño reintentaba en bucle algo que no iba a funcionar.
+      setError(
+        e?.response?.data?.message ||
+        (e?.response?.status === 403
+          ? 'Tu puesto no tiene permiso para ver la nómina. Pídeselo al administrador.'
+          : 'No se pudieron cargar los datos de la nómina. Por favor, intenta de nuevo.')
+      );
     } finally {
       setIsLoading(false);
     }
@@ -49,9 +73,33 @@ export default function ReportesManager() {
         message: res.data?.message || 'Autorización procesada.'
       });
       fetchPayroll(); // refrescar los estados de firma/autorización en la tabla
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error al autorizar la nómina");
+      // El backend explica el candado (p. ej. "no se puede recalcular una nómina firmada"):
+      // taparlo con un "Error al autorizar" genérico deja al dueño sin saber qué hacer.
+      alert(err?.response?.data?.message || 'No se pudo autorizar la nómina.');
+    }
+  };
+
+  // Los dos CSV de la pestaña básica. Los botones existían SIN onClick: no bajaban nada
+  // y tampoco avisaban de nada.
+  const handleDescargarCsv = async (reporte: 'asistencia' | 'tareas') => {
+    setDescargando(reporte);
+    try {
+      const res = await axiosInstance.get(`/admin/reports/${reporte}.csv`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${reporte}_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.message || 'No se pudo descargar el reporte. Intenta de nuevo.');
+    } finally {
+      setDescargando(null);
     }
   };
 
@@ -68,7 +116,12 @@ export default function ReportesManager() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Prenomina_${new Date().toISOString().slice(0, 10)}.${format}`);
+      // El archivo se nombra con el PERIODO que contiene, no con el día de la descarga
+      // (que además salía en UTC): el contenido es la última semana cerrada, así que
+      // "Prenomina_2026-08-08.xlsx" archivaba un recibo del 27-jul al 02-ago con fecha
+      // equivocada y dos descargas del mismo periodo no se distinguían.
+      const etiqueta = period ? `${period.start_date}_a_${period.end_date}` : 'periodo';
+      link.setAttribute('download', `Prenomina_${etiqueta}.${format}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -80,20 +133,17 @@ export default function ReportesManager() {
   };
 
   useEffect(() => {
-    if (activeTab === 'avanzados' && demoTier === 'pro') {
+    if (activeTab === 'avanzados' && tieneAvanzados) {
       fetchPayroll();
     }
-  }, [activeTab, demoTier]);
+  }, [activeTab, tieneAvanzados]);
 
   return (
     <div className="h-full flex flex-col bg-white border border-slate-200 shadow-sm rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden relative">
       
-      {/* Controles Ocultos para Demostración */}
-      <div className="absolute top-4 right-6 z-10 flex items-center gap-2 bg-slate-900/5 backdrop-blur-sm p-1.5 rounded-lg border border-slate-200/50">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-2">DEMO TIER:</span>
-        <button onClick={() => {setDemoTier('freemium'); setActiveTab('basicos')}} className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${demoTier === 'freemium' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:bg-slate-200'}`}>Freemium</button>
-        <button onClick={() => setDemoTier('pro')} className={`px-2 py-1 text-xs font-bold rounded-md transition-colors ${demoTier === 'pro' ? 'bg-blue-600 shadow text-white' : 'text-slate-500 hover:bg-slate-200'}`}>PRO</button>
-      </div>
+      {/* El conmutador "DEMO TIER" (Freemium/PRO) vivía aquí, en la pantalla del cliente:
+          cualquiera podía fingir el plan y, peor, arrancaba en 'freemium' para todos. El
+          plan sale del tenant. */}
 
       {/* Header (Escritorio) */}
       <div className="hidden sm:block sticky -top-8 -mt-8 -mx-8 px-8 pt-6 pb-3 bg-slate-50/90 backdrop-blur-md z-20 transition-all border-b border-slate-200/50 mb-6">
@@ -104,7 +154,9 @@ export default function ReportesManager() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Módulo de Reportes IA</h1>
-              <p className="text-sm text-slate-500">Exportación de datos y cálculo inteligente de pagos</p>
+              {/* Decía "cálculo inteligente de pagos": el cálculo es determinista (asistencia
+                  + reglamento de la empresa), no hay ninguna IA de por medio en este módulo. */}
+              <p className="text-sm text-slate-500">Exportación de datos y prenómina calculada con tu reglamento</p>
             </div>
           </div>
 
@@ -114,14 +166,16 @@ export default function ReportesManager() {
               onClick={() => setActiveTab('basicos')}
               className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'basicos' ? 'border-emerald-600 text-emerald-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
             >
-              Reportes Básicos (Gratis)
+              {/* Decía "(Gratis)", pero el módulo entero exige plan PRO (minTier en App.tsx):
+                  la única pestaña rotulada como gratuita solo la ve quien ya pagó. */}
+              Reportes Operativos
             </button>
             <button 
               onClick={() => setActiveTab('avanzados')}
               className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-amber-500 text-amber-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
             >
               Nómina y Avanzados
-              {demoTier === 'freemium' && <Lock size={14} className="text-amber-500" />}
+              {!tieneAvanzados && <Lock size={14} className="text-amber-500" />}
             </button>
           </div>
         </div>
@@ -155,8 +209,12 @@ export default function ReportesManager() {
                   <p className="text-sm text-slate-500 mt-1">Exporta un CSV plano con las horas de entrada y salida de hoy.</p>
                 </div>
               </div>
-              <button className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors shadow-sm">
-                <Download size={16} /> Descargar CSV
+              <button
+                onClick={() => handleDescargarCsv('asistencia')}
+                disabled={descargando === 'asistencia'}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Download size={16} /> {descargando === 'asistencia' ? 'Generando…' : 'Descargar CSV'}
               </button>
             </div>
 
@@ -165,18 +223,22 @@ export default function ReportesManager() {
                 <div className="p-3 bg-purple-50 text-purple-600 rounded-lg"><FileSpreadsheet size={24} /></div>
                 <div>
                   <h3 className="font-bold text-slate-800">Tareas Completadas</h3>
-                  <p className="text-sm text-slate-500 mt-1">Listado básico de tareas cerradas por los empleados.</p>
+                  <p className="text-sm text-slate-500 mt-1">Listado de tareas cerradas por el equipo en los últimos 30 días.</p>
                 </div>
               </div>
-              <button className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors shadow-sm">
-                <Download size={16} /> Descargar CSV
+              <button
+                onClick={() => handleDescargarCsv('tareas')}
+                disabled={descargando === 'tareas'}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Download size={16} /> {descargando === 'tareas' ? 'Generando…' : 'Descargar CSV'}
               </button>
             </div>
           </div>
         )}
 
         {/* TABS: AVANZADOS (FREEMIUM VIEW -> UPSELL) */}
-        {activeTab === 'avanzados' && demoTier === 'freemium' && (
+        {activeTab === 'avanzados' && !tieneAvanzados && (
           <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500 pb-10">
             <div className="max-w-lg w-full bg-white rounded-2xl border border-amber-200 shadow-xl overflow-hidden relative">
               <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-amber-400 to-yellow-500"></div>
@@ -187,33 +249,39 @@ export default function ReportesManager() {
                 </div>
                 
                 <h3 className="text-2xl font-black text-slate-800 mb-2">Reportes Analíticos y Nómina</h3>
+                {/* La promesa decía "genera la prenómina con IA y timbra (CFDI) a un clic".
+                    El cálculo de nómina es determinista (reglamento + asistencia), no IA, y
+                    el timbrado exige dar de alta al PAC antes. Se describe lo que hace. */}
                 <p className="text-slate-500 mb-8 leading-relaxed">
-                  Calcula descuentos automáticos por retardos, genera la prenómina con IA y timbra (CFDI) a un clic. Exclusivo del plan PRO.
+                  Prenómina calculada con la asistencia y el reglamento de tu empresa, exportable
+                  a Excel y PDF, con recibos y timbrado CFDI una vez conectado tu PAC.
                 </p>
 
                 <div className="space-y-3 mb-8 text-left max-w-sm mx-auto">
                   <div className="flex items-center gap-3 text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <FileOutput size={18} className="text-emerald-500 shrink-0" /> Generación de Nómina en PDF.
+                    <FileOutput size={18} className="text-emerald-500 shrink-0" /> Prenómina en Excel y PDF.
                   </div>
                   <div className="flex items-center gap-3 text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <Zap size={18} className="text-emerald-500 shrink-0" /> Cálculo de Penalizaciones Automático.
+                    <Zap size={18} className="text-emerald-500 shrink-0" /> Descuentos por retardos y faltas según tu reglamento.
                   </div>
                   <div className="flex items-center gap-3 text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                    <CheckCircle2 size={18} className="text-emerald-500 shrink-0" /> Conexión a PAC (Facturación CFDI).
+                    <CheckCircle2 size={18} className="text-emerald-500 shrink-0" /> Timbrado CFDI (requiere conectar tu PAC).
                   </div>
                 </div>
 
-                <button onClick={() => setDemoTier('pro')} className="w-full py-3.5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group">
-                  <Lock size={18} className="text-slate-400 group-hover:text-white transition-colors" />
-                  [DEMO] Simular Mejora a PRO
-                </button>
+                {/* El botón era "[DEMO] Simular Mejora a PRO" y solo cambiaba un estado local:
+                    fingía la contratación. La adopción de módulos ya vive en el tablero. */}
+                <div className="w-full py-3.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium flex items-center justify-center gap-2">
+                  <Lock size={16} className="text-slate-400 shrink-0" />
+                  Actívalo en el tablero, en "Nuevos Módulos Disponibles".
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* TABS: AVANZADOS (PRO VIEW -> SIMULADOR IA) */}
-        {activeTab === 'avanzados' && demoTier === 'pro' && (
+        {activeTab === 'avanzados' && tieneAvanzados && (
           <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
             {isLoading ? (
                <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-16 text-center flex flex-col items-center justify-center min-h-[300px]">
@@ -234,16 +302,26 @@ export default function ReportesManager() {
                 {/* Resumen Superior */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-sm font-bold text-slate-500 mb-1">Nómina Base Bruta</p>
-                    <h4 className="text-3xl font-black text-slate-800">${totalBase.toLocaleString('es-MX')}</h4>
+                    <p className="text-sm font-bold text-slate-500 mb-1">Nómina Bruta del Periodo</p>
+                    <h4 className="text-3xl font-black text-slate-800">${totalBase.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
+                    {totalBonos > 0 && (
+                      <p className="text-[11px] text-slate-400 font-semibold mt-1">
+                        + ${totalBonos.toLocaleString('es-MX', { maximumFractionDigits: 2 })} en bonos de cumplimiento
+                      </p>
+                    )}
                   </div>
                   <div className="bg-rose-50 p-6 rounded-2xl border border-rose-100 shadow-sm">
-                    <p className="text-sm font-bold text-rose-600 mb-1 flex items-center gap-2"><AlertCircle size={14}/> Deducciones (Retardos)</p>
-                    <h4 className="text-3xl font-black text-rose-700">-${totalPenalties.toLocaleString('es-MX')}</h4>
+                    <p className="text-sm font-bold text-rose-600 mb-1 flex items-center gap-2"><AlertCircle size={14}/> Deducciones (Retardos y Faltas)</p>
+                    <h4 className="text-3xl font-black text-rose-700">-${totalPenalties.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
                   </div>
                   <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 shadow-sm">
                     <p className="text-sm font-bold text-emerald-600 mb-1">Total a Pagar (Neto)</p>
-                    <h4 className="text-3xl font-black text-emerald-700">${totalNet.toLocaleString('es-MX')}</h4>
+                    <h4 className="text-3xl font-black text-emerald-700">${totalNet.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
+                    {pendientesDeSalario > 0 && (
+                      <p className="text-[11px] text-amber-700 font-bold mt-1">
+                        No incluye {pendientesDeSalario} colaborador{pendientesDeSalario === 1 ? '' : 'es'} sin sueldo capturado
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -269,6 +347,19 @@ export default function ReportesManager() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
+                        {/* Sin esta fila, "cero empleados" se veía IGUAL que una nómina
+                            calculada que da cero: tres tarjetas en $0 y una tabla vacía. El
+                            dueño podía concluir que su semana valía cero y autorizarla. */}
+                        {payrollData.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-6 py-10 text-center">
+                              <p className="text-sm font-bold text-slate-700">No hay colaboradores en este periodo de nómina.</p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Da de alta a tu equipo en Recursos Humanos; aquí no hay nada que autorizar todavía.
+                              </p>
+                            </td>
+                          </tr>
+                        )}
                         {payrollData.map((emp) => (
                           <React.Fragment key={emp.id}>
                             <tr 
@@ -330,18 +421,20 @@ export default function ReportesManager() {
                                                   <span>🕒 Entrada: <strong>{day.entries.find((e: any) => e.type === 'check_in')?.time || '-'}</strong></span>
                                                   <span>🕒 Salida: <strong>{day.entries.find((e: any) => e.type === 'check_out')?.time || 'Faltante'}</strong></span>
                                                 </div>
-                                                {/* Excesos */}
-                                                {day.entries.filter((e: any) => e.type === 'meal_end').map((e: any) => {
-                                                  const d = JSON.parse(e.details || '{}');
-                                                  if (d.duration_minutes && d.duration_minutes > 60) {
-                                                    return (
-                                                      <div key={e.id} className="text-[9.5px] text-rose-500 font-bold bg-rose-50/50 p-1.5 rounded-lg border border-rose-100">
-                                                        ⚠️ Exceso Comida: {d.duration_minutes - 60} min
-                                                      </div>
-                                                    );
-                                                  }
-                                                  return null;
-                                                })}
+                                                {/* Exceso de comida. Antes se leía `duration_minutes`
+                                                    de los details del ponche —un campo que NADIE
+                                                    escribe— contra un umbral fijo de 60 min: el
+                                                    aviso no podía encenderse nunca y, de haberlo
+                                                    hecho, habría ignorado la comida contratada de
+                                                    cada quien. `meal_makeup_minutes` es el exceso
+                                                    que YA calcula la nómina, con los minutos de
+                                                    comida del empleado y la tolerancia de la LFT. */}
+                                                {day.meal_makeup_minutes > 0 && (
+                                                  <div className="text-[9.5px] text-rose-500 font-bold bg-rose-50/50 p-1.5 rounded-lg border border-rose-100">
+                                                    ⚠️ Exceso de comida: {day.meal_makeup_minutes} min
+                                                    {day.required_exit_time && <> · salida requerida {day.required_exit_time}</>}
+                                                  </div>
+                                                )}
                                               </div>
                                             ) : day.day_over ? (
                                               <div className="text-[10.5px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded inline-block">Falta / Inasistencia</div>
@@ -387,9 +480,12 @@ export default function ReportesManager() {
                   >
                     <FileText size={18} className="text-rose-600" /> Exportar PDF
                   </button>
+                  {/* Sin nada calculado no hay nada que autorizar: el botón estaba activo
+                      sobre una tabla vacía. */}
                   <button
                     onClick={handleApprovePayroll}
-                    className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all hover:-translate-y-0.5"
+                    disabled={payrollData.length === 0}
+                    className="px-8 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   >
                     <DollarSign size={20} /> Autorizar Pago de Nómina
                   </button>

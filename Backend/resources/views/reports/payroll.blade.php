@@ -111,12 +111,23 @@
         <p>Talent360 — Gestión Automatizada de Nómina</p>
     </div>
 
+    {{-- Un reporte de PRUEBA salía idéntico al real: en el escritorio de alguien no había
+         forma de saber cuál era cuál. --}}
+    @if (!empty($esSimulacion))
+        <div style="background-color:#fef3c7; border:2px solid #f59e0b; color:#92400e; padding:10px; margin-bottom:12px; text-align:center; font-weight:bold;">
+            DOCUMENTO DE SIMULACIÓN — datos del Simulador Matrix, NO es la nómina real de la empresa.
+        </div>
+    @endif
+
     <table class="meta-table">
         <tr>
             <td class="label">Fecha Emisión:</td>
             <td>{{ now()->format('d/m/Y H:i') }}</td>
             <td class="label">Rango Reporte:</td>
-            <td>Últimos 15 Días (Quincenal)</td>
+            {{-- Decía "Últimos 15 Días (Quincenal)" escrito a mano, sin importar qué periodo
+                 se estuviera exportando: el PDF de la prenómina mentía sobre su propio rango
+                 (una semana del 27-jul al 02-ago se archivaba como "quincenal"). --}}
+            <td>Del {{ $startDate }} al {{ $endDate }}</td>
         </tr>
         <tr>
             <td class="label">Generado por:</td>

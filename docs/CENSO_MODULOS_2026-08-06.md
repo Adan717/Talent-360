@@ -14,6 +14,7 @@ pruebas. Sirve para decidir **qué se audita después** de Reloj, Tareas y Acade
 | **Academia 360** | AC1–AC10 cerrados. Circuito probado de punta a punta con un colaborador real. |
 | **Archivo Digital** | Construido de cero en la ronda 2026-08 (era mockup). `ArchivoDigitalTest` 12 casos. |
 | **Monitor 360 + Chat** | Ronda "la pantalla dice la verdad" 2026-08-08: 12 correcciones, `MonitorDiceLaVerdadTest`. |
+| **Reportes IA** | Ronda 2026-08-08: los 2 CSV "gratis" construidos de verdad, fuera el gate DEMO. `ReportesBasicosTest`. |
 
 De paso quedaron tocados: el **asistente de alta** (catálogo único, confirmación de organigrama),
 el **organigrama** (dos representaciones, comando de reparación), el **Monitor** (modo privado del

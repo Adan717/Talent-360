@@ -33,7 +33,14 @@ class PayrollController extends Controller
             // Predeterminado: el último periodo CERRADO del tenant según su periodicidad
             // (N3/#17). Es lo que el batch calcula, el trabajador firma y la empresa
             // autoriza — el periodo en curso no tiene nada autorizable.
-            [$start, $end] = $this->weekService->lastClosedPeriodFor($tenantId, Carbon::now());
+            // "Ahora" en la zona del TENANT, no en UTC: con `Carbon::now()` el periodo de
+            // nómina saltaba al siguiente a las 18:00 hora de México (medianoche UTC), así
+            // que la misma pantalla mostraba un periodo por la tarde y otro por la noche —
+            // y el Excel/PDF salían del periodo equivocado. Familia H10/H21.
+            [$start, $end] = $this->weekService->lastClosedPeriodFor(
+                $tenantId,
+                Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))
+            );
             $startDate = $start->toDateString();
             $endDate = $end->toDateString();
         } else {
@@ -56,11 +63,27 @@ class PayrollController extends Controller
     {
         // Obtener todos los empleados activos del tenant
         $tenantId = auth()->user()->tenant_id ?? 1;
-        $employees = Employee::where('tenant_id', $tenantId)
-            ->where('is_active_employee', '!=', false)
-            ->get();
 
         [$startDate, $endDate] = $this->getPeriodDates($request);
+
+        // Activos MÁS quien ya tiene nómina de este periodo aunque hoy esté dado de baja.
+        //
+        // Con sólo `is_active_employee != false`, alguien que trabajó la semana, firmó su
+        // recibo y salió de la empresa el lunes DESAPARECÍA de la tabla y de los totales —
+        // pero "Autorizar Pago de Nómina" sí autorizaba su pago (autorizarPeriodoCompleto
+        // recorre las WeeklyPayroll del periodo, no la plantilla de hoy). La pantalla no
+        // mostraba lo que el botón autoriza, y quien ya trabajó tiene que cobrar.
+        $conNominaDelPeriodo = \App\Models\WeeklyPayroll::where('tenant_id', $tenantId)
+            ->where('start_date', $startDate)
+            ->where('end_date', $endDate)
+            ->pluck('employee_id');
+
+        $employees = Employee::where('tenant_id', $tenantId)
+            ->where(function ($q) use ($conNominaDelPeriodo) {
+                $q->where('is_active_employee', '!=', false)
+                    ->orWhereIn('id', $conNominaDelPeriodo);
+            })
+            ->get();
 
         // "Reportes de Prueba" (sección 13 del contrato): un admin/platform_admin puede
         // pedir explícitamente el cálculo de nómina usando datos de una sesión del
@@ -93,9 +116,24 @@ class PayrollController extends Controller
                 // float (`2722.222222222221`), que el panel pintaba como "2,722.222" —tres
                 // decimales en pesos— y que también viajaba al Excel y al PDF de prenómina.
                 'base' => round((float) $payroll['salary']['base'], 2),
+                // BRUTO del periodo (diario × días + prima de festivo) y bono de cumplimiento:
+                // sin ellos, la pantalla derivaba su propio total (Σbase − Σpenalty) que NO
+                // coincidía con la columna "Neto a Pagar" de la tabla de abajo — dos cifras
+                // distintas para el mismo dinero, y la grande no era la que se paga.
+                'gross' => round((float) $payroll['salary']['gross'], 2),
+                'compliance_bonus' => round((float) $payroll['salary']['compliance_bonus'], 2),
                 'penalty' => round((float) $payroll['deductions_breakdown']['total'], 2),
                 'net' => round((float) $payroll['salary']['net'], 2),
-                'salary_pending' => ($payroll['salary']['base'] === null || $payroll['salary']['base'] <= 0),
+                // Se mira el EXPEDIENTE, no el resultado del cálculo: calculatePayrollForEmployee
+                // sustituye el salario faltante por un default de $2,400 (fórmula histórica que
+                // no se toca sin informe de impacto), así que preguntándole a `salary.base` este
+                // aviso NUNCA se encendía y la pantalla presentaba como sueldo real una cifra
+                // que nadie capturó. Aquí se pregunta si hay salario capturado de verdad.
+                'salary_pending' => (
+                    ($employee->salario_diario === null || (float) $employee->salario_diario <= 0)
+                    && ($employee->base_salary === null || (float) $employee->base_salary <= 0)
+                    && ($employee->salary === null || (float) $employee->salary <= 0)
+                ),
                 'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
                 'approval_status' => $payroll['approval']['status'],
                 'cfdi_uuid' => $payroll['approval']['cfdi_uuid'],
@@ -132,15 +170,31 @@ class PayrollController extends Controller
         $payroll = $this->calculatePayrollData($request);
         [$startDate, $endDate] = $this->getPeriodDates($request);
 
+        // Cada total es la SUMA de su columna. Antes el neto se derivaba aquí como
+        // (Σbase − Σpenalty) igual que en la pantalla, así que el PDF de prenómina no
+        // cuadraba con su propia columna "Neto a Pagar": `base` es el sueldo del
+        // expediente, no el bruto del periodo, y el neto real tiene tope en 0 y suma el
+        // bono de cumplimiento. Un documento de nómina no puede no cuadrar consigo mismo.
         $totalBase = 0;
         $totalPenalties = 0;
+        $totalNet = 0;
         foreach ($payroll as $emp) {
             if (!$emp['salary_pending']) {
-                $totalBase += $emp['base'];
+                $totalBase += $emp['gross'];
                 $totalPenalties += $emp['penalty'];
+                $totalNet += $emp['net'];
             }
         }
-        $totalNet = $totalBase - $totalPenalties;
+        $totalBase = round($totalBase, 2);
+        $totalPenalties = round($totalPenalties, 2);
+        $totalNet = round($totalNet, 2);
+
+        // Un reporte de PRUEBA (datos del Simulador Matrix) salía con el MISMO nombre y el
+        // mismo aspecto que el real: imposible distinguir en el escritorio de alguien cuál
+        // era cuál. La regla del contrato es que los datos simulados nunca se confundan con
+        // los reales, así que el archivo lo dice desde el nombre y desde la portada.
+        $esSimulacion = (bool) $request->query('simulation_session_id');
+        $prefijo = $esSimulacion ? 'SIMULACION_prenomina_' : 'prenomina_';
 
         if ($format === 'pdf') {
             $pdf = Pdf::loadView('reports.payroll', [
@@ -149,12 +203,25 @@ class PayrollController extends Controller
                 'totalPenalties' => $totalPenalties,
                 'totalNet' => $totalNet,
                 'startDate' => $startDate,
-                'endDate' => $endDate
+                'endDate' => $endDate,
+                'esSimulacion' => $esSimulacion,
             ]);
-            return $pdf->download('prenomina_' . $startDate . '_' . $endDate . '.pdf');
+            return $pdf->download($prefijo . $startDate . '_' . $endDate . '.pdf');
         }
 
         // Predeterminado a Excel/XLSX
+        // La columna de la firma imprimía el enum crudo de la base ("pending_employee"):
+        // el que abre el Excel es el dueño, no un programador.
+        $etiquetasFirma = [
+            'draft' => 'Borrador (sin cerrar)',
+            'pending_employee' => 'Falta firma del colaborador',
+            'approved_by_employee' => 'Firmada por el colaborador',
+            'approved_by_admin' => 'Autorizada',
+            'finalized' => 'Finalizada',
+            'stamped' => 'Timbrada',
+            'rejected' => 'Rechazada',
+        ];
+
         $exportData = [];
         foreach ($payroll as $emp) {
             $exportData[] = [
@@ -162,21 +229,31 @@ class PayrollController extends Controller
                 $emp['role'],
                 $emp['lates'],
                 $emp['absences'],
-                $emp['salary_pending'] ? 'Pendiente' : $emp['base'],
+                // El "Salario Base" de la columna es el BRUTO del periodo, que es contra lo
+                // que se restan las deducciones para llegar al neto de la fila de al lado.
+                $emp['salary_pending'] ? 'Pendiente' : $emp['gross'],
                 $emp['salary_pending'] ? 0 : $emp['penalty'],
                 $emp['salary_pending'] ? 'Pendiente' : $emp['net'],
-                $emp['approval_status']
+                $etiquetasFirma[$emp['approval_status']] ?? $emp['approval_status'],
             ];
         }
 
-        return Excel::download(new class($exportData) implements FromArray, WithHeadings {
+        $encabezadoPeriodo = ($esSimulacion ? 'SIMULACIÓN — ' : '')
+            . "Prenómina del {$startDate} al {$endDate}";
+
+        return Excel::download(new class($exportData, $encabezadoPeriodo) implements FromArray, WithHeadings {
             protected $data;
-            public function __construct(array $data) { $this->data = $data; }
+            protected $periodo;
+            public function __construct(array $data, string $periodo) { $this->data = $data; $this->periodo = $periodo; }
             public function array(): array { return $this->data; }
             public function headings(): array {
-                return ["Colaborador", "Puesto", "Retardos", "Faltas", "Salario Base", "Penalización", "Neto a Pagar", "Firma Empleado"];
+                // El archivo no decía de qué periodo era: dos descargas distintas se veían iguales.
+                return [
+                    [$this->periodo],
+                    ["Colaborador", "Puesto", "Retardos", "Faltas", "Bruto del Periodo", "Penalización", "Neto a Pagar", "Firma Empleado"],
+                ];
             }
-        }, 'prenomina_' . $startDate . '_' . $endDate . '.xlsx');
+        }, $prefijo . $startDate . '_' . $endDate . '.xlsx');
     }
 
     /**

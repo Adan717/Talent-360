@@ -513,6 +513,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware('throttle:5,1')->post('/store-opening/emergency-open', [StoreOpeningController::class, 'emergencyOpen']);
         Route::post('/clock/declare-contingency', [TimeEntryController::class, 'declareContingency']);
         Route::post('/clock/meal-photo', [TimeEntryController::class, 'uploadMealPhoto']);
+        // La evidencia de comedor sale SOLO por aquí (antes era un archivo estático público,
+        // sin autenticación y con nombre adivinable). El controlador decide si quien pregunta
+        // es el dueño de la cara o un mando de su empresa.
+        Route::get('/clock/meal-evidence/{uuid}', [TimeEntryController::class, 'showMealEvidence']);
 
         // Monedero Digital y Recompensas (Wallet) — merge: estaba en el grupo ADMIN, así que el
         // EMPLEADO recibía 403 al abrir su propio monedero en TaskRunner (el catch lo silenciaba y

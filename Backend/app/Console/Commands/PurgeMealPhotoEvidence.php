@@ -26,7 +26,18 @@ class PurgeMealPhotoEvidence extends Command
 
         $deletedFiles = 0;
         foreach ($old as $evidence) {
-            if ($evidence->path && file_exists($evidence->path)) {
+            if (!$evidence->path) {
+                continue;
+            }
+
+            // Desde 2026-08-08 `path` es una ruta RELATIVA del disco privado. Se mantiene el
+            // camino absoluto para las filas viejas que aún no pasaron por `meal-evidence:privatizar`:
+            // si la purga no las reconoce, borra la fila y deja el archivo huérfano — que es
+            // justo como quedó un biométrico público en el servidor sin registro que lo nombrara.
+            if (\Illuminate\Support\Facades\Storage::disk('local')->exists($evidence->path)) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($evidence->path);
+                $deletedFiles++;
+            } elseif (file_exists($evidence->path)) {
                 @unlink($evidence->path);
                 $deletedFiles++;
             }

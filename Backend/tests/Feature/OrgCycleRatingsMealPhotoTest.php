@@ -164,10 +164,15 @@ class OrgCycleRatingsMealPhotoTest extends TestCase
             'type' => 'meal_start',
         ]);
 
+        // Desde 2026-08-08 la evidencia vive en el disco PRIVADO y `path` es una ruta
+        // relativa a él. Antes esta prueba comprobaba un archivo dentro de `public/`, que
+        // era justamente el agujero: servido por nginx sin autenticación. El contrato
+        // completo está en EvidenciaComedorPrivadaTest.
         $path = DB::table('meal_photo_evidences')->where('employee_id', $user->id)->value('path');
-        $this->assertFileExists($path);
+        $this->assertStringStartsWith('meal-evidence/', $path);
+        \Illuminate\Support\Facades\Storage::disk('local')->assertExists($path);
 
-        @unlink($path);
+        \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
     }
 
     public function test_meal_photo_rejects_invalid_format(): void

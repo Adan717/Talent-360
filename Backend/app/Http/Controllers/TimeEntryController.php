@@ -247,8 +247,49 @@ class TimeEntryController extends Controller
     }
 
     /**
+     * Única puerta de salida de la evidencia de comedor (ronda 2026-08-08).
+     *
+     * La foto vive en disco PRIVADO; aquí se valida quién pregunta antes de entregarla:
+     * el propio colaborador (es su cara) o un mando de SU MISMA empresa (para eso es la
+     * evidencia). Antes no había puerta: el archivo estaba servido como estático público
+     * y respondía 200 a cualquiera con la URL.
+     */
+    public function showMealEvidence(Request $request, string $uuid)
+    {
+        // El uuid llega de la URL y se usa en un LIKE: se valida el formato antes de tocar
+        // la consulta, y el tenant siempre va explícito.
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+            abort(404);
+        }
+
+        $user = auth()->user();
+
+        $evidencia = \App\Models\MealPhotoEvidence::withoutGlobalScopes()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('path', 'like', "%/{$uuid}.%")
+            ->first();
+
+        if (!$evidencia) {
+            abort(404);
+        }
+
+        $esSuya = (int) $evidencia->employee_id === (int) $user->id;
+        $esMando = in_array($user->role, ['admin', 'supervisor'], true);
+
+        if (!$esSuya && !$esMando) {
+            abort(403, 'Esta evidencia no es tuya.');
+        }
+
+        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($evidencia->path)) {
+            abort(404);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($evidencia->path);
+    }
+
+    /**
      * Evidencia fotográfica de comedor (estados #17/#18b) — recibe la foto en base64,
-     * la guarda en disco y persiste la referencia.
+     * la guarda en disco PRIVADO y persiste la referencia.
      */
     public function uploadMealPhoto(Request $request)
     {
@@ -281,24 +322,31 @@ class TimeEntryController extends Controller
         $user = auth()->user();
         $tenantId = $user->tenant_id ?? 1;
 
-        $filename = "meal_{$validated['type']}_{$user->id}_" . now()->format('YmdHis') . '_' . \Illuminate\Support\Str::random(6) . ".{$extension}";
-        $relativeDir = "uploads/meal-evidence/{$tenantId}";
-        $destinationPath = public_path($relativeDir);
-        if (!file_exists($destinationPath)) {
-            mkdir($destinationPath, 0755, true);
-        }
-        $fullPath = $destinationPath . DIRECTORY_SEPARATOR . $filename;
-        file_put_contents($fullPath, $decoded);
+        // STORAGE PRIVADO (ronda 2026-08-08). Antes esto iba a `public_path()`, o sea que la
+        // foto de una persona quedaba servida como archivo estático SIN autenticación: se
+        // comprobó en el servidor que respondía 200 image/jpeg a cualquiera que pidiera la
+        // URL. Encima el nombre era adivinable (tipo + user_id + fecha + 6 al azar) y la
+        // purga a 90 días borraba la FILA dejando el archivo público para siempre.
+        //
+        // Mismo patrón que el Archivo Digital: nombre uuid en disco privado y una sola
+        // puerta de salida, el endpoint autenticado `meal-evidence/{id}`.
+        // El uuid identifica la evidencia hacia afuera: no es adivinable como lo era
+        // "meal_meal_start_{user_id}_{fecha}", y se conoce antes de insertar.
+        $uuid = (string) \Illuminate\Support\Str::uuid();
+        $relativePath = "meal-evidence/{$tenantId}/{$uuid}.{$extension}";
+        \Illuminate\Support\Facades\Storage::disk('local')->put($relativePath, $decoded);
 
-        $url = "/{$relativeDir}/{$filename}";
+        $url = "/api/v1/clock/meal-evidence/{$uuid}";
 
         \App\Models\MealPhotoEvidence::create([
             'tenant_id' => $tenantId,
             'employee_id' => $user->id,
             'date' => $validated['date'],
             'type' => $validated['type'],
+            // `url` deja de ser una ruta servible y pasa a ser el endpoint que valida quién
+            // pregunta; `path` es la ruta dentro del disco privado.
             'url' => $url,
-            'path' => $fullPath,
+            'path' => $relativePath,
         ]);
 
         return response()->json(['success' => true, 'url' => $url]);

@@ -1965,9 +1965,9 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                 : `${sinPuesto.length} colaboradores sin puesto asignado`}
                            </p>
                            <p className="text-xs text-amber-800 font-medium mt-0.5 leading-snug">
-                              {sinPuesto.map((u: any) => u.name).join(', ')} — no pueden fichar por el
-                              kiosco, no aparecen en el organigrama y no se les puede otorgar ninguna
-                              capacidad (Monitor, tareas, aperturas). Ábreles la ficha y asígnales puesto.
+                              {sinPuesto.map((u: any) => u.name).join(', ')} — {sinPuesto.length === 1
+                                ? 'no puede fichar por el kiosco, no aparece en el organigrama y no se le puede otorgar ninguna capacidad (Monitor, tareas, aperturas). Ábrele la ficha y asígnale puesto.'
+                                : 'no pueden fichar por el kiosco, no aparecen en el organigrama y no se les puede otorgar ninguna capacidad (Monitor, tareas, aperturas). Ábreles la ficha y asígnales puesto.'}
                            </p>
                         </div>
                      </div>

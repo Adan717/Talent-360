@@ -44,6 +44,8 @@ class EmailFlowTest extends TestCase
             'name' => 'Nuevo Colaborador',
             'email' => 'colab@empresa.com',
             'role' => 'empleado',
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
             'job_role_id' => $jobRole->id,
         ]);

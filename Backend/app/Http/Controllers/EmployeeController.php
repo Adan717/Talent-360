@@ -76,6 +76,40 @@ class EmployeeController extends Controller
         return $data;
     }
 
+    /**
+     * Horario de la EMPRESA cuando el alta no trae uno (decisión del dueño, 2026-08-08).
+     *
+     * Antes `shiftStart`/`shiftEnd` quedaban NULL y el reloj asumía 09:00 para todos: a quien
+     * entra a las 11:00 le contaba dos horas de retardo desde su primer día. El horario de la
+     * empresa vive en `system_settings.storeSchedule` (openTime/closeTime), que es lo que el
+     * asistente de alta configura.
+     */
+    private function heredarHorarioDeLaEmpresa(array $data, ?int $tenantId): array
+    {
+        $faltaInicio = empty($data['shiftStart']);
+        $faltaFin = empty($data['shiftEnd']);
+
+        if (!$faltaInicio && !$faltaFin) {
+            return $data;
+        }
+
+        $horario = DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'storeSchedule')
+            ->value('value');
+
+        $horario = $horario ? json_decode($horario, true) : null;
+
+        if ($faltaInicio) {
+            $data['shiftStart'] = $horario['openTime'] ?? '09:00';
+        }
+        if ($faltaFin) {
+            $data['shiftEnd'] = $horario['closeTime'] ?? '18:00';
+        }
+
+        return $data;
+    }
+
     public function store(Request $request)
     {
         $currentUser = auth()->user() ?? auth('sanctum')->user();
@@ -139,7 +173,17 @@ class EmployeeController extends Controller
         if ($email !== null) {
             $request->merge(['email' => $email]);
         }
-        $password = $request->input('password', 'password123');
+
+        // CONTRASEÑA (2026-08-08). Antes el default era la cadena fija `password123`: TODA la
+        // plantilla de TODAS las empresas compartía la misma contraseña, conocida y publicada
+        // en el propio código. Ahora, si el alta no trae una, se genera una aleatoria que nadie
+        // conoce —ni nosotros— y la persona fija la suya al activar su cuenta con el PIN de la
+        // invitación (ver OnboardingController::completeActivation). El admin también puede
+        // ponerle una a mano desde RRHH.
+        //
+        // Las cuentas YA existentes no se tocan: rotarlas aquí dejaría fuera a quien está
+        // trabajando hoy. Se cambian al activarse o desde el panel.
+        $password = $request->input('password') ?: \Illuminate\Support\Str::random(32);
 
         // 3. Verificar si ya existe un colaborador con este email en el tenant
         $existingEmployee = Employee::withoutGlobalScopes()->where('email', $email)->where('tenant_id', $tenantId)->first();
@@ -202,14 +246,27 @@ class EmployeeController extends Controller
             ]);
         }
 
+        // SUELDO OBLIGATORIO (decisión del dueño, 2026-08-08). Sin sueldo capturado, el cálculo
+        // de nómina sustituye el hueco por un default escondido de $2,400 y la persona aparece
+        // con un sueldo que nadie tecleó. Se pide al dar de alta, que es cuando se sabe.
+        // Se acepta por cualquiera de las dos columnas (el formulario manda `salary`, la
+        // autoritativa es `base_salary`; `espejarSueldo` las sincroniza después).
+        if ($request->input('base_salary') === null && $request->input('salary') === null) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'salary' => ['Captura el sueldo del colaborador: sin él, la nómina no puede calcularse.'],
+            ]);
+        }
+
         $data = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email',
             // §49: solo roles de empresa (ver nota arriba).
             'role' => 'required|string|in:admin,supervisor,empleado',
-            'job_role_id' => 'nullable|integer|exists:job_roles,id',
+            // El puesto se valida DENTRO de la empresa: con `exists:job_roles,id` a secas se
+            // aceptaba el id de un puesto de OTRO tenant.
+            'job_role_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('job_roles', 'id')->where('tenant_id', $tenantId)],
             'contract_type' => 'nullable|string',
-            'salary' => 'nullable|numeric',
+            'salary' => 'nullable|numeric|min:0.01',
             'is_active' => 'nullable|boolean',
             'is_active_employee' => 'nullable|boolean',
             'shiftStart' => 'nullable|string',
@@ -233,7 +290,7 @@ class EmployeeController extends Controller
             'hire_date' => 'required|date',
             'mealMinutes' => 'nullable|integer',
             'restDay' => 'nullable|string',
-            'base_salary' => 'nullable|numeric',
+            'base_salary' => 'nullable|numeric|min:0.01',
                 'salary_periodicity' => 'nullable|string|in:diario,semanal,quincenal,mensual',
             'avatar' => 'sometimes|nullable|string',
         ]);
@@ -242,6 +299,12 @@ class EmployeeController extends Controller
         // `base_salary_at_time` del ponche la leen; con NULL caen al default de $300). El FE
         // del alta manda `salary`, así que se espejan ambas venga la que venga.
         $data = $this->espejarSueldo($data);
+
+        // TURNO POR DEFECTO DE LA EMPRESA (decisión del dueño, 2026-08-08). Si el alta no
+        // declara horario, se hereda el de la empresa (`storeSchedule`) en vez de dejarlo en
+        // NULL: con NULL el reloj asumía 09:00 para todo el mundo, así que a quien entra a las
+        // 11:00 le contaba dos horas de retardo desde su primer día.
+        $data = $this->heredarHorarioDeLaEmpresa($data, $tenantId);
 
         try {
             DB::beginTransaction();
@@ -339,6 +402,7 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
         $currentUser = auth()->user() ?? auth('sanctum')->user();
         $tenant = $currentUser ? $currentUser->tenant : null;
+        $tenantId = $currentUser ? $currentUser->tenant_id : null;
 
         // H3: misma normalización que en el alta (ver EmailNormalizer).
         if ($request->has('email')) {
@@ -373,10 +437,19 @@ class EmployeeController extends Controller
 
         $data = $request->validate([
             'name' => 'sometimes|string',
-            'email' => 'sometimes|email',
+            // El correo es la llave de acceso: si ya lo usa OTRA cuenta, el índice único
+            // reventaba con un 500 que le enseñaba al usuario el SQL crudo. Se valida y se
+            // responde con el mensaje del formulario, ignorando la propia cuenta.
+            'email' => [
+                'sometimes',
+                'email',
+                \Illuminate\Validation\Rule::unique('users', 'email')->ignore($employee->user_id),
+            ],
             // §49: solo roles de empresa (ver nota arriba).
             'role' => 'sometimes|string|in:admin,supervisor,empleado',
-            'job_role_id' => 'sometimes|nullable|integer|exists:job_roles,id',
+            // El puesto se valida DENTRO de la empresa: con `exists:job_roles,id` a secas se
+            // aceptaba el id de un puesto de OTRO tenant.
+            'job_role_id' => ['sometimes', 'nullable', 'integer', \Illuminate\Validation\Rule::exists('job_roles', 'id')->where('tenant_id', $tenantId)],
             'contract_type' => 'sometimes|nullable|string',
             'is_active' => 'sometimes|boolean',
             'is_active_employee' => 'sometimes|boolean',

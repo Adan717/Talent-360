@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import PendientesDeMiEquipo from './PendientesDeMiEquipo';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
@@ -57,7 +57,13 @@ const JobRoleCardItem: React.FC<JobRoleCardItemProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const employeesWithRole = users.filter((u: any) => u.job_role_id === rol.id || (Array.isArray(u.job_role_ids) && u.job_role_ids.includes(rol.id))).length;
+  // "Equipo N" y el semáforo Activo/Inactivo del puesto contaban también a los ARCHIVADOS:
+  // un puesto del que ya se fue todo el mundo seguía saliendo con gente y en verde. Se cuenta
+  // la plantilla activa, que es lo que la etiqueta promete.
+  const employeesWithRole = users.filter((u: any) =>
+    (u.is_active_employee !== false && u.is_active_employee !== 0) &&
+    (u.job_role_id === rol.id || (Array.isArray(u.job_role_ids) && u.job_role_ids.includes(rol.id)))
+  ).length;
   const roleVacancies = vacancies.filter((v: any) => v.job_role_id === rol.id);
   const isAutoActive = employeesWithRole > 0;
   
@@ -523,17 +529,19 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const getUserKeysIcon = (userId: number) => {
     try {
       const isSandbox = useAppStore.getState().isSandboxMode;
+      // Sin datos del servidor NO se inventan portadores de llaves. Antes, si
+      // /store-opening/assignments fallaba (fetchData sólo guarda en localStorage cuando la
+      // respuesta llega), el navegador daba por hecho que los empleados 11, 12 y 13 eran los
+      // portadores y les pintaba la llave a quienes tuvieran esos ids: una custodia de llaves
+      // de la sucursal fabricada en el navegador. En el Simulador Matrix, que es una
+      // demostración declarada, se conservan los de ejemplo.
       const savedAss = localStorage.getItem('store_opening_assignments');
       const assignments = savedAss ? JSON.parse(savedAss) : (
         isSandbox ? [
           { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
           { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
           { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ] : [
-          { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ]
+        ] : []
       );
       // §29 (docs/BACKEND_INTERFACES.md): preferir resolved_user_id (users.id, ya resuelto por
       // backend) sobre el employee_id crudo (employees.id) que trae /store-opening/assignments.
@@ -554,11 +562,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
           { id: 1, employee_id: 1, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
           { id: 2, employee_id: 2, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
           { id: 3, employee_id: 3, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ] : [
-          { id: 11, employee_id: 11, priority_order: 1, can_open_store: true, has_keys: true, is_active: true },
-          { id: 12, employee_id: 12, priority_order: 2, can_open_store: true, has_keys: true, is_active: true },
-          { id: 13, employee_id: 13, priority_order: 3, can_open_store: true, has_keys: true, is_active: true }
-        ]
+        ] : []
       );
       // §29: preferir resolved_user_id (users.id) sobre employee_id crudo (employees.id).
       const authorizedUserIds = assignments
@@ -928,6 +932,8 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [newUserSalaryPeriodicidad, setNewUserSalaryPeriodicidad] = useState('semanal');
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingUserTab, setEditingUserTab] = useState<'personal'|'laboral'|'accesos'|'expediente'>('personal');
+  // Resumen REAL del expediente (Archivo Digital). null = aún consultando.
+  const [expedienteDocs, setExpedienteDocs] = useState<{ subidos: number; faltantes: number; error?: boolean } | null>(null);
   const [editingJobRole, setEditingJobRole] = useState<any>(null);
   const [editingJobRoleTab, setEditingJobRoleTab] = useState<'perfil'|'reglas'>('perfil');
   const [newUserRole, setNewUserRole] = useState('');
@@ -1134,9 +1140,38 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
     return `@${subdomain || 'decorarte360'}.com`;
   };
 
+  // Al abrir la pestaña "Expediente" se pregunta al Archivo Digital qué tiene esa persona
+  // de verdad, en vez de pintar dos enlaces a ninguna parte.
+  useEffect(() => {
+    if (editingUserTab !== 'expediente' || !editingUser?.id) {
+      return;
+    }
+    let vigente = true;
+    setExpedienteDocs(null);
+    axiosInstance.get(`/admin/documentos/expedientes/${editingUser.id}`)
+      .then((res) => {
+        if (!vigente) return;
+        const checklist = res.data?.checklist || [];
+        const extras = res.data?.extras || [];
+        setExpedienteDocs({
+          subidos: checklist.filter((c: any) => c.doc).length + extras.length,
+          faltantes: checklist.filter((c: any) => !c.doc).length,
+        });
+      })
+      .catch(() => vigente && setExpedienteDocs({ subidos: 0, faltantes: 0, error: true }));
+    return () => { vigente = false; };
+  }, [editingUserTab, editingUser?.id]);
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName || !newUserRole) return;
+    // El sueldo es obligatorio (decisión del dueño): sin él la nómina sustituye el hueco por
+    // un default escondido y la persona aparece con un sueldo que nadie tecleó. El servidor
+    // también lo exige; esto es para decirlo antes de mandar el formulario.
+    if (!newUserSalary || parseFloat(newUserSalary) <= 0) {
+      alert('Captura el sueldo del colaborador: sin él, su nómina no se puede calcular.');
+      return;
+    }
     try {
       const companyDomain = getCompanyDomain();
       const res = await axiosInstance.post('/employees', {
@@ -1146,7 +1181,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         // H3: sin normalizar, "Adán Cuéllar" generaba `adáncuéllar@...` — un correo con
         // diacríticos exige SMTPUTF8 y la invitación de bienvenida fallaba en silencio.
         email: `${slugParaCorreo(newUserName)}${companyDomain}`,
-        password: 'password123',
+        // Sin `password`: el servidor genera una aleatoria que nadie conoce y la persona fija
+        // la suya al activar su cuenta con el PIN de la invitación. Antes se mandaba
+        // 'password123' desde aquí, así que toda la plantilla de todas las empresas
+        // compartía la misma contraseña, escrita en el código del navegador.
         // H4: antes iba 'empleado' fijo — para nombrar un supervisor o un admin había que dar
         // de alta y DESPUÉS editar su ficha. El backend ya valida in:admin,supervisor,empleado.
         role: newUserSystemRole,
@@ -1820,7 +1858,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
             }
           ]}
           items={[
-            { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.length },
+            // Misma cuenta que el escritorio: sólo plantilla ACTIVA. El badge del celular
+            // usaba `users.length` (con archivados), así que el mismo dato daba un número
+            // distinto según el aparato desde el que se mirara.
+            { id: 'directorio', label: 'Colaboradores', icon: <Users />, badge: users.filter((u: any) => u.is_active_employee !== false && u.is_active_employee !== 0).length },
             { id: 'puestos', label: 'Puestos', icon: <Briefcase />, badge: jobRoles.length },
             { id: 'organigrama', label: 'Organigrama', icon: <Network /> },
             // También en el dock móvil: el encargado de piso trae el celular, no una laptop —
@@ -2341,24 +2382,47 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                            </div>
                         )}
 
+                        {/* Esta pestaña era una maqueta: decía "Examen no realizado aún" pasara
+                            lo que pasara, y ofrecía dos enlaces a `#` con documentos que nadie
+                            había subido. Ahora la inducción sale del expediente real y los
+                            documentos del Archivo Digital, que es donde viven de verdad. */}
                         {editingUserTab === 'expediente' && (
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                               <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
                                  <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2 text-xs sm:text-sm">
-                                    <Shield size={18} className="text-slate-500" /> Resultados de Inducción
+                                    <Shield size={18} className="text-slate-500" /> Inducción
                                  </h4>
-                                 <p className="text-slate-500 italic text-xs sm:text-sm">Examen no realizado aún.</p>
+                                 {editingUser?.user?.has_completed_induction ? (
+                                    <p className="text-emerald-700 text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                                       <CheckCircle2 size={15} /> Inducción completada
+                                    </p>
+                                 ) : (
+                                    <p className="text-amber-700 text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                                       <AlertTriangle size={15} /> Inducción pendiente
+                                    </p>
+                                 )}
                               </div>
                               <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
-                                 <h4 className="font-bold text-slate-800 mb-3 text-xs sm:text-sm">Documentación Adjunta</h4>
-                                 <div className="space-y-3">
-                                    <a href="#" className="flex items-center gap-2 text-blue-600 hover:underline text-xs sm:text-sm font-medium">
-                                       <FileText size={16} /> Currículum Vitae (PDF)
-                                    </a>
-                                    <a href="#" className="flex items-center gap-2 text-blue-600 hover:underline text-xs sm:text-sm font-medium">
-                                       <User size={16} /> Identificación Oficial (INE)
-                                    </a>
-                                 </div>
+                                 <h4 className="font-bold text-slate-800 mb-2 text-xs sm:text-sm">Documentación</h4>
+                                 {expedienteDocs === null ? (
+                                    <p className="text-slate-400 italic text-xs sm:text-sm">Consultando el Archivo Digital…</p>
+                                 ) : expedienteDocs.error ? (
+                                    <p className="text-slate-500 text-xs sm:text-sm">
+                                       No se pudo consultar el Archivo Digital.
+                                    </p>
+                                 ) : (
+                                    <>
+                                       <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                                          <span className="font-black text-slate-800">{expedienteDocs.subidos}</span> documento{expedienteDocs.subidos === 1 ? '' : 's'} en su expediente
+                                          {expedienteDocs.faltantes > 0 && (
+                                             <span className="text-rose-600 font-bold"> · {expedienteDocs.faltantes} faltante{expedienteDocs.faltantes === 1 ? '' : 's'}</span>
+                                          )}
+                                       </p>
+                                       <p className="text-[11px] text-slate-400 mt-2">
+                                          Los documentos se suben y validan en el módulo Archivo Digital.
+                                       </p>
+                                    </>
+                                 )}
                               </div>
                            </div>
                         )}
@@ -2554,14 +2618,22 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                            {/* Campo: Salario Base */}
                            <div className="group">
-                              <label className="block text-[11px] font-black text-slate-400 group-focus-within:text-blue-600 uppercase tracking-wider mb-1.5 transition-colors">Salario Base</label>
+                              <label className="block text-[11px] font-black text-slate-400 group-focus-within:text-blue-600 uppercase tracking-wider mb-1.5 transition-colors">
+                                 Salario Base <span className="text-rose-500">*</span>
+                              </label>
                               <div className="flex gap-2">
                                  <div className="relative flex-1">
                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                        <DollarSign size={18} />
                                     </div>
+                                    {/* Obligatorio (decisión del dueño): sin sueldo, la nómina
+                                        sustituye el hueco por un default escondido y la persona
+                                        aparece con un sueldo que nadie tecleó. */}
                                     <input
                                        type="number"
+                                       required
+                                       min="0.01"
+                                       step="0.01"
                                        value={newUserSalary}
                                        onChange={e => setNewUserSalary(e.target.value)}
                                        className="pl-10 w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white outline-none transition-all duration-300 placeholder-slate-400/60"

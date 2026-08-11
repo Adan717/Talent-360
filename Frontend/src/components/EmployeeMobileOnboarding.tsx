@@ -17,6 +17,8 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
   const [isLoading, setIsLoading] = useState(false);
   const [verifiedUser, setVerifiedUser] = useState<any>(null);
   const [aliasName, setAliasName] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [companyConfig, setCompanyConfig] = useState({
     welcomeTitle: '¡Bienvenido a Talent 360!',
     welcomeMessage: 'Estamos muy emocionados de que te unas a nuestro equipo. Aquí encontrarás tus herramientas, rutinas y medios de comunicación oficiales.',
@@ -60,7 +62,9 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
         user_id: verifiedUser?.id,
         pin: pin.join(''),
         name: aliasName,
-        avatar: null
+        avatar: null,
+        password,
+        password_confirmation: passwordConfirm,
       });
       setIsLoading(false);
       setCurrentStep('ready');
@@ -178,19 +182,46 @@ export const EmployeeMobileOnboarding = ({ onComplete }: { onComplete: () => voi
                 <div className="w-full space-y-4">
                    <div>
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Tu Nombre (Alias)</label>
-                      <input 
-                        type="text" 
-                        value={aliasName} 
+                      <input
+                        type="text"
+                        value={aliasName}
                         onChange={(e) => setAliasName(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
+                   </div>
+
+                   {/* La persona elige AQUÍ su contraseña. Antes toda alta nacía con la misma
+                       cadena fija para toda la plantilla de todas las empresas; ahora el alta
+                       genera una aleatoria que nadie conoce y ésta es la puerta por la que su
+                       dueño pone la suya. */}
+                   <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Crea tu contraseña</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Mínimo 8 caracteres"
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                   </div>
+                   <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Repite tu contraseña</label>
+                      <input
+                        type="password"
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                      {passwordConfirm !== '' && passwordConfirm !== password && (
+                        <p className="text-[11px] font-bold text-rose-500 mt-1 ml-1">Las dos contraseñas no coinciden.</p>
+                      )}
                    </div>
                 </div>
              </div>
 
-             <button 
+             <button
                onClick={completeActivation}
-               disabled={!aliasName || isLoading}
+               disabled={!aliasName || password.length < 8 || password !== passwordConfirm || isLoading}
                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 disabled:opacity-50"
              >
                 {isLoading ? (

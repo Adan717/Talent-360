@@ -130,7 +130,13 @@ class OnboardingController extends Controller
             'user_id' => 'required|integer',
             'pin' => 'required|string|size:6',
             'name' => 'required|string|max:255',
-            'avatar' => 'nullable|string' // Puede ser base64 o URL
+            'avatar' => 'nullable|string', // Puede ser base64 o URL
+            // La persona fija AQUÍ su contraseña (2026-08-08). Antes toda alta nacía con la
+            // cadena fija `password123` —la misma para toda la plantilla de todas las
+            // empresas— y este flujo nunca tocaba la contraseña. Ahora el alta genera una
+            // aleatoria que nadie conoce y ésta es la puerta por la que su dueño la cambia.
+            // Opcional para no romper a quien ya activó: si no la manda, se queda como está.
+            'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $employee = Employee::withoutGlobalScope(\App\Scopes\TenantScope::class)
@@ -160,11 +166,17 @@ class OnboardingController extends Controller
             : null;
 
         if ($cuenta) {
-            $cuenta->update([
+            $cambios = [
                 'name' => $request->name,
                 'avatar' => $request->avatar ?? $cuenta->avatar,
                 'is_active' => true,
-            ]);
+            ];
+
+            if ($request->filled('password')) {
+                $cambios['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+            }
+
+            $cuenta->update($cambios);
         }
 
         // FUGA DE DATOS PERSONALES (2026-08-08). Aquí se devolvía `$employee->user ?? $employee`

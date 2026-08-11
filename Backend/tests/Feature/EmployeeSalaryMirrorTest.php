@@ -114,7 +114,9 @@ class EmployeeSalaryMirrorTest extends TestCase
                 'name' => "Persona {$rol}",
                 'email' => "{$rol}@decorarte.test",
                 'role' => $rol,
-                'hire_date' => '2026-08-01',
+                // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
+            'hire_date' => '2026-08-01',
             ])->assertStatus(201);
 
             $this->assertDatabaseHas('users', ['email' => "{$rol}@decorarte.test", 'role' => $rol]);

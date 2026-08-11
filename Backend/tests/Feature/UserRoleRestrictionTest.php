@@ -39,6 +39,8 @@ class UserRoleRestrictionTest extends TestCase
             'name' => 'Intento Escalada',
             'email' => 'escalada@x.com',
             'role' => 'platform_admin', // §49: no permitido en la tabla users
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
             'job_role_id' => $jobRole->id,
         ]);
@@ -56,6 +58,8 @@ class UserRoleRestrictionTest extends TestCase
             'name' => 'Empleado Normal',
             'email' => 'normal@x.com',
             'role' => 'empleado',
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
             'job_role_id' => $jobRole->id,
         ]);

@@ -46,6 +46,8 @@ class EmployeeEmailNormalizationTest extends TestCase
             'name' => 'Adán Cuéllar',
             'email' => 'adáncuéllar@pruebaqa360.com',
             'role' => 'empleado',
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
         ]);
 
@@ -60,6 +62,8 @@ class EmployeeEmailNormalizationTest extends TestCase
             'name' => 'Íñigo Muñoz',
             'email' => 'ÍÑIGOmuñoz@empresa.com',
             'role' => 'empleado',
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
         ]);
 
@@ -73,6 +77,8 @@ class EmployeeEmailNormalizationTest extends TestCase
             'name' => 'Ana Lopez',
             'email' => 'ana.lopez+turno1@empresa.com.mx',
             'role' => 'empleado',
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
         ]);
 
@@ -85,6 +91,8 @@ class EmployeeEmailNormalizationTest extends TestCase
         $admin = $this->admin();
         $this->actingAs($admin)->postJson('/api/v1/employees', [
             'name' => 'Rosa Perez', 'email' => 'rosa@empresa.com', 'role' => 'empleado',
+            // El sueldo es obligatorio en el alta desde 2026-08-08.
+            'salary' => 3000,
             'hire_date' => '2026-08-01',
         ])->assertStatus(201);
 

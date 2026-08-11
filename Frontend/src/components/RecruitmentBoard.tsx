@@ -12,6 +12,8 @@ interface Candidate {
   status: 'prospect' | 'induction' | 'interview' | 'training' | 'evaluation' | 'hired' | 'rejected';
   induction_score?: number;
   is_ex_employee_fast_track: boolean;
+  birth_certificate_url?: string | null;
+  id_card_url?: string | null;
 }
 
 interface Vacancy {
@@ -24,6 +26,8 @@ export const RecruitmentBoard: React.FC = () => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [loading, setLoading] = useState(false);
+  const [verRechazados, setVerRechazados] = useState(false);
+  const [interesados, setInteresados] = useState<{ id: number; email: string; job_role_name: string; created_at: string }[]>([]);
 
   useEffect(() => {
     fetchVacancies();
@@ -32,12 +36,16 @@ export const RecruitmentBoard: React.FC = () => {
   const fetchVacancies = async () => {
     try {
       setLoading(true);
-      const [vacRes, candRes] = await Promise.all([
+      const [vacRes, candRes, alertRes] = await Promise.all([
         axiosInstance.get('/admin/vacancies'),
-        axiosInstance.get('/admin/candidates')
+        axiosInstance.get('/admin/candidates'),
+        // Los que pidieron aviso desde el portal: la tabla existía desde siempre y NADIE la leía,
+        // así que su interés se perdía mientras el portal les prometía un correo.
+        axiosInstance.get('/admin/vacancy-alerts').catch(() => null)
       ]);
       setVacancies(vacRes.data || []);
       setCandidates(candRes.data || []);
+      setInteresados(alertRes?.data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -64,22 +72,32 @@ export const RecruitmentBoard: React.FC = () => {
     setShowHireModal(true);
   };
 
-  const { hireEmployee } = useAppStore();
-
   const confirmHire = async () => {
     if (candidateToHire) {
       try {
         const res = await axiosInstance.put(`/admin/candidates/${candidateToHire.id}`, { status: 'hired' });
-        const pinGenerated = res.data?.pin_code || "Generado";
-        
-        // Sincronizar localmente en store global
-        hireEmployee(candidateToHire);
-        setCandidates(prev => prev.map(c => c.id === candidateToHire.id ? { ...c, status: 'hired' } : c));
-        
-        alert(`🎉 ¡Contratación en 1-Click Exitosa!\n\nColaborador: ${candidateToHire.name}\nPIN Móvil único de fichaje: ${pinGenerated}\n\nSe ha insertado directamente en la base de datos de empleados (Postgres), se ha activado su perfil de inicio de sesión e inscrito a sus Cursos de Inducción obligatorios.`);
-      } catch (err) {
+        const pin = res.data?.pin_code;
+        const avisos: string[] = res.data?.avisos || [];
+
+        // Antes se llamaba a `hireEmployee` del store, que FABRICABA un colaborador en el
+        // navegador: correo inventado, `tenant_id: 1` en duro y el id de la VACANTE usado como
+        // id de PUESTO. Ese fantasma vivía toda la sesión y aparecía hasta en el selector de
+        // asignar tareas. Se relee del servidor, que es quien sabe qué se creó de verdad.
+        await fetchVacancies();
+        await useAppStore.getState().fetchState?.();
+
+        // El aviso prometía tres cosas que el servidor no hace: que el PIN es de fichaje (es el
+        // de invitación; el de kiosko es otro), que quedó inscrito en cursos, y un "bloqueo
+        // operativo" que no existe (el reloj avisa, no bloquea).
+        alert(
+          `Contratado: ${candidateToHire.name}\n\n` +
+          `Ya tiene expediente y acceso.${pin ? `\nPIN de invitación (para activar su cuenta): ${pin}` : ''}\n` +
+          (avisos.length ? `\nFalta por hacer:\n• ${avisos.join('\n• ')}` : '')
+        );
+      } catch (err: any) {
         console.error(err);
-        alert("Hubo un error al dar de alta al empleado.");
+        const detalle = err?.response?.data?.errors?.email?.[0] || err?.response?.data?.message;
+        alert(detalle || "Hubo un error al dar de alta al empleado.");
       }
     }
     setShowHireModal(false);
@@ -124,7 +142,21 @@ export const RecruitmentBoard: React.FC = () => {
                   )}
                   <button onClick={() => setSelectedCandidate(c)} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-1 rounded hover:bg-slate-200 flex items-center gap-1"><Eye size={12}/> Expediente</button>
                   {['prospect', 'induction', 'interview', 'training'].includes(status) && (
-                    <button onClick={() => moveCandidate(c.id, 'rejected')} className="text-[10px] bg-rose-50 text-rose-600 px-2 py-1 rounded hover:bg-rose-100">Rechazar</button>
+                    // Rechazar sacaba al candidato de TODAS las pantallas sin preguntar y sin
+                    // vuelta atrás: el tablero no tenía columna de rechazados.
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`¿Rechazar a ${c.name}? Saldrá del tablero, pero puedes recuperarlo desde "Ver rechazados".`)) {
+                          moveCandidate(c.id, 'rejected');
+                        }
+                      }}
+                      className="text-[10px] bg-rose-50 text-rose-600 px-2 py-1 rounded hover:bg-rose-100"
+                    >
+                      Rechazar
+                    </button>
+                  )}
+                  {status === 'rejected' && (
+                    <button onClick={() => moveCandidate(c.id, 'prospect')} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-1 rounded hover:bg-slate-200">Devolver a Prospectos</button>
                   )}
                 </div>
               </div>
@@ -140,10 +172,20 @@ export const RecruitmentBoard: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h3 className="text-2xl font-bold text-slate-900">Atracción de Talento</h3>
-          <p className="text-slate-500 text-sm">Gestiona el flujo de candidatos. Ex-empleados tienen vía rápida (Fast-Track).</p>
+          {/* La "vía rápida" no existía: `is_ex_employee_fast_track` no se leía en ninguna parte y
+              nadie lo encendía nunca. Ahora el servidor SÍ marca a quien ya tuvo expediente en
+              esta empresa, y la etiqueta significa eso: ya trabajó aquí. No salta ningún paso. */}
+          <p className="text-slate-500 text-sm">Gestiona el flujo de candidatos. Los que ya trabajaron aquí llegan marcados.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
-            <button className="w-full sm:w-auto justify-center bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2"><Settings size={16}/> Configurar Inducciones</button>
+          {/* El botón "Configurar Inducciones" no tenía handler y no había pantalla a la que
+              llevar: la inducción se configura en la Academia. */}
+          <button
+            onClick={() => setVerRechazados(v => !v)}
+            className="w-full sm:w-auto justify-center bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2"
+          >
+            <Settings size={16}/> {verRechazados ? 'Ocultar rechazados' : 'Ver rechazados'}
+          </button>
         </div>
       </div>
 
@@ -153,7 +195,37 @@ export const RecruitmentBoard: React.FC = () => {
         <Column title="3. Por Entrevistar" status="interview" color="text-purple-600" />
         <Column title="4. Entrenamiento Piso" status="training" color="text-orange-600" />
         <Column title="5. Contratación" status="hired" color="text-emerald-600" />
+        {verRechazados && <Column title="Rechazados" status={'rejected' as Candidate['status']} color="text-rose-600" />}
       </div>
+
+      {/* Interesados: los correos que dejó gente pidiendo aviso cuando la vacante se reabra.
+          El portal se lo prometía y la lista no la veía nadie. */}
+      {interesados.length > 0 && (
+        <div className="mt-6 bg-white border border-slate-200 rounded-2xl p-4 sm:p-5">
+          <h4 className="font-bold text-slate-800 text-sm mb-1">Interesados en vacantes cerradas ({interesados.length})</h4>
+          <p className="text-xs text-slate-500 mb-3">Dejaron su correo en la bolsa de trabajo pidiendo aviso. No se les manda nada automáticamente: contáctalos tú cuando la posición se reabra.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-slate-400 uppercase text-[10px]">
+                  <th className="py-2 pr-4 font-bold">Correo</th>
+                  <th className="py-2 pr-4 font-bold">Puesto</th>
+                  <th className="py-2 font-bold">Cuándo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {interesados.slice(0, 25).map(i => (
+                  <tr key={i.id} className="border-t border-slate-100">
+                    <td className="py-2 pr-4 font-semibold text-slate-700">{i.email}</td>
+                    <td className="py-2 pr-4 text-slate-600">{i.job_role_name}</td>
+                    <td className="py-2 text-slate-400">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-MX') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {selectedCandidate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">
@@ -183,12 +255,24 @@ export const RecruitmentBoard: React.FC = () => {
                   <p className="text-sm text-slate-500 italic">Examen no realizado aún.</p>
                 )}
               </div>
+              {/* Estos dos "adjuntos" eran decoración: dos <li> con aspecto de enlace, sin href y
+                  sin onClick, pintados igual para todo el mundo. Las columnas existen en la tabla
+                  pero nadie las escribe nunca — no hay subida de archivos en el portal. Se pinta
+                  el estado REAL, como ya hacía el recuadro de al lado. */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <h4 className="font-bold text-slate-700 mb-2 text-sm">Documentación Adjunta</h4>
-                <ul className="space-y-3 text-sm">
-                  <li className="flex items-center gap-2 text-blue-600 hover:underline cursor-pointer"><FileText size={16}/> Currículum Vitae (PDF)</li>
-                  <li className="flex items-center gap-2 text-blue-600 hover:underline cursor-pointer"><UserSquare size={16}/> Identificación Oficial (INE)</li>
-                </ul>
+                {(selectedCandidate.birth_certificate_url || selectedCandidate.id_card_url) ? (
+                  <ul className="space-y-3 text-sm">
+                    {selectedCandidate.birth_certificate_url && (
+                      <li className="flex items-center gap-2 text-blue-600"><FileText size={16}/> Acta de nacimiento</li>
+                    )}
+                    {selectedCandidate.id_card_url && (
+                      <li className="flex items-center gap-2 text-blue-600"><UserSquare size={16}/> Identificación oficial (INE)</li>
+                    )}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500 italic">Sin documentos entregados — el portal de empleos todavía no permite adjuntarlos.</p>
+                )}
               </div>
             </div>
 
@@ -224,25 +308,29 @@ export const RecruitmentBoard: React.FC = () => {
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2">Contratación 1-Click</h2>
             <p className="text-slate-500 text-sm mb-6 font-medium">
-              ¿Deseas dar de alta a <strong className="text-slate-800">{candidateToHire.name}</strong> en Postgres, generar su PIN móvil e iniciar su enrolamiento académico?
+              Vas a dar de alta a <strong className="text-slate-800">{candidateToHire.name}</strong> como colaborador de la empresa.
             </p>
-            
+
+            {/* Esta lista prometía un "bloqueo operativo hasta completar inducción" que no existe
+                —el reloj avisa, nunca bloquea, igual que se corrigió en la Academia— y llamaba
+                "PIN móvil de fichaje" al PIN de invitación (el de kiosko es otro). Ahora dice lo
+                que de verdad ocurre, incluido lo que queda pendiente. */}
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 mb-6 text-left space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                 <span className="text-emerald-500 text-sm">✓</span>
-                <span>Inserción directa en base de datos real</span>
+                <span>Se le crea su expediente de colaborador</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                 <span className="text-emerald-500 text-sm">✓</span>
-                <span>Generación de PIN móvil de fichaje único</span>
+                <span>PIN de invitación para que active su cuenta y fije su contraseña</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                 <span className="text-emerald-500 text-sm">✓</span>
-                <span>Perfil web activo para inicio de sesión inmediato</span>
+                <span>Hereda el horario de la empresa</span>
               </div>
-              <div className="flex items-center gap-2 text-xs font-bold text-red-500">
-                <span className="text-red-500 text-sm">🔒</span>
-                <span>Bloqueo operativo hasta completar inducción</span>
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-600">
+                <span className="text-amber-500 text-sm">⚠</span>
+                <span>Su sueldo NO se captura aquí: hay que ponerlo en RRHH o la nómina usará un valor por defecto</span>
               </div>
             </div>
 

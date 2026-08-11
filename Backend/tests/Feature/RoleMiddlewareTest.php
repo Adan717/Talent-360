@@ -300,7 +300,17 @@ class RoleMiddlewareTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_public_vacancy_alerts_can_be_created_directly(): void
+    /**
+     * CRITERIO NUEVO (2026-08-11): la alerta se archiva en la empresa del PORTAL que se visita, no
+     * en la que diga el cuerpo de la petición.
+     *
+     * Esta prueba afirmaba lo contrario —que se podía crear mandando `tenant_id` a pelo—, y eso
+     * era justamente el agujero: en una ruta pública el `tenant_id` lo pone el visitante, así que
+     * cualquiera escribía correos en la lista de la empresa que eligiera. Además el portal mandaba
+     * siempre `tenant_id: 1` (sin sesión no hay de dónde sacarlo), y por eso el correo de quien
+     * pedía aviso en la bolsa de CUALQUIER cliente acababa archivado en la empresa 1.
+     */
+    public function test_public_vacancy_alerts_requires_the_portal_slug(): void
     {
         $response = $this->postJson('/api/v1/public/vacancy-alerts', [
             'tenant_id' => 1,
@@ -308,18 +318,10 @@ class RoleMiddlewareTest extends TestCase
             'job_role_name' => 'Supervisor de Tienda'
         ]);
 
-        $response->assertStatus(201);
-        $response->assertJsonFragment([
-            'tenant_id' => 1,
-            'email' => 'alerta@test.com',
-            'job_role_name' => 'Supervisor de Tienda'
-        ]);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('slug');
 
-        $this->assertDatabaseHas('vacancy_alerts', [
-            'tenant_id' => 1,
-            'email' => 'alerta@test.com',
-            'job_role_name' => 'Supervisor de Tienda'
-        ]);
+        $this->assertDatabaseMissing('vacancy_alerts', ['email' => 'alerta@test.com']);
     }
 
     public function test_public_vacancy_alerts_can_be_created_using_slug(): void

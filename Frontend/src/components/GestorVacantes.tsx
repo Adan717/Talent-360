@@ -12,6 +12,9 @@ export default function GestorVacantes() {
   };
   const [jobRoles, setJobRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Dirección pública de la empresa: el QR apuntaba a la raíz con `?module=web`, que sin sesión
+   *  aterriza en la página comercial de Talent360 en vez de en la bolsa de trabajo del cliente. */
+  const [portalSlug, setPortalSlug] = useState('');
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -74,15 +77,17 @@ export default function GestorVacantes() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [vacRes, stateRes] = await Promise.all([
+      const [vacRes, stateRes, portalRes] = await Promise.all([
         axiosInstance.get('/admin/vacancies'),
-        axiosInstance.get('/sync/state')
+        axiosInstance.get('/sync/state'),
+        axiosInstance.get('/admin/tenant/portal-settings').catch(() => null)
       ]);
       const vacData = vacRes.data;
       const stateData = stateRes.data;
-      
+
       setVacancies(vacData);
       setJobRoles(stateData.job_roles || []);
+      setPortalSlug(portalRes?.data?.public_slug || '');
     } catch (error) {
       console.error("Error fetching data", error);
     } finally {
@@ -97,6 +102,20 @@ export default function GestorVacantes() {
       fetchInitialData();
     } catch (error) {
       console.error("Error toggling status", error);
+      alert("No se pudo cambiar el estado de la vacante. Vuelve a intentarlo.");
+    }
+  };
+
+  /** Eliminar una vacante. El método existía en el servidor desde el principio pero NUNCA tuvo
+   *  ruta: no había forma de quitar del portal una posición ya cubierta. */
+  const eliminarVacante = async (v: any) => {
+    if (!window.confirm(`¿Eliminar la vacante "${v.title}"? Dejará de aparecer en la bolsa de trabajo. Las postulaciones que ya recibiste se conservan.`)) return;
+    try {
+      await axiosInstance.delete(`/admin/vacancies/${v.id}`);
+      fetchInitialData();
+    } catch (error) {
+      console.error("Error deleting vacancy", error);
+      alert("No se pudo eliminar la vacante.");
     }
   };
 
@@ -212,12 +231,19 @@ export default function GestorVacantes() {
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${v.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
                   </button>
                 </td>
-                <td className="p-4 text-sm">
-                  <button 
+                <td className="p-4 text-sm whitespace-nowrap">
+                  <button
                     onClick={() => openEditModal(v)}
                     className="text-slate-400 hover:text-blue-600 font-medium p-2 hover:bg-blue-50 rounded-lg transition-colors"
                   >
                     <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => eliminarVacante(v)}
+                    title="Eliminar vacante"
+                    className="text-slate-400 hover:text-rose-600 font-medium p-2 hover:bg-rose-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={16} />
                   </button>
                 </td>
               </tr>
@@ -237,12 +263,20 @@ export default function GestorVacantes() {
                 </span>
                 <h4 className="font-bold text-slate-800 text-sm mt-1">{v.title}</h4>
               </div>
-              <button 
-                onClick={() => openEditModal(v)}
-                className="text-slate-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
-              >
-                <Edit2 size={16} />
-              </button>
+              <div className="flex shrink-0">
+                <button
+                  onClick={() => openEditModal(v)}
+                  className="text-slate-400 hover:text-blue-600 p-1.5 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  onClick={() => eliminarVacante(v)}
+                  className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-3">
               <div>
@@ -501,11 +535,23 @@ export default function GestorVacantes() {
              <QrCode size={48} className="text-blue-600 mb-4" />
              <h3 className="text-2xl font-bold text-slate-900 mb-2">Portal Público</h3>
              <p className="text-sm text-slate-500 mb-4">Imprime este código QR y colócalo en la entrada de la sucursal o compártelo en redes sociales.</p>
-             
-             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 w-full flex justify-center mb-4">
-                {/* Generador de QR dinámico usando la API gratuita de qrserver */}
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getQrOrigin(qrIpOverride) + '?module=web')}`} alt="QR Portal Vacantes" className="w-48 h-48 rounded-xl shadow-sm mix-blend-multiply" />
-             </div>
+
+             {/* El QR codificaba la raíz con `?module=web`, y un candidato sin sesión que lo
+                 escaneaba aterrizaba en la página comercial de Talent360, no en la bolsa de la
+                 empresa. La dirección buena es /vacantes/{slug}, la misma que ya construye la
+                 pestaña de Vista Pública. */}
+             {portalSlug ? (
+               <>
+                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 w-full flex justify-center mb-2">
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${getQrOrigin(qrIpOverride)}/vacantes/${portalSlug}`)}`} alt="QR de la bolsa de trabajo" className="w-48 h-48 rounded-xl shadow-sm mix-blend-multiply" />
+                 </div>
+                 <p className="text-[10px] text-slate-400 font-mono break-all mb-4">{`${getQrOrigin(qrIpOverride)}/vacantes/${portalSlug}`}</p>
+               </>
+             ) : (
+               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 w-full text-left mb-4">
+                 <p className="text-xs text-amber-800 font-semibold">Todavía no se pudo leer la dirección pública de tu empresa. Ábrela en la pestaña «Vista Pública (Web)» y vuelve a intentarlo.</p>
+               </div>
+             )}
 
              {isLocalhost() && (
                 <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-left w-full mb-4">

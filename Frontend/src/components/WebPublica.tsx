@@ -60,7 +60,10 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const currentUser = useAppStore(state => state.currentUser);
   
   const activeSlug = routeSlug || currentUser?.tenant?.public_slug || currentUser?.tenant?.subdomain || 'default';
-  const tenantId = searchParams.get('tenant_id') || currentUser?.tenant?.id || '1';
+  // En el portal público NO hay sesión, así que aquí no se puede saber de qué empresa es la bolsa:
+  // la dirección (`slug`) es el único dato fiable, y el servidor resuelve la empresa a partir de
+  // ella. Antes se mandaba un `tenant_id` que caía SIEMPRE al literal '1', y el correo de quien
+  // pedía aviso en la bolsa de cualquier cliente se archivaba en la empresa 1.
 
   const [selectedVacancy, setSelectedVacancy] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -92,10 +95,18 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const [alertVacancy, setAlertVacancy] = useState<any>(null);
   const [shareVacancy, setShareVacancy] = useState<any>(null);
   const [showSocialAuthModal, setShowSocialAuthModal] = useState(false);
-  const [authProvider, setAuthProvider] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
   const [expandedVacancies, setExpandedVacancies] = useState<Record<number, boolean>>({});
+
+  /** Vídeo de bienvenida configurado por la empresa (vacío = no hay modal). Acepta el enlace
+   *  normal de YouTube y lo convierte al de incrustar; cualquier otra URL se usa tal cual. */
+  const videoDeBienvenida = (() => {
+    const url = (tenant?.custom_settings?.welcome_video_url || '').trim();
+    if (!url) return '';
+    const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    return yt ? `https://www.youtube.com/embed/${yt[1]}` : url;
+  })();
 
   const toggleRequirements = (id: number) => {
     setExpandedVacancies(prev => ({
@@ -107,7 +118,8 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const handlePostularse = (vacancy: any) => {
     setSelectedVacancy(vacancy);
     setShowSocialAuthModal(true);
-    setAuthProvider(null);
+    // El formulario abre VACÍO: ya no se prellena con identidades inventadas.
+    setCandidateForm({ name: '', email: '', phone: '', answers: { q1: 'Puntualidad' } });
   };
 
   const handleNotificarme = (vacancy: any) => {
@@ -132,8 +144,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
       await axiosInstance.post('/public/vacancy-alerts', {
         email: alertForm.email,
         job_role_name: alertForm.jobRoleName,
-        slug: activeSlug,
-        tenant_id: Number(tenantId)
+        slug: activeSlug
       });
       setAlertSuccess(true);
       setAlertForm({ email: '', jobRoleName: '' });
@@ -707,15 +718,21 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
       {showSocialAuthModal && selectedVacancy && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative animate-slide-up">
-            {!authProvider ? (
-              // Paso 1: Selección de Proveedor
+            {/* ELIMINADO (2026-08-11): el "Paso 1 — Continuar con Google / Apple / Samsung".
+                No había OAuth en ninguna parte del producto: los tres botones sólo rellenaban el
+                formulario con tres identidades INVENTADAS escritas en el código ("Carlos Mendoza
+                / carlos.mendoza.dev@gmail.com", "Sofía Rodríguez", "Alejandro Ruiz") y la
+                pantalla afirmaba después "Confirma tus datos vinculados desde google". Como era
+                el ÚNICO camino para postularse, todo el que usaba la bolsa de trabajo de un
+                cliente real arrancaba con el nombre, el correo y el teléfono de un tercero ya
+                escritos — y quien no se fijaba mandaba su postulación a nombre de otra persona.
+                Ahora el formulario abre vacío. Vinculación social de verdad = trabajo aparte. */}
+            {(
               <div className="p-8">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-black text-slate-900">Postulación</h3>
-                  <button 
-                    onClick={() => {
-                      setShowSocialAuthModal(false);
-                    }}
+                  <button
+                    onClick={() => setShowSocialAuthModal(false)}
                     className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-all"
                   >
                     <X size={20} />
@@ -723,103 +740,7 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 </div>
 
                 <p className="text-sm text-slate-500 mb-6">
-                  Estás postulándote a <strong className="text-blue-600">{selectedVacancy.title}</strong>. Para continuar, vincula tu cuenta de redes sociales.
-                </p>
-
-                <div className="space-y-3 mb-6">
-                  {/* Google */}
-                  <button 
-                    onClick={() => {
-                      setAuthProvider('google');
-                      setCandidateForm({
-                        ...candidateForm,
-                        name: 'Carlos Mendoza',
-                        email: 'carlos.mendoza.dev@gmail.com',
-                        phone: '5543210987'
-                      });
-                    }}
-                    className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-sm"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.41 0-6.19-2.78-6.19-6.19 0-3.41 2.78-6.19 6.19-6.19 1.488 0 2.85.535 3.923 1.417l3.056-3.055C18.895 2.146 15.753 1 12.24 1 6.043 1 1 6.043 1 12.24s5.043 11.24 11.24 11.24c5.84 0 10.84-4.148 10.84-11.24 0-.668-.063-1.31-.18-1.955H12.24z"/>
-                    </svg>
-                    Continuar con Google
-                  </button>
-
-                  {/* Apple */}
-                  <button 
-                    onClick={() => {
-                      setAuthProvider('apple');
-                      setCandidateForm({
-                        ...candidateForm,
-                        name: 'Sofía Rodríguez',
-                        email: 's.rodriguez@icloud.com',
-                        phone: '5587654321'
-                      });
-                    }}
-                    className="w-full bg-black hover:bg-slate-900 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-sm"
-                  >
-                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.69-1.12 1.83-.98 2.94 1.07.08 2.15-.52 2.81-1.33z"/>
-                    </svg>
-                    Continuar con Apple
-                  </button>
-
-                  {/* Samsung */}
-                  <button 
-                    onClick={() => {
-                      setAuthProvider('samsung');
-                      setCandidateForm({
-                        ...candidateForm,
-                        name: 'Alejandro Ruiz',
-                        email: 'alejandro.ruiz@samsung.com',
-                        phone: '5576543210'
-                      });
-                    }}
-                    className="w-full bg-[#1428a0] hover:bg-[#0f1f7a] text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-sm"
-                  >
-                    <span className="font-extrabold tracking-wider text-sm italic">SAMSUNG</span>
-                    Continuar con Samsung
-                  </button>
-                </div>
-
-                <button 
-                  onClick={() => {
-                    setShowSocialAuthModal(false);
-                  }}
-                  className="w-full text-center text-slate-500 font-bold hover:text-slate-700 transition-colors text-sm"
-                >
-                  Cancelar
-                </button>
-              </div>
-            ) : (
-              // Paso 2: Consentimiento
-              <div className="p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center gap-2">
-                    {authProvider === 'google' && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                    )}
-                    {authProvider === 'apple' && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-800 animate-pulse"></span>
-                    )}
-                    {authProvider === 'samsung' && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
-                    )}
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-wider">
-                      Perfil {authProvider}
-                    </h3>
-                  </div>
-                  <button 
-                    onClick={() => setAuthProvider(null)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                  >
-                    Atrás
-                  </button>
-                </div>
-
-                <p className="text-sm text-slate-500 mb-6">
-                  Confirma tus datos vinculados desde <strong className="capitalize">{authProvider}</strong> para postularte a <strong className="text-blue-600">{selectedVacancy.title}</strong>:
+                  Déjanos tus datos para postularte a <strong className="text-blue-600">{selectedVacancy.title}</strong>:
                 </p>
 
                 <div className="space-y-4 mb-6">
@@ -860,10 +781,10 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                     }
                     setShowSocialAuthModal(false);
                     setShowInduction(true);
-                  }} 
+                  }}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2"
                 >
-                  Vincular y Continuar a Inducción <ArrowRight size={16} />
+                  Revisar y enviar <ArrowRight size={16} />
                 </button>
               </div>
             )}
@@ -890,15 +811,19 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 </button>
               </div>
 
+              {/* No existe (todavía) ningún envío automático de correo: la tabla de alertas era
+                  de SOLO ESCRITURA y nadie la leía jamás. Ahora Recursos Humanos sí ve la lista
+                  en su panel, así que el texto promete lo que de verdad va a pasar: que la
+                  empresa te contacte. El correo automático es una función aparte. */}
               <p className="text-sm text-slate-500 mb-6">
-                Te enviaremos una notificación por correo electrónico en cuanto la posición de <strong className="text-blue-600">{alertVacancy.title}</strong> vuelva a estar disponible.
+                Guardaremos tu correo y Recursos Humanos de <strong className="text-blue-600">{tenant.name}</strong> podrá contactarte cuando la posición de <strong className="text-blue-600">{alertVacancy.title}</strong> vuelva a abrirse.
               </p>
 
               {alertSuccess ? (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-800 text-center mb-4">
                   <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={40} />
-                  <p className="font-bold text-lg mb-1">¡Alerta Activada!</p>
-                  <p className="text-sm font-medium">Te notificaremos de inmediato en cuanto se publique o habilite esta vacante.</p>
+                  <p className="font-bold text-lg mb-1">Registramos tu interés</p>
+                  <p className="text-sm font-medium">Recursos Humanos ya tiene tu correo en su lista de interesados para esta posición.</p>
                 </div>
               ) : (
                 <form onSubmit={handleAlertSubmit} className="space-y-4 mb-4">
@@ -942,95 +867,58 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
       {showInduction && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-fade-in overflow-y-auto">
           <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl relative my-8 max-h-[90vh] overflow-y-auto">
+            {/* Antes esta pantalla encabezaba "¡Solicitud Recibida!" ANTES de llamar a ningún
+                endpoint, embebía un vídeo de YouTube en duro (el mismo rickroll que ya se retiró
+                de la Academia) y preguntaba por "el valor principal de Talent360" —el proveedor
+                del SaaS— en la bolsa de trabajo del cliente. Y la respuesta del test se
+                descartaba en silencio: el servidor nunca la guardó. Ahora es lo que de verdad
+                es: el paso de revisar y enviar. La inducción real vive en la Academia. */}
             <div className="p-4 sm:p-8">
-              <h2 className="text-3xl font-extrabold text-slate-800 mb-2">¡Solicitud Recibida! 🎉</h2>
-              <p className="text-slate-500 text-lg mb-8">Para avanzar en tu proceso, necesitamos que completes tu Curso de Inducción Básico.</p>
-              
-              <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-black mb-8">
-                <iframe 
-                  className="w-full h-full" 
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
-                  title="YouTube video player" 
-                  frameBorder="0" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                ></iframe>
+              <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Revisa y envía tu postulación</h2>
+              <p className="text-slate-500 text-lg mb-8">
+                Estos son los datos que llegarán a Recursos Humanos de {tenant.name} para la vacante
+                de <span className="font-bold text-slate-700">{selectedVacancy?.title}</span>.
+              </p>
+
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 mb-8 space-y-2 text-sm">
+                <div><span className="font-bold text-slate-500 uppercase text-xs block">Nombre</span>{candidateForm.name}</div>
+                <div><span className="font-bold text-slate-500 uppercase text-xs block">Correo</span>{candidateForm.email}</div>
+                {candidateForm.phone && (
+                  <div><span className="font-bold text-slate-500 uppercase text-xs block">Teléfono</span>{candidateForm.phone}</div>
+                )}
               </div>
- 
-              <div className="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 mb-8">
-                <h3 className="font-bold text-indigo-900 mb-4 text-xl">Test Rápido:</h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="font-semibold text-indigo-800 mb-2">1. ¿Cuál es el valor principal de Talent360?</p>
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                      <label className="flex items-center space-x-2">
-                        <input 
-                          type="radio" 
-                          name="q1" 
-                          checked={candidateForm.answers.q1 === 'Puntualidad'} 
-                          onChange={() => setCandidateForm({ ...candidateForm, answers: { ...candidateForm.answers, q1: 'Puntualidad' } })}
-                          className="form-radio text-indigo-600" 
-                        /> 
-                        <span>Puntualidad</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input 
-                          type="radio" 
-                          name="q1" 
-                          checked={candidateForm.answers.q1 === 'Creatividad'} 
-                          onChange={() => setCandidateForm({ ...candidateForm, answers: { ...candidateForm.answers, q1: 'Creatividad' } })}
-                          className="form-radio text-indigo-600" 
-                        /> 
-                        <span>Creatividad</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input 
-                          type="radio" 
-                          name="q1" 
-                          checked={candidateForm.answers.q1 === 'Velocidad'} 
-                          onChange={() => setCandidateForm({ ...candidateForm, answers: { ...candidateForm.answers, q1: 'Velocidad' } })}
-                          className="form-radio text-indigo-600" 
-                        /> 
-                        <span>Velocidad</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
- 
+
               <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-4">
-                <button 
-                  onClick={() => { setShowInduction(false); setSelectedVacancy(null); }}
+                <button
+                  onClick={() => { setShowInduction(false); setShowSocialAuthModal(true); }}
                   className="text-slate-500 font-bold hover:text-slate-700 transition-colors py-2 text-center"
                   type="button"
                 >
-                  Hacerlo más tarde
+                  Corregir mis datos
                 </button>
-                <button 
+                <button
                   onClick={async () => {
                     try {
                       const payload = {
                         name: candidateForm.name,
                         email: candidateForm.email,
                         phone: candidateForm.phone,
-                        applied_vacancy_id: selectedVacancy.id,
-                        tenant_id: selectedVacancy.tenant_id ?? Number(tenantId) ?? 1,
-                        answers: JSON.stringify(candidateForm.answers)
+                        applied_vacancy_id: selectedVacancy.id
                       };
                       await axiosInstance.post('/public/candidates', payload);
-                      alert('¡Has completado tu inducción! Tu expediente ha sido enviado a Recursos Humanos.');
+                      alert(`¡Listo! Tu postulación llegó a Recursos Humanos de ${tenant.name}. Te contactarán al correo o teléfono que dejaste.`);
                       setShowInduction(false);
                       setSelectedVacancy(null);
                       setCandidateForm({ name: '', email: '', phone: '', answers: { q1: 'Puntualidad' } });
-                    } catch (err) {
+                    } catch (err: any) {
                       console.error("Error submitting candidate:", err);
-                      alert("Hubo un error al enviar tu postulación. Intenta nuevamente.");
+                      alert(err?.response?.data?.message || "Hubo un error al enviar tu postulación. Intenta nuevamente.");
                     }
                   }}
                   className="btn-brand text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md text-center"
                   type="button"
                 >
-                  Terminar y Enviar Expediente
+                  Enviar mi postulación
                 </button>
               </div>
             </div>
@@ -1039,33 +927,39 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
         </div>
       )}
 
-      {/* Modal de Bienvenida (Video Corporativo) */}
-      {showWelcomeModal && (
+      {/* Modal de bienvenida: sólo si la empresa configuró un vídeo suyo.
+          Antes se abría SOLO al cargar, a pantalla completa y con autoplay, embebiendo un enlace
+          de YouTube escrito en duro — el mismo rickroll que ya se había retirado de la Academia,
+          sobreviviendo justo en la única pantalla que ven personas ajenas a la empresa, con la
+          marca del cliente encima. El vídeo se configura en Ajustes del Portal Público. */}
+      {showWelcomeModal && videoDeBienvenida && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl relative animate-slide-up">
             <button onClick={() => setShowWelcomeModal(false)} className="absolute top-6 right-6 z-20 text-white hover:text-white bg-black/40 hover:bg-black/60 p-2 rounded-full backdrop-blur-md transition-all"><X size={20}/></button>
             <div className="flex flex-col md:flex-row">
                <div className="w-full md:w-1/2 bg-black aspect-video md:aspect-auto md:min-h-[400px] relative">
-                  <iframe 
-                    className="absolute inset-0 w-full h-full" 
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1" 
-                    title="Video Corporativo" 
-                    frameBorder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={videoDeBienvenida}
+                    title={`Video de ${tenant.name}`}
+                    frameBorder="0"
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
                </div>
                <div className="w-full md:w-1/2 p-10 flex flex-col justify-center bg-white">
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-brand-light bg-brand-light text-brand"
                   >
                      <Building2 size={24} />
                   </div>
                   <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Bienvenido a {tenant.name}</h2>
-                  <p className="text-slate-500 mb-8 text-lg leading-relaxed">
-                     Somos más que una empresa; somos una familia enfocada en la excelencia y el desarrollo de nuestro talento. Descubre por qué trabajar con nosotros es tu mejor decisión.
-                  </p>
-                  <button 
+                  {tenant.custom_settings?.header_subtitle && (
+                    <p className="text-slate-500 mb-8 text-lg leading-relaxed">
+                       {tenant.custom_settings.header_subtitle}
+                    </p>
+                  )}
+                  <button
                      onClick={() => setShowWelcomeModal(false)}
                      className="btn-brand text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-md flex justify-center items-center gap-2 w-full"
                   >

@@ -118,31 +118,13 @@ class EmployeeController extends Controller
      * entra a las 11:00 le contaba dos horas de retardo desde su primer día. El horario de la
      * empresa vive en `system_settings.storeSchedule` (openTime/closeTime), que es lo que el
      * asistente de alta configura.
+     *
+     * Vive en `App\Support\HorarioDeLaEmpresa` desde 2026-08-11: era privado de aquí y por eso el
+     * alta del ATS (que escribe `Employee::create` por su cuenta) clavaba 09:00–18:00 en duro.
      */
     private function heredarHorarioDeLaEmpresa(array $data, ?int $tenantId): array
     {
-        $faltaInicio = empty($data['shiftStart']);
-        $faltaFin = empty($data['shiftEnd']);
-
-        if (!$faltaInicio && !$faltaFin) {
-            return $data;
-        }
-
-        $horario = DB::table('system_settings')
-            ->where('tenant_id', $tenantId)
-            ->where('key', 'storeSchedule')
-            ->value('value');
-
-        $horario = $horario ? json_decode($horario, true) : null;
-
-        if ($faltaInicio) {
-            $data['shiftStart'] = $horario['openTime'] ?? '09:00';
-        }
-        if ($faltaFin) {
-            $data['shiftEnd'] = $horario['closeTime'] ?? '18:00';
-        }
-
-        return $data;
+        return \App\Support\HorarioDeLaEmpresa::completar($data, $tenantId);
     }
 
     public function store(Request $request)

@@ -60,9 +60,14 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook']);
 
     // Pública (Web de Empleos y Onboarding)
-    Route::get('/public/vacancies/{slug}', [RecruitmentController::class, 'getPublicVacancies']);
-    Route::post('/public/candidates', [CandidateController::class, 'store']);
-    Route::post('/public/vacancy-alerts', [RecruitmentController::class, 'storeVacancyAlert']);
+    // Con freno: son rutas sin sesión y dos de ellas ESCRIBEN. Sin límite, cualquiera podía
+    // sembrar candidatos y correos de alerta sin tope, o barrer slugs para enumerar empresas.
+    // 20/min por IP no molesta a nadie: un candidato manda una postulación, no veinte.
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::get('/public/vacancies/{slug}', [RecruitmentController::class, 'getPublicVacancies']);
+        Route::post('/public/candidates', [CandidateController::class, 'store']);
+        Route::post('/public/vacancy-alerts', [RecruitmentController::class, 'storeVacancyAlert']);
+    });
     // El PIN de bienvenida son 6 dígitos: un millón de combinaciones, que sin freno se
     // barren en minutos desde una ruta PÚBLICA. Con 10 intentos por minuto y por IP, probar
     // el espacio completo pasa de minutos a más de dos meses. (Acertar uno daba, hasta hoy,
@@ -251,6 +256,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::get('/admin/vacancies', [RecruitmentController::class, 'getAdminVacancies']);
             Route::post('/admin/vacancies', [RecruitmentController::class, 'createVacancy']);
             Route::put('/admin/vacancies/{id}', [RecruitmentController::class, 'updateVacancy']);
+            // `deleteVacancy` existía en el controlador desde el principio pero NUNCA tuvo ruta:
+            // no había forma de quitar una vacante ya cubierta.
+            Route::delete('/admin/vacancies/{id}', [RecruitmentController::class, 'deleteVacancy']);
+            // Los correos que pidieron aviso: la tabla era de solo escritura.
+            Route::get('/admin/vacancy-alerts', [RecruitmentController::class, 'getVacancyAlerts']);
             Route::get('/admin/tenant/portal-settings', [RecruitmentController::class, 'getPortalSettings']);
             Route::put('/admin/tenant/portal-settings', [RecruitmentController::class, 'updatePortalSettings']);
             

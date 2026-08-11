@@ -101,7 +101,9 @@ interface AppState {
   resolveSaaSAlert: (alertId: string) => Promise<void>;
   
   // HR Workflow Actions
-  hireEmployee: (candidate: any) => void;
+  // `hireEmployee` se eliminó (2026-08-11): fabricaba un colaborador en el navegador con correo
+  // inventado, `tenant_id: 1` en duro y el id de la VACANTE como id de PUESTO. El tablero del ATS
+  // ahora relee del servidor después de contratar.
   completeInduction: (userId: number) => void;
   
   isModuleUnlocked: (moduleId: string) => boolean;
@@ -271,51 +273,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  hireEmployee: (candidate) => set((s) => {
-    const newId = s.globalUsers.length > 0 ? Math.max(...s.globalUsers.map(u => u.id)) + 1 : 1;
-    let subdomain = s.currentUser?.tenant?.subdomain;
-
-    if (!subdomain && s.currentUser?.email) {
-      const emailParts = s.currentUser.email.split('@');
-      if (emailParts.length === 2) {
-        const domainParts = emailParts[1].split('.');
-        if (domainParts.length >= 2) {
-          const domainName = domainParts[0];
-          const commonProviders = ['gmail', 'yahoo', 'outlook', 'hotmail', 'live', 'icloud', 'talent360'];
-          if (!commonProviders.includes(domainName.toLowerCase())) {
-            subdomain = domainName;
-          }
-        }
-      }
-    }
-
-    if (!subdomain && s.systemSettings?.company_name) {
-      const cleanCompName = s.systemSettings.company_name
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]/g, '');
-      if (cleanCompName.length > 0) {
-        subdomain = cleanCompName;
-      }
-    }
-
-    subdomain = subdomain || s.currentUser?.tenant?.subdomain || 'empresa';
-
-    const newUser = {
-      id: newId,
-      name: candidate.name,
-      role: 'Recién Contratado',
-      system_role: 'Recién Contratado',
-      email: `${candidate.name.toLowerCase().replace(/\s/g, '')}@${subdomain}.com`,
-      tenant_id: 1,
-      job_role_id: candidate.applied_vacancy_id || 5, // Fallback
-      avatar: '',
-      has_completed_induction: false,
-      mealMinutes: 60
-    };
-    return { globalUsers: [...s.globalUsers, newUser] };
-  }),
   completeInduction: (userId) => set((s) => ({
     globalUsers: s.globalUsers.map(u => u.id === userId ? { ...u, has_completed_induction: true } : u),
     // También si el currentUser es el mismo, actualizarlo en la sesión

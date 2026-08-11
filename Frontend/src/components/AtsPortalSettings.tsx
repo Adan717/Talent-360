@@ -33,6 +33,7 @@ export default function AtsPortalSettings() {
       social_facebook: '',
       social_instagram: '',
       social_linkedin: '',
+      welcome_video_url: '',
     }
   });
 
@@ -71,6 +72,7 @@ export default function AtsPortalSettings() {
             social_facebook: '',
             social_instagram: '',
             social_linkedin: '',
+      welcome_video_url: '',
           };
         }
         setSettings(fetched);
@@ -105,6 +107,7 @@ export default function AtsPortalSettings() {
           social_facebook: '',
           social_instagram: '',
           social_linkedin: '',
+      welcome_video_url: '',
         };
       }
       setSettings(updated);
@@ -319,6 +322,22 @@ export default function AtsPortalSettings() {
                       placeholder="https://ejemplo.com/background.jpg"
                     />
                     <span className="text-[9px] text-slate-400 block pl-1">Se aplicará un sombreado oscuro para asegurar la legibilidad del texto en blanco.</span>
+                  </div>
+
+                  {/* Antes el portal abría SIEMPRE un modal a pantalla completa con un vídeo de
+                      YouTube escrito en el código. Ahora sólo aparece si la empresa pone el suyo. */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide pl-1 flex items-center gap-1">
+                      <Image size={11} /> Video de Bienvenida (URL de YouTube)
+                    </label>
+                    <input
+                      type="url"
+                      value={settings.custom_settings.welcome_video_url}
+                      onChange={(e) => handleCustomSettingChange('welcome_video_url', e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 shadow-sm text-slate-800 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                    <span className="text-[9px] text-slate-400 block pl-1">Si lo dejas vacío, el portal no muestra ninguna ventana de bienvenida.</span>
                   </div>
                 </div>
 

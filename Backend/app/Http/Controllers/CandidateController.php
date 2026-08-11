@@ -25,7 +25,10 @@ class CandidateController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email',
-            'applied_vacancy_id' => 'required|integer|exists:vacancies,id',
+            // `exists:vacancies,id` a secas aceptaba vacantes BORRADAS: se podía postular a una
+            // posición que la empresa ya había quitado. El resto de filtros (empresa, activa,
+            // oculta) se comprueba abajo, porque la respuesta depende de si hay sesión.
+            'applied_vacancy_id' => ['required', 'integer', 'exists:vacancies,id,deleted_at,NULL'],
             'phone' => 'nullable|string',
             'rfc' => 'nullable|string',
             'nss' => 'nullable|string',
@@ -33,15 +36,36 @@ class CandidateController extends Controller
             'is_ex_employee_fast_track' => 'nullable|boolean',
             'tenant_id' => 'nullable|integer'
         ]);
- 
-        // Buscar la vacante sin scopes globales para obtener el tenant_id real
-        $vacancy = Vacancy::withoutGlobalScopes()->findOrFail($data['applied_vacancy_id']);
+
+        // Se resuelve sin el scope de TENANT (en la ruta pública no hay sesión que lo resuelva),
+        // pero SÍ respetando el borrado lógico.
+        $vacancy = Vacancy::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->findOrFail($data['applied_vacancy_id']);
 
         if (!auth()->check()) {
             // Postulación pública: forzar tenant_id de la vacante, ignorar inputs administrativos
             $data['tenant_id'] = $vacancy->tenant_id;
             $data['status'] = 'prospect';
-            $data['is_ex_employee_fast_track'] = false;
+
+            // Desde fuera sólo se puede postular a lo que de verdad está publicado. La bolsa
+            // pública ya filtra igual; esto cierra la puerta de atrás (mandar un id a mano).
+            $publicada = ($vacancy->is_active === null || $vacancy->is_active)
+                && ($vacancy->is_hidden === null || !$vacancy->is_hidden);
+
+            if (!$publicada) {
+                return response()->json([
+                    'message' => 'Esta vacante ya no está recibiendo postulaciones.',
+                ], 422);
+            }
+
+            // FAST-TRACK: la etiqueta existía en la pantalla pero nadie la encendía jamás. Se
+            // calcula en el SERVIDOR (nunca se acepta del cliente): es ex-colaborador quien ya
+            // tiene expediente en ESA empresa, incluido el archivado.
+            $data['is_ex_employee_fast_track'] = Employee::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->withTrashed()
+                ->where('tenant_id', $vacancy->tenant_id)
+                ->where('email', $data['email'])
+                ->exists();
         } else {
             // Postulación desde panel de administración: forzar el tenant_id del usuario autenticado
             $tenantId = auth()->user()->tenant_id;
@@ -62,7 +86,16 @@ class CandidateController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|string',
             'email' => 'sometimes|email',
-            'applied_vacancy_id' => 'sometimes|integer|exists:vacancies,id',
+            // La vacante se valida DENTRO de la empresa: con `exists:vacancies,id` a secas se
+            // aceptaba el id de una vacante de OTRO tenant, y su `job_role_id` acababa metido en
+            // el expediente al contratar (puesto ajeno = política de tolerancia ajena).
+            'applied_vacancy_id' => [
+                'sometimes',
+                'integer',
+                \Illuminate\Validation\Rule::exists('vacancies', 'id')
+                    ->where('tenant_id', $candidate->tenant_id)
+                    ->whereNull('deleted_at'),
+            ],
             'phone' => 'nullable|string',
             'rfc' => 'nullable|string',
             'nss' => 'nullable|string',
@@ -78,15 +111,45 @@ class CandidateController extends Controller
         // contratación (con el usuario y el expediente ya creados por la transacción previa, y el
         // candidato quedándose para siempre sin pasar a "contratado").
         $pinDeInvitacion = null;
+        $faltaSueldo = false;
+        $faltaPuesto = false;
 
         if (isset($data['status']) && $data['status'] === 'hired' && $candidate->status !== 'hired') {
-            DB::transaction(function () use ($candidate, &$data, &$pinDeInvitacion) {
-                // Find vacancy
-                $vacancy = Vacancy::withoutGlobalScopes()->find($candidate->applied_vacancy_id);
+            // El correo es ÚNICO GLOBAL en `users`. Si ya pertenece a una cuenta de OTRA empresa,
+            // seguir adelante significaba apropiarse de ella: el `update` de abajo la degradaba a
+            // 'empleado' (sacando de su panel al admin del vecino) y el expediente nuevo quedaba
+            // colgado de un usuario de otro tenant. Se comprueba ANTES de tocar nada, con el mismo
+            // criterio que ya aplica el alta de RRHH (EmployeeController::store).
+            $cuentaAjena = User::withoutGlobalScopes()->withTrashed()
+                ->where('email', $candidate->email)
+                ->where('tenant_id', '!=', $candidate->tenant_id)
+                ->exists();
+
+            if ($cuentaAjena) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'email' => ['Ese correo ya tiene una cuenta en la plataforma, en otra empresa. Pídele al candidato un correo distinto y corrígelo antes de contratarlo.'],
+                ]);
+            }
+
+            DB::transaction(function () use ($candidate, &$data, &$pinDeInvitacion, &$faltaSueldo, &$faltaPuesto) {
+                // La vacante se lee DENTRO de la empresa del candidato y viva: de una ajena o
+                // borrada no se hereda el puesto (se queda sin puesto, que sí avisa en RRHH).
+                $vacancy = Vacancy::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                    ->where('tenant_id', $candidate->tenant_id)
+                    ->find($candidate->applied_vacancy_id);
                 $jobRoleId = $vacancy ? $vacancy->job_role_id : null;
 
-                // Create user
-                $user = User::withoutGlobalScopes()->where('email', $candidate->email)->first();
+                // Cuenta y expediente se buscan en SU empresa y CON los archivados: el reingreso
+                // de un ex-colaborador es justo el caso que este módulo dice atender. Antes se
+                // usaba `withoutGlobalScopes()` a secas —que también apaga el filtro de borrado
+                // lógico— y se les ponía is_active=true SIN restore(): el `deleted_at` seguía
+                // puesto y la persona quedaba contratada pero invisible: no podía entrar (el login
+                // sí respeta el borrado), su PIN no servía y no salía ni en RRHH ni en nómina.
+                $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->withTrashed()
+                    ->where('email', $candidate->email)
+                    ->where('tenant_id', $candidate->tenant_id)
+                    ->first();
+
                 if (!$user) {
                     // Misma regla que el alta de RRHH: contraseña que nadie conoce; la persona
                     // fija la suya al activar su cuenta con el PIN de la invitación. Contratar a
@@ -100,14 +163,15 @@ class CandidateController extends Controller
                         'is_active' => true
                     ]);
                 } else {
-                    $user->update([
-                        'is_active' => true,
-                        'role' => 'empleado'
-                    ]);
+                    if ($user->trashed()) {
+                        $user->restore();
+                    }
+                    // Sólo se reactiva el acceso. El ROL no se toca: contratar a alguien que ya
+                    // tiene cuenta de admin o supervisor en la empresa no debe degradarlo.
+                    $user->update(['is_active' => true]);
                 }
 
-                // Create/Update employee
-                $employee = Employee::withoutGlobalScopes()
+                $employee = Employee::withoutGlobalScope(\App\Scopes\TenantScope::class)->withTrashed()
                     ->where('email', $candidate->email)
                     ->where('tenant_id', $candidate->tenant_id)
                     ->first();
@@ -119,6 +183,10 @@ class CandidateController extends Controller
                 } while ($pinExists);
 
                 if (!$employee) {
+                    // El turno sale del horario de la EMPRESA, no de un 09:00–18:00 en duro: a
+                    // quien abre a las 11:00 le contaba dos horas de retardo desde su primer día.
+                    $jornada = \App\Support\HorarioDeLaEmpresa::completar([], $candidate->tenant_id);
+
                     $employee = Employee::create([
                         'tenant_id' => $candidate->tenant_id,
                         'user_id' => $user->id,
@@ -129,13 +197,16 @@ class CandidateController extends Controller
                         'is_active_employee' => true,
                         'pin_code' => $pin,
                         'invite_token' => Str::random(32),
-                        'shiftStart' => '09:00:00',
-                        'shiftEnd' => '18:00:00',
+                        'shiftStart' => $jornada['shiftStart'],
+                        'shiftEnd' => $jornada['shiftEnd'],
                         'mealMinutes' => 60,
                         'restDay' => 'Domingo',
                         'hire_date' => now()->toDateString(),
                     ]);
                 } else {
+                    if ($employee->trashed()) {
+                        $employee->restore();
+                    }
                     $employee->update([
                         'user_id' => $user->id,
                         'is_active_employee' => true,
@@ -145,6 +216,15 @@ class CandidateController extends Controller
                 }
 
                 $pinDeInvitacion = $employee->pin_code;
+
+                // SUELDO: el ATS no lo pregunta en ningún momento, así que el expediente nace sin
+                // él y la nómina rellena el hueco con un default escondido de $2,400 que nadie
+                // tecleó (ClockService). No se bloquea la contratación —criterio del dueño— pero
+                // se AVISA, para que RRHH sepa que le falta capturarlo.
+                $employee->refresh();
+                $faltaSueldo = ($employee->base_salary === null || (float) $employee->base_salary <= 0)
+                    && ($employee->salary === null || (float) $employee->salary <= 0);
+                $faltaPuesto = $employee->job_role_id === null;
             });
         }
 
@@ -154,6 +234,12 @@ class CandidateController extends Controller
         $responseArray = $candidate->toArray();
         if ($pinDeInvitacion !== null) {
             $responseArray['pin_code'] = $pinDeInvitacion;
+            $responseArray['salary_pending'] = $faltaSueldo;
+            $responseArray['job_role_pending'] = $faltaPuesto;
+            $responseArray['avisos'] = array_values(array_filter([
+                $faltaSueldo ? 'Falta capturar su sueldo en RRHH: sin él, la nómina lo calcula con un valor por defecto.' : null,
+                $faltaPuesto ? 'Quedó sin puesto asignado: no podrá fichar por el kiosco ni recibir capacidades hasta que se lo asignes en RRHH.' : null,
+            ]));
         }
 
         return response()->json($responseArray);

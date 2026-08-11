@@ -1172,15 +1172,32 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       alert('Captura el sueldo del colaborador: sin él, su nómina no se puede calcular.');
       return;
     }
+    const companyDomain = getCompanyDomain();
+    const correoGenerado = `${slugParaCorreo(newUserName)}${companyDomain}`;
+
+    // HOMÓNIMOS: el correo se genera del nombre, así que dos "Juan Pérez" producen el mismo y
+    // el segundo alta PISABA el expediente del primero en silencio. Sólo el humano sabe si es
+    // la misma persona o son dos, así que se pregunta. Sin confirmación, el servidor le da al
+    // homónimo su propio correo (juanperez2@…) y su propia ficha.
+    let actualizarExistente = false;
+    const yaExiste = users.find((u: any) => (u.email || '').toLowerCase() === correoGenerado.toLowerCase());
+    if (yaExiste) {
+      actualizarExistente = window.confirm(
+        `Ya tienes a "${yaExiste.name}" con el correo ${correoGenerado}.\n\n` +
+        `• Aceptar: es LA MISMA persona → se actualiza su ficha.\n` +
+        `• Cancelar: es OTRA persona con el mismo nombre → se crea una ficha nueva con su propio correo.`
+      );
+    }
+
     try {
-      const companyDomain = getCompanyDomain();
       const res = await axiosInstance.post('/employees', {
         name: newUserName,
         job_role_id: newUserRole,
         contract_type: contractType,
+        actualizar_existente: actualizarExistente,
         // H3: sin normalizar, "Adán Cuéllar" generaba `adáncuéllar@...` — un correo con
         // diacríticos exige SMTPUTF8 y la invitación de bienvenida fallaba en silencio.
-        email: `${slugParaCorreo(newUserName)}${companyDomain}`,
+        email: correoGenerado,
         // Sin `password`: el servidor genera una aleatoria que nadie conoce y la persona fija
         // la suya al activar su cuenta con el PIN de la invitación. Antes se mandaba
         // 'password123' desde aquí, así que toda la plantilla de todas las empresas

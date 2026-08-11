@@ -19,6 +19,9 @@ class Employee extends Model
         'phone',
         'employee_id',
         'job_role_id',
+        // A quién le reporta esta persona (organigrama). Sin esto en la lista, el
+        // `update(['report_to' => ...])` de updateReportTo se descartaba en silencio.
+        'report_to',
         'salary',
         'base_salary',
         'salario_diario',

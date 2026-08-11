@@ -77,6 +77,41 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Primer correo libre a partir del que se generó del nombre (homónimos, 2026-08-08).
+     *
+     *   juanperez@empresa.com  ->  juanperez2@empresa.com  ->  juanperez3@empresa.com
+     *
+     * Se comprueba contra `employees` de la empresa y contra `users`, que es único global.
+     */
+    private function correoDisponible(string $email, ?int $tenantId): string
+    {
+        [$local, $dominio] = array_pad(explode('@', $email, 2), 2, '');
+
+        if ($dominio === '') {
+            return $email;
+        }
+
+        // Tope defensivo: 99 homónimos es de sobra y evita un bucle infinito si algo falla.
+        for ($n = 2; $n <= 99; $n++) {
+            $candidato = "{$local}{$n}@{$dominio}";
+
+            $tomadoEnEmpresa = Employee::withoutGlobalScopes()
+                ->where('email', $candidato)
+                ->where('tenant_id', $tenantId)
+                ->exists();
+
+            $tomadoComoCuenta = User::withoutGlobalScopes()->where('email', $candidato)->exists();
+
+            if (!$tomadoEnEmpresa && !$tomadoComoCuenta) {
+                return $candidato;
+            }
+        }
+
+        // Sin hueco en los 99: se cae a algo único de todas formas, nunca a pisar a nadie.
+        return $local . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)) . '@' . $dominio;
+    }
+
+    /**
      * Horario de la EMPRESA cuando el alta no trae uno (decisión del dueño, 2026-08-08).
      *
      * Antes `shiftStart`/`shiftEnd` quedaban NULL y el reloj asumía 09:00 para todos: a quien
@@ -185,8 +220,23 @@ class EmployeeController extends Controller
         // trabajando hoy. Se cambian al activarse o desde el panel.
         $password = $request->input('password') ?: \Illuminate\Support\Str::random(32);
 
-        // 3. Verificar si ya existe un colaborador con este email en el tenant
+        // HOMÓNIMOS (2026-08-08). El formulario de alta NO pide correo: lo genera del nombre
+        // (`slugParaCorreo`). Con dos "Juan Pérez" salía el mismo `juanperez@empresa.com`, y
+        // esta rama —pensada para actualizar a quien ya existe— PISABA el expediente del
+        // primero en silencio: su puesto, su sueldo y su horario quedaban reemplazados por los
+        // del segundo, y la empresa se quedaba con una sola ficha para dos personas.
+        //
+        // Ahora sólo se actualiza si quien llama lo pide EXPLÍCITAMENTE (`actualizar_existente`,
+        // que RRHH manda cuando el admin confirma que es la misma persona). Si no, el homónimo
+        // recibe su propio correo (juanperez2@…) y su propio expediente.
         $existingEmployee = Employee::withoutGlobalScopes()->where('email', $email)->where('tenant_id', $tenantId)->first();
+
+        if ($existingEmployee && !$request->boolean('actualizar_existente')) {
+            $email = $this->correoDisponible($email, $tenantId);
+            $request->merge(['email' => $email]);
+            $existingEmployee = null;
+        }
+
         if ($existingEmployee) {
             $data = $request->validate([
                 'name' => 'required|string',
@@ -695,14 +745,27 @@ class EmployeeController extends Controller
      */
     public function updateReportTo(Request $request, int $id)
     {
+        $tenantId = (auth()->user() ?? auth('sanctum')->user())?->tenant_id;
+
         $request->validate([
-            'report_to' => 'nullable|integer|exists:employees,id',
+            // Acotado a la EMPRESA: con `exists:employees,id` a secas se podía poner como jefe
+            // a alguien de otra compañía (los ids del cliente son globales).
+            'report_to' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('employees', 'id')->where('tenant_id', $tenantId)],
         ]);
 
         $employee = Employee::findOrFail($id);
 
-        // Prevenir ciclos: el nuevo manager no puede ser un subordinado del empleado
         if ($request->report_to) {
+            // Nadie es su propio jefe. El bucle de abajo no lo cubría: si el destino no tenía
+            // jefe todavía, no llegaba a entrar y la auto-referencia pasaba.
+            if ((int) $request->report_to === (int) $id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Una persona no puede reportarse a sí misma.',
+                ], 422);
+            }
+
+            // Prevenir ciclos: el nuevo jefe no puede colgar del propio empleado.
             $reportToId = $request->report_to;
             $current    = Employee::find($reportToId);
             $visited    = [];

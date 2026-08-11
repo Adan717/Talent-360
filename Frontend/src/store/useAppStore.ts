@@ -281,14 +281,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setHasAlertedStoreDelay: (val) => set({ hasAlertedStoreDelay: val }),
   resetGlobalSimulation: async () => {
-    if (!get().isSandboxMode) {
-      try {
-        await axiosInstance.post('/sync/reset_day', { date: new Date().toLocaleDateString('sv-SE') });
-      } catch (e) {
-        console.error("Error resetting day in database:", e);
-      }
-    }
-    
+    // AQUÍ SE LLAMABA A `/sync/reset_day` (2026-08-11: quitado).
+    //
+    // El panel del Simulador afirma en su propio diálogo que "los datos de la sesión anterior NO
+    // se borran" y que "no afecta fichajes reales", y su comentario de código dice "nunca borra
+    // datos". Pero esta función posteaba a `/sync/reset_day`, que borra la jornada REAL del día
+    // —fichajes, bitácora de tienda, eventualidades y auditoría— sin distinguir simulación de
+    // realidad (no filtra `simulation_session_id`). Y el error se tragaba en un console.error,
+    // así que la pantalla decía "sesión iniciada" pasara lo que pasara.
+    //
+    // El trabajo de esta función es reiniciar el estado VISUAL, que es lo que hace justo debajo.
+    // Para borrar datos de prueba ya existe un botón propio y correctamente acotado
+    // (`/sync/reset` con session_id, que sólo toca filas de simulación).
     const initialClockStates = get().globalUsers.reduce((acc, user) => ({ ...acc, [user.id]: 'inactive' }), {});
     set({
       globalClockStates: initialClockStates,

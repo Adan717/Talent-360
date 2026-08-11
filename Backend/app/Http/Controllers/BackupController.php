@@ -11,11 +11,28 @@ use Carbon\Carbon;
 
 class BackupController extends Controller
 {
+    /**
+     * Tablas que viajan en el respaldo, en orden de dependencia.
+     *
+     * Cambios del 2026-08-11:
+     *  - FUERA `companies`: NO tiene columna `tenant_id` (se indexa por id == tenant_id), así que
+     *    el `where('tenant_id', ...)` de abajo reventaba con un 500 en Postgres. Es decir: el
+     *    respaldo NUNCA funcionó en producción — ni exportar, ni restaurar, ni "subir a Drive".
+     *    Sólo guarda los 4 campos de la pantalla de bienvenida; se dejan fuera a propósito.
+     *  - DENTRO `employees`, `permissions` y `role_permissions`: un "respaldo completo" que no
+     *    incluía los EXPEDIENTES (CURP, RFC, NSS, sueldo, horario) ni quién puede hacer qué no
+     *    respaldaba lo que de verdad importa.
+     *
+     * Lo que NO entra y hay que decirlo en pantalla: los archivos del Archivo Digital y las
+     * evidencias (viven en disco, no en la base) y los recibos de nómina timbrados.
+     */
     private $tables = [
-        'companies',
         'job_roles',
         'role_clock_policies',
+        'permissions',
+        'role_permissions',
         'users',
+        'employees',
         'time_entries',
         'routines',
         'tasks',
@@ -25,6 +42,24 @@ class BackupController extends Controller
         'academy_courses',
         'user_course_progress',
         'system_settings'
+    ];
+
+    /**
+     * Columnas que NUNCA salen del servidor en un respaldo.
+     *
+     * El export usaba `DB::table(...)->get()`, que no pasa por el modelo y por tanto ignora su
+     * `$hidden`: el JSON llevaba el hash de la contraseña de cada persona, el secreto de 2FA, la
+     * llave biométrica, el token del checador y los ids de Google/Apple/Samsung. Y la pantalla lo
+     * llamaba "archivo JSON cifrado" cuando sólo va firmado.
+     */
+    private const COLUMNAS_SENSIBLES = [
+        'users' => [
+            'password', 'remember_token', 'two_factor_secret', 'biometric_key',
+            'fcm_token', 'qr_token', 'google_id', 'apple_id', 'samsung_id',
+        ],
+        'employees' => [
+            'kiosk_pin_hash', 'kiosk_pin_lookup', 'security_pin', 'pin_code', 'invite_token',
+        ],
     ];
 
     /**
@@ -49,6 +84,46 @@ class BackupController extends Controller
     }
 
     /**
+     * Por qué columnas se reconoce una fila al reponerla.
+     *
+     * Casi todas tienen `id`. `system_settings` NO: su clave es (tenant_id, key), así que buscarla
+     * por `id` acababa insertando siempre y chocando con su índice único.
+     */
+    private const CLAVE_DE_FILA = [
+        'system_settings' => ['tenant_id', 'key'],
+    ];
+
+    /**
+     * Valores para las columnas obligatorias que el respaldo NO trae por ser sensibles.
+     *
+     * Sólo hace falta al INSERTAR una fila que ya no existe: al actualizar, la contraseña que ya
+     * tiene la persona se queda como está. Nace una aleatoria que nadie conoce; la persona fija la
+     * suya al activar su cuenta, igual que en el alta de RRHH.
+     */
+    private function rellenoObligatorio(string $table): array
+    {
+        return $table === 'users'
+            ? ['password' => Hash::make(\Illuminate\Support\Str::random(32))]
+            : [];
+    }
+
+    /** Los datos de una empresa, ya sin las columnas que no deben salir del servidor. */
+    private function datosDelTenant(int $tenantId): array
+    {
+        $datos = [];
+
+        foreach ($this->tables as $table) {
+            $ocultas = self::COLUMNAS_SENSIBLES[$table] ?? [];
+
+            $datos[$table] = DB::table($table)->where('tenant_id', $tenantId)->get()
+                ->map(fn ($fila) => (object) \Illuminate\Support\Arr::except((array) $fila, $ocultas))
+                ->toArray();
+        }
+
+        return $datos;
+    }
+
+    /**
      * Export tenant data as JSON with SHA-256 HMAC
      */
     public function export(Request $request)
@@ -62,11 +137,7 @@ class BackupController extends Controller
         }
 
         $tenantId = $user->tenant_id;
-        $backupData = [];
-
-        foreach ($this->tables as $table) {
-            $backupData[$table] = DB::table($table)->where('tenant_id', $tenantId)->get()->toArray();
-        }
+        $backupData = $this->datosDelTenant($tenantId);
 
         // Add metadata
         $metadata = [
@@ -134,39 +205,73 @@ class BackupController extends Controller
         try {
             DB::beginTransaction();
 
-            // Disable foreign key checks temporarily to wipe tables cleanly
-            if (config('database.default') === 'sqlite') {
-                DB::statement('PRAGMA foreign_keys = OFF;');
-            } else {
-                DB::statement('SET CONSTRAINTS ALL DEFERRED;');
-            }
+            // RESTAURAR YA NO BORRA NADA (2026-08-11).
+            //
+            // Aquí había un `DELETE` de todas las filas de la empresa en las 13 tablas de la
+            // lista, y sólo después se reinsertaba lo que trajera el archivo. Con eso:
+            //  · Al borrar `users` y `job_roles`, las llaves foráneas de `employees` (ambas
+            //    ON DELETE SET NULL) dejaban CADA expediente con `user_id` y `job_role_id` en
+            //    NULL. Como `employees` no viajaba en el respaldo, nada volvía a unirlos: toda la
+            //    plantilla quedaba sin cuenta de acceso y sin puesto, de forma permanente.
+            //  · Ese mismo borrado de `users` arrastraba por CASCADE una docena de tablas que
+            //    tampoco están en el respaldo (bitácora de auditoría, chat, eventualidades,
+            //    evaluaciones, traspasos de llaves, monedero...), que se perdían para siempre.
+            //  · Y el "apagado" de llaves foráneas no apagaba nada: `SET CONSTRAINTS ALL DEFERRED`
+            //    no hace efecto sobre restricciones que no son DEFERRABLE, que son todas aquí.
+            //
+            // Ahora es un REPONER: cada fila del archivo se escribe sobre la suya (por id) o se
+            // inserta si ya no está. No se borra nada, así que ninguna llave foránea se dispara.
+            // Lo que se creó después del respaldo sobrevive — y eso es exactamente lo que hay que
+            // decir en pantalla, en vez de llamarlo "restaurar el estado".
+            $filas = 0;
 
-            // Clean existing tenant records in reverse dependency order
-            $tablesToClean = array_reverse($this->tables);
-            foreach ($tablesToClean as $table) {
-                DB::table($table)->where('tenant_id', $tenantId)->delete();
-            }
-
-            // Restore in correct dependency order
             foreach ($this->tables as $table) {
-                if (isset($data[$table]) && is_array($data[$table])) {
-                    foreach ($data[$table] as $row) {
-                        $rowArray = (array)$row;
-                        // Force tenant isolation (security block)
-                        $rowArray['tenant_id'] = $tenantId;
-                        
-                        DB::table($table)->insert($rowArray);
-                    }
+                if (!isset($data[$table]) || !is_array($data[$table])) {
+                    continue;
                 }
-            }
 
-            if (config('database.default') === 'sqlite') {
-                DB::statement('PRAGMA foreign_keys = ON;');
+                $claves = self::CLAVE_DE_FILA[$table] ?? ['id'];
+
+                foreach ($data[$table] as $row) {
+                    $fila = (array) $row;
+                    // Aislamiento: la empresa la pone el servidor, nunca el archivo.
+                    $fila['tenant_id'] = $tenantId;
+
+                    $busqueda = [];
+                    foreach ($claves as $columna) {
+                        if (!array_key_exists($columna, $fila) || $fila[$columna] === null) {
+                            $busqueda = [];
+                            break;
+                        }
+                        $busqueda[$columna] = $fila[$columna];
+                    }
+
+                    if (empty($busqueda)) {
+                        DB::table($table)->insert($fila + $this->rellenoObligatorio($table));
+                        $filas++;
+                        continue;
+                    }
+
+                    $valores = array_diff_key($fila, $busqueda);
+
+                    if (DB::table($table)->where($busqueda)->exists()) {
+                        // Sólo se pisan las columnas que el archivo trae: las sensibles no viajan
+                        // en el respaldo, así que reponer nunca borra la contraseña de nadie.
+                        DB::table($table)->where($busqueda)->update($valores);
+                    } else {
+                        DB::table($table)->insert($fila + $this->rellenoObligatorio($table));
+                    }
+
+                    $filas++;
+                }
             }
 
             DB::commit();
 
-            return response()->json(['message' => 'Respaldo restaurado con éxito.']);
+            return response()->json([
+                'message' => "Datos repuestos desde el respaldo: {$filas} registros.",
+                'rows' => $filas,
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -176,59 +281,13 @@ class BackupController extends Controller
         }
     }
 
-    /**
-     * Simulate Google Drive sync
-     */
-    public function googleSync(Request $request)
-    {
-        $user = $request->user();
-        if (!$this->checkPremiumAccess($user)) {
-            return response()->json([
-                'error' => 'Premium Feature Locked',
-                'message' => 'La sincronización con Google Drive es una característica exclusiva de los planes de pago.'
-            ], 403);
-        }
+    // googleSync() SE ELIMINÓ el 2026-08-11.
+    //
+    // Era una SIMULACIÓN vendida como función del plan de pago: armaba el JSON, lo DESCARTABA
+    // sin escribirlo en ningún sitio y respondía "Copia de seguridad subida a Google Drive con
+    // éxito" con un md5() disfrazado de identificador de archivo. Su propio comentario lo
+    // reconocía. En la pantalla, además, "Vincular Cuenta de Google" ni siquiera llamaba al
+    // servidor: pintaba "Conectado", una cuenta de correo escrita a mano y dos archivos con
+    // tamaños inventados. Nada de esto subía nada a ninguna nube.
 
-        $request->validate([
-            'google_token' => 'required|string'
-        ]);
-
-        // In a production app, we would use the Google API PHP Client here.
-        // For our simulated environment, we will mock the Google Drive API response 
-        // to return a successful sync status and a simulated File ID.
-        
-        $tenantId = $user->tenant_id;
-        $backupData = [];
-
-        foreach ($this->tables as $table) {
-            $backupData[$table] = DB::table($table)->where('tenant_id', $tenantId)->get()->toArray();
-        }
-
-        $metadata = [
-            'tenant_id' => $tenantId,
-            'exported_at' => now()->toIso8601String(),
-            'version' => '1.0.0',
-            'company_name' => $user->tenant->name ?? 'Talent360 Tenant'
-        ];
-
-        $payload = [
-            'metadata' => $metadata,
-            'data' => $backupData
-        ];
-
-        $jsonStr = json_encode($payload);
-        $signature = hash_hmac('sha256', $jsonStr, config('app.key'));
-        $payload['_signature'] = $signature;
-
-        // Mock upload ID
-        $mockFileId = 'gdrive_' . md5(now() . $tenantId);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Copia de seguridad subida a Google Drive con éxito.',
-            'file_id' => $mockFileId,
-            'filename' => 'talent360_backup_' . date('Y-m-d') . '.json',
-            'synced_at' => now()->toIso8601String()
-        ]);
-    }
 }

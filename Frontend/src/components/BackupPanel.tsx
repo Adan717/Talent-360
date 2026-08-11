@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
-import { Database, Download, Upload, CloudLightning, ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw, LogIn } from 'lucide-react';
+import { Database, Download, Upload, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 
 export function BackupPanel() {
-  const { currentTier, currentUser, fetchState, isFeatureUnlocked } = useAppStore();
+  const { currentUser, fetchState, isFeatureUnlocked } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  
-  // Google Drive Simulation States
-  const [gdriveConnected, setGdriveConnected] = useState(false);
-  const [gdriveAutoSync, setGdriveAutoSync] = useState(false);
-  const [syncingGdrive, setSyncingGdrive] = useState(false);
-  const [gdriveFiles, setGdriveFiles] = useState<Array<{ id: string, name: string, date: string, size: string }>>([]);
 
   const isTrialActive = () => {
     const tenant = currentUser?.tenant;
@@ -67,10 +61,28 @@ export function BackupPanel() {
     reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
+
+        // Elegir el archivo en el explorador disparaba la operación directamente, sin una sola
+        // pregunta. Ahora se muestra de qué respaldo se trata (el propio JSON lo dice) y se pide
+        // confirmación antes de tocar la base.
+        let meta: any = null;
+        try { meta = JSON.parse(text)?.metadata; } catch { /* la firma lo rechazará abajo */ }
+        const cuando = meta?.exported_at ? new Date(meta.exported_at).toLocaleString('es-MX') : 'fecha desconocida';
+        const deQuien = meta?.company_name || 'empresa desconocida';
+
+        if (!window.confirm(
+          `Vas a reponer los datos del respaldo de "${deQuien}" del ${cuando}.\n\n` +
+          `Los registros que estén en el respaldo se sobrescriben con la versión del archivo. ` +
+          `Lo que se haya creado después NO se borra.\n\n¿Continuar?`
+        )) {
+          setLoading(false);
+          return;
+        }
+
         const res = await axiosInstance.post('/tenant/backup/import', {
           backup_json: text
         });
-        setSuccessMsg(res.data.message || 'Copia de seguridad restaurada con éxito.');
+        setSuccessMsg(res.data.message || 'Datos repuestos desde el respaldo.');
         // Refresh local store state after import
         await fetchState();
       } catch (err: any) {
@@ -85,46 +97,6 @@ export function BackupPanel() {
     event.target.value = '';
   };
 
-  const connectGoogleDrive = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setGdriveConnected(true);
-      setLoading(false);
-      setGdriveFiles([
-        { id: '1', name: 'talent360_backup_initial.json', date: new Date(Date.now() - 86400000 * 3).toISOString().slice(0, 10), size: '142 KB' },
-        { id: '2', name: 'talent360_backup_weekly.json', date: new Date(Date.now() - 86400000).toISOString().slice(0, 10), size: '205 KB' }
-      ]);
-      setSuccessMsg('Conectado a Google Drive exitosamente (Simulado).');
-    }, 1000);
-  };
-
-  const handleGoogleSync = async () => {
-    setSyncingGdrive(true);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    try {
-      const res = await axiosInstance.post('/tenant/backup/google-sync', {
-        google_token: 'simulated_oauth2_token_abc123'
-      });
-      if (res.data && res.data.status === 'success') {
-        setGdriveFiles(prev => [
-          { 
-            id: res.data.file_id, 
-            name: res.data.filename, 
-            date: res.data.synced_at.slice(0, 10), 
-            size: '248 KB' 
-          },
-          ...prev
-        ]);
-        setSuccessMsg(res.data.message);
-      }
-    } catch (e: any) {
-      console.error(e);
-      setErrorMsg(e.response?.data?.message || 'Error en la sincronización con Google Drive.');
-    } finally {
-      setSyncingGdrive(false);
-    }
-  };
 
   return (
     <div className="relative w-full">
@@ -137,7 +109,7 @@ export function BackupPanel() {
         </div>
         <div className="text-left">
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Respaldos y Seguridad</h1>
-          <p className="text-xs text-slate-500 font-medium">Exporta tu información con firma criptográfica HMAC y sincroniza tu base de datos con la nube.</p>
+          <p className="text-xs text-slate-500 font-medium">Descarga una copia firmada de los datos de tu empresa y reponla si hace falta.</p>
         </div>
       </div>
 
@@ -172,7 +144,7 @@ export function BackupPanel() {
               Copias de Seguridad Bloqueadas
             </h2>
             <p className="text-slate-500 text-xs max-w-sm leading-relaxed mb-5">
-              Los respaldos firmados localmente y la sincronización en la nube con Google Drive son exclusivos del Plan Profesional e Ilimitado.
+              Descargar y reponer copias de seguridad es exclusivo del Plan Profesional e Ilimitado.
             </p>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-pricing-modal'))}
@@ -186,10 +158,21 @@ export function BackupPanel() {
         {/* Column 1: Local Backup Actions */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-left">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2">Exportar Respaldo Completo</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              Descarga un archivo JSON cifrado y firmado con un código HMAC SHA-256 generado por tu llave privada del servidor (`APP_KEY`). Esto impide la alteración o inyección maliciosa de registros antes de la importación.
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2">Descargar Respaldo</h3>
+            {/* Decía "archivo JSON cifrado": no está cifrado, va FIRMADO. Y el archivo llevaba en
+                claro el hash de la contraseña de cada persona, el secreto de 2FA, la llave
+                biométrica y el token del checador; ya no salen del servidor. */}
+            <p className="text-xs text-slate-500 leading-relaxed mb-4">
+              Un archivo JSON <span className="font-bold">firmado</span> (HMAC SHA-256 con la llave del servidor), para que no se pueda alterar sin que se note. No va cifrado: guárdalo en un lugar seguro.
             </p>
+            <div className="text-[11px] text-slate-500 leading-relaxed mb-6 bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <span className="font-bold text-slate-700 block mb-1">Qué incluye</span>
+              Colaboradores y sus expedientes, puestos y capacidades, cuentas de acceso, fichajes,
+              rutinas y tareas, vacantes y candidatos, cursos y su avance, y la configuración.
+              <span className="font-bold text-slate-700 block mt-2 mb-1">Qué NO incluye</span>
+              Los archivos subidos (Archivo Digital y evidencias, que viven en disco), los recibos
+              de nómina, y las contraseñas y PINs (nunca salen del servidor).
+            </div>
 
             <button
               disabled={loading || isFreemiumExpired}
@@ -209,13 +192,20 @@ export function BackupPanel() {
           </div>
 
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-left">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2">Restaurar Copia de Seguridad</h3>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2">Reponer desde un Respaldo</h3>
+            {/* Se llamaba "Restaurar Estado" y el servidor BORRABA las tablas de la empresa antes
+                de reinsertar. Eso dejaba a toda la plantilla sin cuenta y sin puesto (los
+                expedientes no viajan atados a nada) y se llevaba por delante el chat, la
+                auditoría, las eventualidades y el monedero, que no están en el respaldo. Ahora
+                repone sin borrar, y el texto dice exactamente eso. */}
             <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              Sube el archivo JSON que exportaste anteriormente. El sistema verificará de forma segura la firma digital antes de limpiar las tablas del tenant y reinsertar los datos estructurados.
+              Sube el archivo que descargaste. Se comprueba la firma y luego cada registro del
+              respaldo se vuelve a escribir sobre el actual. <span className="font-bold">No se borra nada</span>:
+              lo que se haya creado después del respaldo se conserva.
             </p>
 
             <label className={`inline-flex items-center gap-2 px-6 py-3.5 border border-slate-300 hover:border-slate-400 bg-white text-slate-700 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-sm transition-colors cursor-pointer ${loading || isFreemiumExpired ? 'opacity-50 cursor-not-allowed' : ''}`}>
-              <Upload size={16} /> Cargar y Restaurar Estado
+              <Upload size={16} /> Cargar y Reponer
               <input
                 type="file"
                 accept=".json"
@@ -227,87 +217,12 @@ export function BackupPanel() {
           </div>
         </div>
 
-        {/* Column 2: Google Drive Sim Panel */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-left flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Google Drive Cloud</h3>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${gdriveConnected ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                {gdriveConnected ? 'Conectado' : 'Desconectado'}
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              Almacena automáticamente una copia de tus registros en la carpeta segura de Google Drive asociada a la cuenta de tu organización.
-            </p>
-
-            {!gdriveConnected ? (
-              <button
-                disabled={loading || isFreemiumExpired}
-                onClick={connectGoogleDrive}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
-              >
-                {loading ? <RefreshCw size={16} className="animate-spin" /> : <LogIn size={16} />}
-                Vincular Cuenta de Google
-              </button>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-150 rounded-xl">
-                  <div className="text-[11px] font-bold text-slate-700 truncate max-w-[150px]">talent360@organizacion.com</div>
-                  <button 
-                    onClick={() => { setGdriveConnected(false); setGdriveFiles([]); }}
-                    className="text-[10px] font-black text-rose-600 hover:text-rose-800 uppercase tracking-wider"
-                  >
-                    Desconectar
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-bold text-slate-600">Sincronización automática</label>
-                  <input
-                    type="checkbox"
-                    checked={gdriveAutoSync}
-                    onChange={(e) => setGdriveAutoSync(e.target.checked)}
-                    className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
-                  />
-                </div>
-
-                <button
-                  disabled={syncingGdrive}
-                  onClick={handleGoogleSync}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-sm transition-all"
-                >
-                  {syncingGdrive ? (
-                    <>
-                      <RefreshCw size={14} className="animate-spin" /> Sincronizando...
-                    </>
-                  ) : (
-                    <>
-                      <CloudLightning size={14} /> Respaldar en Google Drive
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {gdriveConnected && gdriveFiles.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-slate-100">
-              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Archivos en la Nube</h4>
-              <div className="space-y-2.5 max-h-36 overflow-y-auto pr-1">
-                {gdriveFiles.map(file => (
-                  <div key={file.id} className="flex justify-between items-center text-[11px]">
-                    <div className="truncate pr-2 text-left">
-                      <p className="font-bold text-slate-700 truncate">{file.name}</p>
-                      <span className="text-slate-400 text-[10px]">{file.date}</span>
-                    </div>
-                    <span className="font-bold text-slate-500 whitespace-nowrap shrink-0">{file.size}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* COLUMNA DE GOOGLE DRIVE ELIMINADA (2026-08-11): era ficción completa. "Vincular
+            Cuenta de Google" no llamaba a ningún servidor —era un setTimeout que pintaba
+            "Conectado", una cuenta escrita a mano y dos archivos con tamaños inventados—, y
+            "Respaldar en Google Drive" llamaba a un endpoint que armaba el JSON, lo descartaba
+            y respondía "subida con éxito". Nada subía a ninguna nube, y se vendía como función
+            del Plan Profesional. */}
       </div>
     </div>
   );

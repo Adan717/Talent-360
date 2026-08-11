@@ -536,123 +536,14 @@ class ClockController extends Controller
         return response()->json(['message' => 'Settings updated successfully']);
     }
 
-    // ⚠️ DEV-ONLY — No usar en producción
-    public function initDb(Request $request)
-    {
-        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
-            return response()->json(['error' => 'Este endpoint está deshabilitado en producción.'], 403);
-        }
-
-        // NOTA (Ronda 1): a diferencia de resetDb/resetDay, initDb NO se acotó por
-        // tenant en esta ronda (colisiona con constraints UNIQUE globales al reinsertar
-        // catálogos). DEV-ONLY, platform_admin, ALLOW_QA_RESET-gated, sin llamadores hoy.
-        $users = $request->input('users');
-        $configs = $request->input('configs');
-        $tenantId = auth()->user()->tenant_id ?? 1;
-
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys=OFF;');
-        } else {
-            DB::statement('SET session_replication_role = replica;');
-        }
-
-        DB::table('employees')->truncate();
-        DB::table('users')->where('role', 'empleado')->delete();
-        DB::table('role_permissions')->truncate();
-        DB::table('permissions')->truncate();
-        DB::table('job_roles')->truncate();
-
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys=ON;');
-        } else {
-            DB::statement('SET session_replication_role = DEFAULT;');
-        }
-
-        // Define permissions
-        $perms = [
-            ['name' => 'view_reports', 'description' => 'Ver tablas de reportes y excel'],
-            ['name' => 'manage_contingencies', 'description' => 'Aprobar justificantes y otorgar amnistía'],
-            ['name' => 'broadcast_messages', 'description' => 'Mandar mensajes por megáfono'],
-            ['name' => 'open_store', 'description' => 'Abrir y cerrar la tienda (Cierre Maestro)'],
-            ['name' => 'manage_tasks', 'description' => 'Generar y asignar tareas a colaboradores'],
-            ['name' => 'roll_call', 'description' => 'Pasar lista de asistencia (Entradas/Salidas)'],
-            ['name' => 'take_breaks', 'description' => 'Derecho a tomar descansos y pausas activas']
-        ];
-        foreach ($perms as $p) {
-            $p['id'] = DB::table('permissions')->insertGetId(array_merge($p, ['created_at' => now(), 'updated_at' => now()]));
-        }
-        $permIds = DB::table('permissions')->pluck('id', 'name');
-
-        // Extract unique roles from users
-        $roleMap = [];
-        foreach ($users as $u) {
-            $roleName = $u['role'] ?? 'Empleado General';
-            if (!isset($roleMap[$roleName])) {
-                $roleId = DB::table('job_roles')->insertGetId([
-                    'name' => $roleName,
-                    'area' => 'Ventas',
-                    'esAperturador' => in_array($roleName, ['Encargado Titular', 'Segundo Encargado', 'Supervisor']),
-                    'portadorLlaves' => in_array($roleName, ['Encargado Titular', 'Segundo Encargado', 'Supervisor']) ? 'ambos' : 'ninguno',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $roleMap[$roleName] = $roleId;
-
-                // Assign permissions based on role
-                if (in_array($roleName, ['Encargado Titular', 'Segundo Encargado', 'Supervisor'])) {
-                    DB::table('role_permissions')->insert([
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['view_reports']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['manage_contingencies']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['broadcast_messages']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['open_store']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['manage_tasks']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['roll_call']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['take_breaks']],
-                    ]);
-                } else {
-                    DB::table('role_permissions')->insert([
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['manage_tasks']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['roll_call']],
-                        ['job_role_id' => $roleId, 'permission_id' => $permIds['take_breaks']],
-                    ]);
-                }
-            }
-        }
-
-        foreach ($users as $u) {
-            $conf = $configs[$u['id']] ?? [];
-
-            // Insert into users for login access
-            $userId = DB::table('users')->insertGetId([
-                'name' => $u['name'],
-                'email' => strtolower(str_replace(' ', '.', $u['name'])) . '@talent360.com',
-                // Aleatoria, no `123456`: aunque sea el sembrador de QA, escribe en una BD real y
-                // deja cuentas con sesión propia. Se accede a ellas reseteando desde la consola.
-                'password' => Hash::make(\Illuminate\Support\Str::random(32)),
-                'role' => 'empleado',
-                'tenant_id' => $tenantId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Insert into employees for operational data
-            DB::table('employees')->insert([
-                'tenant_id' => $tenantId,
-                'user_id' => $userId,
-                'name' => $u['name'],
-                'email' => strtolower(str_replace(' ', '.', $u['name'])) . '@talent360.com',
-                'job_role_id' => $roleMap[$u['role'] ?? 'Empleado General'],
-                'shiftStart' => $conf['start'] ?? '08:00:00',
-                'shiftEnd' => $conf['end'] ?? '18:00:00',
-                'mealMinutes' => 60,
-                'restDay' => $conf['restDay'] ?? 'Domingo',
-                'is_active_employee' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-        return response()->json(['message' => 'DB initialized with employees.']);
-    }
+    // initDb() SE ELIMINÓ el 2026-08-11.
+    //
+    // Sembraba el simulador de QA haciendo `truncate` de employees, job_roles, permissions y
+    // role_permissions SIN filtrar por empresa. En Postgres, Laravel compila el truncate como
+    // `TRUNCATE ... RESTART IDENTITY CASCADE`, que además vacía toda tabla que referencie a la
+    // truncada: recibos de nómina FIRMADOS (weekly_payrolls), el Archivo Digital
+    // (employee_documents), las aprobaciones diarias y las aperturas — de TODAS las empresas de
+    // la instancia, no sólo de la del que llama. No tenía un solo llamador en el frontend.
 
     public function sync(Request $request)
     {
@@ -879,20 +770,23 @@ class ClockController extends Controller
     // Purga permanente del archivo histórico — SOLO platform_admin (línea §1–§42)
     public function purgeArchive(Request $request)
     {
-        $user = auth()->user();
-
-        // Solo platform_admin puede destruir datos históricos permanentemente
-        if (($user->system_role ?? '') !== 'platform_admin') {
-            return response()->json(['error' => 'Acceso denegado. Solo un administrador de plataforma puede purgar el historial.'], 403);
+        // La guardia que había aquí comparaba `$user->system_role`, que NO es una columna ni un
+        // accessor: es un campo que se inventa el frontend al iniciar sesión. En el servidor vale
+        // siempre null, así que este endpoint respondía 403 a TODO EL MUNDO, incluido el
+        // platform_admin legítimo — el botón "Purgar Archivo" nunca pudo funcionar. El control de
+        // rol real ya lo hace el middleware `role:platform_admin` de la ruta.
+        //
+        // Y debajo estaba el defecto que de verdad muerde: sin `tenant_id` el DELETE iba contra
+        // `archived_time_entries` ENTERA — el archivo histórico de todas las empresas. Justo el
+        // caso del platform_admin, que no tiene tenant propio. Ahora la empresa es obligatoria.
+        $tenantId = $this->resolveResetTenantId($request);
+        if ($tenantId === null) {
+            return response()->json(['error' => 'Indica la empresa (tenant_id) cuyo archivo histórico quieres purgar.'], 422);
         }
 
-        $tenantId = $request->input('tenant_id');
-        $before   = $request->input('before_date'); // Opcional: purgar solo antes de cierta fecha
+        $before = $request->input('before_date'); // Opcional: purgar solo antes de cierta fecha
 
-        $query = DB::table('archived_time_entries');
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
+        $query = DB::table('archived_time_entries')->where('tenant_id', $tenantId);
         if ($before) {
             $query->where('date', '<', $before);
         }

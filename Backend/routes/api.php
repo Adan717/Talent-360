@@ -189,14 +189,23 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     });
 
 
-    // DB Initialization (QA Simulator helper)
-    // ⚠️ Solo platform_admin: initDb hace TRUNCATE de employees/job_roles/permissions
-    // sin filtrar por tenant_id (borra estructura organizacional de TODAS las empresas).
+    // Operaciones destructivas de QA: SÓLO platform_admin y sólo fuera de producción.
+    //
+    // `/sync/init` (initDb) se ELIMINÓ el 2026-08-11: hacía `truncate` de employees, job_roles y
+    // permissions sin filtrar por empresa, y en Postgres Laravel compila `TRUNCATE ... CASCADE`,
+    // que vacía además toda tabla que las referencie — recibos de nómina FIRMADOS
+    // (weekly_payrolls), el Archivo Digital (employee_documents) y las aperturas, de TODAS las
+    // empresas a la vez. No tenía un solo llamador en el frontend.
+    //
+    // El default de `ALLOW_QA_RESET` es ahora `false` (antes `true` aquí y `false` en los
+    // controladores: la puerta decía una cosa y la cerradura otra).
     Route::middleware(['auth:sanctum', 'role:platform_admin'])->group(function () {
-        if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
-            Route::post('/sync/init', [ClockController::class, 'initDb']);
+        if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', false)) {
+            // Borra la jornada de UNA empresa (archivando los fichajes). Vivía en el grupo de
+            // `role:empleado`, donde cualquier colaborador podía llamarlo.
+            Route::post('/sync/reset_day', [ClockController::class, 'resetDay']);
         }
-        Route::post('/sync/purge_archive', [ClockController::class, 'purgeArchive'])->middleware('auth:sanctum');
+        Route::post('/sync/purge_archive', [ClockController::class, 'purgeArchive']);
     });
 
     Route::post('/support/copilot', [SupportTicketController::class, 'copilot'])->middleware('auth:sanctum');
@@ -423,7 +432,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Respaldos (Exclusivos Pro/Empresas en controlador)
         Route::get('/tenant/backup/export', [BackupController::class, 'export']);
         Route::post('/tenant/backup/import', [BackupController::class, 'import']);
-        Route::post('/tenant/backup/google-sync', [BackupController::class, 'googleSync']);
+        // `/tenant/backup/google-sync` se ELIMINÓ el 2026-08-11: era una simulación que no subía
+        // nada a ninguna nube y se vendía como función del plan de pago.
 
         // Apertura de tienda (Ajustes y Jerarquías)
         Route::get('/store-opening/settings', [StoreOpeningController::class, 'getSettings']);
@@ -626,9 +636,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         });
 
         // Sincronización del cliente local y registros offline (Kiosko)
-        if (app()->isLocal() || app()->runningUnitTests() || env('ALLOW_QA_RESET', true)) {
-            Route::post('/sync/reset_day', [ClockController::class, 'resetDay']);
-        }
+        // `/sync/reset_day` YA NO VIVE AQUÍ (2026-08-11): este grupo admite `role:empleado`, así
+        // que cualquier colaborador con sesión podía borrar la jornada REAL completa de su
+        // empresa —fichajes, bitácora de tienda, eventualidades y el registro de auditoría donde
+        // viven retardos y sanciones— para la fecha que quisiera. Su única cerradura era el gate
+        // de entorno. Se movió al grupo de platform_admin donde ya viven los demás destructivos.
         Route::get('/sync/state', [ClockController::class, 'getState']);
         Route::post('/sync/clock', [ClockController::class, 'sync']);
         Route::post('/sync/store', [StoreController::class, 'sync']);

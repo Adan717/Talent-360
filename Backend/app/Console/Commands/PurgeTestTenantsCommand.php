@@ -13,39 +13,76 @@ class PurgeTestTenantsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'tenant:purge-test-tenants {--force : Confirm purging all test tenants without prompt}';
+    protected $signature = 'tenant:purge-test-tenants
+        {--tenants= : IDs de las empresas a borrar, separados por coma. OBLIGATORIO.}
+        {--force : Saltar la confirmación (sólo para scripts, nunca en un despliegue)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Depura de forma física y en cascada todos los inquilinos de prueba (tenant_id > 1), preservando intacto a Decorarte 360 (tenant_id = 1) y ajustando la secuencia a id = 2';
+    protected $description = 'Borra FÍSICAMENTE las empresas que se le indiquen por id (--tenants=2,3) y todos sus datos. Irreversible.';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        if (!$this->option('force') && !$this->confirm('¿Estás SEGURO de eliminar físicamente todas las empresas de prueba (tenant_id > 1) y sus datos vinculados? Esta acción es irreversible.')) {
+        // GATE DE ENTORNO (2026-08-11). Este comando no tenía ninguno: borraba empresas en
+        // producción sin preguntar. Mismo patrón que ya usa ClockController::resetDay.
+        if (app()->isProduction() && !env('ALLOW_QA_RESET', false)) {
+            $this->error('Comando deshabilitado en producción. Fija ALLOW_QA_RESET=true a propósito si de verdad quieres borrar empresas.');
+            return 1;
+        }
+
+        // LOS IDS SE DICEN A MANO (2026-08-11). Antes el criterio era `id > 1`: TODA empresa que
+        // no fuera la primera se consideraba "de prueba" y se borraba físicamente, con sus
+        // fichajes y sus recibos de nómina. No existe ninguna bandera `is_demo` en la tabla, así
+        // que la heurística no tenía cómo distinguir una empresa real de una de pruebas — y este
+        // comando se ejecutaba con --force en CADA despliegue desde `deploy_to_hetzner.py`.
+        $ids = collect(explode(',', (string) $this->option('tenants')))
+            ->map(fn ($v) => trim($v))
+            ->filter(fn ($v) => $v !== '' && ctype_digit($v))
+            ->map(fn ($v) => (int) $v)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            $this->error('Indica qué empresas borrar: --tenants=2,3');
+            $this->line('Empresas existentes:');
+            foreach (DB::table('tenants')->get(['id', 'name', 'subdomain']) as $t) {
+                $this->line("  {$t->id}  {$t->name}  ({$t->subdomain})");
+            }
+            return 1;
+        }
+
+        if ($ids->contains(1)) {
+            $this->error('La empresa 1 no se puede borrar con este comando.');
+            return 1;
+        }
+
+        $nombres = DB::table('tenants')->whereIn('id', $ids)->pluck('name', 'id');
+
+        if ($nombres->isEmpty()) {
+            $this->error('Ninguno de esos ids existe.');
+            return 1;
+        }
+
+        if (!$this->option('force') && !$this->confirm('Vas a BORRAR FÍSICAMENTE, y sin vuelta atrás, estas empresas con todos sus datos (fichajes, nómina, expedientes): ' . $nombres->map(fn ($n, $id) => "#{$id} {$n}")->implode(', ') . '. ¿Seguro?')) {
             $this->info('Operación cancelada por el usuario.');
             return 0;
         }
 
-        $this->info('Iniciando depuración profunda de inquilinos de prueba (tenant_id > 1)...');
+        $this->info('Borrando: ' . $nombres->map(fn ($n, $id) => "#{$id} {$n}")->implode(', '));
 
         try {
             DB::beginTransaction();
 
-            // 1. Obtener los IDs de tenants a eliminar (excluyendo tenant_id = 1)
-            $testTenantIds = DB::table('tenants')
-                ->where('id', '>', 1)
-                ->where('subdomain', '!=', 'talent360')
-                ->pluck('id')
-                ->toArray();
+            $testTenantIds = $nombres->keys()->all();
 
             if (empty($testTenantIds)) {
-                $this->info('No se encontraron empresas de prueba (tenant_id > 1) para eliminar.');
+                $this->info('Nada que borrar.');
             } else {
                 $this->info('Empresas a eliminar: ' . implode(', ', $testTenantIds));
 

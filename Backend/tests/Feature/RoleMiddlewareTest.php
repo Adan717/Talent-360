@@ -159,21 +159,19 @@ class RoleMiddlewareTest extends TestCase
         $this->actingAs($admin)->getJson('/api/v1/job-roles')->assertStatus(200);
     }
 
-    public function test_sync_init_is_platform_admin_only(): void
+    /**
+     * `/sync/init` YA NO EXISTE (2026-08-11). Restringirlo a platform_admin no bastaba: hacía
+     * `truncate` de employees y job_roles sin filtrar por empresa y, en Postgres, Laravel compila
+     * el truncate con CASCADE — así que vaciaba también los recibos de nómina FIRMADOS y el
+     * Archivo Digital de TODAS las empresas de la instancia. No tenía ningún llamador.
+     */
+    public function test_sync_init_ya_no_existe(): void
     {
-        // 1. Unauthenticated gets 401
-        $this->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(401);
-
-        // 2. Unauthorized role (e.g. admin or supervisor) gets 403 — initDb hace TRUNCATE
-        // de employees/job_roles/permissions sin filtrar por tenant_id.
-        $supervisor = User::factory()->create(['role' => 'supervisor']);
-        $admin = User::factory()->create(['role' => 'admin']);
-        $this->actingAs($supervisor)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(403);
-        $this->actingAs($admin)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(403);
-
-        // 3. Authorized role (platform_admin) gets 200
         $platformAdmin = User::factory()->create(['role' => 'platform_admin']);
-        $this->actingAs($platformAdmin)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])->assertStatus(200);
+
+        $this->actingAs($platformAdmin)
+            ->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])
+            ->assertStatus(404);
     }
 
     public function test_sync_reset_is_open_to_admin_and_supervisor(): void
@@ -258,30 +256,44 @@ class RoleMiddlewareTest extends TestCase
         ]);
     }
 
-    public function test_sync_init_and_reset_day_fail_in_production_environment(): void
+    /**
+     * `/sync/init` ya no existe (2026-08-11): hacía TRUNCATE ... CASCADE de employees y job_roles
+     * sin filtrar por empresa, y en Postgres eso vacía además los recibos de nómina firmados y el
+     * Archivo Digital de TODAS las empresas. No tenía llamadores.
+     *
+     * `/sync/reset_day` sigue existiendo pero se mudó al grupo de platform_admin (antes lo podía
+     * llamar cualquier colaborador) y ya no se registra siquiera en producción.
+     */
+    public function test_los_endpoints_destructivos_de_qa_no_existen_en_produccion(): void
     {
-        // 1. Set environment to production
         $this->app['env'] = 'production';
 
-        // 2. Create platform admin user
         $platformAdmin = User::factory()->create([
             'role' => 'platform_admin',
         ]);
 
-        // 3. Request init endpoint — sigue deshabilitado en producción (TRUNCATE global
-        // de employees/job_roles/permissions sin filtrar por tenant).
-        $responseInit = $this->actingAs($platformAdmin)->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []]);
-        $responseInit->assertStatus(403);
-        $responseInit->assertJson([
-            'error' => 'Este endpoint está deshabilitado en producción.'
-        ]);
+        $this->actingAs($platformAdmin)
+            ->postJson('/api/v1/sync/init', ['users' => [], 'configs' => []])
+            ->assertStatus(404);
 
-        // 4. Request reset_day endpoint — igual, sigue deshabilitado.
-        $responseResetDay = $this->actingAs($platformAdmin)->postJson('/api/v1/sync/reset_day');
-        $responseResetDay->assertStatus(403);
-        $responseResetDay->assertJson([
-            'error' => 'Este endpoint está deshabilitado en producción.'
-        ]);
+        // En producción la ruta ni siquiera se registra; y si el entorno cambia después de
+        // arrancar (como en esta prueba), el propio controlador sigue respondiendo 403.
+        $this->actingAs($platformAdmin)
+            ->postJson('/api/v1/sync/reset_day')
+            ->assertStatus(403)
+            ->assertJson(['error' => 'Este endpoint está deshabilitado en producción.']);
+    }
+
+    public function test_un_colaborador_no_puede_borrar_la_jornada_de_su_empresa(): void
+    {
+        // El caso que importa: `/sync/reset_day` vivía en el grupo `role:empleado,...`, así que
+        // cualquiera con sesión de colaborador podía borrar los fichajes del día de TODA su
+        // empresa —y de cualquier fecha pasada— con una sola petición.
+        $empleado = User::factory()->create(['role' => 'empleado']);
+
+        $this->actingAs($empleado)
+            ->postJson('/api/v1/sync/reset_day', ['tenant_id' => $empleado->tenant_id])
+            ->assertStatus(403);
     }
 
     public function test_sync_reset_works_in_production_now_that_it_only_purges_simulator_data(): void

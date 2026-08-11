@@ -243,7 +243,11 @@ class OnboardingController extends Controller
         ]);
 
         $tenantId = auth()->user()->tenant_id ?? 1;
-        $tenant = Tenant::findOrFail($tenantId);
+        // `Tenant` no está importado en este archivo: sin el nombre completo, PHP lo buscaba como
+        // App\Http\Controllers\Tenant y "Cargar datos de ejemplo" reventaba con 500 SIEMPRE — el
+        // botón nunca cargó nada. (Que estuviera muerto es también la razón de que los cinco
+        // usuarios con contraseña fija no existan hoy en ninguna instancia.)
+        $tenant = \App\Models\Tenant::findOrFail($tenantId);
 
         $insertedRoles = [];
         $insertedEmployees = [];
@@ -435,11 +439,15 @@ class OnboardingController extends Controller
 
                 $domain = $tenant->subdomain . '.com';
 
+                // Los 5 de ejemplo nacen dentro de la empresa REAL y con sesión propia: si su
+                // contraseña fuera fija y conocida, cargar "datos demo" abriría cinco puertas a
+                // los datos del cliente. Cada uno lleva una aleatoria que nadie conoce (se
+                // activan con su PIN, como cualquier alta).
                 $employees = [
                     [
                         'name' => 'Roberto Sánchez',
                         'email' => 'roberto.sanchez@' . $domain,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'job_role_id' => $puestoGerente->id,
                         'tenant_id' => $tenantId,
@@ -447,7 +455,7 @@ class OnboardingController extends Controller
                     [
                         'name' => 'María García',
                         'email' => 'maria.garcia@' . $domain,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'job_role_id' => $puestoVentas->id,
                         'tenant_id' => $tenantId,
@@ -455,7 +463,7 @@ class OnboardingController extends Controller
                     [
                         'name' => 'Carlos López',
                         'email' => 'carlos.lopez@' . $domain,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'job_role_id' => $puestoCaja->id,
                         'tenant_id' => $tenantId,
@@ -463,7 +471,7 @@ class OnboardingController extends Controller
                     [
                         'name' => 'Ana Martínez',
                         'email' => 'ana.martinez@' . $domain,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'job_role_id' => $puestoVentas->id,
                         'tenant_id' => $tenantId,
@@ -471,7 +479,7 @@ class OnboardingController extends Controller
                     [
                         'name' => 'Luis Fernández',
                         'email' => 'luis.fernandez@' . $domain,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'job_role_id' => $puestoAlmacen->id,
                         'tenant_id' => $tenantId,

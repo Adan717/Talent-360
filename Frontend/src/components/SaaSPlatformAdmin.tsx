@@ -663,6 +663,11 @@ export const SaaSPlatformAdmin = () => {
   const handleCreateTenant = async () => {
     if (!newTenantName.trim()) return;
     setIsLoading(true);
+    // La contraseña del admin de la empresa era la cadena fija `password123`: sabiendo el correo
+    // del admin se entraba a la empresa. Se genera una distinta por empresa y se muestra abajo
+    // (es la única vez que se puede leer).
+    const passwordGenerada = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+      .map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'[b % 57]).join('');
     try {
       const response = await axiosInstance.post('/tenants', {
         subdomain: newTenantName.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(Math.random() * 1000),
@@ -672,15 +677,15 @@ export const SaaSPlatformAdmin = () => {
         // H3: el DOMINIO también salía con acentos si la empresa los llevaba en el nombre
         // ("Panadería" → @panadería.com), produciendo un correo inservible para SMTP.
         admin_email: `admin_${Math.floor(Math.random() * 10000)}@${slugParaCorreo(newTenantName)}.com`,
-        admin_password: 'password123'
+        admin_password: passwordGenerada
       });
-      
+
       await fetchGlobalData(searchQuery, planFilter, statusFilter);
-      
+
       setCreatedTenantData({
         tenant: response.data.tenant,
         user: response.data.user,
-        password: 'password123'
+        password: passwordGenerada
       });
     } catch (error) {
       console.error("Error creating tenant:", error);
@@ -2864,7 +2869,7 @@ export const SaaSPlatformAdmin = () => {
                 <ShieldCheck size={24} className="text-emerald-500" />
               </div>
               <h3 className="text-2xl font-black text-slate-800 mb-2">¡Empresa Creada!</h3>
-              <p className="text-sm text-slate-500 mb-6">Guarda estas credenciales para poder iniciar sesión en la empresa creada.</p>
+              <p className="text-sm text-slate-500 mb-6">Guarda estas credenciales: <span className="font-bold text-slate-700">la contraseña sólo se muestra aquí</span> y no se puede volver a consultar (si se pierde, se resetea desde la ficha de la empresa).</p>
               
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left space-y-3 mb-6 text-sm">
                 <div>

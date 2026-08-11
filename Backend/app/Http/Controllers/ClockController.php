@@ -626,7 +626,9 @@ class ClockController extends Controller
             $userId = DB::table('users')->insertGetId([
                 'name' => $u['name'],
                 'email' => strtolower(str_replace(' ', '.', $u['name'])) . '@talent360.com',
-                'password' => Hash::make('123456'),
+                // Aleatoria, no `123456`: aunque sea el sembrador de QA, escribe en una BD real y
+                // deja cuentas con sesión propia. Se accede a ellas reseteando desde la consola.
+                'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                 'role' => 'empleado',
                 'tenant_id' => $tenantId,
                 'created_at' => now(),
@@ -1043,7 +1045,8 @@ class ClockController extends Controller
             $userId = DB::table('users')->insertGetId([
                 'name' => $validated['name'],
                 'email' => $email,
-                'password' => Hash::make('123456'),
+                // Sin ruta que lo llame hoy, pero si alguien la conecta no debe nacer con `123456`.
+                'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                 'role' => 'empleado',
                 'tenant_id' => $tenantId,
                 'is_active' => true,

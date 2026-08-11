@@ -72,8 +72,15 @@ class CandidateController extends Controller
             'hr_notes' => 'nullable|string'
         ]);
 
+        // El PIN de invitación se lleva en una variable, NO como atributo del candidato: la tabla
+        // `candidates` no tiene columna `pin_code`, así que asignárselo al modelo hacía que el
+        // `update()` de más abajo intentara escribir una columna inexistente → 500 en TODA
+        // contratación (con el usuario y el expediente ya creados por la transacción previa, y el
+        // candidato quedándose para siempre sin pasar a "contratado").
+        $pinDeInvitacion = null;
+
         if (isset($data['status']) && $data['status'] === 'hired' && $candidate->status !== 'hired') {
-            DB::transaction(function () use ($candidate, &$data) {
+            DB::transaction(function () use ($candidate, &$data, &$pinDeInvitacion) {
                 // Find vacancy
                 $vacancy = Vacancy::withoutGlobalScopes()->find($candidate->applied_vacancy_id);
                 $jobRoleId = $vacancy ? $vacancy->job_role_id : null;
@@ -81,10 +88,13 @@ class CandidateController extends Controller
                 // Create user
                 $user = User::withoutGlobalScopes()->where('email', $candidate->email)->first();
                 if (!$user) {
+                    // Misma regla que el alta de RRHH: contraseña que nadie conoce; la persona
+                    // fija la suya al activar su cuenta con el PIN de la invitación. Contratar a
+                    // alguien no debe crear un acceso con contraseña pública.
                     $user = User::create([
                         'name' => $candidate->name,
                         'email' => $candidate->email,
-                        'password' => Hash::make('password123'),
+                        'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'tenant_id' => $candidate->tenant_id,
                         'is_active' => true
@@ -134,19 +144,18 @@ class CandidateController extends Controller
                     ]);
                 }
 
-                // Si necesitamos retornar el pin_code generado al frontend, lo inyectamos temporalmente
-                $candidate->pin_code = $employee->pin_code;
+                $pinDeInvitacion = $employee->pin_code;
             });
         }
- 
+
         $candidate->update($data);
-        
+
         // Incluir pin_code en la respuesta JSON si fue generado durante esta actualización
         $responseArray = $candidate->toArray();
-        if (isset($candidate->pin_code)) {
-            $responseArray['pin_code'] = $candidate->pin_code;
+        if ($pinDeInvitacion !== null) {
+            $responseArray['pin_code'] = $pinDeInvitacion;
         }
-        
+
         return response()->json($responseArray);
     }
  

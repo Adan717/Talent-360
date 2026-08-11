@@ -445,8 +445,19 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
                    {formatEmployeeDisplayName(u.name)}{getUserKeysIcon(u.employee_id ? Number(u.employee_id) : Number(u.id))}
                 </h4>
                 <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                   <span className="text-xs font-bold text-indigo-700 bg-indigo-50/90 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
-                      {userRole?.name || 'Sin Puesto'}{userRole && getJobRoleKeysIcon(userRole.id)}
+                   {/* "Sin puesto" no es un dato más: esa persona no puede fichar por el
+                       kiosco, no sale en el organigrama y no admite capacidades. Se marca en
+                       ámbar para que el dueño lo vea de un vistazo y lo pueda arreglar.
+                       Criterio del dueño: nada bloquea, todo avisa. */}
+                   <span
+                     className={`text-xs font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${
+                       userRole
+                         ? 'text-indigo-700 bg-indigo-50/90 border-indigo-200'
+                         : 'text-amber-800 bg-amber-100 border-amber-300'
+                     }`}
+                     title={userRole ? undefined : 'Sin puesto no puede fichar por el kiosco, no aparece en el organigrama y no se le pueden otorgar capacidades.'}
+                   >
+                      {userRole ? <>{userRole.name}{getJobRoleKeysIcon(userRole.id)}</> : '⚠ Sin puesto asignado'}
                    </span>
                    {u.area && (
                       <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
@@ -1934,6 +1945,35 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                    )}
                 </div>
 
+                {/* Aviso de plantilla sin puesto (criterio del dueño: nada bloquea, todo
+                    avisa). Sin puesto, esa gente no puede fichar por el kiosco, no aparece en
+                    el organigrama y el sistema no les puede otorgar ninguna capacidad — un
+                    supervisor sin puesto ve el Monitor permanentemente en blanco. Antes esto
+                    no se decía en ningún lado: había que descubrirlo cuando fallaba. */}
+                {directorioSubTab === 'activos' && (() => {
+                   const sinPuesto = users.filter((u: any) =>
+                     (u.is_active_employee !== false && u.is_active_employee !== 0) && !u.job_role_id
+                   );
+                   if (sinPuesto.length === 0) return null;
+                   return (
+                     <div className="mb-5 bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3 flex items-start gap-3">
+                        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                           <p className="text-sm font-black text-amber-900">
+                              {sinPuesto.length === 1
+                                ? '1 colaborador sin puesto asignado'
+                                : `${sinPuesto.length} colaboradores sin puesto asignado`}
+                           </p>
+                           <p className="text-xs text-amber-800 font-medium mt-0.5 leading-snug">
+                              {sinPuesto.map((u: any) => u.name).join(', ')} — no pueden fichar por el
+                              kiosco, no aparecen en el organigrama y no se les puede otorgar ninguna
+                              capacidad (Monitor, tareas, aperturas). Ábreles la ficha y asígnales puesto.
+                           </p>
+                        </div>
+                     </div>
+                   );
+                })()}
+
                 {/* BUSCADOR Y FILTROS */}
                 <div className="hidden sm:flex flex-col sm:flex-row gap-4 mb-6">
                    <div className="flex-1 relative">
@@ -2125,9 +2165,20 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                               <div>
                                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1.5">Puesto de Trabajo</label>
-                                 <select value={editingUser.job_role_id} onChange={e => setEditingUser({...editingUser, job_role_id: Number(e.target.value)})} className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200">
+                                 {/* La opción vacía es obligatoria: sin ella, a quien NO tiene
+                                     puesto el navegador le pintaba el primero de la lista, así
+                                     que la ficha mostraba un puesto que esa persona no tiene y
+                                     guardar sin tocar el select no lo arreglaba. */}
+                                 <select value={editingUser.job_role_id ?? ''} onChange={e => setEditingUser({...editingUser, job_role_id: e.target.value === '' ? null : Number(e.target.value)})} className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 border rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200 ${editingUser.job_role_id ? 'bg-slate-50 border-slate-200' : 'bg-amber-50 border-amber-300'}`}>
+                                    <option value="">— Sin puesto asignado —</option>
                                     {jobRoles.filter((r: any) => r.is_active !== false || r.id === editingUser.job_role_id).map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
                                  </select>
+                                 {!editingUser.job_role_id && (
+                                    <p className="text-[11px] font-bold text-amber-700 mt-1.5 leading-snug">
+                                       Sin puesto no puede fichar por el kiosco, no aparece en el organigrama
+                                       y no se le pueden otorgar capacidades (Monitor, tareas, aperturas).
+                                    </p>
+                                 )}
                               </div>
                               <div>
                                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1.5">Núm. Empleado</label>

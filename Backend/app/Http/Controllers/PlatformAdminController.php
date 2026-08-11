@@ -709,10 +709,16 @@ class PlatformAdminController extends Controller
             $admin->phone = $request->admin_phone;
         }
         
+        $passwordGenerada = null;
         if (!empty($request->admin_password)) {
             $admin->password = Hash::make($request->admin_password);
         } elseif (!$adminExists) {
-            $admin->password = Hash::make('password123'); // Contraseña temporal por defecto
+            // El ADMIN de una empresa ve toda su nómina y todo su expediente laboral. Nacía con
+            // la cadena fija `password123`: con sólo saber el correo del admin se entraba a la
+            // empresa. Ahora se genera una aleatoria y se devuelve UNA sola vez, para que quien
+            // da de alta la empresa pueda entregarla; si se pierde, se resetea desde la consola.
+            $passwordGenerada = \Illuminate\Support\Str::random(16);
+            $admin->password = Hash::make($passwordGenerada);
         }
         
         $admin->save();
@@ -738,7 +744,9 @@ class PlatformAdminController extends Controller
                 'name' => $admin->name,
                 'email' => $admin->email,
                 'phone' => $admin->phone ?? $employee?->phone
-            ]
+            ],
+            // Sólo cuando se acaba de generar: es la única vez que existe en claro.
+            'admin_password_generada' => $passwordGenerada,
         ]);
     }
 

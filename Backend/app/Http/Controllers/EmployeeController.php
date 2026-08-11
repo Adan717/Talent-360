@@ -578,10 +578,13 @@ class EmployeeController extends Controller
                 }
             } else {
                 if ($request->has('role') && in_array($request->role, ['admin', 'supervisor'])) {
+                    // Misma regla que el alta: si no viene contraseña, se genera una que NADIE
+                    // conoce (la persona fija la suya al activar con su PIN). El `password123`
+                    // que había aquí nacía con acceso de admin/supervisor.
                     $user = User::create([
                         'name' => $request->input('name', $employee->name),
                         'email' => $request->input('email', $employee->email),
-                        'password' => Hash::make($request->input('password', 'password123')),
+                        'password' => Hash::make($request->input('password') ?: \Illuminate\Support\Str::random(32)),
                         'role' => $request->role,
                         'job_role_id' => $request->input('job_role_id', $employee->job_role_id),
                         'tenant_id' => $employee->tenant_id ?? $tenantId,

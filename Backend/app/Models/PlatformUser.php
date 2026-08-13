@@ -23,5 +23,6 @@ class PlatformUser extends Authenticatable
     protected $casts = [
         'is_active' => 'boolean',
         'password' => 'hashed',
+        'must_change_password' => 'boolean',
     ];
 }

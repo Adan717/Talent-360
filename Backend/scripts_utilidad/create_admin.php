@@ -43,15 +43,25 @@ try {
         }
     }
 
+    // Bloque 1 (2026-08-13): este script sembraba password123/123456/Master FIJAS cada vez
+    // que se corría — deshacía la rotación entera. Ahora genera aleatorias, las imprime UNA
+    // vez, y marca las cuentas para cambio forzado (quien corre el script las conoce).
+    $claves = [];
+    $clave = function (string $email) use (&$claves): string {
+        $claves[$email] = \Illuminate\Support\Str::random(16);
+        return $claves[$email];
+    };
+
     // 1. Company Admin (associated with seeded job_role_id = 1: Administrador / Gerente)
     User::updateOrCreate(
         ['email' => 'admin@empresa.com'],
         [
             'name' => 'Super Admin',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make($clave('admin@empresa.com')),
             'role' => UserRole::ADMIN->value,
             'tenant_id' => $tenant->id,
             'job_role_id' => 1,
+            'must_change_password' => true,
         ]
     );
 
@@ -60,9 +70,10 @@ try {
         ['email' => 'master@talent360.com'],
         [
             'name' => 'Master Admin',
-            'password' => Hash::make('123456'),
+            'password' => Hash::make($clave('master@talent360.com')),
             'role' => 'platform_admin',
             'is_active' => true,
+            'must_change_password' => true,
         ]
     );
     // Delete from users table to completely isolate
@@ -73,9 +84,10 @@ try {
         ['email' => 'pcmasterirapuato@gmail.com'],
         [
             'name' => 'Francisco Vega',
-            'password' => Hash::make('Master'),
+            'password' => Hash::make($clave('pcmasterirapuato@gmail.com')),
             'role' => 'platform_admin',
             'is_active' => true,
+            'must_change_password' => true,
         ]
     );
     User::where('email', 'pcmasterirapuato@gmail.com')->delete();
@@ -85,16 +97,21 @@ try {
         ['email' => 'francisco@talent360.com'],
         [
             'name' => 'Francisco',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make($clave('francisco@talent360.com')),
             'role' => 'empleado',
             'tenant_id' => $tenant->id,
             'job_role_id' => 1, // Admin / Gerente
             'has_completed_induction' => true,
+            'must_change_password' => true,
         ]
     );
 
     DB::commit();
     echo "SUCCESS\n";
+    echo "Contraseñas generadas (se muestran SOLO esta vez; cada cuenta debe cambiarla al entrar):\n";
+    foreach ($claves as $correo => $c) {
+        echo "  {$correo}: {$c}\n";
+    }
 } catch (\Exception $e) {
     DB::rollBack();
     echo "ERROR: " . $e->getMessage() . "\n";

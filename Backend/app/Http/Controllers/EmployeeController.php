@@ -261,7 +261,8 @@ class EmployeeController extends Controller
                         'avatar' => $data['avatar'] ?? $user->avatar,
                     ]);
                     if ($request->filled('password')) {
-                        $user->update(['password' => Hash::make($request->password)]);
+                        // La puso un admin (la conoce alguien más): cambio forzado al entrar.
+                        $user->update(['password' => Hash::make($request->password), 'must_change_password' => true]);
                     }
                 }
             }
@@ -351,6 +352,9 @@ class EmployeeController extends Controller
                 'tenant_id' => $tenantId,
                 'is_active' => $request->input('is_active', true),
                 'avatar' => $data['avatar'] ?? null,
+                // Si la contraseña la tecleó el admin, la conoce alguien más: cambio forzado.
+                // (La aleatoria no se marca: nadie la conoce y se fija al activar con el PIN.)
+                'must_change_password' => $request->filled('password'),
             ]);
 
             // Crear el registro del colaborador en la tabla employees
@@ -551,7 +555,9 @@ class EmployeeController extends Controller
                     if ($request->has('avatar')) $userUpdates['avatar'] = $request->avatar;
 
                     if ($request->filled('password')) {
+                        // La puso un admin (la conoce alguien más): cambio forzado al entrar.
                         $userUpdates['password'] = Hash::make($request->password);
+                        $userUpdates['must_change_password'] = true;
                     }
 
                     if (!empty($userUpdates)) {
@@ -571,7 +577,9 @@ class EmployeeController extends Controller
                         'job_role_id' => $request->input('job_role_id', $employee->job_role_id),
                         'tenant_id' => $employee->tenant_id ?? $tenantId,
                         'is_active' => $request->input('is_active', true),
-                        'avatar' => $request->input('avatar', $employee->avatar)
+                        'avatar' => $request->input('avatar', $employee->avatar),
+                        // Igual que en el alta: contraseña tecleada por el admin → cambio forzado.
+                        'must_change_password' => $request->filled('password'),
                     ]);
                     $employee->user_id = $user->id;
                     $employee->save();

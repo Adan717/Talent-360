@@ -557,6 +557,8 @@ class PlatformAdminController extends Controller
             ->where('id', $admin->id)
             ->update([
                 'password' => Hash::make($request->password),
+                // La puso el admin de plataforma (la conoce alguien más): cambio forzado al entrar.
+                'must_change_password' => true,
                 'updated_at' => now()
             ]);
 
@@ -712,6 +714,8 @@ class PlatformAdminController extends Controller
         $passwordGenerada = null;
         if (!empty($request->admin_password)) {
             $admin->password = Hash::make($request->admin_password);
+            // La conoce el admin de plataforma: cambio forzado al entrar.
+            $admin->must_change_password = true;
         } elseif (!$adminExists) {
             // El ADMIN de una empresa ve toda su nómina y todo su expediente laboral. Nacía con
             // la cadena fija `password123`: con sólo saber el correo del admin se entraba a la
@@ -719,6 +723,8 @@ class PlatformAdminController extends Controller
             // da de alta la empresa pueda entregarla; si se pierde, se resetea desde la consola.
             $passwordGenerada = \Illuminate\Support\Str::random(16);
             $admin->password = Hash::make($passwordGenerada);
+            // Se muestra una vez a quien da el alta (la conoce alguien más): cambio forzado.
+            $admin->must_change_password = true;
         }
         
         $admin->save();

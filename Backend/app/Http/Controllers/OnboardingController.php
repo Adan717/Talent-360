@@ -173,7 +173,13 @@ class OnboardingController extends Controller
             ];
 
             if ($request->filled('password')) {
+                // Mismo candado que en change-password: la activación no puede elegir una conocida.
+                if (in_array($request->password, \App\Models\User::CONTRASENAS_CONOCIDAS, true)) {
+                    return response()->json(['error' => 'Esa contraseña es de las que todo el mundo conoce. Elige una distinta.'], 422);
+                }
+                // La eligió el propio colaborador al activarse: sin cambio forzado.
                 $cambios['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+                $cambios['must_change_password'] = false;
             }
 
             $cuenta->update($cambios);

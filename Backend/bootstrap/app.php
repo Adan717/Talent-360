@@ -28,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // ("Route [login] not defined") en vez de 401. Ver ForceJsonResponse.
         $middleware->prependToGroup('api', \App\Http\Middleware\ForceJsonResponse::class);
 
+        // Bloque 1 (2026-08-13): una cuenta marcada con must_change_password sólo puede
+        // cambiar su contraseña o salir. En el grupo entero, no ruta por ruta.
+        $middleware->appendToGroup('api', \App\Http\Middleware\ForcePasswordChange::class);
+
         // §43: el token de auth puede llegar en la cookie httpOnly `talent_auth_token`
         // (protección XSS); este middleware la copia al header Authorization antes de que
         // Sanctum evalúe el token. Se antepone a todo el grupo `api`.

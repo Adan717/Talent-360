@@ -328,7 +328,16 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'message' => 'Cuenta no encontrada.'], 404);
         }
 
-        $user->update(['password' => Hash::make($request->password)]);
+        // El enlace de reset no puede ser la puerta trasera del blocklist: sin este candado,
+        // un usuario marcado pedía el enlace y volvía a ponerse password123.
+        if (in_array($request->password, User::CONTRASENAS_CONOCIDAS, true)) {
+            return response()->json(['success' => false, 'message' => 'Esa contraseña es de las que todo el mundo conoce. Elige una distinta.'], 422);
+        }
+
+        // La contraseña nueva la eligió su dueño (vía enlace de reset): sin cambio forzado.
+        // Y el reset expulsa TODAS las sesiones: es el flujo de "alguien más tiene mi contraseña".
+        $user->update(['password' => Hash::make($request->password), 'must_change_password' => false]);
+        $user->tokens()->delete();
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
         return response()->json(['success' => true, 'message' => 'Contraseña restablecida. Ya puedes iniciar sesión.']);
@@ -769,7 +778,12 @@ class AuthController extends Controller
         $user = $request->user();
         $request->validate([
             'current_password' => 'required|string',
-            'new_password' => 'required|string|min:6|confirmed'
+            'new_password' => 'required|string|min:6|confirmed|different:current_password'
+        ], [
+            // Sin esto los mensajes salen del vendor en inglés, en una pantalla toda en español.
+            'new_password.min' => 'La contraseña nueva debe tener al menos 6 caracteres.',
+            'new_password.confirmed' => 'La confirmación no coincide con la contraseña nueva.',
+            'new_password.different' => 'La contraseña nueva no puede ser igual a la actual.',
         ]);
 
         if (!Hash::check($request->current_password, $user->password)) {
@@ -778,13 +792,32 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Bloque 1: cambiar password123 por 123456 dejaría la vuelta entera en nada.
+        if (in_array($request->new_password, User::CONTRASENAS_CONOCIDAS, true)) {
+            return response()->json([
+                'error' => 'Esa contraseña es de las que todo el mundo conoce. Elige una distinta.'
+            ], 422);
+        }
+
         $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
         \Illuminate\Support\Facades\DB::table($table)
             ->where('id', $user->id)
             ->update([
                 'password' => Hash::make($request->new_password),
+                // La puso su dueño: se levanta el cambio forzado (ambas tablas tienen la columna).
+                'must_change_password' => false,
                 'updated_at' => now()
             ]);
+
+        // Cambiar la contraseña EXPULSA a cualquier otra sesión. Sanctum no caduca tokens
+        // (expiration=null): sin esto, quien entró con la contraseña vieja conserva un token
+        // eterno que revive en cuanto el dueño legítimo completa el cambio forzado.
+        $actual = $user->currentAccessToken();
+        $otros = $user->tokens();
+        if ($actual instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $otros->where('id', '!=', $actual->id);
+        }
+        $otros->delete();
 
         return response()->json([
             'message' => 'Contraseña actualizada exitosamente'

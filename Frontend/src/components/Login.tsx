@@ -26,6 +26,12 @@ export const Login = () => {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalDocType>('privacy');
 
+  // Bloque 1 (2026-08-13): cambio de contraseña forzado al iniciar sesión.
+  const [mustChangeStage, setMustChangeStage] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pendingAuth, setPendingAuth] = useState<any>(null);
+
   // Estados de simulación de seguridad avanzada (2FA y Biometría)
   const [is2FAStage, setIs2FAStage] = useState(false);
   const [otpCode, setOtpCode] = useState<string[]>(['', '', '', '', '', '']);
@@ -147,6 +153,53 @@ export const Login = () => {
     };
   }, []);
 
+  // Navegación post-autenticación (compartida por el login normal y el cambio forzado).
+  const enterApp = (user: any, tenant: any) => {
+    setCurrentUser({ ...user, system_role: user.role });
+    setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+
+    if (user.tenant_id === null && user.role !== 'platform_admin' && user.role !== 'support_agent') {
+      navigate('/', { state: { resumeRegistration: true, user, token: localStorage.getItem('talent_auth_token') } });
+      return;
+    }
+
+    if (user.role === 'platform_admin') {
+      navigate('/superadmin');
+    } else if (user.role === 'support_agent') {
+      navigate('/soporte');
+    } else if (user.role === 'empleado') {
+      navigate('/empleado');
+    } else {
+      navigate('/app');
+    }
+  };
+
+  // Bloque 1: la cuenta entró con una contraseña que alguien más conoce; el backend no la deja
+  // usar ninguna otra ruta hasta que elija una propia. La actual es la que acaba de teclear.
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    try {
+      await axiosInstance.post('/me/change-password', {
+        current_password: password,
+        new_password: newPassword,
+        new_password_confirmation: confirmPassword,
+      });
+      const { user, tenant } = pendingAuth;
+      setMustChangeStage(false);
+      enterApp({ ...user, must_change_password: false }, tenant);
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.response?.data?.message || 'No se pudo cambiar la contraseña.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -176,25 +229,15 @@ export const Login = () => {
       // Save Token
       localStorage.setItem('talent_auth_token', token);
 
-      // Update Global State
-      setCurrentUser({ ...user, system_role: user.role });
-      setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium'); // 'freemium', 'pro', 'enterprise'
-
-      if (user.tenant_id === null && user.role !== 'platform_admin' && user.role !== 'support_agent') {
-        navigate('/', { state: { resumeRegistration: true, user, token } });
+      // Bloque 1: contraseña conocida por otros → antes de entrar, elegir una propia.
+      if (user.must_change_password) {
+        setPendingAuth({ user, tenant });
+        setMustChangeStage(true);
+        setIsLoading(false);
         return;
       }
-      
-      // Redirect to main platform based on user role
-      if (user.role === 'platform_admin') {
-        navigate('/superadmin');
-      } else if (user.role === 'support_agent') {
-        navigate('/soporte');
-      } else if (user.role === 'empleado') {
-        navigate('/empleado');
-      } else {
-        navigate('/app');
-      }
+
+      enterApp(user, tenant);
 
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error de conexión. Verifica tus credenciales.');
@@ -223,6 +266,16 @@ export const Login = () => {
       };
 
       localStorage.setItem('talent_auth_token', token);
+
+      // Bloque 1: el 2FA no puede saltarse el cambio forzado — sin esto, una cuenta marcada
+      // con 2FA entraba a la app y se topaba con puros 403.
+      if (user.must_change_password) {
+        setPendingAuth({ user, tenant });
+        setIs2FAStage(false);
+        setMustChangeStage(true);
+        setIsLoading(false);
+        return;
+      }
       setCurrentUser({ ...user, system_role: user.role });
       setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
       
@@ -340,6 +393,19 @@ export const Login = () => {
             </div>
           )}
 
+          {/* Bloque 1: se llegó aquí rebotado por el 403 de cambio forzado — decir POR QUÉ. */}
+          {searchParams.get('motivo') === 'cambio-contrasena' && !mustChangeStage && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold p-3.5 rounded-xl flex items-start gap-2.5 mb-4 shadow-sm">
+              <span className="text-base">🔑</span>
+              <div className="text-left">
+                <p className="font-black text-slate-800">Tu cuenta necesita una contraseña nueva</p>
+                <p className="text-[11px] font-semibold text-amber-700 mt-0.5 leading-relaxed">
+                  Inicia sesión con tu contraseña actual y el sistema te pedirá elegir una nueva.
+                </p>
+              </div>
+            </div>
+          )}
+
           {paymentParam === 'success' && (
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs sm:text-sm font-bold p-3.5 sm:p-4 rounded-xl flex items-start gap-2.5 mb-4 sm:mb-5 shadow-sm">
               <span className="text-base">✓</span>
@@ -357,7 +423,55 @@ export const Login = () => {
             </div>
           )}
 
-          {!is2FAStage ? (
+          {mustChangeStage ? (
+            <form onSubmit={handleChangePassword} className="space-y-4 sm:space-y-5">
+              <div className="text-center flex flex-col items-center justify-center py-1 sm:py-2">
+                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-3">
+                  <Lock size={22} />
+                </div>
+                <h4 className="font-extrabold text-slate-800 text-base">Crea tu nueva contraseña</h4>
+                <p className="text-xs text-slate-500 mt-1 max-w-[300px] mx-auto leading-relaxed">
+                  Tu contraseña actual es temporal o conocida por alguien más. Por seguridad,
+                  elige una nueva antes de continuar — solo tú debes conocerla.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5 sm:mb-2">Nueva contraseña</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium text-slate-900 text-sm"
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5 sm:mb-2">Confirmar nueva contraseña</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium text-slate-900 text-sm"
+                  placeholder="Repítela"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 text-white font-black py-3 sm:py-3.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Guardando...' : 'Guardar y Entrar'}
+                {!isLoading && <ArrowRight size={18} />}
+              </button>
+            </form>
+          ) : !is2FAStage ? (
             <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1.5 sm:mb-2">Correo Electrónico</label>

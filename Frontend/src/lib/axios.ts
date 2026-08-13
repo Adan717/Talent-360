@@ -61,6 +61,13 @@ axiosInstance.interceptors.response.use(
                 // Redirigir manteniendo los parámetros útiles si es posible
                 const isMobile = window.location.pathname.startsWith('/empleado') || new URLSearchParams(window.location.search).get('mobile') === 'true';
                 window.location.href = isMobile ? '/login?mobile=true' : '/login';
+            } else if (error.response.status === 403 && error.response.data && error.response.data.code === 'must_change_password') {
+                // Bloque 1: la cuenta tiene cambio de contraseña forzado. Cualquier sesión vieja
+                // se manda al login, que es donde vive la pantalla de cambio. El `motivo` hace
+                // que el login DIGA por qué (sin él, el rebote es mudo y parece un error).
+                localStorage.removeItem('talent_auth_token');
+                const isMobile = window.location.pathname.startsWith('/empleado') || new URLSearchParams(window.location.search).get('mobile') === 'true';
+                window.location.href = isMobile ? '/login?mobile=true&motivo=cambio-contrasena' : '/login?motivo=cambio-contrasena';
             } else if (error.response.status === 403 && error.response.data && error.response.data.error === 'Device Banned') {
                 // Dispatch window event for device ban screen
                 window.dispatchEvent(new CustomEvent('device-banned', { detail: error.response.data.message }));

@@ -45,7 +45,15 @@ sin error: cuando alguien haya restaurado de verdad.
 
 ---
 
-## 1. Revertir la decisión de las contraseñas viejas (el consejo la tumbó)
+## 1. Revertir la decisión de las contraseñas viejas (el consejo la tumbó) ✅ HECHO 2026-08-13
+
+> **Estado**: columna `must_change_password`, middleware `ForcePasswordChange` sobre el grupo
+> `api` entero (una cuenta marcada sólo puede cambiar su contraseña o salir), pantalla de cambio
+> en el login, y la política completa: **toda contraseña puesta por OTRO** (ficha de RRHH, reset
+> del platform admin) **marca la cuenta; toda contraseña puesta por UNO MISMO** (cambio, enlace
+> de reset, activación) **la desmarca**. Ninguna contraseña conocida puede elegirse como nueva.
+> Comando `usuarios:marcar-contrasenas-conocidas` corrido en la V2. Pruebas en
+> `CambioForzadoDeContrasenaTest` (7, incluida la del criterio literal del plan).
 
 **El único voto en contra de una decisión ya tomada, y con razón.** El argumento para no rotarlas
 era "dejaría fuera a quien trabaja hoy". Es un dilema falso: **forzar el cambio en el siguiente

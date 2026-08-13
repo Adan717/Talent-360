@@ -88,10 +88,13 @@ lectura y cada purga recorren la tabla entera—; (c) decidir si la retención a
 Por volumen no hay problema de rendimiento: 30 días de chat de una empresa de 50 personas son unos
 miles de filas.
 
-### D4 — Cuentas viejas con `password123`: se quedan (2026-08-11)
+### D4 — Cuentas viejas con `password123`: ~~se quedan~~ **REVERTIDA por el consejo (2026-08-13)**
 
-Rotarlas dejaría fuera a quien está trabajando hoy. Se cambian al activarse con el PIN o desde el
-panel. Las **altas nuevas** ya nacen con contraseña aleatoria (ronda del 2026-08-08/11).
+El argumento original ("rotarlas dejaría fuera a quien está trabajando hoy") era un dilema falso:
+**forzar el cambio en el siguiente inicio de sesión no deja fuera a nadie**, porque la persona ya
+conoce su contraseña actual. Implementado el 2026-08-13 (bloque 1 del plan): la cuenta marcada
+entra con su contraseña de siempre y lo único que puede hacer es elegir una nueva. Las **altas
+nuevas** ya nacían con contraseña aleatoria (ronda del 2026-08-08/11).
 
 ### D5 — Clave de seguridad del Simulador: se quita (2026-08-11)
 

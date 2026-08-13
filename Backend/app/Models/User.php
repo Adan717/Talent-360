@@ -18,12 +18,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 // `pre_shift_alarm_minutes` en users son legacy de la línea §1–§42 (la fuente canónica es el
 // EXPEDIENTE; ver expediente()/R73) — se conservan fillable mientras las columnas existan
 // (drop diferido de F2).
-#[Fillable(['name', 'email', 'phone', 'password', 'tenant_id', 'role', 'is_active', 'google_id', 'apple_id', 'samsung_id', 'avatar', 'has_completed_induction', 'job_role_id', 'pre_shift_alarm_minutes'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'tenant_id', 'role', 'is_active', 'google_id', 'apple_id', 'samsung_id', 'avatar', 'has_completed_induction', 'job_role_id', 'pre_shift_alarm_minutes', 'must_change_password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, Tenantable, SoftDeletes;
+
+    /**
+     * Bloque 1 (2026-08-13): las contraseñas medidas en las instancias reales. Una cuenta con
+     * cualquiera de éstas se marca para cambio forzado, y ninguna puede elegirse como nueva.
+     * 'Master' está literal en el código fuente del repo (y es la contraseña de la BD).
+     */
+    public const CONTRASENAS_CONOCIDAS = ['password123', '123456', 'Master'];
 
     /**
      * Get the attributes that should be cast.
@@ -35,6 +42,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
         ];
     }
 

@@ -12,8 +12,11 @@ comenta en otro lado.
 
 ### B1 — No existe ningún respaldo automático
 
-**Estado: PENDIENTE DE DECIDIR (2026-08-11).** La idea es guardar los datos en la nube; falta
-decidir cómo y con quién.
+**Actualización 2026-08-13: el respaldo automático YA EXISTE y la restauración se probó de
+verdad** (cron diario en el servidor + copia interina en la máquina de Adán; ver
+`docs/RESPALDO_Y_RESTAURACION.md`). **Lo único que sigue pendiente del dueño es el destino
+definitivo en la nube** — la copia fuera del servidor depende hoy de que la máquina de Adán
+esté encendida.
 
 Hoy el único respaldo es el botón manual del panel (que hasta el 2026-08-11 ni siquiera
 funcionaba: reventaba con 500 por la tabla `companies`). Si mañana una empresa pierde datos, o

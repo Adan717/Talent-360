@@ -12,7 +12,15 @@ Postgres en verde (1305 pruebas). 202 archivos de prueba.
 
 ---
 
-## 0. Respaldo con restauración PROBADA — antes que nada
+## 0. Respaldo con restauración PROBADA — antes que nada ✅ HECHO 2026-08-13
+
+> **Estado**: cron diario 02:45 UTC en el servidor (Postgres `-Fc` validado + `storage/app` +
+> `.env` + `public/uploads`, ambas instancias, 14 días), copia fuera del servidor jalada a diario
+> por la máquina de Adán (interina hasta que el dueño decida nube, §B1), y **restauración probada
+> de verdad**: login en la app restaurada y descarga autenticada del expediente (200, `%PDF`,
+> bytes exactos); prod verificada por conteos (13/13, 14/14, 10/10). No existe aún ninguna foto
+> de fichaje en ninguna instancia (§67 no tiene endpoint de subida): se probó con el único
+> archivo privado real. Detalle y runbook: `docs/RESPALDO_Y_RESTAURACION.md`.
 
 **Por qué va primero:** hoy no existe ninguna copia. El mismo día en que se encontró un script de
 despliegue que borraba todas las empresas salvo la primera, se confirmó que no hay de dónde

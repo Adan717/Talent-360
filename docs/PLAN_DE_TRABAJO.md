@@ -52,8 +52,16 @@ sin error: cuando alguien haya restaurado de verdad.
 > en el login, y la política completa: **toda contraseña puesta por OTRO** (ficha de RRHH, reset
 > del platform admin) **marca la cuenta; toda contraseña puesta por UNO MISMO** (cambio, enlace
 > de reset, activación) **la desmarca**. Ninguna contraseña conocida puede elegirse como nueva.
-> Comando `usuarios:marcar-contrasenas-conocidas` corrido en la V2. Pruebas en
-> `CambioForzadoDeContrasenaTest` (7, incluida la del criterio literal del plan).
+> Comando `usuarios:marcar-contrasenas-conocidas` (users + platform_users). Pruebas en
+> `CambioForzadoDeContrasenaTest` (12, incluida la del criterio literal del plan y las de la
+> ronda adversarial: expulsión de tokens al cambiar, platform admin en la rotación, blocklist
+> en el reset, kiosco exento).
+>
+> ⚠ **Pendiente chico**: re-correr el comando de marcado en la V2 — se corrió (7 cuentas,
+> incluida una de PLATAFORMA), pero la restauración del incidente de esa misma noche (ver
+> `RESPALDO_Y_RESTAURACION.md`) revirtió las marcas. Es un solo comando:
+> `docker exec talent360-v2-backend php artisan usuarios:marcar-contrasenas-conocidas`.
+> Y correrlo también en la instancia del jefe cuando él despliegue.
 
 **El único voto en contra de una decisión ya tomada, y con razón.** El argumento para no rotarlas
 era "dejaría fuera a quien trabaja hoy". Es un dilema falso: **forzar el cambio en el siguiente

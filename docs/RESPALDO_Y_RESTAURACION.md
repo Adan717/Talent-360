@@ -81,6 +81,19 @@ existe (el PDF del expediente), que ejercita exactamente la misma cadena: fila e
 autenticado → archivo físico salido del tar. El día que existan fotos de fichaje, viven en
 `public/uploads/clock-photos/` y **ya van dentro del tar**.
 
+## El respaldo ya se usó EN SERIO: incidente del 2026-08-13 (mismo día)
+
+Horas después de la prueba, la suite Postgres corrió por error contra la BD viva de la V2
+(dentro del contenedor, el env real le ganó al `<env force>` del phpunit.postgres.xml — detalle
+en el encabezado de ese archivo) y `RefreshDatabase` la vació: 0 usuarios, 0 fichajes. **Se
+restauró con el respaldo de esa madrugada** (`v2_db_20260813_013313.dump`, `pg_restore --clean
+--if-exists`), se re-aplicó la migración pendiente, y se verificó entrando a la app viva con la
+cuenta admin del tenant QA: datos completos (7 usuarios, 5 expedientes, 23 fichajes, 3
+empresas). Pérdida real: cero (entre el respaldo y el borrado sólo hubo cambios de flags,
+re-aplicables). Dos cerrojos nuevos salieron del incidente: el guardarraíl de
+`tests/TestCase.php` (la suite se niega si la base no es de pruebas) y la invocación segura
+documentada en `phpunit.postgres.xml`.
+
 ## Pendiente
 
 - **Destino en la nube** (decisión del dueño, §B1). Mientras: servidor (14 días) + máquina de Adán.

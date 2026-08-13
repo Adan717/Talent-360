@@ -9,7 +9,22 @@
   familia de defectos (TIME/DATE, casts implícitos, orden de nulos, mayúsculas en LIKE) es ciega
   para la suite de sqlite.
 
-  USO:
+  ⚠⚠ INCIDENTE 2026-08-13 — LEER ANTES DE CORRERLA EN UN CONTENEDOR ⚠⚠
+  Dentro de un contenedor con variables REALES de entorno DB_* (docker -e), esas variables le
+  GANAN al <env force="true"> de este archivo, y la suite corrió con RefreshDatabase
+  (migrate:fresh) contra la BD VIVA de la V2, vaciándola. Se recuperó con el respaldo del
+  bloque 0. Desde entonces tests/TestCase.php trae un guardarraíl que se niega a correr si la
+  base no es de pruebas — NO lo quites. Para correr esta suite dentro de un contenedor, pasa
+  los DB_* de PRUEBAS como env reales del proceso, p. ej.:
+
+      docker exec -w /var/www \
+        -e DB_CONNECTION=pgsql -e DB_HOST=talent360_postgres -e DB_PORT=5432 \
+        -e DB_DATABASE=talent360_test -e DB_USERNAME=postgres -e DB_PASSWORD=Master \
+        talent360-v2-backend php -d memory_limit=1G vendor/phpunit/phpunit/phpunit -c phpunit.postgres.xml
+
+  (y el contenedor necesita alcanzar el Postgres de pruebas: docker network connect / disconnect).
+
+  USO local (fuera de contenedores con DB_* reales):
       php artisan test -c phpunit.postgres.xml
   y para un archivo suelto, añadiendo el filtro habitual de artisan.
 

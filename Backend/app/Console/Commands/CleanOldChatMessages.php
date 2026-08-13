@@ -42,11 +42,21 @@ class CleanOldChatMessages extends Command
             $total += $borrados;
         }
 
+        // Bloque 6: la bitácora del asistente de reportes (frase + quién) lleva datos
+        // personales y HEREDA esta misma retención por empresa — decisión del plan.
+        $frases = 0;
+        foreach (DB::table('report_intent_logs')->distinct()->pluck('tenant_id') as $tenantId) {
+            $frases += DB::table('report_intent_logs')
+                ->where('tenant_id', $tenantId)
+                ->where('created_at', '<', now()->subDays(RetencionChat::dias((int) $tenantId)))
+                ->delete();
+        }
+
         // La tabla muerta se sigue drenando para que no acumule datos personales sin dueño.
         $muertos = DB::table('team_chat_messages')
             ->where('created_at', '<', now()->subDays(RetencionChat::DIAS_POR_DEFECTO))
             ->delete();
 
-        $this->info("Total: {$total} mensajes de equipo purgados; {$muertos} de la tabla legada team_chat_messages.");
+        $this->info("Total: {$total} mensajes de equipo purgados; {$frases} frases del asistente; {$muertos} de la tabla legada team_chat_messages.");
     }
 }

@@ -29,6 +29,35 @@ export default function ReportesManager() {
   const [error, setError] = useState<string | null>(null);
   const [expandedEmpId, setExpandedEmpId] = useState<number | null>(null);
 
+  // Bloque 6: asistente por frase. SOLO llena el formulario; la descarga la confirma el
+  // humano por los botones de siempre. Si la instancia no tiene llave, no se ofrece.
+  const [asistenteDisponible, setAsistenteDisponible] = useState(false);
+  const [frase, setFrase] = useState('');
+  const [interpretando, setInterpretando] = useState(false);
+  const [asistenteError, setAsistenteError] = useState<string | null>(null);
+  const [propuesta, setPropuesta] = useState<{ reporte: 'asistencia' | 'tareas'; desde: string; hasta: string; etiqueta: string } | null>(null);
+
+  useEffect(() => {
+    axiosInstance.get('/admin/reports/asistente/estado')
+      .then(res => setAsistenteDisponible(res.data?.disponible === true))
+      .catch(() => setAsistenteDisponible(false));
+  }, []);
+
+  const handleInterpretar = async () => {
+    if (!frase.trim() || interpretando) return;
+    setInterpretando(true);
+    setAsistenteError(null);
+    setPropuesta(null);
+    try {
+      const res = await axiosInstance.post('/admin/reports/asistente/interpretar', { frase: frase.trim() });
+      setPropuesta(res.data);
+    } catch (err: any) {
+      setAsistenteError(err?.response?.data?.message || 'No se pudo interpretar la frase. Usa los botones de abajo.');
+    } finally {
+      setInterpretando(false);
+    }
+  };
+
   // Cada tarjeta es la SUMA de su columna, no una resta derivada aquí. Antes el neto se
   // calculaba en el navegador (Σbase − Σpenalty) y no coincidía con la columna "Neto a
   // Pagar" de la tabla de abajo: el bruto del periodo no es `base` (que es el sueldo del
@@ -83,14 +112,18 @@ export default function ReportesManager() {
 
   // Los dos CSV de la pestaña básica. Los botones existían SIN onClick: no bajaban nada
   // y tampoco avisaban de nada.
-  const handleDescargarCsv = async (reporte: 'asistencia' | 'tareas') => {
+  const handleDescargarCsv = async (reporte: 'asistencia' | 'tareas', rango?: { from: string; to: string }) => {
     setDescargando(reporte);
     try {
-      const res = await axiosInstance.get(`/admin/reports/${reporte}.csv`, { responseType: 'blob' });
+      const params = rango ? `?from=${rango.from}&to=${rango.to}` : '';
+      const res = await axiosInstance.get(`/admin/reports/${reporte}.csv${params}`, { responseType: 'blob' });
+      // El archivo se nombra con el PERIODO que contiene (ronda adversarial: con rango, el
+      // nombre decía el día de la descarga y mentía sobre el contenido).
+      const sufijo = rango ? (rango.from === rango.to ? rango.from : `${rango.from}_a_${rango.to}`) : new Date().toISOString().slice(0, 10);
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${reporte}_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `${reporte}_${sufijo}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -201,6 +234,82 @@ export default function ReportesManager() {
         {/* TABS: FREEMIUM */}
         {activeTab === 'basicos' && (
           <div className="max-w-4xl space-y-6">
+
+            {/* Bloque 6: asistente por frase. Llena el formulario; el humano confirma y
+                descarga por la puerta de siempre. Sin llave configurada, no existe. */}
+            {asistenteDisponible && (
+              <div className="bg-white p-6 rounded-xl border border-indigo-200 shadow-sm">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg"><Bot size={24} /></div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-slate-800">Pídelo con tus palabras</h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Ej. “los retardos de la semana pasada” o “tareas completadas de julio”.
+                      Solo asistencia y tareas — la nómina se consulta en su pestaña.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    maxLength={300}
+                    value={frase}
+                    onChange={e => setFrase(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleInterpretar()}
+                    placeholder="Escribe qué reporte necesitas…"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                  />
+                  <button
+                    onClick={handleInterpretar}
+                    disabled={interpretando || !frase.trim()}
+                    className="px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <Zap size={15} /> {interpretando ? 'Interpretando…' : 'Interpretar'}
+                  </button>
+                </div>
+
+                {asistenteError && (
+                  <p className="mt-3 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{asistenteError}</p>
+                )}
+
+                {propuesta && (
+                  <div className="mt-4 bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
+                    <p className="text-sm font-bold text-slate-700 mb-3">
+                      Entendí: <span className="text-indigo-700">{propuesta.reporte === 'asistencia' ? 'Asistencia y retardos' : 'Tareas completadas'}</span>{' '}
+                      {/* Si el humano editó las fechas, la etiqueta original ya no aplica y
+                          mentiría (ronda adversarial): se cambia por el rango literal. */}
+                      de <span className="text-indigo-700">{propuesta.etiqueta || `del ${propuesta.desde} al ${propuesta.hasta}`}</span>. Revisa y confirma:
+                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Del</label>
+                        <input type="date" value={propuesta.desde} onChange={e => setPropuesta({ ...propuesta, desde: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Al</label>
+                        <input type="date" value={propuesta.hasta} onChange={e => setPropuesta({ ...propuesta, hasta: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                      </div>
+                      <button
+                        onClick={() => handleDescargarCsv(propuesta.reporte, { from: propuesta.desde, to: propuesta.hasta })}
+                        disabled={descargando === propuesta.reporte}
+                        className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <Download size={15} /> {descargando === propuesta.reporte ? 'Generando…' : 'Descargar CSV'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* LFPDPPP: la transferencia se declara donde ocurre, antes de la primera frase. */}
+                <p className="mt-3 text-[11px] text-slate-400 leading-relaxed">
+                  Tu frase se envía a OpenAI (EE. UU.) únicamente para interpretarla, y se guarda
+                  aquí junto con tu usuario según la retención configurada de tu empresa. Evita
+                  escribir datos personales que no hagan falta.
+                </p>
+              </div>
+            )}
+
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-200 transition-colors">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Table size={24} /></div>

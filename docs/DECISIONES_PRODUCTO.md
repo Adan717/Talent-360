@@ -130,9 +130,11 @@ credenciales en el servidor.
 
 ## 🔎 Abiertas
 
-### A1 — Reportes IA: asistente por voz/texto
+### A1 — Reportes IA: asistente por voz/texto ✅ CONSTRUIDO (2026-08-13)
 
-En discusión al 2026-08-11. Ver `docs/modules/reportes/ASISTENTE_IA.md` cuando exista.
+El dueño entregó la llave de OpenAI el 2026-08-13 y el asistente se construyó al diseño del
+bloque 6 del plan (ver ahí el detalle). Por texto; la voz no existe (el navegador podría
+dictar al input, pero no se prometió nada). Nómina excluida hasta la fase A del bloque 4.
 
 ### A2 — Tolerancia por puesto ✅ CERRADA (2026-08-13)
 

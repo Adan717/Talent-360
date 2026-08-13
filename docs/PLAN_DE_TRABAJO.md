@@ -191,7 +191,21 @@ inducción**. Más el vocabulario separado en las pantallas: *evaluación de pos
 
 ---
 
-## 6. Asistente de reportes (2-3 días, realistas 5 con una sola persona)
+## 6. Asistente de reportes (2-3 días, realistas 5 con una sola persona) ✅ HECHO 2026-08-13
+
+> **Estado**: construido AL DISEÑO de abajo, punto por punto. OpenAI con `strict: true`
+> (`OpenAiReportIntentParser`, única implementación de la interfaz), el parser devuelve
+> INTENCIÓN y las fechas las resuelve el servidor con `PayrollWeekService` + tz del tenant
+> (topes: 92 días, semana 1–53, futuro recortado), autocompletador que llena el formulario y
+> NUNCA descarga (la descarga sale por `asistencia.csv`/`tareas.csv`, que ya autorizan —
+> `asistencia.csv` ahora acepta rango `from`/`to` por la misma puerta), fixture de 40 frases
+> con adversarias **que YA PASÓ contra la API real** (`AsistenteFixturesOpenAiTest`, opt-in
+> `RUN_OPENAI_FIXTURES=1`, umbral 90%), alerta por tasa de fallo
+> (`reportes:alerta-fallos-asistente`, diaria, ≥30% en 7 días → bitácora del Monitor), aviso
+> LFPDPPP visible en la tarjeta, y bitácora `report_intent_logs` con la retención del bloque 2.
+> Nómina EXCLUIDA hasta la fase A del bloque 4, tal como manda este mismo diseño. La llave
+> vive SOLO en el `.env` del servidor (2026-08-13; pendiente del dueño: ponerle límite de
+> gasto en OpenAI).
 
 Va al final **a propósito**: el presupuesto de confianza está en cero después de 150 defectos, y no
 hay llave de IA en ninguna instancia. Diseño acordado:

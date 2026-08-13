@@ -374,8 +374,17 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // existían en la pantalla SIN handler — no bajaban nada. Sin `manage_payroll`
         // a propósito: no traen ni un dato salarial.
         Route::middleware('tenant.module:reportes')->group(function () {
-            Route::get('/admin/reports/asistencia.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'asistenciaDelDia']);
-            Route::get('/admin/reports/tareas.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'tareasCompletadas']);
+            // throttle (ronda adversarial bloque 6): generar un CSV materializa hasta 92
+            // días en memoria — sin límite de tasa, un bucle agota los workers de TODOS.
+            Route::middleware('throttle:30,1')->group(function () {
+                Route::get('/admin/reports/asistencia.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'asistenciaDelDia']);
+                Route::get('/admin/reports/tareas.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'tareasCompletadas']);
+            });
+
+            // Bloque 6: el asistente SOLO interpreta y llena el formulario — la descarga
+            // sale por las dos rutas de arriba, que ya autorizan. No hay segunda puerta.
+            Route::get('/admin/reports/asistente/estado', [\App\Http\Controllers\AsistenteReportesController::class, 'estado']);
+            Route::middleware('throttle:20,1')->post('/admin/reports/asistente/interpretar', [\App\Http\Controllers\AsistenteReportesController::class, 'interpretar']);
         });
 
         // Nómina y Reportes Avanzados

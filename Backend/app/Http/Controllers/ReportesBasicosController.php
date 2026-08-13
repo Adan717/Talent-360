@@ -25,22 +25,60 @@ use Illuminate\Support\Facades\DB;
  */
 class ReportesBasicosController extends Controller
 {
-    /** Asistencia del día: entradas, salidas y retardos de HOY (día del tenant). */
+    /**
+     * Máximo de días por descarga (ronda adversarial del bloque 6): el tope que anunciaba
+     * el asistente era decorativo si esta puerta —la que entrega los datos— no lo conocía.
+     * Un ?from=1990-01-01 materializaba TODO el historial en memoria.
+     */
+    public const DIAS_TOPE = 92;
+
+    /** Valida y acota el rango pedido. Devuelve [desde, hasta] (Y-m-d). */
+    private function rangoValidado(Request $request, string $desdePorDefecto, string $hastaPorDefecto): array
+    {
+        $request->validate([
+            'date' => 'nullable|date_format:Y-m-d',
+            'from' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        $hasta = $request->query('to', $hastaPorDefecto);
+        $desde = $request->query('from', $desdePorDefecto);
+        if ($desde > $hasta) {
+            [$desde, $hasta] = [$hasta, $desde];
+        }
+
+        if (Carbon::parse($desde)->diffInDays(Carbon::parse($hasta)) + 1 > self::DIAS_TOPE) {
+            abort(response()->json([
+                'message' => 'El periodo máximo por reporte es de ' . self::DIAS_TOPE . ' días. Acota las fechas.',
+            ], 422));
+        }
+
+        return [$desde, $hasta];
+    }
+
+    /**
+     * Asistencia: entradas, salidas y retardos. Por defecto HOY (día del tenant); acepta
+     * `from`/`to` para un rango (bloque 6: es la MISMA puerta que llena el asistente —
+     * extenderla aquí evita una segunda ruta). `date` se conserva por compatibilidad.
+     */
     public function asistenciaDelDia(Request $request)
     {
         $tenantId = $request->user()->tenant_id;
         $tz = TenantTimezone::for($tenantId);
         $fecha = $request->query('date', Carbon::now($tz)->toDateString());
+        [$desde, $hasta] = $this->rangoValidado($request, $request->query('to', $fecha), $request->query('to', $fecha));
 
         $entradas = DB::table('time_entries')
             ->leftJoin('users', 'users.id', '=', 'time_entries.user_id')
             ->where('time_entries.tenant_id', $tenantId)
-            ->where('time_entries.date', $fecha)
+            ->whereBetween('time_entries.date', [$desde, $hasta])
             // Los fichajes del Simulador Matrix NUNCA se mezclan con un reporte real.
             ->whereNull('time_entries.simulation_session_id')
+            ->orderBy('time_entries.date')
             ->orderBy('users.name')
             ->orderBy('time_entries.time')
             ->select(
+                'time_entries.date',
                 'time_entries.employee_name_at_time',
                 'users.name as user_name',
                 'time_entries.job_role_title_at_time',
@@ -61,6 +99,7 @@ class ReportesBasicosController extends Controller
         ];
 
         $filas = $entradas->map(fn ($e) => [
+            $e->date,
             $e->employee_name_at_time ?: ($e->user_name ?: 'Sin nombre'),
             $e->job_role_title_at_time ?: 'Sin puesto',
             $etiquetas[$e->type] ?? $e->type,
@@ -69,9 +108,11 @@ class ReportesBasicosController extends Controller
             (int) $e->late_minutes,
         ])->all();
 
+        $nombre = $desde === $hasta ? "asistencia_{$desde}.csv" : "asistencia_{$desde}_a_{$hasta}.csv";
+
         return $this->csv(
-            "asistencia_{$fecha}.csv",
-            ['Colaborador', 'Puesto', 'Movimiento', 'Hora', '¿Retardo?', 'Minutos de retardo'],
+            $nombre,
+            ['Fecha', 'Colaborador', 'Puesto', 'Movimiento', 'Hora', '¿Retardo?', 'Minutos de retardo'],
             $filas
         );
     }
@@ -82,8 +123,12 @@ class ReportesBasicosController extends Controller
         $tenantId = $request->user()->tenant_id;
         $tz = TenantTimezone::for($tenantId);
 
-        $hasta = $request->query('to', Carbon::now($tz)->toDateString());
-        $desde = $request->query('from', Carbon::parse($hasta, $tz)->subDays(29)->toDateString());
+        $hastaPorDefecto = $request->query('to', Carbon::now($tz)->toDateString());
+        [$desde, $hasta] = $this->rangoValidado(
+            $request,
+            Carbon::createFromFormat('Y-m-d', $hastaPorDefecto, $tz)->subDays(29)->toDateString(),
+            $hastaPorDefecto
+        );
 
         $tareas = DB::table('task_assignments')
             ->join('tasks', 'tasks.id', '=', 'task_assignments.task_id')
@@ -130,9 +175,24 @@ class ReportesBasicosController extends Controller
             fwrite($salida, "\xEF\xBB\xBF");
             fputcsv($salida, $encabezados);
             foreach ($filas as $fila) {
-                fputcsv($salida, $fila);
+                fputcsv($salida, array_map([$this, 'celdaSegura'], $fila));
             }
             fclose($salida);
         }, $nombre, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Inyección de fórmulas (ronda adversarial del bloque 6): un colaborador controla su
+     * propio nombre; con `=HYPERLINK(...)` de nombre, Excel EVALÚA la celda en la máquina
+     * del admin al abrir el CSV. Mitigación estándar OWASP: la celda de texto que empiece
+     * con `=`, `+`, `-` o `@` se antepone con apóstrofo (Excel la trata como texto).
+     */
+    private function celdaSegura($celda)
+    {
+        if (is_string($celda) && $celda !== '' && in_array($celda[0], ['=', '+', '-', '@'], true)) {
+            return "'" . $celda;
+        }
+
+        return $celda;
     }
 }

@@ -57,6 +57,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // comando de comedor existía pero nunca se había agendado; se programan ambos.
         $schedule->command('meal-evidence:purge')->dailyAt('03:00');
         $schedule->command('clock-photos:purge')->dailyAt('03:15');
+        // Bloque 6: si el asistente de reportes falla demasiado, que lo diga la bitácora
+        // del Monitor — no esperar a que un cliente se queje en marzo.
+        $schedule->command('reportes:alerta-fallos-asistente')->dailyAt('07:00');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

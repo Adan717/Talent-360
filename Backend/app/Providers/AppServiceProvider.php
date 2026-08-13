@@ -18,6 +18,13 @@ class AppServiceProvider extends ServiceProvider
             }
             throw new \Exception("Billing provider [{$provider}] is not supported.");
         });
+
+        // Bloque 6: asistente de reportes. Una sola implementación (OpenAI); en pruebas se
+        // sustituye por un doble — mismo patrón que el proveedor de facturación de arriba.
+        $this->app->bind(
+            \App\Services\ReportIntentParser::class,
+            \App\Services\OpenAiReportIntentParser::class
+        );
     }
 
     /**

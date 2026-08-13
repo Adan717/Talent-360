@@ -168,9 +168,9 @@ export default function PanelSimulador() {
   } = useAppStore();
 
   const isProduction = import.meta.env.PROD && window.location.hostname !== 'localhost';
-  const [isAuthenticated, setIsAuthenticated] = useState(!isProduction || currentUser?.role === 'platform_admin' || currentUser?.system_role === 'platform_admin');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [authError, setAuthError] = useState('');
+  // D5 (2026-08-13): fuera la "Clave de Seguridad" — era la cadena literal "Master" comparada
+  // AQUÍ, en el navegador: no protegía nada y aparentaba una cerradura. El control real es el
+  // rol (el módulo ya está excluido para supervisores y empleados).
 
   // Auditoría Matrix (2026-07-22): antes esto leía SOLO localStorage.store_opening_assignments,
   // que puede estar vacío/desactualizado si no se visitó RRHH en esta sesión del navegador. Como la
@@ -428,54 +428,6 @@ export default function PanelSimulador() {
     const displayH = h > 12 ? h - 12 : h;
     return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
   };
-
-  if (!isAuthenticated) {
-     return (
-       <div className="flex items-center justify-center min-h-[85vh] bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-2xl relative overflow-hidden">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-         <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[90px] pointer-events-none"></div>
-
-         <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 p-8.5 rounded-2xl shadow-xl w-full max-w-md text-center z-10 transition-all">
-           <div className="w-16 h-16 bg-slate-800/80 border border-slate-700/60 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner text-3xl select-none">
-             🔐
-           </div>
-           <h3 className="text-xl font-black text-slate-100 mb-2">Simulador Matrix QA Protegido</h3>
-           <p className="text-slate-400 text-xs leading-relaxed mb-6">
-             Estás en el entorno de producción de <strong>{currentUser?.tenant?.name || 'tu empresa'}</strong>. Ingresa la Clave de Seguridad para habilitar el simulador en vivo sobre la base de datos real.
-           </p>
-
-           <form onSubmit={(e) => {
-             e.preventDefault();
-             if (passwordInput === "Master") {
-               setIsAuthenticated(true);
-               setAuthError('');
-             } else {
-               setAuthError('Clave incorrecta. Por favor verifique.');
-             }
-           }} className="space-y-4">
-             <div>
-               <input
-                 type="password"
-                 placeholder="Introduce la Clave de Simulación"
-                 value={passwordInput}
-                 onChange={(e) => setPasswordInput(e.target.value)}
-                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-200 placeholder-slate-600 text-center"
-                 autoFocus
-               />
-               {authError && <p className="text-rose-500 text-[11px] font-bold mt-2">{authError}</p>}
-             </div>
-
-             <button
-               type="submit"
-               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3.5 rounded-xl transition-all border-none cursor-pointer shadow-lg shadow-indigo-600/10 active:scale-[0.98]"
-             >
-               Desbloquear Simulador
-             </button>
-           </form>
-         </div>
-       </div>
-     );
-  }
 
   return (
     <div className="flex flex-col gap-4">

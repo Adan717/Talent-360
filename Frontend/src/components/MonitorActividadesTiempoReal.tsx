@@ -159,6 +159,10 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [availableTasks, setAvailableTasks] = useState<any[]>([]);
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
+  // Bloque 2: el botón del Plan IA sólo existe si el servidor tiene llave de IA configurada.
+  const [iaDisponible, setIaDisponible] = useState(false);
+  // D3: días de retención del chat (el servidor manda el valor real de la empresa).
+  const [chatRetentionDays, setChatRetentionDays] = useState(7);
   const [jobRoles, setJobRoles] = useState<any[]>([]);
   const [vendors, setVendors] = useState<VendorLog[]>([]);
   const [prospectsCount, setProspectsCount] = useState<number>(0);
@@ -238,6 +242,9 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         setFeed(res.data.data.feed || []);
         setChatMessages(res.data.data.chat || []);
         setJobRoles(res.data.data.job_roles || []);
+        // Bloque 2: sin llave de IA no se ofrece el Plan IA; y el chat DICE su retención.
+        setIaDisponible(res.data.data.ia_disponible === true);
+        if (res.data.data.chat_retention_days) setChatRetentionDays(res.data.data.chat_retention_days);
         if (res.data.data.prospects_count !== undefined) {
           setProspectsCount(res.data.data.prospects_count);
         }
@@ -611,13 +618,16 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
 
               {/* Botones de Control Rápidos */}
               <div className="flex flex-wrap items-center gap-2">
-                <button 
-                  onClick={handleGenerateAiPlan}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white font-bold text-xs sm:text-sm hover:opacity-95 transition-all shadow-md shadow-purple-500/20 flex items-center justify-center gap-2 active:scale-95"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
-                  <span>Plan Diario IA</span>
-                </button>
+                {/* Bloque 2: sin llave de IA el botón prometía algo que no puede ocurrir. */}
+                {iaDisponible && (
+                  <button
+                    onClick={handleGenerateAiPlan}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 text-white font-bold text-xs sm:text-sm hover:opacity-95 transition-all shadow-md shadow-purple-500/20 flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
+                    <span>Plan Diario IA</span>
+                  </button>
+                )}
 
                 <button 
                   onClick={() => setShowVendorModal(true)}
@@ -1676,6 +1686,11 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </button>
           </div>
 
+          {/* D3: la retención se DICE aquí — una purga que nadie anuncia es una emboscada. */}
+          <p className="text-[10px] text-slate-400 font-medium -mt-1">
+            Los mensajes del equipo se conservan {chatRetentionDays} días (los 📌 conservados, los privados y los avisos de megáfono no se borran).
+          </p>
+
           <div className="h-64 overflow-y-auto space-y-2 pr-1 text-xs">
             {chatMessages.length === 0 ? (
               <p className="text-slate-400 italic text-center py-8">Inicia la conversación con tu equipo...</p>
@@ -1691,7 +1706,24 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 >
                   <div className="flex justify-between text-[10px] text-slate-500 mb-0.5 font-medium">
                     <span className="font-bold text-blue-600">{msg.sender_name}</span>
-                    <span>{msg.time}</span>
+                    <span className="flex items-center gap-1.5">
+                      {msg.time}
+                      {/* D3: conservar un mensaje (citado en un incidente) lo excluye de la purga. */}
+                      {!msg.receiver_id && msg.id && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const r = await axiosInstance.post(`/admin/dashboard/messages/${msg.id}/preserve`);
+                              setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, preserved: r.data.preserved } : m));
+                            } catch { /* sin drama: el siguiente poll repinta la verdad */ }
+                          }}
+                          title={msg.preserved ? 'Conservado: la purga no lo toca. Clic para soltarlo.' : 'Conservar (citado en un incidente)'}
+                          className={msg.preserved ? '' : 'opacity-30 hover:opacity-100'}
+                        >
+                          📌
+                        </button>
+                      )}
+                    </span>
                   </div>
                   {/* Un privado se distingue a simple vista y dice para quién es: si no, nadie
                       sabría si lo que escribió lo leyó el turno entero. */}

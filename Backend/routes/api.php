@@ -342,6 +342,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::post('/admin/dashboard/create-task', [DashboardMonitorController::class, 'createTask']);
             Route::post('/admin/dashboard/parse-voice-task', [DashboardMonitorController::class, 'parseVoiceTask']);
             Route::post('/admin/dashboard/send-message', [DashboardMonitorController::class, 'sendMessage']);
+            // D3: conservar/soltar un mensaje citado en un incidente (la purga lo respeta).
+            Route::post('/admin/dashboard/messages/{id}/preserve', [DashboardMonitorController::class, 'preserveMessage']);
             Route::post('/admin/dashboard/suggest-work-plan', [DashboardMonitorController::class, 'suggestWorkPlan']);
             Route::post('/admin/dashboard/vendors', [DashboardMonitorController::class, 'storeVendor']);
             Route::post('/admin/dashboard/vendors/{id}/complete', [DashboardMonitorController::class, 'completeVendor']);

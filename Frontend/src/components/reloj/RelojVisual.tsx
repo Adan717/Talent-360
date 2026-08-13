@@ -263,6 +263,7 @@ export default function RelojVisual({
     justificanteText,
     setJustificanteText,
     timeBankConfigs,
+    toleranceOrigin,
     simMins,
     globalToast,
     showCustomAlert,
@@ -2266,6 +2267,18 @@ export default function RelojVisual({
             <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Comida</p>
               <p className="font-black text-xs text-slate-700 dark:text-slate-200 mt-0.5 font-mono">{shiftConfigs[currentUser?.id]?.mealMinutes || 45} min</p>
+            </div>
+            {/* A2: la tolerancia aplicada Y de dónde sale — es la MISMA con la que el servidor
+                juzga el retardo (puesto > empresa); dos personas con tolerancias distintas al
+                mismo minuto dejan de parecer un error del software. */}
+            <div className={`p-3 rounded-xl border col-span-2 ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Tolerancia de retardo</p>
+              <p className="font-black text-xs text-slate-700 dark:text-slate-200 mt-0.5 font-mono">
+                {timeBankConfigs?.maxLateMinsAllowed ?? 10} min
+                <span className="font-bold text-[10px] text-slate-500 ml-1.5">
+                  ({toleranceOrigin === 'puesto' ? 'de tu puesto' : 'de la empresa'})
+                </span>
+              </p>
             </div>
           </div>
 

@@ -235,6 +235,10 @@ export function useClockEngine(overrideUser?: any) {
   const isOpeningPremium = useAppStore.getState().isFeatureUnlocked('store_opening');
 
   // --- Inyección de Perfiles por Puesto (RBAC+) ---
+  // A2 (2026-08-13): el SERVIDOR ya juzga el retardo con esta MISMA precedencia
+  // (ClockService::toleranciaDeRetardo, puesto > empresa) — este overlay dejó de ser
+  // una promesa de pantalla y pasó a ser el espejo de lo que la nómina cobra.
+  let toleranceOrigin: 'puesto' | 'empresa' = 'empresa';
   if (currentUser && roleClockPolicies && roleClockPolicies.length > 0) {
       const policy = roleClockPolicies.find((p: any) => p.job_role_id === currentUser.job_role_id);
       if (policy && policy.config) {
@@ -243,6 +247,9 @@ export function useClockEngine(overrideUser?: any) {
               evaluacion_salida: policy.config.requiere_evaluacion_salida ?? featureFlags.evaluacion_salida,
               paseDeLista: policy.config.paseDeLista ?? featureFlags.paseDeLista,
           };
+          if (policy.config.tolerancia_retardo_mins != null) {
+              toleranceOrigin = 'puesto';
+          }
           timeBankConfigs = {
               ...timeBankConfigs,
               maxLateMinsAllowed: policy.config.tolerancia_retardo_mins ?? timeBankConfigs.maxLateMinsAllowed,
@@ -4072,6 +4079,8 @@ export function useClockEngine(overrideUser?: any) {
     syncToDB,
     tasksChecked,
     timeBankConfigs,
+    // A2: de dónde sale la tolerancia que juzga el retardo ('puesto' | 'empresa').
+    toleranceOrigin,
     toggleSelectAll,
     undoCount,
     updateClockState,

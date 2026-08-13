@@ -26,6 +26,17 @@ class GeminiAIService
         $this->baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
     }
 
+    /**
+     * Bloque 2 (2026-08-13): ¿hay llave de IA configurada? Es el MISMO check con el que
+     * callGemini truena; el frontend lo usa para no prometer botones que no pueden ocurrir.
+     */
+    public static function disponible(): bool
+    {
+        $key = config('services.gemini.api_key', env('GEMINI_API_KEY', ''));
+
+        return !empty($key) && $key !== 'YOUR_GEMINI_API_KEY';
+    }
+
     // =========================================================
     // MÉTODO PRIVADO: Llamada HTTP a la API de Gemini
     // =========================================================

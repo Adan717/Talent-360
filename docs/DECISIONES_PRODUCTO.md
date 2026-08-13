@@ -88,6 +88,13 @@ lectura y cada purga recorren la tabla entera—; (c) decidir si la retención a
 Por volumen no hay problema de rendimiento: 30 días de chat de una empresa de 50 personas son unos
 miles de filas.
 
+**Actualización 2026-08-13 (bloque 2): (a) y (b) HECHOS — con una corrección de fondo: la tabla
+que se purgaba (`team_chat_messages`) estaba MUERTA** (nada la lee ni escribe; el chat vivo es
+`internal_messages`), así que la retención, el índice y el aviso se construyeron sobre la viva.
+Extra de la ronda del consejo: 📌 conserva indefinidamente un mensaje citado en un incidente.
+**(c) sigue PENDIENTE del dueño**: los privados y el megáfono hoy NO se purgan nunca — hay que
+decidir si la retención les aplica.
+
 ### D4 — Cuentas viejas con `password123`: ~~se quedan~~ **REVERTIDA por el consejo (2026-08-13)**
 
 El argumento original ("rotarlas dejaría fuera a quien está trabajando hoy") era un dilema falso:
@@ -96,7 +103,7 @@ conoce su contraseña actual. Implementado el 2026-08-13 (bloque 1 del plan): la
 entra con su contraseña de siempre y lo único que puede hacer es elegir una nueva. Las **altas
 nuevas** ya nacían con contraseña aleatoria (ronda del 2026-08-08/11).
 
-### D5 — Clave de seguridad del Simulador: se quita (2026-08-11)
+### D5 — Clave de seguridad del Simulador: se quita (2026-08-11) ✅ HECHA 2026-08-13
 
 Era la cadena literal `"Master"` comparada en el navegador. No protegía nada: el control real es el
 rol, y el módulo ya está excluido para supervisores y empleados. Quitarla no amplía el acceso, deja
@@ -121,7 +128,17 @@ credenciales en el servidor.
 
 En discusión al 2026-08-11. Ver `docs/modules/reportes/ASISTENTE_IA.md` cuando exista.
 
-### A2 — Tolerancia por puesto
+### A2 — Tolerancia por puesto ✅ CERRADA (2026-08-13)
+
+**Resuelta en el bloque 2.** El hallazgo que cambió el diseño: además del control muerto de la
+ficha (`job_roles.tiempoTolerancia`), existía `role_clock_policies.config.tolerancia_retardo_mins`
+(matriz §65 de la línea del jefe) que **el dial ya obedecía y el servidor ignoraba** — la mentira
+H-RRHH seguía viva por puesto. En vez de cablear una segunda fuente, el servidor ahora juzga con
+ésa: puesto (política de la Matriz) > empresa (LFT). El control muerto de la ficha se retiró.
+Medido antes de conectar: la tabla estaba vacía en la V2 y todo en 10 — ningún cambio retroactivo.
+El texto de abajo queda como historia de la decisión.
+
+#### (histórico)
 
 **Corrección al balance del 2026-08-11:** de los dos controles del editor de puestos, el
 **Multiplicador Retardo SÍ está conectado** (`ClockService.php:1836` lo lee y multiplica el

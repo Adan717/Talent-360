@@ -3,7 +3,6 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use App\Jobs\PurgeChatJob;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -13,12 +12,11 @@ Artisan::command('inspire', function () {
 // TAREAS PROGRAMADAS — TALENT360
 // =========================================================================
 
-/**
- * Limpieza diaria de mensajes de chat con más de 7 días de antigüedad.
- * SPEC: "el backend ejecutará una limpieza automática diaria para eliminar
- * de forma definitiva cualquier mensaje con más de 7 días de antigüedad."
- */
-Schedule::job(new PurgeChatJob())->dailyAt('03:00')->name('purge-chat-messages');
+// D3 (2026-08-13, ronda adversarial del bloque 2): aquí vivía PurgeChatJob a las 03:00 —
+// una SEGUNDA purga que borraba TODO internal_messages a los 7 días sin filtro alguno
+// (pisaba los conservados, los privados, el megáfono y la retención configurada). Es el
+// mismo patrón de agenda duplicada que payroll:calculate-weekly (nota de abajo). La única
+// purga de chat es `chat:clean-old-messages` (bootstrap/app.php), que sí respeta todo eso.
 
 // A4 (auditoría 2026-07-27): payroll:calculate-weekly estaba agendado DOS veces — aquí
 // (sábado fijo 23:59, diseño previo a la semana fiscal por tenant) y en bootstrap/app.php

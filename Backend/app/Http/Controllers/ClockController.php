@@ -517,6 +517,15 @@ class ClockController extends Controller
                 return response()->json(['error' => 'El curso seleccionado no existe o no pertenece a tu empresa.'], 422);
             }
 
+            // D3: la retención decide qué se BORRA — el clamp no puede vivir sólo en el
+            // navegador. Basura o fuera de rango → 422, nunca "1 día en silencio".
+            if ($key === 'chatRetentionDays') {
+                if (!is_numeric($value) || (int) $value < 1 || (int) $value > \App\Support\RetencionChat::DIAS_TOPE) {
+                    return response()->json(['error' => 'La retención del chat debe ser un número de 1 a 30 días.'], 422);
+                }
+                $value = (int) $value;
+            }
+
             DB::table('system_settings')->updateOrInsert(
                 ['key' => $key, 'tenant_id' => $tenantId],
                 ['value' => is_string($value) ? $value : json_encode($value), 'updated_at' => now()]
@@ -839,7 +848,10 @@ class ClockController extends Controller
             // Se sigue aceptando por compatibilidad con clientes viejos, pero YA NO SE USA.
             'sender_id' => 'nullable|integer',
             'receiver_id' => 'nullable|integer',
-            'type' => 'nullable|string',
+            // D3: sin 'announcement' — el megáfono es del Monitor (sendMessage). Sin esta
+            // whitelist, cualquier colaborador se hacía inmune a la purga de retención
+            // mandando type=announcement (los avisos no se purgan).
+            'type' => 'nullable|string|in:general,permission,food_change,private',
             'content' => 'required|string',
         ]);
 

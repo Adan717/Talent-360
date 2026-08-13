@@ -57,11 +57,10 @@ sin error: cuando alguien haya restaurado de verdad.
 > ronda adversarial: expulsión de tokens al cambiar, platform admin en la rotación, blocklist
 > en el reset, kiosco exento).
 >
-> ⚠ **Pendiente chico**: re-correr el comando de marcado en la V2 — se corrió (7 cuentas,
-> incluida una de PLATAFORMA), pero la restauración del incidente de esa misma noche (ver
-> `RESPALDO_Y_RESTAURACION.md`) revirtió las marcas. Es un solo comando:
-> `docker exec talent360-v2-backend php artisan usuarios:marcar-contrasenas-conocidas`.
-> Y correrlo también en la instancia del jefe cuando él despliegue.
+> Comando de marcado corrido en la V2 (2026-08-13, tras la restauración del incidente):
+> 6 cuentas marcadas, incluida la de PLATAFORMA del usuario. El e2e completo se probó en la
+> V2 viva (ficha marca → pantalla de cambio → entra). Falta solo: correr el comando en la
+> instancia del jefe cuando él despliegue.
 
 **El único voto en contra de una decisión ya tomada, y con razón.** El argumento para no rotarlas
 era "dejaría fuera a quien trabaja hoy". Es un dilema falso: **forzar el cambio en el siguiente
@@ -87,7 +86,21 @@ contraseña, y la prueba lo demuestra fallando sin el arreglo.
 
 ---
 
-## 2. Lo chico ya decidido (media jornada en total)
+## 2. Lo chico ya decidido (media jornada en total) ✅ HECHO 2026-08-13
+
+> **Estado**: los cuatro, con prueba. (1) Clave "Master" del Simulador: fuera. (2) Plan IA: el
+> Monitor manda `ia_disponible` y el botón sólo existe con llave. (3) Retención de chat: sobre
+> `internal_messages` — **descubrimiento: `team_chat_messages` era una tabla MUERTA** (nada la
+> lee ni escribe; la purga de 7 días era teatro y el chat real no se purgaba jamás) — ajuste por
+> empresa (7/30) en Configuración, aviso en la pantalla del chat, índice
+> `(tenant_id, created_at)`, y 📌 conserva un mensaje citado en un incidente; privados y
+> megáfono esperan la decisión (c) de D3. (4) Tolerancia por puesto: el servidor juzga con
+> `role_clock_policies.config.tolerancia_retardo_mins` (puesto) > LFT (empresa) — la MISMA
+> fuente que el dial ya pintaba desde la línea §65 (el control muerto de la ficha de puestos se
+> retiró; el editor real es la Matriz); el dial muestra "Tolerancia: N min (de tu puesto/de la
+> empresa)" y cada check_in estampa `tolerancia_aplicada`/`origen`. Sólo hacia adelante:
+> verificado con prueba. Medido antes de conectar: en la V2 `role_clock_policies` está vacía y
+> todo está en 10 — ninguna nómina cambia.
 
 Va junto porque son cambios pequeños e independientes.
 

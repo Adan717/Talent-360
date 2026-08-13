@@ -339,7 +339,8 @@ class DashboardMonitorController extends Controller
                 ->select(
                     'internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name',
                     'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at',
-                    'internal_messages.receiver_id', 'destinatarios.name as receiver_name'
+                    'internal_messages.receiver_id', 'destinatarios.name as receiver_name',
+                    'internal_messages.preserved_at'
                 )
                 ->get()
                 ->reverse() // de vuelta a orden cronológico para pintar el hilo
@@ -356,6 +357,8 @@ class DashboardMonitorController extends Controller
                         'receiver_name' => $msg->receiver_name,
                         'time' => Carbon::parse($msg->created_at)->diffForHumans(),
                         'timestamp' => $msg->created_at,
+                        // D3: conservado = citado en un incidente; la purga no lo toca.
+                        'preserved' => (bool) $msg->preserved_at,
                     ];
                 })
                 ->all();
@@ -415,6 +418,10 @@ class DashboardMonitorController extends Controller
                     'chat' => $chatMessages,
                     'job_roles' => $jobRoles,
                     'prospects_count' => $prospectsCount,
+                    // Bloque 2: sin llave de IA el botón del Plan IA no debe ni aparecer.
+                    'ia_disponible' => \App\Services\GeminiAIService::disponible(),
+                    // D3: el plazo de retención se DICE en la pantalla del chat.
+                    'chat_retention_days' => \App\Support\RetencionChat::dias($userTenantId),
                 ]
             ]);
 
@@ -746,6 +753,34 @@ class DashboardMonitorController extends Controller
         ]);
     }
 
+    /**
+     * D3 (2026-08-13): conserva (o suelta) un mensaje del chat — "citado en un incidente".
+     * Un mensaje conservado no lo toca la purga de retención, nunca.
+     */
+    public function preserveMessage(Request $request, $id)
+    {
+        $user = auth()->user() ?? auth('sanctum')->user();
+        $tenantId = $user ? $user->tenant_id : null;
+        if (!$tenantId) {
+            return response()->json(['status' => 'error', 'message' => 'Usuario sin empresa asignada.'], 403);
+        }
+
+        $mensaje = DB::table('internal_messages')
+            ->where('id', $id)
+            ->where('tenant_id', $tenantId)
+            ->first(['id', 'preserved_at']);
+
+        if (!$mensaje) {
+            return response()->json(['status' => 'error', 'message' => 'Mensaje no encontrado.'], 404);
+        }
+
+        $nuevo = $mensaje->preserved_at ? null : now();
+        DB::table('internal_messages')->where('id', $mensaje->id)
+            ->update(['preserved_at' => $nuevo, 'updated_at' => now()]);
+
+        return response()->json(['status' => 'success', 'preserved' => (bool) $nuevo]);
+    }
+
     public function sendMessage(Request $request)
     {
         $request->validate([
@@ -802,7 +837,8 @@ class DashboardMonitorController extends Controller
                 ->select(
                     'internal_messages.id', 'internal_messages.sender_id', 'users.name as sender_name',
                     'internal_messages.content', 'internal_messages.type', 'internal_messages.created_at',
-                    'internal_messages.receiver_id', 'destinatarios.name as receiver_name'
+                    'internal_messages.receiver_id', 'destinatarios.name as receiver_name',
+                    'internal_messages.preserved_at'
                 )
                 ->first();
 

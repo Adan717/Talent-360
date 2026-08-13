@@ -3495,9 +3495,15 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
                 {editingJobRoleTab === 'reglas' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     {/* A2 (2026-08-13): fuera "Minutos de Tolerancia" — era un control MUERTO
+                         (job_roles.tiempoTolerancia: se guardaba y nadie lo leía jamás). La
+                         tolerancia por puesto REAL se configura en la Matriz de Ventanas de
+                         Tiempo (role_clock_policies), que el dial y la nómina sí obedecen. */}
                      <div>
                         <label className="block text-sm font-bold text-slate-600 mb-2">Minutos de Tolerancia</label>
-                        <input type="number" value={editingJobRole.tiempoTolerancia || 10} onChange={e => setEditingJobRole({...editingJobRole, tiempoTolerancia: Number(e.target.value)})} className="w-full px-4 py-2 border rounded-xl" />
+                        <p className="w-full px-4 py-2 border border-dashed rounded-xl text-xs text-slate-500 bg-slate-50">
+                          Se configura en la <strong>Matriz de Ventanas de Tiempo</strong> (tolerancia por puesto); sin configurar, aplica la de la empresa (Políticas LFT).
+                        </p>
                      </div>
                      <div>
                         <label className="block text-sm font-bold text-slate-600 mb-2">Multiplicador Retardo</label>

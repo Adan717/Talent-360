@@ -157,6 +157,35 @@ class ClockService
     }
 
     /**
+     * Bloque 2 / A2 (2026-08-13): tolerancia de retardo con precedencia PUESTO > EMPRESA.
+     *
+     * La fuente por puesto es `role_clock_policies.config.tolerancia_retardo_mins` (matriz §65)
+     * — la MISMA que el dial ya pintaba desde la línea del jefe mientras el servidor juzgaba
+     * sólo con `lft_settings`. Conectarla aquí es lo que hace que la pantalla y la nómina digan
+     * lo mismo. Sólo hacia adelante: los fichajes pasados conservan el `is_late` con el que se
+     * juzgaron (nada recalcula un periodo firmado).
+     *
+     * @return array{0:int,1:string} [minutos, 'puesto'|'empresa']
+     */
+    public static function toleranciaDeRetardo(int $tenantId, ?int $jobRoleId, ?\App\Models\LftSetting $lft = null): array
+    {
+        if ($jobRoleId) {
+            $config = \DB::table('role_clock_policies')
+                ->where('tenant_id', $tenantId)
+                ->where('job_role_id', $jobRoleId)
+                ->value('config');
+            $config = is_string($config) ? json_decode($config, true) : (array) $config;
+            if (is_numeric($config['tolerancia_retardo_mins'] ?? null)) {
+                return [(int) $config['tolerancia_retardo_mins'], 'puesto'];
+            }
+        }
+
+        $lft = $lft ?? \App\Models\LftSetting::where('tenant_id', $tenantId)->first();
+
+        return [(int) ($lft->late_tolerance_minutes ?? 10), 'empresa'];
+    }
+
+    /**
      * Datos de comida del expediente del usuario: [mealMinutes (default 60 si nulo/0), job_role_id
      * (o null)]. Se lee del expediente para que el choque de puesto use la MISMA fuente que los otros
      * reservantes (evita el falso negativo de comparar users.job_role_id contra employees.job_role_id).
@@ -372,7 +401,7 @@ class ClockService
         $turnoDelColaborador = \DB::table('employees')
             ->where('tenant_id', $user->tenant_id)
             ->where('user_id', $user->id)
-            ->first(['shiftStart', 'shiftEnd']);
+            ->first(['shiftStart', 'shiftEnd', 'job_role_id']);
         $turnoInicio = $turnoDelColaborador->shiftStart ?? null;
         $turnoFin = $turnoDelColaborador->shiftEnd ?? null;
 
@@ -771,10 +800,19 @@ class ClockService
             $expectedTime = Carbon::createFromFormat('Y-m-d H:i:s', "$date 09:00:00", $timezone);
         }
 
-        // Políticas LFT del Tenant
+        // Políticas LFT del Tenant + tolerancia con precedencia PUESTO > EMPRESA (bloque 2 / A2).
         $lft = \App\Models\LftSetting::where('tenant_id', $user->tenant_id)->first();
-        $toleranceMinutes = $lft ? $lft->late_tolerance_minutes : 10;
+        [$toleranceMinutes, $toleranceOrigin] = self::toleranciaDeRetardo(
+            $tenantId, $turnoDelColaborador->job_role_id ?? null, $lft
+        );
         $lateActionMode = $lft ? $lft->late_action_mode : 'deduct';
+
+        // Auditable en el propio fichaje: cuando dos personas fichan al mismo minuto y sólo una
+        // tiene retardo, el registro dice con QUÉ tolerancia se juzgó y de dónde salió.
+        if ($type === 'check_in') {
+            $details['tolerancia_aplicada'] = $toleranceMinutes;
+            $details['tolerancia_origen'] = $toleranceOrigin;
+        }
 
         $isLate = false;
         $lateMinutes = 0;

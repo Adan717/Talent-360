@@ -248,6 +248,9 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         // system_settings (no anidada), tal como documentó Claude Code en BACKEND_INTERFACES.md —
         // se guarda con el mismo updateSetting('punctuality_course_id', ...) genérico.
         punctuality_course_id: systemSettings.punctuality_course_id ?? null,
+        // D3: retención del chat de equipo (7 por defecto, tope 30). La purga nocturna y el
+        // aviso de la pantalla del chat leen esta misma llave.
+        chatRetentionDays: systemSettings.chatRetentionDays ?? 7,
         onboarding: systemSettings.onboarding || {
           welcomeTitle: '¡Bienvenido al Equipo!',
           welcomeMessage: 'Estamos muy emocionados de que te unas a nosotros.',
@@ -302,6 +305,8 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         await updateSetting('company_address', formData.company_address);
         await updateSetting('company_phone', formData.company_phone);
         await updateSetting('storeSchedule', formData.storeSchedule);
+        // D3: se guarda ya acotado (1..30) — el tope es decisión del dueño.
+        await updateSetting('chatRetentionDays', Math.max(1, Math.min(30, Number(formData.chatRetentionDays) || 7)));
       } else if (activeTab === 'reloj' || section === 'timeBankConfigs' || section === 'leySillaConfig') {
         await updateSetting('leySillaConfig', formData.leySillaConfig);
         await updateSetting('timeBankConfigs', formData.timeBankConfigs);
@@ -547,6 +552,26 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     }}
                     placeholder="Teléfono de la Tienda (10 dígitos)"
                   />
+                </div>
+              </div>
+
+              {/* D3: Retención del chat de equipo */}
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <h4 className="font-bold text-slate-800 mb-1.5">Retención del Chat de Equipo</h4>
+                <p className="text-xs text-slate-500 mb-4">
+                  Los mensajes del canal del equipo se borran automáticamente después de estos días
+                  (máximo 30). Los privados, los avisos de megáfono y los conservados con 📌 no se borran.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-650"
+                    value={formData.chatRetentionDays}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, chatRetentionDays: e.target.value }))}
+                  />
+                  <span className="text-sm font-bold text-slate-600">días</span>
                 </div>
               </div>
 

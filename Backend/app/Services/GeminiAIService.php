@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
  * GeminiAIService
  * Integración con la API de Google Gemini para:
  *   - parseVoiceTask: Interpretar comandos de voz del supervisor → tarea estructurada
- *   - analyzeCandidate: Analizar perfil de candidato vs requisitos del puesto
+
  *   - generateExam: Generar examen interactivo a partir de documentos Markdown
  *   - suggestOptimalAssignee: Sugerir colaborador óptimo según carga de trabajo
  */
@@ -164,66 +164,13 @@ PROMPT;
     // 2. ANÁLISIS DE PERFIL DE CANDIDATO
     // =========================================================
 
-    /**
-     * Analiza si un candidato cumple con los requisitos de un puesto.
-     *
-     * @param array $candidate  Datos del candidato {name, experience, skills, education, ...}
-     * @param array $vacancy    Datos de la vacante {title, requirements, salary, ...}
-     * @return array  {score, recommendation, strengths, gaps, alternative_roles}
-     */
-    public function analyzeCandidate(array $candidate, array $vacancy): array
-    {
-        $candidateJson = json_encode($candidate, JSON_UNESCAPED_UNICODE);
-        $vacancyJson   = json_encode($vacancy,   JSON_UNESCAPED_UNICODE);
-
-        $prompt = <<<PROMPT
-Eres un experto en selección de personal para empresas mexicanas de retail y operaciones. Analiza si el siguiente candidato es adecuado para la vacante.
-
-CANDIDATO: $candidateJson
-
-VACANTE: $vacancyJson
-
-Responde ÚNICAMENTE con un JSON con esta estructura:
-{
-  "score": 82,
-  "recommendation": "Apto",
-  "summary": "Resumen ejecutivo del candidato (2 oraciones)",
-  "strengths": ["Fortaleza 1", "Fortaleza 2"],
-  "gaps": ["Brecha 1 (qué le falta)"],
-  "alternative_roles": ["Puesto alternativo si no califica completamente"],
-  "interview_questions": ["Pregunta específica 1 para la entrevista", "Pregunta 2"],
-  "risk_flags": []
-}
-
-- "score": 0-100 (qué tan bien encaja)
-- "recommendation": "Apto" | "Apto con reservas" | "No Apto" | "Considerar para otro puesto"
-- "risk_flags": aspectos de riesgo detectados (lagunas laborales, poca estabilidad, etc.)
-PROMPT;
-
-        try {
-            $raw  = $this->callGemini($prompt, 0.4, 768);
-            $data = json_decode($this->extractJson($raw), true);
-
-            if (!$data || !isset($data['score'])) {
-                throw new \Exception('Respuesta inválida');
-            }
-
-            return $data;
-        } catch (\Exception $e) {
-            Log::warning('GeminiAIService::analyzeCandidate error', ['error' => $e->getMessage()]);
-
-            return [
-                'score'               => 50,
-                'recommendation'      => 'Revisión manual requerida',
-                'summary'             => 'No se pudo analizar automáticamente. Se requiere revisión manual.',
-                'strengths'           => [],
-                'gaps'                => [],
-                'alternative_roles'   => [],
-                'interview_questions' => [],
-                'risk_flags'          => ['Análisis de IA no disponible'],
-            ];
-        }
-    }
+    // analyzeCandidate() SE ELIMINÓ el 2026-08-11: código muerto verificado.
+    //
+    // Ningún controlador, ruta, job ni pantalla lo llamaba (comprobado también dentro del
+    // contenedor de producción). Su rama de error devolvía un score de 50 que nadie calculó —
+    // exactamente el tipo de cifra sin dueño que esta ronda persigue— pero nunca llegó a
+    // ejecutarse. Si algún día se quiere análisis de candidatos, se construye con la regla de
+    // siempre: el modelo interpreta, nunca produce la cifra.
 
     // =========================================================
     // 3. GENERACIÓN DE EXAMEN DESDE MARKDOWN

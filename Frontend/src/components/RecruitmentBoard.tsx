@@ -89,9 +89,14 @@ export const RecruitmentBoard: React.FC = () => {
         // El aviso prometía tres cosas que el servidor no hace: que el PIN es de fichaje (es el
         // de invitación; el de kiosko es otro), que quedó inscrito en cursos, y un "bloqueo
         // operativo" que no existe (el reloj avisa, no bloquea).
+        // Bloque 5 / D2 (2026-08-13): lo de los cursos volvió, pero ahora es VERDAD — el
+        // servidor cuenta los cursos de inducción de Academia que le aplican por su puesto,
+        // y el aviso de "inducción pendiente" le corre desde su hire_date (fijado al contratar).
+        const cursosInduccion: number = res.data?.induction_courses ?? 0;
         alert(
           `Contratado: ${candidateToHire.name}\n\n` +
           `Ya tiene expediente y acceso.${pin ? `\nPIN de invitación (para activar su cuenta): ${pin}` : ''}\n` +
+          (cursosInduccion > 0 ? `\nQuedó inscrito en su inducción de la Academia (${cursosInduccion} curso${cursosInduccion === 1 ? '' : 's'}).\n` : '') +
           (avisos.length ? `\nFalta por hacer:\n• ${avisos.join('\n• ')}` : '')
         );
       } catch (err: any) {
@@ -124,7 +129,10 @@ export const RecruitmentBoard: React.FC = () => {
                 <p className="text-xs text-slate-500 mb-2">{v?.title}</p>
                 <div className="flex gap-1 mt-2 flex-wrap">
                   {status === 'prospect' && (
-                    <button onClick={() => moveCandidate(c.id, 'induction')} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">A Inducción</button>
+                    {/* D2: vocabulario — esto es la EVALUACIÓN DE POSTULACIÓN (filtro
+                        pre-contratación); "inducción" es el onboarding de Academia, que ocurre
+                        ya contratado. El status 'induction' se queda (contrato de datos). */}
+                    <button onClick={() => moveCandidate(c.id, 'induction')} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">A Evaluación</button>
                   )}
                   {status === 'induction' && (
                     <button onClick={() => moveCandidate(c.id, 'interview')} className="text-[10px] bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100">A Entrevista</button>
@@ -191,7 +199,7 @@ export const RecruitmentBoard: React.FC = () => {
 
       <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
         <Column title="1. Prospectos" status="prospect" color="text-slate-600" />
-        <Column title="2. Inducción / Quiz" status="induction" color="text-blue-600" />
+        <Column title="2. Evaluación de Postulación" status="induction" color="text-blue-600" />
         <Column title="3. Por Entrevistar" status="interview" color="text-purple-600" />
         <Column title="4. Entrenamiento Piso" status="training" color="text-orange-600" />
         <Column title="5. Contratación" status="hired" color="text-emerald-600" />
@@ -245,7 +253,7 @@ export const RecruitmentBoard: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <h4 className="font-bold text-slate-700 mb-2 text-sm">Resultados de Inducción</h4>
+                <h4 className="font-bold text-slate-700 mb-2 text-sm">Evaluación de Postulación</h4>
                 {selectedCandidate.induction_score ? (
                   <div className="flex items-end gap-2">
                     <span className="text-3xl font-extrabold text-emerald-600">{selectedCandidate.induction_score}%</span>

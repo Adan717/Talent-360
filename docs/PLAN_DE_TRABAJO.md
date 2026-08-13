@@ -170,7 +170,18 @@ veces en este proyecto: *el arreglo corrige el comportamiento y deja los datos v
 
 ---
 
-## 5. ATS → Academia: la inscripción en la transición de contratación
+## 5. ATS → Academia: la inscripción en la transición de contratación ✅ HECHO 2026-08-13
+
+> **Estado**: la inscripción de Academia es implícita (curso del tenant visible por puesto,
+> avance perezoso), así que contratar YA deja a la persona con sus cursos en cuanto existen su
+> cuenta y expediente — lo que faltaba era DEMOSTRARLO y DECIRLO: la contratación ahora cuenta
+> los cursos de inducción que le aplican al contratado y lo dice en el resultado ("Quedó
+> inscrito en su inducción de la Academia (N cursos)" — la promesa que se había quitado por
+> mentirosa, ahora de vuelta porque es verdad), o avisa si la Academia no tiene ninguno que le
+> aplique. `AtsInduccionAcademiaTest` lo prueba de punta a punta (contratar → el contratado VE
+> su curso → `mi-induccion` pendiente desde el `hire_date` que la contratación fija).
+> Vocabulario (D2): la columna del tablero de reclutamiento dejó de llamarse "Inducción" — es
+> la **Evaluación de Postulación**; "inducción" queda reservado para Academia post-contratación.
 
 De la decisión D2, el único trabajo real: **al contratar, inscribir a la persona en sus cursos de
 inducción**. Más el vocabulario separado en las pantallas: *evaluación de postulación* /

@@ -113,6 +113,7 @@ class CandidateController extends Controller
         $pinDeInvitacion = null;
         $faltaSueldo = false;
         $faltaPuesto = false;
+        $cursosInduccion = 0;
 
         if (isset($data['status']) && $data['status'] === 'hired' && $candidate->status !== 'hired') {
             // El correo es ÚNICO GLOBAL en `users`. Si ya pertenece a una cuenta de OTRA empresa,
@@ -131,7 +132,7 @@ class CandidateController extends Controller
                 ]);
             }
 
-            DB::transaction(function () use ($candidate, &$data, &$pinDeInvitacion, &$faltaSueldo, &$faltaPuesto) {
+            DB::transaction(function () use ($candidate, &$data, &$pinDeInvitacion, &$faltaSueldo, &$faltaPuesto, &$cursosInduccion) {
                 // La vacante se lee DENTRO de la empresa del candidato y viva: de una ajena o
                 // borrada no se hereda el puesto (se queda sin puesto, que sí avisa en RRHH).
                 $vacancy = Vacancy::withoutGlobalScope(\App\Scopes\TenantScope::class)
@@ -225,6 +226,20 @@ class CandidateController extends Controller
                 $faltaSueldo = ($employee->base_salary === null || (float) $employee->base_salary <= 0)
                     && ($employee->salary === null || (float) $employee->salary <= 0);
                 $faltaPuesto = $employee->job_role_id === null;
+
+                // Bloque 5 / D2 (2026-08-13): la inducción es de Academia y ocurre YA CONTRATADO.
+                // La inscripción es implícita (curso del tenant visible por puesto; el avance se
+                // crea al tocarlo) y el aviso de pendiente cuenta desde el hire_date que esta
+                // misma transacción fija — aquí sólo se MIDE para que la contratación pueda
+                // DECIR la verdad: cuántos cursos de inducción le esperan (o que no hay ninguno).
+                $cursosInduccion = \App\Models\AcademyCourse::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                    ->where('tenant_id', $candidate->tenant_id)
+                    ->where('course_type', 'induction')
+                    ->where(function ($q) use ($employee) {
+                        $q->whereNull('target_job_role_id')
+                            ->orWhere('target_job_role_id', $employee->job_role_id);
+                    })
+                    ->count();
             });
         }
 
@@ -236,9 +251,11 @@ class CandidateController extends Controller
             $responseArray['pin_code'] = $pinDeInvitacion;
             $responseArray['salary_pending'] = $faltaSueldo;
             $responseArray['job_role_pending'] = $faltaPuesto;
+            $responseArray['induction_courses'] = $cursosInduccion;
             $responseArray['avisos'] = array_values(array_filter([
                 $faltaSueldo ? 'Falta capturar su sueldo en RRHH: sin él, la nómina lo calcula con un valor por defecto.' : null,
                 $faltaPuesto ? 'Quedó sin puesto asignado: no podrá fichar por el kiosco ni recibir capacidades hasta que se lo asignes en RRHH.' : null,
+                $cursosInduccion === 0 ? 'La Academia no tiene ningún curso de inducción que le aplique: no le llegará nada que completar.' : null,
             ]));
         }
 

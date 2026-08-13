@@ -51,7 +51,13 @@ parecen ciertos.
    pelean: **devengado** (lo que pasó) vs **pagado/timbrado** (el instrumento legal).
 5. **Excepción documentada** con umbral de materialidad → cancelación + sustitución del CFDI.
 
-### D2 — Inducción del ATS: es un curso de Academia, post-contratación (2026-08-11)
+### D2 — Inducción del ATS: es un curso de Academia, post-contratación (2026-08-11) ✅ IMPLEMENTADA 2026-08-13
+
+> Bloque 5 del plan: la contratación cuenta y anuncia los cursos de inducción que le aplican al
+> contratado (o avisa si no hay ninguno), con prueba de punta a punta; y el tablero de
+> reclutamiento ya dice "Evaluación de Postulación" donde decía "Inducción". La condición 2 (el
+> cuestionario de postulación aterrizando en la pantalla de revisión) ya existía: el expediente
+> del candidato muestra su calificación.
 
 Había dos sistemas de inducción que no se conocían: Academia 360 (cursos, examen calificado en el
 servidor, certificado con folio) y una mini-inducción propia del portal de empleos (video + test de

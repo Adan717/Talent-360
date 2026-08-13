@@ -128,10 +128,10 @@ export const RecruitmentBoard: React.FC = () => {
                 </div>
                 <p className="text-xs text-slate-500 mb-2">{v?.title}</p>
                 <div className="flex gap-1 mt-2 flex-wrap">
+                  {/* D2: vocabulario — esto es la EVALUACIÓN DE POSTULACIÓN (filtro
+                      pre-contratación); "inducción" es el onboarding de Academia, que ocurre
+                      ya contratado. El status 'induction' se queda (contrato de datos). */}
                   {status === 'prospect' && (
-                    {/* D2: vocabulario — esto es la EVALUACIÓN DE POSTULACIÓN (filtro
-                        pre-contratación); "inducción" es el onboarding de Academia, que ocurre
-                        ya contratado. El status 'induction' se queda (contrato de datos). */}
                     <button onClick={() => moveCandidate(c.id, 'induction')} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">A Evaluación</button>
                   )}
                   {status === 'induction' && (

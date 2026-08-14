@@ -14,8 +14,13 @@ export default function ReportesManager() {
   // 'freemium' con un botón "[DEMO] Simular Mejora a PRO" en la pantalla: a un cliente
   // enterprise se le mostraba un candado vendiéndole el plan que YA TIENE, y para ver su
   // propia nómina tenía que pulsar un botón de demostración.
-  const { currentTier, isModuleUnlocked } = useAppStore();
-  const tieneAvanzados = currentTier === 'pro' || currentTier === 'enterprise' || isModuleUnlocked('reportes');
+  const { currentTier, isModuleUnlocked, currentUser } = useAppStore();
+
+  // Decisión del dueño (2026-08-13): el supervisor ve los reportes BÁSICOS (asistencia y
+  // tareas, sin un dato salarial) y el asistente; la pestaña de nómina es solo de admin.
+  // El candado real de los datos vive en el servidor (permission:manage_payroll).
+  const esAdmin = currentUser?.role === 'admin' || currentUser?.role === 'platform_admin';
+  const tieneAvanzados = esAdmin && (currentTier === 'pro' || currentTier === 'enterprise' || isModuleUnlocked('reportes'));
 
   const [descargando, setDescargando] = useState<string | null>(null);
 
@@ -203,13 +208,15 @@ export default function ReportesManager() {
                   la única pestaña rotulada como gratuita solo la ve quien ya pagó. */}
               Reportes Operativos
             </button>
-            <button 
-              onClick={() => setActiveTab('avanzados')}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-amber-500 text-amber-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
-            >
-              Nómina y Avanzados
-              {!tieneAvanzados && <Lock size={14} className="text-amber-500" />}
-            </button>
+            {esAdmin && (
+              <button
+                onClick={() => setActiveTab('avanzados')}
+                className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'avanzados' ? 'border-amber-500 text-amber-700 font-bold' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+              >
+                Nómina y Avanzados
+                {!tieneAvanzados && <Lock size={14} className="text-amber-500" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -220,11 +227,11 @@ export default function ReportesManager() {
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab as any)}
         fabIcon={<Bot size={28} className="text-white relative z-10 animate-pulse" />}
-        onFabClick={() => setActiveTab('avanzados')}
+        onFabClick={() => setActiveTab(esAdmin ? 'avanzados' : 'basicos')}
         fabTitle="Generar Reportes Inteligentes IA"
         items={[
           { id: 'basicos', label: 'Básicos', icon: <FileText /> },
-          { id: 'avanzados', label: 'Avanzados', icon: <DollarSign /> }
+          ...(esAdmin ? [{ id: 'avanzados', label: 'Avanzados', icon: <DollarSign /> }] : [])
         ]}
       />
 

@@ -437,9 +437,13 @@ function MainLayout() {
       return false;
     }
 
-    // 5. Filtrar por rol de supervisor
+    // 5. Filtrar por rol de supervisor. Reportes SÍ se les muestra (decisión del dueño,
+    // 2026-08-13): el backend siempre les permitió los básicos (asistencia/tareas, sin un
+    // dato salarial) y la pantalla les escondía la puerta entera. La pestaña de nómina se
+    // gatea DENTRO de ReportesManager (solo admin), y los datos, en el servidor
+    // (permission:manage_payroll).
     if (currentUser?.role === 'supervisor') {
-      return !['reportes', 'matrix', 'settings'].includes(mod.id);
+      return !['matrix', 'settings'].includes(mod.id);
     }
 
     return true;

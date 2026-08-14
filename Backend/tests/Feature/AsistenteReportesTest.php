@@ -151,6 +151,24 @@ class AsistenteReportesTest extends TestCase
         $this->assertFalse((bool) DB::table('report_intent_logs')->where('tenant_id', $this->tenant->id)->value('exito'));
     }
 
+    /**
+     * Decisión del dueño (2026-08-13): el supervisor SÍ ve reportes — los básicos, que no
+     * traen un dato salarial — y el asistente; la nómina le sigue negada por el servidor
+     * (permission:manage_payroll, default conservador). La pantalla ya no le esconde la
+     * puerta que el backend siempre le abrió.
+     */
+    public function test_el_supervisor_tiene_los_basicos_pero_no_la_nomina(): void
+    {
+        $supervisor = User::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Sup', 'email' => 'sup@asistenteqa.test',
+            'password' => bcrypt('x'), 'role' => 'supervisor',
+        ]);
+
+        $this->actingAs($supervisor)->get('/api/v1/admin/reports/asistencia.csv')->assertOk();
+        $this->actingAs($supervisor)->getJson('/api/v1/admin/reports/asistente/estado')->assertOk();
+        $this->actingAs($supervisor)->getJson('/api/v1/admin/payroll')->assertStatus(403);
+    }
+
     public function test_un_empleado_no_puede_usar_el_asistente(): void
     {
         $empleado = User::create([

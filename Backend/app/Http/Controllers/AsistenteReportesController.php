@@ -55,7 +55,10 @@ class AsistenteReportesController extends Controller
         $frase = trim($request->input('frase'));
 
         try {
-            $intent = $parser->parse($frase);
+            // El modelo NO sabe qué día es hoy: sin decírselo interpretaba "de julio" como el
+            // julio de su entrenamiento (se vio en vivo: 2023-07). La fecha va en la zona del
+            // inquilino, la misma con la que se resuelve el periodo abajo.
+            $intent = $parser->parse($frase, Carbon::now(TenantTimezone::for($tenantId))->toDateString());
         } catch (\Throwable $e) {
             $this->registrar($tenantId, $user->id, $frase, null, false, substr($e->getMessage(), 0, 250));
             return response()->json([

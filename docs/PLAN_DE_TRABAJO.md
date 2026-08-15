@@ -256,6 +256,22 @@ gasto).
   `storage/app/private` (uuid, sin URL pública, ya en el respaldo) — mover a object storage
   (Cloudflare R2 o Hetzner) cuando haya volumen; hoy no hay problema que resolver.
 
+## Reportes operativos: 3 nuevos (2026-08-13)
+
+Construidos: **retardos y faltas por colaborador**, **horas trabajadas y extra** y
+**cumplimiento de rutinas**. Regla que mandó: ninguna cifra se recalcula si ya hay quien la
+calcule — retardos/faltas salen del MISMO motor que la nómina (contar `is_late` a mano da más
+retardos, porque las exenciones se aplican al calcular, no se escriben en el fichaje). Horas es
+un dato operativo nuevo (la nómina paga por día). Cumplimiento declara su definición dentro del
+CSV porque **ya existían cuatro conteos distintos** del mismo dato, y NO trae "minutos reales"
+(sólo se miden al pausar: serían ceros). El asistente por frase ya los elige.
+
+**Pendientes de esta línea** (el dueño los quiere todos con el tiempo): justificantes y
+autorizaciones, aperturas/cierres, validaciones y monedero, inducción y certificados,
+expediente documental, embudo de reclutamiento, comedor/Ley Silla, bitácora de incidentes.
+Nómina histórica y costo por puesto **esperan la fase A del bloque 4**; rotación de personal
+necesita validar antes la calidad de `hire_date` y las bajas viejas.
+
 ## Fuera de la lista, y valen más que la mitad de ella
 
 - **Avisarles a las tres empresas** que hoy no hay respaldo automático ni correo saliente. Cuesta

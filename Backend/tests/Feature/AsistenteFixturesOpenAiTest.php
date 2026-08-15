@@ -34,7 +34,7 @@ class AsistenteFixturesOpenAiTest extends TestCase
         $fallas = [];
         foreach ($fixture['frases'] as $caso) {
             try {
-                $intent = $parser->parse($caso['frase']);
+                $intent = $parser->parse($caso['frase'], now()->toDateString());
             } catch (\Throwable $e) {
                 $fallas[] = "«{$caso['frase']}» → EXCEPCIÓN: {$e->getMessage()}";
                 continue;

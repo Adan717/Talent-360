@@ -48,14 +48,14 @@ class AsistenteReportesTest extends TestCase
     {
         $this->app->bind(ReportIntentParser::class, fn () => new class($intent) implements ReportIntentParser {
             public function __construct(private array $intent) {}
-            public function parse(string $frase): array { return $this->intent; }
+            public function parse(string $frase, string $hoy): array { return $this->intent; }
         });
     }
 
     private function conParserQueExplota(): void
     {
         $this->app->bind(ReportIntentParser::class, fn () => new class implements ReportIntentParser {
-            public function parse(string $frase): array { throw new \RuntimeException('OpenAI caído'); }
+            public function parse(string $frase, string $hoy): array { throw new \RuntimeException('OpenAI caído'); }
         });
     }
 

@@ -18,5 +18,10 @@ namespace App\Services;
  */
 interface ReportIntentParser
 {
-    public function parse(string $frase): array;
+    /**
+     * @param string $hoy fecha de HOY en la zona horaria del inquilino (Y-m-d). El modelo no
+     *                    sabe qué día es: sin este dato interpretaba "de julio" como el julio
+     *                    de su entrenamiento (se vio en vivo: devolvió 2023-07).
+     */
+    public function parse(string $frase, string $hoy): array;
 }

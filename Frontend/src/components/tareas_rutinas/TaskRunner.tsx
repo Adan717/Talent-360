@@ -1733,6 +1733,24 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
                                             </button>
                                         )}
 
+                                        {/* 2026-08-13: el "Checklist de Validación" que el admin captura en la
+                                            tarea se guardaba y NADIE lo mostraba — el supervisor validaba sin
+                                            saber qué debía revisar. Se pinta aquí, donde se decide. */}
+                                        {t.validationCriteria && t.validationCriteria.filter(c => c && c.trim()).length > 0 && (
+                                            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
+                                                <p className="font-extrabold text-emerald-800 flex items-center gap-1.5 mb-1.5">
+                                                    ✅ Qué revisar antes de aprobar:
+                                                </p>
+                                                <ul className="space-y-1">
+                                                    {t.validationCriteria.filter(c => c && c.trim()).map((c, i) => (
+                                                        <li key={i} className="flex items-start gap-1.5 text-emerald-900">
+                                                            <span className="mt-0.5 shrink-0">•</span><span>{c}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
                                         {a.assistantData && (
                                             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                                                 <p className="font-extrabold text-blue-700 flex items-center gap-1.5 mb-1.5">

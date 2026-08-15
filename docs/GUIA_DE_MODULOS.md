@@ -72,7 +72,7 @@
    - En todos: **nadie resuelve lo suyo**; si la solicitud es tuya aparece "debe resolverla otro admin o supervisor".
 
 8. **Plan Diario IA** (botón morado "Plan Diario IA").
-   - **Solo aparece si el servidor tiene configurada la llave de IA** (Gemini). Sin llave, el botón no existe.
+   - **Solo aparece si el servidor tiene configurada una llave de IA** (OpenAI, que ya está; o Gemini). Sin llave, el botón no existe.
    - Al pulsarlo se muestra un diagnóstico del día (quién vino y quién no, tareas pendientes, puestos), un aviso si "hay huecos de personal" y una lista de sugerencias (reasignar una tarea pendiente o crear una nueva, a qué puesto o persona, minutos y motivo). Si la IA no responde, la pantalla lo dice ("El asistente de IA no está disponible") y **no inventa un plan**.
    - **No asigna nada por sí solo**: es una sugerencia para la junta; se reparte con "Asignar Tarea Express" o desde Tareas. Botón único: **Cerrar**.
 
@@ -89,7 +89,7 @@
 - Un mensaje privado no puede enviarse a alguien de otra empresa ni a quien no tenga cuenta (no aparece en el selector).
 
 **Depende de configuración externa.**
-- **Plan Diario IA**: llave de Gemini en el servidor; sin ella el botón desaparece.
+- **Plan Diario IA**: una llave de IA en el servidor (OpenAI ya está); sin ninguna, el botón desaparece.
 - Nada más del Monitor requiere correo, PAC ni llaves.
 
 ---
@@ -235,8 +235,10 @@ El dial nunca ofrece dos cosas a la vez; ofrece la única acción válida en ese
 
 **Funciones.**
 
-1. **Rutinas por puesto y momento.** Cada rutina tiene título, puesto al que aplica, cuándo se dispara (al **checar entrada**, en **cierre**, o a una hora), minutos estimados, prioridad, qué **evidencia** exige (ninguna / foto / capturar un número) y si requiere **validación del supervisor** al terminar. Al arrancar el giro con el asistente inicial se cargan las rutinas del catálogo (por ejemplo restaurante: 15 tareas de apertura/cierre).
-   - Cómo se usa: Tareas IA → **Nueva rutina** → llena y guarda. Se reparte sola cada día a quienes tengan ese puesto.
+1. **Tareas y rutinas.** Una **tarea** es la definición (qué se hace, cuánto tarda, qué evidencia pide, quién la valida). Una **rutina** es la que decide **cuándo y a quién se reparte**: tiene un disparador (al **fichar entrada**, al **abrir/cerrar** la sucursal, o a una **hora**) y una lista de tareas. **Una tarea que no está en ninguna rutina no le llega a nadie** — el formulario lo dice en el lugar donde antes había un campo "Frecuencia" que se guardaba y nadie leía. Al arrancar el giro con el asistente inicial se cargan las rutinas del catálogo (por ejemplo restaurante: 15 tareas de apertura/cierre).
+   - Cómo se usa: Tareas IA → **Nueva tarea** (4 pasos: qué y para quién / cuándo y cuánto / validación / procedimiento) → guarda → mete la tarea en una **rutina** (o crea una) → se reparte sola cada vez que la rutina dispara.
+   - **"Describe o dicta la tarea → Generar"**: escribe (o dicta con el micrófono) una frase como "el cajero hace el corte a las 9 de la noche, urgente, que anote el total" y el sistema **pre-llena todo el formulario** (título, minutos, prioridad, categoría, puesto, hora, evidencia con su instrucción, objetivo y pasos) usando la IA (OpenAI). No crea nada solo: revisas los 4 pasos y guardas. Sin llave de IA cae a un intérprete de reglas fijas (entiende "20 min", "foto", "urgente" y poco más).
+   - Los campos del formulario y su efecto real: **Título** (lo que ve el colaborador) · **Categoría** (color y filtro; se detecta sola por el título y se puede cambiar) · **Puesto ejecutor** (a quién le puede tocar; "Bolsa de trabajo" = cualquiera la toma) · **Objetivo** (se muestra al colaborador al abrirla) · **Tiempo estimado** · **Hora programada** (ordena el plan del día) · **Prioridad**: *bloqueante* impide fichar salida sin terminarla · **Medir tiempo real** (guarda cuánto tardó cada quien para afinar el estimado; no es IA) · **Tarea sentada** (Ley Silla) · **Mini-asistente** = la evidencia que se pide al terminar (ninguna / foto / número / texto, con su instrucción) · **Modo de supervisión**: forzosa (siempre valida el encargado) / automática / dinámica (por antigüedad) / **comparación con IA** (solo con foto: compara contra tus fotos de referencia) · **Procedimiento** (pasos que el colaborador va marcando) · **Checklist de validación** (lo que el supervisor debe revisar; **se le muestra al validar**) · **Video de apoyo** (lección de Academia).
 2. **Ejecución desde el Reloj.** El colaborador ve sus tareas del día; las **inicia, pausa y completa**. Si pide foto o número, no se puede cerrar sin darlo. Al completar, si la tarea exige validación, queda **"pendiente de firma"** hasta que el encargado la apruebe.
 3. **Tarea al vuelo.** El colaborador puede registrar una tarea que hizo y no estaba en su lista (con título y minutos); **siempre** requiere validación del supervisor y no paga hasta que la aprueben.
 4. **Tarea Express** (desde el Monitor, a una persona concreta) — ver Monitor 360.
@@ -249,9 +251,9 @@ El dial nunca ofrece dos cosas a la vez; ofrece la única acción válida en ese
 - La validación (firma) es del **encargado**, nunca de la misma persona que hizo la tarea.
 - Una tarea pagada no vuelve a pagar aunque se reabra; el sistema lo garantiza en el servidor.
 - El "reconocimiento por voz" para dictar tareas depende del navegador (funciona en Chrome); si no está disponible, se captura a mano.
-- La validación **con IA de fotos** ("ai-validate") existe como botón pero **depende de la llave de IA (Gemini)**; sin llave el sistema no valida por IA y el encargado valida a ojo.
+- La **comparación con IA de fotos** funciona con la llave de OpenAI del servidor (o Gemini si es la única). Colaboradores con **menos de 30 días** siempre van a revisión humana (30-90 días: mitad; más de 90: casi siempre IA). Si la IA no está o no coincide, la tarea va al supervisor **con la foto** — antes se perdía en ese camino y el supervisor abría una tarea sin evidencia (corregido 2026-08-13).
 
-**Depende de configuración externa:** solo la validación por IA (llave de Gemini). Todo lo demás funciona.
+**Depende de configuración externa:** la IA (Generar, comparación de fotos, Plan IA del Monitor) usa la llave de OpenAI que ya está en el servidor; sin ninguna llave, todo degrada a manual y lo dice.
 
 ---
 
@@ -635,7 +637,7 @@ Al entrar carga automáticamente la prenómina del **último periodo cerrado** d
 - La cuenta de la bóveda pública es **independiente** de la de la empresa: alguien registrado ahí **no** puede entrar a ningún otro módulo (se cerró un hueco al respecto en la auditoría de agosto).
 - El organigrama visual (árbol y carriles de mando) vive en **Directorio Digital → Organigrama**, no aquí; este módulo es la parte documental.
 
-**Depende de configuración externa:** IA opcional (llave de Gemini).
+**Depende de configuración externa:** IA opcional — usa la llave de OpenAI del servidor (o una de Gemini propia de la empresa si la configuró en el manual).
 
 ---
 

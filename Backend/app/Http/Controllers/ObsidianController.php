@@ -897,36 +897,22 @@ No inventes datos de salarios, reglas o puestos si no están en el contexto.
 DOCUMENTACIÓN COMPLETA DE LA EMPRESA:
 " . $contextText;
 
+        // 2026-08-13: sale por el proveedor de IA que exista (OpenAI primero); la llave de
+        // Gemini propia de la empresa se sigue respetando si la configuró.
         $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
-        $geminiKey = $vault?->gemini_api_key ?? env('GEMINI_API_KEY');
-        if (!$geminiKey) {
+        $llavePropia = $vault?->gemini_api_key;
+        if (!$llavePropia && !\App\Services\GeminiAIService::disponible()) {
             return response()->json([
-                'answer' => "Modo Demo: Hola, soy el Asistente de La Receta Secreta. Para darte respuestas reales con IA, por favor configura la clave de API de Gemini en la configuración del manual. Preguntaste por: \"" . $request->question . "\""
+                'answer' => "El asistente del manual no está configurado en esta instancia (falta la llave de IA). Preguntaste por: \"" . $request->question . "\""
             ]);
         }
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $systemInstruction . "\n\nPregunta del colaborador: " . $request->question]
-                        ]
-                    ]
-                ]
-            ]);
-
-            if ($response->failed()) {
-                return response()->json(['error' => 'Error al conectar con la IA.'], 500);
-            }
-
-            $answer = $response->json('candidates.0.content.parts.0.text') ?? 'No tengo respuesta en este momento.';
-            return response()->json(['answer' => trim($answer)]);
-
+            $answer = app(\App\Services\GeminiAIService::class)->responder($systemInstruction, 'Pregunta del colaborador: ' . $request->question, $llavePropia);
+            return response()->json(['answer' => $answer !== '' ? $answer : 'No tengo respuesta en este momento.']);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::warning('Asistente de la Wiki: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al conectar con la IA.'], 500);
         }
     }
 
@@ -1326,32 +1312,22 @@ Separa cada uno de los documentos solicitados con un separador visual de página
 Rellena todos los campos vacíos con datos hipotéticos lógicos y formales basados en el manual. El lenguaje debe ser estrictamente en español formal, legal y corporativo mexicano.
 Usa etiquetas legibles. Hoy es " . date('d/m/Y') . ".";
 
+        // 2026-08-13: sale por el proveedor de IA que exista (OpenAI primero).
         $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
-        $geminiKey = $vault?->gemini_api_key ?? env('GEMINI_API_KEY');
-        if (!$geminiKey) {
+        $llavePropia = $vault?->gemini_api_key;
+        if (!$llavePropia && !\App\Services\GeminiAIService::disponible()) {
             return response()->json([
-                'html' => "<h3>Modo Demo</h3><p>Para generar contratos con IA, por favor configura la clave de API de Gemini en la configuración del manual. Datos del colaborador: {$request->candidate_name} como {$roleDoc->title}.</p>"
+                'html' => "<h3>Sin IA configurada</h3><p>Para generar contratos con IA falta la llave de IA en esta instancia. Datos del colaborador: {$request->candidate_name} como {$roleDoc->title}.</p>"
             ]);
         }
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $systemInstruction . "\n\nRedacta ahora los pergaminos de contratación:\n" . $instructions]
-                        ]
-                    ]
-                ]
-            ]);
-
-            if ($response->failed()) {
-                return response()->json(['error' => 'Error al conectar con el Escribano AI.'], 500);
+            $markdown = app(\App\Services\GeminiAIService::class)->responder(
+                $systemInstruction, "Redacta ahora los pergaminos de contratación:\n" . $instructions, $llavePropia
+            );
+            if ($markdown === '') {
+                $markdown = 'No se pudo generar la documentación.';
             }
-
-            $markdown = $response->json('candidates.0.content.parts.0.text') ?? 'No se pudo generar la documentación.';
             
             // Convertir markdown a HTML
             $html = Str::markdown($markdown);
@@ -1992,36 +1968,19 @@ ESQUEMA JSON REQUERIDO:
   ]
 }";
 
+        // 2026-08-13: sale por el proveedor de IA que exista (OpenAI primero).
         $vault = ObsidianVault::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
-        $geminiKey = $vault?->gemini_api_key ?? env('GEMINI_API_KEY');
+        $llavePropia = $vault?->gemini_api_key;
 
-        if (!$geminiKey) {
+        if (!$llavePropia && !\App\Services\GeminiAIService::disponible()) {
             // Mock exam generator for sandbox/demo mode
             return $this->createMockExam($user->id, $jobRoleId, $tenant->id);
         }
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $prompt]
-                        ]
-                    ]
-                ],
-                'generationConfig' => [
-                    'responseMimeType' => 'application/json'
-                ]
-            ]);
-
-            if ($response->failed()) {
-                throw new \Exception("Error de conexión API: " . $response->body());
-            }
-
-            $resJson = $response->json();
-            $text = $resJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            $text = app(\App\Services\GeminiAIService::class)->responder(
+                'Responde ÚNICAMENTE con el JSON pedido, sin texto adicional.', $prompt, $llavePropia
+            );
             
             // Clean markdown wrapper if any
             if (preg_match('/```json\s*(.*?)\s*```/s', $text, $matches)) {

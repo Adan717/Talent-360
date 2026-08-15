@@ -90,6 +90,13 @@ if git --no-pager diff --name-only "${ANTERIOR}..${NUEVA}" | grep -q '^Frontend/
     # resolver de nuevo; es barato y no interrumpe nada más.
     echo "▸ Reiniciando nginx para que resuelva la IP nueva del backend…"
     $COMPOSE restart backend-web >/dev/null 2>&1 || docker restart talent360-v2-backend-web >/dev/null
+
+    # Cada reconstrucción del frontend deja ~1-2 GB de caché de compilación que NADIE borra: el
+    # 2026-08-13 el disco iba en 84% con 22 GB de puro caché (Postgres vive en el mismo disco;
+    # si se llena, deja de escribir la base). Se conserva el caché de 24 h (los rebuilds del día
+    # siguen siendo rápidos) y se suelta el resto. Solo borra caché: nunca imágenes ni datos.
+    echo "▸ Limpiando caché de compilación viejo…"
+    docker builder prune -af --filter 'until=24h' >/dev/null 2>&1 || true
 else
     echo "▸ El frontend no cambió: se omite la reconstrucción."
 fi

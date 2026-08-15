@@ -236,6 +236,26 @@ gasto).
 
 ---
 
+## Ronda de Tareas y almacenamiento (2026-08-13, pedida por el dueño tras revisar el formulario)
+
+- **"Describe o dicta la tarea → Generar"** ahora interpreta con OpenAI (strict) y pre-llena TODO
+  el formulario (categoría, puesto, hora, evidencia con instrucción, objetivo, pasos); sin llave
+  cae a las reglas fijas de siempre. Sigue sin crear nada solo.
+- **Formulario de tarea auditado campo por campo**: "Frecuencia" y "Evidencia de Cumplimiento"
+  eran texto libre que se guardaba y NADIE leía (el reparto lo deciden las rutinas) — retirados y
+  reemplazados por la verdad; "Modo Autocaptura (IA)" no era IA — renombrado; el "Checklist de
+  Validación" se guardaba pero no se le mostraba al supervisor al validar — ahora sí.
+- **Defecto real de la comparación con IA**: en las tres salidas a revisión humana la FOTO NO SE
+  GUARDABA (el supervisor abría una tarea sin evidencia). Corregido en el servidor + prueba.
+- **Toda la IA sale por OpenAI** (única llave que existe): Plan IA del Monitor, comparación de
+  fotos, Generar, asistente de la Wiki, Escribano de contratos, generador de examen y Copiloto de
+  soporte. Gemini queda como alternativa si algún día es la única llave. El centinela que
+  detectaba "sin llave" comparaba contra el placeholder equivocado (corregido).
+- **Disco del servidor: 84% → 28%** — eran 23 GB de caché de compilación de Docker; `deploy-v2`
+  ahora lo limpia solo (conserva 24 h). Los archivos del Archivo Digital viven en
+  `storage/app/private` (uuid, sin URL pública, ya en el respaldo) — mover a object storage
+  (Cloudflare R2 o Hetzner) cuando haya volumen; hoy no hay problema que resolver.
+
 ## Fuera de la lista, y valen más que la mitad de ella
 
 - **Avisarles a las tres empresas** que hoy no hay respaldo automático ni correo saliente. Cuesta

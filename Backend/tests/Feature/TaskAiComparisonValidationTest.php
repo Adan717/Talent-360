@@ -189,6 +189,62 @@ class TaskAiComparisonValidationTest extends TestCase
         $this->assertTrue($sawAiFailure);
     }
 
+    /**
+     * 2026-08-13: en las TRES salidas a revisión humana (muestreo por antigüedad, IA caída,
+     * IA sin match) la foto no se guardaba — el supervisor abría una tarea "por validar" SIN
+     * evidencia. Ahora se persiste apenas llega, antes de cualquier bifurcación.
+     */
+    public function test_la_foto_se_guarda_aunque_la_tarea_vaya_a_revision_humana(): void
+    {
+        // Recién contratado (<30 días): SIEMPRE muestreo humano — la ruta que perdía la foto.
+        $employee = $this->makeEmployee(5);
+        $task = $this->makeAiTask();
+        $assignment = $this->makeAssignment($task, $employee, 'ai-nuevo-foto');
+
+        $this->actingAs($employee)->postJson("/api/v1/task-assignments/{$assignment->id}/ai-validate", [
+            'evidence_photo_base64' => 'data:image/jpeg;base64,FOTO-DEL-NUEVO',
+        ])->assertStatus(200)->assertJsonPath('reviewed_by', 'human_spotcheck');
+
+        // assistant_data se castea a JSON en el modelo (igual que en el flujo sin IA).
+        $this->assertSame(
+            'data:image/jpeg;base64,FOTO-DEL-NUEVO',
+            \App\Models\TaskAssignment::find($assignment->id)->assistant_data,
+            'el supervisor tiene que poder VER la foto que va a validar'
+        );
+
+        // Y también cuando la IA se cae (veterano).
+        $veterano = $this->makeEmployee(200);
+        $this->mock(GeminiAIService::class, function ($mock) {
+            $mock->shouldReceive('compareTaskEvidence')->andThrow(new \Exception('caída'));
+        });
+        for ($i = 0; $i < 25; $i++) {
+            $a = $this->makeAssignment($task, $veterano, "ai-vet-foto-{$i}");
+            $this->actingAs($veterano)->postJson("/api/v1/task-assignments/{$a->id}/ai-validate", [
+                'evidence_photo_base64' => "data:image/jpeg;base64,FOTO-{$i}",
+            ])->assertStatus(200);
+            $this->assertSame("data:image/jpeg;base64,FOTO-{$i}",
+                \App\Models\TaskAssignment::find($a->id)->assistant_data);
+        }
+    }
+
+    /** El centinela de la llave: un placeholder cuenta como "sin llave", nunca como "con IA". */
+    public function test_un_placeholder_de_llave_gemini_no_cuenta_como_ia_disponible(): void
+    {
+        config(['services.openai.api_key' => null]);
+        foreach (['', 'YOUR_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY_HERE', 'tu_clave_aqui'] as $falsa) {
+            config(['services.gemini.api_key' => $falsa]);
+            $this->assertFalse(GeminiAIService::disponible(), "'{$falsa}' no es una llave");
+            $this->assertNull(GeminiAIService::proveedor());
+        }
+        config(['services.gemini.api_key' => 'AIzaSyReal-Looking-Key']);
+        $this->assertSame('gemini', GeminiAIService::proveedor());
+
+        // 2026-08-13: con llave de OpenAI, ella manda aunque no haya Gemini.
+        config(['services.gemini.api_key' => null, 'services.openai.api_key' => 'sk-prueba']);
+        $this->assertSame('openai', GeminiAIService::proveedor());
+        $this->assertTrue(GeminiAIService::disponible());
+    }
+
     public function test_ai_validate_rejects_a_task_without_ai_comparison_enabled(): void
     {
         $employee = $this->makeEmployee(200);

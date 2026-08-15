@@ -362,7 +362,10 @@ class TaskAssignmentController extends Controller
         $tenantId = $user->tenant_id ?? 1;
 
         $validated = $request->validate([
-            'evidence_photo_base64' => 'required|string',
+            // Tope de 4 MB en base64 (~3 MB de imagen): la cámara del TaskRunner emite JPEG de
+            // 900px calidad 0.7 (~150 KB); sin tope, cualquier cliente metía lo que quisiera
+            // a la fila y al viaje hacia Gemini.
+            'evidence_photo_base64' => 'required|string|max:4200000',
         ]);
 
         $assignment = TaskAssignment::where('tenant_id', $tenantId)->findOrFail($id);
@@ -385,6 +388,13 @@ class TaskAssignmentController extends Controller
         if ($assignment->status === 'completed') {
             return response()->json(['success' => true, 'status' => 'completed']);
         }
+
+        // LA FOTO SE GUARDA PRIMERO (2026-08-13). Este método tiene TRES salidas que mandan la
+        // tarea a revisión humana (muestreo por antigüedad, IA no disponible, IA sin match) y
+        // ninguna persistía la evidencia: la app le decía al colaborador "tu supervisor lo
+        // revisará" y el supervisor abría una tarea SIN foto — la imagen se quedaba en el
+        // navegador del empleado. Se guarda apenas llega, antes de cualquier bifurcación.
+        $assignment->update(['assistant_data' => $validated['evidence_photo_base64']]);
 
         $assignmentUser = $assignment->user_id ? User::find($assignment->user_id) : null;
         $days = 0;

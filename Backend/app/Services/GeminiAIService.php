@@ -27,14 +27,133 @@ class GeminiAIService
     }
 
     /**
-     * Bloque 2 (2026-08-13): ¿hay llave de IA configurada? Es el MISMO check con el que
-     * callGemini truena; el frontend lo usa para no prometer botones que no pueden ocurrir.
+     * Ronda 2026-08-13: el centinela comparaba contra 'YOUR_GEMINI_API_KEY' y el .env de
+     * ejemplo trae 'YOUR_GEMINI_API_KEY_HERE' — no coincidían, así que con el placeholder el
+     * sistema se creía "con IA", ofrecía el Plan IA y salía a Google con una llave falsa
+     * (dos reintentos con la foto a cuestas). Ahora cualquier placeholder cuenta como "sin llave".
      */
+    public static function llaveConfigurada(): bool
+    {
+        $key = (string) config('services.gemini.api_key', env('GEMINI_API_KEY', ''));
+
+        return $key !== '' && !str_starts_with($key, 'YOUR_') && !str_contains($key, 'tu_clave');
+    }
+
+    /**
+     * 2026-08-13: el dueño entregó llave de OpenAI y NO hay llave de Gemini en ninguna
+     * instancia. En vez de reescribir cada llamada, este servicio elige el proveedor por la
+     * llave que exista — OpenAI primero (la que sirve), Gemini si es la única. Los prompts, los
+     * parsers y las degradaciones con gracia de cada método quedan tal cual: solo cambia el
+     * transporte. Los controladores no se enteran.
+     */
+    public static function proveedor(): ?string
+    {
+        if ((string) config('services.openai.api_key', env('OPENAI_API_KEY', '')) !== '') {
+            return 'openai';
+        }
+
+        return self::llaveConfigurada() ? 'gemini' : null;
+    }
+
+    /** ¿Hay ALGUNA IA configurada? Es lo que el Monitor usa para ofrecer (o no) el Plan IA. */
     public static function disponible(): bool
     {
-        $key = config('services.gemini.api_key', env('GEMINI_API_KEY', ''));
+        return self::proveedor() !== null;
+    }
 
-        return !empty($key) && $key !== 'YOUR_GEMINI_API_KEY';
+    /**
+     * Pregunta en lenguaje natural → respuesta en texto (Wiki de la empresa, Copiloto de
+     * soporte). 2026-08-13: esos cuatro sitios pegaban directo a la URL de Gemini con su
+     * propio `env('GEMINI_API_KEY')`; ahora pasan por aquí y salen por el proveedor que exista.
+     *
+     * @throws \Exception si no hay ninguna llave o el proveedor falla.
+     */
+    public function responder(string $instruccion, string $pregunta, ?string $llaveGeminiPropia = null): string
+    {
+        $prompt = $instruccion . "\n\n" . $pregunta;
+
+        if (self::proveedor() === 'openai') {
+            $apiKey = (string) config('services.openai.api_key', env('OPENAI_API_KEY', ''));
+            $model = (string) config('services.openai.model', env('OPENAI_MODEL', 'gpt-4o-mini'));
+            $response = Http::timeout(30)->withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
+                'model' => $model,
+                'temperature' => 0.3,
+                'messages' => [
+                    ['role' => 'system', 'content' => $instruccion],
+                    ['role' => 'user', 'content' => $pregunta],
+                ],
+            ]);
+            if ($response->failed()) {
+                throw new \Exception('Error al contactar OpenAI: HTTP ' . $response->status());
+            }
+            return trim((string) ($response->json('choices.0.message.content') ?? ''));
+        }
+
+        // La Wiki permite una llave de Gemini propia por empresa; se respeta si viene.
+        $key = $llaveGeminiPropia ?: (self::llaveConfigurada() ? $this->apiKey : '');
+        if ($key === '') {
+            throw new \Exception('Sin llave de IA configurada.');
+        }
+        $response = Http::timeout(30)->post(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $key,
+            ['contents' => [['parts' => [['text' => $prompt]]]]]
+        );
+        if ($response->failed()) {
+            throw new \Exception('Error al contactar Gemini: HTTP ' . $response->status());
+        }
+        return trim((string) ($response->json('candidates.0.content.parts.0.text') ?? ''));
+    }
+
+    /** Transporte OpenAI para prompts de texto que piden JSON (mismo contrato que callGemini). */
+    private function callOpenAiText(string $prompt, float $temperature, int $maxOutputTokens): string
+    {
+        $apiKey = (string) config('services.openai.api_key', env('OPENAI_API_KEY', ''));
+        $model = (string) config('services.openai.model', env('OPENAI_MODEL', 'gpt-4o-mini'));
+
+        $response = Http::timeout(30)->retry(2, 1000)->withToken($apiKey)
+            ->post('https://api.openai.com/v1/chat/completions', [
+                'model' => $model,
+                'temperature' => $temperature,
+                'max_tokens' => $maxOutputTokens,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => [['role' => 'user', 'content' => $prompt]],
+            ]);
+
+        if ($response->failed()) {
+            Log::error('OpenAI API error', ['status' => $response->status(), 'body' => substr($response->body(), 0, 300)]);
+            throw new \Exception('Error al contactar OpenAI: HTTP ' . $response->status());
+        }
+
+        return (string) ($response->json('choices.0.message.content') ?? '');
+    }
+
+    /** Transporte OpenAI con visión: texto + imágenes (data URIs), pide JSON. */
+    private function callOpenAiVision(string $promptText, array $dataUris, float $temperature, int $maxOutputTokens): string
+    {
+        $apiKey = (string) config('services.openai.api_key', env('OPENAI_API_KEY', ''));
+        $model = (string) config('services.openai.vision_model', env('OPENAI_VISION_MODEL', 'gpt-4o-mini'));
+
+        $content = [['type' => 'text', 'text' => $promptText]];
+        foreach ($dataUris as $uri) {
+            [$mime, $data] = $this->splitDataUri($uri);
+            $content[] = ['type' => 'image_url', 'image_url' => ['url' => "data:{$mime};base64,{$data}", 'detail' => 'low']];
+        }
+
+        $response = Http::timeout(30)->retry(2, 1000)->withToken($apiKey)
+            ->post('https://api.openai.com/v1/chat/completions', [
+                'model' => $model,
+                'temperature' => $temperature,
+                'max_tokens' => $maxOutputTokens,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => [['role' => 'user', 'content' => $content]],
+            ]);
+
+        if ($response->failed()) {
+            Log::error('OpenAI API error (vision)', ['status' => $response->status(), 'body' => substr($response->body(), 0, 300)]);
+            throw new \Exception('Error al contactar OpenAI: HTTP ' . $response->status());
+        }
+
+        return (string) ($response->json('choices.0.message.content') ?? '');
     }
 
     // =========================================================
@@ -48,8 +167,13 @@ class GeminiAIService
      */
     private function callGemini(string $prompt, float $temperature = 0.3, int $maxOutputTokens = 1024): string
     {
-        if (empty($this->apiKey) || $this->apiKey === 'YOUR_GEMINI_API_KEY') {
-            throw new \Exception('GEMINI_API_KEY no configurada. Añade tu clave en el archivo .env: GEMINI_API_KEY=tu_clave_aqui');
+        // Proveedor por llave disponible: con OpenAI configurada, todo lo de texto sale por ahí.
+        if (self::proveedor() === 'openai') {
+            return $this->callOpenAiText($prompt, $temperature, $maxOutputTokens);
+        }
+
+        if (!self::llaveConfigurada()) {
+            throw new \Exception('Sin llave de IA configurada (OPENAI_API_KEY o GEMINI_API_KEY).');
         }
 
         $endpoint = $this->baseUrl . $this->model . ':generateContent?key=' . $this->apiKey;
@@ -426,8 +550,8 @@ PROMPT;
      */
     public function compareTaskEvidence(string $evidenceBase64, array $referenceImagesBase64, ?string $toleranceDescription = null): array
     {
-        if (empty($this->apiKey) || $this->apiKey === 'YOUR_GEMINI_API_KEY') {
-            throw new \Exception('GEMINI_API_KEY no configurada. Añade tu clave en el archivo .env: GEMINI_API_KEY=tu_clave_aqui');
+        if (self::proveedor() === null) {
+            throw new \Exception('Sin llave de IA configurada (OPENAI_API_KEY o GEMINI_API_KEY).');
         }
 
         $toleranceText = $toleranceDescription
@@ -446,6 +570,17 @@ Responde ÚNICAMENTE con un JSON con esta estructura exacta:
   "reasoning": "Explicación breve (1-2 oraciones) de por qué coincide o no coincide"
 }
 PROMPT;
+
+        // Con OpenAI: mismo prompt, mismo orden de imágenes (referencias primero, evidencia al
+        // final), mismo parser de abajo — solo cambia el transporte.
+        if (self::proveedor() === 'openai') {
+            $raw = $this->callOpenAiVision($promptText, [...$referenceImagesBase64, $evidenceBase64], 0.2, 512);
+            $decoded = json_decode($this->extractJson($raw), true);
+            if (!$decoded || !isset($decoded['match'])) {
+                throw new \Exception('Respuesta inválida de OpenAI para comparación de evidencia');
+            }
+            return $decoded;
+        }
 
         $parts = [['text' => $promptText]];
         foreach ($referenceImagesBase64 as $refImage) {

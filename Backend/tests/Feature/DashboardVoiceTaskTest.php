@@ -67,7 +67,7 @@ class DashboardVoiceTaskTest extends TestCase
                 // antes producía 'high', un valor que ninguna otra capa entendía y que rompía el
                 // filtro de tareas bloqueantes. Sólo "urgente"/"bloqueante" escalan.
                 'priority' => 'normal',
-                'category' => 'limpieza',
+                'category' => 'operativo', // 2026-08-13: 'limpieza' no existe en el formulario (Task['category']); se normaliza al vocabulario real
                 'target_type' => 'user',
                 'target_id' => $employee->id,
                 'matched_name' => 'Francisco Javier',
@@ -142,7 +142,7 @@ class DashboardVoiceTaskTest extends TestCase
             'estimated_mins' => 30,
             'points' => 10,
             'priority' => 'normal',
-            'category' => 'limpieza',
+            'category' => 'operativo', // 2026-08-13: 'limpieza' no existe en el formulario (Task['category']); se normaliza al vocabulario real
             'target_type' => 'user',
             'target_id' => $employee->id,
             'assistant_type' => 'ninguno',

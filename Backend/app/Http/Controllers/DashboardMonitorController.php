@@ -596,6 +596,43 @@ class DashboardMonitorController extends Controller
         $user = auth()->user() ?? auth('sanctum')->user();
         $tenantId = $user ? $user->tenant_id : 1;
 
+        // "Describe o dicta la tarea → Generar" (2026-08-13): con llave de OpenAI, la frase se
+        // interpreta de verdad (structured outputs strict) y llena TODOS los campos del
+        // formulario; sin llave o si el proveedor falla, se cae a las reglas fijas de abajo,
+        // que son las de siempre. En ambos casos solo se PRE-LLENA: el admin revisa y guarda.
+        if (\App\Services\OpenAiTaskDraftParser::disponible()) {
+            try {
+                $puestos = DB::table('job_roles')->where('tenant_id', $tenantId)->whereNull('deleted_at')
+                    ->orderBy('name')->get(['id', 'name']);
+                $draft = (new \App\Services\OpenAiTaskDraftParser())->parse($text, $puestos->pluck('name')->all());
+                $puesto = $draft['role_name'] ? $puestos->firstWhere('name', $draft['role_name']) : null;
+
+                return response()->json([
+                    'status' => 'success',
+                    'source' => 'openai',
+                    'data' => [
+                        'title' => $draft['title'],
+                        'estimated_mins' => $draft['estimated_mins'],
+                        'points' => max(5, (int) round($draft['estimated_mins'] / 3)),
+                        'priority' => $draft['priority'],
+                        'category' => $draft['category'],
+                        'target_type' => $puesto ? 'role' : 'pool',
+                        'target_id' => $puesto->id ?? null,
+                        'matched_name' => $puesto->name ?? null,
+                        'time_detected' => true,
+                        'assistant_type' => $draft['assistant_type'],
+                        'assistant_prompt' => $draft['assistant_prompt'] ?? '',
+                        'assistant_detected' => $draft['assistant_type'] !== 'ninguno',
+                        'scheduled_time' => $draft['scheduled_time'],
+                        'objective' => $draft['objective'],
+                        'procedure_steps' => $draft['procedure_steps'],
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Generar tarea con OpenAI falló; se usan las reglas fijas: ' . $e->getMessage());
+            }
+        }
+
         // 1. Detect target (User or Role)
         $targetType = 'role';
         $targetId = null;
@@ -734,8 +771,18 @@ class DashboardMonitorController extends Controller
 
         $points = max(5, round($estimatedMins / 3));
 
+        // Las reglas fijas producían 'limpieza'/'atencion', valores que el formulario NO
+        // ofrece (Task['category'] es operativo|administrativo|mantenimiento|supervision):
+        // se normalizan al vocabulario real para que el pre-llenado no meta una categoría
+        // que la tarjeta pinta "sin color" y el filtro no encuentra.
+        $category = match ($category) {
+            'limpieza', 'atencion' => 'operativo',
+            default => $category,
+        };
+
         return response()->json([
             'status' => 'success',
+            'source' => 'reglas',
             'data' => [
                 'title' => $title,
                 'estimated_mins' => $estimatedMins,
@@ -749,6 +796,9 @@ class DashboardMonitorController extends Controller
                 'assistant_type' => $assistantType,
                 'assistant_prompt' => $assistantPrompt,
                 'assistant_detected' => $assistantDetected,
+                'scheduled_time' => null,
+                'objective' => null,
+                'procedure_steps' => [],
             ]
         ]);
     }

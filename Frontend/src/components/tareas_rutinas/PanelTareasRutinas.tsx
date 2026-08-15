@@ -182,15 +182,29 @@ export function PanelTareasRutinas() {
             const res = await axiosInstance.post('/admin/dashboard/parse-voice-task', { text: aiQuickInput });
             const d = res.data?.data;
             if (d) {
+                // 2026-08-13: antes solo llenaba título/minutos/prioridad/evidencia y dejaba
+                // el resto vacío. Ahora llena TODO lo que el servidor interprete (con OpenAI
+                // cuando hay llave; con reglas fijas si no). Sigue sin crear nada: el admin
+                // revisa los 4 pasos y guarda.
                 if (d.title) setNewTaskTitle(d.title);
                 if (d.estimated_mins) setNewTaskMins(d.estimated_mins);
                 setNewTaskPriority(d.priority === 'bloqueante' ? 'bloqueante' : 'normal');
+                if (d.category && ['operativo', 'administrativo', 'mantenimiento', 'supervision'].includes(d.category)) {
+                    setNewTaskCategoryOverride(d.category);
+                }
                 if (d.assistant_detected && d.assistant_type) {
                     setNewTaskAssistant(d.assistant_type);
                     if (d.assistant_prompt) setNewTaskPrompt(d.assistant_prompt);
                 }
                 if (d.target_type === 'role' && d.target_id) {
                     setNewTaskExecutorRoleId(Number(d.target_id));
+                }
+                if (d.scheduled_time) setNewTaskScheduledTime(d.scheduled_time);
+                if (d.objective) setNewTaskObjective(d.objective);
+                if (Array.isArray(d.procedure_steps) && d.procedure_steps.length > 0) {
+                    setNewTaskProcedureSteps(d.procedure_steps.map((texto: string, i: number) => ({
+                        step_number: i + 1, title: texto, detailed_instruction: '', verification_required: false,
+                    })));
                 }
             }
             setAiQuickInput('');
@@ -859,15 +873,15 @@ export function PanelTareasRutinas() {
                                                     ))}
                                                 </select>
                                             </div>
+                                            {/* 2026-08-13: aquí había un campo "Frecuencia" de texto libre que se
+                                                guardaba y NADIE leía jamás (el reparto lo deciden las RUTINAS y su
+                                                disparador, no la tarea). Escribir "cada tercer día" no cambiaba nada.
+                                                Se retira y se dice la verdad. */}
                                             <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Frecuencia</label>
-                                                <input
-                                                    value={newTaskFrequency}
-                                                    onChange={e => setNewTaskFrequency(e.target.value)}
-                                                    type="text"
-                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
-                                                    placeholder="Ej. Diaria, Al cierre, Semanal"
-                                                />
+                                                <label className="block text-sm font-bold text-slate-700 mb-2">¿Cuándo se reparte?</label>
+                                                <p className="w-full p-3.5 sm:p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-600 leading-relaxed">
+                                                    Lo decide la <strong>rutina</strong> en la que metas esta tarea (al fichar entrada, al abrir/cerrar la sucursal o a una hora). Una tarea que no está en ninguna rutina <strong>no le llega a nadie</strong>. Si quieres una hora fija dentro del día, usa "Hora Programada" en el paso 2.
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -875,8 +889,11 @@ export function PanelTareasRutinas() {
 
                                     {creatorStep === 2 && (
                                     <div className="space-y-4 sm:space-y-6">
-                                        {/* Tiempo, hora programada y evidencia */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                                        {/* Tiempo y hora programada. 2026-08-13: aquí había un tercer campo
+                                            "Evidencia de Cumplimiento" de texto libre que se guardaba y nadie
+                                            leía, y que además duplicaba al "Mini-Asistente" del paso 3 (que SÍ es
+                                            la evidencia real: foto / número / texto). Se retira. */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             <div>
                                                 <label className="block text-sm font-bold text-slate-700 mb-2">Tiempo Estimado (Mins)</label>
                                                 <input value={newTaskMins} onChange={e => setNewTaskMins(parseInt(e.target.value) || 15)} type="number" className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-slate-700" />
@@ -890,16 +907,6 @@ export function PanelTareasRutinas() {
                                                     className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
                                                 />
                                                 <p className="text-[10px] text-slate-400 mt-1">Opcional — ordena el plan de trabajo del día por hora.</p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-bold text-slate-700 mb-2">Evidencia de Cumplimiento</label>
-                                                <input
-                                                    value={newTaskEvidenceType}
-                                                    onChange={e => setNewTaskEvidenceType(e.target.value)}
-                                                    type="text"
-                                                    className="w-full p-3.5 sm:p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
-                                                    placeholder="Ej. Supervisión directa, Foto"
-                                                />
                                             </div>
                                         </div>
 
@@ -917,8 +924,10 @@ export function PanelTareasRutinas() {
                                             <label className="flex items-center gap-3 p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl cursor-pointer hover:bg-blue-100/50 transition-colors">
                                                 <input type="checkbox" checked={newTaskAutoCap} onChange={e => setNewTaskAutoCap(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
                                                 <div>
-                                                    <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Modo Autocaptura (IA)</span>
-                                                    <span className="text-[10px] text-blue-700">Aprenderá tiempos reales.</span>
+                                                    {/* Decía "(IA)": no hay IA aquí. Solo guarda cuánto tardó cada quien
+                                                        de verdad para afinar el tiempo estimado con datos reales. */}
+                                                    <span className="font-bold text-blue-900 block text-xs flex items-center gap-1"><Brain size={14}/> Medir tiempo real</span>
+                                                    <span className="text-[10px] text-blue-700">Guarda cuánto tardó cada quien para afinar el estimado.</span>
                                                 </div>
                                             </label>
                                             <label className="flex items-center gap-3 p-3.5 bg-purple-50/50 border border-purple-200 rounded-xl cursor-pointer hover:bg-purple-100/50 transition-colors">

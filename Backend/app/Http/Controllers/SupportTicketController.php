@@ -276,35 +276,19 @@ Información clave de la plataforma:
 
 Responde de manera profesional y directa a la consulta del usuario, usando el siguiente contexto si es relevante: '{$context}'.";
 
-        $geminiKey = env('GEMINI_API_KEY');
-        if (!$geminiKey) {
+        // 2026-08-13: sale por el proveedor de IA que exista (OpenAI primero), no solo Gemini.
+        if (!\App\Services\GeminiAIService::disponible()) {
             return response()->json([
-                'answer' => "Modo offline/Demo: Hola, soy tu Copiloto de Soporte. Para responder consultas reales con Inteligencia Artificial, configura la variable GEMINI_API_KEY en tu archivo .env. Consulta: \"{$question}\""
+                'answer' => "El Copiloto de Soporte no está configurado en esta instancia (falta la llave de IA). Tu consulta: \"{$question}\""
             ]);
         }
 
         try {
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $geminiKey, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            ['text' => $systemInstruction . "\n\nConsulta del usuario: " . $question]
-                        ]
-                    ]
-                ]
-            ]);
-
-            if ($response->failed()) {
-                return response()->json(['error' => 'Error al conectar con la IA de soporte.'], 500);
-            }
-
-            $answer = $response->json('candidates.0.content.parts.0.text') ?? 'No se pudo obtener una respuesta en este momento.';
-            return response()->json(['answer' => trim($answer)]);
-
+            $answer = app(\App\Services\GeminiAIService::class)->responder($systemInstruction, 'Consulta del usuario: ' . $question);
+            return response()->json(['answer' => $answer !== '' ? $answer : 'No se pudo obtener una respuesta en este momento.']);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::warning('Copiloto de soporte: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al conectar con la IA de soporte.'], 500);
         }
     }
 }

@@ -31,7 +31,14 @@ class OpenAiReportIntentParser implements ReportIntentParser
         $sistema = <<<'PROMPT'
 Conviertes la frase de un encargado en la intención de un reporte de un sistema de asistencia laboral mexicano.
 
-Reportes disponibles: "asistencia" (entradas, salidas y retardos) y "tareas" (tareas completadas). NADA MÁS.
+Reportes disponibles, y NADA MÁS:
+- "asistencia": el detalle de entradas, salidas y retardos, movimiento por movimiento.
+- "tareas": las tareas completadas, una por renglón.
+- "retardos": el RESUMEN por colaborador de cuántos retardos y faltas acumula (quién reincide). Úsalo cuando pidan "resumen", "quién llega tarde", "reincidentes", "faltas", "incidencias por persona".
+- "horas": horas trabajadas y efectivas por día y por persona (descontando comida), y trabajo en día no laborable.
+- "rutinas": cumplimiento de rutinas y tareas (% hecho, omitidas, sin cerrar) por persona y por tarea.
+
+Si dudas entre "asistencia" y "retardos": el detalle movimiento por movimiento es "asistencia"; el conteo por persona es "retardos".
 
 Reglas duras:
 1. NUNCA resuelvas fechas relativas ("ayer", "la semana pasada", "los últimos 15 días"): clasifícalas en el tipo de periodo correspondiente. Solo usa "rango_absoluto" cuando la frase diga fechas concretas, y escríbelas tal cual en desde/hasta (YYYY-MM-DD).
@@ -45,7 +52,7 @@ PROMPT;
             'type' => 'object',
             'additionalProperties' => false,
             'properties' => [
-                'reporte' => ['type' => 'string', 'enum' => ['asistencia', 'tareas', 'no_soportado']],
+                'reporte' => ['type' => 'string', 'enum' => ['asistencia', 'tareas', 'retardos', 'horas', 'rutinas', 'no_soportado']],
                 'periodo' => [
                     'type' => 'object',
                     'additionalProperties' => false,

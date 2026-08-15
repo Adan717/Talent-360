@@ -31,6 +31,9 @@ class AsistenteReportesController extends Controller
      */
     private const DIAS_TOPE = ReportesBasicosController::DIAS_TOPE;
 
+    /** Los reportes que el asistente sabe llenar; cada uno tiene su descarga ya autorizada. */
+    private const REPORTES = ['asistencia', 'tareas', 'retardos', 'horas', 'rutinas'];
+
     public function estado()
     {
         return response()->json(['disponible' => OpenAiReportIntentParser::disponible()]);
@@ -63,7 +66,7 @@ class AsistenteReportesController extends Controller
 
         // La frontera de confianza es ésta, no el proveedor: se revalida TODO.
         $reporte = $intent['reporte'] ?? null;
-        if ($reporte === 'no_soportado' || !in_array($reporte, ['asistencia', 'tareas'], true)) {
+        if ($reporte === 'no_soportado' || !in_array($reporte, self::REPORTES, true)) {
             $motivo = trim((string) ($intent['motivo_rechazo'] ?? '')) ?: 'Eso no es uno de los reportes disponibles (asistencia o tareas).';
             $this->registrar($tenantId, $user->id, $frase, $intent, true, 'rechazada: ' . substr($motivo, 0, 200));
             return response()->json(['code' => 'no_soportado', 'message' => $motivo], 422);

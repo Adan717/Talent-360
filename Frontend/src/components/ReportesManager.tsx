@@ -7,6 +7,18 @@ import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
+// Los reportes operativos que existen hoy. El id es el nombre del archivo que sirve el
+// servidor (/admin/reports/<id>.csv) y el que devuelve el asistente por frase.
+type ReporteId = 'asistencia' | 'tareas' | 'retardos' | 'horas' | 'rutinas';
+
+const REPORTES: { id: ReporteId; titulo: string; desc: string; color: string; Icono: any }[] = [
+  { id: 'asistencia', titulo: 'Asistencia', desc: 'Entradas, salidas y retardos, movimiento por movimiento. Por defecto hoy.', color: 'bg-blue-50 text-blue-600', Icono: Table },
+  { id: 'retardos', titulo: 'Retardos y Faltas por Colaborador', desc: 'Quién reincide: retardos, minutos, faltas físicas y las que se acumularon por retardos. Mismas cifras que la nómina (respeta justificantes y contingencias). Últimos 30 días.', color: 'bg-rose-50 text-rose-600', Icono: AlertCircle },
+  { id: 'horas', titulo: 'Horas Trabajadas y Extra', desc: 'Horas en sucursal y efectivas por día (descontando comida y descansos), con turnos nocturnos bien contados. Últimos 14 días.', color: 'bg-amber-50 text-amber-600', Icono: Calendar },
+  { id: 'rutinas', titulo: 'Cumplimiento de Rutinas', desc: '% de tareas hechas, omitidas y sin cerrar, por persona y por tarea. Últimos 30 días.', color: 'bg-violet-50 text-violet-600', Icono: CheckCircle2 },
+  { id: 'tareas', titulo: 'Tareas Completadas', desc: 'Listado de tareas cerradas por el equipo, una por renglón. Últimos 30 días.', color: 'bg-purple-50 text-purple-600', Icono: FileSpreadsheet },
+];
+
 export default function ReportesManager() {
   const [activeTab, setActiveTab] = useState<'basicos' | 'avanzados'>('basicos');
 
@@ -117,7 +129,7 @@ export default function ReportesManager() {
 
   // Los dos CSV de la pestaña básica. Los botones existían SIN onClick: no bajaban nada
   // y tampoco avisaban de nada.
-  const handleDescargarCsv = async (reporte: 'asistencia' | 'tareas', rango?: { from: string; to: string }) => {
+  const handleDescargarCsv = async (reporte: ReporteId, rango?: { from: string; to: string }) => {
     setDescargando(reporte);
     try {
       const params = rango ? `?from=${rango.from}&to=${rango.to}` : '';
@@ -251,8 +263,8 @@ export default function ReportesManager() {
                   <div className="flex-1">
                     <h3 className="font-bold text-slate-800">Pídelo con tus palabras</h3>
                     <p className="text-sm text-slate-500 mt-1">
-                      Ej. “los retardos de la semana pasada” o “tareas completadas de julio”.
-                      Solo asistencia y tareas — la nómina se consulta en su pestaña.
+                      Ej. “quién llega tarde seguido este mes”, “horas trabajadas de la semana
+                      pasada” o “cumplimiento de rutinas de julio”. La nómina se consulta en su pestaña.
                     </p>
                   </div>
                 </div>
@@ -283,7 +295,7 @@ export default function ReportesManager() {
                 {propuesta && (
                   <div className="mt-4 bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
                     <p className="text-sm font-bold text-slate-700 mb-3">
-                      Entendí: <span className="text-indigo-700">{propuesta.reporte === 'asistencia' ? 'Asistencia y retardos' : 'Tareas completadas'}</span>{' '}
+                      Entendí: <span className="text-indigo-700">{REPORTES.find(r => r.id === propuesta.reporte)?.titulo || propuesta.reporte}</span>{' '}
                       {/* Si el humano editó las fechas, la etiqueta original ya no aplica y
                           mentiría (ronda adversarial): se cambia por el rango literal. */}
                       de <span className="text-indigo-700">{propuesta.etiqueta || `del ${propuesta.desde} al ${propuesta.hasta}`}</span>. Revisa y confirma:
@@ -317,39 +329,24 @@ export default function ReportesManager() {
               </div>
             )}
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-200 transition-colors">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Table size={24} /></div>
-                <div>
-                  <h3 className="font-bold text-slate-800">Asistencia del Día</h3>
-                  <p className="text-sm text-slate-500 mt-1">Exporta un CSV plano con las horas de entrada y salida de hoy.</p>
+            {REPORTES.map(({ id, titulo, desc, color, Icono }) => (
+              <div key={id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-blue-200 transition-colors">
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-lg shrink-0 ${color}`}><Icono size={24} /></div>
+                  <div>
+                    <h3 className="font-bold text-slate-800">{titulo}</h3>
+                    <p className="text-sm text-slate-500 mt-1 leading-relaxed">{desc}</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => handleDescargarCsv(id)}
+                  disabled={descargando === id}
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50 shrink-0"
+                >
+                  <Download size={16} /> {descargando === id ? 'Generando…' : 'Descargar CSV'}
+                </button>
               </div>
-              <button
-                onClick={() => handleDescargarCsv('asistencia')}
-                disabled={descargando === 'asistencia'}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
-              >
-                <Download size={16} /> {descargando === 'asistencia' ? 'Generando…' : 'Descargar CSV'}
-              </button>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-200 transition-colors">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-purple-50 text-purple-600 rounded-lg"><FileSpreadsheet size={24} /></div>
-                <div>
-                  <h3 className="font-bold text-slate-800">Tareas Completadas</h3>
-                  <p className="text-sm text-slate-500 mt-1">Listado de tareas cerradas por el equipo en los últimos 30 días.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleDescargarCsv('tareas')}
-                disabled={descargando === 'tareas'}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
-              >
-                <Download size={16} /> {descargando === 'tareas' ? 'Generando…' : 'Descargar CSV'}
-              </button>
-            </div>
+            ))}
           </div>
         )}
 

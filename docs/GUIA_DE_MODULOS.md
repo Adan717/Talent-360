@@ -480,11 +480,22 @@ Reglas del examen:
 
 2. **Tareas Completadas (CSV).** Tarjeta "Tareas Completadas" → "Descargar CSV". Trae las tareas cerradas en los últimos 30 días: Fecha, Colaborador, Tarea, Prioridad, Minutos estimados, Minutos reales y Puntos.
 
+2.b **Retardos y Faltas por Colaborador (CSV)** — *nuevo 2026-08-13*. Una línea por persona con: retardos, minutos acumulados, faltas físicas, faltas que se generaron por acumular retardos, faltas totales, exceso de comida y días festivos trabajados. Ordenado de más incidencias a menos (para ver quién reincide). Últimos 30 días por defecto.
+   - **Las cifras son las mismas que la nómina**: salen del mismo motor que calcula el recibo, así que respetan los justificantes aprobados y las contingencias (un retardo justificado NO aparece como retardo cobrable). Contar los retardos a mano desde el CSV de asistencia da un número MAYOR, porque ahí no se ven las exenciones.
+
+2.c **Horas Trabajadas y Extra (CSV)** — *nuevo*. Una línea por persona y día: entrada, salida, horas en sucursal, comida, descansos, **horas efectivas** (sucursal − comida − descansos) y si fue trabajo en día no laborable autorizado. Últimos 14 días por defecto.
+   - Los turnos que cruzan medianoche cuentan como **una sola jornada**. Si alguien olvidó checar salida, la columna Observación lo dice ("Cerrada por el sistema" o "Sin salida registrada") y **no se le inventan horas**.
+   - Es un reporte **operativo**: la nómina de este sistema se paga por día, no por horas, así que no altera ningún recibo.
+
+2.d **Cumplimiento de Rutinas (CSV)** — *nuevo*. Dos bloques en el mismo archivo: por **colaborador** y por **tarea**, con asignadas, hechas, omitidas, sin cerrar y **% de cumplimiento**. Últimos 30 días por defecto.
+   - Definición que usa (viene escrita en el propio archivo): *hechas* = completadas + las que esperan firma; *omitidas* = rechazadas o saltadas; *sin cerrar* = pendientes, en curso o pausadas.
+   - **No trae "minutos reales"** a propósito: el sistema sólo mide el tiempo real cuando la persona *pausa* la tarea, así que esa columna sería casi toda ceros y engañaría.
+
 3. **"Pídelo con tus palabras" (asistente por frase).** Solo aparece si la instancia tiene configurada la llave de OpenAI; si no, la tarjeta no existe y quedan los dos botones de arriba.
    - Cómo se usa: escribe la frase (por ejemplo "los retardos de la semana pasada" o "tareas completadas de julio", máximo 300 caracteres) → pulsa "Interpretar" (o Enter) → el sistema muestra "Entendí: Asistencia y retardos / Tareas completadas de <periodo>" y llena las fechas "Del" y "Al" → revisa (puedes corregir las fechas a mano) → pulsa "Descargar CSV".
    - El asistente NO descarga nada por sí solo: solo llena el formulario; la descarga siempre la confirmas tú con el botón.
    - Entiende periodos como hoy, ayer, últimos N días, la semana en curso, la semana pasada, "la semana 32", el mes en curso, el mes pasado o un rango de fechas ("del 1 al 15 de julio"). Las semanas se calculan con el día de inicio de semana configurado por tu empresa.
-   - Solo sabe de asistencia y tareas. Si le pides nómina u otra cosa, contesta que no es uno de los reportes disponibles.
+   - Sabe elegir entre los **cinco** reportes operativos: asistencia, tareas, retardos y faltas, horas trabajadas y cumplimiento de rutinas. Ejemplos: *"quién llega tarde seguido este mes"* → Retardos y Faltas; *"horas trabajadas de la semana pasada"* → Horas; *"cumplimiento de rutinas de julio"* → Rutinas. Si le pides nómina u otra cosa, contesta que no es uno de los reportes disponibles.
    - Debajo del cuadro se avisa: la frase se envía a OpenAI (EE. UU.) únicamente para interpretarla y se guarda junto con tu usuario según la retención configurada de la empresa; evita escribir datos personales innecesarios.
 
 **Pestaña "Nómina y Avanzados" (solo administrador)**

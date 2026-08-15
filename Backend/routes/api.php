@@ -379,6 +379,13 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::middleware('throttle:30,1')->group(function () {
                 Route::get('/admin/reports/asistencia.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'asistenciaDelDia']);
                 Route::get('/admin/reports/tareas.csv', [\App\Http\Controllers\ReportesBasicosController::class, 'tareasCompletadas']);
+
+                // Reportes operativos (2026-08-13). Sin dato salarial: mismo grupo, sin el
+                // candado de nómina. Las cifras de retardos/faltas salen del MISMO motor que
+                // la nómina (ver ReportesOperativosController).
+                Route::get('/admin/reports/retardos.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'retardosYFaltas']);
+                Route::get('/admin/reports/horas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'horasTrabajadas']);
+                Route::get('/admin/reports/rutinas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'cumplimientoRutinas']);
             });
 
             // Bloque 6: el asistente SOLO interpreta y llena el formulario — la descarga

@@ -212,10 +212,13 @@ class ReportesIncidenciasController extends Controller
             ->orderBy('user_id')->orderBy('date')->orderBy('time')
             ->get(['user_id', 'date', 'type', 'time']);
 
+        // OJO: en esta tabla la columna se llama `employee_id` pero apunta a `users` (familia
+        // §29/§30 de nombres engañosos). Y "otorgada" son tres estados, no sólo `approved`:
+        // una solicitud en curso (`active`) o ya terminada (`finished`) también se concedió.
         $sillas = DB::table('silla_requests')
             ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
-            ->get(['user_id', 'status', 'created_at']);
+            ->whereBetween('requested_at', [$desde . ' 00:00:00', $hasta . ' 23:59:59'])
+            ->get(['employee_id as user_id', 'status', 'requested_at']);
 
         $porPersonaDia = [];
         foreach ($marcas as $m) {
@@ -233,7 +236,7 @@ class ReportesIncidenciasController extends Controller
                 $exceso = max(0, $comida['minutos'] - $permitidos);
 
                 $sillasDia = $sillas->filter(fn ($s) => (int) $s->user_id === (int) $userId
-                    && Carbon::parse($s->created_at)->setTimezone($tz)->toDateString() === $fecha);
+                    && Carbon::parse($s->requested_at)->setTimezone($tz)->toDateString() === $fecha);
 
                 $filas[] = [
                     $fecha,
@@ -246,7 +249,7 @@ class ReportesIncidenciasController extends Controller
                     $exceso > 0 ? $exceso : '',
                     $descanso['minutos'],
                     $sillasDia->count() ?: '',
-                    $sillasDia->where('status', 'approved')->count() ?: '',
+                    $sillasDia->whereIn('status', ['approved', 'active', 'finished'])->count() ?: '',
                     $comida['abierta'] ? 'Comida sin cerrar' : '',
                 ];
             }

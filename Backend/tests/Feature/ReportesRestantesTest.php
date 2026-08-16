@@ -175,6 +175,16 @@ class ReportesRestantesTest extends TestCase
             ]);
         }
 
+        // Ley Silla: SIN esta fila el reporte pasaba en pruebas y tronaba en producción con un
+        // 500 — la consulta a `silla_requests` nunca se ejercía (columna real: `employee_id`,
+        // que apunta a users; y "otorgada" incluye active/finished, no sólo approved).
+        DB::table('silla_requests')->insert([
+            ['tenant_id' => $this->tenant->id, 'store_id' => 1, 'employee_id' => $this->colaborador->id,
+             'requested_at' => now(), 'status' => 'finished', 'created_at' => now(), 'updated_at' => now()],
+            ['tenant_id' => $this->tenant->id, 'store_id' => 1, 'employee_id' => $this->colaborador->id,
+             'requested_at' => now(), 'status' => 'rejected', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
         $csv = $this->csv('comedor', ['from' => $hoy, 'to' => $hoy]);
         $renglon = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'Pedro'));
         $campos = str_getcsv(trim($renglon));
@@ -182,6 +192,8 @@ class ReportesRestantesTest extends TestCase
         $this->assertSame('80', $campos[5], '80 minutos de comida');
         $this->assertSame('60', $campos[6], 'los permitidos salen del expediente');
         $this->assertSame('20', $campos[7], 'exceso de 20');
+        $this->assertSame('2', $campos[9], 'dos solicitudes de Ley Silla');
+        $this->assertSame('1', $campos[10], 'sólo una se otorgó');
     }
 
     public function test_academia_marca_la_induccion_vencida_con_el_plazo_real(): void

@@ -1,6 +1,6 @@
 # Guía de módulos de Talent 360
 
-**Qué es este documento.** La descripción de **cada módulo tal como existe hoy en el sistema**: qué hace, quién lo ve, cómo se usa desde la pantalla y qué reglas conviene saber. Se levantó **desde el código real** el 2026-08-13 y se actualizó el **2026-08-16** (los 15 reportes y la baja con motivo y fecha) — no de las promesas de venta: si algo está marcado *"en construcción"* es porque la pantalla existe pero el sistema aún no lo respalda, y si una función no aparece aquí es porque no existe todavía.
+**Qué es este documento.** La descripción de **cada módulo tal como existe hoy en el sistema**: qué hace, quién lo ve, cómo se usa desde la pantalla y qué reglas conviene saber. Se levantó **desde el código real** el 2026-08-13 y se actualizó el **2026-08-16** (los 15 reportes en sus tres formatos, y la baja con motivo y fecha) — no de las promesas de venta: si algo está marcado *"en construcción"* es porque la pantalla existe pero el sistema aún no lo respalda, y si una función no aparece aquí es porque no existe todavía.
 
 **Los tres enchufes pendientes** (no son construcción, son credenciales o decisiones del dueño) aparecen en cada módulo bajo *"Depende de configuración externa"*: **correo saliente** (proveedor por elegir — hoy no llega ningún correo), **timbrado fiscal** (llave de Facturapi) y **destino en la nube del respaldo**.
 
@@ -468,7 +468,7 @@ Reglas del examen:
 
 ## Reportes IA
 
-**En la barra lateral:** "Reportes IA" (subtítulo "Analítica Nómina e incidencias"). Dentro se llama "Módulo de Reportes IA". Sirve para descargar **15 reportes** en hoja de cálculo, pedirlos escribiendo una frase, y —solo el administrador— revisar y autorizar la prenómina del periodo cerrado, exportándola a Excel o PDF.
+**En la barra lateral:** "Reportes IA" (subtítulo "Analítica Nómina e incidencias"). Dentro se llama "Módulo de Reportes IA". Sirve para descargar **15 reportes** —cada uno en Excel, CSV o PDF—, pedirlos escribiendo una frase, y —solo el administrador— revisar y autorizar la prenómina del periodo cerrado, exportándola a Excel o PDF.
 
 **Quién lo ve y desde qué plan**
 - Roles: administrador y supervisor. El supervisor ve la pestaña "Reportes Operativos" y **13 de los 15 reportes**; los dos con dinero (Nómina Histórica y Costo por Puesto) solo los ve quien tiene la capacidad "manage_payroll" — el administrador siempre, un supervisor solo si el administrador se la otorga. La pestaña "Nómina y Avanzados" solo aparece al administrador. El candado es del servidor, no de la pantalla: aunque alguien la forzara, no obtiene los datos.
@@ -517,7 +517,7 @@ pedir otro.
 
 **Tres cosas que conviene saber**
 - **Los tres salen de las mismas cifras.** Ni el Excel ni el PDF vuelven a consultar nada: se arman con los mismos renglones. El documento que entregas no puede decir algo distinto al Excel que revisaste.
-- **En el Excel, el resumen y las notas van en sus propias pestañas.** En el CSV van pegados debajo de la tabla (es lo único que un CSV permite), y ahí estorban: si ordenas o filtras los datos, esos renglones se revuelven con ellos. Por ejemplo, Nómina Histórica abre con la hoja de recibos, y en otra pestaña los *Totales por periodo*.
+- **En el Excel, las notas van en su propia pestaña** ("Cómo leer este reporte"), y los tres reportes que traen resumen —Rotación, Reclutamiento y Nómina Histórica— lo llevan también en la suya. En el CSV todo eso va pegado debajo de la tabla, que es lo único que un CSV permite, y ahí estorba: al ordenar o filtrar los datos, esos renglones se revuelven con ellos.
 - **El PDF se topa en 2,000 renglones** y lo dice en el propio documento cuando pasa (no recorta callado). Arriba de eso, acota las fechas o usa Excel: un PDF de miles de renglones no se lee ni se entrega.
 
 **Por qué el Excel y no el CSV de siempre.** Un CSV es texto, y Excel adivina qué es cada cosa
@@ -530,11 +530,11 @@ los porcentajes (como texto, ordenar pone "100%" antes que "80%").
 
 - **Asistencia** — Fecha, Colaborador, Puesto, Movimiento (Entrada, Salida, Inicio/Fin de comida, Inicio/Fin de descanso), Hora, ¿Retardo? y Minutos. Por defecto **hoy**; acepta rango.
 - **Retardos y Faltas por Colaborador** — Una línea por persona: retardos, minutos, faltas físicas, faltas generadas por acumular retardos, faltas totales, exceso de comida y festivos trabajados. De más incidencias a menos. **Últimos 30 días.**
-  - **Las cifras son las mismas que la nómina**: salen del mismo motor que calcula el recibo, así que respetan justificantes aprobados y contingencias. Contarlos a mano desde el CSV de asistencia da un número **mayor**, porque ahí no se ven las exenciones.
+  - **Las cifras son las mismas que la nómina**: salen del mismo motor que calcula el recibo, así que respetan justificantes aprobados y contingencias. Contarlos a mano desde el reporte de Asistencia da un número **mayor**, porque ahí no se ven las exenciones.
 - **Horas Trabajadas y Extra** — Por persona y día: entrada, salida, horas en sucursal, comida, descansos, **horas efectivas** y trabajo en día no laborable autorizado. **Últimos 14 días.**
   - Los turnos que cruzan medianoche son **una sola jornada**. A quien olvidó checar salida no se le inventan horas: la columna Observación lo dice.
   - Es **operativo**: la nómina se paga por día, no por horas, así que no altera ningún recibo.
-- **Cumplimiento de Rutinas** — Dos bloques: por **colaborador** y por **tarea**, con asignadas, hechas, omitidas, sin cerrar y **% de cumplimiento**. **Últimos 30 días.**
+- **Cumplimiento de Rutinas** — Asignadas, hechas, omitidas, sin cerrar y **% de cumplimiento**, con una columna "Tipo" que dice si el renglón cuenta a un **colaborador** o a una **tarea** (en Excel, filtra por ahí para ver una vista u otra). **Últimos 30 días.**
   - Su definición viene escrita en el archivo: *hechas* = completadas + las que esperan firma; *omitidas* = rechazadas o saltadas; *sin cerrar* = pendientes, en curso o pausadas.
   - **No trae "minutos reales"** a propósito: el sistema sólo mide el tiempo cuando la persona *pausa* la tarea, así que esa columna sería casi toda ceros.
 - **Tareas Completadas** — Fecha, Colaborador, Tarea, Prioridad, Minutos estimados, Minutos reales y Puntos. **Últimos 30 días.**
@@ -546,12 +546,12 @@ los porcentajes (como texto, ordenar pone "100%" antes que "80%").
 - **Inducción y Capacitación** — Por colaborador: fecha de ingreso, días transcurridos, estado de la inducción (**VENCIDA** si pasó el plazo de 3 días), cursos aprobados, cursos atorados (2+ reprobadas) y certificados emitidos con su folio. **Últimos 90 días.**
   - Los administradores no aparecen: tampoco reciben el aviso de inducción.
 - **Expediente Documental** — Por colaborador: cuántos de los 6 documentos tiene validados, el estado de cada uno (con el motivo si fue rechazado) y **qué le falta**. Es una **foto de hoy**, no un periodo.
-- **Embudo de Reclutamiento** — Candidatos con su etapa actual, vacante, puesto, antecedente ("ya trabajó aquí") y evaluación de postulación, más un **resumen por vacante** (total, contratados, rechazados, en proceso). **Últimos 90 días.**
-  - No puede decir cuánto tardó cada candidato en cada etapa: el sistema no registra los cambios de etapa. El CSV lo aclara.
+- **Embudo de Reclutamiento** — Candidatos con su etapa actual, vacante, puesto, antecedente ("ya trabajó aquí") y evaluación de postulación, más un **"Resumen por vacante"** (candidatos, contratados, rechazados, en proceso), que en Excel es su propia pestaña. **Últimos 90 días.**
+  - No puede decir cuánto tardó cada candidato en cada etapa: el sistema no registra los cambios de etapa. El propio archivo lo aclara.
 - **Monedero y Reconocimientos** — Por persona: tareas hechas, monedas y puntos ganados **en el periodo**, tareas validadas y rechazadas, y su saldo, puntos totales y nivel **de hoy**. **Últimos 30 días.**
-- **Rotación de Personal** — Por persona: ingreso, situación, fecha y motivo de baja, permanencia; y un **resumen** con plantilla activa, altas del periodo, antigüedad promedio y bajas con/sin fecha. **Últimos 90 días.**
-- 🔒 **Nómina Histórica** — Cada recibo guardado: periodo, sueldo, retardos, faltas, deducciones, neto, estado (borrador / firmado / autorizado / timbrado), quién autorizó y el folio fiscal; más **totales por periodo**. **Últimos 90 días.**
-- 🔒 **Costo de Nómina por Puesto y Área** — Dos bloques (por **puesto** y por **área**) con personas, recibos, sueldo, descuentos separados por **faltas / retardos / séptimo día**, total de deducciones, bonos, neto y **% deducido**. **Últimos 90 días.**
+- **Rotación de Personal** — Por persona: ingreso, situación, fecha y motivo de baja, permanencia; y un **"Resumen de plantilla"** (activa hoy, altas del periodo, antigüedad promedio, bajas con y sin fecha), que en Excel es su propia pestaña. **Últimos 90 días.**
+- 🔒 **Nómina Histórica** — Cada recibo guardado: periodo, sueldo, retardos, faltas, deducciones, neto, estado (borrador / firmado / autorizado / timbrado), quién autorizó y el folio fiscal; más **"Totales por periodo"** —que separa lo **firmado** (dinero comprometido) de lo que aún es **borrador**— y que en Excel es su propia pestaña. **Últimos 90 días.**
+- 🔒 **Costo de Nómina por Puesto y Área** — Personas, recibos, sueldo, descuentos separados por **faltas / retardos / séptimo día**, total de deducciones, bonos, neto y **% deducido**, con una columna "Agrupado por" que dice si el renglón es un **puesto** o un **área** (en Excel, filtra por ahí). **Últimos 90 días.**
 
 **"Pídelo con tus palabras" (asistente por frase)**
 
@@ -583,9 +583,9 @@ Al entrar carga automáticamente la prenómina del **último periodo cerrado** d
    - La autorización deja registro de quién y cuándo. El timbrado fiscal NO ocurre aquí: se hace en "Nómina CFDI 4.0" sobre las nóminas ya autorizadas.
 
 **Reglas que conviene saber**
-- Los reportes CSV admiten como máximo 92 días por descarga; si el asistente o las fechas piden más, el sistema lo rechaza con aviso. Tampoco acepta periodos futuros ("no hay asistencia del futuro"); si el rango termina en el futuro, lo recorta a hoy.
-- Las descargas tienen límite de frecuencia (30 CSV por minuto, 20 interpretaciones por minuto) para no saturar el servidor.
-- Los fichajes del Simulador Matrix nunca entran en los CSV ni en la nómina real.
+- Los reportes admiten como máximo 92 días por descarga, en cualquiera de los tres formatos; si el asistente o las fechas piden más, el sistema lo rechaza con aviso. Tampoco acepta periodos futuros ("no hay asistencia del futuro"); si el rango termina en el futuro, lo recorta a hoy.
+- Las descargas tienen límite de frecuencia: **30 por minuto y por usuario, contando todos los reportes y los tres formatos en el mismo cubo** — bajar un mismo reporte en Excel, CSV y PDF gasta tres. Y 20 interpretaciones por minuto. Si te pasas, el sistema responde "demasiadas peticiones"; se espera un minuto y sigue. (Es lo que parece un reporte roto y no lo es: al probar los 15 en los tres formatos —45 descargas— los últimos fallan por esto.)
+- Los fichajes del Simulador Matrix nunca entran en los reportes ni en la nómina real.
 - Cómo se calcula la prenómina (reglas de Ley Federal del Trabajo configurables en el módulo LFT): las faltas descuentan el día completo; cada 3 retardos cuentan como una falta (configurable); el descuento por minuto de retardo viene en $0 de fábrica (activarlo es decisión de cada empresa) y un retardo que ya se convirtió en falta no se cobra además por minuto; el séptimo día se paga proporcional a las faltas de la semana; el día festivo trabajado paga salario doble adicional; un retardo con justificante aprobado o un día con contingencia aprobada no se cobra ni cuenta como falta; el neto nunca baja de $0 y se le suman los bonos de puntualidad/apertura si la empresa los tiene configurados.
 - Un día solo cuenta como falta si ya terminó; el periodo en curso no es autorizable: siempre se trabaja sobre el último periodo cerrado.
 - Si en RRHH no está capturado el sueldo, la fila se marca "Pendiente" y se excluye de los totales (internamente el cálculo usa un valor histórico de $2,400 semanales, por eso conviene capturar el sueldo real antes de autorizar).

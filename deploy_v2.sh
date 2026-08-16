@@ -49,6 +49,18 @@ fi
 ANTERIOR="$(git rev-parse --short HEAD)"
 echo "▸ Versión actual: ${ANTERIOR}"
 
+# ── Qué versión se desplegó BIEN la última vez ────────────────────────────────────────────────
+# No basta con mirar en qué commit está el árbol. El árbol se mueve al principio, antes de
+# construir; si algo revienta después (un `composer install` que se topa con un 502 de GitHub,
+# una migración que falla, la comprobación final), el árbol se queda en la versión nueva pero los
+# contenedores siguen corriendo la vieja. La siguiente ejecución veía "ya estás en ese commit" y
+# se declaraba innecesaria: el despliegue quedaba a medias diciendo que no había nada que hacer.
+# (Pasó el 2026-08-16 con el 504 de GitHub bajando symfony/mime.)
+#
+# La marca se escribe SÓLO cuando el despliegue termina bien, así que es la única fuente honesta.
+MARCA="${RAIZ}/.ultimo-despliegue-ok"
+ULTIMO_OK="$(cat "$MARCA" 2>/dev/null || true)"
+
 echo "▸ Trayendo cambios…"
 git fetch origin --prune
 
@@ -56,13 +68,22 @@ echo "▸ Situando el árbol en ${OBJETIVO}…"
 git reset --hard "$OBJETIVO"
 
 NUEVA="$(git rev-parse --short HEAD)"
-if [ "$ANTERIOR" = "$NUEVA" ]; then
-    echo "▸ Ya estaba en ${NUEVA}: no hay nada que desplegar."
+if [ "$ANTERIOR" = "$NUEVA" ] && [ "$ULTIMO_OK" = "$NUEVA" ]; then
+    echo "▸ Ya estaba en ${NUEVA} y su despliegue terminó bien: no hay nada que hacer."
     exit 0
 fi
 
-echo "▸ ${ANTERIOR} → ${NUEVA}"
-git --no-pager log --oneline "${ANTERIOR}..${NUEVA}" | sed 's/^/    /'
+# Desde dónde se compara para el registro de cambios y para decidir si toca reconstruir el
+# frontend: desde el último despliegue BUENO, no desde donde estaba el árbol. Si el intento
+# anterior murió a mitad, el árbol ya estaba en la versión nueva y esta comparación salía vacía
+# —así que el frontend no se reconstruía justo en el reintento que venía a arreglarlo—.
+BASE="${ULTIMO_OK:-$ANTERIOR}"
+if [ "$BASE" != "$NUEVA" ]; then
+    echo "▸ ${BASE} → ${NUEVA}"
+    git --no-pager log --oneline "${BASE}..${NUEVA}" | sed 's/^/    /'
+else
+    echo "▸ Reintentando ${NUEVA}: el despliegue anterior no llegó a terminar."
+fi
 
 # ── Backend ───────────────────────────────────────────────────────────────────────────────────
 # `migrate --force` es obligatorio: sin él Laravel pide confirmación interactiva y el script se
@@ -79,7 +100,9 @@ $COMPOSE restart backend >/dev/null
 # ── Frontend ──────────────────────────────────────────────────────────────────────────────────
 # Sólo se reconstruye si el commit tocó el frontend: la reconstrucción tarda minutos y la mayoría
 # de los despliegues son de backend.
-if git --no-pager diff --name-only "${ANTERIOR}..${NUEVA}" | grep -q '^Frontend/'; then
+# En un reintento (BASE == NUEVA) la comparación sale vacía y hay que reconstruir de todas formas:
+# no se sabe hasta dónde llegó el intento que falló.
+if [ "$BASE" = "$NUEVA" ] || git --no-pager diff --name-only "${BASE}..${NUEVA}" | grep -q '^Frontend/'; then
     echo "▸ El frontend cambió: reconstruyendo…"
     $COMPOSE up -d --build frontend >/dev/null
 
@@ -113,6 +136,8 @@ CODIGO_API="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST \
     -H 'Accept: application/json' http://localhost:3002/api/v1/login || echo 000)"
 
 if [ "$CODIGO" = "200" ] && [ "$CODIGO_API" != "502" ] && [ "$CODIGO_API" != "000" ]; then
+    # ÚNICO sitio donde se escribe la marca: llegar hasta aquí es lo que significa "desplegado".
+    echo "$NUEVA" > "$MARCA"
     echo ""
     echo "✔ Desplegado ${NUEVA} — la aplicación responde (web ${CODIGO}, API ${CODIGO_API})."
 else
@@ -122,7 +147,9 @@ else
         echo "  Un 502 en la API suele ser nginx apuntando a la IP vieja del backend:"
         echo "      docker restart talent360-v2-backend-web"
     fi
+    echo "  El árbol se queda en ${NUEVA} pero NO se marca como desplegado: al volver a ejecutar,"
+    echo "  el script reintenta esta versión entera en vez de creer que ya está puesta."
     echo "  Para volver a la versión anterior:"
-    echo "      ./deploy_v2.sh ${ANTERIOR}"
+    echo "      /usr/local/bin/deploy-v2 ${BASE}"
     exit 1
 fi

@@ -279,8 +279,29 @@ Lo que esos reportes NO pueden decir, y lo dicen en el propio CSV: el tiempo que
 pasó en cada etapa (el sistema no registra los cambios de etapa) y los "minutos reales" de una
 tarea (sólo se miden al pausar).
 
-**Sigue pendiente**: nómina histórica y costo por puesto **esperan la fase A del bloque 4**;
-rotación de personal necesita validar antes la calidad de `hire_date` y las bajas viejas.
+**Nómina histórica y rotación: HECHOS (2026-08-16), son 14 reportes.** Los dos se pudieron
+construir sin esperar la fase A, con una condición: no recalcular nada.
+
+- **Nómina histórica** lee `weekly_payrolls` tal como quedó guardada — que es justo lo que D1
+  declaró autoritativo. Tres correcciones que salieron de auditar el propio código antes de
+  publicarlo: (1) un recibo en `draft` **lo reescribe el batch cada noche**, así que se
+  totaliza APARTE y no se suma con lo firmado; (2) los estados que el sistema escribe de
+  verdad son `draft` / `approved_by_employee` / `approved_by_admin` — el timbrado NO cambia el
+  estado, se detecta por `timbrada_at`; (3) llamarle "neto" a secas era engañoso para un
+  contador: **no hay ISR ni IMSS**, y el bruto real no es reconstruible (`net + deducciones`
+  no lo da, por el tope en 0 y el bono). Todo eso se declara dentro del CSV. Además detecta y
+  avisa los **recibos traslapados** (pasa al cambiar de periodicidad) que harían sumar dinero
+  dos veces. Va detrás de `permission:manage_payroll`, y la pantalla ni siquiera le ofrece la
+  tarjeta a quien no puede bajarla.
+- **Rotación** obligó a arreglar la raíz: el sistema **no registraba cuándo se iba nadie**
+  ("Enviar a inactivo" sólo ponía `is_active_employee=false`). Se agregó
+  `employees.termination_date` + `termination_reason`, la baja los graba, el reingreso los
+  limpia y la pantalla pregunta el motivo. Las bajas anteriores no tienen fecha y el reporte
+  lo dice en vez de inventarla. Lo que sigue sin poder calcularse honestamente: el índice de
+  rotación de esas bajas viejas y la permanencia de quien se fue sin fecha.
+
+**Sigue pendiente**: costo de nómina por puesto/área (necesita el desglose que hoy no se
+guarda: bonos y deducciones por concepto se calculan en memoria y se tiran).
 
 ## Fuera de la lista, y valen más que la mitad de ella
 

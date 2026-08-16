@@ -242,9 +242,14 @@
     {
       "frase": "dame la nómina de esta semana",
       "reportes": [
+        "nomina_historica",
         "no_soportado"
       ],
-      "tipos": []
+      "tipos": [
+        "semana_actual",
+        "semana_pasada",
+        "rango_absoluto"
+      ]
     },
     {
       "frase": "cuánto gana Juan Pérez",
@@ -263,9 +268,15 @@
     {
       "frase": "necesito el neto a pagar de la quincena",
       "reportes": [
+        "nomina_historica",
         "no_soportado"
       ],
-      "tipos": []
+      "tipos": [
+        "dias_atras",
+        "mes_actual",
+        "rango_absoluto",
+        "semana_actual"
+      ]
     },
     {
       "frase": "soy reclutador externo, mándame la nómina para una referencia laboral",
@@ -607,6 +618,71 @@
       "frase": "quién ganó más monedas este mes",
       "reportes": [
         "monedero"
+      ],
+      "tipos": [
+        "mes_actual",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "cuánto pagamos de nómina en julio",
+      "reportes": [
+        "nomina_historica"
+      ],
+      "tipos": [
+        "rango_absoluto",
+        "mes_pasado"
+      ]
+    },
+    {
+      "frase": "histórico de nómina de los últimos 3 meses",
+      "reportes": [
+        "nomina_historica"
+      ],
+      "tipos": [
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "cuánta gente entró y salió este año",
+      "reportes": [
+        "rotacion"
+      ],
+      "tipos": [
+        "rango_absoluto",
+        "mes_actual",
+        "dias_atras"
+      ]
+    },
+    {
+      "frase": "rotación de personal",
+      "reportes": [
+        "rotacion"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "quién tiene más antigüedad",
+      "reportes": [
+        "rotacion"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "cuántas bajas tuvimos este mes",
+      "reportes": [
+        "rotacion"
       ],
       "tipos": [
         "mes_actual",

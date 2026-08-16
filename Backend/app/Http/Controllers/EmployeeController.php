@@ -594,15 +594,21 @@ class EmployeeController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $employee = Employee::withTrashed()->findOrFail($id);
 
         try {
             DB::beginTransaction();
 
-            // Desactivar el estado operativo del colaborador
-            $employee->update(['is_active_employee' => false]);
+            // Desactivar el estado operativo del colaborador. 2026-08-16: se registra la
+            // FECHA de la baja — sin ella el sistema sabía quién estaba inactivo pero no
+            // desde cuándo, y no había forma de medir rotación ni permanencia.
+            $employee->update([
+                'is_active_employee' => false,
+                'termination_date' => $employee->termination_date ?? now()->toDateString(),
+                'termination_reason' => $request->input('motivo') ?: $employee->termination_reason,
+            ]);
 
             // Si tiene usuario enlazado, desactivar su acceso web (pero no eliminarlo por completo para conservar integridad, y nunca tocar cuentas admin)
             if ($employee->user_id) {
@@ -660,7 +666,10 @@ class EmployeeController extends Controller
                 $detalle[] = "{$cuantos} {$que}";
             }
 
-            $employee->update(['is_active_employee' => false]);
+            $employee->update([
+                'is_active_employee' => false,
+                'termination_date' => $employee->termination_date ?? now()->toDateString(),
+            ]);
             $employee->delete();
             if ($employee->user_id) {
                 $u = User::withoutGlobalScopes()->find($employee->user_id);
@@ -713,7 +722,10 @@ class EmployeeController extends Controller
             // aplicar borrado lógico defensivo (soft delete) marcándolo inactivo para conservar integridad histórica.
             try {
                 DB::beginTransaction();
-                $employee->update(['is_active_employee' => false]);
+                $employee->update([
+                    'is_active_employee' => false,
+                    'termination_date' => $employee->termination_date ?? now()->toDateString(),
+                ]);
                 $employee->delete();
                 if ($employee->user_id) {
                     $u = User::withoutGlobalScopes()->find($employee->user_id);

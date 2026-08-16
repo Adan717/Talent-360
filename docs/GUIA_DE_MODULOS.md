@@ -493,6 +493,13 @@ los puede descargar un supervisor (no traen dato salarial). Máximo 92 días por
 | **Expediente Documental** | Qué documentos tiene validados cada quien y cuáles le faltan (foto de hoy, no un periodo) |
 | **Embudo de Reclutamiento** | Candidatos por etapa y por vacante, contratados y rechazados |
 | **Monedero y Reconocimientos** | Monedas y puntos ganados, tareas validadas y rechazadas, saldo y nivel |
+| **Rotación de Personal** | Altas, bajas, plantilla activa, antigüedad y permanencia |
+| **Nómina Histórica** 🔒 | Lo que se pagó en periodos anteriores: netos, deducciones, firmas y timbrado. **Solo con la capacidad de nómina** |
+
+**Dos cosas que estos reportes dicen de sí mismos, y conviene saber antes de usarlos:**
+
+- **Nómina Histórica** lee los recibos **guardados**: no recalcula nada con la asistencia de hoy, así que un recibo firmado no cambia aunque después se corrija una falta (así debe ser: es el instrumento legal). Los recibos en **borrador** se totalizan aparte, porque el sistema los vuelve a calcular cada noche hasta que el colaborador firma. Y el "neto" **no incluye ISR ni IMSS**: este sistema no calcula retenciones fiscales — es sueldo del periodo menos deducciones internas más bonos. Si la empresa cambió de periodicidad, el reporte avisa cuando detecta recibos que cubren días repetidos.
+- **Rotación** cuenta altas, plantilla y antigüedad con certeza, pero **las bajas anteriores al 16 de agosto de 2026 no tienen fecha**: hasta ese día el sistema no la registraba. De ahí en adelante cada baja guarda su día y su motivo (se pregunta al enviar a inactivo), y entonces el índice de rotación del periodo sí será calculable.
 
 **Detalle de los reportes básicos**
 

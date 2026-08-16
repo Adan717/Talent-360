@@ -31,12 +31,21 @@ class AsistenteReportesController extends Controller
      */
     private const DIAS_TOPE = ReportesBasicosController::DIAS_TOPE;
 
-    public function estado()
+    public function estado(Request $request)
     {
+        // La pantalla pinta sus tarjetas desde aquí: una sola lista para todos. Los reportes
+        // con dinero sólo se ofrecen a quien puede bajarlos — mostrar una tarjeta que va a
+        // responder 403 es prometer lo que el servidor no va a dar.
+        $puedeNomina = \App\Http\Middleware\PermissionMiddleware::usuarioTiene($request->user(), 'manage_payroll');
+
+        $catalogo = array_values(array_filter(
+            \App\Support\CatalogoDeReportes::paraLaPantalla(),
+            fn ($r) => $puedeNomina || !\App\Support\CatalogoDeReportes::esDeNomina($r['id'])
+        ));
+
         return response()->json([
             'disponible' => OpenAiReportIntentParser::disponible(),
-            // La pantalla pinta sus tarjetas desde aquí: una sola lista para todos.
-            'catalogo' => \App\Support\CatalogoDeReportes::paraLaPantalla(),
+            'catalogo' => $catalogo,
         ]);
     }
 
@@ -74,6 +83,19 @@ class AsistenteReportesController extends Controller
             $motivo = trim((string) ($intent['motivo_rechazo'] ?? '')) ?: 'Eso no es uno de los reportes disponibles (asistencia o tareas).';
             $this->registrar($tenantId, $user->id, $frase, $intent, true, 'rechazada: ' . substr($motivo, 0, 200));
             return response()->json(['code' => 'no_soportado', 'message' => $motivo], 422);
+        }
+
+        // El candado del dinero, ANTES de llenar el formulario: si el reporte es de nómina y
+        // el puesto no tiene esa capacidad, se dice aquí con un mensaje entendible — llenarle
+        // el formulario para que la descarga le responda 403 sería prometer lo que no hay.
+        if (\App\Support\CatalogoDeReportes::esDeNomina($reporte)
+            && !\App\Http\Middleware\PermissionMiddleware::usuarioTiene($user, 'manage_payroll')) {
+            $this->registrar($tenantId, $user->id, $frase, $intent, true, 'sin capacidad de nómina');
+
+            return response()->json([
+                'code' => 'sin_permiso',
+                'message' => 'Tu puesto no tiene permiso para ver datos de nómina. Pídeselo al administrador.',
+            ], 403);
         }
 
         try {

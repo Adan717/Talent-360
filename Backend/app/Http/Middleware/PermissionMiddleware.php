@@ -26,6 +26,34 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class PermissionMiddleware
 {
+    /**
+     * ¿Este usuario tiene alguna de estas capacidades? MISMA regla que `handle` (el admin
+     * pasa siempre; los demás por el puesto). Se expone para que las pantallas no ofrezcan
+     * botones que el servidor va a rechazar — sin escribir una segunda versión de la regla.
+     */
+    public static function usuarioTiene($user, string ...$capabilities): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->role === \App\Enums\UserRole::ADMIN->value) {
+            return true;
+        }
+
+        $jobRoleId = DB::table('employees')->where('user_id', $user->id)->value('job_role_id');
+        if (!$jobRoleId) {
+            return false;
+        }
+
+        return DB::table('role_permissions')
+            ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+            ->where('role_permissions.tenant_id', $user->tenant_id)
+            ->where('role_permissions.job_role_id', $jobRoleId)
+            ->whereIn('permissions.name', $capabilities)
+            ->exists();
+    }
+
     public function handle(Request $request, Closure $next, string ...$capabilities): Response
     {
         $user = $request->user();

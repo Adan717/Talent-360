@@ -33,6 +33,10 @@ class Employee extends Model
         'emergency_contact_name',
         'emergency_contact_phone',
         'hire_date',
+        // 2026-08-16: cuándo y por qué se fue. Sin esto, dar de baja no dejaba fecha y la
+        // rotación no se podía medir (ver el reporte de rotación).
+        'termination_date',
+        'termination_reason',
         'contract_type',
         'is_active_employee',
         'shiftStart',

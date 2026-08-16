@@ -1465,8 +1465,12 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
   const handleDeleteUser = async (id: number) => {
     if(!window.confirm('¿Deseas enviar a este empleado como inactivo? Su historial de asistencias se mantendrá intacto, pero ya no aparecerá en las listas activas.')) return;
+    // 2026-08-16: se pregunta el MOTIVO. La baja ya registra su fecha (para poder medir
+    // rotación), y sin el motivo esa columna del reporte nacería siempre vacía. Es opcional:
+    // cancelar el cuadro no impide dar de baja.
+    const motivo = window.prompt('¿Motivo de la baja? (opcional — sirve para el reporte de rotación)\nEj. Renuncia voluntaria, Fin de contrato, Despido, Abandono') || '';
     try {
-      const res = await axiosInstance.delete(`/employees/${id}`);
+      const res = await axiosInstance.delete(`/employees/${id}`, { data: { motivo: motivo.trim() } });
       if (res.status !== 200 && res.status !== 204) throw new Error("Failed to delete user");
       await fetchData();
       window.dispatchEvent(new Event('db_sync_updated'));

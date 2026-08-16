@@ -212,7 +212,11 @@ class CandidateController extends Controller
                         'user_id' => $user->id,
                         'is_active_employee' => true,
                         'pin_code' => $employee->pin_code ?? $pin,
-                        'job_role_id' => $employee->job_role_id ?? $jobRoleId
+                        'job_role_id' => $employee->job_role_id ?? $jobRoleId,
+                        // Reingreso: vuelve a estar activo, así que su baja anterior deja de
+                        // aplicar (si no, la rotación lo contaría como ido para siempre).
+                        'termination_date' => null,
+                        'termination_reason' => null,
                     ]);
                 }
 

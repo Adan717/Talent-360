@@ -81,7 +81,31 @@ class CatalogoDeReportes
             'descripcion' => 'monedas y puntos ganados por persona, y las tareas validadas o rechazadas',
             'dias' => 30,
         ],
+        'rotacion' => [
+            'titulo' => 'Rotación de Personal',
+            'descripcion' => 'altas, bajas, plantilla activa y antigüedad de la gente',
+            'dias' => 90,
+        ],
+        // Con dinero: sólo lo ve quien tiene la capacidad de nómina (ver `soloNomina`).
+        'nomina_historica' => [
+            'titulo' => 'Nómina Histórica',
+            'descripcion' => 'lo que se pagó en periodos anteriores: netos, deducciones, firmas y timbrado',
+            'dias' => 90,
+            'nomina' => true,
+        ],
     ];
+
+    /** ¿Este reporte trae datos salariales? (define detrás de qué candado vive su ruta) */
+    public static function esDeNomina(string $id): bool
+    {
+        return (bool) (self::REPORTES[$id]['nomina'] ?? false);
+    }
+
+    /** Los que puede bajar cualquiera con acceso a Reportes (sin dato salarial). */
+    public static function idsOperativos(): array
+    {
+        return array_keys(array_filter(self::REPORTES, fn ($r) => empty($r['nomina'])));
+    }
 
     /** @return string[] los ids válidos (lo que el asistente puede devolver). */
     public static function ids(): array

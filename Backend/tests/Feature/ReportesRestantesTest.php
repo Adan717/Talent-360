@@ -84,10 +84,150 @@ class ReportesRestantesTest extends TestCase
 
         $this->assertSame(
             ['asistencia', 'retardos', 'horas', 'rutinas', 'tareas', 'justificantes',
-             'aperturas', 'comedor', 'academia', 'expedientes', 'reclutamiento', 'monedero'],
+             'aperturas', 'comedor', 'academia', 'expedientes', 'reclutamiento', 'monedero',
+             'rotacion', 'nomina_historica'],
             CatalogoDeReportes::ids(),
             'si cambias el catálogo, revisa el prompt del asistente y la pantalla'
         );
+    }
+
+    /**
+     * El candado del dinero: la nómina histórica NO puede caer en el grupo de reportes
+     * operativos, que un supervisor puede bajar. Es la misma regla que la pantalla de nómina.
+     */
+    public function test_la_nomina_historica_exige_la_capacidad_de_nomina(): void
+    {
+        $supervisor = User::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Supervisor', 'email' => 'sup@rep8qa.test',
+            'password' => bcrypt('x'), 'role' => 'supervisor',
+        ]);
+
+        // El supervisor baja los operativos…
+        foreach (['rotacion', 'retardos', 'monedero'] as $id) {
+            $this->actingAs($supervisor)->get("/api/v1/admin/reports/{$id}.csv")->assertOk();
+        }
+        // …pero el dinero no.
+        $this->actingAs($supervisor)->getJson('/api/v1/admin/reports/nomina_historica.csv')->assertStatus(403);
+        $this->actingAs($this->colaborador)->getJson('/api/v1/admin/reports/nomina_historica.csv')->assertStatus(403);
+        $this->actingAs($this->admin)->get('/api/v1/admin/reports/nomina_historica.csv')->assertOk();
+
+        $this->assertTrue(CatalogoDeReportes::esDeNomina('nomina_historica'));
+        $this->assertNotContains('nomina_historica', CatalogoDeReportes::idsOperativos());
+
+        // Y la pantalla tampoco le ofrece la tarjeta: prometer un botón que devuelve 403 es
+        // el mismo defecto de "la pantalla dice lo que el backend no respalda".
+        $delSupervisor = $this->actingAs($supervisor)->getJson('/api/v1/admin/reports/asistente/estado')
+            ->assertOk()->json('catalogo');
+        $this->assertNotContains('nomina_historica', array_column($delSupervisor, 'id'));
+
+        $delAdmin = $this->actingAs($this->admin)->getJson('/api/v1/admin/reports/asistente/estado')
+            ->assertOk()->json('catalogo');
+        $this->assertContains('nomina_historica', array_column($delAdmin, 'id'));
+    }
+
+    /** La histórica lee lo GUARDADO y no recalcula: es lo que se firmó y se timbró. */
+    public function test_la_nomina_historica_lee_el_recibo_guardado(): void
+    {
+        $inicio = now()->subDays(14)->startOfWeek()->toDateString();
+        $fin = now()->subDays(14)->startOfWeek()->addDays(6)->toDateString();
+
+        DB::table('weekly_payrolls')->insert([
+            'tenant_id' => $this->tenant->id, 'employee_id' => $this->expediente->id,
+            'start_date' => $inicio, 'end_date' => $fin,
+            'base_salary_paid' => 3000, 'lates_count' => 2, 'absences_count' => 1,
+            'deductions' => 450.50, 'net_pay' => 2549.50,
+            'status' => 'approved_by_employee', 'employee_approved_at' => now()->subDays(10),
+            'cfdi_uuid' => 'ABC-123-UUID', 'timbrada_at' => now()->subDays(9),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $csv = $this->csv('nomina_historica', ['from' => $inicio, 'to' => now()->toDateString()]);
+        $renglon = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'Pedro'));
+        $campos = str_getcsv(trim($renglon));
+
+        $this->assertSame('2549.50', $campos[8], 'el neto es el GUARDADO, no uno recalculado');
+        $this->assertSame('450.50', $campos[7], 'deducciones guardadas');
+        // El timbrado NO cambia el status en la base: se detecta por `timbrada_at` y se
+        // añade al estado, porque un contador necesita verlo de un vistazo.
+        $this->assertSame('Firmado por el colaborador · timbrado', $campos[9]);
+        $this->assertSame('ABC-123-UUID', $campos[13], 'el folio fiscal viaja en el reporte');
+        $this->assertStringContainsString('TOTAL FIRMADO DEL PERIODO', $csv);
+        $this->assertStringContainsString('NO incluye ISR, IMSS', $csv, 'no puede parecer un neto fiscal');
+        $this->assertStringContainsString('NO vuelve a calcular', $csv, 'el CSV declara que no recalcula');
+    }
+
+    /**
+     * Un recibo en BORRADOR se recalcula solo cada noche: no es dinero comprometido y no
+     * puede sumarse junto a lo firmado (sería otra vez "dos cifras para el mismo dato").
+     */
+    public function test_los_borradores_se_totalizan_aparte_de_lo_firmado(): void
+    {
+        $ini = now()->subDays(7)->startOfWeek();
+        DB::table('weekly_payrolls')->insert([
+            ['tenant_id' => $this->tenant->id, 'employee_id' => $this->expediente->id,
+             'start_date' => $ini->copy()->subDays(7)->toDateString(), 'end_date' => $ini->copy()->subDay()->toDateString(),
+             'base_salary_paid' => 3000, 'deductions' => 0, 'net_pay' => 1000,
+             'status' => 'approved_by_employee', 'employee_approved_at' => now(),
+             'created_at' => now(), 'updated_at' => now()],
+            ['tenant_id' => $this->tenant->id, 'employee_id' => $this->expediente->id,
+             'start_date' => $ini->toDateString(), 'end_date' => $ini->copy()->addDays(6)->toDateString(),
+             'base_salary_paid' => 3000, 'deductions' => 0, 'net_pay' => 999,
+             'status' => 'draft', 'employee_approved_at' => null,
+             'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $csv = $this->csv('nomina_historica', ['from' => $ini->copy()->subDays(14)->toDateString(), 'to' => now()->toDateString()]);
+
+        $this->assertStringContainsString('BORRADORES (NO son dinero comprometido)', $csv);
+        $this->assertStringContainsString('Borrador (por firmar)', $csv);
+        // El total firmado no incluye el borrador de 999.
+        $totalFirmado = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'TOTAL FIRMADO'));
+        $this->assertStringContainsString('1000.00', $totalFirmado);
+        $this->assertStringNotContainsString('1999', $totalFirmado);
+    }
+
+    /** Rotación: cuenta lo que sabe y DECLARA lo que no (las bajas sin fecha). */
+    public function test_rotacion_distingue_bajas_con_y_sin_fecha(): void
+    {
+        // Baja registrada con el mecanismo nuevo (tiene fecha y motivo).
+        $conFecha = Employee::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Se fue con fecha',
+            'is_active_employee' => false, 'hire_date' => now()->subMonths(8)->toDateString(),
+            'termination_date' => now()->subDays(20)->toDateString(),
+            'termination_reason' => 'Renuncia voluntaria',
+        ]);
+        // Baja vieja: inactiva sin fecha (así estaban TODAS antes del 2026-08-16).
+        Employee::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Se fue sin fecha',
+            'is_active_employee' => false, 'hire_date' => now()->subYear()->toDateString(),
+        ]);
+
+        $csv = $this->csv('rotacion');
+
+        $conFechaRenglon = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'Se fue con fecha'));
+        $this->assertStringContainsString($conFecha->termination_date, $conFechaRenglon);
+        $this->assertStringContainsString('Renuncia voluntaria', $conFechaRenglon);
+
+        $sinFechaRenglon = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'Se fue sin fecha'));
+        $this->assertStringContainsString('Sin fecha', $sinFechaRenglon, 'no se inventa una fecha de baja');
+
+        // fputcsv entrecomilla las etiquetas con espacios: se compara como sale.
+        $this->assertStringContainsString('"Bajas con fecha registrada",1', $csv);
+        $this->assertStringContainsString('"Bajas sin fecha (anteriores al registro)",1', $csv);
+        $this->assertStringContainsString('"Plantilla activa hoy",1', $csv, 'sólo Pedro sigue activo');
+    }
+
+    /** Dar de baja AHORA sí deja fecha — que es lo que hace medible la rotación futura. */
+    public function test_dar_de_baja_registra_la_fecha(): void
+    {
+        $this->actingAs($this->admin)
+            ->deleteJson("/api/v1/employees/{$this->expediente->id}", ['motivo' => 'Fin de contrato'])
+            ->assertSuccessful();
+
+        $this->expediente->refresh();
+        $this->assertSame(now()->toDateString(), $this->expediente->termination_date);
+        $this->assertSame('Fin de contrato', $this->expediente->termination_reason);
+        $this->assertFalse((bool) $this->expediente->is_active_employee);
     }
 
     /** Todos respetan el tope de días y ninguno se le abre a un empleado raso. */

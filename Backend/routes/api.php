@@ -399,6 +399,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
                 Route::get('/admin/reports/expedientes.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'expedientes']);
                 Route::get('/admin/reports/reclutamiento.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'reclutamiento']);
                 Route::get('/admin/reports/monedero.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'monedero']);
+
+                // Rotación es de RRHH y NO trae dinero: va con los operativos.
+                Route::get('/admin/reports/rotacion.csv', [\App\Http\Controllers\ReportesNominaController::class, 'rotacion']);
             });
 
             // Bloque 6: el asistente SOLO interpreta y llena el formulario — la descarga
@@ -413,6 +416,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // NO accede por defecto (set conservador) hasta que el admin se lo otorgue en la
         // matriz — es el endurecimiento que pidió Francisco (raíz del §64).
         Route::middleware(['tenant.module:reportes', 'permission:manage_payroll'])->group(function () {
+            // Nómina histórica: trae dinero, así que vive con el resto de la nómina, detrás
+            // de `permission:manage_payroll` — NO con los reportes operativos.
+            Route::middleware('throttle:30,1')->get('/admin/reports/nomina_historica.csv', [\App\Http\Controllers\ReportesNominaController::class, 'historica']);
+
             Route::get('/admin/payroll', [PayrollController::class, 'getPayrollData']);
             Route::get('/admin/reports/export', [PayrollController::class, 'exportReport']);
             Route::post('/admin/payroll/approve', [PayrollController::class, 'approvePayroll']);

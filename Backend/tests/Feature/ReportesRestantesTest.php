@@ -107,6 +107,15 @@ class ReportesRestantesTest extends TestCase
             $this->assertStringContainsString(".pdf", $res->headers->get('content-disposition') ?? '');
             // Un PDF de verdad, no una página de error con extensión bonita.
             $this->assertStringStartsWith('%PDF', $res->getContent(), "'{$id}' no devolvió un PDF válido");
+
+            // Las fuentes base de dompdf son WinAnsi: un símbolo fuera de ese juego (una flecha,
+            // un ⚠) se imprime como "?" suelto y nadie lo nota hasta que el documento ya se
+            // entregó. Un "?" pegado a una palabra ("¿A tiempo?") es legítimo; uno solo, no.
+            $this->assertDoesNotMatchRegularExpression(
+                '/\s\?\s/',
+                $this->textoDelPdf($res->getContent()),
+                "'{$id}' imprime un símbolo que la fuente del PDF no tiene: agrégalo a sinSimbolosRaros()"
+            );
         }
     }
 

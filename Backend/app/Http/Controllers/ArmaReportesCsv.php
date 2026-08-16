@@ -144,15 +144,38 @@ trait ArmaReportesCsv
             'generadoPor' => request()->user()->name,
             'generadoEl' => Carbon::now(TenantTimezone::for((int) request()->user()->tenant_id))->format('d/m/Y H:i'),
             'periodo' => $periodo,
-            'encabezados' => $encabezados,
-            'filas' => $recortado ? array_slice($filas, 0, self::PDF_TOPE_FILAS) : $filas,
-            'notas' => $notas,
+            'encabezados' => array_map([$this, 'sinSimbolosRaros'], $encabezados),
+            'filas' => array_map(
+                fn ($f) => array_map([$this, 'sinSimbolosRaros'], $f),
+                $recortado ? array_slice($filas, 0, self::PDF_TOPE_FILAS) : $filas
+            ),
+            'notas' => array_map([$this, 'sinSimbolosRaros'], $notas),
             'total' => $total,
             'recortado' => $recortado,
             'tope' => self::PDF_TOPE_FILAS,
         ])->setPaper('letter', count($encabezados) > 6 ? 'landscape' : 'portrait');
 
         return $pdf->download(str_replace('.csv', '.pdf', $nombre));
+    }
+
+    /**
+     * SÓLO para el PDF: las fuentes base de dompdf son WinAnsi, y todo lo que quede fuera de
+     * ese juego se imprime como "?" — la nota "Directorio Digital → Laboral" salía
+     * "Directorio Digital ? Laboral". El CSV no lo necesita: ahí el UTF-8 se ve bien.
+     *
+     * Si aparece otro símbolo, se agrega aquí: la prueba que recorre los 15 en PDF falla
+     * cuando un carácter se convierte en un "?" suelto, así que no se cuela en silencio.
+     */
+    private function sinSimbolosRaros($valor)
+    {
+        return is_string($valor)
+            ? strtr($valor, [
+                '→' => '>', '←' => '<', '⚠' => '!', '≥' => '>=', '≤' => '<=', '…' => '...',
+                // El signo MENOS de verdad (U+2212), no el guion: se cuela al escribir fórmulas
+                // ("horas en sucursal − comida") y es indistinguible a simple vista del guion.
+                '−' => '-', '×' => 'x', '÷' => '/', '≈' => '~',
+            ])
+            : $valor;
     }
 
     /**

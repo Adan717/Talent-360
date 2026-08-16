@@ -7,17 +7,29 @@ import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
-// Los reportes operativos que existen hoy. El id es el nombre del archivo que sirve el
-// servidor (/admin/reports/<id>.csv) y el que devuelve el asistente por frase.
-type ReporteId = 'asistencia' | 'tareas' | 'retardos' | 'horas' | 'rutinas';
+// El id es el nombre del archivo que sirve el servidor (/admin/reports/<id>.csv) y el que
+// devuelve el asistente. La LISTA ya no vive aquí: la manda el servidor desde el catálogo
+// único (App\Support\CatalogoDeReportes) — con doce reportes, tenerla duplicada en la
+// pantalla garantizaba una tarjeta que el backend no sabe servir.
+type ReporteId = string;
 
-const REPORTES: { id: ReporteId; titulo: string; desc: string; color: string; Icono: any }[] = [
-  { id: 'asistencia', titulo: 'Asistencia', desc: 'Entradas, salidas y retardos, movimiento por movimiento. Por defecto hoy.', color: 'bg-blue-50 text-blue-600', Icono: Table },
-  { id: 'retardos', titulo: 'Retardos y Faltas por Colaborador', desc: 'Quién reincide: retardos, minutos, faltas físicas y las que se acumularon por retardos. Mismas cifras que la nómina (respeta justificantes y contingencias). Últimos 30 días.', color: 'bg-rose-50 text-rose-600', Icono: AlertCircle },
-  { id: 'horas', titulo: 'Horas Trabajadas y Extra', desc: 'Horas en sucursal y efectivas por día (descontando comida y descansos), con turnos nocturnos bien contados. Últimos 14 días.', color: 'bg-amber-50 text-amber-600', Icono: Calendar },
-  { id: 'rutinas', titulo: 'Cumplimiento de Rutinas', desc: '% de tareas hechas, omitidas y sin cerrar, por persona y por tarea. Últimos 30 días.', color: 'bg-violet-50 text-violet-600', Icono: CheckCircle2 },
-  { id: 'tareas', titulo: 'Tareas Completadas', desc: 'Listado de tareas cerradas por el equipo, una por renglón. Últimos 30 días.', color: 'bg-purple-50 text-purple-600', Icono: FileSpreadsheet },
-];
+type ReporteDelCatalogo = { id: ReporteId; titulo: string; descripcion: string };
+
+// Sólo el adorno vive en el cliente; si llega un reporte nuevo, se pinta con el ícono neutro.
+const ADORNO: Record<string, { color: string; Icono: any }> = {
+  asistencia:    { color: 'bg-blue-50 text-blue-600',     Icono: Table },
+  retardos:      { color: 'bg-rose-50 text-rose-600',     Icono: AlertCircle },
+  horas:         { color: 'bg-amber-50 text-amber-600',   Icono: Calendar },
+  rutinas:       { color: 'bg-violet-50 text-violet-600', Icono: CheckCircle2 },
+  tareas:        { color: 'bg-purple-50 text-purple-600', Icono: FileSpreadsheet },
+  justificantes: { color: 'bg-cyan-50 text-cyan-600',     Icono: FileText },
+  aperturas:     { color: 'bg-emerald-50 text-emerald-600', Icono: Calendar },
+  comedor:       { color: 'bg-orange-50 text-orange-600', Icono: Table },
+  academia:      { color: 'bg-indigo-50 text-indigo-600', Icono: CheckCircle2 },
+  expedientes:   { color: 'bg-slate-100 text-slate-600',  Icono: FileText },
+  reclutamiento: { color: 'bg-pink-50 text-pink-600',     Icono: BarChart3 },
+  monedero:      { color: 'bg-yellow-50 text-yellow-700', Icono: DollarSign },
+};
 
 export default function ReportesManager() {
   const [activeTab, setActiveTab] = useState<'basicos' | 'avanzados'>('basicos');
@@ -52,11 +64,16 @@ export default function ReportesManager() {
   const [frase, setFrase] = useState('');
   const [interpretando, setInterpretando] = useState(false);
   const [asistenteError, setAsistenteError] = useState<string | null>(null);
-  const [propuesta, setPropuesta] = useState<{ reporte: 'asistencia' | 'tareas'; desde: string; hasta: string; etiqueta: string } | null>(null);
+  const [propuesta, setPropuesta] = useState<{ reporte: ReporteId; desde: string; hasta: string; etiqueta: string } | null>(null);
+  // El catálogo lo manda el servidor: una sola lista para la pantalla, el asistente y las rutas.
+  const [catalogo, setCatalogo] = useState<ReporteDelCatalogo[]>([]);
 
   useEffect(() => {
     axiosInstance.get('/admin/reports/asistente/estado')
-      .then(res => setAsistenteDisponible(res.data?.disponible === true))
+      .then(res => {
+        setAsistenteDisponible(res.data?.disponible === true);
+        setCatalogo(res.data?.catalogo || []);
+      })
       .catch(() => setAsistenteDisponible(false));
   }, []);
 
@@ -295,7 +312,7 @@ export default function ReportesManager() {
                 {propuesta && (
                   <div className="mt-4 bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
                     <p className="text-sm font-bold text-slate-700 mb-3">
-                      Entendí: <span className="text-indigo-700">{REPORTES.find(r => r.id === propuesta.reporte)?.titulo || propuesta.reporte}</span>{' '}
+                      Entendí: <span className="text-indigo-700">{catalogo.find(r => r.id === propuesta.reporte)?.titulo || propuesta.reporte}</span>{' '}
                       {/* Si el humano editó las fechas, la etiqueta original ya no aplica y
                           mentiría (ronda adversarial): se cambia por el rango literal. */}
                       de <span className="text-indigo-700">{propuesta.etiqueta || `del ${propuesta.desde} al ${propuesta.hasta}`}</span>. Revisa y confirma:
@@ -329,13 +346,15 @@ export default function ReportesManager() {
               </div>
             )}
 
-            {REPORTES.map(({ id, titulo, desc, color, Icono }) => (
+            {catalogo.map(({ id, titulo, descripcion }) => {
+              const { color, Icono } = ADORNO[id] || { color: 'bg-slate-100 text-slate-600', Icono: FileText };
+              return (
               <div key={id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-blue-200 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-lg shrink-0 ${color}`}><Icono size={24} /></div>
                   <div>
                     <h3 className="font-bold text-slate-800">{titulo}</h3>
-                    <p className="text-sm text-slate-500 mt-1 leading-relaxed">{desc}</p>
+                    <p className="text-sm text-slate-500 mt-1 leading-relaxed">{descripcion}</p>
                   </div>
                 </div>
                 <button
@@ -346,7 +365,8 @@ export default function ReportesManager() {
                   <Download size={16} /> {descargando === id ? 'Generando…' : 'Descargar CSV'}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

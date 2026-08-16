@@ -474,7 +474,27 @@ Reglas del examen:
 - Roles: administrador y supervisor. El supervisor ve únicamente la pestaña "Reportes Operativos" (asistencia y tareas, sin ningún dato salarial); la pestaña "Nómina y Avanzados" solo aparece al administrador. Aunque alguien forzara la pantalla, el servidor exige la capacidad "manage_payroll" para entregar datos de nómina (el administrador la tiene siempre; un supervisor solo si el administrador se la otorga en la matriz de capacidades por puesto).
 - Plan: Pro o Enterprise (o Freemium con el módulo activado como adicional o en periodo de prueba).
 
-**Pestaña "Reportes Operativos"**
+**Pestaña "Reportes Operativos" — 12 reportes**
+
+Todos bajan en CSV que Excel abre bien, todos explican sus reglas al pie del archivo, y todos
+los puede descargar un supervisor (no traen dato salarial). Máximo 92 días por descarga.
+
+| Reporte | Qué contesta |
+|---|---|
+| **Asistencia** | El detalle: cada entrada, salida y retardo, movimiento por movimiento |
+| **Retardos y Faltas por Colaborador** | Quién reincide. **Mismas cifras que la nómina**: respeta justificantes y contingencias aprobados |
+| **Horas Trabajadas y Extra** | Horas en sucursal y efectivas por día (descontando comida), turnos nocturnos incluidos |
+| **Cumplimiento de Rutinas** | Qué se hizo, qué se omitió y qué quedó sin cerrar, por persona y por tarea |
+| **Tareas Completadas** | El listado de tareas cerradas, una por renglón |
+| **Justificantes y Autorizaciones** | Qué se aprobó y qué se rechazó, con el motivo y quién lo resolvió: es la evidencia de por qué un retardo no se cobró |
+| **Aperturas y Cierres** | Quién abrió, a qué hora, si fue a tiempo (misma regla que paga el bono), y las aperturas de emergencia |
+| **Comedor y Ley Silla** | Comidas, excesos contra los minutos del expediente, y descansos de Ley Silla (evidencia de cumplimiento) |
+| **Inducción y Capacitación** | Quién trae la inducción vencida, quién se atoró reprobando y qué certificados se emitieron |
+| **Expediente Documental** | Qué documentos tiene validados cada quien y cuáles le faltan (foto de hoy, no un periodo) |
+| **Embudo de Reclutamiento** | Candidatos por etapa y por vacante, contratados y rechazados |
+| **Monedero y Reconocimientos** | Monedas y puntos ganados, tareas validadas y rechazadas, saldo y nivel |
+
+**Detalle de los reportes básicos**
 
 1. **Asistencia del Día (CSV).** Tarjeta "Asistencia del Día" → botón "Descargar CSV". Baja un archivo con las columnas Fecha, Colaborador, Puesto, Movimiento (Entrada, Salida, Inicio/Fin de comida, Inicio/Fin de descanso), Hora, ¿Retardo? y Minutos de retardo, del día de hoy en la zona horaria de la empresa. Se abre bien en Excel en español (acentos correctos).
 

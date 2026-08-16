@@ -485,6 +485,133 @@
       "tipos": [
         "rango_absoluto"
       ]
+    },
+    {
+      "frase": "qué justificantes aprobamos este mes",
+      "reportes": [
+        "justificantes"
+      ],
+      "tipos": [
+        "mes_actual",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "quién autorizó horas extra la semana pasada",
+      "reportes": [
+        "justificantes"
+      ],
+      "tipos": [
+        "semana_pasada",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "quién abrió la tienda tarde la semana pasada",
+      "reportes": [
+        "aperturas"
+      ],
+      "tipos": [
+        "semana_pasada",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "aperturas de emergencia del mes pasado",
+      "reportes": [
+        "aperturas"
+      ],
+      "tipos": [
+        "mes_pasado",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "excesos de comida de julio",
+      "reportes": [
+        "comedor"
+      ],
+      "tipos": [
+        "rango_absoluto",
+        "mes_pasado"
+      ]
+    },
+    {
+      "frase": "descansos de ley silla de esta semana",
+      "reportes": [
+        "comedor"
+      ],
+      "tipos": [
+        "semana_actual",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "a quién le falta la inducción",
+      "reportes": [
+        "academia"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "qué certificados se emitieron este año",
+      "reportes": [
+        "academia"
+      ],
+      "tipos": [
+        "rango_absoluto",
+        "mes_actual",
+        "dias_atras"
+      ]
+    },
+    {
+      "frase": "qué documentos le faltan a mi gente",
+      "reportes": [
+        "expedientes"
+      ],
+      "tipos": [
+        "hoy",
+        "rango_absoluto",
+        "mes_actual",
+        "dias_atras"
+      ]
+    },
+    {
+      "frase": "cómo va el reclutamiento",
+      "reportes": [
+        "reclutamiento"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "cuántos candidatos contratamos este mes",
+      "reportes": [
+        "reclutamiento"
+      ],
+      "tipos": [
+        "mes_actual",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "quién ganó más monedas este mes",
+      "reportes": [
+        "monedero"
+      ],
+      "tipos": [
+        "mes_actual",
+        "rango_absoluto"
+      ]
     }
   ]
 }

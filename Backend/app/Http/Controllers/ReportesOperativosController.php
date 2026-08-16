@@ -34,6 +34,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ReportesOperativosController extends Controller
 {
+    use ArmaReportesCsv;
+
     public function __construct(private ClockService $clock)
     {
     }
@@ -45,7 +47,7 @@ class ReportesOperativosController extends Controller
     public function retardosYFaltas(Request $request)
     {
         $tenantId = (int) $request->user()->tenant_id;
-        [$desde, $hasta] = $this->rango($request, 30);
+        [$desde, $hasta] = $this->rango($request, 'retardos');
 
         $lft = \App\Models\LftSetting::where('tenant_id', $tenantId)->first();
         $retardosPorFalta = (int) ($lft->lates_per_absence ?? 3);
@@ -92,7 +94,7 @@ class ReportesOperativosController extends Controller
     public function horasTrabajadas(Request $request)
     {
         $tenantId = (int) $request->user()->tenant_id;
-        [$desde, $hasta] = $this->rango($request, 14);
+        [$desde, $hasta] = $this->rango($request, 'horas');
         $tz = TenantTimezone::for($tenantId);
 
         $colaboradores = $this->colaboradores($tenantId)->keyBy('user_id');
@@ -166,7 +168,7 @@ class ReportesOperativosController extends Controller
     public function cumplimientoRutinas(Request $request)
     {
         $tenantId = (int) $request->user()->tenant_id;
-        [$desde, $hasta] = $this->rango($request, 30);
+        [$desde, $hasta] = $this->rango($request, 'rutinas');
 
         $asignaciones = DB::table('task_assignments')
             ->leftJoin('tasks', 'tasks.id', '=', 'task_assignments.task_id')
@@ -245,19 +247,7 @@ class ReportesOperativosController extends Controller
         };
     }
 
-    private function pct(int $parte, int $total): string
-    {
-        return $total > 0 ? round($parte * 100 / $total) . '%' : '—';
-    }
 
-    private function hhmm(int $minutos): string
-    {
-        if ($minutos <= 0) {
-            return '0:00';
-        }
-
-        return intdiv($minutos, 60) . ':' . str_pad((string) ($minutos % 60), 2, '0', STR_PAD_LEFT);
-    }
 
     /** Colaboradores activos del tenant, con su puesto. */
     private function colaboradores(int $tenantId)
@@ -338,61 +328,6 @@ class ReportesOperativosController extends Controller
         ];
     }
 
-    /** Rango validado con el MISMO tope que el resto de reportes. */
-    private function rango(Request $request, int $diasPorDefecto): array
-    {
-        $request->validate([
-            'from' => 'nullable|date_format:Y-m-d',
-            'to' => 'nullable|date_format:Y-m-d',
-        ]);
 
-        $tz = TenantTimezone::for((int) $request->user()->tenant_id);
-        $hasta = $request->query('to', Carbon::now($tz)->toDateString());
-        $desde = $request->query('from', Carbon::createFromFormat('Y-m-d', $hasta, $tz)->subDays($diasPorDefecto - 1)->toDateString());
 
-        if ($desde > $hasta) {
-            [$desde, $hasta] = [$hasta, $desde];
-        }
-        if (Carbon::parse($desde)->diffInDays(Carbon::parse($hasta)) + 1 > ReportesBasicosController::DIAS_TOPE) {
-            abort(response()->json([
-                'message' => 'El periodo máximo por reporte es de ' . ReportesBasicosController::DIAS_TOPE . ' días. Acota las fechas.',
-            ], 422));
-        }
-
-        return [$desde, $hasta];
-    }
-
-    /**
-     * CSV con BOM (Excel en español) y las notas al pie que explican de dónde salen las
-     * cifras — un reporte que no dice sus reglas obliga a adivinarlas.
-     */
-    private function csv(string $nombre, array $encabezados, array $filas, array $notas = [])
-    {
-        return response()->streamDownload(function () use ($encabezados, $filas, $notas) {
-            $salida = fopen('php://output', 'w');
-            fwrite($salida, "\xEF\xBB\xBF");
-            fputcsv($salida, $encabezados);
-            foreach ($filas as $fila) {
-                fputcsv($salida, array_map([$this, 'celdaSegura'], $fila));
-            }
-            if ($notas) {
-                fputcsv($salida, []);
-                fputcsv($salida, ['Cómo leer este reporte']);
-                foreach ($notas as $n) {
-                    fputcsv($salida, [$this->celdaSegura($n)]);
-                }
-            }
-            fclose($salida);
-        }, $nombre, ['Content-Type' => 'text/csv; charset=UTF-8']);
-    }
-
-    /** Misma mitigación OWASP que el otro controlador: `=`, `+`, `-`, `@` no se ejecutan. */
-    private function celdaSegura($celda)
-    {
-        if (is_string($celda) && $celda !== '' && in_array($celda[0], ['=', '+', '-', '@'], true)) {
-            return "'" . $celda;
-        }
-
-        return $celda;
-    }
 }

@@ -186,6 +186,47 @@ class ClockService
     }
 
     /**
+     * ¿Cuántas aperturas HIZO A TIEMPO esta persona en el periodo?
+     *
+     * Extraído del bloque del bono de apertura (2026-08-13) para que el reporte de aperturas
+     * y la nómina usen LA MISMA regla: abrir dentro de la tolerancia de la empresa contada
+     * desde la hora programada de apertura. Es la definición que ya pagó dinero real; un
+     * segundo `opened_at <= programada + tolerancia` escrito en un controlador de reportes
+     * sería exactamente el defecto histórico del proyecto.
+     *
+     * @return int aperturas dentro de tolerancia (las filas sin hora programada no cuentan)
+     */
+    public static function aperturasATiempo(int $tenantId, int $userId, $startDate, $endDate, ?\App\Models\LftSetting $lft = null): int
+    {
+        $lft = $lft ?? \App\Models\LftSetting::where('tenant_id', $tenantId)->first();
+        $tz = TenantTimezone::for($tenantId);
+        $tolerance = (int) ($lft->late_tolerance_minutes ?? 10);
+
+        $opens = \DB::table('store_daily_opening_statuses')
+            ->where('tenant_id', $tenantId)
+            ->where('opened_by_employee_id', $userId)
+            ->whereNotNull('opened_at')
+            ->whereDate('date', '>=', $startDate)
+            ->whereDate('date', '<=', $endDate)
+            ->get(['date', 'scheduled_opening_time', 'opened_at']);
+
+        $aTiempo = 0;
+        foreach ($opens as $o) {
+            if (!$o->scheduled_opening_time) {
+                continue;
+            }
+            $bizDate = Carbon::parse($o->date)->format('Y-m-d');
+            $openedLocal = Carbon::parse($o->opened_at)->setTimezone($tz);
+            $scheduled = Carbon::parse($bizDate . ' ' . $o->scheduled_opening_time, $tz);
+            if ($openedLocal->lessThanOrEqualTo($scheduled->copy()->addMinutes($tolerance))) {
+                $aTiempo++;
+            }
+        }
+
+        return $aTiempo;
+    }
+
+    /**
      * Datos de comida del expediente del usuario: [mealMinutes (default 60 si nulo/0), job_role_id
      * (o null)]. Se lee del expediente para que el choque de puesto use la MISMA fuente que los otros
      * reservantes (evita el falso negativo de comparar users.job_role_id contra employees.job_role_id).
@@ -1895,26 +1936,7 @@ class ClockService
         $onTimeOpens = 0;
         $openingAmount = (float) ($lft->opening_bonus_per_open ?? 0);
         if ($openingAmount > 0) {
-            $tz = TenantTimezone::for($tenantId);
-            $tolerance = (int) ($lft->late_tolerance_minutes ?? 10);
-            $opens = \DB::table('store_daily_opening_statuses')
-                ->where('tenant_id', $tenantId)
-                ->where('opened_by_employee_id', $employee->user_id)
-                ->whereNotNull('opened_at')
-                ->whereDate('date', '>=', $startDate)
-                ->whereDate('date', '<=', $endDate)
-                ->get(['date', 'scheduled_opening_time', 'opened_at']);
-            foreach ($opens as $o) {
-                if (!$o->scheduled_opening_time) {
-                    continue;
-                }
-                $bizDate = Carbon::parse($o->date)->format('Y-m-d');
-                $openedLocal = Carbon::parse($o->opened_at)->setTimezone($tz);
-                $scheduled = Carbon::parse($bizDate . ' ' . $o->scheduled_opening_time, $tz);
-                if ($openedLocal->lessThanOrEqualTo($scheduled->copy()->addMinutes($tolerance))) {
-                    $onTimeOpens++;
-                }
-            }
+            $onTimeOpens = self::aperturasATiempo($tenantId, (int) $employee->user_id, $startDate, $endDate, $lft);
             $openingBonus = $onTimeOpens * $openingAmount;
         }
 

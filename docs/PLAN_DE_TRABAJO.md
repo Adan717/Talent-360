@@ -266,11 +266,21 @@ un dato operativo nuevo (la nómina paga por día). Cumplimiento declara su defi
 CSV porque **ya existían cuatro conteos distintos** del mismo dato, y NO trae "minutos reales"
 (sólo se miden al pausar: serían ceros). El asistente por frase ya los elige.
 
-**Pendientes de esta línea** (el dueño los quiere todos con el tiempo): justificantes y
-autorizaciones, aperturas/cierres, validaciones y monedero, inducción y certificados,
-expediente documental, embudo de reclutamiento, comedor/Ley Silla, bitácora de incidentes.
-Nómina histórica y costo por puesto **esperan la fase A del bloque 4**; rotación de personal
-necesita validar antes la calidad de `hire_date` y las bajas viejas.
+**Los 8 restantes también se construyeron** (misma tanda): justificantes y autorizaciones,
+aperturas y cierres, comedor/Ley Silla, inducción y capacitación, expediente documental,
+embudo de reclutamiento y monedero. **Son 12 reportes en total.** Dos decisiones de esa tanda:
+la lista vive en un **catálogo único** (`App\Support\CatalogoDeReportes`) que alimenta a la vez
+la pantalla, el asistente y la validación — con doce reportes, tenerla duplicada garantizaba
+ofrecer descargas inexistentes, y hay una prueba que recorre el catálogo entero exigiendo que
+cada id responda; y "apertura a tiempo" se **extrajo** del motor del bono
+(`ClockService::aperturasATiempo`) para que el reporte y la nómina cuenten igual.
+
+Lo que esos reportes NO pueden decir, y lo dicen en el propio CSV: el tiempo que un candidato
+pasó en cada etapa (el sistema no registra los cambios de etapa) y los "minutos reales" de una
+tarea (sólo se miden al pausar).
+
+**Sigue pendiente**: nómina histórica y costo por puesto **esperan la fase A del bloque 4**;
+rotación de personal necesita validar antes la calidad de `hire_date` y las bajas viejas.
 
 ## Fuera de la lista, y valen más que la mitad de ella
 

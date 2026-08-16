@@ -386,6 +386,19 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
                 Route::get('/admin/reports/retardos.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'retardosYFaltas']);
                 Route::get('/admin/reports/horas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'horasTrabajadas']);
                 Route::get('/admin/reports/rutinas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'cumplimientoRutinas']);
+
+                // Incidencias y operación. El id del archivo = el id del catálogo único
+                // (App\Support\CatalogoDeReportes): si no coinciden, el asistente ofrece
+                // descargas que dan 404.
+                Route::get('/admin/reports/justificantes.csv', [\App\Http\Controllers\ReportesIncidenciasController::class, 'justificantes']);
+                Route::get('/admin/reports/aperturas.csv', [\App\Http\Controllers\ReportesIncidenciasController::class, 'aperturas']);
+                Route::get('/admin/reports/comedor.csv', [\App\Http\Controllers\ReportesIncidenciasController::class, 'comedor']);
+
+                // Personas.
+                Route::get('/admin/reports/academia.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'academia']);
+                Route::get('/admin/reports/expedientes.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'expedientes']);
+                Route::get('/admin/reports/reclutamiento.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'reclutamiento']);
+                Route::get('/admin/reports/monedero.csv', [\App\Http\Controllers\ReportesPersonasController::class, 'monedero']);
             });
 
             // Bloque 6: el asistente SOLO interpreta y llena el formulario — la descarga

@@ -1,6 +1,6 @@
 # Guía de módulos de Talent 360
 
-**Qué es este documento.** La descripción de **cada módulo tal como existe hoy en el sistema**: qué hace, quién lo ve, cómo se usa desde la pantalla y qué reglas conviene saber. Se levantó **desde el código real** el 2026-08-13 (no de las promesas de venta): si algo está marcado *"en construcción"* es porque la pantalla existe pero el sistema aún no lo respalda, y si una función no aparece aquí es porque no existe todavía.
+**Qué es este documento.** La descripción de **cada módulo tal como existe hoy en el sistema**: qué hace, quién lo ve, cómo se usa desde la pantalla y qué reglas conviene saber. Se levantó **desde el código real** el 2026-08-13 y se actualizó el **2026-08-16** (los 15 reportes y la baja con motivo y fecha) — no de las promesas de venta: si algo está marcado *"en construcción"* es porque la pantalla existe pero el sistema aún no lo respalda, y si una función no aparece aquí es porque no existe todavía.
 
 **Los tres enchufes pendientes** (no son construcción, son credenciales o decisiones del dueño) aparecen en cada módulo bajo *"Depende de configuración externa"*: **correo saliente** (proveedor por elegir — hoy no llega ningún correo), **timbrado fiscal** (llave de Facturapi) y **destino en la nube del respaldo**.
 
@@ -129,7 +129,7 @@
     - El colaborador abre el enlace, escribe su PIN, confirma su nombre/foto y **elige su contraseña** (mínimo 8 caracteres; no acepta contraseñas conocidas como `password123`). El PIN se consume al usarse.
   - **Expediente**: solo lectura. Muestra si completó la inducción y cuántos documentos tiene en el Archivo Digital y cuántos faltan (los documentos se suben en el módulo Archivo Digital).
 
-- **Enviar a inactivo** (icono de persona con menos en la tarjeta): la persona pasa al Directorio Inactivo, **conserva todo su historial** y pierde el acceso web (salvo si es administrador). Confirmación previa.
+- **Enviar a inactivo** (icono de persona con menos en la tarjeta): la persona pasa al Directorio Inactivo, **conserva todo su historial** y pierde el acceso web (salvo si es administrador). Confirmación previa, y después pregunta el **motivo de la baja** (renuncia, fin de contrato, despido, abandono…). El motivo es **opcional** —cancelar ese cuadro no impide dar de baja— pero es lo que llena esa columna en el reporte de Rotación de Personal. La **fecha de la baja se registra sola** (el día que la haces): antes el sistema sabía quién estaba inactivo pero no desde cuándo, y sin eso no había forma de medir rotación ni permanencia.
 - **Re-activar Colaborador** (Directorio Inactivo): vuelve al directorio activo.
 - **Eliminar Definitivamente** (Directorio Inactivo): pide confirmación. **Si la persona tiene historia (fichajes, recibos de nómina o documentos), no la borra: la archiva** e informa cuántos registros tiene y que deben conservarse (art. 804 LFT). Solo se borra de verdad a quien no tiene ningún registro. No puedes borrar tu propia cuenta ni al último administrador.
 
@@ -468,16 +468,17 @@ Reglas del examen:
 
 ## Reportes IA
 
-**En la barra lateral:** "Reportes IA" (subtítulo "Analítica Nómina e incidencias"). Dentro se llama "Módulo de Reportes IA". Sirve para descargar la asistencia y las tareas completadas en hoja de cálculo, pedir esos reportes escribiendo una frase, y —solo el administrador— revisar y autorizar la prenómina del periodo cerrado, exportándola a Excel o PDF.
+**En la barra lateral:** "Reportes IA" (subtítulo "Analítica Nómina e incidencias"). Dentro se llama "Módulo de Reportes IA". Sirve para descargar **15 reportes** en hoja de cálculo, pedirlos escribiendo una frase, y —solo el administrador— revisar y autorizar la prenómina del periodo cerrado, exportándola a Excel o PDF.
 
 **Quién lo ve y desde qué plan**
-- Roles: administrador y supervisor. El supervisor ve únicamente la pestaña "Reportes Operativos" (asistencia y tareas, sin ningún dato salarial); la pestaña "Nómina y Avanzados" solo aparece al administrador. Aunque alguien forzara la pantalla, el servidor exige la capacidad "manage_payroll" para entregar datos de nómina (el administrador la tiene siempre; un supervisor solo si el administrador se la otorga en la matriz de capacidades por puesto).
+- Roles: administrador y supervisor. El supervisor ve la pestaña "Reportes Operativos" y **13 de los 15 reportes**; los dos con dinero (Nómina Histórica y Costo por Puesto) solo los ve quien tiene la capacidad "manage_payroll" — el administrador siempre, un supervisor solo si el administrador se la otorga. La pestaña "Nómina y Avanzados" solo aparece al administrador. El candado es del servidor, no de la pantalla: aunque alguien la forzara, no obtiene los datos.
 - Plan: Pro o Enterprise (o Freemium con el módulo activado como adicional o en periodo de prueba).
 
-**Pestaña "Reportes Operativos" — 12 reportes**
+**Pestaña "Reportes Operativos" — los 15 reportes**
 
-Todos bajan en CSV que Excel abre bien, todos explican sus reglas al pie del archivo, y todos
-los puede descargar un supervisor (no traen dato salarial). Máximo 92 días por descarga.
+Todos bajan en CSV que Excel abre bien (acentos correctos), **todos explican sus reglas al pie
+del propio archivo**, y ninguno acepta más de 92 días por descarga. Los marcados con 🔒 traen
+dinero y exigen la capacidad de nómina.
 
 | Reporte | Qué contesta |
 |---|---|
@@ -487,7 +488,7 @@ los puede descargar un supervisor (no traen dato salarial). Máximo 92 días por
 | **Cumplimiento de Rutinas** | Qué se hizo, qué se omitió y qué quedó sin cerrar, por persona y por tarea |
 | **Tareas Completadas** | El listado de tareas cerradas, una por renglón |
 | **Justificantes y Autorizaciones** | Qué se aprobó y qué se rechazó, con el motivo y quién lo resolvió: es la evidencia de por qué un retardo no se cobró |
-| **Aperturas y Cierres** | Quién abrió, a qué hora, si fue a tiempo (misma regla que paga el bono), y las aperturas de emergencia |
+| **Aperturas y Cierres de Sucursal** | Quién abrió, a qué hora, si fue a tiempo (misma regla que paga el bono), y las aperturas de emergencia |
 | **Comedor y Ley Silla** | Comidas, excesos contra los minutos del expediente, y descansos de Ley Silla (evidencia de cumplimiento) |
 | **Inducción y Capacitación** | Quién trae la inducción vencida, quién se atoró reprobando y qué certificados se emitieron |
 | **Expediente Documental** | Qué documentos tiene validados cada quien y cuáles le faltan (foto de hoy, no un periodo) |
@@ -497,48 +498,67 @@ los puede descargar un supervisor (no traen dato salarial). Máximo 92 días por
 | **Nómina Histórica** 🔒 | Lo que se pagó en periodos anteriores: netos, deducciones, firmas y timbrado. **Solo con la capacidad de nómina** |
 | **Costo de Nómina por Puesto y Área** 🔒 | Cuánto cuesta cada puesto y cada área: sueldo, bonos y cuánto se descontó por faltas y retardos. **Solo con la capacidad de nómina** |
 
-**Dos cosas que estos reportes dicen de sí mismos, y conviene saber antes de usarlos:**
+**Tres cosas que estos reportes dicen de sí mismos, y conviene saber antes de usarlos:**
 
 - **Nómina Histórica** lee los recibos **guardados**: no recalcula nada con la asistencia de hoy, así que un recibo firmado no cambia aunque después se corrija una falta (así debe ser: es el instrumento legal). Los recibos en **borrador** se totalizan aparte, porque el sistema los vuelve a calcular cada noche hasta que el colaborador firma. Y el "neto" **no incluye ISR ni IMSS**: este sistema no calcula retenciones fiscales — es sueldo del periodo menos deducciones internas más bonos. Si la empresa cambió de periodicidad, el reporte avisa cuando detecta recibos que cubren días repetidos.
 - **Costo por Puesto** sólo puede sumar recibos que guardaron su desglose por concepto, cosa que el sistema hace **desde el 16 de agosto de 2026**: los recibos anteriores tienen su neto pero no sus partes, así que el reporte los deja fuera de las sumas y **dice cuántos son y cuánto valían** en vez de repartirlos a ojo. Cada recibo cuenta en el puesto y el área que tenía **cuando se generó**: si alguien cambia de puesto, su gasto pasado no se mueve de lugar. Ojo: el neto no incluye ISR ni IMSS, así que el costo patronal real es mayor.
 - **Rotación** cuenta altas, plantilla y antigüedad con certeza, pero **las bajas anteriores al 16 de agosto de 2026 no tienen fecha**: hasta ese día el sistema no la registraba. De ahí en adelante cada baja guarda su día y su motivo (se pregunta al enviar a inactivo), y entonces el índice de rotación del periodo sí será calculable.
 
-**Detalle de los reportes básicos**
+**Cómo se descarga cualquiera de ellos**
 
-1. **Asistencia del Día (CSV).** Tarjeta "Asistencia del Día" → botón "Descargar CSV". Baja un archivo con las columnas Fecha, Colaborador, Puesto, Movimiento (Entrada, Salida, Inicio/Fin de comida, Inicio/Fin de descanso), Hora, ¿Retardo? y Minutos de retardo, del día de hoy en la zona horaria de la empresa. Se abre bien en Excel en español (acentos correctos).
+Cada reporte es una tarjeta con su botón **"Descargar CSV"**. Todos traen un periodo por
+defecto sensato (el que más se pide), y el asistente por frase permite pedir otro.
 
-2. **Tareas Completadas (CSV).** Tarjeta "Tareas Completadas" → "Descargar CSV". Trae las tareas cerradas en los últimos 30 días: Fecha, Colaborador, Tarea, Prioridad, Minutos estimados, Minutos reales y Puntos.
+**Qué trae cada uno**
 
-2.b **Retardos y Faltas por Colaborador (CSV)** — *nuevo 2026-08-13*. Una línea por persona con: retardos, minutos acumulados, faltas físicas, faltas que se generaron por acumular retardos, faltas totales, exceso de comida y días festivos trabajados. Ordenado de más incidencias a menos (para ver quién reincide). Últimos 30 días por defecto.
-   - **Las cifras son las mismas que la nómina**: salen del mismo motor que calcula el recibo, así que respetan los justificantes aprobados y las contingencias (un retardo justificado NO aparece como retardo cobrable). Contar los retardos a mano desde el CSV de asistencia da un número MAYOR, porque ahí no se ven las exenciones.
+- **Asistencia** — Fecha, Colaborador, Puesto, Movimiento (Entrada, Salida, Inicio/Fin de comida, Inicio/Fin de descanso), Hora, ¿Retardo? y Minutos. Por defecto **hoy**; acepta rango.
+- **Retardos y Faltas por Colaborador** — Una línea por persona: retardos, minutos, faltas físicas, faltas generadas por acumular retardos, faltas totales, exceso de comida y festivos trabajados. De más incidencias a menos. **Últimos 30 días.**
+  - **Las cifras son las mismas que la nómina**: salen del mismo motor que calcula el recibo, así que respetan justificantes aprobados y contingencias. Contarlos a mano desde el CSV de asistencia da un número **mayor**, porque ahí no se ven las exenciones.
+- **Horas Trabajadas y Extra** — Por persona y día: entrada, salida, horas en sucursal, comida, descansos, **horas efectivas** y trabajo en día no laborable autorizado. **Últimos 14 días.**
+  - Los turnos que cruzan medianoche son **una sola jornada**. A quien olvidó checar salida no se le inventan horas: la columna Observación lo dice.
+  - Es **operativo**: la nómina se paga por día, no por horas, así que no altera ningún recibo.
+- **Cumplimiento de Rutinas** — Dos bloques: por **colaborador** y por **tarea**, con asignadas, hechas, omitidas, sin cerrar y **% de cumplimiento**. **Últimos 30 días.**
+  - Su definición viene escrita en el archivo: *hechas* = completadas + las que esperan firma; *omitidas* = rechazadas o saltadas; *sin cerrar* = pendientes, en curso o pausadas.
+  - **No trae "minutos reales"** a propósito: el sistema sólo mide el tiempo cuando la persona *pausa* la tarea, así que esa columna sería casi toda ceros.
+- **Tareas Completadas** — Fecha, Colaborador, Tarea, Prioridad, Minutos estimados, Minutos reales y Puntos. **Últimos 30 días.**
+- **Justificantes y Autorizaciones** — Cada solicitud con su tipo (justificante de retardo, contingencia, entrada tardía, horas extra, salida anticipada, eventualidad de sucursal), estado, **motivo**, quién la resolvió y cuándo. **Últimos 30 días.**
+  - Es la evidencia de **por qué** un retardo o una falta no se cobraron. Las autorizaciones de horas extra y salida anticipada no tienen ciclo de aprobación: se otorgan en el momento con QR o PIN, y la fila es la autorización.
+- **Aperturas y Cierres de Sucursal** — Por día: hora programada, hora real, **¿a tiempo?**, quién abrió y cerró, estado del día, amnistía y las incidencias (apertura de emergencia, portador que reportó ausencia…). **Últimos 30 días.**
+  - "A tiempo" usa la **misma regla que paga el bono de apertura**: dentro de la tolerancia de la empresa contada desde la hora programada.
+- **Comedor y Ley Silla** — Por persona y día: inicio y fin de comida, minutos tomados vs **permitidos según su expediente**, exceso, minutos de descanso y solicitudes de Ley Silla (pedidas y otorgadas). **Últimos 30 días.**
+- **Inducción y Capacitación** — Por colaborador: fecha de ingreso, días transcurridos, estado de la inducción (**VENCIDA** si pasó el plazo de 3 días), cursos aprobados, cursos atorados (2+ reprobadas) y certificados emitidos con su folio. **Últimos 90 días.**
+  - Los administradores no aparecen: tampoco reciben el aviso de inducción.
+- **Expediente Documental** — Por colaborador: cuántos de los 6 documentos tiene validados, el estado de cada uno (con el motivo si fue rechazado) y **qué le falta**. Es una **foto de hoy**, no un periodo.
+- **Embudo de Reclutamiento** — Candidatos con su etapa actual, vacante, puesto, antecedente ("ya trabajó aquí") y evaluación de postulación, más un **resumen por vacante** (total, contratados, rechazados, en proceso). **Últimos 90 días.**
+  - No puede decir cuánto tardó cada candidato en cada etapa: el sistema no registra los cambios de etapa. El CSV lo aclara.
+- **Monedero y Reconocimientos** — Por persona: tareas hechas, monedas y puntos ganados **en el periodo**, tareas validadas y rechazadas, y su saldo, puntos totales y nivel **de hoy**. **Últimos 30 días.**
+- **Rotación de Personal** — Por persona: ingreso, situación, fecha y motivo de baja, permanencia; y un **resumen** con plantilla activa, altas del periodo, antigüedad promedio y bajas con/sin fecha. **Últimos 90 días.**
+- 🔒 **Nómina Histórica** — Cada recibo guardado: periodo, sueldo, retardos, faltas, deducciones, neto, estado (borrador / firmado / autorizado / timbrado), quién autorizó y el folio fiscal; más **totales por periodo**. **Últimos 90 días.**
+- 🔒 **Costo de Nómina por Puesto y Área** — Dos bloques (por **puesto** y por **área**) con personas, recibos, sueldo, descuentos separados por **faltas / retardos / séptimo día**, total de deducciones, bonos, neto y **% deducido**. **Últimos 90 días.**
 
-2.c **Horas Trabajadas y Extra (CSV)** — *nuevo*. Una línea por persona y día: entrada, salida, horas en sucursal, comida, descansos, **horas efectivas** (sucursal − comida − descansos) y si fue trabajo en día no laborable autorizado. Últimos 14 días por defecto.
-   - Los turnos que cruzan medianoche cuentan como **una sola jornada**. Si alguien olvidó checar salida, la columna Observación lo dice ("Cerrada por el sistema" o "Sin salida registrada") y **no se le inventan horas**.
-   - Es un reporte **operativo**: la nómina de este sistema se paga por día, no por horas, así que no altera ningún recibo.
+**"Pídelo con tus palabras" (asistente por frase)**
 
-2.d **Cumplimiento de Rutinas (CSV)** — *nuevo*. Dos bloques en el mismo archivo: por **colaborador** y por **tarea**, con asignadas, hechas, omitidas, sin cerrar y **% de cumplimiento**. Últimos 30 días por defecto.
-   - Definición que usa (viene escrita en el propio archivo): *hechas* = completadas + las que esperan firma; *omitidas* = rechazadas o saltadas; *sin cerrar* = pendientes, en curso o pausadas.
-   - **No trae "minutos reales"** a propósito: el sistema sólo mide el tiempo real cuando la persona *pausa* la tarea, así que esa columna sería casi toda ceros y engañaría.
+Solo aparece si la instancia tiene configurada la llave de OpenAI; si no, quedan las tarjetas.
 
-3. **"Pídelo con tus palabras" (asistente por frase).** Solo aparece si la instancia tiene configurada la llave de OpenAI; si no, la tarjeta no existe y quedan los dos botones de arriba.
-   - Cómo se usa: escribe la frase (por ejemplo "los retardos de la semana pasada" o "tareas completadas de julio", máximo 300 caracteres) → pulsa "Interpretar" (o Enter) → el sistema muestra "Entendí: Asistencia y retardos / Tareas completadas de <periodo>" y llena las fechas "Del" y "Al" → revisa (puedes corregir las fechas a mano) → pulsa "Descargar CSV".
-   - El asistente NO descarga nada por sí solo: solo llena el formulario; la descarga siempre la confirmas tú con el botón.
-   - Entiende periodos como hoy, ayer, últimos N días, la semana en curso, la semana pasada, "la semana 32", el mes en curso, el mes pasado o un rango de fechas ("del 1 al 15 de julio"). Las semanas se calculan con el día de inicio de semana configurado por tu empresa.
-   - Sabe elegir entre los **cinco** reportes operativos: asistencia, tareas, retardos y faltas, horas trabajadas y cumplimiento de rutinas. Ejemplos: *"quién llega tarde seguido este mes"* → Retardos y Faltas; *"horas trabajadas de la semana pasada"* → Horas; *"cumplimiento de rutinas de julio"* → Rutinas. Si le pides nómina u otra cosa, contesta que no es uno de los reportes disponibles.
-   - Debajo del cuadro se avisa: la frase se envía a OpenAI (EE. UU.) únicamente para interpretarla y se guarda junto con tu usuario según la retención configurada de la empresa; evita escribir datos personales innecesarios.
+- Cómo se usa: escribe (o dicta) la frase, máximo 300 caracteres → **"Interpretar"** → el sistema dice qué entendió y **llena las fechas** → revisas y corriges si hace falta → **"Descargar CSV"**.
+- **Nunca descarga solo**: únicamente llena el formulario; la descarga la confirmas tú.
+- Entiende periodos: hoy, ayer, últimos N días, la semana en curso o pasada, "la semana 32", el mes en curso o pasado, un mes por su nombre ("julio", "diciembre" — siempre el más reciente ya ocurrido) y rangos de fechas. Las semanas usan el **día de inicio configurado por tu empresa**.
+- Sabe elegir entre los **15**. Ejemplos reales: *"quién llega tarde seguido este mes"* → Retardos y Faltas · *"quién abrió la tienda tarde la semana pasada"* → Aperturas · *"a quién le falta la inducción"* → Inducción · *"cómo va el reclutamiento"* → Embudo · *"cuánto pagamos de nómina en julio"* → Nómina Histórica · *"qué área gasta más en sueldos"* → Costo por Puesto.
+- Si le pides algo que no es un reporte —el sueldo de **una** persona, un RFC, datos personales— contesta que no está disponible. Y si pides nómina sin tener la capacidad, te lo dice claro en vez de llenarte un formulario que luego sería rechazado.
+- Debajo se avisa: la frase se envía a OpenAI (EE. UU.) sólo para interpretarla y se guarda junto con tu usuario según la retención configurada; evita escribir datos personales innecesarios.
 
 **Pestaña "Nómina y Avanzados" (solo administrador)**
 
 Al entrar carga automáticamente la prenómina del **último periodo cerrado** de la empresa (semana, quincena o mes, según la periodicidad configurada en Configuración → "Nómina & Periodicidad"). El periodo se muestra en una etiqueta ("Periodo del … al …").
 
-4. **Resumen del periodo.** Tres tarjetas: "Nómina Bruta del Periodo" (con la línea "+ $… en bonos de cumplimiento" si los hay), "Deducciones (Retardos y Faltas)" y "Total a Pagar (Neto)". Si hay colaboradores sin sueldo capturado, la tarjeta de neto avisa "No incluye N colaborador(es) sin sueldo capturado" y esos no entran en las sumas.
+1. **Resumen del periodo.** Tres tarjetas: "Nómina Bruta del Periodo" (con la línea "+ $… en bonos de cumplimiento" si los hay), "Deducciones (Retardos y Faltas)" y "Total a Pagar (Neto)". Si hay colaboradores sin sueldo capturado, la tarjeta de neto avisa "No incluye N colaborador(es) sin sueldo capturado" y esos no entran en las sumas.
 
-5. **Desglose por empleado.** Tabla con Colaborador, Puesto, Retardos, Faltas, Salario Base, Penalización y Neto a Pagar. Un colaborador sin sueldo capturado aparece con "Pendiente" / "Ajustar Salario" (se corrige en Recursos Humanos).
+2. **Desglose por empleado.** Tabla con Colaborador, Puesto, Retardos, Faltas, Salario Base, Penalización y Neto a Pagar. Un colaborador sin sueldo capturado aparece con "Pendiente" / "Ajustar Salario" (se corrige en Recursos Humanos).
    - Cómo se usa: haz clic en el renglón del colaborador para desplegar el "Detalle Diario de Asistencia": por cada día del periodo, entrada y salida, "Día de Descanso", "Falta / Inasistencia" (solo en días ya terminados), "Sin registro aún" (día no concluido), aviso de "Exceso de comida: N min · salida requerida hh:mm" cuando aplica, y el estado de la "Firma Diaria" del colaborador (Firmado / Pendiente).
 
-6. **Exportar Excel / Exportar PDF.** Botones al pie. El archivo se llama Prenomina_<inicio>_a_<fin>.xlsx o .pdf y contiene el mismo periodo que ves en pantalla, con una columna extra "Firma Empleado" (Borrador, Falta firma del colaborador, Firmada por el colaborador, Autorizada, Finalizada, Timbrada, Rechazada). En el Excel la columna "Bruto del Periodo" es contra la que se restan las deducciones para llegar al neto.
+3. **Exportar Excel / Exportar PDF.** Botones al pie. El archivo se llama Prenomina_<inicio>_a_<fin>.xlsx o .pdf y contiene el mismo periodo que ves en pantalla, con una columna extra "Firma Empleado" (Borrador, Falta firma del colaborador, Firmada por el colaborador, Autorizada, Finalizada, Timbrada, Rechazada). En el Excel la columna "Bruto del Periodo" es contra la que se restan las deducciones para llegar al neto.
 
-7. **Autorizar Pago de Nómina.** Botón verde al pie (deshabilitado si la tabla está vacía).
+4. **Autorizar Pago de Nómina.** Botón verde al pie (deshabilitado si la tabla está vacía).
    - Cómo se usa: revisa la tabla → pulsa "Autorizar Pago de Nómina" → aparece la ventana "Pago Autorizado" (o "Nada que Autorizar") con el conteo real: "N nómina(s) autorizada(s) para pago" y, si aplica, "N sin autorizar: el colaborador aún no firma de conformidad".
    - Solo se autorizan las nóminas del periodo que el colaborador **ya firmó** desde su Reloj Checador ("Firmar Nómina de Conformidad"). Las no firmadas se quedan pendientes y se informan.
    - Nadie puede autorizar su propia nómina (si el administrador también es colaborador, la suya se salta y la debe autorizar otro administrador).
@@ -557,8 +577,6 @@ Al entrar carga automáticamente la prenómina del **último periodo cerrado** d
 **Configuración externa pendiente**
 - El asistente por frase requiere una llave de OpenAI en el servidor; sin ella, la tarjeta simplemente no aparece (el resto del módulo funciona).
 - El timbrado (siguiente paso tras autorizar) depende de la llave del PAC — ver "Nómina CFDI 4.0".
-
----
 
 ---
 

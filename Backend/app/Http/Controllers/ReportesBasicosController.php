@@ -18,13 +18,15 @@ use Illuminate\Support\Facades\DB;
  * salarial (asistencia y tareas), así que exigir la capacidad de nómina para bajarlos
  * sería pedir de más — el candado del dinero es para el dinero.
  *
- * CSV a mano con `fputcsv` en streaming: nada de cargar todo en memoria ni de sumar una
- * dependencia para separar por comas. Lleva BOM UTF-8 porque Excel en español abre el
- * archivo con los acentos rotos sin él (Nómina → NÃ³mina), y es el primer reporte que ve
- * el cliente.
+ * La entrega (CSV con BOM, PDF con `?formato=pdf`, notas al pie y neutralización de fórmulas)
+ * sale de `ArmaReportesCsv`, igual que los otros trece. Este controlador tenía SU PROPIA copia
+ * de `csv()`, escrita antes del trait: se quedó atrás cuando el trait ganó las notas al pie, y
+ * los dos únicos reportes de los quince que no las traían eran justo éstos.
  */
 class ReportesBasicosController extends Controller
 {
+    use ArmaReportesCsv;
+
     /**
      * Máximo de días por descarga (ronda adversarial del bloque 6): el tope que anunciaba
      * el asistente era decorativo si esta puerta —la que entrega los datos— no lo conocía.
@@ -113,7 +115,12 @@ class ReportesBasicosController extends Controller
         return $this->csv(
             $nombre,
             ['Fecha', 'Colaborador', 'Puesto', 'Movimiento', 'Hora', '¿Retardo?', 'Minutos de retardo'],
-            $filas
+            $filas,
+            [
+                $desde === $hasta ? "Periodo del {$desde}." : "Periodo del {$desde} al {$hasta}.",
+                'Es el detalle CRUDO de los fichajes: un retardo aparece aquí aunque después se haya justificado. Para lo que de verdad se cobró, el reporte es "Retardos y Faltas por Colaborador", que sale del mismo motor que la nómina.',
+                'El nombre y el puesto son los que la persona tenía EL DÍA del fichaje, no los de hoy.',
+            ]
         );
     }
 
@@ -163,36 +170,13 @@ class ReportesBasicosController extends Controller
         return $this->csv(
             "tareas_completadas_{$desde}_a_{$hasta}.csv",
             ['Fecha', 'Colaborador', 'Tarea', 'Prioridad', 'Minutos estimados', 'Minutos reales', 'Puntos'],
-            $filas
+            $filas,
+            [
+                "Periodo del {$desde} al {$hasta}.",
+                'Sólo tareas COMPLETADAS. Las omitidas, rechazadas o sin cerrar están en "Cumplimiento de Rutinas".',
+                'Los "minutos reales" sólo se acumulan cuando la persona PAUSA la tarea: una tarea hecha de corrido marca 0, y eso no significa que no se trabajó.',
+            ]
         );
     }
 
-    /** CSV en streaming con BOM UTF-8 (si no, Excel en español rompe los acentos). */
-    private function csv(string $nombre, array $encabezados, array $filas)
-    {
-        return response()->streamDownload(function () use ($encabezados, $filas) {
-            $salida = fopen('php://output', 'w');
-            fwrite($salida, "\xEF\xBB\xBF");
-            fputcsv($salida, $encabezados);
-            foreach ($filas as $fila) {
-                fputcsv($salida, array_map([$this, 'celdaSegura'], $fila));
-            }
-            fclose($salida);
-        }, $nombre, ['Content-Type' => 'text/csv; charset=UTF-8']);
-    }
-
-    /**
-     * Inyección de fórmulas (ronda adversarial del bloque 6): un colaborador controla su
-     * propio nombre; con `=HYPERLINK(...)` de nombre, Excel EVALÚA la celda en la máquina
-     * del admin al abrir el CSV. Mitigación estándar OWASP: la celda de texto que empiece
-     * con `=`, `+`, `-` o `@` se antepone con apóstrofo (Excel la trata como texto).
-     */
-    private function celdaSegura($celda)
-    {
-        if (is_string($celda) && $celda !== '' && in_array($celda[0], ['=', '+', '-', '@'], true)) {
-            return "'" . $celda;
-        }
-
-        return $celda;
-    }
 }

@@ -476,9 +476,10 @@ Reglas del examen:
 
 **Pestaña "Reportes Operativos" — los 15 reportes**
 
-Todos bajan en CSV que Excel abre bien (acentos correctos), **todos explican sus reglas al pie
-del propio archivo**, y ninguno acepta más de 92 días por descarga. Los marcados con 🔒 traen
-dinero y exigen la capacidad de nómina.
+Cada uno baja en **dos formatos**, con el mismo contenido: **CSV** (el que Excel abre, con los
+acentos correctos) para trabajar los números, y **PDF** para entregar, imprimir o archivar.
+Todos explican sus reglas al pie del propio archivo y ninguno acepta más de 92 días por
+descarga. Los marcados con 🔒 traen dinero y exigen la capacidad de nómina.
 
 | Reporte | Qué contesta |
 |---|---|
@@ -506,8 +507,14 @@ dinero y exigen la capacidad de nómina.
 
 **Cómo se descarga cualquiera de ellos**
 
-Cada reporte es una tarjeta con su botón **"Descargar CSV"**. Todos traen un periodo por
-defecto sensato (el que más se pide), y el asistente por frase permite pedir otro.
+Cada reporte es una tarjeta con dos botones: **"Descargar CSV"** y **"PDF"**. Todos traen un
+periodo por defecto sensato (el que más se pide), y el asistente por frase permite pedir otro.
+
+**Cuál de los dos formatos usar**
+- **CSV** cuando vas a *trabajar* el reporte: filtrar, ordenar, sumar, pegarlo en otra hoja. Es el formato principal y el único que sirve para periodos largos.
+- **PDF** cuando vas a *entregarlo o archivarlo*: enseñárselo a un inspector, imprimirlo para firmarlo, adjuntarlo a un correo, guardarlo como constancia. Trae portada con el nombre de la empresa, el periodo, quién lo generó y cuándo, número de página, y las mismas notas al pie.
+- **Los dos salen de las mismas cifras.** El PDF no vuelve a consultar nada: se arma con los renglones que produce el CSV, así que el documento que entregas no puede decir algo distinto al Excel que revisaste.
+- **El PDF se topa en 2,000 renglones** y lo dice en el propio documento cuando pasa (no recorta callado). Arriba de eso, acota las fechas o usa el CSV: un PDF de miles de renglones no se lee ni se entrega, y tardaría en generarse.
 
 **Qué trae cada uno**
 
@@ -540,7 +547,7 @@ defecto sensato (el que más se pide), y el asistente por frase permite pedir ot
 
 Solo aparece si la instancia tiene configurada la llave de OpenAI; si no, quedan las tarjetas.
 
-- Cómo se usa: escribe (o dicta) la frase, máximo 300 caracteres → **"Interpretar"** → el sistema dice qué entendió y **llena las fechas** → revisas y corriges si hace falta → **"Descargar CSV"**.
+- Cómo se usa: escribe (o dicta) la frase, máximo 300 caracteres → **"Interpretar"** → el sistema dice qué entendió y **llena las fechas** → revisas y corriges si hace falta → **"Descargar CSV"** o **"PDF"**.
 - **Nunca descarga solo**: únicamente llena el formulario; la descarga la confirmas tú.
 - Entiende periodos: hoy, ayer, últimos N días, la semana en curso o pasada, "la semana 32", el mes en curso o pasado, un mes por su nombre ("julio", "diciembre" — siempre el más reciente ya ocurrido) y rangos de fechas. Las semanas usan el **día de inicio configurado por tu empresa**.
 - Sabe elegir entre los **15**. Ejemplos reales: *"quién llega tarde seguido este mes"* → Retardos y Faltas · *"quién abrió la tienda tarde la semana pasada"* → Aperturas · *"a quién le falta la inducción"* → Inducción · *"cómo va el reclutamiento"* → Embudo · *"cuánto pagamos de nómina en julio"* → Nómina Histórica · *"qué área gasta más en sueldos"* → Costo por Puesto.
@@ -556,7 +563,7 @@ Al entrar carga automáticamente la prenómina del **último periodo cerrado** d
 2. **Desglose por empleado.** Tabla con Colaborador, Puesto, Retardos, Faltas, Salario Base, Penalización y Neto a Pagar. Un colaborador sin sueldo capturado aparece con "Pendiente" / "Ajustar Salario" (se corrige en Recursos Humanos).
    - Cómo se usa: haz clic en el renglón del colaborador para desplegar el "Detalle Diario de Asistencia": por cada día del periodo, entrada y salida, "Día de Descanso", "Falta / Inasistencia" (solo en días ya terminados), "Sin registro aún" (día no concluido), aviso de "Exceso de comida: N min · salida requerida hh:mm" cuando aplica, y el estado de la "Firma Diaria" del colaborador (Firmado / Pendiente).
 
-3. **Exportar Excel / Exportar PDF.** Botones al pie. El archivo se llama Prenomina_<inicio>_a_<fin>.xlsx o .pdf y contiene el mismo periodo que ves en pantalla, con una columna extra "Firma Empleado" (Borrador, Falta firma del colaborador, Firmada por el colaborador, Autorizada, Finalizada, Timbrada, Rechazada). En el Excel la columna "Bruto del Periodo" es contra la que se restan las deducciones para llegar al neto.
+3. **Exportar Excel / Exportar PDF.** Botones al pie. El archivo se llama Prenomina_<inicio>_a_<fin>.xlsx o .pdf y contiene el mismo periodo que ves en pantalla, con una columna extra "Firma Empleado" (Borrador, Falta firma del colaborador, Firmada por el colaborador, Autorizada, Finalizada, Timbrada, Rechazada). En los dos, la columna "Bruto del Periodo" es contra la que se restan las deducciones para llegar al neto (el PDF la titulaba "Salario Base" y mostraba el sueldo del expediente, mientras su propia caja de totales sumaba el bruto del periodo: la columna no daba su propio total — corregido el 2026-08-16).
 
 4. **Autorizar Pago de Nómina.** Botón verde al pie (deshabilitado si la tabla está vacía).
    - Cómo se usa: revisa la tabla → pulsa "Autorizar Pago de Nómina" → aparece la ventana "Pago Autorizado" (o "Nada que Autorizar") con el conteo real: "N nómina(s) autorizada(s) para pago" y, si aplica, "N sin autorizar: el colaborador aún no firma de conformidad".

@@ -146,25 +146,36 @@ export default function ReportesManager() {
 
   // Los dos CSV de la pestaña básica. Los botones existían SIN onClick: no bajaban nada
   // y tampoco avisaban de nada.
-  const handleDescargarCsv = async (reporte: ReporteId, rango?: { from: string; to: string }) => {
-    setDescargando(reporte);
+  //
+  // El PDF es la MISMA ruta con `?formato=pdf`: el servidor arma los dos del mismo arreglo de
+  // filas, así que el documento que se entrega no puede decir algo distinto al Excel.
+  const handleDescargar = async (reporte: ReporteId, formato: 'csv' | 'pdf' = 'csv', rango?: { from: string; to: string }) => {
+    setDescargando(`${reporte}:${formato}`);
     try {
-      const params = rango ? `?from=${rango.from}&to=${rango.to}` : '';
-      const res = await axiosInstance.get(`/admin/reports/${reporte}.csv${params}`, { responseType: 'blob' });
+      const query = new URLSearchParams(rango ? { from: rango.from, to: rango.to } : {});
+      if (formato === 'pdf') query.set('formato', 'pdf');
+      const qs = query.toString();
+      const res = await axiosInstance.get(`/admin/reports/${reporte}.csv${qs ? `?${qs}` : ''}`, { responseType: 'blob' });
       // El archivo se nombra con el PERIODO que contiene (ronda adversarial: con rango, el
       // nombre decía el día de la descarga y mentía sobre el contenido).
       const sufijo = rango ? (rango.from === rango.to ? rango.from : `${rango.from}_a_${rango.to}`) : new Date().toISOString().slice(0, 10);
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }));
+      const tipo = formato === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8';
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: tipo }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${reporte}_${sufijo}.csv`);
+      link.setAttribute('download', `${reporte}_${sufijo}.${formato}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error(err);
-      alert(err?.response?.data?.message || 'No se pudo descargar el reporte. Intenta de nuevo.');
+      // El error del servidor viaja como blob por `responseType: 'blob'`: leerlo como si fuera
+      // JSON deja `undefined` y el dueño ve "no se pudo" en vez del motivo real (p. ej. que el
+      // periodo pasa de 92 días).
+      let motivo = '';
+      try { motivo = JSON.parse(await err?.response?.data?.text?.() || '{}')?.message || ''; } catch { /* no era JSON */ }
+      alert(motivo || 'No se pudo descargar el reporte. Intenta de nuevo.');
     } finally {
       setDescargando(null);
     }
@@ -327,11 +338,19 @@ export default function ReportesManager() {
                         <input type="date" value={propuesta.hasta} onChange={e => setPropuesta({ ...propuesta, hasta: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
                       </div>
                       <button
-                        onClick={() => handleDescargarCsv(propuesta.reporte, { from: propuesta.desde, to: propuesta.hasta })}
-                        disabled={descargando === propuesta.reporte}
+                        onClick={() => handleDescargar(propuesta.reporte, 'pdf', { from: propuesta.desde, to: propuesta.hasta })}
+                        disabled={!!descargando}
+                        title="Para entregar, imprimir o archivar"
+                        className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <FileText size={15} /> {descargando === `${propuesta.reporte}:pdf` ? 'Generando…' : 'PDF'}
+                      </button>
+                      <button
+                        onClick={() => handleDescargar(propuesta.reporte, 'csv', { from: propuesta.desde, to: propuesta.hasta })}
+                        disabled={!!descargando}
                         className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
                       >
-                        <Download size={15} /> {descargando === propuesta.reporte ? 'Generando…' : 'Descargar CSV'}
+                        <Download size={15} /> {descargando === `${propuesta.reporte}:csv` ? 'Generando…' : 'Descargar CSV'}
                       </button>
                     </div>
                   </div>
@@ -357,13 +376,25 @@ export default function ReportesManager() {
                     <p className="text-sm text-slate-500 mt-1 leading-relaxed">{descripcion}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDescargarCsv(id)}
-                  disabled={descargando === id}
-                  className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50 shrink-0"
-                >
-                  <Download size={16} /> {descargando === id ? 'Generando…' : 'Descargar CSV'}
-                </button>
+                {/* Dos formatos, un mismo contenido: el CSV para trabajar los números, el PDF
+                    para entregar o archivar (una inspección, un expediente que se firma). */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleDescargar(id, 'csv')}
+                    disabled={!!descargando}
+                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    <Download size={16} /> {descargando === `${id}:csv` ? 'Generando…' : 'Descargar CSV'}
+                  </button>
+                  <button
+                    onClick={() => handleDescargar(id, 'pdf')}
+                    disabled={!!descargando}
+                    title="El mismo reporte en documento, para entregar o archivar"
+                    className="px-3 py-2 bg-white border border-slate-200 text-slate-500 font-medium rounded-lg hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    <FileText size={16} /> {descargando === `${id}:pdf` ? '…' : 'PDF'}
+                  </button>
+                </div>
               </div>
               );
             })}

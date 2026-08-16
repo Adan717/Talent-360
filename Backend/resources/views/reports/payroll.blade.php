@@ -144,7 +144,11 @@
                 <th>Puesto</th>
                 <th class="text-center">Retardos</th>
                 <th class="text-center">Faltas</th>
-                <th class="text-right">Salario Base</th>
+                {{-- Era "Salario Base" e imprimía `base` (el sueldo del expediente) mientras la
+                     caja de totales de abajo sumaba `gross` (el bruto del periodo): la columna
+                     NO daba su propio total, en el documento de una nómina. Se corrigieron los
+                     totales en su día y esta mitad se quedó sin corregir. --}}
+                <th class="text-right">Bruto del Periodo</th>
                 <th class="text-right">Penalización</th>
                 <th class="text-right">Neto a Pagar</th>
             </tr>
@@ -172,7 +176,7 @@
                         @if($emp['salary_pending'])
                             <span style="color: #ef4444; font-size: 10px;">Pendiente</span>
                         @else
-                            ${{ number_format($emp['base'], 2) }}
+                            ${{ number_format($emp['gross'], 2) }}
                         @endif
                     </td>
                     <td class="text-right" style="color: #ef4444;">

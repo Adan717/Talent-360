@@ -92,6 +92,43 @@ class ReportesRestantesTest extends TestCase
     }
 
     /**
+     * Los mismos 15, en documento. Un reporte nuevo hereda su PDF sin diseñarle nada, así que
+     * lo que puede romperse es justo lo contrario: que uno de los 15 reviente al renderizarse
+     * (una fila con un valor que la plantilla no espera) y nadie se entere hasta que el dueño
+     * lo intenta. Por eso se recorre el catálogo entero, igual que con el CSV.
+     */
+    public function test_todo_reporte_del_catalogo_tambien_sale_en_pdf(): void
+    {
+        foreach (CatalogoDeReportes::ids() as $id) {
+            $res = $this->actingAs($this->admin)->get("/api/v1/admin/reports/{$id}.csv?formato=pdf");
+
+            $res->assertOk("el reporte '{$id}' no se pudo generar en PDF");
+            $this->assertStringContainsString('pdf', strtolower($res->headers->get('content-type') ?? ''));
+            $this->assertStringContainsString(".pdf", $res->headers->get('content-disposition') ?? '');
+            // Un PDF de verdad, no una página de error con extensión bonita.
+            $this->assertStringStartsWith('%PDF', $res->getContent(), "'{$id}' no devolvió un PDF válido");
+        }
+    }
+
+    /**
+     * `formato=pdf` NO puede ser una puerta de atrás: es la MISMA ruta, así que estructuralmente
+     * no lo es, pero un candado de dinero se prueba, no se razona.
+     */
+    public function test_el_pdf_respeta_el_candado_de_nomina(): void
+    {
+        $supervisor = User::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Sup PDF', 'email' => 'suppdf@rep8qa.test',
+            'password' => bcrypt('x'), 'role' => 'supervisor',
+        ]);
+
+        foreach (['nomina_historica', 'costo_por_puesto'] as $id) {
+            $this->actingAs($supervisor)
+                ->get("/api/v1/admin/reports/{$id}.csv?formato=pdf")
+                ->assertForbidden("'{$id}' en PDF se le entregó a un supervisor sin la capacidad de nómina");
+        }
+    }
+
+    /**
      * El candado del dinero: la nómina histórica NO puede caer en el grupo de reportes
      * operativos, que un supervisor puede bajar. Es la misma regla que la pantalla de nómina.
      */

@@ -58,7 +58,11 @@ echo "▸ Versión actual: ${ANTERIOR}"
 # (Pasó el 2026-08-16 con el 504 de GitHub bajando symfony/mime.)
 #
 # La marca se escribe SÓLO cuando el despliegue termina bien, así que es la única fuente honesta.
-MARCA="${RAIZ}/.ultimo-despliegue-ok"
+#
+# Vive FUERA del árbol, por lo mismo que este script: dentro, `git reset --hard` la borraría en
+# cada despliegue y además la guarda de "cambios sin commitear" de arriba la vería como un
+# archivo que alguien dejó a mano y se negaría a desplegar (probado: se negó).
+MARCA="/var/lib/talent360-v2-ultimo-despliegue-ok"
 ULTIMO_OK="$(cat "$MARCA" 2>/dev/null || true)"
 
 echo "▸ Trayendo cambios…"

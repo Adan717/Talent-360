@@ -495,10 +495,12 @@ los puede descargar un supervisor (no traen dato salarial). Máximo 92 días por
 | **Monedero y Reconocimientos** | Monedas y puntos ganados, tareas validadas y rechazadas, saldo y nivel |
 | **Rotación de Personal** | Altas, bajas, plantilla activa, antigüedad y permanencia |
 | **Nómina Histórica** 🔒 | Lo que se pagó en periodos anteriores: netos, deducciones, firmas y timbrado. **Solo con la capacidad de nómina** |
+| **Costo de Nómina por Puesto y Área** 🔒 | Cuánto cuesta cada puesto y cada área: sueldo, bonos y cuánto se descontó por faltas y retardos. **Solo con la capacidad de nómina** |
 
 **Dos cosas que estos reportes dicen de sí mismos, y conviene saber antes de usarlos:**
 
 - **Nómina Histórica** lee los recibos **guardados**: no recalcula nada con la asistencia de hoy, así que un recibo firmado no cambia aunque después se corrija una falta (así debe ser: es el instrumento legal). Los recibos en **borrador** se totalizan aparte, porque el sistema los vuelve a calcular cada noche hasta que el colaborador firma. Y el "neto" **no incluye ISR ni IMSS**: este sistema no calcula retenciones fiscales — es sueldo del periodo menos deducciones internas más bonos. Si la empresa cambió de periodicidad, el reporte avisa cuando detecta recibos que cubren días repetidos.
+- **Costo por Puesto** sólo puede sumar recibos que guardaron su desglose por concepto, cosa que el sistema hace **desde el 16 de agosto de 2026**: los recibos anteriores tienen su neto pero no sus partes, así que el reporte los deja fuera de las sumas y **dice cuántos son y cuánto valían** en vez de repartirlos a ojo. Cada recibo cuenta en el puesto y el área que tenía **cuando se generó**: si alguien cambia de puesto, su gasto pasado no se mueve de lugar. Ojo: el neto no incluye ISR ni IMSS, así que el costo patronal real es mayor.
 - **Rotación** cuenta altas, plantilla y antigüedad con certeza, pero **las bajas anteriores al 16 de agosto de 2026 no tienen fecha**: hasta ese día el sistema no la registraba. De ahí en adelante cada baja guarda su día y su motivo (se pregunta al enviar a inactivo), y entonces el índice de rotación del periodo sí será calculable.
 
 **Detalle de los reportes básicos**

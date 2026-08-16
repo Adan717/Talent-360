@@ -86,10 +86,16 @@ class CatalogoDeReportes
             'descripcion' => 'altas, bajas, plantilla activa y antigüedad de la gente',
             'dias' => 90,
         ],
-        // Con dinero: sólo lo ve quien tiene la capacidad de nómina (ver `soloNomina`).
+        // Con dinero: sólo lo ve quien tiene la capacidad de nómina (ver `esDeNomina`).
         'nomina_historica' => [
             'titulo' => 'Nómina Histórica',
             'descripcion' => 'lo que se pagó en periodos anteriores: netos, deducciones, firmas y timbrado',
+            'dias' => 90,
+            'nomina' => true,
+        ],
+        'costo_por_puesto' => [
+            'titulo' => 'Costo de Nómina por Puesto y Área',
+            'descripcion' => 'cuánto cuesta cada puesto o área: sueldo, bonos y cuánto se descontó por faltas y retardos',
             'dias' => 90,
             'nomina' => true,
         ],

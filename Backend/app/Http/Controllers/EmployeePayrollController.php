@@ -203,20 +203,16 @@ class EmployeePayrollController extends Controller
                     'start_date' => $startDate,
                     'end_date' => $endDate
                 ],
-                [
-                    'base_salary_paid' => $payroll['salary']['base'],
-                    'lates_count' => $payroll['incidents']['lates'],
-                    'absences_count' => $payroll['incidents']['total_absences'],
-                    'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
-                    'deductions' => $payroll['deductions_breakdown']['total'],
-                    'net_pay' => $payroll['salary']['net'],
-                    'meal_overtime_mins' => $payroll['performance']['meal_overtime_mins'],
-                    'break_overtime_mins' => $payroll['performance']['break_overtime_mins'],
-                    'task_performance_pct' => $payroll['performance']['task_performance_pct'],
-                    'performance_score' => $payroll['performance']['performance_score'],
-                    'employee_approved_at' => Carbon::now(),
-                    'status' => 'approved_by_employee'
-                ]
+                // Mismo mapeo que el cálculo nocturno (DesgloseDeNomina): si cada camino
+                // guardara lo suyo, el mismo periodo tendría cifras distintas según quién
+                // lo escribió — el defecto histórico de este proyecto.
+                array_merge(
+                    \App\Support\DesgloseDeNomina::paraGuardar($payroll, $employee),
+                    [
+                        'employee_approved_at' => Carbon::now(),
+                        'status' => 'approved_by_employee',
+                    ]
+                )
             );
 
             return response()->json([

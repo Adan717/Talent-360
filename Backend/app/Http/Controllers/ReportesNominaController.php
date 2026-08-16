@@ -240,6 +240,97 @@ class ReportesNominaController extends Controller
      * `approved_by_employee` (la firma) y `approved_by_admin` (la autorización). El timbrado
      * NO cambia el estado — se detecta por `timbrada_at`, así que se añade aquí.
      */
+    /**
+     * COSTO DE NÓMINA POR PUESTO Y ÁREA.
+     *
+     * Sólo puede salir de recibos que traigan el desglose (guardado desde 2026-08-16). Los
+     * recibos anteriores tienen el neto pero no sus partes: se cuentan aparte y se dicen, en
+     * vez de repartir a ojo un total entre conceptos que no se guardaron.
+     *
+     * Agrupa por el puesto DEL MOMENTO del recibo, no por el de hoy: si alguien cambió de
+     * puesto, su gasto pasado debe seguir contando donde de verdad ocurrió.
+     */
+    public function costoPorPuesto(Request $request)
+    {
+        $tenantId = (int) $request->user()->tenant_id;
+        [$desde, $hasta] = $this->rango($request, 'costo_por_puesto');
+
+        $recibos = DB::table('weekly_payrolls')
+            ->join('employees', 'employees.id', '=', 'weekly_payrolls.employee_id')
+            ->leftJoin('job_roles', 'job_roles.id', '=', 'employees.job_role_id')
+            ->where('weekly_payrolls.tenant_id', $tenantId)
+            ->whereNull('weekly_payrolls.deleted_at')
+            // Sólo lo COMPROMETIDO: un borrador se recalcula cada noche y no es un costo.
+            ->where('weekly_payrolls.status', '!=', 'draft')
+            ->whereBetween('weekly_payrolls.start_date', [$desde, $hasta])
+            ->get([
+                'weekly_payrolls.net_pay', 'weekly_payrolls.deductions', 'weekly_payrolls.base_salary_paid',
+                'weekly_payrolls.gross_pay', 'weekly_payrolls.holiday_bonus_pay',
+                'weekly_payrolls.punctuality_bonus', 'weekly_payrolls.opening_bonus',
+                'weekly_payrolls.deduction_absences', 'weekly_payrolls.deduction_rest_day',
+                'weekly_payrolls.deduction_lates', 'weekly_payrolls.job_role_title_at_time',
+                'weekly_payrolls.job_role_area_at_time', 'job_roles.name as puesto_hoy',
+                'job_roles.area as area_hoy', 'employees.id as employee_id',
+            ]);
+
+        $conDesglose = $recibos->filter(fn ($r) => $r->gross_pay !== null);
+        $sinDesglose = $recibos->filter(fn ($r) => $r->gross_pay === null);
+
+        $filas = [];
+        foreach ([['Puesto', 'puesto'], ['Área', 'area']] as [$etiqueta, $eje]) {
+            $grupos = $conDesglose->groupBy(function ($r) use ($eje) {
+                return $eje === 'puesto'
+                    ? ($r->job_role_title_at_time ?: $r->puesto_hoy ?: 'Sin puesto')
+                    : ($r->job_role_area_at_time ?: $r->area_hoy ?: 'Sin área');
+            });
+
+            foreach ($grupos as $nombre => $lista) {
+                // OJO: la prima de día festivo YA viene sumada dentro del bruto (así la
+                // calcula el motor), así que NO se suma otra vez aquí — se muestra aparte
+                // como informativa. Los bonos que sí se agregan al neto son puntualidad y
+                // apertura: bruto − deducciones + esos bonos = neto. Cuadra, y hay prueba.
+                $bonosDeCumplimiento = $lista->sum('punctuality_bonus') + $lista->sum('opening_bonus');
+                $filas[] = [
+                    $etiqueta, $nombre,
+                    $lista->pluck('employee_id')->unique()->count(),
+                    $lista->count(),
+                    number_format($lista->sum('gross_pay'), 2, '.', ''),
+                    number_format($lista->sum('deduction_absences'), 2, '.', ''),
+                    number_format($lista->sum('deduction_lates'), 2, '.', ''),
+                    number_format($lista->sum('deduction_rest_day'), 2, '.', ''),
+                    number_format($lista->sum('deductions'), 2, '.', ''),
+                    number_format($bonosDeCumplimiento, 2, '.', ''),
+                    number_format($lista->sum('holiday_bonus_pay'), 2, '.', ''),
+                    number_format($lista->sum('net_pay'), 2, '.', ''),
+                    $this->pct((int) round($lista->sum('deductions')), (int) max(1, round($lista->sum('gross_pay')))),
+                ];
+            }
+        }
+
+        // Puesto primero, y dentro de cada eje el más caro arriba.
+        usort($filas, fn ($a, $b) => [$a[0], (float) $b[11]] <=> [$b[0], (float) $a[11]]);
+
+        $notas = [
+            "Periodo del {$desde} al {$hasta} (por la fecha de inicio de cada recibo).",
+            'Sólo cuenta lo COMPROMETIDO: los recibos en borrador se recalculan cada noche y no son un costo todavía.',
+            'Cada recibo cuenta en el puesto y el área que tenía CUANDO se generó: si alguien cambió de puesto después, su gasto pasado no se mueve de lugar.',
+            'El neto no incluye ISR ni IMSS: este sistema no calcula retenciones fiscales. El costo patronal real (cuotas, prestaciones) es mayor que esta cifra.',
+            'La cuenta cuadra así: Sueldo del periodo − Total deducciones + Bonos de cumplimiento = Neto pagado. Las tres deducciones por concepto suman el total.',
+            'La "prima de festivos" se muestra sólo como informativa: YA está incluida dentro del sueldo del periodo, así que NO hay que volver a sumarla.',
+        ];
+        if ($sinDesglose->isNotEmpty()) {
+            $notas[] = 'NOTA: ' . $sinDesglose->count() . ' recibo(s) de este periodo son anteriores al 2026-08-16 y no guardaron el desglose por concepto, así que NO están en estas sumas. Su neto total fue $'
+                . number_format($sinDesglose->sum('net_pay'), 2) . ' — para verlos usa el reporte de Nómina Histórica.';
+        }
+
+        return $this->csv("costo_por_puesto_{$desde}_a_{$hasta}.csv", [
+            'Agrupado por', 'Nombre', 'Personas', 'Recibos', 'Sueldo del periodo',
+            'Descuento por faltas', 'Descuento por retardos', 'Ajuste séptimo día',
+            'Total deducciones', 'Bonos de cumplimiento', 'Prima de festivos (ya en el sueldo)',
+            'Neto pagado', '% deducido',
+        ], $filas, $notas);
+    }
+
     private function estadoDelRecibo(?string $status, $timbradaAt): string
     {
         $base = match ($status) {

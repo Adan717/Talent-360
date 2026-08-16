@@ -132,19 +132,13 @@ class CalculateWeeklyPayrollCommand extends Command
                                 'start_date'  => $weekStart->toDateString(),
                                 'end_date'    => $weekEnd->toDateString(),
                             ],
-                            [
-                                'base_salary_paid'    => $payroll['salary']['base'] ?? 0,
-                                'lates_count'         => $payroll['incidents']['lates'] ?? 0,
-                                'absences_count'      => $payroll['incidents']['total_absences'] ?? 0,
-                                'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'] ?? 0,
-                                'deductions'          => $payroll['deductions_breakdown']['total'] ?? 0,
-                                'net_pay'             => $payroll['salary']['net'] ?? 0,
-                                'meal_overtime_mins'  => $payroll['performance']['meal_overtime_mins'] ?? 0,
-                                'break_overtime_mins' => $payroll['performance']['break_overtime_mins'] ?? 0,
-                                'task_performance_pct' => $payroll['performance']['task_performance_pct'] ?? 0,
-                                'performance_score'   => $payroll['performance']['performance_score'] ?? 0,
-                                'status'              => 'draft',
-                            ]
+                            // 2026-08-16: el mapeo vive en UN solo sitio (DesgloseDeNomina),
+                            // porque los dos puntos que guardan un recibo —éste y la firma
+                            // del colaborador— tienen que guardar exactamente lo mismo.
+                            array_merge(
+                                \App\Support\DesgloseDeNomina::paraGuardar($payroll, $employee),
+                                ['status' => 'draft']
+                            )
                         );
                     });
 

@@ -300,8 +300,23 @@ construir sin esperar la fase A, con una condición: no recalcular nada.
   lo dice en vez de inventarla. Lo que sigue sin poder calcularse honestamente: el índice de
   rotación de esas bajas viejas y la permanencia de quien se fue sin fecha.
 
-**Sigue pendiente**: costo de nómina por puesto/área (necesita el desglose que hoy no se
-guarda: bonos y deducciones por concepto se calculan en memoria y se tiran).
+**Costo por puesto: HECHO (2026-08-16) — son 15 reportes, y con esto la lista queda cerrada.**
+Requería guardar el desglose, y resultó que **el motor ya lo calculaba**: devolvía
+`deductions_breakdown` (faltas / séptimo día / retardos) y `bonus` (puntualidad / apertura)
+completos, pero al guardar sólo se conservaba el TOTAL y el neto — el resto se tiraba. Ahora se
+persiste en `weekly_payrolls` (10 columnas nullable) por los DOS caminos que escriben un
+recibo, con el mapeo en un único sitio (`App\Support\DesgloseDeNomina`): si cada camino
+guardara lo suyo, el mismo periodo tendría cifras distintas según quién lo escribió.
+
+Dos decisiones del reporte: agrupa por el puesto y el área **del momento del recibo** (un
+cambio de puesto no debe mover el gasto pasado de área — por eso el recibo guarda su propio
+snapshot), y los recibos anteriores al desglose **no se reparten a ojo**: quedan fuera de las
+sumas y el CSV dice cuántos son y cuánto valían. Las deducciones por concepto suman el total
+que ya se guardaba: hay prueba que lo exige.
+
+**La lista de reportes está completa.** Lo único que este sistema no puede reportar es lo que
+no calcula: retenciones fiscales (ISR/IMSS) — el "neto" es sueldo menos deducciones internas
+más bonos, y así se declara en cada CSV con dinero.
 
 ## Fuera de la lista, y valen más que la mitad de ella
 

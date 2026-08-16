@@ -688,6 +688,53 @@
         "mes_actual",
         "rango_absoluto"
       ]
+    },
+    {
+      "frase": "cuánto nos cuesta cada puesto",
+      "reportes": [
+        "costo_por_puesto"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "costo de nómina por área este mes",
+      "reportes": [
+        "costo_por_puesto"
+      ],
+      "tipos": [
+        "mes_actual",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "qué área gasta más en sueldos",
+      "reportes": [
+        "costo_por_puesto"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "cuánto perdimos por faltas y retardos",
+      "reportes": [
+        "costo_por_puesto",
+        "retardos"
+      ],
+      "tipos": [
+        "hoy",
+        "mes_actual",
+        "dias_atras",
+        "rango_absoluto"
+      ]
     }
   ]
 }

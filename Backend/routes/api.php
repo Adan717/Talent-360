@@ -418,7 +418,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware(['tenant.module:reportes', 'permission:manage_payroll'])->group(function () {
             // Nómina histórica: trae dinero, así que vive con el resto de la nómina, detrás
             // de `permission:manage_payroll` — NO con los reportes operativos.
-            Route::middleware('throttle:30,1')->get('/admin/reports/nomina_historica.csv', [\App\Http\Controllers\ReportesNominaController::class, 'historica']);
+            Route::middleware('throttle:30,1')->group(function () {
+                Route::get('/admin/reports/nomina_historica.csv', [\App\Http\Controllers\ReportesNominaController::class, 'historica']);
+                Route::get('/admin/reports/costo_por_puesto.csv', [\App\Http\Controllers\ReportesNominaController::class, 'costoPorPuesto']);
+            });
 
             Route::get('/admin/payroll', [PayrollController::class, 'getPayrollData']);
             Route::get('/admin/reports/export', [PayrollController::class, 'exportReport']);

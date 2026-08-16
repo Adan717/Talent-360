@@ -85,7 +85,7 @@ class ReportesRestantesTest extends TestCase
         $this->assertSame(
             ['asistencia', 'retardos', 'horas', 'rutinas', 'tareas', 'justificantes',
              'aperturas', 'comedor', 'academia', 'expedientes', 'reclutamiento', 'monedero',
-             'rotacion', 'nomina_historica'],
+             'rotacion', 'nomina_historica', 'costo_por_puesto'],
             CatalogoDeReportes::ids(),
             'si cambias el catálogo, revisa el prompt del asistente y la pantalla'
         );
@@ -184,6 +184,123 @@ class ReportesRestantesTest extends TestCase
         $totalFirmado = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'TOTAL FIRMADO'));
         $this->assertStringContainsString('1000.00', $totalFirmado);
         $this->assertStringNotContainsString('1999', $totalFirmado);
+    }
+
+    /**
+     * El desglose se guarda por los DOS caminos que escriben un recibo. Si uno lo guardara y
+     * el otro no, el mismo periodo tendría cifras distintas según quién lo escribió.
+     */
+    public function test_el_desglose_se_guarda_al_calcular_y_al_firmar(): void
+    {
+        DB::table('lft_settings')->updateOrInsert(
+            ['tenant_id' => $this->tenant->id],
+            ['late_tolerance_minutes' => 10, 'lates_per_absence' => 3, 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        $payroll = app(\App\Services\ClockService::class)->calculatePayrollForEmployee(
+            $this->expediente, now()->subDays(7)->toDateString(), now()->subDay()->toDateString()
+        );
+        $guardable = \App\Support\DesgloseDeNomina::paraGuardar($payroll, $this->expediente);
+
+        // Las llaves del desglose existen y salen del motor, no de un cálculo paralelo.
+        foreach (['gross_pay', 'holiday_bonus_pay', 'punctuality_bonus', 'opening_bonus',
+                  'deduction_absences', 'deduction_rest_day', 'deduction_lates', 'daily_salary'] as $llave) {
+            $this->assertArrayHasKey($llave, $guardable, "falta el concepto {$llave}");
+        }
+        $this->assertSame($payroll['salary']['gross'], $guardable['gross_pay']);
+        $this->assertSame($payroll['deductions_breakdown']['absences'], $guardable['deduction_absences']);
+        $this->assertSame('Cajero', $guardable['job_role_title_at_time'], 'el puesto queda congelado en el recibo');
+
+        // Y las partes SUMAN el total que ya se guardaba (no es un desglose inventado).
+        $this->assertEqualsWithDelta(
+            $guardable['deductions'],
+            $guardable['deduction_absences'] + $guardable['deduction_rest_day'] + $guardable['deduction_lates'],
+            0.01,
+            'las deducciones por concepto deben sumar el total del recibo'
+        );
+
+        // El colaborador firma: el mismo desglose queda guardado por ese camino.
+        $this->actingAs($this->colaborador)->postJson('/api/v1/me/payroll/approve', [
+            'start_date' => now()->subDays(7)->toDateString(),
+            'end_date' => now()->subDay()->toDateString(),
+        ]);
+        $recibo = DB::table('weekly_payrolls')->where('employee_id', $this->expediente->id)->first();
+        if ($recibo) {
+            $this->assertNotNull($recibo->gross_pay, 'al firmar también se guarda el desglose');
+            $this->assertSame('Cajero', $recibo->job_role_title_at_time);
+        }
+    }
+
+    /** Costo por puesto: cuadra con el neto y separa los recibos sin desglose. */
+    public function test_costo_por_puesto_cuadra_y_declara_los_recibos_viejos(): void
+    {
+        $ini = now()->subDays(20)->startOfWeek();
+
+        DB::table('weekly_payrolls')->insert([
+            // Con desglose (nuevo): entra en las sumas por concepto.
+            ['tenant_id' => $this->tenant->id, 'employee_id' => $this->expediente->id,
+             'start_date' => $ini->toDateString(), 'end_date' => $ini->copy()->addDays(6)->toDateString(),
+             'base_salary_paid' => 3000, 'deductions' => 300, 'net_pay' => 2800,
+             'gross_pay' => 3000, 'deduction_absences' => 200, 'deduction_lates' => 100,
+             'deduction_rest_day' => 0, 'punctuality_bonus' => 100, 'opening_bonus' => 0,
+             'holiday_bonus_pay' => 0, 'daily_salary' => 100,
+             'job_role_title_at_time' => 'Cajero', 'job_role_area_at_time' => 'Piso',
+             'status' => 'approved_by_employee', 'employee_approved_at' => now(),
+             'created_at' => now(), 'updated_at' => now()],
+            // Sin desglose (anterior al 2026-08-16): NO se reparte a ojo, se declara aparte.
+            // Las mismas columnas que la fila de arriba, en null (el insert múltiple lo exige).
+            ['tenant_id' => $this->tenant->id, 'employee_id' => $this->expediente->id,
+             'start_date' => $ini->copy()->addDays(7)->toDateString(), 'end_date' => $ini->copy()->addDays(13)->toDateString(),
+             'base_salary_paid' => 3000, 'deductions' => 500, 'net_pay' => 2500,
+             'gross_pay' => null, 'deduction_absences' => null, 'deduction_lates' => null,
+             'deduction_rest_day' => null, 'punctuality_bonus' => null, 'opening_bonus' => null,
+             'holiday_bonus_pay' => null, 'daily_salary' => null,
+             'job_role_title_at_time' => null, 'job_role_area_at_time' => null,
+             'status' => 'approved_by_employee', 'employee_approved_at' => now(),
+             'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $csv = $this->csv('costo_por_puesto', ['from' => $ini->toDateString(), 'to' => now()->toDateString()]);
+
+        $renglonPuesto = collect(explode("\n", $csv))->first(fn ($l) => str_starts_with($l, 'Puesto,'));
+        $campos = str_getcsv(trim($renglonPuesto));
+
+        $this->assertSame('Cajero', $campos[1]);
+        $this->assertSame('2800.00', $campos[11], 'sólo el recibo CON desglose entra en el neto agrupado');
+        $this->assertSame('200.00', $campos[5], 'descuento por faltas');
+        $this->assertSame('100.00', $campos[6], 'descuento por retardos');
+        $this->assertSame('300.00', $campos[8], 'total de deducciones = la suma de los conceptos');
+
+        // LA CUENTA CUADRA: bruto − deducciones + bonos de cumplimiento = neto. Es lo primero
+        // que va a verificar un contador, y la prima de festivo NO se suma dos veces (ya
+        // viene dentro del bruto: así lo calcula el motor).
+        $bruto = (float) $campos[4];
+        $deducciones = (float) $campos[8];
+        $bonos = (float) $campos[9];
+        $neto = (float) $campos[11];
+        $this->assertEqualsWithDelta($neto, $bruto - $deducciones + $bonos, 0.01,
+            'sueldo − deducciones + bonos debe dar el neto');
+
+        // Agrupa también por área, con el área congelada del recibo.
+        $this->assertStringContainsString('Área,Piso', $csv);
+
+        // Y DECLARA el recibo viejo en vez de repartirlo a ojo.
+        $this->assertStringContainsString('1 recibo(s) de este periodo son anteriores', $csv);
+        $this->assertStringContainsString('2,500.00', $csv, 'dice cuánto quedó fuera');
+        $this->assertStringContainsString('no incluye ISR ni IMSS', $csv);
+    }
+
+    /** El costo por puesto también es dinero: mismo candado que la nómina histórica. */
+    public function test_el_costo_por_puesto_exige_la_capacidad_de_nomina(): void
+    {
+        $supervisor = User::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Sup2', 'email' => 'sup2@rep8qa.test',
+            'password' => bcrypt('x'), 'role' => 'supervisor',
+        ]);
+
+        $this->actingAs($supervisor)->getJson('/api/v1/admin/reports/costo_por_puesto.csv')->assertStatus(403);
+        $this->actingAs($this->admin)->get('/api/v1/admin/reports/costo_por_puesto.csv')->assertOk();
+        $this->assertTrue(CatalogoDeReportes::esDeNomina('costo_por_puesto'));
     }
 
     /** Rotación: cuenta lo que sabe y DECLARA lo que no (las bajas sin fecha). */

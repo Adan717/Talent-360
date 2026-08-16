@@ -84,25 +84,43 @@ trait ArmaReportesCsv
     private const PDF_TOPE_FILAS = 2000;
 
     /**
-     * La descarga: CSV (predeterminado, es lo que Excel abre) o PDF con `?formato=pdf`.
+     * La descarga, en los tres formatos: CSV (predeterminado), `?formato=xlsx` y `?formato=pdf`.
      *
-     * Los dos salen de las MISMAS `$filas`: el PDF no vuelve a consultar nada. En un proyecto
-     * cuya familia de defectos es "dos cifras para el mismo dato", un documento con aire de
-     * oficial —el que acaba en manos de un inspector— es el peor lugar donde dejar que eso
-     * vuelva a pasar.
+     * Los tres salen de las MISMAS `$filas`: ni el Excel ni el PDF vuelven a consultar nada. En
+     * un proyecto cuya familia de defectos es "dos cifras para el mismo dato", el documento que
+     * acaba en manos de un inspector es el peor lugar donde dejar que eso vuelva a pasar.
+     *
+     * `$resumen` es el bloque de otra forma que algunos reportes llevan al final (el resumen
+     * por vacante, los totales por periodo, el conteo de plantilla). En el CSV va debajo, que
+     * es lo único que un CSV permite; en el Excel y en el PDF va aparte — pegado a la tabla
+     * estorba, porque al ordenar o filtrar se revuelve con los datos.
      */
-    private function csv(string $nombre, array $encabezados, array $filas, array $notas = [])
+    private function csv(string $nombre, array $encabezados, array $filas, array $notas = [], ?array $resumen = null)
     {
-        if (request()->query('formato') === 'pdf') {
-            return $this->pdf($nombre, $encabezados, $filas, $notas);
+        $formato = request()->query('formato');
+
+        if ($formato === 'pdf') {
+            return $this->pdf($nombre, $encabezados, $filas, $notas, $resumen);
         }
 
-        return response()->streamDownload(function () use ($encabezados, $filas, $notas) {
+        if ($formato === 'xlsx') {
+            return $this->xlsx($nombre, $encabezados, $filas, $notas, $resumen);
+        }
+
+        return response()->streamDownload(function () use ($encabezados, $filas, $notas, $resumen) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
             fputcsv($salida, $encabezados);
             foreach ($filas as $fila) {
                 fputcsv($salida, array_map([$this, 'celdaSegura'], $fila));
+            }
+            if ($resumen && $resumen['filas']) {
+                fputcsv($salida, []);
+                fputcsv($salida, [$resumen['titulo']]);
+                fputcsv($salida, $resumen['encabezados']);
+                foreach ($resumen['filas'] as $fila) {
+                    fputcsv($salida, array_map([$this, 'celdaSegura'], $fila));
+                }
             }
             if ($notas) {
                 fputcsv($salida, []);
@@ -116,18 +134,40 @@ trait ArmaReportesCsv
     }
 
     /**
+     * El mismo reporte como libro de Excel de verdad: números que son números, fechas que son
+     * fechas, encabezado congelado, filtros puestos, y el resumen y las notas en sus hojas.
+     *
+     * El detalle de por qué importa cada cosa está en `LibroDeReporte`.
+     */
+    private function xlsx(string $nombre, array $encabezados, array $filas, array $notas, ?array $resumen)
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Support\LibroDeReporte($this->tituloDelReporte(), $encabezados, $filas, $notas, $resumen),
+            str_replace('.csv', '.xlsx', $nombre)
+        );
+    }
+
+    /**
+     * El título del catálogo. El id sale de la RUTA (`/admin/reports/<id>.csv`), no del nombre
+     * del archivo: cuatro reportes se descargan con un nombre más largo que su id
+     * ("retardos_y_faltas" para `retardos`), así que partir el nombre daría títulos equivocados
+     * justo en esos.
+     */
+    private function tituloDelReporte(): string
+    {
+        $id = basename(request()->path(), '.csv');
+
+        return CatalogoDeReportes::REPORTES[$id]['titulo'] ?? ucfirst(str_replace('_', ' ', $id));
+    }
+
+    /**
      * El mismo reporte, en documento: para entregar, imprimir o archivar (una inspección, un
      * expediente que se firma). Una sola plantilla para los 15 — el ancho y la orientación
      * salen del número de columnas, así que un reporte nuevo no necesita diseño propio.
      */
-    private function pdf(string $nombre, array $encabezados, array $filas, array $notas)
+    private function pdf(string $nombre, array $encabezados, array $filas, array $notas, ?array $resumen)
     {
-        // El id sale de la RUTA (`/admin/reports/<id>.csv`), no del nombre del archivo: cuatro
-        // reportes se descargan con un nombre más largo que su id ("retardos_y_faltas" para
-        // `retardos`), así que partir el nombre daría títulos equivocados justo en esos.
-        $id = basename(request()->path(), '.csv');
-        $titulo = CatalogoDeReportes::REPORTES[$id]['titulo'] ?? ucfirst(str_replace('_', ' ', $id));
-
+        $titulo = $this->tituloDelReporte();
         $total = count($filas);
         $recortado = $total > self::PDF_TOPE_FILAS;
 
@@ -150,6 +190,11 @@ trait ArmaReportesCsv
                 $recortado ? array_slice($filas, 0, self::PDF_TOPE_FILAS) : $filas
             ),
             'notas' => array_map([$this, 'sinSimbolosRaros'], $notas),
+            'resumen' => ($resumen && $resumen['filas']) ? [
+                'titulo' => $this->sinSimbolosRaros($resumen['titulo']),
+                'encabezados' => array_map([$this, 'sinSimbolosRaros'], $resumen['encabezados']),
+                'filas' => array_map(fn ($f) => array_map([$this, 'sinSimbolosRaros'], $f), $resumen['filas']),
+            ] : null,
             'total' => $total,
             'recortado' => $recortado,
             'tope' => self::PDF_TOPE_FILAS,

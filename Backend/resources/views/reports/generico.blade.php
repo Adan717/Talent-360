@@ -39,6 +39,8 @@
         table.datos tr:nth-child(even) td { background-color: #fafafa; }
         .vacio { padding: 20px; text-align: center; color: #6b7280; font-style: italic; }
         .aviso { margin-top: 12px; padding: 8px 10px; background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; font-weight: bold; }
+        .resumen { margin-top: 18px; page-break-inside: avoid; }
+        .resumen h2 { font-size: {{ $fuente + 2 }}px; color: #111827; margin: 0 0 5px 0; }
         .notas { margin-top: 16px; padding-top: 8px; border-top: 1px solid #e5e7eb; color: #6b7280; }
         .notas h2 { font-size: {{ $fuente + 1 }}px; color: #374151; margin: 0 0 4px 0; }
         .notas li { margin-bottom: 3px; line-height: 1.35; }
@@ -81,6 +83,24 @@
     @else
         {{-- Una hoja en blanco se lee como "falla"; esto dice que sí corrió y no hubo nada. --}}
         <p class="vacio">No hubo registros en este periodo.</p>
+    @endif
+
+    @if ($resumen)
+        {{-- El resumen va DESPUÉS de la tabla y con su propio encabezado, no pegado como más
+             renglones: en la tabla se confundía con los datos y en Excel se revolvía al ordenar. --}}
+        <div class="resumen">
+            <h2>{{ $resumen['titulo'] }}</h2>
+            <table class="datos">
+                <thead>
+                    <tr>@foreach ($resumen['encabezados'] as $e)<th>{{ $e }}</th>@endforeach</tr>
+                </thead>
+                <tbody>
+                    @foreach ($resumen['filas'] as $fila)
+                        <tr>@foreach ($fila as $celda)<td>{{ $celda }}</td>@endforeach</tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
     @endif
 
     @if ($recortado)

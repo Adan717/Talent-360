@@ -15,6 +15,23 @@ type ReporteId = string;
 
 type ReporteDelCatalogo = { id: ReporteId; titulo: string; descripcion: string };
 
+// Los tres formatos son la misma ruta con `?formato=`. Excel es el predeterminado porque es lo
+// que la gente hace con un reporte: trabajarlo. El CSV queda para quien lo va a meter en otro
+// sistema, y el PDF para lo que se entrega o se archiva.
+type Formato = 'xlsx' | 'csv' | 'pdf';
+
+const FORMATOS: { id: Formato; etiqueta: string; ayuda: string }[] = [
+  { id: 'xlsx', etiqueta: 'Excel', ayuda: 'Hoja de cálculo con filtros, el encabezado fijo, y el resumen y las notas en sus propias pestañas' },
+  { id: 'csv',  etiqueta: 'CSV',   ayuda: 'Texto plano, para cargarlo en otro sistema' },
+  { id: 'pdf',  etiqueta: 'PDF',   ayuda: 'Documento para entregar, imprimir o archivar' },
+];
+
+const TIPO_MIME: Record<Formato, string> = {
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv;charset=utf-8',
+  pdf: 'application/pdf',
+};
+
 // Sólo el adorno vive en el cliente; si llega un reporte nuevo, se pinta con el ícono neutro.
 const ADORNO: Record<string, { color: string; Icono: any }> = {
   asistencia:    { color: 'bg-blue-50 text-blue-600',     Icono: Table },
@@ -144,23 +161,21 @@ export default function ReportesManager() {
     }
   };
 
-  // Los dos CSV de la pestaña básica. Los botones existían SIN onClick: no bajaban nada
-  // y tampoco avisaban de nada.
+  // Los botones existían SIN onClick: no bajaban nada y tampoco avisaban de nada.
   //
-  // El PDF es la MISMA ruta con `?formato=pdf`: el servidor arma los dos del mismo arreglo de
-  // filas, así que el documento que se entrega no puede decir algo distinto al Excel.
-  const handleDescargar = async (reporte: ReporteId, formato: 'csv' | 'pdf' = 'csv', rango?: { from: string; to: string }) => {
+  // Los tres formatos son la MISMA ruta con `?formato=`: el servidor los arma del mismo arreglo
+  // de filas, así que el documento que se entrega no puede decir algo distinto al Excel.
+  const handleDescargar = async (reporte: ReporteId, formato: Formato = 'xlsx', rango?: { from: string; to: string }) => {
     setDescargando(`${reporte}:${formato}`);
     try {
       const query = new URLSearchParams(rango ? { from: rango.from, to: rango.to } : {});
-      if (formato === 'pdf') query.set('formato', 'pdf');
+      if (formato !== 'csv') query.set('formato', formato);
       const qs = query.toString();
       const res = await axiosInstance.get(`/admin/reports/${reporte}.csv${qs ? `?${qs}` : ''}`, { responseType: 'blob' });
       // El archivo se nombra con el PERIODO que contiene (ronda adversarial: con rango, el
       // nombre decía el día de la descarga y mentía sobre el contenido).
       const sufijo = rango ? (rango.from === rango.to ? rango.from : `${rango.from}_a_${rango.to}`) : new Date().toISOString().slice(0, 10);
-      const tipo = formato === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8';
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: tipo }));
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: TIPO_MIME[formato] }));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `${reporte}_${sufijo}.${formato}`);
@@ -338,20 +353,23 @@ export default function ReportesManager() {
                         <input type="date" value={propuesta.hasta} onChange={e => setPropuesta({ ...propuesta, hasta: e.target.value, etiqueta: '' })} className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
                       </div>
                       <button
-                        onClick={() => handleDescargar(propuesta.reporte, 'pdf', { from: propuesta.desde, to: propuesta.hasta })}
-                        disabled={!!descargando}
-                        title="Para entregar, imprimir o archivar"
-                        className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2"
-                      >
-                        <FileText size={15} /> {descargando === `${propuesta.reporte}:pdf` ? 'Generando…' : 'PDF'}
-                      </button>
-                      <button
-                        onClick={() => handleDescargar(propuesta.reporte, 'csv', { from: propuesta.desde, to: propuesta.hasta })}
+                        onClick={() => handleDescargar(propuesta.reporte, 'xlsx', { from: propuesta.desde, to: propuesta.hasta })}
                         disabled={!!descargando}
                         className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
                       >
-                        <Download size={15} /> {descargando === `${propuesta.reporte}:csv` ? 'Generando…' : 'Descargar CSV'}
+                        <Download size={15} /> {descargando === `${propuesta.reporte}:xlsx` ? 'Generando…' : 'Descargar Excel'}
                       </button>
+                      {FORMATOS.filter(f => f.id !== 'xlsx').map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => handleDescargar(propuesta.reporte, f.id, { from: propuesta.desde, to: propuesta.hasta })}
+                          disabled={!!descargando}
+                          title={f.ayuda}
+                          className="px-3 py-2 bg-white border border-slate-300 text-slate-600 font-bold rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {descargando === `${propuesta.reporte}:${f.id}` ? '…' : f.etiqueta}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -376,24 +394,28 @@ export default function ReportesManager() {
                     <p className="text-sm text-slate-500 mt-1 leading-relaxed">{descripcion}</p>
                   </div>
                 </div>
-                {/* Dos formatos, un mismo contenido: el CSV para trabajar los números, el PDF
-                    para entregar o archivar (una inspección, un expediente que se firma). */}
+                {/* Tres formatos, un mismo contenido: Excel para trabajarlo, CSV para cargarlo
+                    en otro sistema, PDF para entregar o archivar. */}
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => handleDescargar(id, 'csv')}
+                    onClick={() => handleDescargar(id, 'xlsx')}
                     disabled={!!descargando}
+                    title={FORMATOS[0].ayuda}
                     className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
                   >
-                    <Download size={16} /> {descargando === `${id}:csv` ? 'Generando…' : 'Descargar CSV'}
+                    <Download size={16} /> {descargando === `${id}:xlsx` ? 'Generando…' : 'Descargar Excel'}
                   </button>
-                  <button
-                    onClick={() => handleDescargar(id, 'pdf')}
-                    disabled={!!descargando}
-                    title="El mismo reporte en documento, para entregar o archivar"
-                    className="px-3 py-2 bg-white border border-slate-200 text-slate-500 font-medium rounded-lg hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center gap-2 text-sm transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    <FileText size={16} /> {descargando === `${id}:pdf` ? '…' : 'PDF'}
-                  </button>
+                  {FORMATOS.filter(f => f.id !== 'xlsx').map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => handleDescargar(id, f.id)}
+                      disabled={!!descargando}
+                      title={f.ayuda}
+                      className="px-3 py-2 bg-white border border-slate-200 text-slate-500 font-medium rounded-lg hover:bg-slate-50 hover:text-slate-700 text-sm transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      {descargando === `${id}:${f.id}` ? '…' : f.etiqueta}
+                    </button>
+                  ))}
                 </div>
               </div>
               );

@@ -476,10 +476,9 @@ Reglas del examen:
 
 **Pestaña "Reportes Operativos" — los 15 reportes**
 
-Cada uno baja en **dos formatos**, con el mismo contenido: **CSV** (el que Excel abre, con los
-acentos correctos) para trabajar los números, y **PDF** para entregar, imprimir o archivar.
-Todos explican sus reglas al pie del propio archivo y ninguno acepta más de 92 días por
-descarga. Los marcados con 🔒 traen dinero y exigen la capacidad de nómina.
+Cada uno baja en **tres formatos**, con el mismo contenido: **Excel** (`.xlsx` de verdad),
+**CSV** y **PDF**. Todos explican sus reglas dentro del propio archivo y ninguno acepta más de
+92 días por descarga. Los marcados con 🔒 traen dinero y exigen la capacidad de nómina.
 
 | Reporte | Qué contesta |
 |---|---|
@@ -507,14 +506,25 @@ descarga. Los marcados con 🔒 traen dinero y exigen la capacidad de nómina.
 
 **Cómo se descarga cualquiera de ellos**
 
-Cada reporte es una tarjeta con dos botones: **"Descargar CSV"** y **"PDF"**. Todos traen un
-periodo por defecto sensato (el que más se pide), y el asistente por frase permite pedir otro.
+Cada reporte es una tarjeta con **"Descargar Excel"** y, al lado, **"CSV"** y **"PDF"**. Todos
+traen un periodo por defecto sensato (el que más se pide), y el asistente por frase permite
+pedir otro.
 
-**Cuál de los dos formatos usar**
-- **CSV** cuando vas a *trabajar* el reporte: filtrar, ordenar, sumar, pegarlo en otra hoja. Es el formato principal y el único que sirve para periodos largos.
-- **PDF** cuando vas a *entregarlo o archivarlo*: enseñárselo a un inspector, imprimirlo para firmarlo, adjuntarlo a un correo, guardarlo como constancia. Trae portada con el nombre de la empresa, el periodo, quién lo generó y cuándo, número de página, y las mismas notas al pie.
-- **Los dos salen de las mismas cifras.** El PDF no vuelve a consultar nada: se arma con los renglones que produce el CSV, así que el documento que entregas no puede decir algo distinto al Excel que revisaste.
-- **El PDF se topa en 2,000 renglones** y lo dice en el propio documento cuando pasa (no recorta callado). Arriba de eso, acota las fechas o usa el CSV: un PDF de miles de renglones no se lee ni se entrega, y tardaría en generarse.
+**Cuál de los tres usar**
+- **Excel** es el predeterminado y el que quieres casi siempre. Es un `.xlsx` de verdad, no un CSV renombrado: el encabezado queda **fijo al desplazarte**, las columnas traen **filtros** puestos y salen ya al ancho de su contenido, y —lo importante— **los números son números y las fechas son fechas**, así que puedes sumar una columna o filtrar "sólo julio" sin pelearte con el archivo.
+- **CSV** cuando vas a **cargarlo en otro sistema** (tu contador, otro programa). Es texto plano.
+- **PDF** cuando vas a **entregarlo o archivarlo**: enseñárselo a un inspector, imprimirlo para firmarlo, adjuntarlo a un correo. Trae portada con la empresa, el periodo, quién lo generó y cuándo, y número de página.
+
+**Tres cosas que conviene saber**
+- **Los tres salen de las mismas cifras.** Ni el Excel ni el PDF vuelven a consultar nada: se arman con los mismos renglones. El documento que entregas no puede decir algo distinto al Excel que revisaste.
+- **En el Excel, el resumen y las notas van en sus propias pestañas.** En el CSV van pegados debajo de la tabla (es lo único que un CSV permite), y ahí estorban: si ordenas o filtras los datos, esos renglones se revuelven con ellos. Por ejemplo, Nómina Histórica abre con la hoja de recibos, y en otra pestaña los *Totales por periodo*.
+- **El PDF se topa en 2,000 renglones** y lo dice en el propio documento cuando pasa (no recorta callado). Arriba de eso, acota las fechas o usa Excel: un PDF de miles de renglones no se lee ni se entrega.
+
+**Por qué el Excel y no el CSV de siempre.** Un CSV es texto, y Excel adivina qué es cada cosa
+**según el idioma de quien lo abre**. En un Excel en español, donde el separador decimal es la
+coma, un neto de `13125.00` se puede leer como trece millones. En el `.xlsx` no hay nada que
+adivinar: el número se guarda como número. Lo mismo con las fechas (para filtrar por mes) y con
+los porcentajes (como texto, ordenar pone "100%" antes que "80%").
 
 **Qué trae cada uno**
 
@@ -547,7 +557,7 @@ periodo por defecto sensato (el que más se pide), y el asistente por frase perm
 
 Solo aparece si la instancia tiene configurada la llave de OpenAI; si no, quedan las tarjetas.
 
-- Cómo se usa: escribe (o dicta) la frase, máximo 300 caracteres → **"Interpretar"** → el sistema dice qué entendió y **llena las fechas** → revisas y corriges si hace falta → **"Descargar CSV"** o **"PDF"**.
+- Cómo se usa: escribe (o dicta) la frase, máximo 300 caracteres → **"Interpretar"** → el sistema dice qué entendió y **llena las fechas** → revisas y corriges si hace falta → **"Descargar Excel"** (o CSV, o PDF).
 - **Nunca descarga solo**: únicamente llena el formulario; la descarga la confirmas tú.
 - Entiende periodos: hoy, ayer, últimos N días, la semana en curso o pasada, "la semana 32", el mes en curso o pasado, un mes por su nombre ("julio", "diciembre" — siempre el más reciente ya ocurrido) y rangos de fechas. Las semanas usan el **día de inicio configurado por tu empresa**.
 - Sabe elegir entre los **15**. Ejemplos reales: *"quién llega tarde seguido este mes"* → Retardos y Faltas · *"quién abrió la tienda tarde la semana pasada"* → Aperturas · *"a quién le falta la inducción"* → Inducción · *"cómo va el reclutamiento"* → Embudo · *"cuánto pagamos de nómina en julio"* → Nómina Histórica · *"qué área gasta más en sueldos"* → Costo por Puesto.

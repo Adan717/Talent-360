@@ -120,6 +120,135 @@ class ReportesRestantesTest extends TestCase
     }
 
     /**
+     * Los mismos 15, en Excel de verdad. Igual que con el PDF, lo que puede romperse es que uno
+     * reviente al escribirse y nadie se entere hasta que el dueño lo intenta.
+     */
+    public function test_todo_reporte_del_catalogo_tambien_sale_en_xlsx(): void
+    {
+        foreach (CatalogoDeReportes::ids() as $id) {
+            $res = $this->actingAs($this->admin)->get("/api/v1/admin/reports/{$id}.csv?formato=xlsx");
+
+            $res->assertOk("el reporte '{$id}' no se pudo generar en Excel");
+            $this->assertStringContainsString('.xlsx', $res->headers->get('content-disposition') ?? '');
+            // Un xlsx es un zip: sin esto, un CSV renombrado pasaría la prueba.
+            $this->assertStringStartsWith('PK', $this->contenido($res), "'{$id}' no devolvió un .xlsx real");
+        }
+    }
+
+    /**
+     * Lo que hace que valga la pena el .xlsx y no un CSV renombrado:
+     *  - un número es un número (en un CSV, "13125.00" abierto en un Excel en español, donde la
+     *    coma es el separador decimal, se puede leer como trece millones);
+     *  - una fecha es una fecha, para poder filtrar por mes;
+     *  - un porcentaje ordena por su valor y no como texto ("100%" antes que "80%");
+     *  - y un nombre que empiece con "=" NUNCA es una fórmula.
+     */
+    public function test_el_xlsx_escribe_tipos_de_verdad_y_no_formulas(): void
+    {
+        // Un colaborador controla su propio nombre: es el vector de inyección de fórmulas.
+        $malicioso = User::create([
+            'tenant_id' => $this->tenant->id, 'name' => '=HYPERLINK("http://malo","clic")',
+            'email' => 'malo@rep8qa.test', 'password' => bcrypt('x'), 'role' => 'empleado',
+        ]);
+        Employee::create([
+            'tenant_id' => $this->tenant->id, 'user_id' => $malicioso->id,
+            'name' => '=HYPERLINK("http://malo","clic")', 'is_active_employee' => true,
+            'hire_date' => now()->subDays(5)->toDateString(), 'salary' => 1000,
+        ]);
+
+        $res = $this->actingAs($this->admin)->get('/api/v1/admin/reports/rotacion.csv?formato=xlsx');
+        $hoja = $this->primeraHoja($this->contenido($res));
+
+        $this->assertNotNull($hoja, 'no se pudo leer la hoja del Excel');
+
+        // Ni una sola celda quedó como fórmula.
+        $this->assertStringNotContainsString('<f>', $hoja, 'el Excel guardó una FÓRMULA: el nombre de un colaborador se ejecutaría al abrirlo');
+        // Y tampoco se ensució el dato con el apóstrofo que sí necesita el CSV.
+        $this->assertStringNotContainsString("'=HYPERLINK", $hoja);
+
+        // La fecha de ingreso quedó como número de serie con formato de fecha, no como texto:
+        // una fecha en texto no se puede filtrar por mes ni ordenar bien.
+        $this->assertMatchesRegularExpression(
+            '/<c [^>]*s="\d+"[^>]*>\s*<v>\d{5}(\.\d+)?<\/v>/',
+            $hoja,
+            'las fechas se guardaron como texto: no se podrán filtrar por mes'
+        );
+    }
+
+    /**
+     * El resumen y las notas dejan de vivir DENTRO de la tabla.
+     *
+     * Pegados abajo, ordenar o filtrar los datos los revuelve con los renglones — y en Nómina
+     * Histórica eso significa un renglón "TOTAL FIRMADO" perdido entre los recibos.
+     */
+    public function test_el_xlsx_pone_el_resumen_y_las_notas_en_sus_propias_hojas(): void
+    {
+        $res = $this->actingAs($this->admin)->get('/api/v1/admin/reports/rotacion.csv?formato=xlsx');
+        $hojas = $this->nombresDeHojas($this->contenido($res));
+
+        $this->assertContains('Resumen de plantilla', $hojas);
+        $this->assertContains('Cómo leer este reporte', $hojas);
+
+        // Y el resumen ya NO está en la hoja de datos.
+        $datos = $this->textoDeLaPrimeraHoja($this->contenido($res));
+        $this->assertStringContainsString('Colaborador', $datos, 'la hoja de datos no trae ni su encabezado');
+        $this->assertStringNotContainsString('Plantilla activa hoy', $datos, 'el resumen sigue pegado a la tabla de datos');
+        $this->assertStringNotContainsString('Cómo leer', $datos, 'las notas siguen pegadas a la tabla de datos');
+    }
+
+    private function contenido($res): string
+    {
+        // Excel::download devuelve un archivo en disco, no un cuerpo en memoria.
+        return $res->baseResponse instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse
+            ? file_get_contents($res->baseResponse->getFile()->getPathname())
+            : $res->getContent();
+    }
+
+    /** Un .xlsx es un zip: se abre y se leen sus XML. */
+    private function abre(string $xlsx, string $ruta): ?string
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
+        file_put_contents($tmp, $xlsx);
+        $zip = new \ZipArchive();
+        $contenido = $zip->open($tmp) === true ? ($zip->getFromName($ruta) ?: null) : null;
+        $zip->close();
+        @unlink($tmp);
+
+        return $contenido;
+    }
+
+    /** El XML crudo de la hoja 1 (para mirar tipos y fórmulas). */
+    private function primeraHoja(string $xlsx): ?string
+    {
+        return $this->abre($xlsx, 'xl/worksheets/sheet1.xml');
+    }
+
+    /**
+     * El TEXTO de la hoja 1, resolviendo la tabla de cadenas compartidas.
+     *
+     * Hace falta resolverla: `sharedStrings.xml` es de TODO el libro, así que buscar ahí una
+     * frase encuentra también las de las otras hojas — con eso, "el resumen ya no está en la
+     * tabla de datos" pasaba siempre, midiera lo que midiera.
+     */
+    private function textoDeLaPrimeraHoja(string $xlsx): string
+    {
+        preg_match_all('/<si>(.*?)<\/si>/s', (string) $this->abre($xlsx, 'xl/sharedStrings.xml'), $cadenas);
+        $tabla = array_map(fn ($si) => html_entity_decode(strip_tags($si), ENT_QUOTES | ENT_XML1, 'UTF-8'), $cadenas[1]);
+
+        $hoja = (string) $this->primeraHoja($xlsx);
+        preg_match_all('/<c [^>]*t="s"[^>]*>\s*<v>(\d+)<\/v>/', $hoja, $indices);
+
+        return implode(' | ', array_map(fn ($i) => $tabla[(int) $i] ?? '', $indices[1]));
+    }
+
+    private function nombresDeHojas(string $xlsx): array
+    {
+        preg_match_all('/<sheet [^>]*name="([^"]+)"/', (string) $this->abre($xlsx, 'xl/workbook.xml'), $m);
+
+        return array_map(fn ($n) => html_entity_decode($n, ENT_QUOTES | ENT_XML1, 'UTF-8'), $m[1]);
+    }
+
+    /**
      * El encabezado del documento: empresa, periodo y quién lo generó.
      *
      * Es lo que separa un PDF de una hoja impresa cualquiera — sin eso no sirve como evidencia
@@ -237,7 +366,8 @@ class ReportesRestantesTest extends TestCase
         // añade al estado, porque un contador necesita verlo de un vistazo.
         $this->assertSame('Firmado por el colaborador · timbrado', $campos[9]);
         $this->assertSame('ABC-123-UUID', $campos[13], 'el folio fiscal viaja en el reporte');
-        $this->assertStringContainsString('TOTAL FIRMADO DEL PERIODO', $csv);
+        $this->assertStringContainsString('Totales por periodo', $csv);
+        $this->assertStringContainsString('FIRMADO (dinero comprometido)', $csv);
         $this->assertStringContainsString('NO incluye ISR, IMSS', $csv, 'no puede parecer un neto fiscal');
         $this->assertStringContainsString('NO vuelve a calcular', $csv, 'el CSV declara que no recalcula');
     }
@@ -264,10 +394,10 @@ class ReportesRestantesTest extends TestCase
 
         $csv = $this->csv('nomina_historica', ['from' => $ini->copy()->subDays(14)->toDateString(), 'to' => now()->toDateString()]);
 
-        $this->assertStringContainsString('BORRADORES (NO son dinero comprometido)', $csv);
+        $this->assertStringContainsString('BORRADOR (NO es dinero comprometido)', $csv);
         $this->assertStringContainsString('Borrador (por firmar)', $csv);
         // El total firmado no incluye el borrador de 999.
-        $totalFirmado = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'TOTAL FIRMADO'));
+        $totalFirmado = collect(explode("\n", $csv))->first(fn ($l) => str_contains($l, 'FIRMADO (dinero comprometido)'));
         $this->assertStringContainsString('1000.00', $totalFirmado);
         $this->assertStringNotContainsString('1999', $totalFirmado);
     }
@@ -596,9 +726,11 @@ class ReportesRestantesTest extends TestCase
         $csv = $this->csv('reclutamiento');
 
         $this->assertStringContainsString('5. Contratado', $csv);
-        $this->assertStringContainsString('Contratados: 1', $csv);
-        $this->assertStringContainsString('Rechazados: 1', $csv);
-        $this->assertStringContainsString('En proceso: 1', $csv);
+        // El resumen por vacante ya no va apretado como texto dentro de una celda de la tabla:
+        // cada conteo es su columna (vacante, candidatos, contratados, rechazados, en proceso).
+        $this->assertStringContainsString('Vacante,Candidatos,Contratados,Rechazados,"En proceso"', $csv);
+        $renglon = collect(explode("\n", $csv))->first(fn ($l) => str_starts_with($l, '"Cajero de fin de semana",'));
+        $this->assertSame('"Cajero de fin de semana",3,1,1,1', trim($renglon));
         // Honestidad: el sistema no guarda cuándo cambió de etapa.
         $this->assertStringContainsString('no puede decir cuánto tardó en cada una', $csv);
     }

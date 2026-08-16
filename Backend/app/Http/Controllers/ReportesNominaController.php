@@ -82,10 +82,15 @@ class ReportesNominaController extends Controller
         }
 
         // Totales por periodo, SEPARANDO lo comprometido de lo que aún es borrador.
+        //
+        // Con SUS columnas, no rellenados hasta las 15 de la tabla de arriba: así el Excel los
+        // pone en su propia hoja y ordenar los recibos deja de revolverlos con los totales.
         $totales = [];
         foreach ($firmados->groupBy(fn ($r) => $r->start_date . ' → ' . $r->end_date) as $periodo => $lista) {
             $totales[] = [
-                '', $periodo, 'TOTAL FIRMADO DEL PERIODO', $lista->count() . ' colaboradores',
+                $periodo,
+                'FIRMADO (dinero comprometido)',
+                $lista->count(),
                 number_format($lista->sum('base_salary_paid'), 2, '.', ''),
                 $lista->sum('lates_count'),
                 $lista->sum('absences_count'),
@@ -93,14 +98,16 @@ class ReportesNominaController extends Controller
                 number_format($lista->sum('net_pay'), 2, '.', ''),
                 $lista->whereNotNull('admin_approved_at')->count() . ' autorizados · '
                     . $lista->whereNotNull('timbrada_at')->count() . ' timbrados',
-                '', '', '', '', '',
             ];
         }
         if ($borradores->isNotEmpty()) {
             $totales[] = [
-                '', '', 'BORRADORES (NO son dinero comprometido)', $borradores->count() . ' recibos',
-                '', '', '', '', number_format($borradores->sum('net_pay'), 2, '.', ''),
-                'Se recalculan solos hasta que el colaborador firma', '', '', '', '', '',
+                'Todos los periodos',
+                'BORRADOR (NO es dinero comprometido)',
+                $borradores->count(),
+                '', '', '', '',
+                number_format($borradores->sum('net_pay'), 2, '.', ''),
+                'Se recalculan solos hasta que el colaborador firma',
             ];
         }
 
@@ -136,7 +143,14 @@ class ReportesNominaController extends Controller
             'Periodo inicia', 'Periodo termina', 'Colaborador', 'Puesto', 'Sueldo del periodo',
             'Retardos', 'Faltas', 'Deducciones', 'Neto del recibo (sin ISR/IMSS)', 'Estado del recibo',
             'Firmado por el colaborador', 'Autorizado el', 'Autorizó', 'Folio fiscal (UUID)', 'Timbrado el',
-        ], array_merge($filas, [[]], $totales), $notas);
+        ], $filas, $notas, [
+            'titulo' => 'Totales por periodo',
+            'encabezados' => [
+                'Periodo', 'Situación', 'Recibos', 'Sueldo del periodo', 'Retardos', 'Faltas',
+                'Deducciones', 'Neto (sin ISR/IMSS)', 'Avance',
+            ],
+            'filas' => $totales,
+        ]);
     }
 
     /**
@@ -213,9 +227,8 @@ class ReportesNominaController extends Controller
 
         $antiguedadPromedio = $antiguedades ? $this->enMeses((int) round(array_sum($antiguedades) / count($antiguedades))) : '—';
 
+        // Dos columnas de verdad, no siete vacías de relleno para que cupieran en la tabla.
         $resumen = [
-            [],
-            ['RESUMEN'],
             ['Plantilla activa hoy', $activos],
             ["Altas entre {$desde} y {$hasta}", $altasEnPeriodo],
             ['Antigüedad promedio de la plantilla activa', $antiguedadPromedio],
@@ -226,12 +239,16 @@ class ReportesNominaController extends Controller
         return $this->csv("rotacion_{$desde}_a_{$hasta}.csv", [
             'Colaborador', 'Puesto', 'Fecha de ingreso', 'Situación', 'Fecha de baja',
             'Motivo de la baja', 'Permanencia', '¿Archivado?',
-        ], array_merge($filas, array_map(fn ($r) => array_pad($r, 8, ''), $resumen)), [
+        ], $filas, [
             "Altas contadas entre {$desde} y {$hasta}; la plantilla y la antigüedad son de HOY.",
             'Hasta el 2026-08-16 el sistema no registraba la fecha de baja: por eso hay bajas "sin fecha". De esa fecha en adelante, cada baja queda con su día y su motivo, y entonces sí se podrá calcular el índice de rotación del periodo.',
             'La permanencia de quien sigue activo se cuenta hasta hoy; la de quien se fue, hasta su fecha de baja (si la tiene).',
             'Las fechas de ingreso de altas muy viejas se rellenaron con la fecha en que se creó el registro: pueden no ser exactas.',
             'Un reingreso limpia la baja anterior: la persona cuenta como activa desde su recontratación.',
+        ], [
+            'titulo' => 'Resumen de plantilla',
+            'encabezados' => ['Indicador', 'Valor'],
+            'filas' => $resumen,
         ]);
     }
 

@@ -200,28 +200,35 @@ class ReportesPersonasController extends Controller
             ];
         }
 
-        // Resumen por vacante al final del mismo archivo: es lo que se mira primero.
+        // Resumen por vacante: es lo que se mira primero.
+        //
+        // Antes iba pegado al final de la misma tabla, con el nombre de la vacante metido en la
+        // columna "Candidato" y los cuatro conteos apretados como texto dentro de "Etapa actual".
+        // Ahora cada conteo es su columna: se puede sumar y ordenar, y en Excel va en su hoja.
         $resumen = collect($candidatos)->groupBy(fn ($c) => $c->vacante ?: 'Sin vacante ligada');
         $filasResumen = [];
         foreach ($resumen as $vacante => $lista) {
             $filasResumen[] = [
-                '', "RESUMEN · {$vacante}", '', '',
-                'Total: ' . $lista->count()
-                . ' · Contratados: ' . $lista->where('status', 'hired')->count()
-                . ' · Rechazados: ' . $lista->where('status', 'rejected')->count()
-                . ' · En proceso: ' . $lista->whereNotIn('status', ['hired', 'rejected'])->count(),
-                '', '', '',
+                $vacante,
+                $lista->count(),
+                $lista->where('status', 'hired')->count(),
+                $lista->where('status', 'rejected')->count(),
+                $lista->whereNotIn('status', ['hired', 'rejected'])->count(),
             ];
         }
 
         return $this->csv("reclutamiento_{$desde}_a_{$hasta}.csv", [
             'Se postuló', 'Candidato', 'Vacante', 'Puesto', 'Etapa actual',
             'Antecedente', 'Evaluación de postulación', 'Último movimiento',
-        ], array_merge($filas, [[]], $filasResumen), [
+        ], $filas, [
             "Periodo del {$desde} al {$hasta} (por fecha de postulación).",
             'El sistema NO guarda cuándo cambió cada candidato de etapa, así que este reporte no puede decir cuánto tardó en cada una: sólo su etapa actual y la fecha de su último movimiento.',
             'La "evaluación de postulación" es el filtro previo a contratar; la inducción es de Academia y ocurre ya contratado.',
             '"Ya trabajó aquí" lo marca el sistema al reconocer el correo de un ex-colaborador.',
+        ], [
+            'titulo' => 'Resumen por vacante',
+            'encabezados' => ['Vacante', 'Candidatos', 'Contratados', 'Rechazados', 'En proceso'],
+            'filas' => $filasResumen,
         ]);
     }
 

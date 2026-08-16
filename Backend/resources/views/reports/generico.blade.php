@@ -7,12 +7,14 @@
     por su cuenta, así que no puede decir una cifra distinta a la del Excel del mismo día.
 --}}
 @php
-    // El ancho manda sobre el tamaño de letra: 14 columnas en carta horizontal no caben a 10px.
-    // Pero con SUELO: por debajo de ~8px dompdf imprime a menos de 6 puntos y el documento deja
-    // de poder leerse en papel, que es justo para lo que existe. Antes que achicar más, la tabla
-    // parte palabras y crece a lo alto — un renglón de dos líneas se lee; uno de 5 puntos no.
+    // El ancho manda sobre el tamaño de letra, pero con SUELO. Ojo con la unidad: dompdf
+    // imprime 1px = 0.75pt, así que "9px" son 6.75 PUNTOS en el papel — la letra chica de un
+    // contrato. Por debajo de eso el documento deja de poder leerse impreso, que es justo para
+    // lo que existe. Antes que achicar más, la tabla parte palabras y crece a lo alto: un
+    // renglón de dos líneas se lee, uno de 5 puntos no. En horizontal caben 729pt de ancho, así
+    // que 12 columnas salen a ~61pt cada una y a 7pt de letra entran unos 17 caracteres.
     $cols = count($encabezados);
-    $fuente = $cols > 11 ? 8 : ($cols > 8 ? 8.5 : ($cols > 6 ? 9 : 10.5));
+    $fuente = $cols > 11 ? 9.5 : ($cols > 8 ? 10 : ($cols > 6 ? 10.5 : 12));
 
     // El periodo ya subió al encabezado: repetirlo abajo es ruido en un documento impreso.
     $notasAlPie = ($periodo && $notas && str_starts_with($notas[0], 'Periodo del'))
@@ -41,8 +43,12 @@
         .notas h2 { font-size: {{ $fuente + 1 }}px; color: #374151; margin: 0 0 4px 0; }
         .notas li { margin-bottom: 3px; line-height: 1.35; }
         .pie { position: fixed; bottom: -1cm; left: 0; right: 0; font-size: {{ $fuente - 1 }}px; color: #9ca3af; }
-        /* Un documento archivado sin folio de página no se puede citar ni verificar completo. */
-        .pie .pagina:after { content: counter(page) " de " counter(pages); }
+        /* Un documento archivado sin folio de página no se puede citar.
+           ponytail: sólo el número, sin "de N": dompdf no conoce el total al pintar un elemento
+           fijo y `counter(pages)` sale 0 — el pie decía "pág. 1 de 0", que miente. Para saber si
+           falta una hoja está el conteo de renglones del encabezado. Si algún día hace falta el
+           "de N", se hace con `getCanvas()->page_text()` y su marcador {PAGE_COUNT}. */
+        .pie .pagina:after { content: counter(page); }
     </style>
 </head>
 <body>

@@ -111,6 +111,46 @@ class ReportesRestantesTest extends TestCase
     }
 
     /**
+     * El encabezado del documento: empresa, periodo y quién lo generó.
+     *
+     * Es lo que separa un PDF de una hoja impresa cualquiera — sin eso no sirve como evidencia
+     * ni se puede archivar. Y es lo que se rompió en la primera versión: el periodo se sacaba
+     * leyendo la primera nota del reporte, así que Rotación (que abre con "Altas contadas
+     * entre…") salía sin fecha. Sólo se ve leyendo el PDF por dentro, no mirando el 200.
+     */
+    public function test_el_pdf_lleva_empresa_periodo_y_quien_lo_genero(): void
+    {
+        // Rotación es justo el que no anuncia su periodo con la frase de siempre.
+        $res = $this->actingAs($this->admin)->get('/api/v1/admin/reports/rotacion.csv?formato=pdf');
+        $texto = $this->textoDelPdf($res->getContent());
+
+        $this->assertStringContainsString('Rotación de Personal', $texto);
+        $this->assertStringContainsString('Reportes 8 QA', $texto, 'el documento no dice de qué empresa es');
+        $this->assertStringContainsString('Periodo del ' . now()->subDays(89)->toDateString(), $texto, 'el documento no dice qué periodo cubre');
+        $this->assertStringContainsString('Jefa', $texto, 'el documento no dice quién lo generó');
+        // El pie decía "pág. 1 de 0": dompdf no conoce el total al pintar un elemento fijo.
+        $this->assertStringNotContainsString('de 0', $texto, 'el pie está imprimiendo un total de páginas falso');
+    }
+
+    /** El texto de un PDF de dompdf: los flujos van comprimidos y el texto en operadores TJ. */
+    private function textoDelPdf(string $pdf): string
+    {
+        $texto = '';
+        preg_match_all('/stream\r?\n(.*?)endstream/s', $pdf, $flujos);
+        foreach ($flujos[1] as $flujo) {
+            $crudo = @gzuncompress($flujo);
+            if ($crudo === false) {
+                continue;
+            }
+            preg_match_all('/\[\((.*?)\)\]\s*TJ/s', $crudo, $piezas);
+            $texto .= implode(' ', $piezas[1]) . ' ';
+        }
+
+        // El PDF guarda el texto en WinAnsi, así que "Rotación" vuelve con la ó en un byte.
+        return mb_convert_encoding($texto, 'UTF-8', 'Windows-1252');
+    }
+
+    /**
      * `formato=pdf` NO puede ser una puerta de atrás: es la MISMA ruta, así que estructuralmente
      * no lo es, pero un candado de dinero se prueba, no se razona.
      */

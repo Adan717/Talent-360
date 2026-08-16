@@ -55,7 +55,9 @@ class ReportesBasicosController extends Controller
             ], 422));
         }
 
-        return [$desde, $hasta];
+        // Lo mismo que hace `rango()` del trait: dejar dicho qué periodo se entregó, para que
+        // el encabezado del PDF lo imprima.
+        return $this->rangoEntregado = [$desde, $hasta];
     }
 
     /**

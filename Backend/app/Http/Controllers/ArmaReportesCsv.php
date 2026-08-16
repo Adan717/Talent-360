@@ -18,6 +18,13 @@ use Illuminate\Support\Facades\DB;
  */
 trait ArmaReportesCsv
 {
+    /**
+     * El rango que se entregó, para que el encabezado del PDF lo pueda imprimir. Queda vacío
+     * en el reporte que no es de periodo (Expediente Documental es una foto de hoy), y ahí el
+     * encabezado simplemente no lleva la línea.
+     */
+    private array $rangoEntregado = [];
+
     /** Rango validado, con los días por defecto que declara el catálogo para ese reporte. */
     private function rango(Request $request, string $reporteId): array
     {
@@ -40,7 +47,7 @@ trait ArmaReportesCsv
             ], 422));
         }
 
-        return [$desde, $hasta];
+        return $this->rangoEntregado = [$desde, $hasta];
     }
 
     /**
@@ -124,11 +131,12 @@ trait ArmaReportesCsv
         $total = count($filas);
         $recortado = $total > self::PDF_TOPE_FILAS;
 
-        // ponytail: el periodo sube al encabezado tomándolo de su nota. Impreso, un documento
-        // sin periodo no sirve de evidencia, y el rango no llega hasta aquí. Si la nota no
-        // empieza así (Expediente Documental es foto de hoy, no periodo), no se pinta la línea
-        // y el rango sigue en las notas y en el nombre del archivo — nunca se pierde.
-        $periodo = ($notas && str_starts_with($notas[0], 'Periodo del')) ? rtrim($notas[0], '.') : null;
+        // El periodo va en el encabezado: impreso, un documento sin su rango no sirve de
+        // evidencia. Sale del rango que este mismo trait validó, no de leerle la primera nota
+        // al reporte — Rotación abre con "Altas contadas entre…" y se quedaba sin fecha arriba.
+        $periodo = $this->rangoEntregado
+            ? 'Periodo del ' . $this->rangoEntregado[0] . ' al ' . $this->rangoEntregado[1]
+            : null;
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.generico', [
             'titulo' => $titulo,

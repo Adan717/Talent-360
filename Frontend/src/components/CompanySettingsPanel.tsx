@@ -300,7 +300,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
     setIsSaving(true);
     setSaved(false);
     try {
-      if (activeTab === 'general') {
+      // El "Centro de Control" muestra los MISMOS campos que "Datos Generales" (nombre,
+      // dirección, teléfono, retención del chat, horario de tienda), pero su botón llama a
+      // `handleSave()` sin sección: no había rama para `control_center`, así que recorría las
+      // once condiciones sin coincidir con ninguna y aun así pintaba el "Guardado" —
+      // `setSaved(true)` está fuera del if—. El dueño podía editar el nombre de su empresa ahí,
+      // ver la confirmación verde, y no se guardaba nada. Peor: en la otra pestaña sí funciona,
+      // así que el comportamiento parecía aleatorio.
+      if (activeTab === 'general' || activeTab === 'control_center' || section === 'general') {
         await updateSetting('company_name', formData.company_name);
         await updateSetting('company_address', formData.company_address);
         await updateSetting('company_phone', formData.company_phone);

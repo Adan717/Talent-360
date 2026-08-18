@@ -9,13 +9,49 @@ use Illuminate\Support\Facades\Log;
 class FacturapiBillingProvider implements BillingProviderInterface
 {
     protected ?Tenant $tenant = null;
-    protected string $apiKey;
     protected string $baseUrl = 'https://api.facturapi.com/v1';
 
-    public function __construct()
+    /** La llave de fábrica: está en el código, no timbra nada, y hay que poder reconocerla. */
+    public const LLAVE_DE_RELLENO = 'sk_test_default_facturapi_key_talent360';
+
+    /**
+     * La llave del PAC, leída CUANDO se usa.
+     *
+     * Antes se guardaba en el constructor, y este servicio es un `singleton`: la llave quedaba
+     * congelada para toda la vida del proceso. Por `config()` y no por `env()`, porque fuera de
+     * los archivos de configuración `env()` devuelve null en cuanto alguien cachea la config —
+     * y esto caería a la llave de relleno sin avisar, dejando de timbrar con toda la pinta de
+     * estar configurado.
+     */
+    protected function llave(): string
     {
-        // Reads the key from env, defaults to a placeholder sandbox key if not set
-        $this->apiKey = env('FACTURAPI_KEY', 'sk_test_default_facturapi_key_talent360');
+        return trim((string) config('services.facturapi.key', '')) ?: self::LLAVE_DE_RELLENO;
+    }
+
+    /**
+     * En qué ambiente fiscal está operando la instancia, sin exponer la llave.
+     *
+     * Fuente ÚNICA del dato: la misma llave con la que se timbra. La pantalla de
+     * Configuración ofrecía un selector "Pruebas / Producción Fiscal" que se guardaba por
+     * empresa y no mandaba sobre nada — el ambiente lo decide la llave del servidor, y una
+     * pantalla que dice "Producción" mientras el servidor timbra contra el sandbox es la peor
+     * forma posible de equivocarse en algo fiscal.
+     *
+     * @return array{configurado: bool, ambiente: ?string}
+     */
+    public function estadoDelTimbrado(): array
+    {
+        $llave = $this->llave();
+
+        if ($llave === '' || $llave === self::LLAVE_DE_RELLENO) {
+            return ['configurado' => false, 'ambiente' => null];
+        }
+
+        // Convención de Facturapi: las llaves de prueba llevan el prefijo `sk_test`.
+        return [
+            'configurado' => true,
+            'ambiente' => str_starts_with($llave, 'sk_test') ? 'pruebas' : 'produccion',
+        ];
     }
 
     /**
@@ -67,7 +103,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
         }
 
         // Avoid making HTTP calls if API key is empty or default sandbox placeholder
-        if (empty($this->apiKey) || $this->apiKey === 'sk_test_default_facturapi_key_talent360') {
+        if ($this->llave() === self::LLAVE_DE_RELLENO) {
             return null;
         }
 
@@ -79,7 +115,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
             Log::info("Creating Facturapi Organization for Tenant: {$this->tenant->name} (RFC: {$rfc})");
 
             $response = Http::timeout(5)
-                ->withBasicAuth($this->apiKey, '')
+                ->withBasicAuth($this->llave(), '')
                 ->post("{$this->baseUrl}/organizations", [
                     'name' => $this->tenant->name,
                     'legal_name' => $this->tenant->tax_name ?? $this->tenant->name,
@@ -130,7 +166,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
             $keyContent = base64_decode($this->tenant->csd_private_key);
             $password = $this->tenant->csd_password ?? '';
 
-            $response = Http::withBasicAuth($this->apiKey, '')
+            $response = Http::withBasicAuth($this->llave(), '')
                 ->attach('cer', $cerContent, 'certificate.cer')
                 ->attach('key', $keyContent, 'private_key.key')
                 ->post("{$this->baseUrl}/organizations/{$orgId}/csd", [
@@ -164,7 +200,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
 
         try {
             $response = Http::withHeaders($this->getHeaders())
-                ->withBasicAuth($this->apiKey, '')
+                ->withBasicAuth($this->llave(), '')
                 ->post("{$this->baseUrl}/invoices", $data);
 
             if ($response->successful()) {
@@ -210,7 +246,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
 
         try {
             $response = Http::withHeaders($this->getHeaders())
-                ->withBasicAuth($this->apiKey, '')
+                ->withBasicAuth($this->llave(), '')
                 ->post("{$this->baseUrl}/invoices", $data);
 
             if ($response->successful()) {
@@ -260,7 +296,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
             }
 
             $response = Http::withHeaders($this->getHeaders())
-                ->withBasicAuth($this->apiKey, '')
+                ->withBasicAuth($this->llave(), '')
                 ->delete("{$this->baseUrl}/invoices/{$invoiceId}", $params);
 
             if ($response->successful()) {
@@ -311,7 +347,7 @@ class FacturapiBillingProvider implements BillingProviderInterface
     {
         try {
             $response = Http::withHeaders($this->getHeaders())
-                ->withBasicAuth($this->apiKey, '')
+                ->withBasicAuth($this->llave(), '')
                 ->get("{$this->baseUrl}/invoices", $params);
 
             if ($response->successful()) {

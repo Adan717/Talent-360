@@ -39,4 +39,17 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
     ],
 
+    /*
+     * PAC del timbrado fiscal. La llave decide el AMBIENTE: una `sk_test…` es sandbox y una
+     * viva es producción; no es un ajuste por empresa.
+     *
+     * Vive aquí y no en un `env()` suelto del código: fuera de los archivos de configuración,
+     * `env()` devuelve null en cuanto alguien cachea la config (`php artisan config:cache`), y
+     * el proveedor caería sin avisar a su llave de relleno — es decir, dejaría de timbrar
+     * pareciendo que sigue configurado.
+     */
+    'facturapi' => [
+        'key' => env('FACTURAPI_KEY', ''),
+    ],
+
 ];

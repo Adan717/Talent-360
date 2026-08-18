@@ -53,6 +53,17 @@ interface BillingProviderInterface
     public function listInvoices(array $params = []): array;
 
     /**
+     * En qué ambiente fiscal está operando la instancia, sin exponer la llave.
+     *
+     * El ambiente NO se elige por empresa: lo decide la llave del PAC que tenga el servidor en
+     * su `.env`. La pantalla de Configuración llegó a ofrecer un selector Pruebas/Producción que
+     * no podía mandar sobre nada; esto es lo que sí se puede decir con la verdad.
+     *
+     * @return array{configurado: bool, ambiente: ?string}  ambiente: 'pruebas' | 'produccion' | null
+     */
+    public function estadoDelTimbrado(): array;
+
+    /**
      * Upload CSD keys to the billing provider.
      */
     public function uploadCsd(string $orgId): bool;

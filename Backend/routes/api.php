@@ -493,6 +493,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::prefix('billing')->middleware('role:admin')->group(function () {
             Route::post('/tax-data', [BillingController::class, 'updateTaxData']);
             Route::post('/csd', [BillingController::class, 'uploadCsd']);
+            Route::get('/estado-timbrado', [BillingController::class, 'estadoDelTimbrado']);
             Route::get('/invoices', [BillingController::class, 'getInvoices']);
             Route::post('/payroll/timbrar', [BillingController::class, 'timbrarNomina']);
         });

@@ -12,6 +12,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -39,6 +40,18 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
   const [selectedUserForAss, setSelectedUserForAss] = useState('');
   const [assignmentError, setAssignmentError] = useState('');
   const isSandbox = useAppStore(state => state.isSandboxMode);
+
+  // Ambiente fiscal REAL de la instancia. Se pregunta al servidor porque lo decide su llave del
+  // PAC, no un ajuste de la empresa; nunca viaja la llave, sólo lo que se deduce de ella.
+  const [estadoTimbrado, setEstadoTimbrado] = useState<{ configurado: boolean; ambiente: string | null } | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== 'facturacion' || estadoTimbrado || isSandbox) return;
+    axiosInstance.get('/billing/estado-timbrado')
+      .then(res => setEstadoTimbrado({ configurado: res.data?.configurado === true, ambiente: res.data?.ambiente ?? null }))
+      // Sin permiso o sin red, se asume lo prudente: que no hay timbrado configurado.
+      .catch(() => setEstadoTimbrado({ configurado: false, ambiente: null }));
+  }, [activeTab, estadoTimbrado, isSandbox]);
   const globalUsers = useAppStore(state => state.globalUsers);
 
   // NUEVO: cursos de Academia disponibles para el selector de "Curso de Puntualidad" (pestaña Reloj).
@@ -239,7 +252,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           startHour: 12,
           endHour: 17,
           preventRoleOverlap: true,
-          mealStartToleranceMins: 5,
           ...(systemSettings.mealSettings || {})
         },
         timeBankConfigs: systemSettings.timeBankConfigs || { maxLateMinsAllowed: 15 },
@@ -253,42 +265,14 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         chatRetentionDays: systemSettings.chatRetentionDays ?? 7,
         onboarding: systemSettings.onboarding || {
           welcomeTitle: '¡Bienvenido al Equipo!',
-          welcomeMessage: 'Estamos muy emocionados de que te unas a nosotros.',
-          inviteLinkMode: 'whatsapp'
+          welcomeMessage: 'Estamos muy emocionados de que te unas a nosotros.'
         },
         tasksConfig: systemSettings.tasksConfig || {
           requireSupervisorValidation: true,
-          validationThreshold: 'all_tasks',
-          allowTaskRejection: true,
-          aiAutoApproveIfValid: false
-        },
-        atsConfig: systemSettings.atsConfig || {
-          defaultInterviewer: 'Lic. Francisco',
-          notificationChannel: 'whatsapp',
-          autoPublish: true
-        },
-        academyConfig: systemSettings.academyConfig || {
-          minPassingGrade: 80,
-          allowSelfEnrollment: true,
-          certificateSignatures: {
-            directorName: 'Francisco',
-            instructorName: 'Liz'
-          }
-        },
-        docsConfig: systemSettings.docsConfig || {
-          maxFileSizeMb: 10,
-          allowCollabUpload: true,
-          requiredDocs: ['ine', 'rfc', 'curp']
-        },
-        reportsConfig: systemSettings.reportsConfig || {
-          defaultFormat: 'xlsx',
-          payrollPeriod: 'quincenal',
-          sendDailySummary: false
+          validationThreshold: 'all_tasks'
         },
         clockOpConfig: systemSettings.clockOpConfig || {
           arrivalWindowMins: 30,
-          storeClosedReportDelayMins: 0,
-          requireExitEvaluation: true,
           allowManualCheckIn: false,
           gpsValidationEnabled: true
         }
@@ -325,14 +309,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         await updateSetting('onboarding', formData.onboarding);
       } else if (activeTab === 'tareas' || section === 'tasksConfig') {
         await updateSetting('tasksConfig', formData.tasksConfig);
-      } else if (activeTab === 'ats' || section === 'atsConfig') {
-        await updateSetting('atsConfig', formData.atsConfig);
-      } else if (activeTab === 'academia' || section === 'academyConfig') {
-        await updateSetting('academyConfig', formData.academyConfig);
-      } else if (activeTab === 'documentos' || section === 'docsConfig') {
-        await updateSetting('docsConfig', formData.docsConfig);
-      } else if (activeTab === 'reportes' || section === 'reportsConfig') {
-        await updateSetting('reportsConfig', formData.reportsConfig);
       } else if (activeTab === 'reloj_operacion' || section === 'clockOpConfig') {
         await updateSetting('clockOpConfig', formData.clockOpConfig);
       }
@@ -420,27 +396,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           >
             <Users size={18} />
             Onboarding
-          </button>
-          <button 
-            onClick={() => setActiveTab('ats')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'ats' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Briefcase size={18} />
-            Bolsa y ATS
-          </button>
-          <button 
-            onClick={() => setActiveTab('academia')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'academia' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <GraduationCap size={18} />
-            Academia LMS
-          </button>
-          <button 
-            onClick={() => setActiveTab('documentos')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'documentos' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <FileText size={18} />
-            Gestor Documental
           </button>
           <button 
             onClick={() => setActiveTab('facturacion')}
@@ -765,21 +720,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-1">Margen de Entrada a Comida</h4>
-                <p className="text-xs text-slate-500 mb-3">Minutos de gracia previos al slot reservado en comedor que permiten iniciar la comida (en plan PRO).</p>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="30"
-                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650"
-                    value={formData.mealSettings?.mealStartToleranceMins || 5}
-                    onChange={(e) => handleNestedChange('mealSettings', 'mealStartToleranceMins', parseInt(e.target.value))}
-                  />
-                  <span className="text-sm text-slate-650 font-bold">Minutos previos permitidos.</span>
-                </div>
-              </div>
             </div>
 
             <button onClick={() => handleSave('mealSettings')} className="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors">
@@ -802,23 +742,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Mensaje Principal</label>
                 <textarea rows={4} className="w-full px-4 py-2 border border-slate-300 rounded-xl" value={formData.onboarding.welcomeMessage} onChange={(e) => handleNestedChange('onboarding', 'welcomeMessage', e.target.value)}></textarea>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Canal de Invitación Predeterminado</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="inviteMode" value="whatsapp" checked={formData.onboarding.inviteLinkMode === 'whatsapp'} onChange={(e) => handleNestedChange('onboarding', 'inviteLinkMode', e.target.value)} />
-                    <span className="text-slate-700 font-bold">WhatsApp</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="inviteMode" value="email" checked={formData.onboarding.inviteLinkMode === 'email'} onChange={(e) => handleNestedChange('onboarding', 'inviteLinkMode', e.target.value)} />
-                    <span className="text-slate-700 font-bold">Correo Electrónico (Email)</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">URL del Video de Bienvenida (Opcional)</label>
-                <input type="text" placeholder="https://youtube.com/..." className="w-full px-4 py-2 border border-slate-300 rounded-xl" value={formData.onboarding.welcomeVideo || ''} onChange={(e) => handleNestedChange('onboarding', 'welcomeVideo', e.target.value)} />
               </div>
             </div>
 
@@ -866,37 +789,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                       </select>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2">
-                      <div>
-                        <h5 className="font-semibold text-sm text-indigo-900">Permitir Devolución/Rechazo de Tareas</h5>
-                        <p className="text-xs text-indigo-700 mt-0.5">El supervisor puede rechazar tareas con comentarios y regresarlas a "En Progreso".</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.tasksConfig?.allowTaskRejection || false} 
-                          onChange={(e) => handleNestedChange('tasksConfig', 'allowTaskRejection', e.target.checked)} 
-                        />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
 
-                    <div className="flex justify-between items-center pt-2">
-                      <div>
-                        <h5 className="font-semibold text-sm text-indigo-900">Auto-Aprobación Inteligente por IA</h5>
-                        <p className="text-xs text-indigo-700 mt-0.5">Auto-aprobar si la validación visual de fotos por IA es exitosa (&gt;85% coincidencia).</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={formData.tasksConfig?.aiAutoApproveIfValid || false} 
-                          onChange={(e) => handleNestedChange('tasksConfig', 'aiAutoApproveIfValid', e.target.checked)} 
-                        />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
                   </div>
                 )}
               </div>
@@ -1191,404 +1084,93 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
           </div>
         )}
 
-        {/* --- PESTAÑA: BOLSA Y ATS --- */}
-        {activeTab === 'ats' && (
-          <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-2xl font-black text-slate-800">Ajustes de Reclutamiento ATS</h3>
-                <p className="text-slate-500 text-sm">Gestiona los parámetros para el portal público de empleo y entrevistas.</p>
-              </div>
-              {!useAppStore.getState().isModuleUnlocked('ats') && (
-                <span className="bg-amber-100 text-amber-800 text-xs font-extrabold uppercase px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Key size={12} /> Plan PRO requerido
-                </span>
-              )}
-            </div>
+        {/* Aquí vivían cuatro pestañas —Bolsa y ATS, Academia, Documentos y Reportes— cuyos
+            ajustes NO LOS LEÍA NADIE: `atsConfig`, `academyConfig`, `docsConfig` y
+            `reportsConfig` se guardaban en system_settings con cero lectores en todo el
+            proyecto. Cada una prometía algo que el sistema decide en otro lado y de otra forma:
+            una calificación mínima de examen (el examen exige el 100%), las firmas del
+            certificado (las pone su plantilla), el tamaño máximo de archivo (10 MB fijos en el
+            servidor), qué documentos son obligatorios (los 6 de DocumentosController::CHECKLIST)
+            y el ciclo de nómina (que se configura en "Nómina & Periodicidad"). Retiradas el
+            2026-08-16 — detalle en docs/modules/configuracion/RONDA_2026-08-16.md */}
 
-            <div className={`space-y-6 ${!useAppStore.getState().isModuleUnlocked('ats') && 'opacity-60 pointer-events-none'}`}>
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Entrevistador / Reclutador por Defecto</h4>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-indigo-650 bg-white"
-                  value={formData.atsConfig?.defaultInterviewer || ''}
-                  onChange={(e) => handleNestedChange('atsConfig', 'defaultInterviewer', e.target.value)}
-                  placeholder="Ej. Lic. Francisco"
-                />
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-3">Canal de Notificaciones de Cita</h4>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="atsNotifyMode" 
-                      value="whatsapp" 
-                      checked={formData.atsConfig?.notificationChannel === 'whatsapp'} 
-                      onChange={(e) => handleNestedChange('atsConfig', 'notificationChannel', e.target.value)} 
-                    />
-                    <span className="text-slate-700 font-bold">WhatsApp API</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="atsNotifyMode" 
-                      value="email" 
-                      checked={formData.atsConfig?.notificationChannel === 'email'} 
-                      onChange={(e) => handleNestedChange('atsConfig', 'notificationChannel', e.target.value)} 
-                    />
-                    <span className="text-slate-700 font-bold">Correo (Email)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-slate-800">Publicar automáticamente vacantes</h4>
-                    <p className="text-sm text-slate-500 mt-1">Sincroniza y publica tus vacantes activas en el portal público de inmediato.</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.atsConfig?.autoPublish || false} 
-                      onChange={(e) => handleNestedChange('atsConfig', 'autoPublish', e.target.checked)} 
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => handleSave('atsConfig')} 
-              disabled={isSaving || !useAppStore.getState().isModuleUnlocked('ats')}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <Save size={18} /> Guardar Ajustes de ATS
-            </button>
-          </div>
-        )}
-
-        {/* --- PESTAÑA: ACADEMIA LMS --- */}
-        {activeTab === 'academia' && (
-          <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-2xl font-black text-slate-800">Academia LMS y Capacitación</h3>
-                <p className="text-slate-500 text-sm">Configura las reglas de aprobación de cursos y diplomas de los colaboradores.</p>
-              </div>
-              {!useAppStore.getState().isModuleUnlocked('academia') && (
-                <span className="bg-purple-100 text-purple-800 text-xs font-extrabold uppercase px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Key size={12} /> Plan ENTERPRISE requerido
-                </span>
-              )}
-            </div>
-
-            <div className={`space-y-6 ${!useAppStore.getState().isModuleUnlocked('academia') && 'opacity-60 pointer-events-none'}`}>
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-4">Calificación de Aprobación Mínima (%)</h4>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
-                    min="50" 
-                    max="100" 
-                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-slate-850"
-                    value={formData.academyConfig?.minPassingGrade || 80}
-                    onChange={(e) => handleNestedChange('academyConfig', 'minPassingGrade', parseInt(e.target.value))}
-                  />
-                  <span className="text-slate-600">Porcentaje mínimo de respuestas correctas en exámenes.</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-slate-800">Permitir Auto-inscripción a Cursos</h4>
-                    <p className="text-sm text-slate-500 mt-1">Los colaboradores pueden cursar asignaturas no obligatorias libremente.</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.academyConfig?.allowSelfEnrollment || false} 
-                      onChange={(e) => handleNestedChange('academyConfig', 'allowSelfEnrollment', e.target.checked)} 
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-4">Firmas Autorizadas para Constancias</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Nombre del Director</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-medium bg-white text-slate-800" 
-                      value={formData.academyConfig?.certificateSignatures?.directorName || ''} 
-                      onChange={(e) => {
-                        const updatedSignatures = { ...(formData.academyConfig?.certificateSignatures || {}), directorName: e.target.value };
-                        handleNestedChange('academyConfig', 'certificateSignatures', updatedSignatures);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Nombre del Instructor</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-2 border border-slate-300 rounded-xl font-medium bg-white text-slate-800" 
-                      value={formData.academyConfig?.certificateSignatures?.instructorName || ''} 
-                      onChange={(e) => {
-                        const updatedSignatures = { ...(formData.academyConfig?.certificateSignatures || {}), instructorName: e.target.value };
-                        handleNestedChange('academyConfig', 'certificateSignatures', updatedSignatures);
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => handleSave('academyConfig')} 
-              disabled={isSaving || !useAppStore.getState().isModuleUnlocked('academia')}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <Save size={18} /> Guardar Ajustes de LMS
-            </button>
-          </div>
-        )}
-
-        {/* --- PESTAÑA: GESTOR DOCUMENTAL --- */}
-        {activeTab === 'documentos' && (
-          <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-2xl font-black text-slate-800">Expedientes y Gestor Documental</h3>
-                <p className="text-slate-500 text-sm">Define las reglas para el expediente de personal y la carga de archivos.</p>
-              </div>
-              {!useAppStore.getState().isModuleUnlocked('documentos') && (
-                <span className="bg-purple-100 text-purple-800 text-xs font-extrabold uppercase px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Key size={12} /> Plan ENTERPRISE requerido
-                </span>
-              )}
-            </div>
-
-            <div className={`space-y-6 ${!useAppStore.getState().isModuleUnlocked('documentos') && 'opacity-60 pointer-events-none'}`}>
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Tamaño Máximo por Archivo</h4>
-                <select 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-700 font-bold focus:outline-none"
-                  value={formData.docsConfig?.maxFileSizeMb || 10}
-                  onChange={(e) => handleNestedChange('docsConfig', 'maxFileSizeMb', parseInt(e.target.value))}
-                >
-                  <option value="5">5 MB (Límite estándar)</option>
-                  <option value="10">10 MB (Recomendado)</option>
-                  <option value="20">20 MB (Carga alta de PDFs)</option>
-                  <option value="50">50 MB (Archivos pesados/Videos)</option>
-                </select>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-slate-800">Permitir Carga a Colaboradores</h4>
-                    <p className="text-sm text-slate-500 mt-1">Los colaboradores pueden subir sus documentos oficiales directamente desde su móvil.</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.docsConfig?.allowCollabUpload || false} 
-                      onChange={(e) => handleNestedChange('docsConfig', 'allowCollabUpload', e.target.checked)} 
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-3">Documentación Obligatoria del Expediente</h4>
-                <div className="space-y-2">
-                  {[
-                    { id: 'ine', label: 'Identificación Oficial (INE / Pasaporte)' },
-                    { id: 'rfc', label: 'Cédula de Identificación Fiscal (RFC)' },
-                    { id: 'curp', label: 'Clave Única de Registro de Población (CURP)' },
-                    { id: 'domicilio', label: 'Comprobante de Domicilio (Reciente)' }
-                  ].map((doc) => {
-                    const isChecked = (formData.docsConfig?.requiredDocs || []).includes(doc.id);
-                    const handleDocCheckboxChange = (checked: boolean) => {
-                      const current = formData.docsConfig?.requiredDocs || [];
-                      const updated = checked 
-                        ? [...current, doc.id]
-                        : current.filter((x: string) => x !== doc.id);
-                      handleNestedChange('docsConfig', 'requiredDocs', updated);
-                    };
-
-                    return (
-                      <label key={doc.id} className="flex items-center gap-2.5 cursor-pointer text-sm font-semibold text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200">
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked} 
-                          onChange={(e) => handleDocCheckboxChange(e.target.checked)} 
-                          className="rounded text-indigo-650 focus:ring-indigo-500 cursor-pointer"
-                        />
-                        <span>{doc.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => handleSave('docsConfig')} 
-              disabled={isSaving || !useAppStore.getState().isModuleUnlocked('documentos')}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <Save size={18} /> Guardar Ajustes de Expedientes
-            </button>
-          </div>
-        )}
-
-        {/* --- PESTAÑA: CENTRO DE REPORTES --- */}
-        {activeTab === 'reportes' && (
-          <div className="max-w-2xl animate-in slide-in-from-right-4">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-2xl font-black text-slate-800">Centro de Reportes y Nómina</h3>
-                <p className="text-slate-500 text-sm">Configura la generación e informes ejecutivos de asistencia.</p>
-              </div>
-              {!useAppStore.getState().isModuleUnlocked('reportes') && (
-                <span className="bg-amber-100 text-amber-800 text-xs font-extrabold uppercase px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Key size={12} /> Plan PRO requerido
-                </span>
-              )}
-            </div>
-
-            <div className={`space-y-6 ${!useAppStore.getState().isModuleUnlocked('reportes') && 'opacity-60 pointer-events-none'}`}>
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Formato Predeterminado de Descarga</h4>
-                <select 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-700 font-bold focus:outline-none"
-                  value={formData.reportsConfig?.defaultFormat || 'xlsx'}
-                  onChange={(e) => handleNestedChange('reportsConfig', 'defaultFormat', e.target.value)}
-                >
-                  <option value="xlsx">Excel (.xlsx) - Para cálculos de nómina</option>
-                  <option value="pdf">PDF (.pdf) - Para impresión y firmas</option>
-                </select>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Ciclo de Corte de Pre-Nómina</h4>
-                <select 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-700 font-bold focus:outline-none"
-                  value={formData.reportsConfig?.payrollPeriod || 'quincenal'}
-                  onChange={(e) => handleNestedChange('reportsConfig', 'payrollPeriod', e.target.value)}
-                >
-                  <option value="semanal">Corte Semanal (Lunes a Domingo)</option>
-                  <option value="quincenal">Corte Quincenal (1 al 15 y 16 al fin de mes)</option>
-                  <option value="mensual">Corte Mensual (Mes Calendario)</option>
-                </select>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-slate-800">Enviar Resumen Diario por Email</h4>
-                    <p className="text-sm text-slate-500 mt-1">Recibe un resumen con la lista de retardos e inasistencias del día en tu correo.</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.reportsConfig?.sendDailySummary || false} 
-                      onChange={(e) => handleNestedChange('reportsConfig', 'sendDailySummary', e.target.checked)} 
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => handleSave('reportsConfig')} 
-              disabled={isSaving || !useAppStore.getState().isModuleUnlocked('reportes')}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <Save size={18} /> Guardar Ajustes de Reportes
-            </button>
-          </div>
-        )}
-
+        {/* FACTURACIÓN — pestaña de LECTURA, no de ajustes (2026-08-16).
+            Traía tres controles imposibles: un "Timbrado de Nómina Automático" que no existe
+            (nada timbra solo: `timbrarNomina` sólo se invoca a mano desde Nómina CFDI 4.0), un
+            selector "Pruebas SAT / Producción Fiscal" que se guardaba por empresa y no gobernaba
+            nada (el ambiente lo decide FACTURAPI_KEY del .env del servidor) y un correo de avisos
+            CFDI sin proveedor de correo. Y su botón "Guardar" llamaba handleSave('facturacionConfig'),
+            rama que no existe: confirmaba en verde y descartaba todo.
+            Una pantalla que dice "Producción Fiscal" mientras el servidor timbra contra el sandbox
+            es la peor forma de equivocarse en algo fiscal, así que ahora MUESTRA el ambiente real
+            en vez de ofrecer elegirlo. */}
         {activeTab === 'facturacion' && (
           <div className="max-w-2xl animate-in slide-in-from-right-4">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-black text-slate-800">Ajustes de Facturación SAT</h3>
-                <p className="text-slate-500 text-sm">Gestiona el comportamiento operativo de la facturación y timbrado.</p>
+                <h3 className="text-2xl font-black text-slate-800">Facturación SAT</h3>
+                <p className="text-slate-500 text-sm">Estado del timbrado de esta instancia.</p>
               </div>
-              {!useAppStore.getState().isModuleUnlocked('facturacion') && (
-                <span className="bg-amber-100 text-amber-800 text-xs font-extrabold uppercase px-3 py-1.5 rounded-full flex items-center gap-1">
-                  <Key size={12} /> Plan PRO requerido
-                </span>
-              )}
             </div>
 
-            <div className={`space-y-6 ${!useAppStore.getState().isModuleUnlocked('facturacion') && 'opacity-60 pointer-events-none'}`}>
+            <div className="space-y-6">
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-slate-800">Timbrado de Nómina Automático</h4>
-                    <p className="text-sm text-slate-500 mt-1">Timbra automáticamente los recibos CFDI 4.0 al procesar el cierre del periodo quincenal.</p>
+                <h4 className="font-bold text-slate-800 mb-3">Ambiente de Operación SAT</h4>
+                {estadoTimbrado === null ? (
+                  <p className="text-sm text-slate-500">Consultando al servidor…</p>
+                ) : !estadoTimbrado.configurado ? (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-slate-400"></span>
+                    <div>
+                      <p className="font-black text-slate-800">Sin llave del PAC</p>
+                      <p className="text-sm text-slate-500 mt-1">
+                        No se puede timbrar todavía. El resto de la nómina (calcular, firmar y
+                        autorizar) funciona igual; lo único que falta es el sello fiscal.
+                      </p>
+                    </div>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.facturacionConfig?.autoTimbrar || false} 
-                      onChange={(e) => handleNestedChange('facturacionConfig', 'autoTimbrar', e.target.checked)} 
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
+                ) : estadoTimbrado.ambiente === 'produccion' ? (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-emerald-500"></span>
+                    <div>
+                      <p className="font-black text-emerald-700">Producción fiscal — los timbres son REALES</p>
+                      <p className="text-sm text-slate-500 mt-1">
+                        Lo que se timbre desde "Nómina CFDI 4.0" queda ante el SAT y sólo se
+                        deshace cancelando.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 shrink-0 w-3 h-3 rounded-full bg-amber-500"></span>
+                    <div>
+                      <p className="font-black text-amber-700">Pruebas (sandbox)</p>
+                      <p className="text-sm text-slate-500 mt-1">
+                        Los timbres NO tienen validez fiscal: sirven para ensayar el flujo completo.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-slate-400 mt-4 leading-relaxed border-t border-slate-200 pt-3">
+                  El ambiente no se elige por empresa: lo decide la llave del PAC que tenga el
+                  servidor ({'{'}<code className="font-mono">FACTURAPI_KEY</code>{'}'} en su <code className="font-mono">.env</code>).
+                  Cambiarla es tarea de quien administra el servidor.
+                </p>
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Ambiente de Operación SAT</h4>
-                <select 
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-700 font-bold focus:outline-none"
-                  value={formData.facturacionConfig?.ambienteSat || 'sandbox'}
-                  onChange={(e) => handleNestedChange('facturacionConfig', 'ambienteSat', e.target.value)}
-                >
-                  <option value="sandbox">Pruebas SAT (Sandbox Facturapi)</option>
-                  <option value="production">Producción Fiscal (Timbrado Real)</option>
-                </select>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2">Email para Recepción de Avisos CFDIs</h4>
-                <input 
-                  type="email"
-                  placeholder="ejemplo@decorarte.com"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-800 font-semibold focus:border-indigo-500 focus:outline-none"
-                  value={formData.facturacionConfig?.correoFiscal || ''}
-                  onChange={(e) => handleNestedChange('facturacionConfig', 'correoFiscal', e.target.value)}
-                />
+                <h4 className="font-bold text-slate-800 mb-2">Cómo se timbra</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  El timbrado es <strong>manual y por recibo</strong>, desde el módulo
+                  "Nómina CFDI 4.0", y sólo sobre nóminas ya <strong>autorizadas</strong>. No hay
+                  timbrado automático al cerrar el periodo.
+                </p>
+                <p className="text-sm text-slate-600 leading-relaxed mt-3">
+                  Los datos fiscales de la empresa (RFC, razón social, régimen) y los sellos
+                  digitales <strong>CSD</strong> también se capturan en ese módulo, no aquí.
+                </p>
               </div>
             </div>
-
-            <button 
-              onClick={() => handleSave('facturacionConfig')} 
-              disabled={isSaving || !useAppStore.getState().isModuleUnlocked('facturacion')}
-              className="mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors cursor-pointer border-none"
-            >
-              <Save size={18} /> Guardar Ajustes de Facturación
-            </button>
           </div>
         )}
 
@@ -1617,21 +1199,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
               </div>
 
               {/* Tiempo Reporte Tienda Cerrada */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-1">Tiempo de Gracia para Tienda Cerrada</h4>
-                <p className="text-xs text-slate-500 mb-3">Minutos tras el inicio oficial del turno antes de activar el botón de "Reportar Tienda Cerrada" a los colaboradores.</p>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="60"
-                    className="w-24 px-4 py-2 border border-slate-300 rounded-xl font-bold bg-white text-slate-800 focus:outline-none focus:border-indigo-650"
-                    value={formData.clockOpConfig?.storeClosedReportDelayMins || 0}
-                    onChange={(e) => handleNestedChange('clockOpConfig', 'storeClosedReportDelayMins', parseInt(e.target.value))}
-                  />
-                  <span className="text-sm text-slate-650 font-bold">Minutos de retraso antes del reporte.</span>
-                </div>
-              </div>
 
               {/* Ventana de Habilitación Previa del Reloj */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
@@ -2107,21 +1674,6 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
 
               {/* Toggles booleanos */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-slate-800">Evaluación Obligatoria al Salir</h4>
-                    <p className="text-xs text-slate-500 mt-1">Exigir retroalimentación de clima laboral al final de la jornada de trabajo.</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.clockOpConfig?.requireExitEvaluation ?? true} 
-                      onChange={(e) => handleNestedChange('clockOpConfig', 'requireExitEvaluation', e.target.checked)} 
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-650"></div>
-                  </label>
-                </div>
 
                 <div className="flex justify-between items-center">
                   <div>

@@ -266,7 +266,12 @@ class AsistenteReportesTest extends TestCase
         DB::table('time_entries')->insert([
             'tenant_id' => $this->tenant->id, 'user_id' => $this->admin->id, 'type' => 'check_in',
             'employee_name_at_time' => '=HYPERLINK("http://evil","ver")',
-            'date' => now()->toDateString(), 'time' => '09:00:00', 'is_late' => false,
+            // El día del TENANT, no el de `now()` (que corre en UTC): el reporte de asistencia
+            // trae "hoy" por defecto, y de madrugada esos dos días no son el mismo — el fichaje
+            // caía fuera del rango y el CSV salía vacío, así que la prueba de la inyección de
+            // fórmulas fallaba de noche sin que nada estuviera roto.
+            'date' => \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($this->tenant->id))->toDateString(),
+            'time' => '09:00:00', 'is_late' => false,
             'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]);
 

@@ -102,6 +102,25 @@ class BillingController extends Controller
     /**
      * Consulta el historial de facturas emitidas por la empresa en Facturapi.
      */
+    /**
+     * Estado del timbrado: en qué ambiente fiscal opera la instancia y si hay llave de PAC.
+     *
+     * Existe porque la pantalla de Configuración traía un selector "Pruebas SAT / Producción
+     * Fiscal" que se guardaba por empresa y no gobernaba nada: el ambiente lo decide la llave
+     * del servidor. Un ajuste que dice "Producción" mientras el servidor timbra contra el
+     * sandbox es la peor manera de equivocarse en algo fiscal, así que en vez de un control
+     * que no manda, la pantalla ahora MUESTRA lo que de verdad está pasando.
+     *
+     * Nunca devuelve la llave, sólo lo que se deduce de ella.
+     */
+    public function estadoDelTimbrado()
+    {
+        return response()->json($this->billingProvider->estadoDelTimbrado() + [
+            'timbrado_automatico' => false,
+            'donde_se_cambia' => 'FACTURAPI_KEY en el .env del servidor',
+        ]);
+    }
+
     public function getInvoices(Request $request)
     {
         $tenantId = auth()->user()->tenant_id ?? 1;

@@ -60,6 +60,19 @@ class ReportesRestantesTest extends TestCase
         ]);
     }
 
+    /**
+     * El "hoy" del TENANT, que es contra el que reportan los reportes.
+     *
+     * `now()` corre en el huso de la aplicación (UTC). De noche esos dos días NO son el mismo,
+     * y una fila fechada con `now()` cae fuera del rango que el reporte considera hoy: la
+     * prueba pasaba de día y fallaba de madrugada. Es la familia de fallos que ya nos mordió
+     * antes; aquí se ataja de raíz.
+     */
+    private function hoyDelTenant(): string
+    {
+        return \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($this->tenant->id))->toDateString();
+    }
+
     private function csv(string $reporte, array $params = []): string
     {
         $query = $params ? '?' . http_build_query($params) : '';
@@ -264,7 +277,15 @@ class ReportesRestantesTest extends TestCase
 
         $this->assertStringContainsString('Rotación de Personal', $texto);
         $this->assertStringContainsString('Reportes 8 QA', $texto, 'el documento no dice de qué empresa es');
-        $this->assertStringContainsString('Periodo del ' . now()->subDays(89)->toDateString(), $texto, 'el documento no dice qué periodo cubre');
+        // Sin recalcular la fecha aquí: `now()` en la prueba y el rango del reporte se
+        // computan en husos distintos, y de noche la resta de 89 días cae en días distintos —
+        // la prueba fallaba de madrugada y pasaba de día. Lo que importa es que el encabezado
+        // LLEVE su periodo, que es lo que se rompió.
+        $this->assertMatchesRegularExpression(
+            '/Periodo del \d{4}-\d{2}-\d{2} al \d{4}-\d{2}-\d{2}/',
+            $texto,
+            'el documento no dice qué periodo cubre'
+        );
         $this->assertStringContainsString('Jefa', $texto, 'el documento no dice quién lo generó');
         // El pie decía "pág. 1 de 0": dompdf no conoce el total al pintar un elemento fijo.
         $this->assertStringNotContainsString('de 0', $texto, 'el pie está imprimiendo un total de páginas falso');
@@ -639,7 +660,9 @@ class ReportesRestantesTest extends TestCase
 
     public function test_comedor_calcula_el_exceso_contra_los_minutos_del_expediente(): void
     {
-        $hoy = now()->toDateString();
+        $hoy = $this->hoyDelTenant();
+        $tz = \App\Helpers\TenantTimezone::for($this->tenant->id);
+        $mediodia = \Carbon\Carbon::parse("{$hoy} 12:00:00", $tz)->utc();
         foreach ([['meal_start', '14:00:00'], ['meal_end', '15:20:00']] as [$tipo, $hora]) {
             DB::table('time_entries')->insert([
                 'tenant_id' => $this->tenant->id, 'user_id' => $this->colaborador->id,
@@ -653,9 +676,9 @@ class ReportesRestantesTest extends TestCase
         // que apunta a users; y "otorgada" incluye active/finished, no sólo approved).
         DB::table('silla_requests')->insert([
             ['tenant_id' => $this->tenant->id, 'store_id' => 1, 'employee_id' => $this->colaborador->id,
-             'requested_at' => now(), 'status' => 'finished', 'created_at' => now(), 'updated_at' => now()],
+             'requested_at' => $mediodia, 'status' => 'finished', 'created_at' => now(), 'updated_at' => now()],
             ['tenant_id' => $this->tenant->id, 'store_id' => 1, 'employee_id' => $this->colaborador->id,
-             'requested_at' => now(), 'status' => 'rejected', 'created_at' => now(), 'updated_at' => now()],
+             'requested_at' => $mediodia, 'status' => 'rejected', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         $csv = $this->csv('comedor', ['from' => $hoy, 'to' => $hoy]);
@@ -744,7 +767,7 @@ class ReportesRestantesTest extends TestCase
         ]);
         DB::table('task_assignments')->insert([
             'id' => 'mon_1', 'tenant_id' => $this->tenant->id, 'task_id' => $tarea,
-            'user_id' => $this->colaborador->id, 'date' => now()->toDateString(), 'status' => 'completed',
+            'user_id' => $this->colaborador->id, 'date' => $this->hoyDelTenant(), 'status' => 'completed',
             'coins_awarded' => 1.5, 'points_awarded' => 15, 'validated_by' => $this->admin->id,
             'created_at' => now(), 'updated_at' => now(),
         ]);

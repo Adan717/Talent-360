@@ -37,6 +37,55 @@ class BillingPermissionsTest extends TestCase
     }
 
     /**
+     * El ambiente fiscal se DEDUCE de la llave del servidor; no se elige por empresa.
+     *
+     * La pantalla de Configuración traía un selector "Pruebas SAT / Producción Fiscal" que se
+     * guardaba por empresa y no gobernaba nada. Que la pantalla dijera "Producción" mientras el
+     * servidor timbra contra el sandbox es la peor forma de equivocarse en algo fiscal, así que
+     * ahora la pantalla lee este endpoint. Lo que se prueba aquí es la regla, y que la llave
+     * NUNCA salga en la respuesta.
+     */
+    public function test_el_estado_del_timbrado_sale_de_la_llave_del_servidor(): void
+    {
+        $admin = $this->makeUser('admin');
+        $relleno = \App\Services\Billing\FacturapiBillingProvider::LLAVE_DE_RELLENO;
+
+        $casos = [
+            // llave del servidor        => [configurado, ambiente]
+            ''                           => [false, null],
+            $relleno                     => [false, null],
+            'sk_test_abc123'             => [true, 'pruebas'],
+            'sk_live_abc123'             => [true, 'produccion'],
+        ];
+
+        foreach ($casos as $llave => [$configurado, $ambiente]) {
+            config(['services.facturapi.key' => $llave]);
+            // El proveedor lee la llave en su constructor: hay que rearmarlo en cada caso.
+            $this->app->forgetInstance(\App\Services\Billing\BillingProviderInterface::class);
+            $this->app->forgetInstance(\App\Services\Billing\FacturapiBillingProvider::class);
+
+            $res = $this->actingAs($admin)->getJson('/api/v1/billing/estado-timbrado')->assertOk();
+
+            $res->assertJson(['configurado' => $configurado, 'ambiente' => $ambiente]);
+            // Nada de timbrado automático: no existe: `timbrarNomina` sólo se invoca a mano.
+            $res->assertJson(['timbrado_automatico' => false]);
+            $this->assertStringNotContainsString(
+                $llave !== '' ? $llave : 'IMPOSIBLE',
+                $res->getContent(),
+                'la llave del PAC no puede viajar al navegador'
+            );
+        }
+    }
+
+    /** Es dato fiscal: el mismo candado que el resto de billing. */
+    public function test_el_estado_del_timbrado_es_solo_de_admin(): void
+    {
+        $this->actingAs($this->makeUser('supervisor'))
+            ->getJson('/api/v1/billing/estado-timbrado')
+            ->assertStatus(403);
+    }
+
+    /**
      * §64: un supervisor NO puede tocar el CSD del SAT ni el timbrado de nómina.
      */
     public function test_supervisor_is_denied_billing_routes(): void

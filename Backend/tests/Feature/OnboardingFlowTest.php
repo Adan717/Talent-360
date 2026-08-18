@@ -11,6 +11,38 @@ class OnboardingFlowTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * NO existe un canal de WhatsApp, así que ninguna ruta puede decir que envió.
+     *
+     * Había una: `POST /admin/onboarding/send-whatsapp` escribía una línea en la bitácora y
+     * respondía "Notificaciones enviadas de manera exitosa desde el canal oficial de Talent
+     * 360". El asistente de alta la disparaba solo y pintaba un ✅ con "Enviado 🟢" por cada
+     * teléfono, así que el dueño terminaba su alta creyendo que a su colaborador le había
+     * llegado el PIN. Esta prueba existe para que no vuelva a aparecer sin un proveedor detrás.
+     */
+    public function test_no_hay_ruta_que_afirme_haber_enviado_whatsapp(): void
+    {
+        $tenant = Tenant::create([
+            'name' => 'QA WhatsApp', 'subdomain' => 'qawa', 'plan' => 'pro', 'is_active' => true,
+        ]);
+        $admin = User::factory()->create(['tenant_id' => $tenant->id, 'role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->postJson('/api/v1/admin/onboarding/send-whatsapp', [
+                'employee_phone' => '5214621234567',
+                'employee_message' => 'hola',
+            ])
+            ->assertNotFound();
+
+        // Y ninguna otra ruta ocupa su lugar diciendo lo mismo.
+        $rutas = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->map(fn ($r) => $r->uri())
+            ->filter(fn ($uri) => str_contains(strtolower($uri), 'whatsapp'))
+            ->values();
+
+        $this->assertEmpty($rutas, 'apareció una ruta de WhatsApp: si hay proveedor de verdad, quita esta prueba; si no, no puede afirmar que envía');
+    }
+
     public function test_google_authenticated_user_can_create_company(): void
     {
         // 1. User registers via Google / Social login (tenant_id is null)

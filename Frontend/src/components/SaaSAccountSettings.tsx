@@ -282,7 +282,6 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
   const [invitePhone, setInvitePhone] = useState('');
   const [invitePin, setInvitePin] = useState('');
   const [isGeneratingPin, setIsGeneratingPin] = useState(false);
-  const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteFeedback, setInviteFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const employees = globalUsers.filter(u => u.system_role === 'empleado' || u.role === 'empleado' || u.system_role === 'colaborador');
@@ -320,38 +319,6 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
       setInviteFeedback({ type: 'error', message: 'Error al generar el PIN.' });
     } finally {
       setIsGeneratingPin(false);
-    }
-  };
-
-  const handleSendAutomaticInvite = async () => {
-    if (!selectedEmployeeId || !invitePin || !invitePhone) return;
-    setIsSendingInvite(true);
-    setInviteFeedback(null);
-    try {
-      const emp = globalUsers.find(u => u.id === selectedEmployeeId);
-      const employeeIdToUse = emp?.employee_id || selectedEmployeeId;
-      const cleanPhone = invitePhone.replace(/\D/g, '');
-      const cleanDbPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
-      
-      if (emp && emp.phone !== cleanDbPhone) {
-        await axiosInstance.put(`/employees/${employeeIdToUse}`, { phone: cleanDbPhone });
-      }
-
-      const inviteUrl = `${window.location.origin}/invite?pin=${invitePin}`;
-      const employeeMessage = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${emp?.name || 'Colaborador'}*, te damos la más cordial bienvenida a *${orgName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${invitePin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
-
-      await axiosInstance.post('/admin/onboarding/send-whatsapp', {
-        employee_phone: cleanDbPhone,
-        employee_message: employeeMessage
-      });
-
-      await fetchState();
-      setInviteFeedback({ type: 'success', message: 'Invitación PWA enviada vía WhatsApp API.' });
-    } catch (e: any) {
-      console.error(e);
-      setInviteFeedback({ type: 'error', message: e.response?.data?.message || 'Error al enviar invitación.' });
-    } finally {
-      setIsSendingInvite(false);
     }
   };
 
@@ -1586,30 +1553,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   {/* Botones de acción */}
                   <div className="pt-4 flex flex-col gap-2">
                     <button 
-                      onClick={handleSendAutomaticInvite}
-                      disabled={isSendingInvite || !invitePin || invitePhone.length < 10}
-                      className="w-full bg-slate-900 text-white font-black py-3 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
-                    >
-                      {isSendingInvite ? (
-                        <>
-                          <Loader2 className="animate-spin animate-duration-1000" size={18} />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Send size={18} />
-                          Enviar Automático (API)
-                        </>
-                      )}
-                    </button>
-
-                    <button 
                       onClick={handleSendManualInvite}
                       disabled={!invitePin || invitePhone.length < 10}
                       className="w-full bg-emerald-600 text-white font-black py-3 rounded-xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
                     >
                       <MessageSquare size={18} />
-                      Enviar por WhatsApp Web
+                      Abrir WhatsApp con la invitación
                     </button>
                   </div>
                 </>

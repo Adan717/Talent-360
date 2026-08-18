@@ -168,7 +168,7 @@
 **Depende de configuración externa.**
 - **Correo de invitación automático** al dar de alta: requiere el servicio de correo de la empresa/plataforma configurado (pendiente en el despliegue actual). Mientras tanto, la invitación se entrega con el enlace/QR/WhatsApp desde la pestaña Accesos.
 - El **código QR** del enlace de activación se genera con un servicio de internet externo (necesita conexión).
-- WhatsApp abre en el navegador o app del usuario; el envío es manual.
+- **El sistema NUNCA manda mensajes por su cuenta.** No hay integración con WhatsApp ni proveedor de correo: los botones de WhatsApp abren la aplicación con el mensaje y el PIN ya redactados, y **la persona pulsa enviar**. Hasta el 2026-08-16 el asistente de alta afirmaba lo contrario —pintaba "Notificaciones enviadas vía WhatsApp · Enviado 🟢"— sobre un endpoint que sólo escribía en la bitácora del servidor; ya no existe.
 - No requiere llaves de IA ni PAC.
 
 ---
@@ -723,7 +723,7 @@ Al entrar carga automáticamente la prenómina del **último periodo cerrado** d
 **Pestañas y qué se ajusta en cada una.**
 
 - **General / Perfil de empresa**: nombre, dirección, teléfono, **horario de operación de la sucursal** (apertura/cierre por día — de aquí heredan su horario los colaboradores nuevos), logo, y **Retención del Chat de Equipo** (1 a 30 días; 7 por defecto).
-- **Onboarding & Expedientes**: textos de bienvenida de la invitación, cómo se entrega la invitación (WhatsApp / enlace), asistente inicial del giro (catálogo: retail, restaurante, oficina, taller — carga puestos, rutinas, cursos y vacantes de ejemplo; se puede volver a aplicar sin duplicar).
+- **Onboarding & Expedientes**: textos de bienvenida de la invitación, asistente inicial del giro (catálogo: retail, restaurante, oficina, taller — carga puestos, rutinas, cursos y vacantes de ejemplo; se puede volver a aplicar sin duplicar).
 - **Reloj & Asistencia Global**: modo de fichaje (rápido sin GPS / GPS perimetral con **geocerca** y radio en metros, con captura de la ubicación de la sucursal), **foto de fichaje**, kiosco, IP permitida, ventana de "Ya llegué", **Curso de Puntualidad Obligatorio** (el de los 3 retardos), evaluación de clima al salir.
 - **Apertura de Sucursales**: quiénes son portadores de llaves (titular/suplente por sucursal), bono de apertura, tolerancia de apertura antes de habilitar la apertura de emergencia.
 - **Comedor & Reservaciones**: minutos de comida, minutos mínimos de trabajo antes de comer, reservación por franjas y aforo, evitar que dos del mismo puesto coman a la vez, foto de evidencia.

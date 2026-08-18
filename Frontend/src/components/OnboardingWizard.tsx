@@ -607,49 +607,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   }, [currentUser, isCompanyNameEdited, companyName]);
 
-  const [waSentStatus, setWaSentStatus] = useState<{
-    sending: boolean;
-    sent: boolean;
-    error: string | null;
-  }>({ sending: false, sent: false, error: null });
-
-  useEffect(() => {
-    if (step === 5 && !waSentStatus.sent && !waSentStatus.sending) {
-      if (!createdEmpPin) {
-        // Bypassed/Skipped employee registration, so no notifications to send
-        setWaSentStatus({ sending: false, sent: true, error: null });
-        return;
-      }
-      const sendNotifications = async () => {
-        setWaSentStatus(prev => ({ ...prev, sending: true }));
-        try {
-          const inviteUrl = `${getQrOrigin(qrIpOverride)}/invite?pin=${createdEmpPin}`;
-          
-          const adminMessage = `¡Hola, ${currentUser?.name || 'Administrador'}! 👋 Gracias por crear tu cuenta de empresa con nosotros en nuestra plataforma.\n\nTu entorno de control ya está listo para operar, te compartimos tu acceso rápido al panel administrativo para gestionar a tus colaboradores en tiempo real:\n\n👤 *Usuario/Email:* ${currentUser?.email || ''}\n🔑 *PIN de prueba del empleado:* ${createdEmpPin} (${empName})\n\n¡Hagamos crecer tu negocio juntos! 🚀\n\n${window.location.origin}`;
-          
-          const employeeMessage = `*TALENT 360* | ¡Bienvenido al Equipo! 👋\n\nHola, *${empName}*, te damos la más cordial bienvenida a *${companyName}*. 🏢\n\nTu cuenta ha sido registrada con éxito en nuestra plataforma de asistencia y gestión laboral. Para activar tu Reloj Checador móvil (PWA) de forma segura y configurar tu perfil, haz clic en el enlace de invitación:\n\n🔑 *Tu PIN temporal de acceso es:* ${createdEmpPin}\n\n¡Mucho éxito en tu jornada laboral! 🚀\n\n${inviteUrl}`;
-
-          await axiosInstance.post('/admin/onboarding/send-whatsapp', {
-            admin_phone: adminPhone,
-            admin_message: adminMessage,
-            employee_phone: empPhone,
-            employee_message: employeeMessage
-          });
-
-          setWaSentStatus({ sending: false, sent: true, error: null });
-        } catch (e: any) {
-          console.error("Error al enviar notificaciones de WhatsApp:", e);
-          setWaSentStatus({ 
-            sending: false, 
-            sent: false, 
-            error: e.response?.data?.message || 'Error de conexión al canal de WhatsApp.' 
-          });
-        }
-      };
-
-      sendNotifications();
-    }
-  }, [step, currentUser, companyName, empName, createdEmpPin, adminPhone, empPhone, qrIpOverride, waSentStatus.sent, waSentStatus.sending]);
 
   const handleSaveSettings = async () => {
     setLoading(true);
@@ -2155,41 +2112,42 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   : "Has inicializado tu sucursal con éxito. Ya puedes comenzar a crear puestos y colaboradores en el panel principal o cargar datos demo abajo."}
               </p>
 
-              {/* Estado del envío de notificaciones vía WhatsApp API */}
+              {/* LOS ACCESOS NO SE ENVÍAN SOLOS (2026-08-16).
+                  Aquí se disparaba `POST /admin/onboarding/send-whatsapp` y se pintaba un ✅
+                  "Notificaciones enviadas vía WhatsApp — Enviado 🟢" por cada teléfono. Ese
+                  endpoint sólo escribía una línea en la bitácora del servidor y respondía éxito:
+                  no existe —ni existió— ninguna integración con WhatsApp, así que el dueño
+                  terminaba su alta creyendo que a su colaborador le había llegado el PIN.
+                  Lo que sí funciona es abrir WhatsApp con el mensaje redactado y que la persona
+                  pulse enviar, que es lo que hacen estos dos botones. */}
               {createdEmpPin && (
                 <div className="max-w-md mx-auto mb-8">
-                  {waSentStatus.sending && (
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-slate-600 text-sm shadow-sm animate-pulse">
-                      <Loader2 size={18} className="animate-spin text-blue-600 shrink-0" />
-                      <span>Enviando accesos y bienvenida vía WhatsApp (Talent 360 API)...</span>
+                  <div className="p-5 bg-amber-50/60 border border-amber-200 rounded-2xl flex flex-col gap-3 text-left shadow-sm">
+                    <div className="flex items-center gap-2 font-bold text-amber-900 text-sm">
+                      <AlertCircle size={18} className="text-amber-600 shrink-0" />
+                      <span>Falta un paso: entregar los accesos</span>
                     </div>
-                  )}
-                  {waSentStatus.sent && (
-                    <div className="p-5 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex flex-col gap-2 text-left shadow-sm animate-in fade-in">
-                      <div className="flex items-center gap-2 font-bold text-emerald-800 text-sm">
-                        <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-                        <span>Notificaciones enviadas vía WhatsApp</span>
-                      </div>
-                      <p className="text-xs text-emerald-700 leading-relaxed pl-6">
-                        Se han enviado los accesos móviles y mensajes de bienvenida automáticamente desde la API del canal oficial de <strong>Talent 360</strong>.
-                      </p>
-                      <div className="pl-6 pt-1 space-y-1 text-[11px] text-slate-500 font-mono">
-                        {adminPhone.trim() && <div>• Administrador (+{adminPhone.replace(/\D/g, '')}): Enviado 🟢</div>}
-                        {empPhone.trim() && <div>• Colaborador ({empName} - +{empPhone.replace(/\D/g, '')}): Enviado 🟢</div>}
-                      </div>
+                    <p className="text-xs text-amber-800 leading-relaxed pl-6">
+                      El sistema <strong>no manda mensajes por su cuenta</strong>. Estos botones
+                      abren WhatsApp con el mensaje y el PIN ya redactados; tú pulsas enviar.
+                      También puedes hacerlo después desde Recursos Humanos, en la ficha de cada
+                      persona.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 pl-6">
+                      <button
+                        onClick={handleSendEmployeeWhatsApp}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <MessageSquare size={14} /> Abrir WhatsApp para {empName}
+                      </button>
+                      <button
+                        onClick={handleSendAdminWhatsApp}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <Send size={14} /> Enviarme mis accesos
+                      </button>
                     </div>
-                  )}
-                  {waSentStatus.error && (
-                    <div className="p-5 bg-rose-50/50 border border-rose-100 rounded-2xl flex flex-col gap-2 text-left shadow-sm animate-in fade-in">
-                      <div className="flex items-center gap-2 font-bold text-rose-800 text-sm">
-                        <AlertCircle size={18} className="text-rose-600 shrink-0" />
-                        <span>Notificación por WhatsApp pendiente</span>
-                      </div>
-                      <p className="text-xs text-rose-700 leading-relaxed pl-6">
-                        {waSentStatus.error}. Puedes realizar el reenvío manual de los accesos utilizando los controles de paso anterior si lo requieres.
-                      </p>
-                    </div>
-                  )}
+                  </div>
                 </div>
               )}
 

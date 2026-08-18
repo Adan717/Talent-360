@@ -199,44 +199,20 @@ class OnboardingController extends Controller
         ]);
     }
 
-    /**
-     * Send automated WhatsApp notifications via Talent 360 API (Simulated)
+    /*
+     * (Eliminado 2026-08-16.) Aquí vivía `sendWhatsAppNotifications`, que escribía
+     *
+     *     Log::info("WhatsApp API (Talent 360) -> Enviando invitación al número +52…")
+     *
+     * y respondía `success` con el mensaje "Notificaciones enviadas de manera exitosa desde el
+     * canal oficial de Talent 360". No enviaba nada: no hay —ni hubo— integración con WhatsApp,
+     * y no existe ninguna llave de proveedor en la configuración. El asistente de alta lo
+     * disparaba solo y pintaba un ✅ con "Enviado 🟢" por cada teléfono, así que un dueño
+     * terminaba su alta convencido de que a su colaborador ya le había llegado el PIN.
+     *
+     * Lo que sí funciona, y es lo que usa ahora la pantalla, es abrir WhatsApp con el mensaje
+     * redactado (`wa.me`) para que la persona pulse enviar.
      */
-    public function sendWhatsAppNotifications(Request $request)
-    {
-        $request->validate([
-            'admin_phone' => 'nullable|string',
-            'admin_message' => 'nullable|string',
-            'employee_phone' => 'nullable|string',
-            'employee_message' => 'nullable|string',
-        ]);
-
-        $adminSent = false;
-        $employeeSent = false;
-
-        if ($request->filled('admin_phone') && $request->filled('admin_message')) {
-            $cleanPhone = preg_replace('/[^0-9]/', '', $request->admin_phone);
-            if (!empty($cleanPhone)) {
-                \Illuminate\Support\Facades\Log::info("WhatsApp API (Talent 360) -> Enviando mensaje de bienvenida a Admin al número +{$cleanPhone}: {$request->admin_message}");
-                $adminSent = true;
-            }
-        }
-
-        if ($request->filled('employee_phone') && $request->filled('employee_message')) {
-            $cleanPhone = preg_replace('/[^0-9]/', '', $request->employee_phone);
-            if (!empty($cleanPhone)) {
-                \Illuminate\Support\Facades\Log::info("WhatsApp API (Talent 360) -> Enviando invitación a Colaborador al número +{$cleanPhone}: {$request->employee_message}");
-                $employeeSent = true;
-            }
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'admin_sent' => $adminSent,
-            'employee_sent' => $employeeSent,
-            'message' => 'Notificaciones enviadas de manera exitosa desde el canal oficial de Talent 360.'
-        ]);
-    }
 
     /**
      * Inject selected demo data (Private)

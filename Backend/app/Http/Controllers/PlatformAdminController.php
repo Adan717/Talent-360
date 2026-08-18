@@ -1013,20 +1013,13 @@ class PlatformAdminController extends Controller
             ->where('key', 'system_health_alerts')
             ->first();
 
-        if ($configAlerts) {
-            $alerts = json_decode($configAlerts->value, true) ?: [];
-        } else {
-            // Default alerts
-            $alerts = [
-                ['id' => 'db_replica', 'type' => 'error', 'message' => 'Fallo de conexión a la base de datos de réplica en GKE.', 'time' => 'Hace 10 min'],
-                ['id' => 'whatsapp_meta', 'type' => 'warning', 'message' => 'Alta latencia en el envío masivo de WhatsApp (API Meta).', 'time' => 'Hace 45 min'],
-            ];
-            // Seed it in DB
-            \DB::table('system_settings')->updateOrInsert(
-                ['tenant_id' => null, 'key' => 'system_health_alerts'],
-                ['value' => json_encode($alerts), 'updated_at' => now(), 'created_at' => now()]
-            );
-        }
+        // Sin alertas guardadas, NINGUNA alerta. Aquí había dos inventadas que además se
+        // sembraban en la base al primer vistazo, así que quedaban con pinta de incidencias
+        // registradas de verdad: "Fallo de conexión a la base de datos de réplica en GKE" (no
+        // hay GKE ni réplica) y "Alta latencia en el envío masivo de WhatsApp (API Meta)"
+        // (no hay integración de WhatsApp). Un panel de salud que inventa fallos es peor que
+        // uno vacío: enseña a ignorarlo.
+        $alerts = $configAlerts ? (json_decode($configAlerts->value, true) ?: []) : [];
 
         return response()->json($alerts);
     }
@@ -1049,15 +1042,8 @@ class PlatformAdminController extends Controller
             ->where('key', 'system_health_alerts')
             ->first();
 
-        $alerts = [];
-        if ($configAlerts) {
-            $alerts = json_decode($configAlerts->value, true) ?: [];
-        } else {
-            $alerts = [
-                ['id' => 'db_replica', 'type' => 'error', 'message' => 'Fallo de conexión a la base de datos de réplica en GKE.', 'time' => 'Hace 10 min'],
-                ['id' => 'whatsapp_meta', 'type' => 'warning', 'message' => 'Alta latencia en el envío masivo de WhatsApp (API Meta).', 'time' => 'Hace 45 min'],
-            ];
-        }
+        // Mismo criterio que al listarlas: si no hay nada guardado, no hay alertas que resolver.
+        $alerts = $configAlerts ? (json_decode($configAlerts->value, true) ?: []) : [];
 
         // Filter out the resolved alert
         $filteredAlerts = array_values(array_filter($alerts, function($alert) use ($request) {

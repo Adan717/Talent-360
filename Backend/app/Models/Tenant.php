@@ -176,6 +176,29 @@ class Tenant extends Model
     /**
      * Check if a specific feature is unlocked for this tenant.
      */
+    /**
+     * Las funciones de plan que existen. Lista ÚNICA, porque estaba en tres sitios distintos.
+     *
+     * `ClockController` preguntaba por sólo cuatro de ellas y mandaba el resultado al navegador
+     * como `tenant_allowed_features`. El frontend, al recibir una lista NO vacía, la toma como
+     * la verdad y ni siquiera mira el plan (`useAppStore::isFeatureUnlocked`), así que las tres
+     * que faltaban quedaban apagadas para todo el mundo, enterprise incluido: `store_opening`,
+     * `meal_reservation` y `enable_ley_silla`.
+     *
+     * Se notaba así: sin `store_opening` no aparece "Apertura de Sucursales" en Configuración,
+     * no se pueden asignar portadores de llaves, y entonces NADIE puede abrir la tienda — el
+     * dial se queda en "Reportar cerrado" para siempre, en una empresa nueva y sin explicación.
+     */
+    public const FUNCIONES_DEL_PLAN = [
+        'keys_control',
+        'meal_timers',
+        'checklists_validation',
+        'voice_commands',
+        'store_opening',
+        'meal_reservation',
+        'enable_ley_silla',
+    ];
+
     public function isFeatureUnlocked($featureId)
     {
         if ((int)$this->id === 1 || (int)$this->id === 33 || $this->subdomain === 'talent360') {

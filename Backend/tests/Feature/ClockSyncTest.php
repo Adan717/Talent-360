@@ -64,6 +64,34 @@ class ClockSyncTest extends TestCase
      * El cliente miente (is_late=false) pero la hora está fuera de tolerancia; el
      * servidor debe recalcular is_late=true. Prueba que el bypass está cerrado.
      */
+    /**
+     * Una empresa enterprise recibe TODAS las funciones de su plan.
+     *
+     * `/sync/state` mandaba `tenant_allowed_features` preguntando sólo por cuatro de las siete
+     * que existen, y el navegador toma esa lista como la verdad sin volver a mirar el plan. Las
+     * tres que faltaban quedaban apagadas para todo el mundo, y `store_opening` es la peor de
+     * perder: sin ella no aparece "Apertura de Sucursales" en Configuración, nadie puede ser
+     * portador de llaves y NADIE puede abrir la tienda — el dial se queda en "Reportar cerrado"
+     * en una empresa recién creada, sin ninguna pista de por qué.
+     */
+    public function test_enterprise_recibe_todas_las_funciones_de_su_plan(): void
+    {
+        [, $user, ] = $this->makeSetup('enterprise');
+
+        $funciones = $this->actingAs($user)
+            ->getJson('/api/v1/sync/state')
+            ->assertOk()
+            ->json('tenant_allowed_features');
+
+        foreach (\App\Models\Tenant::FUNCIONES_DEL_PLAN as $funcion) {
+            $this->assertContains($funcion, $funciones, "enterprise se quedó sin '{$funcion}'");
+        }
+
+        // El candado de verdad: si alguien añade una función al producto y olvida esta lista,
+        // el navegador la apagará en silencio. Que falle aquí y no en la cara de un cliente.
+        $this->assertContains('store_opening', \App\Models\Tenant::FUNCIONES_DEL_PLAN);
+    }
+
     public function test_sync_attendance_punch_recomputes_late_server_side(): void
     {
         [$tenant, $user] = $this->makeSetup('enterprise');

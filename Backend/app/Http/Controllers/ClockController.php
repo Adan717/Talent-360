@@ -438,8 +438,9 @@ class ClockController extends Controller
                 return $tenant->isModuleUnlocked($m);
             }));
 
-            // Check all potential features
-            $featuresToCheck = ['keys_control', 'meal_timers', 'checklists_validation', 'voice_commands'];
+            // La lista vive en el modelo: aquí faltaban tres funciones y, como el navegador
+            // toma esta respuesta como la verdad, quedaban apagadas incluso en enterprise.
+            $featuresToCheck = \App\Models\Tenant::FUNCIONES_DEL_PLAN;
             $allowedFeatures = array_values(array_filter($featuresToCheck, function($f) use ($tenant) {
                 return $tenant->isFeatureUnlocked($f);
             }));

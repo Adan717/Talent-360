@@ -77,6 +77,40 @@ class AperturaCanOpenStoreTest extends TestCase
     }
 
     /**
+     * EL DÍA 1 DE TODA EMPRESA NUEVA: el status del día nace ANTES de que existan portadores.
+     *
+     * La fila del día se crea al primer vistazo de cualquiera —basta con que alguien abra el
+     * Reloj— y elige responsable en ese momento. Una empresa recién dada de alta todavía no
+     * tiene portadores configurados, así que nacía huérfana... y nunca los recogía.
+     *
+     * El síntoma no dice nada: el dial exige `currentUser.id === responsibleId` para ofrecer
+     * "Abrir Tienda"; con responsable nulo eso no se cumple para NADIE, y la tienda se queda
+     * cerrada todo el día mostrando "Esperando apertura por: Encargado". Le pasa a todo cliente
+     * nuevo, siempre, y no hay nada en pantalla que lo explique.
+     */
+    public function test_el_dia_sin_responsable_adopta_al_portador_cuando_ya_existe(): void
+    {
+        $servicio = app(StoreOpeningService::class);
+
+        // Primer vistazo SIN portadores: el día nace huérfano (correcto: no se elige a nadie
+        // que no esté autorizado).
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+        $this->assertNull($status->current_responsible_employee_id, 'sin portadores no debe elegirse a nadie');
+
+        // El administrador configura la apertura DESPUÉS, que es el orden real de las cosas.
+        $gerente = $this->makeEmployeeWithUser('Gerente Que Llegó Después');
+        $this->makeAssignment($gerente['employee_id'], 1, true);
+
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+
+        $this->assertSame(
+            (int) $gerente['user']->id,
+            (int) $status->current_responsible_employee_id,
+            'el día ya existía y se quedaba sin responsable para siempre: la tienda no se podía abrir'
+        );
+    }
+
+    /**
      * El caso del cliente: al Cajero (prioridad 1) se le APAGA "puede abrir tienda"; el Gerente
      * (prioridad 2) sí puede. El responsable del día debe ser el GERENTE, no el Cajero.
      */

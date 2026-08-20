@@ -85,13 +85,7 @@ class StoreOpeningService
             // gateaba ningun lookup, asi que apagarla desde el panel del admin era decorativo y a
             // esa persona le seguian entregando la apertura del dia. Si nadie esta autorizado, el
             // status queda SIN responsable (no se elige a un no-autorizado por defecto).
-            $firstResponsible = StoreOpeningAssignment::withoutGlobalScopes()
-                ->where('tenant_id', $tenantId)
-                ->where('store_id', $storeId)
-                ->where('is_active', true)
-                ->where('can_open_store', true)
-                ->orderBy('priority_order', 'asc')
-                ->first();
+            $firstResponsible = $this->primerResponsable($tenantId, $storeId);
 
             // store_opening_assignments.employee_id es employees.id (migración
             // 2026_07_07_192928_fix_store_opening_assignments_foreign_key), pero
@@ -114,10 +108,45 @@ class StoreOpeningService
             ]);
         }
 
+        // La fila del día se crea al primer vistazo de CUALQUIERA, y elige responsable en ese
+        // momento. Una empresa recién dada de alta todavía no tiene portadores de llaves —
+        // se configuran después—, así que su primer día nacía SIN responsable y ya no lo
+        // recogía nunca: el dial pide `currentUser.id === responsibleId` para ofrecer "Abrir
+        // Tienda", con responsable nulo eso no se cumple para nadie, y la tienda se quedaba
+        // cerrada TODO el día sin decir por qué. Le pasa a todo cliente nuevo, siempre.
+        //
+        // Si hoy ya hay portadores y la fila sigue huérfana, se adopta al de mayor prioridad.
+        if (!$todayStatus->current_responsible_employee_id) {
+            $responsableUserId = $this->responsibleUserId($this->primerResponsable($tenantId, $storeId));
+            if ($responsableUserId) {
+                $todayStatus->current_responsible_employee_id = $responsableUserId;
+                $todayStatus->save();
+            }
+        }
+
         // Auto transition status based on time
         $this->checkAndTransitionStatus($todayStatus, $simTime);
 
         return $todayStatus;
+    }
+
+    /**
+     * El portador de llaves de mayor prioridad que PUEDE abrir hoy.
+     *
+     * `can_open_store` es el permiso real: sin ese filtro, apagarlo desde el panel era
+     * decorativo y a esa persona le seguían entregando la apertura. Si nadie está autorizado
+     * devuelve null y el día se queda sin responsable a propósito — nunca se elige a alguien
+     * que no lo esté.
+     */
+    private function primerResponsable($tenantId, $storeId)
+    {
+        return StoreOpeningAssignment::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->where('can_open_store', true)
+            ->orderBy('priority_order', 'asc')
+            ->first();
     }
 
     /**

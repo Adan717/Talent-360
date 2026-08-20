@@ -251,6 +251,22 @@ class StoreOpeningHandoffService
                 'next_responsible_name' => $nextUser ? $nextUser->name : 'Suplente'
             ];
         } else {
+            // Se acabó la cadena. Pero acabarse la cadena NO es lo mismo que perder el día:
+            // con un solo portador de llaves se agota de inmediato, y antes eso condenaba el
+            // día a la apertura de emergencia (2 testigos) diez minutos ANTES de que la tienda
+            // tuviera que abrir. El día sólo se da por perdido cuando la apertura ya no puede
+            // contar como a tiempo — mismo umbral que paga el bono.
+            if (!StoreOpeningService::yaSePuedeDeclararFallida($status)) {
+                // Sigue habiendo tiempo: el último responsable conserva la apertura.
+                $status->status = 'active_window';
+                $status->save();
+
+                return [
+                    'type' => 'sin_suplentes',
+                    'message' => 'No hay más suplentes, pero aún no vence la hora de apertura: la apertura sigue en manos del responsable actual.',
+                ];
+            }
+
             // All responsibles failed! Generar alerta crítica.
             $status->status = 'failed';
             $status->failed_at = Carbon::now();

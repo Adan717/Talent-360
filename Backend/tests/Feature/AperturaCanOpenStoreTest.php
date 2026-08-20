@@ -77,6 +77,57 @@ class AperturaCanOpenStoreTest extends TestCase
     }
 
     /**
+     * Con UN SOLO portador de llaves, la tienda no puede darse por perdida antes de abrir.
+     *
+     * `report_deadline` se calcula desde el inicio de la ventana previa, no desde la hora de
+     * apertura: con apertura 08:45, ventana 15 y plazo 5, vencia a las 08:35 — DIEZ MINUTOS
+     * ANTES de que la tienda tuviera que abrir. La cadena se agota al instante porque no hay
+     * suplente, y el dia entero quedaba condenado a la apertura de emergencia con 2 testigos
+     * sin que nadie hubiera llegado tarde. Es el caso de cualquier tienda chica.
+     *
+     * Ahora la cesion por eslabon sigue igual (la cadena debe resolverse durante la ventana
+     * previa), pero el dia solo se declara fallido cuando la apertura ya no cuenta como a
+     * tiempo: misma tolerancia con la que se paga el bono.
+     */
+    public function test_con_un_solo_portador_el_dia_no_falla_antes_de_la_hora_de_apertura(): void
+    {
+        $tz = \App\Helpers\TenantTimezone::for(1);
+        $gerente = $this->makeEmployeeWithUser('Unico Con Llave');
+        $this->makeAssignment($gerente['employee_id'], 1, true);
+
+        DB::table('lft_settings')->updateOrInsert(
+            ['tenant_id' => 1],
+            ['late_tolerance_minutes' => 10, 'created_at' => now(), 'updated_at' => now()]
+        );
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => 1, 'key' => 'storeSchedule'],
+            ['value' => json_encode(['openTime' => '08:45', 'closeTime' => '17:00']), 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        $servicio = app(StoreOpeningService::class);
+
+        // 08:31 — dentro de la ventana previa (08:30) y antes del plazo de cesion (08:35).
+        Carbon::setTestNow(Carbon::parse(Carbon::now($tz)->toDateString() . ' 08:31:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+        $this->assertSame('active_window', $status->status);
+        $this->assertSame((int) $gerente['user']->id, (int) $status->current_responsible_employee_id);
+
+        // 08:40 — el plazo de cesion ya vencio y NO hay suplente, pero la tienda todavia no
+        // abre. Antes: 'failed'. Ahora el gerente sigue pudiendo abrir con normalidad.
+        Carbon::setTestNow(Carbon::parse(Carbon::now($tz)->toDateString() . ' 08:40:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+        $this->assertNotSame('failed', $status->status, 'el dia se dio por perdido ANTES de que la tienda abriera');
+        $this->assertSame((int) $gerente['user']->id, (int) $status->current_responsible_employee_id);
+
+        // 08:56 — pasada la hora de apertura mas la tolerancia (08:45 + 10): ahora si.
+        Carbon::setTestNow(Carbon::parse(Carbon::now($tz)->toDateString() . ' 08:56:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+        $this->assertSame('failed', $status->status, 'pasada la tolerancia el dia SI debe darse por perdido');
+
+        Carbon::setTestNow();
+    }
+
+    /**
      * EL DÍA 1 DE TODA EMPRESA NUEVA: el status del día nace ANTES de que existan portadores.
      *
      * La fila del día se crea al primer vistazo de cualquiera —basta con que alguien abra el

@@ -79,6 +79,15 @@ class LlamarEncargadoPhoneTest extends TestCase
 
     public function test_portador_de_llaves_recibe_el_telefono_del_responsable(): void
     {
+        // Anclado ANTES de que se abra la ventana de apertura, para que el titular siga siendo
+        // el responsable. Sin esto la prueba dependía de la hora real del reloj: corriendo por la
+        // tarde el plazo ya había vencido, la cesión automática pasaba la apertura al suplente
+        // —que es justo quien consulta— y entonces no hay teléfono que darle, porque el
+        // responsable es él mismo. Antes pasaba igual, pero sólo porque el servicio pisaba lo que
+        // el handoff escribía; al dejar de pisarlo, la cesión ocurre de verdad.
+        $tz = \App\Helpers\TenantTimezone::for(1);
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::parse(\Carbon\Carbon::now($tz)->toDateString() . ' 06:00:00', $tz));
+
         $titular = $this->makeEmployeeWithUser('Titular Llaves', '55-1234-5678');
         $suplente = $this->makeEmployeeWithUser('Suplente Llaves', '55-9999-0000');
         $this->makeAssignment($titular['employee_id'], 1);
@@ -92,6 +101,8 @@ class LlamarEncargadoPhoneTest extends TestCase
             $response->json('responsible_phone'),
             'el suplente (portador de llaves) debe recibir el teléfono del expediente del responsable'
         );
+
+        \Carbon\Carbon::setTestNow();
     }
 
     public function test_empleado_comun_no_recibe_telefono(): void

@@ -172,20 +172,68 @@ class StoreOpeningService
         } elseif ($now->greaterThanOrEqualTo($windowStart) && $now->lessThan($deadline)) {
             $status->status = 'active_window';
         } elseif ($now->greaterThanOrEqualTo($deadline)) {
-            // Exceeded deadline without action!
+            // Vencido el plazo del eslabón actual: se cede al siguiente. Pero DECLARAR EL DÍA
+            // FALLIDO es otra cosa, y hasta ahora era la misma.
             if ($status->status === 'active_window' || $status->status === 'pending' || $status->status === 'transferred') {
                 if ($settings->allow_automatic_handoff) {
                     // Try handoff to next responsible
                     $handoffService = app(StoreOpeningHandoffService::class);
                     $handoffService->handoffToNextResponsible($status->store_id, $status->current_responsible_employee_id, 'no_response', $simTime, $status->tenant_id);
-                } else {
+
+                    // El handoff carga SU PROPIA copia de la fila y la guarda. Sin releerla aquí,
+                    // el `save()` del final de este método escribe encima con el estado viejo y
+                    // deshace la cesión (o el fallo) que acababa de registrarse.
+                    $status->refresh();
+
+                    return;
+                } elseif (self::yaSePuedeDeclararFallida($status)) {
                     $status->status = 'failed';
                     $status->failed_at = Carbon::now();
+                } else {
+                    // Todavía no es hora de dar el día por perdido: quien sea responsable sigue
+                    // pudiendo abrir con normalidad.
+                    $status->status = 'active_window';
                 }
             }
         }
         
         $status->save();
+    }
+
+    /**
+     * ¿Ya pasó la hora a partir de la cual esta apertura cuenta como perdida?
+     *
+     * Un solo número hacía dos trabajos: `report_deadline` marcaba a la vez "cuánto tiene este
+     * encargado para responder antes de ceder" y "cuándo el día está perdido". Y como el plazo
+     * se calcula desde el INICIO de la ventana previa, salía ANTES de que la tienda abriera:
+     * con apertura 08:45, ventana 15 y plazo 5, el día se declaraba fallido a las 08:35 — diez
+     * minutos antes de que nadie tuviera que abrir nada. Con un único portador de llaves (la
+     * tienda chica de siempre) no había a quién ceder, así que el día quedaba condenado a la
+     * apertura de emergencia con dos testigos sin que nadie hubiera llegado tarde.
+     *
+     * La cesión por eslabón se queda como estaba: la cadena debe resolverse DURANTE la ventana
+     * previa para que la tienda abra a su hora. Lo que se separa es el fallo del día, que ahora
+     * usa la MISMA tolerancia con la que se paga el bono de apertura
+     * (`ClockService::aperturasATiempo`). Así "fallida" significa exactamente "esta apertura ya
+     * no cuenta como a tiempo": un número, un significado, y dos ajustes que no se pueden
+     * contradecir entre sí.
+     */
+    public static function yaSePuedeDeclararFallida(StoreDailyOpeningStatus $status): bool
+    {
+        if (!$status->scheduled_opening_time) {
+            return true; // sin hora programada no hay nada que proteger
+        }
+
+        $tz = TenantTimezone::for($status->tenant_id);
+        $tolerancia = (int) (\App\Models\LftSetting::where('tenant_id', $status->tenant_id)
+            ->value('late_tolerance_minutes') ?? 10);
+
+        $limite = Carbon::parse(
+            Carbon::parse($status->date)->format('Y-m-d') . ' ' . $status->scheduled_opening_time,
+            $tz
+        )->addMinutes($tolerancia);
+
+        return Carbon::now($tz)->greaterThan($limite);
     }
 
     /**

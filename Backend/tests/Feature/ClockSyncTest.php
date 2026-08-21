@@ -65,6 +65,34 @@ class ClockSyncTest extends TestCase
      * servidor debe recalcular is_late=true. Prueba que el bypass está cerrado.
      */
     /**
+     * Doble clic en "Iniciar Comida" NO puede producir dos comidas abiertas.
+     *
+     * El guard de duplicado solo existia para check_in: dos meal_start con un segundo de
+     * diferencia entraban ambos (visto en vivo: 20:10:37 y 20:10:38), y el pareo de nomina
+     * casa el primero con el meal_end dejando el segundo colgado como comida sin cierre.
+     * Regla idempotente, como el check_in: el segundo intento devuelve la entrada existente.
+     * Los segmentos multiples LEGITIMOS (comida -> fin -> segunda comida) siguen permitidos.
+     */
+    public function test_doble_clic_en_iniciar_comida_no_duplica_el_segmento(): void
+    {
+        [$tenant, $user] = array_slice($this->makeSetup('enterprise'), 0, 2);
+
+        $primera = app(ClockService::class)->processPunch($user, 'meal_start');
+        $segunda = app(ClockService::class)->processPunch($user, 'meal_start');
+
+        $this->assertTrue($segunda['success']);
+        $this->assertTrue($segunda['duplicate'] ?? false, 'el segundo meal_start debe reconocerse como duplicado');
+        $this->assertSame(1, TimeEntry::where('user_id', $user->id)->where('type', 'meal_start')->count(),
+            'el doble clic dejo DOS comidas abiertas');
+
+        // Segundo segmento legitimo: fin de comida y una segunda comida nueva.
+        app(ClockService::class)->processPunch($user, 'meal_end');
+        $tercera = app(ClockService::class)->processPunch($user, 'meal_start');
+        $this->assertFalse($tercera['duplicate'] ?? false, 'una SEGUNDA comida tras cerrar la primera es legitima');
+        $this->assertSame(2, TimeEntry::where('user_id', $user->id)->where('type', 'meal_start')->count());
+    }
+
+    /**
      * Una sesion del Simulador Matrix que ya NO esta activa no puede seguir filtrando la vista.
      *
      * El navegador guarda el id de la sesion en localStorage para sobrevivir recargas DENTRO de

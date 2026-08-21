@@ -575,6 +575,33 @@ class ClockService
             }
         }
 
+        // R63 extendido a los SEGMENTOS (2026-08-20, encontrado probando en vivo): el guard de
+        // duplicado sólo existía para check_in. Un doble clic en "Iniciar Comida" mandaba dos
+        // peticiones y el servidor aceptaba AMBAS — quedaron dos meal_start con un segundo de
+        // diferencia, y el pareo de nómina (pairedExcessMinutes) casa el primero con el meal_end
+        // y deja el segundo colgado como comida "sin cierre". Misma regla idempotente que el
+        // check_in: si el MISMO segmento sigue abierto, se devuelve la entrada existente sin
+        // crear fila (la cola offline y el doble toque no deben recibir error). Los segmentos
+        // MÚLTIPLES legítimos (comida→fin→segunda comida) siguen pasando: sólo se corta cuando
+        // el último marcador del par es el propio start.
+        $startPairs = [
+            'meal_start' => 'meal_end',
+            'break_start' => 'break_end',
+            'temp_exit_start' => 'temp_exit_end',
+            'silla_start' => 'silla_end',
+        ];
+        if (isset($startPairs[$type])) {
+            $lastSegment = $this->lastEntryOfTypes($user->id, $date, [$type, $startPairs[$type]], $isSimulatorPunch, $simulationSessionId);
+            if ($lastSegment && $lastSegment->type === $type) {
+                return [
+                    'success' => true,
+                    'message' => 'Ese registro ya estaba iniciado.',
+                    'entry' => $lastSegment,
+                    'duplicate' => true,
+                ];
+            }
+        }
+
         if (!$isOffline && !in_array($type, self::AUXILIARY_ENTRY_TYPES, true) && $type !== 'waiting' && $type !== 'contingency') {
             if ($type === 'check_out') {
                 $lastAttendance = $this->lastEntryOfTypes($user->id, $date, ['check_in', 'check_out'], $isSimulatorPunch, $simulationSessionId);

@@ -58,27 +58,8 @@ class StoreOpeningService
             // Retrieve opening settings
             $openingSettings = $this->settingsService->getOpeningSettings($tenantId, $storeId);
             
-            // Get opening time from store schedule or default to 08:30:00
-            $openTimeStr = '08:30:00';
-            $companySched = DB::table('system_settings')
-                ->where('tenant_id', $tenantId)
-                ->where('key', 'storeSchedule')
-                ->first();
-            if ($companySched) {
-                $schedVal = json_decode($companySched->value, true);
-                if (isset($schedVal['openTime'])) {
-                    $openTimeStr = $schedVal['openTime'] . ':00';
-                }
-            }
-
-            $openTime = Carbon::createFromFormat('H:i:s', $openTimeStr);
-            
-            // Calculate windows
-            $preMinutes = $openingSettings->pre_opening_window_minutes;
-            $reportMinutes = $openingSettings->absence_late_report_window_minutes;
-            
-            $windowStart = $openTime->copy()->subMinutes($preMinutes)->format('H:i:s');
-            $deadline = $openTime->copy()->subMinutes($preMinutes)->addMinutes($reportMinutes)->format('H:i:s');
+            $openTimeStr = $this->horaDeAperturaConfigurada($tenantId);
+            [$windowStart, $deadline] = $this->ventanasDe($openTimeStr, $openingSettings);
 
             // Find current responsible manager (Priority 1)
             // R46 (merge F3): `can_open_store` es el permiso REAL — sin este filtro la columna no
@@ -106,6 +87,32 @@ class StoreOpeningService
                 'current_responsible_employee_id' => $responsibleUserId,
                 'status' => 'pending',
             ]);
+        }
+
+        // EL HORARIO CAMBIÓ DESPUÉS DE CREAR EL DÍA (2026-08-20).
+        //
+        // La fila del día se crea una sola vez, con el horario que hubiera en ese momento. Si el
+        // administrador corrige la hora de apertura más tarde —cosa normal el primer día, o al
+        // cambiar el horario de la tienda— el día en curso seguía gobernado por el horario viejo:
+        // la pantalla mostraba 17:50 y el sistema seguía midiendo contra las 09:32, con el día ya
+        // dado por perdido contra un horario que ya no existe.
+        //
+        // Es la trampa que este proyecto repite: corregir la regla no recalcula lo ya generado.
+        // Un día YA ABIERTO no se toca nunca: eso es historia.
+        if ($todayStatus->status !== 'opened') {
+            $horaConfigurada = $this->horaDeAperturaConfigurada($tenantId);
+            if ($horaConfigurada !== $todayStatus->scheduled_opening_time) {
+                $ajustes = $this->settingsService->getOpeningSettings($tenantId, $storeId);
+                [$inicio, $limite] = $this->ventanasDe($horaConfigurada, $ajustes);
+
+                $todayStatus->scheduled_opening_time = $horaConfigurada;
+                $todayStatus->pre_opening_window_start = $inicio;
+                $todayStatus->report_deadline = $limite;
+                // El fallo se midió contra un horario que ya no rige: se vuelve a evaluar.
+                $todayStatus->status = 'pending';
+                $todayStatus->failed_at = null;
+                $todayStatus->save();
+            }
         }
 
         // La fila del día se crea al primer vistazo de CUALQUIERA, y elige responsable en ese
@@ -198,6 +205,40 @@ class StoreOpeningService
         }
         
         $status->save();
+    }
+
+    /** La hora de apertura que la empresa tiene configurada hoy (`storeSchedule`). */
+    private function horaDeAperturaConfigurada($tenantId): string
+    {
+        $sched = DB::table('system_settings')
+            ->where('tenant_id', $tenantId)
+            ->where('key', 'storeSchedule')
+            ->value('value');
+
+        $val = $sched ? json_decode($sched, true) : null;
+
+        return isset($val['openTime']) ? $val['openTime'] . ':00' : '08:30:00';
+    }
+
+    /**
+     * [inicio de la ventana previa, plazo de cesión] a partir de la hora de apertura.
+     *
+     * El plazo es de CESIÓN al suplente, no de fallo del día: se mide desde el inicio de la
+     * ventana previa a propósito, para que la cadena de encargados se resuelva ANTES de que la
+     * tienda tenga que abrir. Cuándo se da el día por perdido lo decide
+     * `yaSePuedeDeclararFallida()`, que es otra cosa.
+     */
+    private function ventanasDe(string $openTimeStr, $ajustes): array
+    {
+        $openTime = Carbon::createFromFormat('H:i:s', $openTimeStr);
+
+        return [
+            $openTime->copy()->subMinutes($ajustes->pre_opening_window_minutes)->format('H:i:s'),
+            $openTime->copy()
+                ->subMinutes($ajustes->pre_opening_window_minutes)
+                ->addMinutes($ajustes->absence_late_report_window_minutes)
+                ->format('H:i:s'),
+        ];
     }
 
     /**

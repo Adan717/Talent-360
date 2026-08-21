@@ -70,13 +70,26 @@ class StoreClosedAmnestyTest extends TestCase
     /** Fila de status del día. Sin assignments → el gate de tienda-cerrada no aplica (check_in libre). */
     private function makeStatus(Tenant $tenant, array $overrides = []): void
     {
-        DB::table('store_daily_opening_statuses')->insert(array_merge([
+        $fila = array_merge([
             'tenant_id' => $tenant->id, 'company_id' => 1, 'store_id' => 1, 'date' => self::DATE,
             'scheduled_opening_time' => '09:00:00', 'pre_opening_window_start' => '08:45:00',
             'report_deadline' => '09:15:00', 'status' => 'opened',
             'late_amnesty_granted' => false, 'opened_at' => null,
             'created_at' => now(), 'updated_at' => now(),
-        ], $overrides));
+        ], $overrides);
+
+        // El horario de la EMPRESA tiene que decir lo mismo que la fila del día. Si no, el
+        // servicio resincroniza el día con el horario configurado —que es justo lo que debe
+        // hacer cuando el admin corrige la hora— y esta fila armada a mano se descartaría.
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => $tenant->id, 'key' => 'storeSchedule'],
+            ['value' => json_encode([
+                'openTime' => substr($fila['scheduled_opening_time'], 0, 5),
+                'closeTime' => '21:00',
+            ]), 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        DB::table('store_daily_opening_statuses')->insert($fila);
     }
 
     private function checkIn(User $user): TimeEntry

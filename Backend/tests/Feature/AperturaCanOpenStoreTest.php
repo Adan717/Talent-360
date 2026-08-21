@@ -89,6 +89,52 @@ class AperturaCanOpenStoreTest extends TestCase
      * previa), pero el dia solo se declara fallido cuando la apertura ya no cuenta como a
      * tiempo: misma tolerancia con la que se paga el bono.
      */
+    /**
+     * Corregir el horario DEBE arreglar el dia en curso, no solo el de maniana.
+     *
+     * La fila del dia se crea una sola vez, con el horario que hubiera en ese momento. Si el
+     * administrador corrige la hora de apertura mas tarde —normal el primer dia, o al cambiar
+     * el horario de la tienda— el dia seguia gobernado por el horario viejo: la pantalla decia
+     * una hora y el sistema medía contra otra, con el dia ya dado por perdido contra un horario
+     * que ya no existe. Es la trampa que este proyecto repite: corregir la regla no recalcula
+     * lo ya generado.
+     */
+    public function test_cambiar_el_horario_resincroniza_el_dia_en_curso(): void
+    {
+        $tz = \App\Helpers\TenantTimezone::for(1);
+        $hoy = Carbon::now($tz)->toDateString();
+        $gerente = $this->makeEmployeeWithUser('Gerente Horario');
+        $this->makeAssignment($gerente['employee_id'], 1, true);
+
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => 1, 'key' => 'storeSchedule'],
+            ['value' => json_encode(['openTime' => '08:45', 'closeTime' => '17:00']), 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        $servicio = app(StoreOpeningService::class);
+
+        // Media maniana: el dia nacio con las 08:45 y ya se perdio.
+        Carbon::setTestNow(Carbon::parse($hoy . ' 11:00:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+        $this->assertSame('08:45:00', $status->scheduled_opening_time);
+        $this->assertSame('failed', $status->status);
+
+        // El administrador corrige el horario: la tienda abre por la tarde.
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => 1, 'key' => 'storeSchedule'],
+            ['value' => json_encode(['openTime' => '17:50', 'closeTime' => '21:00']), 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        // Antes: seguia con las 08:45 y en 'failed' para siempre.
+        Carbon::setTestNow(Carbon::parse($hoy . ' 17:40:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+
+        $this->assertSame('17:50:00', $status->scheduled_opening_time, 'el dia en curso no siguio al horario nuevo');
+        $this->assertNotSame('failed', $status->status, 'el dia seguia perdido contra un horario que ya no rige');
+
+        Carbon::setTestNow();
+    }
+
     public function test_con_un_solo_portador_el_dia_no_falla_antes_de_la_hora_de_apertura(): void
     {
         $tz = \App\Helpers\TenantTimezone::for(1);

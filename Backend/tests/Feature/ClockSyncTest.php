@@ -65,6 +65,62 @@ class ClockSyncTest extends TestCase
      * servidor debe recalcular is_late=true. Prueba que el bypass está cerrado.
      */
     /**
+     * Una sesion del Simulador Matrix que ya NO esta activa no puede seguir filtrando la vista.
+     *
+     * El navegador guarda el id de la sesion en localStorage para sobrevivir recargas DENTRO de
+     * la Matrix, pero se queda pegado al salir del modulo: desde entonces cada /sync/state pedia
+     * el mundo simulado y el Reloj real se volvia ciego — la tienda recien abierta seguia
+     * "cerrada" en pantalla y los fichajes del dia no aparecian, sin que nada lo explicara.
+     * (Probando en vivo: sesion abierta a las 14:44, dial roto a las 19:38.)
+     *
+     * La regla: el filtro solo aplica si la sesion existe, es de ESTE tenant y sigue activa.
+     * Asi, cerrar la sesion en el servidor sana a todos los navegadores que la tengan pegada.
+     */
+    public function test_una_sesion_de_simulacion_muerta_no_esconde_los_datos_reales(): void
+    {
+        [$tenant, $user] = array_slice($this->makeSetup('enterprise'), 0, 2);
+
+        // Un fichaje REAL de hoy (sin sesion de simulacion).
+        DB::table('time_entries')->insert([
+            'tenant_id' => $tenant->id, 'user_id' => $user->id, 'type' => 'check_in',
+            'date' => now()->toDateString(), 'time' => '09:00:00', 'is_late' => false,
+            'late_minutes' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $sesionCerrada = DB::table('simulator_sessions')->insertGetId([
+            'tenant_id' => $tenant->id, 'status' => 'closed', 'simulated_date' => now()->toDateString(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        // 1) Sesion CERRADA pegada en el navegador: se ignora y se sirven los datos reales.
+        $entradas = $this->actingAs($user)
+            ->getJson('/api/v1/sync/state?simulation_session_id=' . $sesionCerrada)
+            ->assertOk()->json('time_entries');
+        $this->assertNotEmpty($entradas, 'con una sesion muerta pegada, el Reloj se quedaba ciego a los fichajes reales');
+
+        // 2) Sesion ACTIVA de OTRO tenant: tampoco filtra (ni filtra ni filtra lo ajeno).
+        $otroTenant = Tenant::create(['name' => 'Ajeno', 'subdomain' => 'ajeno-sim', 'plan' => 'pro', 'is_active' => true]);
+        $sesionAjena = DB::table('simulator_sessions')->insertGetId([
+            'tenant_id' => $otroTenant->id, 'status' => 'active', 'simulated_date' => now()->toDateString(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $entradas = $this->actingAs($user)
+            ->getJson('/api/v1/sync/state?simulation_session_id=' . $sesionAjena)
+            ->assertOk()->json('time_entries');
+        $this->assertNotEmpty($entradas, 'una sesion de OTRA empresa no debe alterar mi vista');
+
+        // 3) Sesion activa y MIA: el filtro si aplica — la Matrix ve su mundo, no el real.
+        $sesionViva = DB::table('simulator_sessions')->insertGetId([
+            'tenant_id' => $tenant->id, 'status' => 'active', 'simulated_date' => now()->toDateString(),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $entradas = $this->actingAs($user)
+            ->getJson('/api/v1/sync/state?simulation_session_id=' . $sesionViva)
+            ->assertOk()->json('time_entries');
+        $this->assertEmpty($entradas, 'dentro de una simulacion viva NO deben verse los fichajes reales');
+    }
+
+    /**
      * Una empresa enterprise recibe TODAS las funciones de su plan.
      *
      * `/sync/state` mandaba `tenant_allowed_features` preguntando sólo por cuatro de las siete

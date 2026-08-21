@@ -179,7 +179,19 @@ class ClockController extends Controller
                 ->first();
             $simSessionId = $activeSession?->id;
         } elseif ($simSessionId !== null) {
-            $simSessionId = (int) $simSessionId;
+            // La sesión tiene que EXISTIR, ser de ESTE tenant y seguir ACTIVA. El navegador
+            // guarda el id en localStorage para sobrevivir recargas dentro de la Matrix, pero
+            // se quedaba pegado al salir del módulo: desde entonces cada /sync/state pedía el
+            // mundo simulado y el Reloj REAL se volvía ciego — la tienda recién abierta seguía
+            // "cerrada" en pantalla, los fichajes del día no aparecían, y nada de la pantalla
+            // explicaba por qué (probando en vivo: sesión 2 abierta a las 14:44, dial roto a
+            // las 19:38). Con esto, cerrar la sesión en el servidor sana a todos los
+            // navegadores que la tengan pegada, sin cirugía de localStorage.
+            $simSessionId = DB::table('simulator_sessions')
+                ->where('tenant_id', $tenantId)
+                ->where('id', (int) $simSessionId)
+                ->where('status', 'active')
+                ->value('id');
         }
 
         $applySimFilter = function ($query, $column = 'simulation_session_id') use ($simSessionId) {

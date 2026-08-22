@@ -54,7 +54,7 @@ class Employee extends Model
         'allowed_features'
     ];
 
-    protected $appends = ['role'];
+    protected $appends = ['role', 'has_kiosk_pin'];
 
     // security_pin (testigos/Silla, línea §1–§42) y el PIN de kiosko (hash + blind index, R54)
     // NUNCA deben salir en un toArray()/JSON.
@@ -105,6 +105,15 @@ class Employee extends Model
      * OJO: rotar APP_KEY invalida TODOS los PINs de kiosko (habría que reasignarlos) — igual que
      * invalida sesiones y datos cifrados. Es el precio de no guardar un pepper aparte.
      */
+    /**
+     * ¿Tiene PIN de kiosco? Es lo ÚNICO sobre el PIN que la ficha del colaborador puede saber:
+     * el hash y el índice están en `$hidden` y el PIN en claro no se guarda nunca.
+     */
+    public function getHasKioskPinAttribute(): bool
+    {
+        return !empty($this->attributes['kiosk_pin_hash']);
+    }
+
     public static function kioskPinLookup(string $pin): string
     {
         return hash_hmac('sha256', $pin, config('app.key'));

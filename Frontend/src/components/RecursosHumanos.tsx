@@ -943,6 +943,29 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [newUserSalaryPeriodicidad, setNewUserSalaryPeriodicidad] = useState('semanal');
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingUserTab, setEditingUserTab] = useState<'personal'|'laboral'|'accesos'|'expediente'>('personal');
+  // PIN de kiosco (R54): el endpoint existía y ninguna pantalla lo llamaba. Lo usan la apertura de
+  // emergencia, la validación de tareas y la autorización de entrada tardía. Nunca se muestra: se
+  // fija o se cambia, y la ficha sólo sabe si hay uno (`has_kiosk_pin`).
+  const [kioskPin, setKioskPin] = useState('');
+  const [kioskPinEstado, setKioskPinEstado] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [guardandoKioskPin, setGuardandoKioskPin] = useState(false);
+
+  const guardarKioskPin = async () => {
+    if (!editingUser?.id || kioskPin.length !== 6) return;
+    setGuardandoKioskPin(true);
+    setKioskPinEstado(null);
+    try {
+      await axiosInstance.post(`/admin/employees/${editingUser.id}/kiosk-pin`, { pin: kioskPin });
+      setEditingUser({ ...editingUser, has_kiosk_pin: true });
+      setKioskPin('');
+      setKioskPinEstado({ tipo: 'ok', texto: 'PIN guardado. Díselo a la persona en privado: no se puede consultar después, sólo cambiar.' });
+      fetchData();
+    } catch (e: any) {
+      setKioskPinEstado({ tipo: 'error', texto: e.response?.data?.message || 'No se pudo guardar el PIN.' });
+    } finally {
+      setGuardandoKioskPin(false);
+    }
+  };
   // Resumen REAL del expediente (Archivo Digital). null = aún consultando.
   const [expedienteDocs, setExpedienteDocs] = useState<{ subidos: number; faltantes: number; error?: boolean } | null>(null);
   const [editingJobRole, setEditingJobRole] = useState<any>(null);
@@ -2313,6 +2336,46 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                  <input type="text" value={editingUser.samsung_id || ''} onChange={e => setEditingUser({...editingUser, samsung_id: e.target.value})} className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-200" placeholder="No vinculado" />
                               </div>
                               
+                              <div className="border-t border-slate-100 pt-4 mt-2 col-span-1 md:col-span-2">
+                                 <label className="block text-sm font-bold text-slate-700 mb-1">PIN de kiosco</label>
+                                 <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                                   Seis dígitos que la persona teclea para identificarse en el kiosco. Si es supervisor o administrador,
+                                   es también el PIN con el que <strong>autoriza</strong> una entrada tardía, valida tareas y abre en emergencia.
+                                   Nunca se muestra: si se olvida, se cambia.
+                                 </p>
+                                 <div className="bg-slate-50 border border-slate-200 p-3 sm:p-4 rounded-xl space-y-3">
+                                   <div className="flex items-center gap-2 text-xs">
+                                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${editingUser.has_kiosk_pin ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                                     <span className="font-bold text-slate-700">{editingUser.has_kiosk_pin ? 'PIN configurado' : 'Sin PIN todavía'}</span>
+                                   </div>
+                                   <div className="flex flex-col sm:flex-row gap-2">
+                                     <input
+                                       type="password"
+                                       inputMode="numeric"
+                                       maxLength={6}
+                                       value={kioskPin}
+                                       onChange={e => { setKioskPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setKioskPinEstado(null); }}
+                                       placeholder={editingUser.has_kiosk_pin ? 'Nuevo PIN (6 dígitos)' : 'PIN de 6 dígitos'}
+                                       className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-center font-mono tracking-[0.4em] text-sm focus:outline-none focus:border-indigo-400"
+                                     />
+                                     <button
+                                       type="button"
+                                       onClick={guardarKioskPin}
+                                       disabled={kioskPin.length !== 6 || guardandoKioskPin}
+                                       className="px-4 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-xl text-xs transition-colors shrink-0"
+                                     >
+                                       {guardandoKioskPin ? 'Guardando…' : (editingUser.has_kiosk_pin ? 'Cambiar PIN' : 'Guardar PIN')}
+                                     </button>
+                                   </div>
+                                   {kioskPinEstado && (
+                                     <p className={`text-[11px] font-bold ${kioskPinEstado.tipo === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                       {kioskPinEstado.texto}
+                                     </p>
+                                   )}
+                                   <p className="text-[10px] text-slate-400">No se aceptan PINs fáciles (000000, 123456, dígitos repetidos) ni repetidos con otro colaborador.</p>
+                                 </div>
+                              </div>
+
                               <div className="border-t border-slate-100 pt-4 mt-2 col-span-1 md:col-span-2">
                                  <label className="block text-sm font-bold text-slate-700 mb-2">Invitación y Activación Móvil</label>
                                  {editingUser.pin_code ? (

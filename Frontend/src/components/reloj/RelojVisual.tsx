@@ -4035,7 +4035,9 @@ export default function RelojVisual({
 
                 {/* Clock Dial Area */}
                 <div className="flex flex-col items-center justify-center py-2 mt-0 relative">
-                  {isOpeningPremium && storeStatus === 'closed' && (
+                  {/* (2026-08-22) Sólo para quien aún no entra: tras declarar el cierre, quien sigue en
+                      turno veía "Tienes el control de la apertura de hoy" / "Esperando apertura por…". */}
+                  {isOpeningPremium && storeStatus === 'closed' && (clockState === 'inactive' || clockState === 'waiting' || clockState === 'waiting_room') && (
                     <div className={`px-5 py-2.5 rounded-full flex items-center justify-center gap-1.5 shadow-inner border mb-5 select-none shrink-0 text-center animate-fade-in ${
                       Number(currentUser.id) === Number(openingStatus ? openingStatus.current_responsible_employee_id : 1) && !isWithinPerimeter
                         ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-300 dark:border-violet-800/50 text-violet-700 dark:text-violet-300 font-black animate-pulse'

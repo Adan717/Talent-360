@@ -2852,7 +2852,10 @@ export function useClockEngine(overrideUser?: any) {
     // de este cambio). Si se usara "!== false", un valor undefined activaría el bloqueo para TODOS los
     // usuarios en cuanto se despliegue este frontend, antes de que el backend tenga la columna lista.
     // Con === true, el gate queda inactivo (no bloquea a nadie) hasta que el backend confirme el campo.
-    const requiresClosingChecklist = isOpeningPremium && openingSettings?.require_closing_checklist === true;
+    // (2026-08-22) El checklist de cierre es de quien CIERRA: sólo frena a los portadores de
+    // llaves (esAperturador), igual que el servidor. Antes el modal salía a toda la plantilla.
+    const requiresClosingChecklist = isOpeningPremium && openingSettings?.require_closing_checklist === true
+      && currentUser?.esAperturador === true;
     if (requiresClosingChecklist && !closingChecklistCompleted) {
       setShowClosingChecklistModal(true);
       return;
@@ -3496,7 +3499,13 @@ export function useClockEngine(overrideUser?: any) {
     // suplente de llaves presente en el perímetro puede iniciar la apertura de emergencia con
     // co-validación de 2 testigos, en vez de quedarse bloqueado esperando indefinidamente.
     // Consume POST /clock/emergency-open (docs/BACKEND_INTERFACES.md §3, ya implementado por backend).
-    if (isOpeningPremium && storeStatus === 'closed' && openingStatus?.status === 'failed') {
+    // (2026-08-22) "Abrir tienda" (normal o de emergencia) sólo tiene sentido ANTES de entrar.
+    // Al declarar el cierre de la sucursal, el encargado —todavía en turno— veía el dial
+    // regresar a "Abrir Tienda / Tienes el control de la apertura de hoy" en vez de su salida;
+    // y un toque habría reabierto la tienda que acababa de cerrar.
+    const sinTurnoAbierto = clockState === 'inactive' || clockState === 'waiting' || clockState === 'waiting_room';
+
+    if (isOpeningPremium && storeStatus === 'closed' && openingStatus?.status === 'failed' && sinTurnoAbierto) {
       // BUG FIX: la condición original solo miraba currentUser.portadorLlaves, pero el backend
       // (StoreOpeningService::emergencyOpenWithWitnesses) exige que el solicitante esté en
       // store_opening_assignments con has_keys=true e is_active=true — una fuente de datos distinta.
@@ -3526,7 +3535,7 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
 
-    if (isOpeningPremium && storeStatus === 'closed') {
+    if (isOpeningPremium && storeStatus === 'closed' && sinTurnoAbierto) {
       if (Number(currentUser.id) === Number(responsibleId)) {
         return {
           text: 'Abrir Tienda',
@@ -3539,7 +3548,7 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
 
-    if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed') {
+    if (Number(currentUser.id) === Number(activeEncargadoId) && storeStatus === 'closed' && sinTurnoAbierto) {
       return { text: 'Abrir Tienda', bg: 'bg-indigo-600 hover:bg-indigo-700', icon: '🗝️', iconKey: 'open_store' };
     }
 

@@ -5631,7 +5631,7 @@ export default function RelojVisual({
                   <p className="text-[10px] text-slate-500 text-center leading-snug">
                     Tu supervisor lo teclea aquí, en tu pantalla. Queda registrado a su nombre.
                   </p>
-                  {!isLateEntryValidation && (
+                  {!isLateEntryValidation && !isEarlyDepartureValidation && !isOvertimeValidation && (
                     <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
                       ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
                     </p>
@@ -5700,7 +5700,7 @@ export default function RelojVisual({
                   </select>
                   <p className="text-[9.5px] text-rose-500 font-extrabold text-center uppercase">
                     {isPro 
-                      ? "⚠️ Se requiere la validación del QR del supervisor para confirmar."
+                      ? "⚠️ Se requiere el PIN de tu supervisor para confirmar."
                       : "ℹ️ Confirmar registrará tu salida de inmediato."}
                   </p>
                 </div>

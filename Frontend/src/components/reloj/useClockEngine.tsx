@@ -3114,14 +3114,9 @@ export function useClockEngine(overrideUser?: any) {
     useTaskStore.setState({ assignments: updatedAssignments });
     storeState.syncToBackend();
 
-    // 2. Sincronizar log en el backend
-    try {
-      await axiosInstance.post('/clock/uncompleted-tasks-log', {
-        user_id: currentUser.id,
-        supervisor_pin: isPro ? 'QR_VALIDATED' : supervisorPin,
-        pending_count: pendingCount
-      });
-    } catch {}
+    // (2026-08-22) Aquí se llamaba a POST /clock/uncompleted-tasks-log, una ruta que NO existe:
+    // daba 404 en cada salida con tareas pendientes y el `catch {}` lo escondía. Lo que sí queda
+    // registrado es la omisión de cada tarea (validationFeedback, arriba) y el evento del Matrix.
 
     // 3. Matrix Event Log
     useAppStore.getState().addMatrixEvent(

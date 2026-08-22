@@ -36,6 +36,26 @@ class ClockAlarmClosingChecklistTest extends TestCase
         return $user;
     }
 
+    /**
+     * Portador de llaves: el checklist de cierre sólo frena a quien CIERRA (2026-08-22).
+     * Antes frenaba la salida de toda la plantilla; ver ChecklistDeCierreSoloFrenaAPortadoresTest.
+     */
+    private function makeKeyholder(): User
+    {
+        $user = $this->makeEmployee();
+        $employeeId = DB::table('employees')->insertGetId([
+            'tenant_id' => 1, 'user_id' => $user->id, 'name' => $user->name, 'is_active_employee' => true,
+            'shiftStart' => '09:00', 'shiftEnd' => '18:00', 'salary' => 3000, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('store_opening_assignments')->insert([
+            'tenant_id' => 1, 'company_id' => 1, 'store_id' => 1, 'employee_id' => $employeeId,
+            'priority_order' => 1, 'can_open_store' => true, 'has_keys' => true, 'is_active' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return $user;
+    }
+
     public function test_pre_shift_alarm_saves_valid_value(): void
     {
         $user = $this->makeEmployee();
@@ -69,7 +89,7 @@ class ClockAlarmClosingChecklistTest extends TestCase
 
     public function test_check_out_is_blocked_without_completed_closing_checklist(): void
     {
-        $user = $this->makeEmployee();
+        $user = $this->makeKeyholder();
 
         DB::table('system_settings')->insertOrIgnore([
             'tenant_id' => 1,
@@ -95,7 +115,7 @@ class ClockAlarmClosingChecklistTest extends TestCase
 
     public function test_check_out_succeeds_after_closing_checklist_completed(): void
     {
-        $user = $this->makeEmployee();
+        $user = $this->makeKeyholder();
 
         DB::table('system_settings')->insertOrIgnore([
             'tenant_id' => 1,
@@ -135,7 +155,7 @@ class ClockAlarmClosingChecklistTest extends TestCase
 
     public function test_incomplete_closing_checklist_does_not_unblock_check_out(): void
     {
-        $user = $this->makeEmployee();
+        $user = $this->makeKeyholder();
 
         DB::table('system_settings')->insertOrIgnore([
             'tenant_id' => 1,

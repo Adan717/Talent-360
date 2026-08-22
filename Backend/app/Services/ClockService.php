@@ -739,7 +739,20 @@ class ClockService
 
             $requiresClosingChecklist = $closingSettings ? (bool) $closingSettings->require_closing_checklist : false;
 
-            if ($requiresClosingChecklist) {
+            // El checklist de cierre es responsabilidad de quien CIERRA: los portadores de llaves
+            // (asignación activa con permiso de abrir). Antes frenaba la salida de TODA la
+            // plantilla: un colaborador sin llaves que salía antes por enfermedad, con el PIN
+            // de su supervisor ya validado, recibía "Completa el checklist de cierre" — un
+            // checklist que no es suyo y que no puede completar (prueba en vivo, 2026-08-22).
+            $esPortadorDeLlaves = $requiresClosingChecklist && \DB::table('store_opening_assignments')
+                ->join('employees', 'employees.id', '=', 'store_opening_assignments.employee_id')
+                ->where('store_opening_assignments.tenant_id', $tenantId)
+                ->where('store_opening_assignments.is_active', true)
+                ->where('store_opening_assignments.can_open_store', true)
+                ->where('employees.user_id', $user->id)
+                ->exists();
+
+            if ($requiresClosingChecklist && $esPortadorDeLlaves) {
                 $hasCompletedChecklist = \DB::table('store_opening_events')
                     ->where('tenant_id', $tenantId)
                     ->where('event_type', 'closing_checklist')

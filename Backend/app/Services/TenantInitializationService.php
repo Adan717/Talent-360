@@ -95,6 +95,43 @@ class TenantInitializationService
         }
 
         $this->seedPermissionCatalog($tenantId);
+        $this->seedSeatedTask($tenantId);
+    }
+
+    /**
+     * La tarea que se puede hacer SENTADO, para que el descanso de Ley Silla tenga con qué
+     * arrancar. La migración 2026_07_22_000003 la sembró en las empresas que existían ese día y
+     * nadie la creaba para las NUEVAS: en la prueba del dueño (empresa del 20 de agosto) el
+     * modal de Ley Silla decía "No hay tareas configuradas para tomar sentado todavía" y el
+     * único botón era "Cancelar descanso" — el descanso que la ley garantiza era imposible.
+     */
+    public function seedSeatedTask(int $tenantId): void
+    {
+        $existe = DB::table('tasks')
+            ->where('tenant_id', $tenantId)
+            ->where('title', 'Monitoreo de seguridad desde silla')
+            ->exists();
+        if ($existe) {
+            return;
+        }
+
+        DB::table('tasks')->insert([
+            'tenant_id' => $tenantId,
+            'title' => 'Monitoreo de seguridad desde silla',
+            'estimated_mins' => 15,
+            'points' => 5,
+            'priority' => 'normal',
+            'category' => 'operativo',
+            'target_type' => 'role',
+            'validation_mode' => 'auto',
+            'can_be_done_sitting' => true,
+            'frequency' => 'Diaria',
+            'evidence_type' => 'Supervisión directa',
+            'is_auto_capture' => false,
+            'is_validated' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

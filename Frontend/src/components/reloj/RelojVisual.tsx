@@ -344,6 +344,7 @@ export default function RelojVisual({
     isHandoverCompleted,
     setIsHandoverCompleted,
     startBreakWithSittingTask,
+    startBreakWithoutTask,
     handleSendDoorNotice,
     showMealPhotoModal,
     setShowMealPhotoModal,
@@ -5346,11 +5347,18 @@ export default function RelojVisual({
 
                   {useTaskStore.getState().tasks.filter(t => t.canBeDoneSitting).length === 0 && (
                     <p className="text-xs text-slate-400 italic text-center py-4">
-                      No hay tareas configuradas para tomar sentado todavía.
+                      No hay tareas configuradas para hacer sentado. Puedes descansar de todas formas.
                     </p>
                   )}
                 </div>
-                
+
+                {/* El descanso no depende de la tarea: la ley lo garantiza, la tarea es opcional. */}
+                <button
+                  onClick={startBreakWithoutTask}
+                  className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3.5 rounded-2xl transition-colors border-none mb-2"
+                >
+                  🪑 Solo descansar (sin tarea)
+                </button>
                 <button 
                   onClick={() => setShowBreakSeatModal(false)}
                   className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-2xl transition-colors border-none"

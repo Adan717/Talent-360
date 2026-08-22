@@ -2712,6 +2712,16 @@ export function useClockEngine(overrideUser?: any) {
     }
   };
 
+  // El descanso de Ley Silla NO depende de que exista una tarea para hacer sentado: la ley
+  // garantiza el descanso, la tarea es opcional. Sin esto, una empresa sin tareas "sentado"
+  // veía un modal con un solo botón: "Cancelar descanso".
+  const startBreakWithoutTask = async () => {
+    const res = await syncToDB('break_start');
+    if (res?.error) return;
+    setShowBreakSeatModal(false);
+    if (!res?.offline) showCustomAlert('🧘 Descanso (Ley Silla) iniciado.');
+  };
+
   const startBreakWithSittingTask = async (taskId: number) => {
     const res = await syncToDB('break_start');
     if (res?.offline) return;
@@ -4166,6 +4176,7 @@ export function useClockEngine(overrideUser?: any) {
     isHandoverCompleted,
     setIsHandoverCompleted,
     startBreakWithSittingTask,
+    startBreakWithoutTask,
     handleSendDoorNotice,
     showMealPhotoModal, setShowMealPhotoModal,
     mealPhotoType,

@@ -102,8 +102,20 @@ class PermissionMiddleware
             $user->id
         );
 
+        // (2026-08-22) El portazo se explica. Un mando cuyo puesto SÍ está configurado no recibe
+        // el set por defecto —eso es deliberado, para que un puesto al que sólo se le dio una
+        // capacidad de lectura no gane poderes de escritura— pero antes lo vivía como un 403
+        // mudo, idéntico al de un colaborador cualquiera, sin forma de saber qué le falta ni por
+        // qué. Si el mensaje no dice qué pasó, el dueño lo reporta como "el sistema está roto".
+        $esMando = $user->role === \App\Enums\UserRole::SUPERVISOR->value;
+        $mensaje = $esMando
+            ? 'Tu puesto tiene capacidades asignadas a mano y esta acción no está entre ellas. '
+              . 'Pídele al administrador que le agregue la capacidad requerida al puesto.'
+            : 'Acceso denegado. Tu puesto no tiene la capacidad requerida para esta acción.';
+
         return response()->json([
-            'message' => 'Acceso denegado. Tu puesto no tiene la capacidad requerida para esta acción.'
+            'message' => $mensaje,
+            'capacidades_requeridas' => array_values($capabilities),
         ], 403);
     }
 }

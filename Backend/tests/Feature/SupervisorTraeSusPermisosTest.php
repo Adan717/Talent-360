@@ -126,6 +126,35 @@ class SupervisorTraeSusPermisosTest extends TestCase
         );
     }
 
+    /**
+     * DECISIÓN (2026-08-22): el set por defecto es un RESPALDO, no un piso aditivo.
+     *
+     * Se evaluó hacerlo aditivo —conceder una capacidad no debería apagar las otras cuatro— y se
+     * descartó: volvería a permitir que un puesto al que el administrador le dio SÓLO
+     * `view_reports` (una capacidad de LECTURA) cerrara turnos ajenos y escribiera al equipo, que
+     * es un defecto ya corregido en la ronda del Monitor. Entre conceder poder de escritura en
+     * silencio y quitarlo en silencio, se prefiere lo segundo: se nota de inmediato y ahora el
+     * 403 dice exactamente qué pasó y qué pedir.
+     */
+    public function test_el_portazo_le_dice_al_mando_que_su_puesto_esta_configurado(): void
+    {
+        $supervisora = $this->persona('supervisor', 'Ana Analista');
+        $jobRoleId = DB::table('employees')->where('user_id', $supervisora->id)->value('job_role_id');
+        $permId = DB::table('permissions')
+            ->where('tenant_id', $this->tenant->id)->where('name', 'view_reports')->value('id');
+        DB::table('role_permissions')->insert([
+            'tenant_id' => $this->tenant->id, 'job_role_id' => $jobRoleId,
+            'permission_id' => $permId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $res = $this->actingAs($supervisora)
+            ->postJson('/api/v1/admin/dashboard/force-close-shift', ['user_id' => $supervisora->id]);
+
+        $res->assertStatus(403);
+        $this->assertStringContainsString('capacidades asignadas a mano', (string) $res->json('message'));
+        $this->assertNotEmpty($res->json('capacidades_requeridas'));
+    }
+
     public function test_el_puesto_sigue_otorgando_capacidades_a_quien_no_es_mando(): void
     {
         $empleado = $this->persona('empleado', 'Miguel Emp');

@@ -4079,7 +4079,6 @@ export function useClockEngine(overrideUser?: any) {
     submitEvaluation,
     submitReport,
     summaryView,
-    syncToBackend,
     syncToDB,
     tasksChecked,
     timeBankConfigs,

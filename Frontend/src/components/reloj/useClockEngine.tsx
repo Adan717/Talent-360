@@ -2898,9 +2898,22 @@ export function useClockEngine(overrideUser?: any) {
   // pasa primero por el checklist y luego por el PIN: antes el PIN se validaba, las tareas se
   // marcaban omitidas y el servidor rechazaba la salida con "Completa el checklist de cierre"
   // sin que el modal del checklist pudiera abrirse desde ningún lado (prueba en vivo).
+  // "Portador de llaves" con la MISMA fuente que el servidor (store_opening_assignments:
+  // asignación activa con permiso de abrir), no con el flag `esAperturador` del PUESTO —
+  // en vivo, el admin era portador activo sin que su puesto llevara ese flag y el modal no salía.
+  const soyPortadorDeLlaves = () => {
+    try {
+      const ass = JSON.parse(localStorage.getItem('store_opening_assignments') || '[]');
+      return ass.some((a: any) =>
+        Number(a.resolved_user_id ?? a.employee_id) === Number(currentUser?.id) && a.is_active && a.can_open_store
+      );
+    } catch {
+      return false;
+    }
+  };
   const faltaChecklistDeCierre = () =>
     isOpeningPremium && openingSettings?.require_closing_checklist === true
-    && currentUser?.esAperturador === true && !closingChecklistCompleted;
+    && soyPortadorDeLlaves() && !closingChecklistCompleted;
   const [salidaAnticipadaTrasChecklist, setSalidaAnticipadaTrasChecklist] = useState(false);
   const continuarSalidaTrasChecklist = () => {
     if (salidaAnticipadaTrasChecklist) {

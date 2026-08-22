@@ -3602,7 +3602,7 @@ export default function RelojVisual({
                         onRequestGPS={requestGPS}
                         isGpsValidationBypassed={isGpsValidationBypassed}
                         hasMealReservation={hasMealReservation}
-                        onMealSwapClick={() => setShowMealSwapModal(true)}
+                        onMealSwapClick={mealEndTimes[currentUser.id] !== undefined ? undefined : () => setShowMealSwapModal(true)}
                         onEarlyDepartureClick={handleEarlyDepartureClick}
                         onOvertimeClick={handleOvertimeClick}
                         onPanicClick={() => setShowPanicModal(true)}
@@ -4083,7 +4083,7 @@ export default function RelojVisual({
                       onRequestGPS={requestGPS}
                       isGpsValidationBypassed={isGpsValidationBypassed}
                       hasMealReservation={hasMealReservation}
-                      onMealSwapClick={() => setShowMealSwapModal(true)}
+                      onMealSwapClick={mealEndTimes[currentUser.id] !== undefined ? undefined : () => setShowMealSwapModal(true)}
                       onEarlyDepartureClick={handleEarlyDepartureClick}
                       onOvertimeClick={handleOvertimeClick}
                       onPanicClick={() => setShowPanicModal(true)}

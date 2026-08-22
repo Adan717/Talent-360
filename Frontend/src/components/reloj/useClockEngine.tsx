@@ -2854,9 +2854,7 @@ export function useClockEngine(overrideUser?: any) {
     // Con === true, el gate queda inactivo (no bloquea a nadie) hasta que el backend confirme el campo.
     // (2026-08-22) El checklist de cierre es de quien CIERRA: sólo frena a los portadores de
     // llaves (esAperturador), igual que el servidor. Antes el modal salía a toda la plantilla.
-    const requiresClosingChecklist = isOpeningPremium && openingSettings?.require_closing_checklist === true
-      && currentUser?.esAperturador === true;
-    if (requiresClosingChecklist && !closingChecklistCompleted) {
+    if (faltaChecklistDeCierre()) {
       setShowClosingChecklistModal(true);
       return;
     }
@@ -2895,6 +2893,24 @@ export function useClockEngine(overrideUser?: any) {
   // NUEVO (estado #22): consume POST /store-opening/closing-checklist (docs/BACKEND_INTERFACES.md §6).
   // Tras confirmar los 3 checks, marca closingChecklistCompleted y re-invoca handleClockOutRequest()
   // para continuar exactamente el mismo flujo que hubiera corrido si el gate no hubiera interceptado.
+  // (2026-08-22) El checklist de cierre es de quien CIERRA: sólo frena a los portadores de
+  // llaves (esAperturador), igual que el servidor (R106). Y la salida ANTICIPADA de un portador
+  // pasa primero por el checklist y luego por el PIN: antes el PIN se validaba, las tareas se
+  // marcaban omitidas y el servidor rechazaba la salida con "Completa el checklist de cierre"
+  // sin que el modal del checklist pudiera abrirse desde ningún lado (prueba en vivo).
+  const faltaChecklistDeCierre = () =>
+    isOpeningPremium && openingSettings?.require_closing_checklist === true
+    && currentUser?.esAperturador === true && !closingChecklistCompleted;
+  const [salidaAnticipadaTrasChecklist, setSalidaAnticipadaTrasChecklist] = useState(false);
+  const continuarSalidaTrasChecklist = () => {
+    if (salidaAnticipadaTrasChecklist) {
+      setSalidaAnticipadaTrasChecklist(false);
+      setShowEarlyDepartureModal(true);
+      return;
+    }
+    handleClockOutRequest();
+  };
+
   const submitClosingChecklist = async (checks: { lights_off: boolean; safe_secured: boolean; alarm_activated: boolean }) => {
     if (!checks.lights_off || !checks.safe_secured || !checks.alarm_activated) {
       showCustomAlert('⚠️ Debes confirmar los 3 puntos del checklist antes de continuar.');
@@ -2904,10 +2920,10 @@ export function useClockEngine(overrideUser?: any) {
     try {
       if (isSandboxMode) {
         setClosingChecklistCompleted(true);
-        localStorage.setItem('closing_checklist_completed', 'true');
+        localStorage.setItem('closing_checklist_completed', new Date().toLocaleDateString('sv-SE'));
         setShowClosingChecklistModal(false);
         showCustomAlert('📋 Checklist de cierre completado (Sandbox).');
-        handleClockOutRequest();
+        continuarSalidaTrasChecklist();
         return;
       }
 
@@ -2928,10 +2944,10 @@ export function useClockEngine(overrideUser?: any) {
       } catch { /* no responsable o ya cerrada: la salida sigue su curso */ }
 
       setClosingChecklistCompleted(true);
-      localStorage.setItem('closing_checklist_completed', 'true');
+      localStorage.setItem('closing_checklist_completed', new Date().toLocaleDateString('sv-SE'));
       setShowClosingChecklistModal(false);
       showCustomAlert('📋 Checklist de cierre completado.');
-      handleClockOutRequest();
+      continuarSalidaTrasChecklist();
     } catch (e: any) {
       showCustomAlert(e.response?.data?.message || 'Error al guardar el checklist de cierre.');
     } finally {
@@ -3069,32 +3085,8 @@ export function useClockEngine(overrideUser?: any) {
       return;
     }
 
-    // 1. Omitir todas las tareas pendientes del usuario actual
-    const storeState = useTaskStore.getState();
-    const pendingCount = storeState.assignments.filter(
-      (a: any) => Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')
-    ).length;
-
-    const updatedAssignments = storeState.assignments.map((a: any) => {
-      if (Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress')) {
-        return { ...a, status: 'omitted', validationFeedback: `Omitida al salir por supervisor mediante ${isPro ? 'QR Dinámico' : 'PIN'}.` };
-      }
-      return a;
-    });
-    useTaskStore.setState({ assignments: updatedAssignments });
-    storeState.syncToBackend();
-
-    // (2026-08-22) Aquí se llamaba a POST /clock/uncompleted-tasks-log, una ruta que NO existe:
-    // daba 404 en cada salida con tareas pendientes y el `catch {}` lo escondía. Lo que sí queda
-    // registrado es la omisión de cada tarea (validationFeedback, arriba) y el evento del Matrix.
-
-    // 3. Matrix Event Log
-    useAppStore.getState().addMatrixEvent(
-      '⚠️ Cierre con Pendientes',
-      `${currentUser.name} finalizó jornada con ${pendingCount} tareas pendientes, autorizado por supervisor mediante ${isPro ? 'QR Dinámico' : 'PIN'}. Se aplicó penalización en métricas.`,
-      'warning'
-    );
-
+    // (2026-08-22) Las tareas pendientes ya NO se omiten aquí (al validar el PIN) sino cuando
+    // la salida queda registrada: ver omitirPendientesTrasSalir() en processFinalClockOut.
     // 4. Resetear el bloqueador y continuar
     setPendingTasksBlocker(false);
     setSupervisorQrToken('');
@@ -3127,6 +3119,11 @@ export function useClockEngine(overrideUser?: any) {
 
   const submitEarlyDeparture = async () => {
     setShowEarlyDepartureModal(false);
+    if (faltaChecklistDeCierre()) {
+      setSalidaAnticipadaTrasChecklist(true);
+      setShowClosingChecklistModal(true);
+      return;
+    }
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
     
     if (isPro) {
@@ -3144,6 +3141,29 @@ export function useClockEngine(overrideUser?: any) {
     setRequireEvaluation(false); 
     showCustomAlert(`⭐ Evaluación enviada.`);
     processFinalClockOut();
+  };
+
+  // (2026-08-22) Las tareas pendientes se marcan OMITIDAS sólo cuando la salida YA quedó
+  // registrada. Antes se omitían al validar el PIN, antes del check_out: en vivo el servidor
+  // rechazó la salida (checklist de cierre) y las 7 tareas de cierre quedaron "omitidas" con
+  // la persona todavía en turno.
+  const omitirPendientesTrasSalir = () => {
+    const storeState = useTaskStore.getState();
+    const esPendienteMia = (a: any) =>
+      Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress');
+    const pendientes = storeState.assignments.filter(esPendienteMia).length;
+    if (pendientes === 0) return;
+    useTaskStore.setState({
+      assignments: storeState.assignments.map((a: any) =>
+        esPendienteMia(a) ? { ...a, status: 'omitted', validationFeedback: 'Omitida al registrar la salida (autorizada por supervisor).' } : a
+      ),
+    });
+    storeState.syncToBackend();
+    useAppStore.getState().addMatrixEvent(
+      '⚠️ Cierre con Pendientes',
+      `${currentUser.name} finalizó jornada con ${pendientes} tareas pendientes, autorizado por supervisor. Se aplicó penalización en métricas.`,
+      'warning'
+    );
   };
 
   const processFinalClockOut = async (delegatedTo: number | null = null, note = '') => {
@@ -3167,6 +3187,7 @@ export function useClockEngine(overrideUser?: any) {
     if (res?.error) {
       return; // el servidor ya explicó por qué; el turno sigue abierto y el dial lo refleja
     }
+    omitirPendientesTrasSalir();
     if (!res?.offline) {
       showCustomAlert(`🔴 Salida registrada a las ${formattedTime}.${delegatedTo ? ' 🔑 Llaves delegadas con éxito.' : ''} ${note ? ' (' + note + ')' : ''}`);
     }

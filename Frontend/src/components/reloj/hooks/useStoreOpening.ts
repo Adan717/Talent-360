@@ -58,8 +58,10 @@ export function useStoreOpening({
 
   // NUEVO (estado #22 de la matriz — "Checklist de Cierre Seguro"): espejo del checklist de apertura
   // de arriba, misma key sin scope de fecha para mantener paridad de comportamiento con su par.
+  // (2026-08-22) Con scope de FECHA: la bandera nunca se limpiaba, así que el checklist de ayer
+  // contaba como el de hoy, el modal no salía y el servidor rechazaba la salida sin remedio.
   const [closingChecklistCompleted, setClosingChecklistCompleted] = useState(() => {
-    return localStorage.getItem('closing_checklist_completed') === 'true';
+    return localStorage.getItem('closing_checklist_completed') === new Date().toLocaleDateString('sv-SE');
   });
   // R100 (merge FE, spec §3/§5 "Llamar a Encargado de Llaves"): teléfono del responsable de
   // apertura. El backend lo manda SÓLO si quien pregunta es portador de llaves (gate server-side);

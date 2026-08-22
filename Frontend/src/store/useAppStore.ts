@@ -559,6 +559,11 @@ export const useAppStore = create<AppState>((set, get) => ({
             const mealEndTimes: Record<number, number> = {};
             const checkOutTimes: Record<number, number> = {};
             const pendingBreakRequests: Record<number, any> = {};
+            // (2026-08-22) Reservas de comedor: vivían sólo en memoria del navegador. Al recargar
+            // la página (o cambiar de dispositivo) la reserva "desaparecía" —el dial volvía a
+            // "Apartar comida" con la reserva ya en la base— y el aforo se contaba vacío.
+            const reservas: Record<number, { mins: number }> = {};
+            let ultimoSwap: string | null = null;
 
             const parseTimeToMins = (timeStr: string) => {
               if (!timeStr) return 0;
@@ -618,7 +623,49 @@ export const useAppStore = create<AppState>((set, get) => ({
                 delete pendingBreakRequests[userId];
               } else if (entry.type === 'contingency') {
                 clockStates[userId] = 'contingency';
+              } else if (entry.type === 'meal_reservation') {
+                reservas[Number(userId)] = { mins: timeMins };
+              } else if (entry.type === 'meal_cancel') {
+                delete reservas[Number(userId)];
+              } else if (entry.type === 'meal_swap') {
+                // El intercambio se guarda como DOS filas (una por persona, "Swapped meal slots
+                // with user N"); se aplica una sola vez por pareja consecutiva.
+                const m = /user (\d+)/.exec(String(entry.details || ''));
+                const otro = m ? Number(m[1]) : NaN;
+                const par = [Number(userId), otro].sort((a, b) => a - b).join('-');
+                if (!Number.isNaN(otro) && par !== ultimoSwap) {
+                  const a = reservas[Number(userId)];
+                  const b = reservas[otro];
+                  if (a) reservas[otro] = a; else delete reservas[otro];
+                  if (b) reservas[Number(userId)] = b; else delete reservas[Number(userId)];
+                }
+                ultimoSwap = par;
               }
+              if (entry.type !== 'meal_swap') ultimoSwap = null;
+            });
+
+            const stepMins = Number(get().systemSettings?.mealSettings?.stepMins) || 15;
+            const etiquetaSlot = (mins: number) => {
+              const h = Math.floor(mins / 60);
+              const mm = mins % 60;
+              const ampm = h >= 12 ? 'PM' : 'AM';
+              return `${h > 12 ? h - 12 : h}:${mm.toString().padStart(2, '0')} ${ampm}`;
+            };
+            const reservedMeals: Record<string, { userId: number; role: string }[]> = {};
+            const hasReservedMeal: Record<number, boolean> = {};
+            const userReservedMealSlots: Record<number, string[]> = {};
+            Object.entries(reservas).forEach(([uidStr, r]) => {
+              const uid = Number(uidStr);
+              const u = (data.users || []).find((x: any) => Number(x.id) === uid);
+              const bloques = Math.max(1, Math.ceil((Number(u?.mealMinutes) || 60) / stepMins));
+              const slots: string[] = [];
+              for (let j = 0; j < bloques; j++) slots.push(etiquetaSlot(r.mins + j * stepMins));
+              userReservedMealSlots[uid] = slots;
+              hasReservedMeal[uid] = true;
+              slots.forEach((slot) => {
+                if (!reservedMeals[slot]) reservedMeals[slot] = [];
+                reservedMeals[slot].push({ userId: uid, role: u?.role || 'Colaborador' });
+              });
             });
 
             set({
@@ -631,6 +678,9 @@ export const useAppStore = create<AppState>((set, get) => ({
               globalMealEndTimes: mealEndTimes,
               globalCheckOutTimes: checkOutTimes,
               globalPendingBreakRequests: pendingBreakRequests,
+              reservedMeals,
+              hasReservedMeal,
+              userReservedMealSlots,
             });
           }
         }

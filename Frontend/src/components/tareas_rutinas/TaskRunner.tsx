@@ -527,8 +527,11 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
         
         const isTargetedToMyRole = isSupervisor || t.targetId === null || t.targetId === undefined || Number(t.targetId) === 0 || Number(t.targetId) === Number(currentUser.job_role_id);
         
-        // Pendiente en la bolsa (nadie la tiene asignada)
-        const isFreeInPool = a.userId === null && a.status === 'pending' && isTargetedToMyRole && esDeHoy(a);
+        // Pendiente en la bolsa (nadie la tiene asignada). 'spilled' cuenta: es lo que el
+        // spill-over pone a las tareas BLOQUEANTES de un mando que cierra su turno, "para que las
+        // rescate el suplente" — pero ninguna pantalla las pintaba, así que ese rescate no existía
+        // y el trabajo desaparecía sin más (2026-08-22: 6 de las 7 tareas de cierre, invisibles).
+        const isFreeInPool = a.userId === null && ['pending', 'spilled'].includes(a.status) && isTargetedToMyRole && esDeHoy(a);
         
         // Pausada por otro colaborador que tiene exactamente mi puesto/rol
         const isPausedByPeer = a.userId !== null && a.userId !== currentUser.id && a.status === 'paused' && t.targetType === 'role' && Number(t.targetId) === Number(currentUser.job_role_id);

@@ -3605,6 +3605,7 @@ export default function RelojVisual({
                         onOvertimeClick={handleOvertimeClick}
                         onPanicClick={() => setShowPanicModal(true)}
                         isKeyholder={isUserActiveKeyholder(currentUser?.id)}
+                        isResponsibleToday={Number(currentUser?.id) === Number(openingStatus?.current_responsible_employee_id)}
                         onCallManagerClick={() => {
                           const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
                           if (respUser?.phone) {
@@ -4083,6 +4084,7 @@ export default function RelojVisual({
                       onOvertimeClick={handleOvertimeClick}
                       onPanicClick={() => setShowPanicModal(true)}
                       isKeyholder={isUserActiveKeyholder(currentUser?.id)}
+                        isResponsibleToday={Number(currentUser?.id) === Number(openingStatus?.current_responsible_employee_id)}
                       onCallManagerClick={() => {
                         const respUser = globalUsers.find((u: any) => u.id === (openingStatus?.current_responsible_employee_id || 1));
                         if (respUser?.phone) {
@@ -4167,7 +4169,9 @@ export default function RelojVisual({
                   isDark ? 'bg-slate-900/20 border-slate-900' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide mb-1">Accesos Directos</h4>
-                  {isUserActiveKeyholder(currentUser?.id) && (storeStatus === 'closed' || clockState === 'waiting_room') && (
+                  {/* No se ofrece llamar al encargado cuando el encargado soy yo. */}
+                  {isUserActiveKeyholder(currentUser?.id) && (storeStatus === 'closed' || clockState === 'waiting_room')
+                    && Number(currentUser?.id) !== Number(openingStatus?.current_responsible_employee_id) && (
                     <button
                       type="button"
                       onClick={() => {

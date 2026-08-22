@@ -66,6 +66,8 @@ interface DialPrincipalProps {
   onDeclareContingencyClick?: () => void;
   hasActiveContingency?: boolean;
   isKeyholder?: boolean;
+  /** ¿El usuario es el responsable de abrir HOY? No se le ofrece llamarse a sí mismo. */
+  isResponsibleToday?: boolean;
   // Auditoría reloj checador (2026-07-22), Hallazgo 1: el botón principal queda `disabled` (HTML)
   // cuando btnProps.iconKey === 'blocked', así que un onClick en el propio dial nunca dispara.
   // Este callback se renderiza aparte, como CTA secundario, para llevar al curso de puntualidad real.
@@ -104,6 +106,7 @@ export default function DialPrincipal({
   onDeclareContingencyClick,
   hasActiveContingency = false,
   isKeyholder,
+  isResponsibleToday = false,
   onGoToRequiredCourseClick
 }: DialPrincipalProps) {
   const size = isMobile ? 76 : 88;
@@ -423,7 +426,7 @@ export default function DialPrincipal({
       )}
 
       {/* REGLA: Botón de Llamar a Encargado de Llaves SOLO se muestra a titulares y suplentes de llaves cuando la tienda está cerrada o en sala de espera */}
-      {(storeStatus === 'closed' || clockState === 'waiting_room' || btnProps.text === '⏳ Esperando Apertura') && isUserKeyholder && onCallManagerClick && (
+      {(storeStatus === 'closed' || clockState === 'waiting_room' || btnProps.text === '⏳ Esperando Apertura') && isUserKeyholder && !isResponsibleToday && onCallManagerClick && (
         <button
           type="button"
           onClick={onCallManagerClick}

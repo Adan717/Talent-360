@@ -3346,7 +3346,14 @@ export function useClockEngine(overrideUser?: any) {
     // ----------------------------------------------------
     // VENTANA 2: Registro de Cercanía ("Ya estoy aquí") (8:15 AM - 8:30 AM)
     // ----------------------------------------------------
-    if (!hasCheckedIn && clockState === 'inactive' && currentSimTime >= shiftStartMins - 15 && currentSimTime < shiftStartMins) {
+    // El ENCARGADO DE ABRIR no registra "llegada anticipada": abre la tienda. Esta rama iba antes
+    // que la de tienda cerrada, así que el responsable cuyo turno empieza a la hora de apertura
+    // (el caso normal) veía "Ya llegué" durante toda la ventana previa y nunca "Abrir Tienda"
+    // (prueba en el navegador, 2026-08-22 02:40: ventana abierta desde las 02:28 y el dial
+    // ofrecía llegada anticipada). Para él, abrir ES la entrada.
+    const soyElQueAbreHoy = isOpeningPremium && storeStatus === 'closed'
+      && responsibleId != null && Number(currentUser?.id) === Number(responsibleId);
+    if (!soyElQueAbreHoy && !hasCheckedIn && clockState === 'inactive' && currentSimTime >= shiftStartMins - 15 && currentSimTime < shiftStartMins) {
       if (isPro && features.enable_proximity_check !== false) {
         const isNear = isWithinPerimeter || isGpsValidationBypassed;
         if (isNear) {

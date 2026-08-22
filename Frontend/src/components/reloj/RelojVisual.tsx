@@ -201,6 +201,8 @@ export default function RelojVisual({
     phoneTab,
     playAlarm,
     playedAlarms,
+    minutosDePieDesdeElUltimoDescanso,
+    minutosDePieParaDescanso,
     processFinalClockOut,
     realSeconds,
     removeAlert,
@@ -5968,9 +5970,13 @@ export default function RelojVisual({
               const info = getBreakInfo();
               const limit = leySillaConfig?.breakMinutes || 15;
               if (!info) {
+                // (2026-08-22) Misma fuente que el botón y la alarma: minutos DE PIE desde el
+                // último descanso, contra el ajuste de la empresa. Antes contaba desde el
+                // CHECK-IN, así que el modal decía "faltan 100 minutos" mientras el botón de al
+                // lado ya ofrecía el descanso. Dos afirmaciones contrarias en la misma pantalla.
                 const hasCheckedInUser = checkInTimes[currentUser.id] !== undefined;
-                const elapsedMins = hasCheckedInUser ? Math.max(0, currentSimTime - checkInTimes[currentUser.id]) : 0;
-                const consecutiveMinutes = leySillaConfig?.consecutiveMinutes || 120;
+                const elapsedMins = minutosDePieDesdeElUltimoDescanso ?? 0;
+                const consecutiveMinutes = minutosDePieParaDescanso;
                 const remainingMins = Math.max(0, consecutiveMinutes - elapsedMins);
                 
                 const isRequested = !!pendingBreakRequests[currentUser.id];

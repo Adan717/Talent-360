@@ -348,38 +348,19 @@ class ClockService
      */
     private function pairedExcessMinutes($dayEntries, string $dateStr, string $startType, string $endType, int $allowed, int $tolerance, ?string $turnoInicio = null, ?string $turnoFin = null): int
     {
-        // (2026-08-22) H21 otra vez: en un turno nocturno la pausa CRUZA MEDIANOCHE y sus dos
-        // ponches se guardan con la MISMA fecha de jornada (23:00 y 01:00). Ordenar por la hora
-        // cruda ponía el fin ANTES del inicio: el par se descartaba y el exceso de toda comida
-        // nocturna salía 0. Se ordena y se resta por el INSTANTE reconstruido, igual que
-        // ReportesOperativosController::minutosDeJornada. Eso desarma además el abs() que había
-        // aquí, que con el par mal ordenado facturaba 1400 minutos de exceso fantasma.
-        $instante = fn ($e) => \App\Support\JornadaLaboral::instanteDe(
-            $dateStr, substr((string) $e->time, 0, 8), $turnoInicio, $turnoFin, 'UTC'
-        );
-
-        $ordered = $dayEntries
-            ->whereIn('type', [$startType, $endType])
-            ->sortBy($instante)
-            ->values();
-
-        $openStarts = [];
-        $excess = 0;
-        foreach ($ordered as $e) {
-            if ($e->type === $startType) {
-                $openStarts[] = $instante($e);
-            } elseif ($e->type === $endType && !empty($openStarts)) {
-                $startAt = array_pop($openStarts);
-                // Diferencia CON SIGNO entre marcas de tiempo: un par mal formado da negativo y
-                // no suma nada, en vez de convertirse en horas de exceso inventadas.
-                $mins = intdiv($instante($e)->getTimestamp() - $startAt->getTimestamp(), 60);
-                if ($mins > ($allowed + $tolerance)) {
-                    $excess += max(0, $mins - $allowed);
-                }
-            }
-        }
-
-        return $excess;
+        // La fórmula vive en App\Support\ExcesoDeDescanso, que es la MISMA que consume el reporte
+        // de Comedor. Antes había dos: el reporte ignoraba la tolerancia y sumaba los segmentos
+        // del día, así que las dos pantallas daban cifras distintas del mismo día (2026-08-22).
+        return \App\Support\ExcesoDeDescanso::calcular(
+            $dayEntries->whereIn('type', [$startType, $endType]),
+            $dateStr,
+            $startType,
+            $endType,
+            $allowed,
+            $tolerance,
+            $turnoInicio,
+            $turnoFin
+        )['exceso'];
     }
 
     /**
@@ -646,9 +627,13 @@ class ClockService
                 ->orderByDesc('requested_at')
                 ->first();
 
-            if (!$sillaRequestForThisPunch) {
-                throw new \Exception('Fichaje Denegado: no tienes una solicitud de Ley Silla aprobada por tu supervisor.');
-            }
+            // (2026-08-22) Antes esto era un PORTAZO. El servidor negaba el reposo a quien no
+            // tuviera aprobación del supervisor — y el reposo en trabajos de pie es un derecho que
+            // la ley obliga a PERMITIR, no a racionar. Un rechazo así queda por escrito y se lee,
+            // en una inspección, como "el patrón le impidió sentarse". Ahora se REGISTRA siempre y
+            // se marca como pendiente de aprobación, que es lo que protege a los dos lados: la
+            // persona descansa y al supervisor le queda el aviso de que ocurrió sin su visto bueno.
+            $sillaSinAprobacion = !$sillaRequestForThisPunch;
 
             $clockOpConfig = isset($settings['clockOpConfig']) ? json_decode($settings['clockOpConfig'], true) : [];
             $maxSimultaneous = $clockOpConfig['sillas_maximas_simultaneas'] ?? 1;
@@ -658,8 +643,27 @@ class ClockService
                 ->whereDate('started_at', $date)
                 ->count();
 
-            if ($activeCount >= $maxSimultaneous) {
-                throw new \Exception('Fichaje Denegado: el aforo máximo de sillas simultáneas está lleno. Espera tu turno.');
+            // Ídem con el aforo: se avisa que se excedió, no se impide el descanso.
+            $sillaAforoExcedido = $activeCount >= $maxSimultaneous;
+
+            if ($sillaSinAprobacion || $sillaAforoExcedido) {
+                $motivo = $sillaSinAprobacion
+                    ? 'sin aprobación previa del supervisor'
+                    : 'con el aforo de sillas lleno';
+                $details['silla_sin_aprobacion'] = $sillaSinAprobacion;
+                $details['silla_aforo_excedido'] = $sillaAforoExcedido;
+                \DB::table('audit_logs')->insert([
+                    'tenant_id' => $tenantId,
+                    'user_id' => $user->id,
+                    'date' => $date,
+                    'type' => 'silla_sin_aprobacion',
+                    'timestamp_str' => $date . ' ' . $time,
+                    'reason' => '🪑 Descanso de Ley Silla tomado ' . $motivo . '. Queda registrado: el sistema no impide el reposo, lo informa.',
+                    'punishment_amount' => 0,
+                    'details' => json_encode(['silla_sin_aprobacion' => $sillaSinAprobacion, 'silla_aforo_excedido' => $sillaAforoExcedido]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
         }
 

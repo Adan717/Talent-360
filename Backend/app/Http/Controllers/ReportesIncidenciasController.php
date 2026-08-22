@@ -225,15 +225,29 @@ class ReportesIncidenciasController extends Controller
             $porPersonaDia[$m->user_id][$m->date][] = $m;
         }
 
+        // La MISMA tolerancia que aplica la nómina. El reporte la ignoraba por completo, así que
+        // con permitido 60 y tolerancia 15 una comida de 70 min salía con 10 de exceso aquí y 0
+        // en la nómina: dos cifras del mismo día (2026-08-22).
+        $lftComedor = \App\Models\LftSetting::where('tenant_id', $tenantId)->first();
+        $toleranciaComida = (int) ($lftComedor->meal_tolerance_minutes ?? 15);
+        $toleranciaDescanso = (int) ($lftComedor->rest_tolerance_minutes ?? 10);
+
         $filas = [];
         foreach ($porPersonaDia as $userId => $dias) {
             $emp = $nombres[$userId] ?? null;
             $permitidos = (int) ($emp['mealMinutes'] ?? 60);
 
             foreach ($dias as $fecha => $delDia) {
-                $comida = $this->minutosEmparejados($delDia, 'meal_start', 'meal_end', $fecha, $tz);
-                $descanso = $this->minutosEmparejados($delDia, 'break_start', 'break_end', $fecha, $tz);
-                $exceso = max(0, $comida['minutos'] - $permitidos);
+                // Fórmula ÚNICA, compartida con el motor de nómina (App\Support\ExcesoDeDescanso).
+                $comida = \App\Support\ExcesoDeDescanso::calcular(
+                    $delDia, $fecha, 'meal_start', 'meal_end', $permitidos, $toleranciaComida,
+                    $emp['shiftStart'] ?? null, $emp['shiftEnd'] ?? null, $tz
+                );
+                $descanso = \App\Support\ExcesoDeDescanso::calcular(
+                    $delDia, $fecha, 'break_start', 'break_end', 15, $toleranciaDescanso,
+                    $emp['shiftStart'] ?? null, $emp['shiftEnd'] ?? null, $tz
+                );
+                $exceso = $comida['exceso'];
 
                 $sillasDia = $sillas->filter(fn ($s) => (int) $s->user_id === (int) $userId
                     && Carbon::parse($s->requested_at)->setTimezone($tz)->toDateString() === $fecha);

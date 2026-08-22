@@ -64,13 +64,18 @@ trait ArmaReportesCsv
             })
             ->leftJoin('job_roles', 'job_roles.id', '=', 'employees.job_role_id')
             ->where('users.tenant_id', $tenantId)
+            // El turno viaja porque el cálculo de comida y descanso mide por el INSTANTE de la
+            // jornada: sin él, una pausa que cruza la medianoche en turno nocturno se pierde.
             ->get(['users.id', 'users.name as nombre_cuenta', 'employees.name as nombre_expediente',
-                   'employees.mealMinutes', 'job_roles.name as puesto'])
+                   'employees.mealMinutes', 'employees.shiftStart', 'employees.shiftEnd',
+                   'job_roles.name as puesto'])
             ->keyBy('id')
             ->map(fn ($u) => [
                 'nombre' => $u->nombre_expediente ?: $u->nombre_cuenta,
                 'puesto' => $u->puesto ?: 'Sin puesto',
                 'mealMinutes' => $u->mealMinutes,
+                'shiftStart' => $u->shiftStart ?? null,
+                'shiftEnd' => $u->shiftEnd ?? null,
             ])
             ->all();
     }

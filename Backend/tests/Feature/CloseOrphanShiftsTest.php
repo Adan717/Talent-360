@@ -49,15 +49,24 @@ class CloseOrphanShiftsTest extends TestCase
         return $tenant;
     }
 
-    private function makeUser(int $tenantId): User
+    private function makeUser(int $tenantId, string $shiftEnd = '18:00'): User
     {
-        return User::create([
+        $user = User::create([
             'tenant_id' => $tenantId,
             'name' => 'Colaborador',
             'email' => 'emp' . uniqid() . '@t.local',
             'password' => bcrypt('password'),
             'role' => 'empleado',
         ]);
+        // Con expediente: el barrido cierra al fin de turno de LA PERSONA, así que sin employee
+        // la prueba no representaría a nadie real (todo colaborador tiene ficha).
+        DB::table('employees')->insert([
+            'tenant_id' => $tenantId, 'user_id' => $user->id, 'name' => $user->name,
+            'is_active_employee' => true, 'shiftStart' => '09:00', 'shiftEnd' => $shiftEnd,
+            'salary' => 3000, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return $user;
     }
 
     private function punch(int $tenantId, int $userId, string $type, string $time, string $date): void
@@ -176,24 +185,76 @@ class CloseOrphanShiftsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /** La salida nunca puede quedar ANTES de la última actividad real de la persona. */
-    public function test_no_estampa_una_salida_anterior_a_la_entrada(): void
+    /**
+     * Si el horario programado NO explica la jornada, el sistema NO inventa la hora de salida.
+     *
+     * (2026-08-22) Con la regla anterior —`max(cierre, último ponche)`— una entrada a las 20:33
+     * con turno que termina 07:45 producía una salida en el MISMO SEGUNDO: una jornada de CERO
+     * minutos escrita sobre asistencia real. Ahora sólo queda la alerta para revisión humana.
+     */
+    public function test_no_inventa_la_salida_cuando_el_horario_no_explica_la_jornada(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));
         try {
             $tenant = $this->makeTenant('18:00');
             $user = $this->makeUser($tenant->id);
             $today = now()->format('Y-m-d');
-            // Turno de inventario: entra a las 19:00, después de que la tienda cerró.
+            // Entra a las 19:00, mucho después del fin de su turno (18:00 de la tienda / 18:00 suyo).
             $this->punch($tenant->id, $user->id, 'check_in', '19:00:00', $today);
 
             $this->artisan('shifts:close-orphans')->assertExitCode(0);
 
-            $salida = DB::table('time_entries')
-                ->where('user_id', $user->id)->where('type', 'check_out')->value('time');
-            $this->assertNotNull($salida);
-            $this->assertGreaterThanOrEqual('19:00:00', substr((string) $salida, 0, 8),
-                'la salida automática no puede ser anterior a la entrada');
+            $this->assertDatabaseMissing('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out',
+            ]);
+            $alerta = DB::table('audit_logs')->where('user_id', $user->id)->where('type', 'orphan_shift')->first();
+            $this->assertNotNull($alerta, 'tiene que quedar la alerta para que un humano lo resuelva');
+            $this->assertStringContainsString('no explica la jornada', (string) $alerta->reason);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /** La salida se estampa al fin de turno de la PERSONA, no al cierre de la tienda. */
+    public function test_usa_el_fin_de_turno_del_colaborador(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));
+        try {
+            $tenant = $this->makeTenant('22:00');
+            $user = $this->makeUser($tenant->id, '15:00');
+            $today = now()->format('Y-m-d');
+            $this->punch($tenant->id, $user->id, 'check_in', '09:00:00', $today);
+
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertDatabaseHas('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out', 'time' => '15:00:00',
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /** Se fue a comer y no volvió: se cierra la comida, marcada y SIN inventarle exceso. */
+    public function test_cierra_la_comida_abierta_sin_inventar_exceso(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));
+        try {
+            $tenant = $this->makeTenant('18:00');
+            $user = $this->makeUser($tenant->id, '18:00');
+            $today = now()->format('Y-m-d');
+            $this->punch($tenant->id, $user->id, 'check_in', '09:00:00', $today);
+            $this->punch($tenant->id, $user->id, 'meal_start', '14:00:00', $today);
+
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $comida = DB::table('time_entries')
+                ->where('user_id', $user->id)->where('type', 'meal_end')->first();
+            $this->assertNotNull($comida, 'la comida abierta tiene que cerrarse');
+            $this->assertStringContainsString('meal_sin_regreso', (string) $comida->details);
+            $this->assertDatabaseHas('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out', 'time' => '18:00:00',
+            ]);
         } finally {
             Carbon::setTestNow();
         }
@@ -235,7 +296,7 @@ class CloseOrphanShiftsTest extends TestCase
             $tenant = $this->makeTenant('18:00');
             $user = $this->makeUser($tenant->id);
             $ayer = now()->subDay()->format('Y-m-d');
-            $this->punch($tenant->id, $user->id, 'check_in', '22:00:00', $ayer);
+            $this->punch($tenant->id, $user->id, 'check_in', '09:00:00', $ayer);
 
             $this->artisan('shifts:close-orphans')->assertExitCode(0);
 

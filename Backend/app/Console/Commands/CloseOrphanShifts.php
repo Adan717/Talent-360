@@ -130,12 +130,79 @@ class CloseOrphanShifts extends Command
         $closeTimeHis = strlen($closeTime) === 5 ? $closeTime . ':00' : $closeTime;
         $now = now();
 
+        // El fin de turno de CADA colaborador manda sobre la hora de cierre de la tienda: es la
+        // hora a la que esa persona debía irse. La tienda es sólo el respaldo si no tiene turno.
+        $finDeTurno = DB::table('employees')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('user_id', $orphans)
+            ->pluck('shiftEnd', 'user_id');
+
+        // ¿Se fue a comer y nunca fichó el regreso? Se cierra también esa comida, pero SIN
+        // inventarle minutos de exceso: no hay dato para calcularlos (decisión 2026-08-22).
+        $comidaAbierta = [];
+        foreach ($entries as $e) {
+            if ($e->type === 'meal_start') {
+                $comidaAbierta[$e->user_id] = true;
+            } elseif ($e->type === 'meal_end') {
+                unset($comidaAbierta[$e->user_id]);
+            }
+        }
+
         foreach ($orphans as $userId) {
-            // La salida se estampa a la hora de cierre de la sucursal, pero NUNCA antes del
-            // último ponche real de la persona: con la tienda cerrando a las 18:00, quien entró
-            // a las 19:00 por un inventario recibía un check_out de las 18:00 — una salida ANTERIOR
-            // a su entrada, que en el reporte de horas da 0 minutos trabajados (2026-08-22).
-            $horaSalida = max($closeTimeHis, $ultimaActividad[$userId] ?? $closeTimeHis);
+            // LA HORA QUE SE ESTAMPA (reescrito 2026-08-22 tras verlo en datos reales).
+            //
+            // Antes era `max(cierre de tienda, último ponche)`, y con un turno cuyo horario NO
+            // explicaba la jornada eso producía una salida en el MISMO SEGUNDO de la entrada:
+            // jornadas de CERO minutos escritas sobre asistencia real (María, 21-ago: entrada
+            // 20:33:05, salida sintética 20:33:05).
+            //
+            // Regla actual: se usa el fin de turno de la persona. Si tiene ponches DESPUÉS de esa
+            // hora, su horario no explica el día — típico del error a.m./p.m. que arrastran los
+            // horarios de esta empresa — y entonces NO se inventa nada: sólo queda la alerta 🔴
+            // para que un humano lo resuelva. El sistema adivina o avisa, nunca las dos cosas.
+            $base = (string) ($finDeTurno[$userId] ?? '');
+            $base = $base !== '' ? (strlen($base) === 5 ? $base . ':00' : substr($base, 0, 8)) : $closeTimeHis;
+            $ultima = $ultimaActividad[$userId] ?? null;
+
+            if ($ultima !== null && $ultima > $base) {
+                DB::table('audit_logs')->insert([
+                    'tenant_id' => $tenantId,
+                    'user_id' => $userId,
+                    'date' => $today,
+                    'type' => 'orphan_shift',
+                    'timestamp_str' => "$today $ultima",
+                    'reason' => '🔴 Turno huérfano SIN cerrar: el horario programado (fin ' . substr($base, 0, 5)
+                        . ') no explica la jornada — hay actividad a las ' . substr($ultima, 0, 5)
+                        . '. Revísalo a mano: el sistema no inventa la hora de salida.',
+                    'punishment_amount' => 0,
+                    'details' => json_encode(['auto_closed' => false, 'revision_manual' => true]),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                continue;
+            }
+
+            $horaSalida = $base;
+
+            // Comida sin regreso: se cierra a la misma hora, marcada y con exceso CERO.
+            if (!empty($comidaAbierta[$userId])) {
+                DB::table('time_entries')->insert([
+                    'tenant_id' => $tenantId,
+                    'user_id' => $userId,
+                    'date' => $today,
+                    'type' => 'meal_end',
+                    'time' => $horaSalida,
+                    'is_late' => false,
+                    'late_minutes' => 0,
+                    'details' => json_encode([
+                        'auto_closed' => true,
+                        'reason' => 'meal_sin_regreso',
+                        'note' => 'Cierre automático: se fue a comer y no fichó el regreso. No se le calculan minutos de exceso porque no hay dato para calcularlos.',
+                    ]),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
 
             // Check_out automático a la hora de cierre. Insert directo, NO vía
             // processPunch: es un cierre forzado del sistema que no debe pasar por reglas

@@ -157,7 +157,13 @@ class SillaMealQueueDoorNoticeTest extends TestCase
         $this->assertDatabaseHas('silla_requests', ['id' => $requestId, 'status' => 'finished']);
     }
 
-    public function test_silla_start_without_approval_is_rejected(): void
+    /**
+     * (2026-08-22) Antes esto era un portazo (400 "no tienes una solicitud aprobada"). El reposo
+     * en trabajos de pie es un derecho que la ley obliga a PERMITIR: el software no lo impide, lo
+     * REGISTRA y le avisa al supervisor. Un rechazo escrito se lee, en una inspección, como que el
+     * patrón impidió sentarse.
+     */
+    public function test_silla_sin_aprobacion_se_registra_y_avisa_en_vez_de_bloquear(): void
     {
         $employee = $this->makeUser('empleado');
         $this->checkIn($employee);
@@ -166,10 +172,20 @@ class SillaMealQueueDoorNoticeTest extends TestCase
             'user_id' => $employee->id, 'type' => 'silla_start', 'time' => '11:00:00',
         ]);
 
-        $response->assertStatus(400);
-        $this->assertStringContainsString('no tienes una solicitud', $response->json('message'));
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('time_entries', [
+            'user_id' => $employee->id, 'type' => 'silla_start',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $employee->id, 'type' => 'silla_sin_aprobacion',
+        ]);
     }
 
+    /**
+     * El aforo AVISA, no impide (2026-08-22). Que las sillas estén ocupadas es un problema del
+     * patrón, no del colaborador: el descanso se registra y queda el aviso para el supervisor.
+     * El tablero sigue diciendo la verdad sobre cuántas sillas hay en uso.
+     */
     public function test_silla_capacity_blocks_when_full(): void
     {
         $supervisor = $this->makeUser('supervisor', '1111');
@@ -193,16 +209,22 @@ class SillaMealQueueDoorNoticeTest extends TestCase
         $r2 = $this->actingAs($emp2)->postJson('/api/v1/clock/silla/request')->json('request_id');
         $this->actingAs($supervisor)->postJson("/api/v1/clock/silla/{$r2}/approve", ['method' => 'remote'])->assertStatus(200);
 
-        $blocked = $this->actingAs($emp2)->postJson('/api/v1/clock/punch', [
+        $conAforoLleno = $this->actingAs($emp2)->postJson('/api/v1/clock/punch', [
             'user_id' => $emp2->id, 'type' => 'silla_start', 'time' => '10:05:00',
         ]);
-        $blocked->assertStatus(400);
-        $this->assertStringContainsString('aforo', $blocked->json('message'));
+        $conAforoLleno->assertStatus(200);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $emp2->id, 'type' => 'silla_sin_aprobacion',
+        ]);
 
         $status = $this->actingAs($supervisor)->getJson('/api/v1/clock/silla/status?date=' . $this->storedDateFor($emp1));
         $status->assertStatus(200);
-        $status->assertJson(['max_simultaneous' => 1, 'active_count' => 1, 'available' => 0]);
-        $this->assertCount(1, $status->json('queue'));
+        // Dos personas descansando con aforo de 1: el tablero lo dice tal cual, que es justo el
+        // aviso que el supervisor necesita — antes la segunda simplemente no podía sentarse.
+        $status->assertJson(['max_simultaneous' => 1, 'active_count' => 2, 'available' => 0]);
+        // La cola queda vacía porque ya nadie espera: la segunda persona se sentó en vez de
+        // quedarse formada. Eso es el cambio de 2026-08-22 — el aforo informa, no encola gente.
+        $this->assertCount(0, $status->json('queue'));
     }
 
     public function test_supervisor_can_list_pending_silla_requests(): void

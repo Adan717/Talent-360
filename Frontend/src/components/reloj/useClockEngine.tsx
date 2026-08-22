@@ -218,6 +218,7 @@ export function useClockEngine(overrideUser?: any) {
 
 
   let leySillaConfig = systemSettings.leySillaConfig || {};
+
   const setLeySillaConfig = (v: any) => updateSetting('leySillaConfig', typeof v === 'function' ? v(leySillaConfig) : v);
   
   let featureFlags = systemSettings.featureFlags || {};
@@ -617,6 +618,34 @@ export function useClockEngine(overrideUser?: any) {
   const arrivalTimes = globalArrivalTimes;
   const clockState = globalClockStates[currentUser?.id] || 'inactive';
   const simTimeMinutes = currentSimTime;
+  // (2026-08-22) FUENTE ÚNICA de la Ley Silla. Antes había TRES relojes para el mismo derecho:
+  // el botón sólo exigía "ya volvió de comer" (sin medir minutos), el modal contaba desde el
+  // CHECK-IN, y la alarma usaba un 120 escrito a mano — ninguno leía el ajuste de la empresa
+  // (leySillaConfig.consecutiveMinutes), que era editable y no lo consumía nadie.
+  //
+  // Aquí se calculan los minutos DE PIE: desde el último momento en que la persona descansó
+  // (regreso de comida, de descanso corto, de silla o de salida temporal) o, si no ha
+  // descansado, desde su entrada. El botón, el modal y la alarma leen esto y nada más.
+  //
+  // AVISA, NUNCA BLOQUEA: la ley obliga a permitir el reposo, no a racionarlo. El servidor
+  // tampoco rechaza un silla_start; este número sólo decide cuándo se OFRECE el descanso.
+  const minutosDePieDesdeElUltimoDescanso = (() => {
+    const uid = currentUser?.id;
+    if (!uid) return null;
+    const entrada = checkInTimes[uid];
+    if (entrada === undefined) return null;
+    const reposos = [
+      mealEndTimes[uid],
+      breakEndTimes[uid],
+    ].filter((m): m is number => typeof m === 'number');
+    const desde = reposos.length ? Math.max(entrada, ...reposos) : entrada;
+    return Math.max(0, currentSimTime - desde);
+  })();
+  const minutosDePieParaDescanso = Number(leySillaConfig?.consecutiveMinutes) > 0
+    ? Number(leySillaConfig.consecutiveMinutes)
+    : 120;
+  const tocaDescansoLeySilla = minutosDePieDesdeElUltimoDescanso !== null
+    && minutosDePieDesdeElUltimoDescanso >= minutosDePieParaDescanso;
   const setSimTimeMinutes = (_v?: number) => {}; // no-op (se deja como estaba, solo se tipa el argumento que ya se le pasaba)
   const setArrivalTimes = (obj: any) => {
       Object.entries(obj).forEach(([id, mins]) => setGlobalArrivalTime(Number(id), Number(mins)));
@@ -1893,9 +1922,10 @@ export function useClockEngine(overrideUser?: any) {
       }
     }
 
-    // 3. Ley Silla alarm (120 minutes after returning from meal)
-    const mealEndTime = mealEndTimes[currentUser.id];
-    if (userClockPrefs.alarmsEnabled && userClockPrefs.leySillaAlert && mealEndTime !== undefined && currentSimTime === mealEndTime + 120 && !leySillaAlarmPlayed) {
+    // 3. Alarma Ley Silla — misma fuente que el botón y el modal: minutos DE PIE desde el último
+    // descanso, contra el ajuste de la empresa. Antes sonaba a los 120 minutos exactos del fin de
+    // la comida, con el 120 escrito a mano: recordaba un descanso que a veces ya se había tomado.
+    if (userClockPrefs.alarmsEnabled && userClockPrefs.leySillaAlert && tocaDescansoLeySilla && !leySillaAlarmPlayed) {
       playAlarm('alerta_tiempo');
       setLeySillaAlarmPlayed(true);
       showCustomAlert("🧘 Alerta Ley Silla: Recuerda tomar un descanso de 15 minutos de pie o sentado según la Ley Silla.");
@@ -3654,9 +3684,11 @@ export function useClockEngine(overrideUser?: any) {
         return { text: 'Tomar Comida', bg: 'bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold shadow-[0_0_20px_rgba(245,158,11,0.25)]', icon: '🍔', iconKey: 'meal_start', subtext: 'Haz clic para iniciar tu comida' };
       }
 
-      const hasReturnedFromMeal = mealEndTimes[currentUser.id] !== undefined;
+      // El descanso se OFRECE cuando la persona lleva de pie los minutos configurados por su
+      // empresa — no por el mero hecho de haber vuelto de comer, que era la regla vieja y hacía
+      // aparecer "Tomar Silla" a los 20 minutos de entrar.
       const hasTakenBreak = breakStartTimes[currentUser.id] !== undefined;
-      if (isPro && hasReturnedFromMeal && !hasTakenBreak && features.enable_ley_silla !== false) {
+      if (isPro && tocaDescansoLeySilla && !hasTakenBreak && features.enable_ley_silla !== false) {
         return {
           text: 'Tomar Silla',
           bg: 'bg-violet-600 hover:bg-violet-700 text-white font-extrabold shadow-[0_0_20px_rgba(147,51,234,0.3)] animate-pulse',
@@ -3995,6 +4027,9 @@ export function useClockEngine(overrideUser?: any) {
     phoneTab,
     playAlarm,
     playedAlarms,
+    minutosDePieDesdeElUltimoDescanso,
+    minutosDePieParaDescanso,
+    tocaDescansoLeySilla,
     processFinalClockOut,
     realSeconds,
     removeAlert,

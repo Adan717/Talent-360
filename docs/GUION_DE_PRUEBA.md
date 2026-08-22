@@ -88,7 +88,11 @@ ver el Monitor en vivo desde el tuyo.
 4. **Comida**: inicio y fin. Excédete a propósito con uno para generar exceso.
 5. **Descanso de Ley Silla** con el otro.
 6. **Salida** de ambos. Deja a uno **sin checar salida** a propósito: el sistema debe cerrar la
-   jornada solo y **decirlo**, no inventar horas.
+   jornada solo y **decirlo**, no inventar horas. El barrido corre **cada hora** y sólo actúa
+   pasada la hora de cierre de la sucursal, así que no lo esperes al minuto: la salida queda
+   marcada `auto_closed` y con una alerta 🔴 de auditoría a nombre de esa persona.
+7. **Cierre de la sucursal**: declara el cierre con el encargado. Si luego necesitas volver a
+   abrir el mismo día, se puede (por ejemplo, cerraste por error).
 
 > **La prueba cruzada más valiosa:** apunta en papel a qué hora entró cada quien y cuántos minutos
 > tarde. Lo vas a contrastar contra los reportes y la nómina.
@@ -223,6 +227,9 @@ Léelas antes de reportar nada:
 | **El PDF corta a 2,000 renglones** | Es a propósito y el propio documento lo dice. Para periodos largos, Excel |
 | **Los fichajes del Simulador Matrix no salen en reportes ni nómina** | Excluidos a propósito para que no se confundan con datos reales |
 | **El navegador marca el sitio como inseguro** | La instancia de prueba va por HTTP sin certificado. Algunas redes con filtrado lo bloquean del todo |
+| **Una supervisora no puede validar tareas de alguien que no está debajo de ella** | Es jerárquico: valida sólo a los puestos que le reportan en el organigrama. Si tu supervisora no tiene a nadie debajo, no tendrá nada que validar |
+| **Quien ya checó salida no puede volver a entrar el mismo día** | El reloj lleva UNA jornada por día. Si alguien sale y regresa (cita médica, segundo turno), hoy no hay forma de reabrir su turno — decisión pendiente |
+| **Al terminar una tarea a veces se pagan las monedas y a veces no** | Depende del organigrama: si tu puesto no le reporta a nadie, no hay quién valide y se paga al terminar. Con supervisor arriba, se paga **al validar** |
 
 ---
 

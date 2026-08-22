@@ -12,6 +12,12 @@ RUN npm ci
 # Copiar código fuente
 COPY . .
 
+# El puerto del websocket (Reverb) se fija al COMPILAR: Vite lo incrusta en el paquete. Sin
+# esto el navegador intentaba ws://<host>:8080, que en la V2 no está publicado (Reverb sale por
+# 8082): ni una sola conexión en tiempo real llegó a establecerse en la instancia de prueba.
+ARG VITE_REVERB_PORT=8080
+ENV VITE_REVERB_PORT=$VITE_REVERB_PORT
+
 # Construir aplicación para producción
 RUN npm run build
 

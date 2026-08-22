@@ -83,15 +83,30 @@ class TimeEntryController extends Controller
             unset($details['photo_url']);
         }
 
-        $details['supervisor_override'] = in_array(auth()->user()->role, ['admin', 'supervisor'], true);
+        // El override de supervisor sólo aplica cuando un mando ficha a OTRA persona (kiosco,
+        // corrección). Antes se concedía a todo ponche de un admin/supervisor, incluido el suyo:
+        // el mando se autorizaba a sí mismo por el mero hecho de serlo, y así pasó un check_in con
+        // 863 minutos de retardo sin que nadie lo autorizara (prueba del dueño, 2026-08-21).
+        // Nadie se autoriza a sí mismo — misma regla que el PIN y que la aprobación remota.
+        $esMando = in_array(auth()->user()->role, ['admin', 'supervisor'], true);
+        $details['supervisor_override'] = $esMando && (int) $user->id !== (int) auth()->id();
 
         try {
-            $result = $this->clockService->processPunch(
-                $user,
-                $request->type,
-                $request->time, // Solo para simulador, en prod usar nulo
-                $details
-            );
+            // Un usuario, un ponche a la vez. El guard de duplicados (R63) leía el último marcador
+            // y luego insertaba; dos peticiones del mismo doble clic llegaban en el mismo segundo,
+            // las dos leían "sin comida abierta" y las dos insertaban (visto en vivo: dos meal_start
+            // a las 02:59:23). El candado de fila sobre el usuario serializa sus ponches: la segunda
+            // espera a que la primera confirme y entonces sí ve el segmento abierto.
+            $result = \DB::transaction(function () use ($user, $request, $details) {
+                \DB::table('users')->where('id', $user->id)->lockForUpdate()->first();
+
+                return $this->clockService->processPunch(
+                    $user,
+                    $request->type,
+                    $request->time, // Solo para simulador, en prod usar nulo
+                    $details
+                );
+            });
 
             if (isset($result['success']) && $result['success']) {
                 event(new MonitorUpdated($user->tenant_id));

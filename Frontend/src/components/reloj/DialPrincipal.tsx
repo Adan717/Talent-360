@@ -38,6 +38,7 @@ interface DialPrincipalProps {
     disabled: boolean;
     isIncidenceReport?: boolean;
     isOpeningManager?: boolean;
+    isMealReservationAlert?: boolean;
     text?: string;
     subtext?: string;
     // Clave semántica explícita por estado (docs/funcionamiento_del_dial.md, Matriz de 23 Estados).
@@ -208,6 +209,11 @@ export default function DialPrincipal({
     // Formateo de etiquetas de la secuencia del dial. Textos alineados a docs/Logica Dial.md
     // (matriz de 23 estados, columna "Texto Principal") — cambio de solo texto, sin tocar
     // condiciones ni el despacho de acciones en handleAction().
+    // Si el clic va a abrir la RESERVACIÓN del comedor, el dial no puede decir "Tomar Comida":
+    // en la prueba del 2026-08-22 el texto prometía empezar a comer y el clic abría "Aparta tu
+    // comida" — un doble clic confundido con una comida duplicada que nunca existió.
+    if (btnProps.isMealReservationAlert) return 'Apartar Comida';
+
     switch (btnProps.iconKey) {
       case 'entrada': return 'Fichar Entrada';
       case 'verifying_gps': return 'Buscando GPS';

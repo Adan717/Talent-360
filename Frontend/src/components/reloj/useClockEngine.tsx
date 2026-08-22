@@ -664,7 +664,13 @@ export function useClockEngine(overrideUser?: any) {
   const workedCheckInMins = checkInTimes[currentUser?.id];
   const workedElapsedLabel = (clockState === 'active' && workedCheckInMins !== undefined)
     ? (() => {
-        const total = Math.max(0, currentSimTime - workedCheckInMins);
+        // En tiempo real los minutos salen del RELOJ DE PARED. `currentSimTime` avanza por un
+        // tick que va por detrás del minuto real, y al combinarlo con los segundos de pared el
+        // contador RETROCEDÍA al cambiar de minuto (visto en vivo: 00:01:43 → 00:01:23, y
+        // 00:05:23 → 00:05:06). Un cronómetro que va hacia atrás no es un cronómetro.
+        const ahora = new Date();
+        const nowMins = isRealTimeMode ? ahora.getHours() * 60 + ahora.getMinutes() : currentSimTime;
+        const total = Math.max(0, nowMins - workedCheckInMins);
         const wh = Math.floor(total / 60);
         const wm = total % 60;
         return `${wh.toString().padStart(2, '0')}:${wm.toString().padStart(2, '0')}:${realSeconds.toString().padStart(2, '0')}`;
@@ -3731,6 +3737,10 @@ export function useClockEngine(overrideUser?: any) {
 
   useEffect(() => {
     if (isSandboxMode) return;
+    // `GET /store-opening/assignments` es admin/supervisor (R50): el colaborador ya recibe las
+    // asignaciones depuradas dentro de /store-opening/today. Pedirlas desde aquí le daba un 403
+    // y un error en consola en cada carga.
+    if (!['admin', 'supervisor', 'platform_admin'].includes(currentUser?.role)) return;
     const fetchRealAssignments = async () => {
       try {
         const res = await axiosInstance.get('/store-opening/assignments');
@@ -3743,7 +3753,7 @@ export function useClockEngine(overrideUser?: any) {
       }
     };
     fetchRealAssignments();
-  }, [isSandboxMode]);
+  }, [isSandboxMode, currentUser?.role]);
 
   // --- NUEVAS HERRAMIENTAS INTEGRADAS CON EL SERVIDOR ---
   const [chatMessages, setChatMessages] = useState<any[]>([]);

@@ -256,7 +256,11 @@ class StoreOpeningHandoffService
             // día a la apertura de emergencia (2 testigos) diez minutos ANTES de que la tienda
             // tuviera que abrir. El día sólo se da por perdido cuando la apertura ya no puede
             // contar como a tiempo — mismo umbral que paga el bono.
-            if (!StoreOpeningService::yaSePuedeDeclararFallida($status)) {
+            // Sólo cuando la cadena se agotó por SILENCIO (el plazo venció sin respuesta) y
+            // todavía no es hora de darla por perdida. Si el responsable REPORTÓ que no viene
+            // y no hay a quién ceder, el día está perdido ya: no tiene sentido dejárselo a
+            // quien acaba de decir que no va a abrir.
+            if ($reason === 'no_response' && !app(StoreOpeningService::class)->yaSePuedeDeclararFallida($status, $simTime)) {
                 // Sigue habiendo tiempo: el último responsable conserva la apertura.
                 $status->status = 'active_window';
                 $status->save();

@@ -60,7 +60,7 @@ class StoreOpeningService
             
             $openTimeStr = $this->horaDeAperturaConfigurada($tenantId);
             [$windowStart, $deadline] = $this->ventanasDe($openTimeStr, $openingSettings);
-            $deadline = $this->plazoConOportunidad($deadline, $openingSettings, $tenantId, $openTimeStr);
+            $deadline = $this->plazoConOportunidad($deadline, $openingSettings, $tenantId, $openTimeStr, $simTime);
 
             // Find current responsible manager (Priority 1)
             // R46 (merge F3): `can_open_store` es el permiso REAL — sin este filtro la columna no
@@ -108,7 +108,7 @@ class StoreOpeningService
 
                 $todayStatus->scheduled_opening_time = $horaConfigurada;
                 $todayStatus->pre_opening_window_start = $inicio;
-                $todayStatus->report_deadline = $this->plazoConOportunidad($limite, $ajustes, $tenantId, $horaConfigurada);
+                $todayStatus->report_deadline = $this->plazoConOportunidad($limite, $ajustes, $tenantId, $horaConfigurada, $simTime);
                 // El fallo se midió contra un horario que ya no rige: se vuelve a evaluar.
                 $todayStatus->status = 'pending';
                 $todayStatus->failed_at = null;
@@ -200,7 +200,7 @@ class StoreOpeningService
                     $status->refresh();
 
                     return;
-                } elseif (self::yaSePuedeDeclararFallida($status)) {
+                } elseif ($this->yaSePuedeDeclararFallida($status, $simTime)) {
                     $status->status = 'failed';
                     $status->failed_at = Carbon::now();
                 } else {
@@ -223,9 +223,9 @@ class StoreOpeningService
      * calculado era 20:30, y "el encargado resultó ser María cuando en ajustes se ve claro que
      * es Adan". Si el plazo ya venció, se cuenta desde ahora.
      */
-    private function plazoConOportunidad(string $plazo, $ajustes, $tenantId, string $openTimeStr): string
+    private function plazoConOportunidad(string $plazo, $ajustes, $tenantId, string $openTimeStr, $simTime = null): string
     {
-        $ahora = Carbon::createFromFormat('H:i:s', $this->getCurrentTimeStr(null, $tenantId));
+        $ahora = Carbon::createFromFormat('H:i:s', $this->getCurrentTimeStr($simTime, $tenantId));
         $limite = Carbon::createFromFormat('H:i:s', $plazo);
 
         if ($limite->greaterThan($ahora)) {
@@ -296,22 +296,24 @@ class StoreOpeningService
      * no cuenta como a tiempo": un número, un significado, y dos ajustes que no se pueden
      * contradecir entre sí.
      */
-    public static function yaSePuedeDeclararFallida(StoreDailyOpeningStatus $status): bool
+    public function yaSePuedeDeclararFallida(StoreDailyOpeningStatus $status, $simTime = null): bool
     {
         if (!$status->scheduled_opening_time) {
             return true; // sin hora programada no hay nada que proteger
         }
 
-        $tz = TenantTimezone::for($status->tenant_id);
         $tolerancia = (int) (\App\Models\LftSetting::where('tenant_id', $status->tenant_id)
             ->value('late_tolerance_minutes') ?? 10);
 
-        $limite = Carbon::parse(
-            Carbon::parse($status->date)->format('Y-m-d') . ' ' . $status->scheduled_opening_time,
-            $tz
-        )->addMinutes($tolerancia);
+        // Con el MISMO reloj que el resto del módulo: el tiempo simulado del Matrix si aplica, y
+        // si no, la hora real en la zona del tenant. La primera versión miraba `Carbon::now()`
+        // a secas, así que una prueba con simTime 08:16 se decidía con la hora de pared — pasaba
+        // de noche y fallaba de madrugada.
+        $ahora = $this->getCurrentTimeStr($simTime, $status->tenant_id);
+        $limite = Carbon::createFromFormat('H:i:s', $status->scheduled_opening_time)
+            ->addMinutes($tolerancia)->format('H:i:s');
 
-        return Carbon::now($tz)->greaterThan($limite);
+        return $ahora > $limite;
     }
 
     /**

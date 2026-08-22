@@ -6,7 +6,17 @@ import { ClockControlCenterPanel } from './reloj/ui/ClockControlCenterPanel';
 
 
 export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = false }: { initialTab?: string; hideSidebar?: boolean }) => {
-  const { systemSettings, updateSetting } = useAppStore();
+  const { systemSettings, updateSetting, fetchState } = useAppStore();
+
+  // (2026-08-22) Esta pantalla edita y GUARDA la configuración real de la empresa, así que tiene
+  // que partir de la configuración real. fetchState() sólo corría si había token al montar la
+  // app: tras un login fresco, el admin caía en el Monitor (que no lo llama) y al abrir aquí veía
+  // los valores por defecto del store —horario 08:00-18:00, tolerancia 15— mientras la empresa
+  // tenía 02:49-07:45 y 10. Un "Guardar" ahí pisaba la configuración real con los defaults.
+  useEffect(() => {
+    if (!localStorage.getItem('talent_auth_token')) return;
+    fetchState().catch(() => { /* sin red se queda con lo que haya; no hay nada mejor que mostrar */ });
+  }, [fetchState]);
   const currentTier = useAppStore(state => state.currentTier);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isSaving, setIsSaving] = useState(false);

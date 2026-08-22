@@ -207,7 +207,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   setIsLoadingDB: (loading) => set({ isLoadingDB: loading }),
   setGlobalUsers: (users) => set({ globalUsers: users }),
   setCurrentUser: (user) => set({ currentUser: user }),
-  setCurrentTier: (tier) => set({ currentTier: tier }),
+  setCurrentTier: (tier) => {
+    set({ currentTier: tier });
+    // (2026-08-22) Todo login (contraseña, Google, 2FA, cambio forzado) pasa por aquí ya con el
+    // token guardado, así que es el único punto común para cargar el estado real. Antes
+    // fetchState() sólo corría si había token AL MONTAR la app: tras un login fresco el admin
+    // caía en el Monitor (que no lo llama) y Configuración mostraba los valores por defecto del
+    // store —horario 08:00-18:00, tolerancia 15— en vez de los de su empresa; guardar ahí los
+    // pisaba. Si la app ya cargó el estado al montar, esta segunda llamada sólo lo refresca.
+    if (localStorage.getItem('talent_auth_token')) {
+      get().fetchState().catch(() => { /* sin red se trabaja con lo que haya */ });
+    }
+  },
   setSimulatedTierOverride: (tier) => {
     if (tier) {
       localStorage.setItem('qa_simulated_tier_override', tier);

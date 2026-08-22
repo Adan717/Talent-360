@@ -1192,7 +1192,8 @@ export default function RelojVisual({
     const isDark = false; // Forced light mode by system policy
     const pendingCount = assignments.filter(a => a.userId === currentUser.id && ['pending', 'in_progress'].includes(a.status)).length;
     const sameMealRes = Object.values(reservedMeals).flat().some((r: any) => r.userId === currentUser.id);
-    const needsMealRes = clockState === 'active' && !sameMealRes && hasMealReservation;
+    // (2026-08-22) Con la comida ya TOMADA la reserva se consume y el aviso volvía a salir.
+    const needsMealRes = clockState === 'active' && !sameMealRes && hasMealReservation && mealEndTimes[currentUser.id] === undefined;
     const keyTransfer = pendingKeyTransfers && pendingKeyTransfers.length > 0 ? pendingKeyTransfers[0] : null;
     const needsChecklist = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_checklist && !openingChecklistCompleted;
     const needsRollCall = isOpeningPremium && storeStatus === 'open' && openingStatus && Number(currentUser.id) === Number(openingStatus.current_responsible_employee_id) && openingSettings.require_opening_roll_call && !openingRollCallCompleted;
@@ -4212,7 +4213,7 @@ export default function RelojVisual({
                   }
                   const alerts = buddyAlerts[currentUser.id] || [];
                   const sameMealRes = Object.values(reservedMeals).flat().some((r: any) => r.userId === currentUser.id);
-                  const needsMealRes = clockState === 'active' && !sameMealRes;
+                  const needsMealRes = clockState === 'active' && !sameMealRes && hasMealReservation && mealEndTimes[currentUser.id] === undefined;
                   
                   let alertMsg = null;
                   let alertBg = isDark ? "bg-violet-500/10 border-violet-500/20 text-violet-400" : "bg-violet-50 border-violet-100 text-violet-600";
@@ -6270,7 +6271,13 @@ export default function RelojVisual({
                               let blockReason = '';
                               let firstBlockReservations = reservedMeals[slotStr] || [];
                               
-                              if (i + neededBlocks > totalPossibleBlocks) {
+                              // (2026-08-22) Un horario que ya pasó no se aparta: a las 4:06 se
+                              // ofrecían las 2:00, 2:15… como disponibles. currentSimTime es la hora
+                              // real en la zona del tenant (o la simulada en el Matrix).
+                              if (!isMySlot && totalMins + safeStep <= currentSimTime) {
+                                 canReserve = false;
+                                 blockReason = 'Ya pasó';
+                              } else if (i + neededBlocks > totalPossibleBlocks) {
                                  canReserve = false;
                                  blockReason = 'Tiempo insuficiente';
                               } else {

@@ -37,6 +37,50 @@ class ClockController extends Controller
      * propio) debe indicar explícitamente el tenant vía el parámetro tenant_id.
      * Devuelve null si no se puede determinar (el caller debe responder 422).
      */
+    /**
+     * El retardo más reciente que el colaborador todavía puede justificar (ventana de 2 días, la
+     * misma que usa LateJustificationController::request para anclar la solicitud), junto con el
+     * estado de su justificante si ya lo pidió.
+     */
+    private function retardoJustificable(int $tenantId, $userId): ?array
+    {
+        if (!$userId) {
+            return null;
+        }
+
+        $tz = \App\Helpers\TenantTimezone::for($tenantId);
+        $hoy = \Carbon\Carbon::now($tz)->format('Y-m-d');
+        $desde = \Carbon\Carbon::now($tz)->subDays(2)->format('Y-m-d');
+
+        $retardo = DB::table('time_entries')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('type', 'check_in')
+            ->where('is_late', true)
+            ->whereNull('simulation_session_id')
+            ->whereBetween('date', [$desde, $hoy])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->first(['date', 'late_minutes']);
+
+        if (!$retardo) {
+            return null;
+        }
+
+        $fecha = \Carbon\Carbon::parse($retardo->date)->format('Y-m-d');
+        $justificante = DB::table('late_justifications')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('date', $fecha)
+            ->value('status');
+
+        return [
+            'date' => $fecha,
+            'minutes' => (int) ($retardo->late_minutes ?? 0),
+            'justificante' => $justificante,
+        ];
+    }
+
     private function resolveResetTenantId(Request $request): ?int
     {
         $tenantId = auth()->user()->tenant_id ?? $request->input('tenant_id');
@@ -487,6 +531,14 @@ class ClockController extends Controller
             'time_entries' => $timeEntries,
             'store_logs' => $storeLogs,
             'store_status' => $storeStatus,
+            // (2026-08-22) El retardo que ESTA persona todavía puede justificar, con el estado de
+            // su justificante. Sin esto el dial no tenía forma de ofrecer "Justificar retardo":
+            // la única puerta era un modal que aparecía en el instante siguiente al fichaje tarde
+            // —y que además exigía un rol que no existe ('Encargado Titular', 'Supervisor' con
+            // mayúscula, cuando los roles son admin/supervisor/empleado)—, así que en la práctica
+            // NADIE podía pedir un justificante nunca, aunque el endpoint, el panel de aprobación
+            // y la exención en nómina llevaban meses construidos y funcionando.
+            'mi_retardo_justificable' => $this->retardoJustificable($tenantId, auth()->id()),
             'contingencies' => $contingencies,
             'internal_messages' => $messages,
             'audit_logs' => $auditLogs,

@@ -482,6 +482,32 @@ export default function RelojVisual({
     dias_restantes?: number | null; vencido?: boolean;
   } | null>(null);
 
+  /**
+   * El retardo que ESTA persona todavía puede justificar (lo calcula el servidor en /sync/state).
+   *
+   * (2026-08-22) Antes no había forma de pedir un justificante: el único disparador era un modal
+   * que salía en el instante siguiente al fichaje tarde, y encima exigía un rol inexistente
+   * ('Encargado Titular', 'Supervisor' con mayúscula, cuando los roles son admin/supervisor/
+   * empleado). El endpoint, el panel de aprobación del jefe y la exención en la nómina llevaban
+   * meses funcionando; lo que faltaba era el botón.
+   */
+  const [miRetardoJustificable, setMiRetardoJustificable] = useState<{
+    date: string; minutes: number; justificante: string | null;
+  } | null>(null);
+
+  const consultarRetardoJustificable = () => {
+    if (isSimulated || !currentUser?.id) return;
+    axiosInstance.get('/sync/state')
+      .then(res => setMiRetardoJustificable(res.data?.mi_retardo_justificable ?? null))
+      .catch(() => { /* sin red no se ofrece el trámite; no hay nada que romper */ });
+  };
+
+  useEffect(() => {
+    consultarRetardoJustificable();
+    window.addEventListener('db_sync_updated', consultarRetardoJustificable);
+    return () => window.removeEventListener('db_sync_updated', consultarRetardoJustificable);
+  }, [isSimulated, currentUser?.id]);
+
   useEffect(() => {
     if (isSimulated || !currentUser?.id) return;
     axiosInstance.get('/academy/mi-induccion')
@@ -1365,6 +1391,25 @@ export default function RelojVisual({
         icon: <CheckSquare className="text-emerald-500 w-4 h-4" />,
         action: () => { setInnerTool(null); setPhoneTab('tareas'); },
         actionText: 'Ir a tareas'
+      });
+    }
+
+    // Retardo sin justificar: la puerta de entrada al justificante. Sigue disponible DESPUÉS del
+    // fichaje (la ventana del servidor son 2 días), que es cuando la gente trae el comprobante
+    // del médico. Un justificante que sólo se puede pedir en el segundo siguiente al retardo no
+    // es un justificante.
+    if (miRetardoJustificable && (miRetardoJustificable.justificante === null || miRetardoJustificable.justificante === 'rejected')) {
+      const rechazado = miRetardoJustificable.justificante === 'rejected';
+      notificationsList.push({
+        id: 'retardo_sin_justificar',
+        type: 'warning',
+        title: rechazado ? 'Justificante rechazado' : 'Retardo sin justificar',
+        desc: rechazado
+          ? `Tu jefe rechazó el justificante del retardo de ${miRetardoJustificable.minutes} min. Puedes volver a enviarlo con más detalle.`
+          : `Tienes un retardo de ${miRetardoJustificable.minutes} min sin justificar. Si tuviste un motivo, explícalo y tu jefe decide.`,
+        icon: <AlertTriangle className="text-amber-500 w-4 h-4" />,
+        action: () => setShowJustificanteModal(true),
+        actionText: rechazado ? 'Volver a enviar' : 'Justificar'
       });
     }
 
@@ -5212,6 +5257,7 @@ export default function RelojVisual({
                            updateClockState(currentUser.id, 'active');
                            setContingencyLogs((prev: any) => [{ id: Date.now(), userId: currentUser.id, userName: currentUser.name, type: 'late', reason: `JUSTIFICANTE: ${justificanteText}`, time: formattedTime }, ...prev]);
                            showCustomAlert(`✅ Justificante enviado. Un administrador lo revisará; si lo aprueba, el retardo no se te descontará.`);
+                           consultarRetardoJustificable();
                            setShowJustificanteModal(false);
                            setJustificanteText("");
                         } else {

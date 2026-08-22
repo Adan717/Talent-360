@@ -2548,9 +2548,14 @@ export function useClockEngine(overrideUser?: any) {
         const res = await syncToDB('check_in');
         if (res && res.entry && res.entry.late_type) {
             showCustomAlert(`🟢 Fichaje registrado. Se detectó: ${res.entry.late_type} (${res.entry.penalty_applied}% descuento)`);
-            if (['Encargado Titular', 'Segundo Encargado', 'Supervisor'].includes(currentUser.role)) {
-                setShowJustificanteModal(true);
-            }
+            // (2026-08-22) Aquí había un candado muerto: exigía que el rol fuera 'Encargado
+            // Titular', 'Segundo Encargado' o 'Supervisor' —con mayúscula— cuando los roles reales
+            // son admin/supervisor/empleado. Nunca coincidía con nadie, así que este modal jamás
+            // se abría y, como era la ÚNICA puerta al justificante, nadie podía pedir uno nunca.
+            // Y el filtro estaba al revés: quien más necesita justificar su retardo es el
+            // colaborador, no el jefe. El trámite queda además disponible después, desde el aviso
+            // "Retardo sin justificar" del dial.
+            setShowJustificanteModal(true);
         } else {
             showCustomAlert(`🟢 Fichaje registrado a tiempo.`);
         }

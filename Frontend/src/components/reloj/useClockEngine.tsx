@@ -2451,6 +2451,11 @@ export function useClockEngine(overrideUser?: any) {
          // el dial. Ahora se muestra el mensaje real del backend cuando existe.
          console.error(e);
          showCustomAlert(e.response?.data?.message || '⚠️ No se pudo sincronizar el fichaje con el servidor.');
+         // Quien llamó tiene que saber que NO se registró. Antes esto devolvía undefined y el
+         // cierre de jornada seguía como si nada: "🔴 Salida registrada a las 23:08" encima del
+         // aviso de que el servidor la había rechazado (checklist de cierre pendiente), y el dial
+         // ofrecía "Tomar Silla" porque, de verdad, la persona seguía en turno.
+         return { error: true, message: e.response?.data?.message };
       }
   };
   const handleAction = async () => {
@@ -2966,30 +2971,30 @@ export function useClockEngine(overrideUser?: any) {
 
   const authorizeClockOutWithPendingTasks = async () => {
     const isPro = currentTier === 'pro' || currentTier === 'enterprise' || currentUser?.tenant_id === 1;
-    
-    if (isPro) {
-      if (!supervisorQrToken || !supervisorQrToken.trim()) {
-        showCustomAlert("⚠️ Token de Código QR de Supervisor inválido o incompleto.");
+
+    // UNA cerradura, y vive en el servidor (2026-08-21, prueba del dueño). Antes había dos de
+    // cartón: en PRO, un botón "[Escaneo Sim.]" generaba el token QR con la sesión del propio
+    // usuario (un admin se autorizaba solo; a un empleado le daba error); y en no-PRO el PIN
+    // sólo se revisaba aquí por su largo. Ahora el supervisor presente teclea su PIN de kiosco
+    // y es el servidor quien lo valida, exige que sea un mando distinto al colaborador, y —para
+    // la entrada tardía— registra la autorización a su nombre, igual que la remota del Monitor.
+    if (!supervisorPin || supervisorPin.trim().length < 4) {
+      showCustomAlert("⚠️ Teclea el PIN de kiosco de tu supervisor.");
+      return;
+    }
+    const purpose = isLateEntryValidation ? 'late_entry'
+      : isOvertimeValidation ? 'overtime'
+      : isEarlyDepartureValidation ? 'early_departure'
+      : 'pending_tasks';
+    try {
+      const val = await axiosInstance.post('/clock/supervisor-pin/authorize', { pin: supervisorPin.trim(), purpose });
+      if (!val.data?.success) {
+        showCustomAlert(`⚠️ ${val.data?.message || 'PIN de supervisor no válido.'}`);
         return;
       }
-      
-      try {
-        const res = await axiosInstance.post('/sync/supervisor/validate-qr', {
-          token: supervisorQrToken
-        });
-        if (!res.data || !res.data.success) {
-          showCustomAlert(`⚠️ Error de Validación: ${res.data.message || 'Token QR inválido o expirado.'}`);
-          return;
-        }
-      } catch (e: any) {
-        showCustomAlert(`⚠️ Error de Validación: ${e.response?.data?.message || 'Error al conectar con el servidor para validar el QR.'}`);
-        return;
-      }
-    } else {
-      if (!supervisorPin || supervisorPin.trim().length < 4) {
-        showCustomAlert("⚠️ PIN de Supervisor inválido o incompleto.");
-        return;
-      }
+    } catch (e: any) {
+      showCustomAlert(`⚠️ ${e.response?.data?.message || 'No se pudo validar el PIN con el servidor.'}`);
+      return;
     }
 
     if (isOvertimeValidation) {
@@ -3178,6 +3183,9 @@ export function useClockEngine(overrideUser?: any) {
     };
 
     const res = await syncToDB('check_out', false, 0, JSON.stringify(detailsObj));
+    if (res?.error) {
+      return; // el servidor ya explicó por qué; el turno sigue abierto y el dial lo refleja
+    }
     if (!res?.offline) {
       showCustomAlert(`🔴 Salida registrada a las ${formattedTime}.${delegatedTo ? ' 🔑 Llaves delegadas con éxito.' : ''} ${note ? ' (' + note + ')' : ''}`);
     }

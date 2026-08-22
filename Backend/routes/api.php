@@ -601,6 +601,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Tolerancia con autorización: el empleado solicita autorización cuando el Retardo Extremo
         // le bloquea la entrada (R14). Una aprobación levanta el bloqueo server-side. R56.
         Route::post('/clock/request-late-authorization', [\App\Http\Controllers\LateAuthorizationController::class, 'request']);
+        // El supervisor presente teclea su PIN de kiosco: 10 intentos por minuto contra fuerza bruta (R54).
+        Route::middleware('throttle:10,1')->post('/clock/supervisor-pin/authorize', [\App\Http\Controllers\LateAuthorizationController::class, 'authorizeWithSupervisorPin']);
 
         // Botón de Pánico (R80): el empleado declara una emergencia (categoría + geo) → se persiste y
         // alerta a los mandos del tenant.

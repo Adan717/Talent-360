@@ -106,6 +106,75 @@ class LateAuthorizationController extends Controller
     /**
      * Lista de solicitudes PENDIENTES del tenant (para el panel del admin).
      */
+    /**
+     * El supervisor PRESENTE autoriza con su PIN de kiosco (2026-08-21, prueba del dueño).
+     *
+     * El modal de "Acceso Bloqueado" traía un botón "[Escaneo Sim.]" —simular escaneo de QR— que
+     * generaba el token con la sesión del PROPIO usuario: un admin se autorizaba a sí mismo con un
+     * clic, y a un empleado le daba error y lo dejaba frente a una caja de texto `qr_...` sin
+     * nada que escanear. No existía ninguna pantalla donde un supervisor generara su QR; el
+     * "QR dinámico" era un resto del simulador. Y el PIN de la variante no-PRO sólo se revisaba
+     * en el navegador (largo ≥ 4): una cerradura de cartón.
+     *
+     * Ahora hay UNA cerradura y vive aquí: el supervisor teclea su PIN de kiosco (el mismo que
+     * usa para aprobar tareas y abrir en emergencia), se valida contra su expediente, tiene que
+     * ser admin/supervisor y NO puede ser el propio colaborador. Con `purpose=late_entry` se
+     * registra una autorización APROBADA a nombre del supervisor —exactamente la misma fila que
+     * deja la aprobación remota del Monitor—, así que el fichaje que sigue pasa el bloqueo del
+     * servidor por la vía normal y queda auditado quién autorizó.
+     */
+    public function authorizeWithSupervisorPin(Request $request)
+    {
+        $request->validate([
+            'pin' => ['required', 'string', 'regex:/\A\d{4,6}\z/'],
+            'purpose' => 'required|in:late_entry,overtime,early_departure,pending_tasks',
+        ]);
+
+        $actor = Auth::user();
+        $tenantId = $actor->tenant_id;
+        if ($tenantId === null) {
+            return response()->json(['success' => false, 'message' => 'Sin tenant.'], 403);
+        }
+
+        $lookup = \App\Models\Employee::kioskPinLookup($request->pin);
+        $emp = \App\Models\Employee::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('kiosk_pin_lookup', $lookup)
+            ->first();
+
+        $supervisor = ($emp && $emp->kiosk_pin_hash && \Illuminate\Support\Facades\Hash::check($request->pin, $emp->kiosk_pin_hash) && $emp->is_active_employee)
+            ? \App\Models\User::withoutGlobalScopes()->where('tenant_id', $tenantId)->find($emp->user_id)
+            : null;
+
+        // Mensaje GENÉRICO a propósito: no se revela si el PIN existe, de quién es, ni por qué falló.
+        if (!$supervisor || !in_array($supervisor->role, ['admin', 'supervisor', 'platform_admin'], true)
+            || (int) $supervisor->id === (int) $actor->id) {
+            return response()->json(['success' => false, 'message' => 'PIN de supervisor no válido.'], 422);
+        }
+
+        if ($request->purpose === 'late_entry') {
+            $timezone = TenantTimezone::for($tenantId);
+            $date = Carbon::now($timezone)->format('Y-m-d');
+
+            DB::table('late_authorization_requests')->updateOrInsert(
+                ['tenant_id' => $tenantId, 'user_id' => $actor->id, 'date' => $date],
+                [
+                    'status' => 'approved',
+                    'resolved_by' => $supervisor->id,
+                    'resolved_at' => now(),
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Autorizado por ' . $supervisor->name . '.',
+            'authorized_by' => $supervisor->name,
+        ]);
+    }
+
     public function pending()
     {
         $tenantId = Auth::user()->tenant_id;

@@ -34,7 +34,7 @@ export const SolicitarAutorizacionButton = () => {
       <div className="mt-2 rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-center">
         <p className="text-[11px] font-black text-emerald-700">✓ Solicitud enviada</p>
         <p className="text-[10px] text-emerald-600 mt-1 leading-snug">
-          Cuando un administrador la apruebe, cierra esta ventana y vuelve a registrar tu entrada.
+          Les llegó a los administradores y supervisores de tu empresa (la aprueban en Monitor 360 → Autorizaciones de entrada). Cuando la aprueben, cierra esta ventana y vuelve a registrar tu entrada.
         </p>
       </div>
     );

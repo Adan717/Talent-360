@@ -4639,9 +4639,20 @@ export default function RelojVisual({
               <div className="bg-white rounded-3xl p-5 w-full flex-grow flex flex-col shadow-2xl relative overflow-hidden text-slate-800">
                 <div className="flex justify-between items-center mb-4">
                   <h3 id="pase-lista-modal-title" className="font-extrabold text-xl text-slate-800">Pase de Lista</h3>
+                  <div className="flex items-center gap-2">
                   <button onClick={toggleSelectAll} className="text-xs bg-indigo-50 text-indigo-700 font-bold px-3 py-1.5 rounded-full border border-indigo-100 hover:bg-indigo-100">
                     Seleccionar Todos
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaseListaModal(false)}
+                    aria-label="Cerrar pase de lista"
+                    title="Cerrar"
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center border-none cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                  </div>
                 </div>
                 
                 <div className="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -5572,76 +5583,40 @@ export default function RelojVisual({
                         : "⚠️ Tareas Pendientes Detectadas"}
                 </h3>
                 <p className="text-[10.5px] text-slate-500 text-center leading-relaxed mb-5 px-2 font-bold">
-                  {isPro 
-                    ? (isOvertimeValidation 
-                        ? (isSimulatedHoliday 
-                            ? "El colaborador se encuentra en su día de descanso obligatorio (Día Feriado LFT). Para habilitar su entrada a laborar (Pago Triple LFT), escanea tu código QR dinámico de 60s."
-                            : "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, escanea tu código QR dinámico de 60s.")
-                        : isEarlyDepartureValidation
-                          ? "El colaborador está registrando una salida antes de su horario programado. Solicita la validación de tu supervisor escaneando su QR dinámico de 60s."
-                          : isLateEntryValidation
-                            ? "Se superó el límite de tolerancia de entrada. Solicita la validación de tu supervisor escaneando su QR dinámico de 60s para permitir tu ingreso (Sujeto a deducción salarial)."
-                            : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor escaneando su QR dinámico de 60s.")
-                    : (isOvertimeValidation
-                        ? (isSimulatedHoliday
-                            ? "El colaborador se encuentra en su día de descanso obligatorio (Día Feriado LFT). Para habilitar su entrada a laborar (Pago Triple LFT), ingresa tu PIN de supervisor."
-                            : "El colaborador se encuentra en su día de descanso. Para habilitar su entrada a laborar horas extras, ingresa tu PIN de supervisor.")
-                        : isEarlyDepartureValidation
-                          ? "El colaborador está registrando una salida antes de su horario programado. Solicita la validación de tu supervisor ingresando su PIN."
-                          : isLateEntryValidation
-                            ? "Se superó el límite de tolerancia de entrada. Solicita la validación de tu supervisor ingresando su PIN para permitir tu ingreso (Sujeto a deducción salarial)."
-                            : "No puedes registrar tu salida porque tienes tareas operativas asignadas sin completar. Conclúyelas o solicita la validación de tu supervisor ingresando su PIN.")}
+                  {isOvertimeValidation
+                    ? (isSimulatedHoliday
+                        ? "Hoy es día feriado (LFT): para laborar necesitas que tu supervisor lo autorice con su PIN."
+                        : "Hoy es tu día de descanso: para laborar horas extra necesitas que tu supervisor lo autorice con su PIN.")
+                    : isEarlyDepartureValidation
+                      ? "Vas a salir antes de tu hora: tu supervisor debe autorizarlo con su PIN."
+                      : isLateEntryValidation
+                        ? "Se pasó la tolerancia de entrada. Tu supervisor puede autorizarte aquí con su PIN, o pides la autorización a distancia y un administrador o supervisor la aprueba desde el Monitor."
+                        : "Tienes tareas sin completar: termínalas, o tu supervisor autoriza la salida con su PIN."}
                 </p>
 
-                {isPro ? (
-                  <div className="space-y-3 mb-5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block text-left">Token QR del Supervisor</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={supervisorQrToken}
-                        onChange={e => setSupervisorQrToken(e.target.value)}
-                        placeholder="qr_..."
-                        className="flex-1 py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center text-xs focus:outline-none focus:border-violet-500"
-                      />
-                      <button
-                        onClick={async () => {
-                          try {
-                            const res = await axiosInstance.post('/sync/supervisor/generate-qr');
-                            if (res.data && res.data.token) {
-                              setSupervisorQrToken(res.data.token);
-                            }
-                          } catch (e) {
-                            alert("Error al simular QR");
-                          }
-                        }}
-                        className="bg-violet-600 hover:bg-violet-700 text-white font-bold px-3 py-2 rounded-2xl border-none cursor-pointer text-[10px]"
-                        title="Simular escaneo de QR"
-                        type="button"
-                      >
-                        [Escaneo Sim.]
-                      </button>
-                    </div>
+                {/* Una sola cerradura: el PIN de kiosco del supervisor, validado en el servidor.
+                    Aquí había un botón "[Escaneo Sim.]" que generaba el "QR dinámico" con la sesión
+                    del propio usuario (un admin se autorizaba solo). Ver LateAuthorizationController. */}
+                <div className="space-y-3 mb-5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block text-left">PIN de kiosco del supervisor</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={supervisorPin}
+                    onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="••••••"
+                    className="w-full py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center tracking-[0.5em] text-lg focus:outline-none focus:border-rose-400"
+                  />
+                  <p className="text-[10px] text-slate-500 text-center leading-snug">
+                    Tu supervisor lo teclea aquí, en tu pantalla. Queda registrado a su nombre.
+                  </p>
+                  {!isLateEntryValidation && (
                     <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
                       ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
                     </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 mb-5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block text-left">PIN del Supervisor</label>
-                    <input
-                      type="password"
-                      maxLength={6}
-                      value={supervisorPin}
-                      onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, ''))}
-                      placeholder="••••"
-                      className="w-full py-3 px-4 border border-slate-200 rounded-2xl font-mono text-center tracking-[0.5em] text-lg focus:outline-none focus:border-rose-500"
-                    />
-                    <p className="text-[9px] text-rose-500 font-extrabold text-center uppercase">
-                      ⚠️ Nota: Omitir tareas afectará negativamente las métricas de productividad.
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* R56/R57 (merge FE): si el bloqueo es por RETARDO EXTREMO, el colaborador puede
                     pedir autorización REMOTA a un admin en vez de necesitar al supervisor presente

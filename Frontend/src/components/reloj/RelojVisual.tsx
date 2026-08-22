@@ -4023,6 +4023,14 @@ export default function RelojVisual({
                 {/* Fading Divider below top section */}
                 <div className="w-3/4 mx-auto h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent my-5"></div>
 
+                {/* Barra cronológica del turno (entrada, comida, silla, salida). La función ya traía
+                    su variante de escritorio (isMobile=false) pero sólo se llamaba desde el layout
+                    de celular: en una PC, la misma persona no veía su progreso. Prueba del dueño,
+                    2026-08-21: "no hay barra que me indique, como sí lo hace con un empleado". */}
+                <div className="w-full mb-2">
+                  {renderBarraCronologica(false)}
+                </div>
+
                 {/* Clock Dial Area */}
                 <div className="flex flex-col items-center justify-center py-2 mt-0 relative">
                   {isOpeningPremium && storeStatus === 'closed' && (

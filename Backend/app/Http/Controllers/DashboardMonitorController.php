@@ -113,12 +113,24 @@ class DashboardMonitorController extends Controller
 
                 if ($entries->isNotEmpty()) {
                     $latest = $entries->sortByDesc('id')->first();
-                    if ($latest->type === 'check_in' || $latest->type === 'meal_end') {
+                    // (2026-08-22) Faltaban los descansos cortos: con un break_start, silla_start o
+                    // temp_exit_start como último ponche el estado caía al default 'offline' y la
+                    // persona DESAPARECÍA del monitor justo mientras descansaba.
+                    if (in_array($latest->type, ['check_in', 'meal_end', 'break_end', 'silla_end', 'temp_exit_end'], true)) {
                         $status = 'active';
                         $statusText = 'En Turno';
                     } elseif ($latest->type === 'meal_start') {
                         $status = 'break';
                         $statusText = 'En Descanso';
+                    } elseif ($latest->type === 'break_start') {
+                        $status = 'break';
+                        $statusText = 'Descanso corto';
+                    } elseif ($latest->type === 'silla_start') {
+                        $status = 'break';
+                        $statusText = 'Descanso Ley Silla';
+                    } elseif ($latest->type === 'temp_exit_start') {
+                        $status = 'break';
+                        $statusText = 'Salida temporal';
                     } elseif ($latest->type === 'check_out') {
                         $status = 'offline';
                         $statusText = 'Fuera de Turno';
@@ -241,6 +253,13 @@ class DashboardMonitorController extends Controller
                         'meal_start' => 'salió a tomar su descanso de almuerzo',
                         'meal_end' => 'regresó de su descanso de almuerzo',
                         'check_out' => 'finalizó su turno (Check-Out)',
+                        'break_start' => 'inició un descanso corto',
+                        'break_end' => 'regresó de su descanso corto',
+                        'silla_start' => 'tomó su descanso de Ley Silla',
+                        'silla_end' => 'terminó su descanso de Ley Silla',
+                        'temp_exit_start' => 'salió temporalmente',
+                        'temp_exit_end' => 'regresó de su salida temporal',
+                        'waiting' => 'llegó y espera la apertura',
                     ];
                     return [
                         'id' => 'time_' . $entry->id,

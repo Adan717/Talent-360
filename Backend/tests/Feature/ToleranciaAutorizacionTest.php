@@ -181,6 +181,25 @@ class ToleranciaAutorizacionTest extends TestCase
         }
     }
 
+    /** Una pendiente de AYER no se lista: el candado sólo mira la aprobación de hoy. */
+    public function test_las_pendientes_de_ayer_no_se_listan(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 10:30:00'));
+        try {
+            [$tenant, $user] = $this->makeSetup(60);
+            $admin = $this->makeAdmin($tenant);
+            $this->actingAs($user)->postJson('/api/v1/clock/request-late-authorization', []);
+            DB::table('late_authorization_requests')->where('user_id', $user->id)->update(['date' => '2026-07-09']);
+
+            $res = $this->actingAs($admin)->getJson('/api/v1/admin/late-authorizations');
+
+            $res->assertStatus(200);
+            $this->assertCount(0, $res->json(), 'una solicitud de la víspera no debe aparecer como pendiente de hoy');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_un_empleado_no_puede_resolver(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-10 10:30:00'));

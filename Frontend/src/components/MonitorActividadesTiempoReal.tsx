@@ -170,6 +170,8 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   // UI & Filter States
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Un 403 del monitor se DICE; antes se tragaba y la pantalla quedaba en "0 / 0".
+  const [accesoDenegado, setAccesoDenegado] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [mobileTab, setMobileTab] = useState<'employees' | 'feed' | 'vendors' | 'chat'>('employees');
@@ -259,8 +261,11 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           // ignore candidate fallback error
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error al cargar datos del monitor:", err);
+      if (err?.response?.status === 403) {
+        setAccesoDenegado(err.response?.data?.message || 'Tu cuenta no tiene permiso para ver el monitor. Pide a tu administrador que lo habilite en tu puesto.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -806,6 +811,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                 <div className="p-12 text-center text-slate-400 bg-white rounded-3xl border border-slate-200">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
                   <p className="text-sm font-semibold text-slate-700">Cargando monitor de actividad...</p>
+                </div>
+              ) : accesoDenegado ? (
+                <div className="p-8 text-center bg-rose-50 rounded-3xl border border-rose-200 text-rose-700">
+                  <UserCheck className="w-10 h-10 mx-auto text-rose-400 mb-2" />
+                  <p className="text-sm font-bold">Sin acceso al monitor</p>
+                  <p className="text-xs mt-1">{accesoDenegado}</p>
                 </div>
               ) : filteredUsers.length === 0 ? (
                 <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-500">

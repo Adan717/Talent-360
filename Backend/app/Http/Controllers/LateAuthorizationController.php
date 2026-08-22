@@ -185,6 +185,11 @@ class LateAuthorizationController extends Controller
             })
             ->where('r.tenant_id', $tenantId)
             ->where('r.status', 'pending')
+            // Sólo las de HOY (fecha del negocio). Una solicitud de ayer que nadie resolvió no sirve
+            // para nada: el candado del reloj sólo mira la aprobación del día en curso. En vivo el
+            // panel del Monitor mostraba "Adan, retardo de 465 min" y "Miguel, 611 min" de la
+            // víspera, con ambos ya fichados hoy — un admin podía "autorizar" algo sin efecto.
+            ->where('r.date', \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString())
             ->orderBy('r.created_at', 'asc')
             ->get([
                 'r.id', 'r.user_id', 'r.date', 'r.requested_late_minutes', 'r.status', 'r.created_at',

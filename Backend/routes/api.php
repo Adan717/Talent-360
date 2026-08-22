@@ -331,9 +331,13 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // analítica operativa", una capacidad de LECTURA) podía cerrarle el turno a
         // cualquiera con el Kill-Switch, crear y asignar tareas y escribir en el chat de la
         // empresa. El admin sigue pasando por bypass en ambos grupos.
-        Route::middleware(['permission:manage_tasks,approve_operations,manage_store_opening,view_reports'])->group(function () {
-            Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
-        });
+        // (2026-08-22) La LECTURA del Monitor es del rol, no del puesto: este grupo ya exige
+        // `role:admin,supervisor`, y el Monitor es la pantalla de inicio del supervisor. Exigir
+        // además un permiso de puesto dejaba a una supervisora recién dada de alta (puesto sin
+        // permisos delegados) con 403 silencioso: "0 / 0, no hay colaboradores activos" mientras
+        // el admin estaba en turno. Las ACCIONES (asignar, Kill-Switch, chat) siguen abajo con
+        // su permiso de puesto.
+        Route::get('/admin/dashboard/monitor', [DashboardMonitorController::class, 'getMonitorData']);
 
         Route::middleware(['permission:manage_tasks,approve_operations,manage_store_opening'])->group(function () {
             Route::post('/admin/dashboard/assign-task', [DashboardMonitorController::class, 'assignTask']);

@@ -438,7 +438,12 @@ export const useAppStore = create<AppState>((set, get) => ({
             
             set({ globalUsers: mappedUsers });
             
-            if (data.store_logs && data.store_logs.length > 0) {
+            // El servidor decide si la tienda está abierta con los registros de HOY. Antes se
+            // tomaba el último registro de la semana: una apertura de anoche sin cierre dejaba
+            // la tienda "abierta" al día siguiente, en contra del día de apertura (pendiente).
+            if (data.store_status === 'open' || data.store_status === 'closed') {
+               set({ storeStatus: data.store_status });
+            } else if (data.store_logs && data.store_logs.length > 0) {
                const latestLog = data.store_logs[0];
                set({ storeStatus: latestLog.type === 'open' ? 'open' : 'closed' });
             } else {

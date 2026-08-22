@@ -191,6 +191,38 @@ class ClockSyncTest extends TestCase
             'el frontend pide funciones que el backend nunca enciende: ' . implode(', ', $faltan));
     }
 
+    /**
+     * La tienda abierta ANOCHE no amanece abierta HOY.
+     *
+     * El navegador tomaba el último store_log de la semana: una apertura de anoche sin cierre
+     * (la salida del encargado falló) dejaba la tienda "abierta" al día siguiente, la barra decía
+     * "Sucursal abierta", el dial ofrecía "Fichar entrada" en vez de "Abrir tienda", y el día de
+     * apertura decía "pendiente". El estado sale ahora de los registros de HOY.
+     */
+    public function test_el_estado_de_la_tienda_sale_de_los_registros_de_hoy(): void
+    {
+        [$tenant, $user] = array_slice($this->makeSetup('enterprise'), 0, 2);
+        $tz = \App\Helpers\TenantTimezone::for($tenant->id);
+        $hoy = \Carbon\Carbon::now($tz)->toDateString();
+        $ayer = \Carbon\Carbon::now($tz)->subDay()->toDateString();
+
+        DB::table('store_logs')->insert([
+            'tenant_id' => $tenant->id, 'user_id' => $user->id, 'date' => $ayer, 'type' => 'open',
+            'time' => '20:33:05', 'created_at' => now()->subDay(), 'updated_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($user)->getJson('/api/v1/sync/state')->assertOk()
+            ->assertJson(['store_status' => 'closed']);
+
+        DB::table('store_logs')->insert([
+            'tenant_id' => $tenant->id, 'user_id' => $user->id, 'date' => $hoy, 'type' => 'open',
+            'time' => '08:30:00', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)->getJson('/api/v1/sync/state')->assertOk()
+            ->assertJson(['store_status' => 'open']);
+    }
+
     public function test_enterprise_recibe_todas_las_funciones_de_su_plan(): void
     {
         [, $user, ] = $this->makeSetup('enterprise');

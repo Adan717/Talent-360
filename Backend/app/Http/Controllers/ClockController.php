@@ -213,6 +213,15 @@ class ClockController extends Controller
                 ->whereDate('date', '>=', $oneWeekAgo)
         )->orderBy('id', 'desc')->limit(50)->get();
 
+        // ¿Está abierta la tienda? Se decide con el último registro de HOY (fecha del negocio),
+        // no con el último de la semana. El navegador tomaba `store_logs[0]` tal cual: si anoche
+        // nadie cerró la tienda (la salida del encargado falló), hoy amanecía "abierta" para la
+        // barra y el dial —ofrecía "Fichar entrada" en vez de "Abrir tienda"— mientras el día de
+        // apertura decía "pendiente". Dos fuentes para el mismo dato; ésta es la única.
+        $hoyNegocio = \Carbon\Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString();
+        $ultimoDeHoy = $storeLogs->first(fn ($l) => (string) $l->date === $hoyNegocio);
+        $storeStatus = ($ultimoDeHoy && $ultimoDeHoy->type === 'open') ? 'open' : 'closed';
+
         $contingencies = $applySimFilter(
             DB::table('contingencies')
                 ->where('tenant_id', $tenantId)
@@ -477,6 +486,7 @@ class ClockController extends Controller
             'late_authorized_user_ids' => $lateAuthorizedUserIds,
             'time_entries' => $timeEntries,
             'store_logs' => $storeLogs,
+            'store_status' => $storeStatus,
             'contingencies' => $contingencies,
             'internal_messages' => $messages,
             'audit_logs' => $auditLogs,

@@ -230,7 +230,19 @@ export const useTaskStore = create<TaskStoreState>((set, get) => ({
             }
             const assignment = get().assignments.find(a => a.id === assignmentId);
             if (!assignment) return;
-            await axiosInstance.put(`/task-assignments/${assignmentId}`, assignment);
+            // (2026-08-22) Se mandaba el objeto tal cual, en camelCase, y el endpoint valida
+            // snake_case: todo lo que no fuera `status` se caía en silencio. Por eso la evidencia
+            // del asistente no se guardaba nunca (el "Total arqueado en cajas" que teclea el
+            // encargado se perdía), ni el tiempo trabajado en la tarea: accumulated_mins quedaba
+            // en 0 y started_at/completed_at en null, con la pantalla mostrando otra cosa.
+            await axiosInstance.put(`/task-assignments/${assignmentId}`, {
+                status: assignment.status,
+                assistant_data: assignment.assistantData ?? null,
+                accumulated_mins: assignment.accumulatedMins ?? null,
+                started_at_mins: assignment.startedAtMins ?? null,
+                completed_at_mins: assignment.completedAtMins ?? null,
+                origin: assignment.origin ?? null,
+            });
         } catch (e) {
             console.error("Failed to sync assignment row to backend:", e);
             alert("Error al guardar la tarea. Verifique que el servidor backend esté encendido.");

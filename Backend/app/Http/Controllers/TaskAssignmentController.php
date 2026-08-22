@@ -464,8 +464,18 @@ class TaskAssignmentController extends Controller
             }
         }
 
+        // Muestreo: al novato lo revisa siempre una persona; al veterano casi siempre la IA.
+        // (2026-08-22) El sorteo se puede FORZAR con `tasks.ai_spotcheck_force`, que en producción
+        // no existe (null → se sortea igual que siempre). Antes la única forma de fijar la rama
+        // era sembrar el mt_rand global, y cualquier otro consumidor de azar entre la semilla y
+        // esta línea desplazaba la secuencia: la prueba del pago doble pasaba sola y fallaba en la
+        // suite completa, según qué corriera antes. Un camino que mueve dinero no puede depender
+        // de eso para probarse.
+        $forzado = config('tasks.ai_spotcheck_force');
         if ($days < 30) {
             $reviewsWithAi = false;
+        } elseif ($forzado !== null) {
+            $reviewsWithAi = (bool) $forzado;
         } elseif ($days < 90) {
             $reviewsWithAi = (mt_rand(1, 100) <= 50);
         } else {

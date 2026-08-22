@@ -100,32 +100,16 @@ class TaskAiValidateGuardTest extends TestCase
      * caiga DETERMINISTA en la rama de IA en la siguiente llamada del controller.
      */
     /**
-     * Semilla cuyas PRIMERAS tiradas caen todas en la rama de IA (<= 50, el umbral más estricto
-     * de los dos que usa el controlador).
+     * Fija la rama de IA sin depender del azar global.
      *
-     * (2026-08-22) Antes se buscaba una semilla cuya PRIMERA tirada bastara. Si algo entre el
-     * seed y la comprobación consumía un número al azar —cosa que depende de qué pruebas
-     * corrieron antes—, la secuencia se desplazaba y la rama se iba a la humana: la prueba pasaba
-     * sola y fallaba en la suite completa. Con varias tiradas buenas seguidas, un desplazamiento
-     * de un par de posiciones ya no la voltea.
+     * (2026-08-22) Antes esto sembraba `mt_srand` para que la primera tirada cayera del lado de
+     * la IA. Cualquier consumidor de azar entre la semilla y la comprobación —y cuáles corren
+     * depende de qué pruebas hubo antes— desplazaba la secuencia: la prueba del pago doble pasaba
+     * sola y fallaba en la suite completa.
      */
     private function forceAiBranch(): void
     {
-        for ($seed = 1; $seed < 100000; $seed++) {
-            mt_srand($seed);
-            $sirve = true;
-            for ($i = 0; $i < 6; $i++) {
-                if (mt_rand(1, 100) > 50) {
-                    $sirve = false;
-                    break;
-                }
-            }
-            if ($sirve) {
-                mt_srand($seed);
-                return;
-            }
-        }
-        $this->fail('No se encontró semilla para la rama de IA.');
+        config(['tasks.ai_spotcheck_force' => true]);
     }
 
     public function test_empleado_no_puede_someter_evidencia_de_tarea_ajena(): void

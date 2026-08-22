@@ -602,6 +602,17 @@ export const useAppStore = create<AppState>((set, get) => ({
               } else if (entry.type === 'break_end') {
                 clockStates[userId] = 'active';
                 breakEndTimes[userId] = timeMins;
+              } else if (entry.type === 'silla_start') {
+                // (2026-08-22) Con "requiere aprobación" encendido el descanso se ficha como
+                // silla_start/silla_end, y aquí no se reconocían: el poll de 5 s reconstruía el
+                // estado, no encontraba el descanso y devolvía a la persona a 'active' pisando el
+                // estado local. El dial salía del descanso solo, y como breakStartTimes nunca se
+                // llenaba, la silla se podía volver a tomar sin límite.
+                clockStates[userId] = 'short_break';
+                breakStartTimes[userId] = timeMins;
+              } else if (entry.type === 'silla_end') {
+                clockStates[userId] = 'active';
+                breakEndTimes[userId] = timeMins;
               } else if (entry.type === 'temp_exit_start') {
                 // Antes no se manejaba este tipo aquí: al refrescar la página o en el poll de
                 // 5s, un usuario en "Salida Temporal" perdía ese estado (auditoría dialer Jul 2026).

@@ -346,23 +346,33 @@ class ClockService
      * su duración > (permitido + tolerancia); el exceso es (duración − permitido). Se
      * compara con Carbon sobre "$dateStr $time" (misma fecha → nunca negativo).
      */
-    private function pairedExcessMinutes($dayEntries, string $dateStr, string $startType, string $endType, int $allowed, int $tolerance): int
+    private function pairedExcessMinutes($dayEntries, string $dateStr, string $startType, string $endType, int $allowed, int $tolerance, ?string $turnoInicio = null, ?string $turnoFin = null): int
     {
+        // (2026-08-22) H21 otra vez: en un turno nocturno la pausa CRUZA MEDIANOCHE y sus dos
+        // ponches se guardan con la MISMA fecha de jornada (23:00 y 01:00). Ordenar por la hora
+        // cruda ponía el fin ANTES del inicio: el par se descartaba y el exceso de toda comida
+        // nocturna salía 0. Se ordena y se resta por el INSTANTE reconstruido, igual que
+        // ReportesOperativosController::minutosDeJornada. Eso desarma además el abs() que había
+        // aquí, que con el par mal ordenado facturaba 1400 minutos de exceso fantasma.
+        $instante = fn ($e) => \App\Support\JornadaLaboral::instanteDe(
+            $dateStr, substr((string) $e->time, 0, 8), $turnoInicio, $turnoFin, 'UTC'
+        );
+
         $ordered = $dayEntries
             ->whereIn('type', [$startType, $endType])
-            ->sortBy('time')
+            ->sortBy($instante)
             ->values();
 
         $openStarts = [];
         $excess = 0;
         foreach ($ordered as $e) {
             if ($e->type === $startType) {
-                $openStarts[] = $e->time;
+                $openStarts[] = $instante($e);
             } elseif ($e->type === $endType && !empty($openStarts)) {
-                $startTime = array_pop($openStarts);
-                $mins = (int) abs(
-                    Carbon::parse("$dateStr {$e->time}")->diffInMinutes(Carbon::parse("$dateStr $startTime"))
-                );
+                $startAt = array_pop($openStarts);
+                // Diferencia CON SIGNO entre marcas de tiempo: un par mal formado da negativo y
+                // no suma nada, en vez de convertirse en horas de exceso inventadas.
+                $mins = intdiv($instante($e)->getTimestamp() - $startAt->getTimestamp(), 60);
                 if ($mins > ($allowed + $tolerance)) {
                     $excess += max(0, $mins - $allowed);
                 }
@@ -1761,12 +1771,16 @@ class ClockService
 
         $mealExcessByDate = [];
         foreach ($entriesByDate as $dateStr => $dayEntries) {
-            $dayMealExcess = $this->pairedExcessMinutes($dayEntries, $dateStr, 'meal_start', 'meal_end', $allowedMeal, $mealTolerance);
+            $dayMealExcess = $this->pairedExcessMinutes($dayEntries, $dateStr, 'meal_start', 'meal_end', $allowedMeal, $mealTolerance, $employee->shiftStart ?? null, $employee->shiftEnd ?? null);
             $mealExcessByDate[$dateStr] = $dayMealExcess;
             $mealExcessMinutes += $dayMealExcess;
 
             if ($leySillaEnabled) {
-                $restExcessMinutes += $this->pairedExcessMinutes($dayEntries, $dateStr, 'break_start', 'break_end', $allowedBreak, $restTolerance);
+                $restExcessMinutes += $this->pairedExcessMinutes($dayEntries, $dateStr, 'break_start', 'break_end', $allowedBreak, $restTolerance, $employee->shiftStart ?? null, $employee->shiftEnd ?? null);
+                // El descanso de Ley Silla se ficha como silla_start/silla_end cuando la empresa
+                // exige aprobación (§25). Ese par no se pareaba: encender el control de aprobación
+                // APAGABA el cobro del exceso — un descanso de 3 horas se pagaba entero.
+                $restExcessMinutes += $this->pairedExcessMinutes($dayEntries, $dateStr, 'silla_start', 'silla_end', $allowedBreak, $restTolerance, $employee->shiftStart ?? null, $employee->shiftEnd ?? null);
             }
         }
 

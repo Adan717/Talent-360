@@ -168,6 +168,86 @@ class CloseOrphanShiftsTest extends TestCase
         }
     }
 
+    /** El comando tiene que estar AGENDADO: sin eso, todo lo de arriba es código muerto. */
+    public function test_el_barrido_esta_agendado(): void
+    {
+        $this->artisan('schedule:list')
+            ->expectsOutputToContain('shifts:close-orphans')
+            ->assertExitCode(0);
+    }
+
+    /** La salida nunca puede quedar ANTES de la última actividad real de la persona. */
+    public function test_no_estampa_una_salida_anterior_a_la_entrada(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));
+        try {
+            $tenant = $this->makeTenant('18:00');
+            $user = $this->makeUser($tenant->id);
+            $today = now()->format('Y-m-d');
+            // Turno de inventario: entra a las 19:00, después de que la tienda cerró.
+            $this->punch($tenant->id, $user->id, 'check_in', '19:00:00', $today);
+
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $salida = DB::table('time_entries')
+                ->where('user_id', $user->id)->where('type', 'check_out')->value('time');
+            $this->assertNotNull($salida);
+            $this->assertGreaterThanOrEqual('19:00:00', substr((string) $salida, 0, 8),
+                'la salida automática no puede ser anterior a la entrada');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /** Los ponches del Simulador Matrix no son asistencia real y no se cierran. */
+    public function test_ignora_los_fichajes_del_simulador(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));
+        try {
+            $tenant = $this->makeTenant('18:00');
+            $user = $this->makeUser($tenant->id);
+            $today = now()->format('Y-m-d');
+            $sesion = DB::table('simulator_sessions')->insertGetId([
+                'tenant_id' => $tenant->id, 'simulated_date' => $today, 'status' => 'active',
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $this->punch($tenant->id, $user->id, 'check_in', '09:00:00', $today);
+            DB::table('time_entries')->where('user_id', $user->id)->update(['simulation_session_id' => $sesion]);
+
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertDatabaseMissing('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out',
+            ]);
+            $this->assertDatabaseMissing('audit_logs', [
+                'user_id' => $user->id, 'type' => 'orphan_shift',
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /** El huérfano de una jornada anterior (turno nocturno) también se cierra. */
+    public function test_cierra_el_huerfano_de_la_jornada_de_ayer(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));
+        try {
+            $tenant = $this->makeTenant('18:00');
+            $user = $this->makeUser($tenant->id);
+            $ayer = now()->subDay()->format('Y-m-d');
+            $this->punch($tenant->id, $user->id, 'check_in', '22:00:00', $ayer);
+
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertDatabaseHas('time_entries', [
+                'tenant_id' => $tenant->id, 'user_id' => $user->id,
+                'type' => 'check_out', 'date' => $ayer,
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_is_idempotent(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-07-10 23:59:00'));

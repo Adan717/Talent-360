@@ -36,6 +36,12 @@ class CloseOrphanShifts extends Command
                 continue;
             }
 
+            // La jornada de AYER también: un turno que cruza medianoche (22:00→02:00) guarda su
+            // check_in bajo la fecha de negocio del día que EMPEZÓ, así que el huérfano del velador
+            // no aparecía nunca en el barrido de hoy y quedaba abierto para siempre (2026-08-22).
+            // Se hace aquí, pasada ya la hora de cierre de HOY: para entonces cualquier jornada de
+            // ayer terminó con seguridad, así que esto no puede cerrar un turno vivo.
+            $totalClosed += $this->closeOrphansForTenant($tenant->id, $localNow->copy()->subDay()->format('Y-m-d'), $closeTime);
             $totalClosed += $this->closeOrphansForTenant($tenant->id, $today, $closeTime);
         }
 
@@ -86,17 +92,27 @@ class CloseOrphanShifts extends Command
             ->where('tenant_id', $tenantId)
             ->where('date', $today)
             ->whereNotIn('type', ClockService::AUXILIARY_ENTRY_TYPES)
+            // (2026-08-22) Sólo asistencia REAL. Sin este filtro, un check_in que quedó abierto en
+            // una sesión del Simulador Matrix se tomaba por un turno huérfano de verdad: se le
+            // escribía al colaborador un check_out real (simulation_session_id NULL, es decir
+            // contaminación permanente de su asistencia) y una alerta acusándolo de posible fraude.
+            ->whereNull('simulation_session_id')
             ->orderBy('id')
-            ->get(['user_id', 'type']);
+            ->get(['user_id', 'type', 'time']);
 
         // Un turno es huérfano si el ÚLTIMO registro del usuario NO es check_out y sí
         // hubo un check_in (maneja turnos re-abiertos: check_in→check_out→check_in).
         $latestType = [];
         $hasCheckIn = [];
+        $ultimaActividad = [];
         foreach ($entries as $e) {
             $latestType[$e->user_id] = $e->type;
             if ($e->type === 'check_in') {
                 $hasCheckIn[$e->user_id] = true;
+            }
+            $hora = substr((string) $e->time, 0, 8);
+            if (!isset($ultimaActividad[$e->user_id]) || $hora > $ultimaActividad[$e->user_id]) {
+                $ultimaActividad[$e->user_id] = $hora;
             }
         }
 
@@ -115,6 +131,12 @@ class CloseOrphanShifts extends Command
         $now = now();
 
         foreach ($orphans as $userId) {
+            // La salida se estampa a la hora de cierre de la sucursal, pero NUNCA antes del
+            // último ponche real de la persona: con la tienda cerrando a las 18:00, quien entró
+            // a las 19:00 por un inventario recibía un check_out de las 18:00 — una salida ANTERIOR
+            // a su entrada, que en el reporte de horas da 0 minutos trabajados (2026-08-22).
+            $horaSalida = max($closeTimeHis, $ultimaActividad[$userId] ?? $closeTimeHis);
+
             // Check_out automático a la hora de cierre. Insert directo, NO vía
             // processPunch: es un cierre forzado del sistema que no debe pasar por reglas
             // de festivo/tienda-cerrada/tolerancia.
@@ -123,7 +145,7 @@ class CloseOrphanShifts extends Command
                 'user_id' => $userId,
                 'date' => $today,
                 'type' => 'check_out',
-                'time' => $closeTimeHis,
+                'time' => $horaSalida,
                 'is_late' => false,
                 'late_minutes' => 0,
                 'details' => json_encode([
@@ -141,8 +163,8 @@ class CloseOrphanShifts extends Command
                 'user_id' => $userId,
                 'date' => $today,
                 'type' => 'orphan_shift',
-                'timestamp_str' => "$today $closeTimeHis",
-                'reason' => "🔴 Turno huérfano: cierre automático a las {$closeTime} por falta de checada de salida. Auditar posible fraude de nómina.",
+                'timestamp_str' => "$today $horaSalida",
+                'reason' => "🔴 Turno huérfano: cierre automático a las " . substr($horaSalida, 0, 5) . " por falta de checada de salida. Auditar posible fraude de nómina.",
                 'punishment_amount' => 0,
                 'details' => json_encode(['auto_closed' => true]),
                 'created_at' => $now,

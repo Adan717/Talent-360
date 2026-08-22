@@ -243,7 +243,7 @@ class EmployeeController extends Controller
                 'emergency_contact_name' => 'nullable|string',
                 'emergency_contact_phone' => 'nullable|string',
                 'hire_date' => 'nullable|date',
-                'mealMinutes' => 'nullable|integer',
+                'mealMinutes' => 'nullable|integer|min:0|max:480',
                 'restDay' => 'nullable|string',
                 'base_salary' => 'nullable|numeric',
                 'salary_periodicity' => 'nullable|string|in:diario,semanal,quincenal,mensual',
@@ -321,7 +321,7 @@ class EmployeeController extends Controller
             // la fecha en que se creó el registro, y un alta el viernes para entrar el lunes son
             // días distintos.
             'hire_date' => 'required|date',
-            'mealMinutes' => 'nullable|integer',
+            'mealMinutes' => 'nullable|integer|min:0|max:480',
             'restDay' => 'nullable|string',
             'base_salary' => 'nullable|numeric|min:0.01',
                 'salary_periodicity' => 'nullable|string|in:diario,semanal,quincenal,mensual',
@@ -505,7 +505,7 @@ class EmployeeController extends Controller
             'emergency_contact_name' => 'sometimes|nullable|string',
             'emergency_contact_phone' => 'sometimes|nullable|string',
             'hire_date' => 'sometimes|nullable|date',
-            'mealMinutes' => 'sometimes|nullable|integer',
+            'mealMinutes' => 'sometimes|nullable|integer|min:0|max:480',
             'restDay' => 'sometimes|nullable|string',
             'base_salary' => 'sometimes|nullable|numeric',
             'salary_periodicity' => 'sometimes|nullable|string|in:diario,semanal,quincenal,mensual',

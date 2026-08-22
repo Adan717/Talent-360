@@ -47,6 +47,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sección 2 #2: cada noche a las 00:30, marcar tareas inconclusas de días
         // anteriores como pendientes de validación gerencial.
         $schedule->command('tasks:flag-unfinished')->dailyAt('00:30');
+        // (2026-08-22) shifts:close-orphans NUNCA estuvo agendado: el cierre automático de la
+        // jornada de quien olvida checar salida —y su alerta de auditoría 'orphan_shift'— era
+        // código muerto. La jornada quedaba "activa" para siempre y el día se pagaba completo sin
+        // que nadie se enterara. Cada hora (no una vez al día) porque el comando ya se protege
+        // solo: no cierra nada antes de la hora de cierre de CADA sucursal, en su propia zona
+        // horaria, así que una sola corrida diaria dejaría fuera a las tiendas de horario largo.
+        $schedule->command('shifts:close-orphans')->hourly()->withoutOverlapping();
         // Sección 2 #1 + N3: pre-nómina semanal. Corre cada noche a las 23:00 calculando
         // la última semana CERRADA de cada tenant (según su día de inicio configurado) —
         // nunca la corriente, que contaba días futuros como faltas y dejaba netos en $0.

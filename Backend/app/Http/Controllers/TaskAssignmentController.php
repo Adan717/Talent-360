@@ -167,7 +167,22 @@ class TaskAssignmentController extends Controller
         // Antes cualquier empleado del tenant podía mover la tarea de un compañero (incluido
         // completarla). El checklist de apertura de RelojVisual actúa sobre las propias.
         $isPrivileged = in_array($user->role ?? '', ['admin', 'supervisor', 'platform_admin'], true);
-        if (!$isPrivileged && (int) $assignment->user_id !== (int) $user->id) {
+
+        // Una tarea LIBRE (user_id null) es de la Bolsa de Trabajo y cualquiera de su puesto puede
+        // tomarla. (2026-08-22) Esta guarda comparaba `(int) null !== user->id`, o sea 0 !== id:
+        // un colaborador recibía 403 al pulsar "Iniciar Ya" en CUALQUIER tarea de la bolsa. La
+        // bolsa entera sólo funcionaba para admin/supervisor, que pasan por privilegio.
+        $esDeLaBolsa = $assignment->user_id === null;
+        if ($esDeLaBolsa && !$isPrivileged) {
+            $task = $assignment->task_id ? Task::find($assignment->task_id) : null;
+            $miPuesto = DB::table('employees')->where('user_id', $user->id)->value('job_role_id');
+            $paraTodos = !$task || $task->target_type !== 'role' || empty($task->target_id);
+            if (!$paraTodos && (int) $task->target_id !== (int) $miPuesto) {
+                return response()->json(['error' => 'Esta tarea es de otro puesto.'], 403);
+            }
+        }
+
+        if (!$isPrivileged && !$esDeLaBolsa && (int) $assignment->user_id !== (int) $user->id) {
             return response()->json(['error' => 'No puedes modificar tareas de otro colaborador.'], 403);
         }
 
@@ -202,6 +217,29 @@ class TaskAssignmentController extends Controller
                     'error' => 'Registra tu entrada en el Reloj antes de trabajar una tarea.',
                 ], 422);
             }
+        }
+
+        // TOMAR UNA TAREA DE LA BOLSA (2026-08-22, prueba en vivo). Una tarea libre vive con
+        // `user_id` NULL; al pulsar "Iniciar Ya" el navegador mandaba sólo el status, y este
+        // endpoint nunca aceptó `user_id`, así que la tarea quedaba EN CURSO SIN DUEÑO: no salía
+        // en "Mis Tareas", las monedas y los puntos al validarla no eran de nadie, y dos personas
+        // podían tomar la misma. Se reclama aquí, condicionado a que siga libre (race-safe): si
+        // otro se adelantó, se avisa en vez de pisarlo.
+        $tomandoDeLaBolsa = $assignment->user_id === null
+            && in_array($validated['status'], ['in_progress', 'paused', 'completed', 'awaiting_validation'], true);
+        if ($tomandoDeLaBolsa) {
+            $reclamada = TaskAssignment::where('id', $assignment->id)
+                ->where('tenant_id', $tenantId)
+                ->whereNull('user_id')
+                ->update(['user_id' => $user->id, 'updated_at' => now()]);
+
+            if ($reclamada === 0) {
+                return response()->json([
+                    'error' => 'Otro colaborador tomó esta tarea antes que tú.',
+                ], 409);
+            }
+
+            $assignment->refresh();
         }
 
         if (isset($validated['assistant_data']) && is_array($validated['assistant_data'])) {

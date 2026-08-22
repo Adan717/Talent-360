@@ -882,7 +882,12 @@ export default function RelojVisual({
     const checkInMins = checkInTimes[currentUser?.id];
     const hasUserCheckedIn = checkInMins !== undefined;
     const checkOutMins = checkOutTimes[currentUser?.id];
-    const hasUserCheckedOut = checkOutMins !== undefined;
+    // (2026-08-22) Turno RE-ABIERTO: quien salió antes y volvió (cita médica, segundo turno del
+    // día) tenía a la vez una entrada y una salida, y la etiqueta se quedaba en "Turno Finalizado"
+    // mientras el cronómetro corría. Manda el ponche más reciente: si la última entrada es
+    // posterior a la última salida, el turno está ABIERTO.
+    const hasUserCheckedOut = checkOutMins !== undefined
+      && !(checkInMins !== undefined && checkInMins > checkOutMins);
 
     // 2. Detección de Retardo y Reposición de Jornada según LFT
     const toleranceMins = shiftConfigs[currentUser?.id]?.tolerance ?? 10;

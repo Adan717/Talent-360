@@ -3098,8 +3098,8 @@ export function useClockEngine(overrideUser?: any) {
       return;
     }
 
-    // (2026-08-22) Las tareas pendientes ya NO se omiten aquí (al validar el PIN) sino cuando
-    // la salida queda registrada: ver omitirPendientesTrasSalir() en processFinalClockOut.
+    // (2026-08-22) Las tareas pendientes ya NO se tocan aquí: al registrarse la salida,
+    // handleSpillOver() las suelta a la Bolsa de Trabajo o al suplente.
     // 4. Resetear el bloqueador y continuar
     setPendingTasksBlocker(false);
     setSupervisorQrToken('');
@@ -3156,28 +3156,12 @@ export function useClockEngine(overrideUser?: any) {
     processFinalClockOut();
   };
 
-  // (2026-08-22) Las tareas pendientes se marcan OMITIDAS sólo cuando la salida YA quedó
-  // registrada. Antes se omitían al validar el PIN, antes del check_out: en vivo el servidor
-  // rechazó la salida (checklist de cierre) y las 7 tareas de cierre quedaron "omitidas" con
-  // la persona todavía en turno.
-  const omitirPendientesTrasSalir = () => {
-    const storeState = useTaskStore.getState();
-    const esPendienteMia = (a: any) =>
-      Number(a.userId) === Number(currentUser.id) && (a.status === 'pending' || a.status === 'in_progress');
-    const pendientes = storeState.assignments.filter(esPendienteMia).length;
-    if (pendientes === 0) return;
-    useTaskStore.setState({
-      assignments: storeState.assignments.map((a: any) =>
-        esPendienteMia(a) ? { ...a, status: 'omitted', validationFeedback: 'Omitida al registrar la salida (autorizada por supervisor).' } : a
-      ),
-    });
-    storeState.syncToBackend();
-    useAppStore.getState().addMatrixEvent(
-      '⚠️ Cierre con Pendientes',
-      `${currentUser.name} finalizó jornada con ${pendientes} tareas pendientes, autorizado por supervisor. Se aplicó penalización en métricas.`,
-      'warning'
-    );
-  };
+  // (2026-08-22) Aquí se marcaban las tareas pendientes como "omitidas" al validar el PIN.
+  // Dos problemas: (a) si el servidor rechazaba la salida, quedaban omitidas con la persona
+  // todavía en turno (visto en vivo: las 7 de cierre); (b) nunca sobrevivía, porque al
+  // registrarse la salida handleSpillOver() suelta esas mismas tareas a la Bolsa de Trabajo o al
+  // suplente (userId=null) — que es lo que de verdad debe pasar con el trabajo que queda vivo.
+  // Se quitó: el spill-over de useTaskStore es el único que decide qué pasa con lo pendiente.
 
   const processFinalClockOut = async (delegatedTo: number | null = null, note = '') => {
     // FASE 1: Delegación del Día Previo
@@ -3200,7 +3184,6 @@ export function useClockEngine(overrideUser?: any) {
     if (res?.error) {
       return; // el servidor ya explicó por qué; el turno sigue abierto y el dial lo refleja
     }
-    omitirPendientesTrasSalir();
     if (!res?.offline) {
       showCustomAlert(`🔴 Salida registrada a las ${formattedTime}.${delegatedTo ? ' 🔑 Llaves delegadas con éxito.' : ''} ${note ? ' (' + note + ')' : ''}`);
     }

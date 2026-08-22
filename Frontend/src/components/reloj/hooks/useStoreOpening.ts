@@ -218,6 +218,22 @@ export function useStoreOpening({
     return () => clearInterval(interval);
   }, [isSandboxMode]);
 
+  // (2026-08-22) La configuración de apertura de la EMPRESA (GET /store-opening/settings) nunca
+  // llegaba al dial fuera del Matrix: `openingSettings` era el objeto por defecto de arriba, así
+  // que ventana previa, plazos, cesión automática y el checklist de cierre obligatorio se decidían
+  // aquí con valores fijos, no con lo que el admin configuró (el servidor sí aplicaba lo suyo).
+  // Visto en vivo: require_closing_checklist=true en la base y el modal de cierre nunca salía.
+  useEffect(() => {
+    if (isSandboxMode) return;
+    axiosInstance.get('/store-opening/settings')
+      .then((res) => {
+        if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+          setOpeningSettings((prev: any) => ({ ...prev, ...res.data }));
+        }
+      })
+      .catch(() => { /* sin respuesta se queda con los valores por defecto */ });
+  }, [isSandboxMode]);
+
   const handleOpenStorePremium = async () => {
     if (isSandboxMode) {
       const updated = {

@@ -42,16 +42,41 @@ class PermissionMiddleware
         }
 
         $jobRoleId = DB::table('employees')->where('user_id', $user->id)->value('job_role_id');
-        if (!$jobRoleId) {
-            return false;
+
+        $puestoConfigurado = false;
+        if ($jobRoleId) {
+            $concedidas = DB::table('role_permissions')
+                ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+                ->where('role_permissions.tenant_id', $user->tenant_id)
+                ->where('role_permissions.job_role_id', $jobRoleId);
+
+            if ((clone $concedidas)->whereIn('permissions.name', $capabilities)->exists()) {
+                return true;
+            }
+
+            $puestoConfigurado = $concedidas->exists();
         }
 
-        return DB::table('role_permissions')
-            ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
-            ->where('role_permissions.tenant_id', $user->tenant_id)
-            ->where('role_permissions.job_role_id', $jobRoleId)
-            ->whereIn('permissions.name', $capabilities)
-            ->exists();
+        // Puesto de mando SIN CONFIGURAR: vale el set conservador de SUPERVISOR_DEFAULTS.
+        //
+        // (2026-08-22) La migración 2026_07_26_000001 repartió esos permisos a los puestos de las
+        // empresas que YA existían ese día; a las nuevas no se los da nadie. La empresa de la
+        // prueba tenía 11 puestos y CERO filas en role_permissions, y como la matriz
+        // (GET/PUT /admin/permissions/matrix) no la consume ninguna pantalla, tampoco había forma
+        // de otorgarlos: la supervisora recibía 403 al validar una tarea o al ver el monitor — su
+        // rol era decorativo.
+        //
+        // Aplica cuando el puesto no tiene NINGUNA capacidad asignada (o no hay puesto todavía). En cuanto el admin le
+        // concede aunque sea una, manda la matriz y nada más: así un puesto de mando al que se le
+        // dio sólo `view_reports` (una capacidad de LECTURA) sigue sin poder cerrar turnos ni
+        // escribirle al equipo, que fue un hallazgo de la ronda del Monitor.
+        if ($user->role === \App\Enums\UserRole::SUPERVISOR->value
+            && array_intersect($capabilities, \App\Support\PermissionCatalog::SUPERVISOR_DEFAULTS)
+            && !$puestoConfigurado) {
+            return true;
+        }
+
+        return false;
     }
 
     public function handle(Request $request, Closure $next, string ...$capabilities): Response
@@ -62,30 +87,13 @@ class PermissionMiddleware
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // El admin dueño del tenant pasa siempre.
-        if ($user->role === \App\Enums\UserRole::ADMIN->value) {
+        // Una sola versión de la regla: la de usuarioTiene() (antes estaba copiada aquí, y la
+        // pantalla podía ofrecer un botón que el servidor rechazaba, o al revés).
+        if (self::usuarioTiene($user, ...$capabilities)) {
             return $next($request);
         }
 
         $tenantId = $user->tenant_id;
-
-        // El puesto del usuario vive en employees.job_role_id.
-        $jobRoleId = DB::table('employees')
-            ->where('user_id', $user->id)
-            ->value('job_role_id');
-
-        if ($jobRoleId) {
-            $hasCapability = DB::table('role_permissions')
-                ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
-                ->where('role_permissions.tenant_id', $tenantId)
-                ->where('role_permissions.job_role_id', $jobRoleId)
-                ->whereIn('permissions.name', $capabilities)
-                ->exists();
-
-            if ($hasCapability) {
-                return $next($request);
-            }
-        }
 
         \App\Helpers\SecurityLogger::log(
             'permission_denied',

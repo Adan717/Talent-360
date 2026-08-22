@@ -504,7 +504,18 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
         });
     };
 
-    // 1. Tareas de firma pendiente (para validar):
+    // (2026-08-22) El día del negocio. Las listas de trabajo VIVO se acotan a hoy: /sync/state
+    // manda TODAS las asignaciones del tenant, de todos los días, y sin este filtro una tarea
+    // pendiente de la semana pasada aparecía como trabajo de hoy con su "Quedan 10 min". Eso
+    // además dejaba sin sentido el panel "Pendientes de Ayer → traer a hoy", que es la forma
+    // deliberada de arrastrar trabajo (carryOverAssignment le pone la fecha de hoy).
+    // Se tolera `date` indefinido por los registros viejos que el backend aún no migra, igual
+    // que ya hacía el filtro del historial.
+    const hoyStr = new Date().toLocaleDateString('sv-SE');
+    const esDeHoy = (a: TaskAssignment) => a.date === undefined || a.date === hoyStr;
+
+    // 1. Tareas de firma pendiente (para validar): a propósito SIN filtro de fecha — el trabajo
+    // que nadie validó no puede desaparecer al día siguiente.
     const awaitingValidationFiltered = filterBySearch(assignments.filter(a => 
         a.status === 'awaiting_validation' && (isSupervisor ? true : a.userId === currentUser.id)
     ));
@@ -517,7 +528,7 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
         const isTargetedToMyRole = isSupervisor || t.targetId === null || t.targetId === undefined || Number(t.targetId) === 0 || Number(t.targetId) === Number(currentUser.job_role_id);
         
         // Pendiente en la bolsa (nadie la tiene asignada)
-        const isFreeInPool = a.userId === null && a.status === 'pending' && isTargetedToMyRole;
+        const isFreeInPool = a.userId === null && a.status === 'pending' && isTargetedToMyRole && esDeHoy(a);
         
         // Pausada por otro colaborador que tiene exactamente mi puesto/rol
         const isPausedByPeer = a.userId !== null && a.userId !== currentUser.id && a.status === 'paused' && t.targetType === 'role' && Number(t.targetId) === Number(currentUser.job_role_id);
@@ -529,14 +540,17 @@ export const TaskRunner = forwardRef<TaskRunnerHandle, { currentUser: any, onBac
     // 3. Mis Tareas Activas (rutina + urgentes):
     const activeAssignmentsFiltered = filterBySearch(assignments.filter(a => 
         a.userId === currentUser.id && 
-        ['pending', 'in_progress', 'paused'].includes(a.status)
+        ['pending', 'in_progress', 'paused'].includes(a.status) &&
+        esDeHoy(a)
     ));
 
     // 4. Historial (Tareas completadas u omitidas por el colaborador HOY)
     // El label de la UI siempre dijo "Historial de Hoy" pero no había campo de fecha
     // para acotarlo (ver auditoría de tareas) — se agrega el filtro aquí y se tolera
     // a.date === undefined en registros viejos que el backend aún no migra.
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // (2026-08-22) Antes toISOString() — UTC. En UTC-6, a partir de las 18:00 locales "hoy" ya
+    // era MAÑANA y el "Historial de Hoy" se vaciaba a media tarde. Misma fecha local que el resto.
+    const todayStr = hoyStr;
     const historyAssignmentsFiltered = filterBySearch(assignments.filter(a =>
         a.userId === currentUser.id &&
         ['completed', 'awaiting_validation', 'omitted'].includes(a.status) &&

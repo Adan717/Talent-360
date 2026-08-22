@@ -52,12 +52,26 @@ class MonitorLecturaPorRolTest extends TestCase
             ->assertJsonPath('status', 'success');
     }
 
-    public function test_pero_no_ejecuta_acciones_sin_permiso_de_puesto(): void
+    /**
+     * Las ACCIONES del monitor siguen tras el permiso; lo que cambió (2026-08-22) es que el rol de
+     * supervisor ya trae SUPERVISOR_DEFAULTS de fábrica, así que la supervisora las alcanza: aquí
+     * el 409 es "no hay turno abierto que cerrar", no un portazo. Quien no es mando sigue fuera.
+     */
+    public function test_un_empleado_no_ejecuta_las_acciones_del_monitor(): void
+    {
+        $empleado = $this->persona('empleado', 'Miguel Emp');
+
+        $this->actingAs($empleado)->postJson('/api/v1/admin/dashboard/force-close-shift', ['user_id' => $empleado->id])
+            ->assertStatus(403);
+    }
+
+    public function test_la_supervisora_alcanza_las_acciones_del_monitor(): void
     {
         $supervisora = $this->persona('supervisor', 'Maria Sup');
 
-        $this->actingAs($supervisora)->postJson('/api/v1/admin/dashboard/force-close-shift', ['user_id' => $supervisora->id])
-            ->assertStatus(403);
+        $res = $this->actingAs($supervisora)->postJson('/api/v1/admin/dashboard/force-close-shift', ['user_id' => $supervisora->id]);
+
+        $this->assertNotSame(403, $res->status(), 'una supervisora no debe recibir un portazo de permisos en su propio monitor');
     }
 
     public function test_un_empleado_sigue_sin_ver_el_monitor(): void

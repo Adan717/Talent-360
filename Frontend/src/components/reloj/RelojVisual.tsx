@@ -422,7 +422,14 @@ export default function RelojVisual({
     closeTime: systemSettings?.storeSchedule?.closeTime || '18:00',
     preOpeningAccessMins: systemSettings?.clockOpConfig?.preOpeningAccessMins ?? 60,
   });
-  const isStoreClosed = storeSchedule.isClosed;
+  // (2026-08-22) …y esto es justo lo que advierte la nota de arriba: la pantalla "Empresa
+  // Cerrada" tapaba el dial ENTERO por horario, incluso a quien seguía CON EL TURNO ABIERTO.
+  // Visto en vivo: Adan fichó a las 02:47, la tienda cerró, y al pasar la hora de cierre el
+  // reloj le decía "deberás de esperar" — sin forma de registrar su salida ni de ver sus
+  // tareas de cierre. Quien tiene jornada abierta siempre ve su dial; el horario sólo esconde
+  // el reloj a quien todavía no entra.
+  const conTurnoAbierto = ['active', 'meal', 'short_break', 'temp_exit'].includes(clockState);
+  const isStoreClosed = storeSchedule.isClosed && !conTurnoAbierto;
   const waitTimeText = formatWait(storeSchedule.remainingMins);
 
   // Las pestañas de TRABAJO (tareas, herramientas, nómina…) se cierran cuando la persona no

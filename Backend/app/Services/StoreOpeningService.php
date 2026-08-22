@@ -327,7 +327,12 @@ class StoreOpeningService
         return DB::transaction(function () use ($user, $storeId, $simTime, $tenantId, $isSimulator) {
             $status = $this->getTodayOpeningStatus($tenantId, $storeId, $simTime);
 
-            if ($status->status === 'opened') {
+            // (2026-08-22) …salvo que el día ya se haya CERRADO. Una sucursal que abrió a las 02:47 y
+            // cerró a las 04:00 seguía con status 'opened', así que el servidor se negaba a
+            // reabrirla ("ya se encuentra abierta") mientras la pantalla —que mira el último
+            // registro de store_logs— decía SUCURSAL CERRADA y no dejaba fichar a nadie: la
+            // empresa quedaba trabada el resto del día entre dos versiones de la verdad.
+            if ($status->status === 'opened' && $status->closed_at === null) {
                 throw new \Exception("La tienda ya se encuentra abierta.");
             }
 
@@ -363,6 +368,12 @@ class StoreOpeningService
             $status->status = 'opened';
             $status->opened_by_employee_id = $user->id;
             $status->opened_at = Carbon::now();
+            // Reapertura del mismo día: se limpia el cierre anterior, si no el día seguiría
+            // contando como cerrado y el siguiente intento volvería a chocar contra la guarda.
+            $status->closed_at = null;
+            if (\Illuminate\Support\Facades\Schema::hasColumn('store_daily_opening_statuses', 'closed_by_employee_id')) {
+                $status->closed_by_employee_id = null;
+            }
             $status->save();
 
             // 2. Clock in the employee (con is_simulator si aplica) — SAVEPOINT propio (R51/R84).

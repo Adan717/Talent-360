@@ -490,16 +490,6 @@ export function useClockEngine(overrideUser?: any) {
   const timeMode = systemSettings?.time_mode || 'simulated';
   const isRealTimeMode = timeMode === 'realtime';
 
-  const syncToBackend = async (endpoint: string, payload: any) => {
-      // Siempre mandamos al backend la solicitud, pero con o sin time en el payload
-      // El backend decide si usar NTP o simulado
-      try {
-         await axiosInstance.post(`/${endpoint}`, payload);
-      } catch (e) {
-         console.error('Error syncing to backend', e);
-      }
-  };
-
   if (!currentUser) {
     if (globalUsers.length === 0) {
       return { isGlobalLoading: true } as any;
@@ -757,36 +747,13 @@ export function useClockEngine(overrideUser?: any) {
             );
         }
 
-        if (prevState !== state) {
-            const timeStr = `${Math.floor(currentSimTime/60).toString().padStart(2, '0')}:${(currentSimTime%60).toString().padStart(2, '0')}`;
-            let type = 'check_in';
-            if (state === 'meal') type = 'meal_start';
-            else if (state === 'inactive' || state === 'finished') type = 'check_out'; // BUG FIX: ambos mapean a check_out
-            else if (prevState === 'meal' && state === 'active') type = 'meal_end';
-            
-            // Fase 1 del reordenamiento (2026-07-26) — ESTE ES EL PUNTO QUE ESCRIBE A LA BASE.
-            // Antes calculaba el retardo a mano y con una tolerancia distinta a la de otros
-            // tres puntos del archivo. Ahora usa `logic/attendance.ts`, que garantiza que
-            // `lateMins` sea entero y nunca negativo — las dos condiciones que fallaron en
-            // producción (§61: -296.84 min a alguien que llegó temprano, con incidente de
-            // descuento de salario y un insert reventado por el decimal).
-            // Además maneja turnos que cruzan la medianoche, que aquí se calculaban mal.
-            const startMins = shiftConfigs[userId]?.start ? parseInt(shiftConfigs[userId].start.split(':')[0])*60 + parseInt(shiftConfigs[userId].start.split(':')[1]) : 480;
-            const evalFichaje = evaluateCheckIn({
-                nowMins: currentSimTime,
-                shiftStartMins: startMins,
-                toleranceMins: shiftConfigs[userId]?.tolerance ?? timeBankConfigs.maxLateMinsAllowed,
-            });
-            const isLate = type === 'check_in' && evalFichaje.isLate;
-            const lateMins = isLate ? evalFichaje.lateMins : 0;
-            
-            syncToBackend('clock/punch', {
-                user_id: userId,
-                type,
-                time: timeStr,
-                details: {}
-            });
-        }
+        // (2026-08-22) Aquí vivía un SEGUNDO escritor: en cada cambio de estado se mandaba otro
+        // POST /clock/punch con un tipo ADIVINADO a partir del estado (meal→meal_start,
+        // inactive/finished→check_out y TODO lo demás→check_in). Cada fichaje real llegaba dos
+        // veces al servidor: el meal_start duplicado que se vio en vivo, el check_out de más tras
+        // cada salida (400 "sin check_in previo"), y lo peor: reportar un retraso o una falta
+        // (estado 'contingency') disparaba un check_in. syncToDB es el ÚNICO que escribe fichajes;
+        // este setter sólo cambia el estado del dial y anota el evento del Matrix.
         return { ...prev, [userId]: state };
     });
   };

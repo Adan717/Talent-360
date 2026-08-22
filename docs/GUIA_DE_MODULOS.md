@@ -248,6 +248,7 @@ El dial nunca ofrece dos cosas a la vez; ofrece la única acción válida en ese
 8. **Video de apoyo**: una rutina puede vincularse a una lección de la Academia; al abrirla, el colaborador ve el video.
 
 **Reglas que conviene saber.**
+- **Sin entrada registrada no se trabaja una tarea.** Un colaborador que no ha fichado hoy (o que ya registró su salida) no puede poner una tarea en curso ni completarla: el servidor la rechaza con "Registra tu entrada en el Reloj antes de trabajar una tarea", y en el Reloj las pestañas de trabajo (Tareas, Herramientas, Nómina) se cierran mientras el dial esté en **Acceso Bloqueado**, igual que con la tienda cerrada. Los supervisores y administradores no tienen este candado: validan y reasignan tareas ajenas sin fichar ellos.
 - La validación (firma) es del **encargado**, nunca de la misma persona que hizo la tarea.
 - Una tarea pagada no vuelve a pagar aunque se reabra; el sistema lo garantiza en el servidor.
 - El "reconocimiento por voz" para dictar tareas depende del navegador (funciona en Chrome); si no está disponible, se captura a mano.

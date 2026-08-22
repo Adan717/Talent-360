@@ -188,15 +188,24 @@ class Tenant extends Model
      * Se notaba así: sin `store_opening` no aparece "Apertura de Sucursales" en Configuración,
      * no se pueden asignar portadores de llaves, y entonces NADIE puede abrir la tienda — el
      * dial se queda en "Reportar cerrado" para siempre, en una empresa nueva y sin explicación.
+     *
+     * Segunda vuelta (2026-08-21): la primera corrección dejó la lista en 7, pero el frontend
+     * pregunta por 16 ids distintos. Cualquiera que falte aquí sale "función PRO" aunque la
+     * empresa sea enterprise — así apareció "El Pase de Lista es una función PRO" (`roll_call`).
+     * Hay una prueba que lee el código del frontend y exige que TODO id que pida esté aquí.
      */
     public const FUNCIONES_DEL_PLAN = [
-        'keys_control',
-        'meal_timers',
-        'checklists_validation',
-        'voice_commands',
-        'store_opening',
-        'meal_reservation',
-        'enable_ley_silla',
+        // Apertura y llaves
+        'store_opening', 'keys_control', 'roll_call', 'emergency_open', 'door_amnesty',
+        'store_closed_report',
+        // Reloj
+        'gps_validation', 'face_validation', 'lates_academy_block', 'enable_ley_silla',
+        // Comedor
+        'meal_timers', 'meal_reservation',
+        // Tareas y asistentes
+        'routines_management', 'checklists_validation', 'voice_commands', 'voice_assistant',
+        // Plataforma
+        'custom_logo', 'system_backups',
     ];
 
     public function isFeatureUnlocked($featureId)

@@ -42,4 +42,24 @@ abstract class TestCase extends BaseTestCase
 
         return parent::setUpTraits();
     }
+
+    /**
+     * Le abre el turno de HOY a un usuario de prueba: un check_in en la fecha del tenant.
+     *
+     * Desde 2026-08-21 trabajar una tarea exige turno abierto (TaskAssignmentController::update):
+     * con el dial en "Acceso Bloqueado" la pestaña de Tareas dejaba iniciar y completar. Toda
+     * fixture donde un colaborador mueve sus tareas necesita esto — es como pasa en la vida real.
+     */
+    protected function conTurnoAbierto(\App\Models\User $user): \App\Models\User
+    {
+        $tz = \App\Helpers\TenantTimezone::for((int) $user->tenant_id);
+        \Illuminate\Support\Facades\DB::table('time_entries')->insert([
+            'tenant_id' => $user->tenant_id, 'user_id' => $user->id,
+            'date' => \Carbon\Carbon::now($tz)->toDateString(), 'type' => 'check_in',
+            'time' => \Carbon\Carbon::now($tz)->format('H:i:s'), 'is_late' => false, 'late_minutes' => 0,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        return $user;
+    }
 }

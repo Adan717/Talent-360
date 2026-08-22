@@ -99,6 +99,55 @@ class AperturaCanOpenStoreTest extends TestCase
      * que ya no existe. Es la trampa que este proyecto repite: corregir la regla no recalcula
      * lo ya generado.
      */
+    /**
+     * Resincronizar el horario NO le roba la apertura al titular.
+     *
+     * El dueño puso la apertura a las 20:40 a las 20:3x: el plazo de cesión calculado (ventana
+     * 20:25 + 5 = 20:30) ya había pasado, así que a la primera consulta la cadena cedía la
+     * apertura al suplente de inmediato — "el encargado resultó ser María cuando en ajustes se
+     * ve claro que es Adan". Si el plazo ya venció al crear o resincronizar el día, se cuenta
+     * desde ahora, y la cadena vuelve a empezar por el 1° de la jerarquía.
+     */
+    public function test_resincronizar_con_el_plazo_vencido_devuelve_la_apertura_al_titular(): void
+    {
+        $tz = \App\Helpers\TenantTimezone::for(1);
+        $hoy = Carbon::now($tz)->toDateString();
+        $titular = $this->makeEmployeeWithUser('Titular');
+        $suplente = $this->makeEmployeeWithUser('Suplente');
+        $this->makeAssignment($titular['employee_id'], 1, true);
+        $this->makeAssignment($suplente['employee_id'], 2, true);
+        DB::table('store_opening_settings')->updateOrInsert(
+            ['tenant_id' => 1, 'store_id' => 1],
+            ['company_id' => 1, 'pre_opening_window_minutes' => 15, 'absence_late_report_window_minutes' => 5,
+             'allow_automatic_handoff' => true, 'created_at' => now(), 'updated_at' => now()]
+        );
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => 1, 'key' => 'storeSchedule'],
+            ['value' => json_encode(['openTime' => '17:50', 'closeTime' => '21:00']), 'created_at' => now(), 'updated_at' => now()]
+        );
+        $servicio = app(StoreOpeningService::class);
+
+        // 18:10 — el plazo del titular (17:35+5) venció y la apertura ya se cedió al suplente.
+        Carbon::setTestNow(Carbon::parse($hoy . ' 18:10:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+        $this->assertSame((int) $suplente['user']->id, (int) $status->current_responsible_employee_id, 'precondición: cedida al suplente');
+
+        // 20:36 — el dueño cambia la apertura a las 20:40. El plazo calculado (20:30) YA pasó.
+        DB::table('system_settings')->updateOrInsert(
+            ['tenant_id' => 1, 'key' => 'storeSchedule'],
+            ['value' => json_encode(['openTime' => '20:40', 'closeTime' => '23:00']), 'created_at' => now(), 'updated_at' => now()]
+        );
+        Carbon::setTestNow(Carbon::parse($hoy . ' 20:36:00', $tz));
+        $status = $servicio->getTodayOpeningStatus(1, 1);
+
+        $this->assertSame((int) $titular['user']->id, (int) $status->current_responsible_employee_id,
+            'la cadena debe reiniciar por el titular, no quedarse en el suplente');
+        $this->assertSame('active_window', $status->status, 'el titular debe tener ventana, no perderla al instante');
+        $this->assertGreaterThan('20:36:00', $status->report_deadline, 'el plazo debe contarse desde ahora');
+
+        Carbon::setTestNow();
+    }
+
     public function test_cambiar_el_horario_resincroniza_el_dia_en_curso(): void
     {
         $tz = \App\Helpers\TenantTimezone::for(1);

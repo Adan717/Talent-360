@@ -60,6 +60,7 @@ class StoreOpeningService
             
             $openTimeStr = $this->horaDeAperturaConfigurada($tenantId);
             [$windowStart, $deadline] = $this->ventanasDe($openTimeStr, $openingSettings);
+            $deadline = $this->plazoConOportunidad($deadline, $openingSettings, $tenantId, $openTimeStr);
 
             // Find current responsible manager (Priority 1)
             // R46 (merge F3): `can_open_store` es el permiso REAL — sin este filtro la columna no
@@ -107,10 +108,16 @@ class StoreOpeningService
 
                 $todayStatus->scheduled_opening_time = $horaConfigurada;
                 $todayStatus->pre_opening_window_start = $inicio;
-                $todayStatus->report_deadline = $limite;
+                $todayStatus->report_deadline = $this->plazoConOportunidad($limite, $ajustes, $tenantId, $horaConfigurada);
                 // El fallo se midió contra un horario que ya no rige: se vuelve a evaluar.
                 $todayStatus->status = 'pending';
                 $todayStatus->failed_at = null;
+                // Y la cadena de encargados vuelve a empezar por el titular. Si el día ya había
+                // cedido la apertura al suplente contra el horario viejo, el titular (1° en la
+                // jerarquía) la recupera: la pantalla de ajustes dice que abre él, y debe ser él.
+                $todayStatus->current_responsible_employee_id =
+                    $this->responsibleUserId($this->primerResponsable($tenantId, $storeId))
+                    ?: $todayStatus->current_responsible_employee_id;
                 $todayStatus->save();
             }
         }
@@ -205,6 +212,36 @@ class StoreOpeningService
         }
         
         $status->save();
+    }
+
+    /**
+     * El plazo de cesión, pero dándole al titular una oportunidad real.
+     *
+     * Si el plazo calculado YA pasó en el momento de crear (o resincronizar) el día, el titular
+     * nunca tuvo ventana: a la primera consulta la cadena cedía la apertura al suplente de
+     * inmediato. Visto en vivo: el dueño puso la apertura a las 20:40 a las 20:3x, el plazo
+     * calculado era 20:30, y "el encargado resultó ser María cuando en ajustes se ve claro que
+     * es Adan". Si el plazo ya venció, se cuenta desde ahora.
+     */
+    private function plazoConOportunidad(string $plazo, $ajustes, $tenantId, string $openTimeStr): string
+    {
+        $ahora = Carbon::createFromFormat('H:i:s', $this->getCurrentTimeStr(null, $tenantId));
+        $limite = Carbon::createFromFormat('H:i:s', $plazo);
+
+        if ($limite->greaterThan($ahora)) {
+            return $plazo;
+        }
+
+        // La oportunidad sólo tiene sentido mientras la apertura TODAVÍA puede contar como a
+        // tiempo. Si ya pasó la hora de apertura más la tolerancia, el día debe darse por
+        // perdido de inmediato — no ganar cinco minutos de gracia a las once de la mañana.
+        $tolerancia = (int) (\App\Models\LftSetting::where('tenant_id', $tenantId)->value('late_tolerance_minutes') ?? 10);
+        $limiteDeFallo = Carbon::createFromFormat('H:i:s', $openTimeStr)->addMinutes($tolerancia);
+        if ($ahora->greaterThan($limiteDeFallo)) {
+            return $plazo;
+        }
+
+        return $ahora->copy()->addMinutes((int) $ajustes->absence_late_report_window_minutes)->format('H:i:s');
     }
 
     /** La hora de apertura que la empresa tiene configurada hoy (`storeSchedule`). */
@@ -354,7 +391,9 @@ class StoreOpeningService
                 'tenant_id' => $tenantId,
                 'user_id' => $user->id,
                 'simulation_session_id' => $simSessionId,
-                'date' => Carbon::now()->format('Y-m-d'),
+                // Fecha del NEGOCIO, no del servidor: por la noche (UTC ya es mañana) la apertura
+                // quedaba registrada al día siguiente — el cierre ya lo hacía bien.
+                'date' => Carbon::now($this->tenantTimezone($tenantId))->format('Y-m-d'),
                 'type' => 'open',
                 'time' => $nowTimeStr,
                 'notes' => 'Apertura de tienda por el responsable asignado.',

@@ -50,7 +50,9 @@ class TaskAssignmentUpdateOwnershipTest extends TestCase
     {
         $user = User::factory()->create(['role' => $role]);
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => 1]);
-        return $user->fresh();
+        // Un empleado de estas pruebas está TRABAJANDO sus tareas: tiene turno abierto, como en
+        // la vida real. (Sin check_in el servidor rechaza mover la tarea desde 2026-08-21.)
+        return $role === 'empleado' ? $this->conTurnoAbierto($user->fresh()) : $user->fresh();
     }
 
     /** Empleado con supervisor configurado + feature de validación activa. */
@@ -172,7 +174,7 @@ class TaskAssignmentUpdateOwnershipTest extends TestCase
 
     public function test_completar_propia_va_a_awaiting_validation_si_requiere(): void
     {
-        $empleado = $this->makeEmployeeUnderSupervisor();
+        $empleado = $this->conTurnoAbierto($this->makeEmployeeUnderSupervisor());
         $task = $this->makeTask(703, 'forced');
 
         TaskAssignment::create([

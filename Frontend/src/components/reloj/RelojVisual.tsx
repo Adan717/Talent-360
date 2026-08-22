@@ -424,12 +424,17 @@ export default function RelojVisual({
   const isStoreClosed = storeSchedule.isClosed;
   const waitTimeText = formatWait(storeSchedule.remainingMins);
 
-  // Redirect to academia if store is closed and they are on a blocked tab
+  // Las pestañas de TRABAJO (tareas, herramientas, nómina…) se cierran cuando la persona no
+  // puede trabajar: con la tienda cerrada (regla original) y también con el dial en "Acceso
+  // Bloqueado" (prueba del dueño, 2026-08-21: bloqueado para fichar pero podía entrar a Tareas
+  // y ponerlas en curso). El servidor rechaza igual esas transiciones sin check_in abierto
+  // (TaskAssignmentController::update); esto sólo evita ofrecer lo que no va a funcionar.
+  const accesoBloqueado = btnProps?.iconKey === 'access_blocked';
   useEffect(() => {
-    if (isStoreClosed && (phoneTab === 'tareas' || phoneTab === 'nomina' || phoneTab === 'herramientas' || phoneTab === 'evaluacion360' || phoneTab === 'organigrama')) {
+    if ((isStoreClosed || accesoBloqueado) && (phoneTab === 'tareas' || phoneTab === 'nomina' || phoneTab === 'herramientas' || phoneTab === 'evaluacion360' || phoneTab === 'organigrama')) {
       setPhoneTab('academia');
     }
-  }, [isStoreClosed, phoneTab, setPhoneTab]);
+  }, [isStoreClosed, accesoBloqueado, phoneTab, setPhoneTab]);
 
   useEffect(() => {
     if (!isSimulated) {

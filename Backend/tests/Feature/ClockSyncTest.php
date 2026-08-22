@@ -158,6 +158,39 @@ class ClockSyncTest extends TestCase
      * portador de llaves y NADIE puede abrir la tienda — el dial se queda en "Reportar cerrado"
      * en una empresa recién creada, sin ninguna pista de por qué.
      */
+    /**
+     * La lista del backend tiene que cubrir TODO id que el frontend pregunte.
+     *
+     * Primera vuelta: 4 de 7 → nadie podía abrir tienda. Segunda vuelta: 7 de 16 → "El Pase de
+     * Lista es una función PRO" en una empresa enterprise (`roll_call` no estaba). El navegador
+     * toma la lista como la verdad, así que cualquier id que falte aquí se apaga para todos.
+     * Esta prueba lee el código del frontend: si alguien agrega un isFeatureUnlocked('x') nuevo
+     * y olvida la lista, falla aquí y no en la cara de un cliente.
+     */
+    public function test_la_lista_del_plan_cubre_todo_lo_que_pide_el_frontend(): void
+    {
+        $raiz = realpath(base_path('../Frontend/src'));
+        $this->assertNotFalse($raiz, 'no se encontró Frontend/src junto al Backend');
+
+        $pedidos = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($raiz));
+        foreach ($it as $archivo) {
+            if (!preg_match('/\.(tsx?|jsx?)$/', $archivo->getFilename())) {
+                continue;
+            }
+            if (preg_match_all("/isFeatureUnlocked\\(\\s*['\"]([a-z_]+)['\"]/", file_get_contents($archivo->getPathname()), $m)) {
+                foreach ($m[1] as $id) {
+                    $pedidos[$id] = true;
+                }
+            }
+        }
+
+        $this->assertNotEmpty($pedidos, 'el escaneo del frontend no encontró ningún isFeatureUnlocked');
+        $faltan = array_diff(array_keys($pedidos), \App\Models\Tenant::FUNCIONES_DEL_PLAN);
+        $this->assertSame([], array_values($faltan),
+            'el frontend pide funciones que el backend nunca enciende: ' . implode(', ', $faltan));
+    }
+
     public function test_enterprise_recibe_todas_las_funciones_de_su_plan(): void
     {
         [, $user, ] = $this->makeSetup('enterprise');

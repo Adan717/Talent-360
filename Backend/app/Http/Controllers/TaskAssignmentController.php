@@ -184,6 +184,26 @@ class TaskAssignmentController extends Controller
             'origin' => 'nullable|string|in:planned,carried_over,extra,routine',
         ]);
 
+        // Sin turno abierto no se trabaja una tarea (2026-08-21, prueba del dueño): con el dial
+        // en "Acceso Bloqueado" la pestaña de Tareas seguía dejando iniciar y completar. La
+        // pantalla se cierra también, pero la cerradura es ésta: un colaborador sin check_in
+        // abierto HOY no puede poner su tarea en curso ni terminarla. Los mandos no se gatean
+        // (validan y reasignan tareas ajenas), y deshacer hacia `pending` tampoco.
+        if (!$isPrivileged && in_array($validated['status'], ['in_progress', 'paused', 'completed', 'awaiting_validation'], true)) {
+            $tz = \App\Helpers\TenantTimezone::for((int) $tenantId);
+            $hoy = \Carbon\Carbon::now($tz)->toDateString();
+            $ultimo = \DB::table('time_entries')
+                ->where('tenant_id', $tenantId)->where('user_id', $user->id)
+                ->where('date', $hoy)->whereIn('type', ['check_in', 'check_out'])
+                ->whereNull('simulation_session_id')
+                ->orderByDesc('time')->orderByDesc('id')->value('type');
+            if ($ultimo !== 'check_in') {
+                return response()->json([
+                    'error' => 'Registra tu entrada en el Reloj antes de trabajar una tarea.',
+                ], 422);
+            }
+        }
+
         if (isset($validated['assistant_data']) && is_array($validated['assistant_data'])) {
             $validated['assistant_data'] = json_encode($validated['assistant_data']);
         }

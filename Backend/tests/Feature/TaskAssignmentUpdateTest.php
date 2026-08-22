@@ -57,7 +57,7 @@ class TaskAssignmentUpdateTest extends TestCase
 
     public function test_completing_an_auto_validation_task_awards_points_and_wallet_coins(): void
     {
-        $employee = $this->makeEmployeeWithSupervisorChain();
+        $employee = $this->conTurnoAbierto($this->makeEmployeeWithSupervisorChain());
         $task = Task::create(['title' => 'Auto Task', 'tenant_id' => 1, 'validation_mode' => 'auto', 'points' => 20]);
         $assignment = TaskAssignment::create([
             'id' => 'ta-1', 'task_id' => $task->id, 'user_id' => $employee->id,
@@ -84,7 +84,7 @@ class TaskAssignmentUpdateTest extends TestCase
 
     public function test_completing_a_forced_validation_task_downgrades_to_awaiting_validation(): void
     {
-        $employee = $this->makeEmployeeWithSupervisorChain();
+        $employee = $this->conTurnoAbierto($this->makeEmployeeWithSupervisorChain());
         $task = Task::create(['title' => 'Forced Task', 'tenant_id' => 1, 'validation_mode' => 'forced', 'points' => 15]);
         $assignment = TaskAssignment::create([
             'id' => 'ta-2', 'task_id' => $task->id, 'user_id' => $employee->id,
@@ -106,7 +106,7 @@ class TaskAssignmentUpdateTest extends TestCase
 
     public function test_already_completed_assignment_is_not_repaid_on_further_updates(): void
     {
-        $employee = $this->makeEmployeeWithSupervisorChain();
+        $employee = $this->conTurnoAbierto($this->makeEmployeeWithSupervisorChain());
         $task = Task::create(['title' => 'Auto Task 2', 'tenant_id' => 1, 'validation_mode' => 'auto', 'points' => 10]);
         $assignment = TaskAssignment::create([
             'id' => 'ta-3', 'task_id' => $task->id, 'user_id' => $employee->id,
@@ -137,7 +137,7 @@ class TaskAssignmentUpdateTest extends TestCase
             'title' => 'Tarea de otro tenant', 'tenant_id' => 2, 'validation_mode' => 'auto',
         ]);
 
-        $employee = $this->makeEmployeeWithSupervisorChain();
+        $employee = $this->conTurnoAbierto($this->makeEmployeeWithSupervisorChain());
         $assignment = TaskAssignment::withoutGlobalScopes()->create([
             'id' => 'ta-4', 'task_id' => $otherTenantTask->id, 'user_id' => $employee->id,
             'status' => 'in_progress', 'tenant_id' => 1, 'date' => now()->toDateString(),
@@ -157,7 +157,7 @@ class TaskAssignmentUpdateTest extends TestCase
 
     public function test_update_accepts_and_persists_origin(): void
     {
-        $employee = $this->makeEmployeeWithSupervisorChain();
+        $employee = $this->conTurnoAbierto($this->makeEmployeeWithSupervisorChain());
         $task = Task::create(['title' => 'Extra Task', 'tenant_id' => 1, 'validation_mode' => 'auto']);
         $assignment = TaskAssignment::create([
             'id' => 'ta-5', 'task_id' => $task->id, 'user_id' => $employee->id,
@@ -175,7 +175,7 @@ class TaskAssignmentUpdateTest extends TestCase
 
     public function test_get_task_assignments_returns_origin(): void
     {
-        $employee = $this->makeEmployeeWithSupervisorChain();
+        $employee = $this->conTurnoAbierto($this->makeEmployeeWithSupervisorChain());
         $task = Task::create(['title' => 'Carried Task', 'tenant_id' => 1, 'validation_mode' => 'auto']);
         TaskAssignment::create([
             'id' => 'ta-6', 'task_id' => $task->id, 'user_id' => $employee->id,

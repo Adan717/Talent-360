@@ -3412,13 +3412,20 @@ export function useClockEngine(overrideUser?: any) {
       // H10: dato autoritativo del backend, por si el estado del motor se recalculó mal.
       tieneCheckInEnBackend: arrivalTimes?.[currentUser?.id] !== undefined,
     })) {
+      // Si el turno de hoy YA TERMINÓ, "tolerancia vencida" confunde: la persona no llegó
+      // tarde, llegó a otro día. (Prueba del dueño: abrió el reloj a las 20:41 con turno
+      // 08:45–17:00 y no entendía qué le pedía desbloquear.)
+      const finTurnoStr = shiftConfigs[currentUser?.id]?.end || '17:00';
+      const turnoYaTermino = currentSimTime > parseTimeToMins(finTurnoStr);
       return {
         text: '🔒 Acceso Bloqueado',
         bg: 'bg-slate-700 text-slate-300 hover:bg-slate-800 text-white font-extrabold shadow-[0_0_20px_rgba(100,116,139,0.3)] animate-pulse',
         icon: '🔒',
         iconKey: 'access_blocked',
         isQrUnlockRequired: true,
-        subtext: 'Tolerancia vencida. Requiere desbloqueo QR de supervisor.'
+        subtext: turnoYaTermino
+          ? `Tu turno de hoy (${shiftStartStr}–${finTurnoStr}) ya terminó. Para fichar ahora necesitas autorización de un supervisor.`
+          : 'Tolerancia vencida. Requiere desbloqueo QR de supervisor.'
       };
     }
 

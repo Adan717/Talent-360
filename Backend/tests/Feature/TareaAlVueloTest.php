@@ -139,7 +139,7 @@ class TareaAlVueloTest extends TestCase
         // El círculo completo de P7: el empleado la completa → cae en awaiting_validation
         // (no se paga sola); la firma viaja por las puertas ya endurecidas.
         $supervisor = $this->usuario('supervisor');
-        $empleado = $this->usuario('empleado');
+        $empleado = $this->conTurnoAbierto($this->usuario('empleado'));
 
         // La política de validación exige ORGANIGRAMA (H26/H27): sin jerarquía no hay quién
         // firme y la validación no se activa. En producción la deja el wizard; aquí se siembra.

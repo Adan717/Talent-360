@@ -16,8 +16,10 @@ use Illuminate\Support\Facades\DB;
  * empresa— la salida caía en el MISMO SEGUNDO de la entrada: jornadas de CERO minutos escritas
  * sobre asistencia real (visto en la V2: entrada 20:33:05 y salida sintética 20:33:05).
  *
- * Sólo toca filas marcadas `auto_closed` cuya salida sea anterior o igual a la entrada del día:
- * son sintéticas y demostrablemente falsas. Un cierre automático correcto no se toca. Por
+ * Sólo toca filas marcadas `auto_closed` que la regla ACTUAL no habría escrito: las de duración
+ * cero o negativa, y aquellas en las que la persona tuvo ponches reales después de su fin de
+ * turno (su horario no explica la jornada, y hoy el barrido se niega a inventar la hora). Un
+ * cierre automático correcto no se toca, y una salida puesta por una persona tampoco. Por
  * defecto SIMULA; hay que pasar --aplicar para que escriba. Nunca toca un periodo de nómina ya
  * cerrado (--desde protege el pasado si hiciera falta).
  */
@@ -54,8 +56,31 @@ class RepararCierresSinteticos extends Command
                 continue;
             }
 
-            // Cero o negativo: la salida sintética no aporta nada y ensucia la asistencia.
-            if (substr((string) $fila->time, 0, 8) <= substr((string) $entrada, 0, 8)) {
+            // Criterio: se retira todo cierre sintético que la regla ACTUAL no habría escrito.
+            //  (a) Cero o negativo: la salida no aporta nada y ensucia la asistencia.
+            //  (b) La persona tuvo ponches reales DESPUÉS de su fin de turno: su horario no
+            //      explica la jornada (el error a.m./p.m. de estos horarios) y hoy el barrido se
+            //      niega a inventar la hora. Un cierre de 14 segundos entra por aquí aunque no
+            //      sea cero exacto.
+            $finTurno = DB::table('employees')
+                ->where('tenant_id', $fila->tenant_id)
+                ->where('user_id', $fila->user_id)
+                ->value('shiftEnd');
+            $finTurno = $finTurno ? (strlen((string) $finTurno) === 5 ? $finTurno . ':00' : substr((string) $finTurno, 0, 8)) : null;
+
+            $ultimoReal = DB::table('time_entries')
+                ->where('tenant_id', $fila->tenant_id)
+                ->where('user_id', $fila->user_id)
+                ->where('date', $fila->date)
+                ->where('id', '!=', $fila->id)
+                ->whereNull('simulation_session_id')
+                ->max('time');
+
+            $ceroONegativo = substr((string) $fila->time, 0, 8) <= substr((string) $entrada, 0, 8);
+            $horarioNoExplica = $finTurno !== null && $ultimoReal !== null
+                && substr((string) $ultimoReal, 0, 8) > $finTurno;
+
+            if ($ceroONegativo || $horarioNoExplica) {
                 $invalidos[] = ['fila' => $fila, 'entrada' => $entrada];
             }
         }
@@ -66,7 +91,7 @@ class RepararCierresSinteticos extends Command
             return self::SUCCESS;
         }
 
-        $this->warn(($aplicar ? 'Quitando ' : 'SIMULACRO — se quitarían ') . count($invalidos) . ' cierre(s) de cero minutos:');
+        $this->warn(($aplicar ? 'Quitando ' : 'SIMULACRO — se quitarían ') . count($invalidos) . ' cierre(s) automático(s) inválido(s):');
         foreach ($invalidos as $x) {
             $f = $x['fila'];
             $this->line("  empresa {$f->tenant_id} · colaborador {$f->user_id} · {$f->date} · entrada {$x['entrada']} → salida sintética {$f->time}");
@@ -90,7 +115,7 @@ class RepararCierresSinteticos extends Command
                 'date' => $f->date,
                 'type' => 'orphan_shift',
                 'timestamp_str' => $f->date . ' ' . $f->time,
-                'reason' => '🔴 Turno huérfano SIN cerrar: se retiró un cierre automático inválido (salida a la misma hora que la entrada). Revísalo a mano.',
+                'reason' => '🔴 Turno huérfano SIN cerrar: se retiró un cierre automático que el sistema no debió inventar (el horario programado no explicaba la jornada). Revísalo a mano.',
                 'punishment_amount' => 0,
                 'details' => json_encode(['auto_closed' => false, 'revision_manual' => true, 'reparado' => true]),
                 'created_at' => now(),

@@ -5279,7 +5279,7 @@ export default function RelojVisual({
                      }}
                      className="w-full bg-rose-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-rose-700 active:scale-95 transition-transform"
                   >
-                    Firmar y Entrar
+                    {bloqueandoElAcceso ? 'Firmar y Entrar' : 'Enviar justificante'}
                   </button>
                   <button onClick={() => setShowJustificanteModal(false)} className="w-full mt-3 text-slate-500 font-bold py-2 text-sm hover:text-slate-700">Cancelar</button>
                 </div>

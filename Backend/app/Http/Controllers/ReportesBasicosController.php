@@ -74,10 +74,24 @@ class ReportesBasicosController extends Controller
 
         $entradas = DB::table('time_entries')
             ->leftJoin('users', 'users.id', '=', 'time_entries.user_id')
+            // (2026-08-22) El puesto de la fila es una FOTO tomada al fichar
+            // (job_role_title_at_time). Las vías que no la estampan dejaban la columna vacía y el
+            // reporte imprimía "Sin puesto" para una persona que sí tiene puesto — en renglones
+            // alternados con los suyos correctos, dentro del mismo día. Si no hay foto, se cae al
+            // puesto ACTUAL del expediente en vez de mentir.
+            ->leftJoin('employees', function ($j) {
+                $j->on('employees.user_id', '=', 'time_entries.user_id')
+                    ->on('employees.tenant_id', '=', 'time_entries.tenant_id');
+            })
+            ->leftJoin('job_roles', 'job_roles.id', '=', 'employees.job_role_id')
             ->where('time_entries.tenant_id', $tenantId)
             ->whereBetween('time_entries.date', [$desde, $hasta])
             // Los fichajes del Simulador Matrix NUNCA se mezclan con un reporte real.
             ->whereNull('time_entries.simulation_session_id')
+            // Las reservas de comedor no son asistencia: son un apartado. Salían aquí como un
+            // "Movimiento" llamado `meal_reservation`, en crudo y sin traducir, entre las entradas
+            // y salidas reales. El resto del sistema ya las excluye por esta misma lista.
+            ->whereNotIn('time_entries.type', \App\Services\ClockService::AUXILIARY_ENTRY_TYPES)
             ->orderBy('time_entries.date')
             ->orderBy('users.name')
             ->orderBy('time_entries.time')
@@ -86,10 +100,12 @@ class ReportesBasicosController extends Controller
                 'time_entries.employee_name_at_time',
                 'users.name as user_name',
                 'time_entries.job_role_title_at_time',
+                'job_roles.name as puesto_actual',
                 'time_entries.type',
                 'time_entries.time',
                 'time_entries.is_late',
-                'time_entries.late_minutes'
+                'time_entries.late_minutes',
+                'time_entries.details'
             )
             ->get();
 
@@ -105,8 +121,12 @@ class ReportesBasicosController extends Controller
         $filas = $entradas->map(fn ($e) => [
             $e->date,
             $e->employee_name_at_time ?: ($e->user_name ?: 'Sin nombre'),
-            $e->job_role_title_at_time ?: 'Sin puesto',
-            $etiquetas[$e->type] ?? $e->type,
+            $e->job_role_title_at_time ?: ($e->puesto_actual ?: 'Sin puesto'),
+            // Una salida que puso el SISTEMA (cierre automático de turno huérfano) no puede
+            // presentarse como una salida que registró la persona: en un reporte de asistencia
+            // —el papel que se lleva a una aclaración— eso es exactamente lo que no debe pasar.
+            ($etiquetas[$e->type] ?? $e->type)
+                . (str_contains((string) $e->details, '"auto_closed":true') ? ' (cierre automático del sistema)' : ''),
             substr((string) $e->time, 0, 5),
             $e->is_late ? 'Sí' : 'No',
             (int) $e->late_minutes,

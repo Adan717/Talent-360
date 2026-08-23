@@ -222,6 +222,14 @@ class CandidateController extends Controller
 
                 $pinDeInvitacion = $employee->pin_code;
 
+                // (2026-08-22, fase 9) La ficha del candidato se queda apuntando a la cuenta que
+                // salió de ella. La columna `candidates.user_id` existe desde el principio y nadie
+                // la llenaba: al contratar se creaban usuario y expediente, pero el candidato
+                // quedaba con user_id NULL y se perdía el rastro de "quién se postuló → quién
+                // trabaja aquí". Es el hilo que necesita el reporte de reclutamiento y el que
+                // evita crear un duplicado si esa persona vuelve a postularse.
+                $data['user_id'] = $user->id;
+
                 // SUELDO: el ATS no lo pregunta en ningún momento, así que el expediente nace sin
                 // él y la nómina rellena el hueco con un default escondido de $2,400 que nadie
                 // tecleó (ClockService). No se bloquea la contratación —criterio del dueño— pero

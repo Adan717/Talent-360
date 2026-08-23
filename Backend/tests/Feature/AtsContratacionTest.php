@@ -174,6 +174,29 @@ class AtsContratacionTest extends TestCase
         $this->assertSame('19:23', substr($ficha->shiftEnd, 0, 5));
     }
 
+    /**
+     * La ficha del candidato queda apuntando a la cuenta que salió de ella.
+     *
+     * (2026-08-22, fase 9) `candidates.user_id` existe desde el principio y nadie la llenaba: al
+     * contratar se creaban usuario y expediente, pero el candidato quedaba con user_id NULL. Se
+     * perdía el rastro de "quién se postuló → quién trabaja aquí", que es el hilo que necesita el
+     * reporte de reclutamiento y el que evita duplicar a alguien que vuelve a postularse.
+     */
+    public function test_al_contratar_el_candidato_queda_ligado_a_su_cuenta(): void
+    {
+        $c = $this->candidato();
+
+        $this->contratar($c)->assertStatus(200);
+
+        $cuenta = DB::table('users')->where('email', 'ana@candidata.test')->first();
+        $this->assertNotNull($cuenta, 'la contratación tiene que crear la cuenta');
+        $this->assertDatabaseHas('candidates', [
+            'id' => $c->id,
+            'status' => 'hired',
+            'user_id' => $cuenta->id,
+        ]);
+    }
+
     public function test_contratar_avisa_de_que_falta_capturar_el_sueldo(): void
     {
         $c = $this->candidato();

@@ -35,6 +35,21 @@ interface Course {
   target_job_role_id?: number | null;
 }
 
+/**
+ * ¿Este curso todavía trae el examen de RELLENO que siembra el catálogo del giro?
+ *
+ * (2026-08-22, fase 7) Los cursos nacen con UNA sola pregunta genérica —"¿Cuál es el objetivo
+ * principal de este protocolo?"— idéntica en todos, cuya respuesta correcta es siempre la primera
+ * opción. Con eso cualquiera saca en un clic un certificado que dice "100%" y que además es
+ * VERIFICABLE en público: en la prueba salieron 4 certificados en un minuto, uno de ellos de
+ * "Derechos Laborales & LFT", sin que nadie leyera nada. El sistema no puede escribir el examen
+ * por el dueño, pero sí decirle cuáles siguen sin uno de verdad.
+ */
+const PREGUNTA_DE_RELLENO = '¿Cuál es el objetivo principal de este protocolo?';
+const traeExamenDeRelleno = (curso: { quiz_data?: { question: string }[] }): boolean =>
+  (curso.quiz_data?.length ?? 0) === 1
+  && (curso.quiz_data?.[0]?.question ?? '').trim() === PREGUNTA_DE_RELLENO;
+
 export const GestorAcademia = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
@@ -475,6 +490,11 @@ export const GestorAcademia = () => {
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1"><Video size={12} className={course.video_url ? 'text-blue-500' : ''}/> {course.video_url ? 'Video' : 'Material'}</div>
                               <div className="flex items-center gap-1"><FileQuestion size={12} className={course.quiz_data?.length ? 'text-orange-500' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
+                              {traeExamenDeRelleno(course) && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-extrabold" title="El catálogo sembró una pregunta de ejemplo, igual en todos los cursos y con la primera opción como correcta. Escribe el examen real antes de que alguien saque su certificado.">
+                                  Examen de ejemplo
+                                </span>
+                              )}
                             </div>
                             <span className="text-blue-600 font-extrabold group-hover:underline flex items-center gap-0.5">
                               Iniciar <PlayCircle size={12} className="fill-current text-blue-600" />
@@ -533,6 +553,11 @@ export const GestorAcademia = () => {
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1"><Video size={12} className={course.video_url ? 'text-blue-500' : ''}/> {course.video_url ? 'Video' : 'Material'}</div>
                               <div className="flex items-center gap-1"><FileQuestion size={12} className={course.quiz_data?.length ? 'text-orange-500' : ''}/> {course.quiz_data?.length || 0} Preguntas</div>
+                              {traeExamenDeRelleno(course) && (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-extrabold" title="El catálogo sembró una pregunta de ejemplo, igual en todos los cursos y con la primera opción como correcta. Escribe el examen real antes de que alguien saque su certificado.">
+                                  Examen de ejemplo
+                                </span>
+                              )}
                             </div>
                             <span className="text-blue-600 font-extrabold group-hover:underline flex items-center gap-0.5">
                               Iniciar <PlayCircle size={12} className="fill-current text-blue-600" />

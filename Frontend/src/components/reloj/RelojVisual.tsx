@@ -5217,15 +5217,28 @@ export default function RelojVisual({
           
           {/* Modal Justificante */}
           {showJustificanteModal && (
-            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col justify-center p-6 animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label="Retardo Crítico Detectado">
-              <div className="bg-white rounded-3xl p-6 w-full shadow-2xl border-4 border-rose-500 overflow-hidden relative max-w-md mx-auto">
-                <div className="absolute top-0 left-0 right-0 bg-rose-500 text-white text-center py-2 font-black tracking-widest text-xs uppercase">
-                  Acceso Bloqueado
+            (() => {
+            // (2026-08-22) El mismo modal sirve para dos momentos MUY distintos y antes hablaba
+            // siempre como si fuera el primero: "Acceso Bloqueado — para desbloquear el acceso y
+            // registrar tu entrada". Abierto desde el aviso, horas después y con la jornada ya
+            // terminada, eso era falso: no hay nada bloqueado. El trámite es el mismo; el texto no.
+            const bloqueandoElAcceso = clockState === 'inactive' || clockState === 'contingency';
+            return (
+            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col justify-center p-6 animate-fade-in text-slate-800" role="dialog" aria-modal="true" aria-label={bloqueandoElAcceso ? 'Retardo Crítico Detectado' : 'Justificar retardo'}>
+              <div className={`bg-white rounded-3xl p-6 w-full shadow-2xl border-4 overflow-hidden relative max-w-md mx-auto ${bloqueandoElAcceso ? 'border-rose-500' : 'border-amber-500'}`}>
+                <div className={`absolute top-0 left-0 right-0 text-white text-center py-2 font-black tracking-widest text-xs uppercase ${bloqueandoElAcceso ? 'bg-rose-500' : 'bg-amber-500'}`}>
+                  {bloqueandoElAcceso ? 'Acceso Bloqueado' : 'Justificar retardo'}
                 </div>
                 <div className="mt-6 flex flex-col items-center text-center">
-                  <span className="text-5xl mb-4">⛔</span>
-                  <h3 className="font-black text-slate-800 text-xl mb-2 uppercase">Retardo Crítico Detectado</h3>
-                  <p className="text-sm text-slate-600 mb-6 bg-rose-50 p-3 rounded-xl">Has superado la tolerancia máxima. Para desbloquear el acceso y registrar tu entrada, debes proveer una justificación válida.</p>
+                  <span className="text-5xl mb-4">{bloqueandoElAcceso ? '⛔' : '📝'}</span>
+                  <h3 className="font-black text-slate-800 text-xl mb-2 uppercase">
+                    {bloqueandoElAcceso ? 'Retardo Crítico Detectado' : 'Explica tu retardo'}
+                  </h3>
+                  <p className={`text-sm text-slate-600 mb-6 p-3 rounded-xl ${bloqueandoElAcceso ? 'bg-rose-50' : 'bg-amber-50'}`}>
+                    {bloqueandoElAcceso
+                      ? 'Has superado la tolerancia máxima. Para desbloquear el acceso y registrar tu entrada, debes proveer una justificación válida.'
+                      : `Cuéntale a tu jefe por qué llegaste ${miRetardoJustificable ? miRetardoJustificable.minutes + ' min ' : ''}tarde. Si lo aprueba, ese retardo no se te descuenta.`}
+                  </p>
                   
                   <div className="w-full text-left">
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Justificación (Obligatorio)</label>
@@ -5272,6 +5285,8 @@ export default function RelojVisual({
                 </div>
               </div>
             </div>
+            );
+            })()
           )}
 
           {/* Modal KeyDelegation / Entrega de Turno (Shift Handover) */}

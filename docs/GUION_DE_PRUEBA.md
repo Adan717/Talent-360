@@ -228,7 +228,7 @@ Léelas antes de reportar nada:
 | **Los fichajes del Simulador Matrix no salen en reportes ni nómina** | Excluidos a propósito para que no se confundan con datos reales |
 | **El navegador marca el sitio como inseguro** | La instancia de prueba va por HTTP sin certificado. Algunas redes con filtrado lo bloquean del todo |
 | **Una supervisora no puede validar tareas de alguien que no está debajo de ella** | Es jerárquico: valida sólo a los puestos que le reportan en el organigrama. Si tu supervisora no tiene a nadie debajo, no tendrá nada que validar |
-| **Quien ya checó salida no puede volver a entrar el mismo día** | El reloj lleva UNA jornada por día. Si alguien sale y regresa (cita médica, segundo turno), hoy no hay forma de reabrir su turno — decisión pendiente |
+| **Quien sale y vuelve a entrar el mismo día sí puede** | El reloj lo acepta (comprobado en vivo: salida 13:43:17, entrada 13:43:18, sin cobrarle un segundo retardo). Lo que sigue pendiente de tu decisión es cómo se paga: hoy la nómina paga **por día**, y el reporte de horas suma sólo los bloques ya cerrados y lo dice en sus observaciones |
 | **Al terminar una tarea a veces se pagan las monedas y a veces no** | Depende del organigrama: si tu puesto no le reporta a nadie, no hay quién valide y se paga al terminar. Con supervisor arriba, se paga **al validar** |
 
 ---

@@ -3793,6 +3793,8 @@ export function useClockEngine(overrideUser?: any) {
   // --- NUEVAS HERRAMIENTAS INTEGRADAS CON EL SERVIDOR ---
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
+  // Los días de retención los decide la empresa (7 a 30). La pantalla los anunciaba fijos en 7.
+  const [chatRetentionDays, setChatRetentionDays] = useState<number>(7);
 
   // 1. Chat de equipo
   const fetchChatMessages = async () => {
@@ -3800,8 +3802,14 @@ export function useClockEngine(overrideUser?: any) {
     setChatLoading(true);
     try {
       const res = await axiosInstance.get('/chat/messages');
-      if (res.data) {
-        setChatMessages(res.data);
+      // El endpoint ahora responde { messages, retention_days }; se acepta también el arreglo
+      // pelón por si una pestaña vieja sigue abierta contra el servidor nuevo.
+      const data = res.data;
+      if (Array.isArray(data)) {
+        setChatMessages(data);
+      } else if (data) {
+        setChatMessages(Array.isArray(data.messages) ? data.messages : []);
+        if (Number(data.retention_days) > 0) setChatRetentionDays(Number(data.retention_days));
       }
     } catch (e) {
       console.error("Error al cargar mensajes del chat:", e);
@@ -4181,6 +4189,7 @@ export function useClockEngine(overrideUser?: any) {
     requestGPS,
     chatMessages,
     chatLoading,
+    chatRetentionDays,
     pendingKeyTransfers,
     fetchChatMessages,
     sendChatMessage,

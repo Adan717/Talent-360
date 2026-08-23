@@ -421,9 +421,24 @@ class StoreOpeningService
             $tenantUserIds = DB::table('users')->where('tenant_id', $tenantId)->pluck('id')->toArray();
             event(new \App\Events\StoreOpened($tenantId, $tenantUserIds));
 
+            // (2026-08-22, fase 12) El mensaje decía SIEMPRE "y entrada registrada", aunque el
+            // fichaje se hubiera caído: el ponche es best-effort a propósito (la apertura no debe
+            // fallar por una regla del reloj), pero anunciarlo como hecho es otra cosa. Visto en
+            // vivo: el encargado abrió la tienda a las 13:04 con turno de 02:49, el candado de
+            // retardo extremo rechazó su entrada, la respuesta dijo "entrada registrada" y el
+            // Monitor lo mostró fuera de turno el resto del día. Se abrió la tienda: eso es cierto
+            // y es lo importante; lo que no ocurrió, se dice.
+            $fichoTambien = ($punchResult['success'] ?? false) === true;
+            $mensaje = $fichoTambien
+                ? 'Tienda abierta con éxito y entrada registrada.'
+                : 'Tienda abierta con éxito, pero tu entrada NO quedó registrada: '
+                    . ($punchResult['message'] ?? 'el reloj rechazó el fichaje')
+                    . ' Ficha tu entrada desde el reloj.';
+
             return [
                 'success' => true,
-                'message' => 'Tienda abierta con éxito y entrada registrada.',
+                'message' => $mensaje,
+                'clock_in_registered' => $fichoTambien,
                 'status' => $status,
                 'punch' => $punchResult
             ];

@@ -319,6 +319,7 @@ export default function RelojVisual({
     mealSettings,
     leySillaConfig,
     chatMessages,
+    chatRetentionDays,
     chatLoading,
     pendingKeyTransfers,
     fetchChatMessages,
@@ -549,7 +550,9 @@ export default function RelojVisual({
           <h5 className="font-black text-sm text-indigo-500 flex items-center gap-1.5">
             <span className="animate-pulse">🟢</span> Chat Grupal de Sucursal
           </h5>
-          <span className="text-[9px] text-slate-400 italic">Mensajes expiran en 7 días</span>
+          <span className="text-[9px] text-slate-400 italic">
+            Mensajes expiran en {chatRetentionDays} {chatRetentionDays === 1 ? 'día' : 'días'}
+          </span>
         </div>
         
         {/* Historial de mensajes */}
@@ -581,7 +584,14 @@ export default function RelojVisual({
                         isMe 
                           ? 'bg-indigo-600 text-white rounded-tr-none' 
                           : (isDark ? 'bg-slate-800 text-slate-100' : 'bg-slate-100 text-slate-800') + ' rounded-tl-none'
-                      }`}>
+                      } ${msg.es_privado ? 'ring-1 ring-amber-400/70' : ''}`}>
+                        {/* El hilo es el mismo del Monitor: un privado tiene que verse como
+                            privado o la gente cree que le está escribiendo a todo el equipo. */}
+                        {msg.es_privado && (
+                          <span className="block text-[8px] font-black uppercase tracking-wide text-amber-500 mb-1">
+                            🔒 Privado {msg.para_mi ? '· para ti' : (msg.receiver_name ? '· para ' + msg.receiver_name : '')}
+                          </span>
+                        )}
                         {msg.message}
                       </div>
                       <span className="text-[8px] text-slate-400 block mt-1">

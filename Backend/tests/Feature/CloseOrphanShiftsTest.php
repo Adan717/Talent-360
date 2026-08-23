@@ -69,6 +69,15 @@ class CloseOrphanShiftsTest extends TestCase
         return $user;
     }
 
+    /** Igual que makeUser, pero con horario de entrada propio (turno nocturno). */
+    private function makeUserConTurno(int $tenantId, string $shiftStart, string $shiftEnd): User
+    {
+        $user = $this->makeUser($tenantId, $shiftEnd);
+        DB::table('employees')->where('user_id', $user->id)->update(['shiftStart' => $shiftStart]);
+
+        return $user;
+    }
+
     private function punch(int $tenantId, int $userId, string $type, string $time, string $date): void
     {
         DB::table('time_entries')->insert([
@@ -323,6 +332,102 @@ class CloseOrphanShiftsTest extends TestCase
 
             // El segundo run no encuentra huérfanos (ya tienen check_out).
             $this->assertEquals(1, TimeEntry::where('user_id', $user->id)->where('type', 'check_out')->count());
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * (2026-08-23, fase 12) El candado de tienda dejaba EMPRESAS ENTERAS sin barrido. El tenant de
+     * prueba cierra a las 23:59 y el comando corre cada hora en punto: `now >= 23:59` no se cumplía
+     * nunca, así que sus turnos huérfanos no se cerraban jamás — ni los de hoy ni los de ayer.
+     */
+    public function test_una_tienda_que_cierra_a_las_2359_tambien_se_barre(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:00:00'));
+        try {
+            $tenant = $this->makeTenant('23:59');
+            $user = $this->makeUser($tenant->id, '18:00');
+            $this->punch($tenant->id, $user->id, 'check_in', '09:00:00', '2026-07-10');
+
+            // A las 23:00 de HOY la tienda no ha cerrado: no se le toca la jornada en curso.
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+            $this->assertDatabaseMissing('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out',
+            ]);
+
+            // Al día siguiente, el barrido de "ayer" lo cierra a SU fin de turno.
+            Carbon::setTestNow(Carbon::parse('2026-07-11 08:00:00'));
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertDatabaseHas('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out',
+                'date' => '2026-07-10', 'time' => '18:00:00',
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /** A nadie se le escribe la salida mientras su turno sigue vivo — velador incluido. */
+    public function test_no_cierra_el_turno_nocturno_que_sigue_en_curso(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-11 00:30:00'));
+        try {
+            $tenant = $this->makeTenant('23:59');
+            $velador = $this->makeUserConTurno($tenant->id, '22:00', '02:00');
+            // Su check_in va bajo la fecha de negocio del día que EMPEZÓ.
+            $this->punch($tenant->id, $velador->id, 'check_in', '22:00:00', '2026-07-10');
+
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertDatabaseMissing('time_entries', [
+                'user_id' => $velador->id, 'type' => 'check_out',
+            ]);
+            $this->assertDatabaseMissing('audit_logs', [
+                'user_id' => $velador->id, 'type' => 'orphan_shift',
+            ]);
+
+            // Pasadas las 02:00 su turno ya terminó: ahora sí.
+            Carbon::setTestNow(Carbon::parse('2026-07-11 03:00:00'));
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertDatabaseHas('time_entries', [
+                'user_id' => $velador->id, 'type' => 'check_out',
+                'date' => '2026-07-10', 'time' => '02:00:00',
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * El huérfano que el sistema NO puede cerrar (su horario no explica la jornada) sigue saliendo
+     * huérfano en cada barrido. La alerta se escribe una sola vez o el panel queda sepultado bajo
+     * copias del mismo aviso: el barrido de "ayer" corre cada hora.
+     */
+    public function test_la_alerta_del_huerfano_irresoluble_se_escribe_una_sola_vez(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-10 23:00:00'));
+        try {
+            $tenant = $this->makeTenant('23:59');
+            // El caso real del tenant 4: horario de madrugada (02:49–07:45) por el error a.m./p.m.
+            // que arrastran los horarios de esa empresa, y la persona trabajando por la tarde.
+            $user = $this->makeUserConTurno($tenant->id, '02:49', '07:45');
+            $this->punch($tenant->id, $user->id, 'check_in', '16:46:00', '2026-07-10');
+
+            Carbon::setTestNow(Carbon::parse('2026-07-11 08:00:00'));
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+            Carbon::setTestNow(Carbon::parse('2026-07-11 09:00:00'));
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+            Carbon::setTestNow(Carbon::parse('2026-07-11 10:00:00'));
+            $this->artisan('shifts:close-orphans')->assertExitCode(0);
+
+            $this->assertSame(1, DB::table('audit_logs')
+                ->where('user_id', $user->id)->where('type', 'orphan_shift')->count());
+            $this->assertDatabaseMissing('time_entries', [
+                'user_id' => $user->id, 'type' => 'check_out',
+            ]);
         } finally {
             Carbon::setTestNow();
         }

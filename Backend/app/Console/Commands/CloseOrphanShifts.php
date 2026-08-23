@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Tenant;
 use App\Services\ClockService;
+use App\Support\JornadaLaboral;
 use App\Helpers\TenantTimezone;
 use Carbon\Carbon;
 use Illuminate\Console\Attributes\Description;
@@ -30,19 +31,25 @@ class CloseOrphanShifts extends Command
 
             $closeTime = $this->closeTimeFor($tenant->id);
 
-            // Guard: no cerrar antes de que la tienda cierre (comparación en tz local;
-            // substr(0,5) normaliza por si closeTime trae segundos).
-            if ($nowHm < substr($closeTime, 0, 5)) {
-                continue;
-            }
+            // La jornada de AYER: un turno que cruza medianoche (22:00→02:00) guarda su check_in
+            // bajo la fecha de negocio del día que EMPEZÓ, así que el huérfano del velador no
+            // aparecía nunca en el barrido de hoy y quedaba abierto para siempre (2026-08-22).
+            //
+            // Este barrido NO espera a la hora de cierre de hoy (2026-08-23). El candado de tienda
+            // que había aquí arriba dejaba fuera a empresas enteras: el tenant de prueba cierra a
+            // las **23:59** y el comando corre cada hora en punto, así que `now >= 23:59` no se
+            // cumplía NUNCA — ni hoy ni ayer— y sus turnos huérfanos no se cerraban jamás. Lo que
+            // de verdad protege a un turno vivo es el candado por PERSONA de más abajo (no se toca
+            // a nadie cuyo turno todavía no termina), que además es exacto para el velador.
+            $totalClosed += $this->closeOrphansForTenant($tenant->id, $localNow->copy()->subDay()->format('Y-m-d'), $closeTime, $localNow);
 
-            // La jornada de AYER también: un turno que cruza medianoche (22:00→02:00) guarda su
-            // check_in bajo la fecha de negocio del día que EMPEZÓ, así que el huérfano del velador
-            // no aparecía nunca en el barrido de hoy y quedaba abierto para siempre (2026-08-22).
-            // Se hace aquí, pasada ya la hora de cierre de HOY: para entonces cualquier jornada de
-            // ayer terminó con seguridad, así que esto no puede cerrar un turno vivo.
-            $totalClosed += $this->closeOrphansForTenant($tenant->id, $localNow->copy()->subDay()->format('Y-m-d'), $closeTime);
-            $totalClosed += $this->closeOrphansForTenant($tenant->id, $today, $closeTime);
+            // La de HOY sólo cuando la tienda ya cerró: aquí sí conviene ser conservador, porque
+            // la jornada en curso puede alargarse y no queremos escribirle la salida a alguien que
+            // sigue trabajando. Si la tienda cierra a una hora que el reloj del cron no alcanza,
+            // el barrido de mañana lo recoge con su hora correcta.
+            if ($nowHm >= substr($closeTime, 0, 5)) {
+                $totalClosed += $this->closeOrphansForTenant($tenant->id, $today, $closeTime, $localNow);
+            }
         }
 
         $this->info("Turnos huérfanos cerrados: {$totalClosed}");
@@ -84,7 +91,7 @@ class CloseOrphanShifts extends Command
     /**
      * Cierra los turnos huérfanos del día para un tenant. Devuelve cuántos cerró.
      */
-    private function closeOrphansForTenant(int $tenantId, string $today, string $closeTime): int
+    private function closeOrphansForTenant(int $tenantId, string $today, string $closeTime, Carbon $localNow): int
     {
         // Registros de asistencia del día (se excluyen los auxiliares como reservas de
         // comida), en orden cronológico (id asc).
@@ -128,14 +135,17 @@ class CloseOrphanShifts extends Command
         }
 
         $closeTimeHis = strlen($closeTime) === 5 ? $closeTime . ':00' : $closeTime;
+        $zona = $this->timezoneFor($tenantId);
         $now = now();
 
         // El fin de turno de CADA colaborador manda sobre la hora de cierre de la tienda: es la
         // hora a la que esa persona debía irse. La tienda es sólo el respaldo si no tiene turno.
-        $finDeTurno = DB::table('employees')
+        $turnos = DB::table('employees')
             ->where('tenant_id', $tenantId)
             ->whereIn('user_id', $orphans)
-            ->pluck('shiftEnd', 'user_id');
+            ->get(['user_id', 'shiftStart', 'shiftEnd'])
+            ->keyBy('user_id');
+        $finDeTurno = $turnos->map(fn ($e) => $e->shiftEnd);
 
         // ¿Se fue a comer y nunca fichó el regreso? Se cierra también esa comida, pero SIN
         // inventarle minutos de exceso: no hay dato para calcularlos (decisión 2026-08-22).
@@ -147,6 +157,8 @@ class CloseOrphanShifts extends Command
                 unset($comidaAbierta[$e->user_id]);
             }
         }
+
+        $cerrados = 0;
 
         foreach ($orphans as $userId) {
             // LA HORA QUE SE ESTAMPA (reescrito 2026-08-22 tras verlo en datos reales).
@@ -164,7 +176,46 @@ class CloseOrphanShifts extends Command
             $base = $base !== '' ? (strlen($base) === 5 ? $base . ':00' : substr($base, 0, 8)) : $closeTimeHis;
             $ultima = $ultimaActividad[$userId] ?? null;
 
-            if ($ultima !== null && $ultima > $base) {
+            // CANDADO POR PERSONA: no se le escribe la salida a nadie cuyo turno todavía no
+            // termina. Sustituye al candado de tienda que bloqueaba empresas enteras, y es exacto
+            // para el turno que cruza medianoche: quien entró ayer a las 22:00 con fin a las 02:00
+            // sigue trabajando a las 00:30 de hoy, aunque "ayer" ya sea otra fecha de negocio.
+            $turno = $turnos[$userId] ?? null;
+            $finInstante = JornadaLaboral::instanteDe(
+                $today,
+                substr($base, 0, 8),
+                $turno->shiftStart ?? null,
+                $turno->shiftEnd ?? null,
+                $zona
+            );
+            if ($localNow->lt($finInstante)) {
+                continue;
+            }
+
+            // La comparación "¿hubo actividad DESPUÉS del fin de turno?" tiene que hacerse con
+            // instantes, no con la hora pelona: para el velador (22:00→02:00) el string "22:00" es
+            // mayor que "02:00" y el barrido lo tomaba por un horario que no explica la jornada
+            // — nunca se le cerraba el turno y siempre se le levantaba una alerta.
+            $ultimaInstante = $ultima !== null
+                ? JornadaLaboral::instanteDe($today, $ultima, $turno->shiftStart ?? null, $turno->shiftEnd ?? null, $zona)
+                : null;
+
+            if ($ultimaInstante !== null && $ultimaInstante->gt($finInstante)) {
+                // La alerta se escribe UNA vez. Este caso no cierra nada, así que el turno sigue
+                // saliendo huérfano en cada barrido: sin este candado, el mismo día generaría una
+                // alerta por hora hasta que un humano lo resuelva, y el panel quedaría sepultado
+                // bajo copias del mismo aviso.
+                $yaAvisado = DB::table('audit_logs')
+                    ->where('tenant_id', $tenantId)
+                    ->where('user_id', $userId)
+                    ->where('date', $today)
+                    ->where('type', 'orphan_shift')
+                    ->exists();
+
+                if ($yaAvisado) {
+                    continue;
+                }
+
                 DB::table('audit_logs')->insert([
                     'tenant_id' => $tenantId,
                     'user_id' => $userId,
@@ -237,10 +288,12 @@ class CloseOrphanShifts extends Command
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            $cerrados++;
         }
 
         event(new \App\Events\MonitorUpdated($tenantId));
 
-        return count($orphans);
+        return $cerrados;
     }
 }

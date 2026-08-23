@@ -391,9 +391,21 @@ class PayrollController extends Controller
             $autorizadas++;
         }
 
-        $mensaje = "Nómina aprobada y lista para timbrar. {$autorizadas} autorizada(s).";
-        if ($sinFirmar > 0) {
-            $mensaje .= " {$sinFirmar} sin autorizar: el colaborador aún no ha firmado de conformidad.";
+        // (2026-08-22, fase 11) El mensaje decía SIEMPRE "Nómina aprobada y lista para timbrar",
+        // incluso autorizando CERO: con toda la plantilla sin firmar, el administrador leía que su
+        // nómina estaba lista cuando no se había autorizado ni una. Ahora el encabezado depende de
+        // lo que de verdad pasó.
+        if ($delPeriodo->isEmpty()) {
+            $mensaje = 'No hay nóminas generadas para este periodo, así que no había nada que autorizar.';
+        } elseif ($autorizadas === 0 && $sinFirmar > 0) {
+            $mensaje = "No se autorizó ninguna nómina: {$sinFirmar} sigue(n) sin la firma de conformidad del colaborador.";
+        } elseif ($autorizadas === 0) {
+            $mensaje = 'No había nóminas nuevas que autorizar en este periodo.';
+        } else {
+            $mensaje = "Nómina autorizada y lista para timbrar. {$autorizadas} autorizada(s).";
+            if ($sinFirmar > 0) {
+                $mensaje .= " {$sinFirmar} sin autorizar: el colaborador aún no ha firmado de conformidad.";
+            }
         }
 
         return response()->json([

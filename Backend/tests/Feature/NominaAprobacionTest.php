@@ -262,4 +262,28 @@ class NominaAprobacionTest extends TestCase
             'employee_id' => $ajenoId,
         ])->assertStatus(404);
     }
+
+    /**
+     * El mensaje de "Autorizar pago" dice lo que DE VERDAD pasó (2026-08-22, fase 11).
+     *
+     * Decía siempre "Nómina aprobada y lista para timbrar", incluso autorizando CERO: con toda la
+     * plantilla sin firmar, el administrador leía que su nómina estaba lista cuando no se había
+     * autorizado ni una.
+     */
+    public function test_autorizar_sin_firmas_no_dice_que_quedo_lista(): void
+    {
+        $ana = $this->colaborador();
+        $jefa = $this->colaborador('admin');
+
+        // Existe la nómina del periodo pero NADIE firmó.
+        $this->actingAs($jefa)->getJson('/api/v1/admin/payroll')->assertStatus(200);
+
+        $res = $this->actingAs($jefa)->postJson('/api/v1/admin/payroll/approve', []);
+
+        $res->assertStatus(200);
+        $mensaje = (string) $res->json('message');
+        $this->assertSame(0, (int) $res->json('approved'));
+        $this->assertStringNotContainsString('lista para timbrar', $mensaje,
+            'no puede decir que quedó lista si no autorizó ninguna');
+    }
 }

@@ -1825,6 +1825,30 @@ class ClockService
         // para quien no tiene capacidad de fichar.
         $canTrackAttendance = !is_null($employee->user_id);
 
+        // (2026-08-22, fase 11) …y tampoco para los días en que esa persona NO TRABAJABA AQUÍ.
+        // El conteo miraba festivos, día de descanso, contingencias y días ya transcurridos, pero
+        // nunca la fecha de ingreso: a quien se contrata a mitad de periodo se le cobraban como
+        // FALTAS los días anteriores a su alta, y como la deducción es de un día de salario por
+        // falta, su primera nómina salía en CERO. Visto en vivo con una candidata contratada hoy:
+        // 6 faltas en un periodo que terminó una semana antes de que existiera su expediente.
+        // Lo mismo por el otro extremo con la baja.
+        $altaStr = $employee->hire_date
+            ? Carbon::parse($employee->hire_date)->toDateString()
+            : null;
+        $bajaStr = ($employee->termination_date ?? null)
+            ? Carbon::parse($employee->termination_date)->toDateString()
+            : null;
+        $trabajabaAqui = function (string $dateStr) use ($altaStr, $bajaStr): bool {
+            if ($altaStr !== null && $dateStr < $altaStr) {
+                return false;
+            }
+            if ($bajaStr !== null && $dateStr > $bajaStr) {
+                return false;
+            }
+
+            return true;
+        };
+
         // N3: una falta sólo puede existir en un día que YA TERMINÓ (en la zona horaria del
         // tenant). El día en curso y los futuros no son faltas — todavía no ocurren. Sin este
         // guard, calcular la semana corriente un jueves fabricaba 6 faltas y netos de $0.
@@ -1845,7 +1869,7 @@ class ClockService
 
             $isHolidayDate = $holidays->has($dateStr);
 
-            if ($current->dayOfWeek !== $restDayOfWeek) {
+            if ($current->dayOfWeek !== $restDayOfWeek && $trabajabaAqui($dateStr)) {
                 if ($isHolidayDate) {
                     if (isset($attendedDates[$dateStr])) {
                         $holidayWorkedDaysCount++;

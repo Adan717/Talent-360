@@ -181,6 +181,31 @@ class ReportesOperativosTest extends TestCase
         $this->assertStringContainsString('Sin salida registrada', $campos[10]);
     }
 
+    /**
+     * Quien salió y VOLVIÓ a entrar el mismo día: se cuentan las horas del turno cerrado y se
+     * dice que el otro quedó abierto.
+     *
+     * (2026-08-22) La fila decía a la vez "salida 09:09 · 6:22 horas" y "sin salida registrada:
+     * no se cuentan horas" — dos afirmaciones contrarias en el mismo renglón.
+     */
+    public function test_una_reentrada_cuenta_lo_cerrado_y_avisa_del_turno_abierto(): void
+    {
+        $dia = now()->startOfWeek()->toDateString();
+        $this->fichaje($dia, 'check_in', '09:00:00');
+        $this->fichaje($dia, 'check_out', '13:00:00');
+        $this->fichaje($dia, 'check_in', '16:00:00');
+
+        $csv = $this->descargar('horas', ['from' => $dia, 'to' => $dia]);
+        $renglon = collect(explode("
+", $csv))->first(fn ($l) => str_contains($l, 'Tardón'));
+        $campos = str_getcsv(trim($renglon));
+
+        $this->assertSame('4:00', $campos[8], 'las horas del turno que sí cerró se cuentan');
+        $this->assertStringContainsString('Volvió a entrar', $campos[10]);
+        $this->assertStringNotContainsString('no se cuentan horas', $campos[10],
+            'no puede decir que no cuenta horas cuando acaba de contar cuatro');
+    }
+
     /** Cumplimiento: cuenta hechas/omitidas/sin cerrar y declara su definición. */
     public function test_cumplimiento_de_rutinas_cuenta_por_persona_y_por_tarea(): void
     {

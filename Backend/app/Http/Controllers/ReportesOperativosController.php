@@ -314,6 +314,12 @@ class ReportesOperativosController extends Controller
         $observacion = '';
         if ($autoCerrada) {
             $observacion = 'Cerrada por el sistema (olvidó checar salida)';
+        } elseif ($abierto && $brutos > 0) {
+            // (2026-08-22) Quien salió y VOLVIÓ a entrar el mismo día deja un turno abierto sobre
+            // horas que sí se contaron (las del turno que cerró). La fila decía a la vez "salida
+            // 09:09 · 6:22 horas" y "sin salida registrada: no se cuentan horas" — dos afirmaciones
+            // contrarias en el mismo renglón. Se cuentan las cerradas y se dice cuál queda abierta.
+            $observacion = 'Volvió a entrar y no cerró ese turno: sólo se cuentan las horas ya cerradas';
         } elseif ($abierto) {
             $observacion = 'Sin salida registrada: no se cuentan horas';
         } elseif ($comidaAbierta) {

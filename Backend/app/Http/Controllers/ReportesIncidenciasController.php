@@ -260,7 +260,9 @@ class ReportesIncidenciasController extends Controller
                     $comida['fin'] ?? '',
                     $comida['minutos'],
                     $permitidos,
-                    $exceso > 0 ? $exceso : '',
+                    // Un 0 explícito: en las demás columnas numéricas se imprime, y una celda
+                    // vacía en Excel no es cero, es "no se midió".
+                    $exceso,
                     $descanso['minutos'],
                     $sillasDia->count() ?: '',
                     $sillasDia->whereIn('status', ['approved', 'active', 'finished'])->count() ?: '',
@@ -278,7 +280,13 @@ class ReportesIncidenciasController extends Controller
         ], $filas, [
             "Periodo del {$desde} al {$hasta}.",
             'Los minutos permitidos salen del expediente de cada persona (Directorio Digital → Laboral).',
-            'El exceso de comida es el mismo que la nómina descuenta del cierre de jornada.',
+            // (2026-08-22) Antes decía "es el mismo que la nómina DESCUENTA del cierre de
+            // jornada". La primera mitad ya es cierta —desde hoy las dos pantallas usan
+            // App\Support\ExcesoDeDescanso—, pero la segunda nunca lo fue: el motor paga por DÍA
+            // y el exceso no toca el dinero. Prometer un descuento que no ocurre es peor que no
+            // prometer nada, sobre todo en el papel que se le enseña a un colaborador.
+            'El exceso se calcula igual que en la nómina (misma fórmula y misma tolerancia).',
+            'Hoy el exceso NO descuenta dinero: es un indicador y sirve de evidencia. La jornada se paga por día.',
             'La Ley Silla es obligatoria en México desde 2025: este reporte sirve de evidencia de que los descansos se otorgan.',
         ]);
     }

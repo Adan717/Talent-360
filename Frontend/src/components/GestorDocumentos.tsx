@@ -39,6 +39,7 @@ interface EmployeeSummary {
   subidos: number;
   validados: number;
   faltantes: number;
+  rechazados?: number;
 }
 
 interface CompanyDoc {
@@ -567,6 +568,14 @@ export const GestorDocumentos = () => {
                             <span className="inline-block text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                               📂 {u.validados}/{u.subidos} validados
                             </span>
+                            {/* (2026-08-22) El rechazado ya cuenta dentro de "faltantes" —hay que
+                                volver a subirlo—, pero se nombra aparte: no es lo mismo perseguir
+                                un documento que nunca llegó que uno que llegó mal. */}
+                            {(u.rechazados ?? 0) > 0 && (
+                              <span className="inline-block text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                {u.rechazados} por repetir
+                              </span>
+                            )}
                             {u.faltantes > 0 ? (
                               <span className="inline-block text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
                                 {u.faltantes} faltante{u.faltantes === 1 ? '' : 's'}

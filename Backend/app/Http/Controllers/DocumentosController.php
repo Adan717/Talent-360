@@ -55,7 +55,11 @@ class DocumentosController extends Controller
 
         $resumen = $employees->map(function ($emp) use ($docs) {
             $suyos = $docs->get($emp->id, collect());
-            $tiposSubidos = $suyos->pluck('doc_type')->unique();
+            // (2026-08-22, fase 8) Un documento RECHAZADO cuenta como faltante: hay que volver a
+            // subirlo. Antes bastaba con que existiera la fila para dejar de contarlo, así que un
+            // expediente con la CURP rechazada decía "faltan 4" cuando en realidad faltaban 5 —
+            // justo el renglón que el administrador tiene que perseguir se volvía invisible.
+            $tiposSubidos = $suyos->where('status', '!=', 'rechazado')->pluck('doc_type')->unique();
 
             return [
                 'employee_id' => $emp->id,
@@ -63,6 +67,7 @@ class DocumentosController extends Controller
                 'role'        => $emp->jobRole->name ?? 'Sin puesto',
                 'subidos'     => $suyos->count(),
                 'validados'   => $suyos->where('status', 'validado')->count(),
+                'rechazados'  => $suyos->where('status', 'rechazado')->count(),
                 'faltantes'   => collect(array_keys(self::CHECKLIST))->diff($tiposSubidos)->count(),
             ];
         });

@@ -1,6 +1,30 @@
 # RFC — Bitácora inmutable de asistencia
 
-> **Estado:** propuesta, sin una línea de código escrita · **Fecha:** 2026-08-24
+> **Estado:** ✅ **APROBADO — cimientos implementados el 2026-08-25** (`b70a8b3`) · **Fecha:** 2026-08-24
+
+## Estado de la implementación
+
+Reglas de negocio aprobadas por el dueño: **retención 5 años**, **notificación obligatoria al
+colaborador**, **capacidad aislada `manage_punch_corrections`**.
+
+| Paso del plan | Estado |
+|---|---|
+| 1 · Tabla espejo + trigger | ✅ Desplegado. Verificado contra Postgres real ANTES de tocar la BD viva |
+| 2 · Observar una semana y comparar | ⏳ En curso desde el 2026-08-25 |
+| 3 · Revocar `UPDATE`/`DELETE` sobre el historial | ⬜ Después del paso 2, con respaldo probado |
+| 4 · `asistencia_correcciones` + motivo obligatorio en pantalla | 🟡 Tabla creada; falta la pantalla |
+| 5 · "Corregir no sobrescribe" en motor y reportes | 🟡 `anulado_at` + `ExcludeAnuladasScope` puestos; falta el servicio de corrección y revisar los lectores que usan `DB::table` en vez de Eloquent |
+
+**Comprobado en producción**: con el trigger vivo se registró un fichaje real (check_in de las
+23:25) y quedó su fila en el historial. El reloj sigue funcionando.
+
+**`actor_id` sale nulo por ahora** y es correcto: `processPunch` todavía no declara intención con
+`BitacoraDeAsistencia`. Un fichaje normal no es una corrección — cuando exista el servicio de
+corrección, ése sí firmará.
+
+---
+
+> **Estado original:** propuesta, sin una línea de código escrita
 > **Pregunta que contesta:** si mañana llega una demanda laboral, ¿puede esta empresa probar a qué
 > hora entró y salió una persona, y demostrar que ese registro no se tocó después?
 > **Hoy la respuesta es NO.**

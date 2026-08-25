@@ -109,6 +109,7 @@ class CorreccionDeAsistencia
                 // 4. El aviso al colaborador. Obligatorio, y por eso va dentro de la misma
                 //    transacción: si el aviso no se puede escribir, la corrección no ocurre.
                 $this->avisarAlColaborador($original, $motivo, $autoriza, $correccionId);
+                $this->sellarAviso($correccionId);
 
                 return [
                     'correccion_id' => $correccionId,
@@ -158,6 +159,7 @@ class CorreccionDeAsistencia
                     ->update(['nueva_time_entry_id' => $nuevoId, 'updated_at' => now()]);
 
                 $this->avisarDeAltaManual($datos, $motivo, $autoriza, $correccionId);
+                $this->sellarAviso($correccionId);
 
                 return ['correccion_id' => $correccionId, 'anulado_id' => null, 'nuevo_id' => $nuevoId];
             }
@@ -203,6 +205,22 @@ class CorreccionDeAsistencia
             "Se agregó a mano un registro de tu asistencia del {$datos['date']} ({$hora}). "
                 . "Motivo: {$motivo}. Autorizó: {$autoriza->name}. Folio de corrección #{$correccionId}."
         );
+    }
+
+    /**
+     * Deja constancia de que el aviso salió.
+     *
+     * (2026-08-25) Se detectó al corregir un fichaje real en produccion: el mensaje llegaba al
+     * reloj del colaborador pero `notificado_at` se quedaba nulo, o sea que el expediente de la
+     * correccion decia "sin avisar" mientras el aviso ya estaba entregado. Un registro que afirma
+     * algo que no corresponde con lo que el sistema hizo es justo lo que esta bitacora existe para
+     * evitar — y aqui lo estaba haciendo la bitacora misma.
+     */
+    private function sellarAviso(int $correccionId): void
+    {
+        DB::table('asistencia_correcciones')
+            ->where('id', $correccionId)
+            ->update(['notificado_at' => now(), 'updated_at' => now()]);
     }
 
     /** Mismo canal por el que el jefe ya le escribe: le llega a su reloj. */

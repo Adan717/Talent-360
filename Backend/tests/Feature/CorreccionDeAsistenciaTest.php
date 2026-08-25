@@ -179,6 +179,36 @@ class CorreccionDeAsistenciaTest extends TestCase
         $this->assertStringContainsString('Jefa', $aviso->content, 'tiene que saber quién lo autorizó');
     }
 
+    /**
+     * Salio corrigiendo un fichaje REAL en produccion: el aviso llegaba al reloj del colaborador
+     * pero `notificado_at` se quedaba nulo, o sea que el expediente de la correccion decia "sin
+     * avisar" mientras el aviso ya estaba entregado. Un registro que afirma algo que no coincide
+     * con lo que el sistema hizo es justo lo que esta bitacora existe para evitar.
+     */
+    public function test_el_expediente_registra_que_el_aviso_salio(): void
+    {
+        $original = $this->fichaje('09:03:00');
+
+        $r = $this->servicio()->corregir($original, ['time' => '09:00:00'], 'Reloj adelantado.', $this->jefa);
+
+        $c = DB::table('asistencia_correcciones')->find($r['correccion_id']);
+        $this->assertNotNull($c->notificado_at, 'si el aviso salio, el expediente tiene que decirlo');
+
+        $avisos = DB::table('internal_messages')->where('receiver_id', $this->colaborador->id)->count();
+        $this->assertSame(1, $avisos, 'un aviso por correccion, ni cero ni dos');
+    }
+
+    public function test_el_alta_manual_tambien_sella_el_aviso(): void
+    {
+        $r = $this->servicio()->darDeAlta([
+            'tenant_id' => $this->tenant->id, 'user_id' => $this->colaborador->id,
+            'date' => '2026-08-24', 'type' => 'check_out', 'time' => '18:00:00',
+            'is_late' => false, 'late_minutes' => 0,
+        ], 'Olvido checar salida.', $this->jefa);
+
+        $this->assertNotNull(DB::table('asistencia_correcciones')->find($r['correccion_id'])->notificado_at);
+    }
+
     public function test_la_correccion_guarda_quien_que_y_por_que(): void
     {
         $original = $this->fichaje('09:03:00');

@@ -117,6 +117,39 @@ class BitacoraInmutableAsistenciaTest extends TestCase
         $this->assertSame(['18:00'], $salidas, 'la salida anulada no puede aparecer en la jornada');
     }
 
+    /**
+     * La prueba que de verdad importa: el motor de NÓMINA —que lee `time_entries` en crudo, no por
+     * Eloquent— tampoco cuenta un fichaje anulado. Si contara, una corrección produciría la jornada
+     * vieja y la nueva a la vez, que es peor que no haber corregido nada.
+     */
+    public function test_el_motor_de_nomina_lee_por_la_puerta_y_no_ve_lo_anulado(): void
+    {
+        $emp = \App\Models\Employee::where('user_id', $this->colaborador->id)->first();
+        $emp->update(['salario_diario' => 400, 'restDay' => 'Domingo', 'hire_date' => '2026-01-01']);
+        \App\Models\LftSetting::create(['tenant_id' => $this->tenant->id, 'late_tolerance_minutes' => 10]);
+
+        // Lunes trabajado. El resto de la semana, ausente.
+        $this->fichaje('09:00:00', ['date' => '2026-08-10']);
+        $this->fichaje('18:00:00', ['date' => '2026-08-10', 'type' => 'check_out']);
+
+        $conElAnulado = app(\App\Services\ClockService::class)
+            ->calculatePayrollForEmployee($emp, '2026-08-10', '2026-08-16');
+
+        // Ahora se ANULA la entrada del lunes: para el motor, ese día deja de estar trabajado.
+        \Illuminate\Support\Facades\DB::table('time_entries')
+            ->where('date', '2026-08-10')
+            ->update(['anulado_at' => now()]);
+
+        $sinEl = app(\App\Services\ClockService::class)
+            ->calculatePayrollForEmployee($emp, '2026-08-10', '2026-08-16');
+
+        $this->assertLessThan(
+            (int) $sinEl['incidents']['physical_absences'],
+            (int) $conElAnulado['incidents']['physical_absences'],
+            'anular los fichajes del lunes tiene que sumar una falta: si no, el motor los sigue viendo'
+        );
+    }
+
     // ------------------------------------------------------- la capacidad aislada
 
     public function test_corregir_fichajes_es_una_capacidad_propia_y_no_viene_con_supervisor(): void

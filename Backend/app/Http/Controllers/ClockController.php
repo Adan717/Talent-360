@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -52,7 +53,7 @@ class ClockController extends Controller
         $hoy = \Carbon\Carbon::now($tz)->format('Y-m-d');
         $desde = \Carbon\Carbon::now($tz)->subDays(2)->format('Y-m-d');
 
-        $retardo = DB::table('time_entries')
+        $retardo = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->where('user_id', $userId)
             ->where('type', 'check_in')
@@ -246,7 +247,7 @@ class ClockController extends Controller
         };
 
         $timeEntries = $applySimFilter(
-            DB::table('time_entries')
+            FichajesVigentes::query()
                 ->where('tenant_id', $tenantId)
                 ->whereDate('date', '>=', $oneWeekAgo)
         )->get();
@@ -437,7 +438,7 @@ class ClockController extends Controller
         }
 
         // Calculate activeEncargadoId based on yesterday's check_out details
-        $lastDelegation = DB::table('time_entries')
+        $lastDelegation = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->where('type', 'check_out')
             ->whereNotNull('details')

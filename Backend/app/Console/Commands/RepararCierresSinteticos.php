@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -32,7 +33,7 @@ class RepararCierresSinteticos extends Command
         $aplicar = (bool) $this->option('aplicar');
         $desde = $this->option('desde');
 
-        $q = DB::table('time_entries')
+        $q = FichajesVigentes::query()
             ->where('type', 'check_out')
             ->where('details', 'like', '%auto_closed%');
         if ($desde) {
@@ -43,7 +44,7 @@ class RepararCierresSinteticos extends Command
         $invalidos = [];
         foreach ($sinteticos as $fila) {
             // La entrada real de esa persona ese día (la más tardía, por si reabrió turno).
-            $entrada = DB::table('time_entries')
+            $entrada = FichajesVigentes::query()
                 ->where('tenant_id', $fila->tenant_id)
                 ->where('user_id', $fila->user_id)
                 ->where('date', $fila->date)
@@ -68,7 +69,7 @@ class RepararCierresSinteticos extends Command
                 ->value('shiftEnd');
             $finTurno = $finTurno ? (strlen((string) $finTurno) === 5 ? $finTurno . ':00' : substr((string) $finTurno, 0, 8)) : null;
 
-            $ultimoReal = DB::table('time_entries')
+            $ultimoReal = FichajesVigentes::query()
                 ->where('tenant_id', $fila->tenant_id)
                 ->where('user_id', $fila->user_id)
                 ->where('date', $fila->date)

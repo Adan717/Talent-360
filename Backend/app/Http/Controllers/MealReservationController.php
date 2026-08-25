@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -387,7 +388,7 @@ class MealReservationController extends Controller
 
             // Elegibles: quienes ya ficharon check_in hoy (no se puede apartar turno de
             // comida si no se está en la sucursal). El orden 'arrival' usa esa misma hora.
-            $employeeIds = DB::table('time_entries')
+            $employeeIds = FichajesVigentes::query()
                 ->where('tenant_id', $tenantId)
                 ->where('date', $date)
                 ->where('type', 'check_in')

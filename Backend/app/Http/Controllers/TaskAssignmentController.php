@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use App\Models\Task;
 use App\Models\TaskAssignment;
@@ -207,7 +208,7 @@ class TaskAssignmentController extends Controller
         if (!$isPrivileged && in_array($validated['status'], ['in_progress', 'paused', 'completed', 'awaiting_validation'], true)) {
             $tz = \App\Helpers\TenantTimezone::for((int) $tenantId);
             $hoy = \Carbon\Carbon::now($tz)->toDateString();
-            $ultimo = \DB::table('time_entries')
+            $ultimo = FichajesVigentes::query()
                 ->where('tenant_id', $tenantId)->where('user_id', $user->id)
                 ->where('date', $hoy)->whereIn('type', ['check_in', 'check_out'])
                 ->whereNull('simulation_session_id')

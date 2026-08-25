@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use App\Models\Tenant;
 use App\Models\User;
@@ -1078,7 +1079,7 @@ class PlatformAdminController extends Controller
         $hrScore = min(10, max(5, $hrScore));
 
         // 2. Reloj Checador (reloj)
-        $recentPunches = \DB::table('time_entries')->where('created_at', '>=', now()->subHours(24))->count();
+        $recentPunches = FichajesVigentes::query()->where('created_at', '>=', now()->subHours(24))->count();
         $contingenciesCount = \DB::table('contingencies')->count();
         $relojScore = 8;
         if ($recentPunches > 0) {

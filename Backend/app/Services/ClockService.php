@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\FichajesVigentes;
 use App\Support\SalarioDiarioCalculator;
 use App\Models\ContingencyDeclaration;
 use App\Models\TimeEntry;
@@ -253,14 +254,14 @@ class ClockService
     /** ¿Este usuario tiene una reserva de comida ACTIVA hoy? (última reservation sin cancel posterior). */
     private function hasActiveMealReservation(int $tenantId, int $userId, string $date): bool
     {
-        $lastReservation = \DB::table('time_entries')
+        $lastReservation = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)->where('user_id', $userId)
             ->where('date', $date)->where('type', 'meal_reservation')
             ->max('id');
         if (!$lastReservation) {
             return false;
         }
-        $lastCancel = \DB::table('time_entries')
+        $lastCancel = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)->where('user_id', $userId)
             ->where('date', $date)->where('type', 'meal_cancel')
             ->max('id');
@@ -274,7 +275,7 @@ class ClockService
      */
     private function activeMealReservations(int $tenantId, string $date, int $excludeUserId, int $stepMins): array
     {
-        $rows = \DB::table('time_entries')
+        $rows = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)->where('date', $date)
             ->whereIn('type', ['meal_reservation', 'meal_cancel'])
             ->where('user_id', '!=', $excludeUserId)
@@ -943,7 +944,7 @@ class ClockService
                 // (mismo día, ancho fijo: orden lexicográfico = cronológico).
                 $lowerBound = $expectedTime->copy()->subMinutes($toleranceMinutes)->format('H:i:s');
                 $upperBound = $expectedTime->copy()->addMinutes($toleranceMinutes)->format('H:i:s');
-                $proximityRecord = \DB::table('time_entries')
+                $proximityRecord = FichajesVigentes::query()
                     ->where('user_id', $user->id)
                     ->where('date', $date)
                     ->where('type', 'waiting')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use App\Models\Employee;
 use App\Models\User;
@@ -653,7 +654,7 @@ class EmployeeController extends Controller
         // Ahora se pregunta ANTES, explícitamente. Si hay historia, se archiva y se dice.
         $historia = [
             'fichajes' => $employee->user_id
-                ? DB::table('time_entries')->where('user_id', $employee->user_id)->count()
+                ? FichajesVigentes::query()->where('user_id', $employee->user_id)->count()
                 : 0,
             'recibos de nómina' => DB::table('weekly_payrolls')->where('employee_id', $employee->id)->count(),
             'documentos del expediente' => DB::table('employee_documents')->where('employee_id', $employee->id)->count(),

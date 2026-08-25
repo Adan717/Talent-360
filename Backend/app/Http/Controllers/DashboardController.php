@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\TenantTimezone;
@@ -43,7 +44,7 @@ class DashboardController extends Controller
             // Retardos del Día (Check-ins de hoy donde is_late es verdadero)
             // whereNull('simulation_session_id'): nunca mezclar datos del Simulador Matrix
             // en las estadísticas reales del dashboard (ver sección 13 del contrato).
-            $retardosHoy = DB::table('time_entries')
+            $retardosHoy = FichajesVigentes::query()
                 ->where('tenant_id', $tenantId)
                 ->where('date', $today)
                 ->where('type', 'check_in')
@@ -52,7 +53,7 @@ class DashboardController extends Controller
                 ->count();
 
             // Cumplimiento de Asistencia (colaboradores que hicieron Check-in hoy)
-            $presentCount = DB::table('time_entries')
+            $presentCount = FichajesVigentes::query()
                 ->where('tenant_id', $tenantId)
                 ->where('date', $today)
                 ->where('type', 'check_in')
@@ -88,7 +89,7 @@ class DashboardController extends Controller
                 ->toArray();
                 
             if (!empty($activeEmployeeIds)) {
-                $todayEntries = DB::table('time_entries')
+                $todayEntries = FichajesVigentes::query()
                     ->where('tenant_id', $tenantId)
                     ->where('date', $today)
                     ->whereIn('user_id', $activeEmployeeIds)

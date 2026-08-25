@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\FichajesVigentes;
 use App\Models\Tenant;
 use App\Services\ClockService;
 use App\Support\JornadaLaboral;
@@ -95,7 +96,7 @@ class CloseOrphanShifts extends Command
     {
         // Registros de asistencia del día (se excluyen los auxiliares como reservas de
         // comida), en orden cronológico (id asc).
-        $entries = DB::table('time_entries')
+        $entries = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->where('date', $today)
             ->whereNotIn('type', ClockService::AUXILIARY_ENTRY_TYPES)

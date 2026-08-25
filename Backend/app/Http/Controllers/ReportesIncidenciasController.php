@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use App\Helpers\TenantTimezone;
 use App\Services\ClockService;
 use Carbon\Carbon;
@@ -204,7 +205,7 @@ class ReportesIncidenciasController extends Controller
 
         $nombres = $this->nombresPorUsuario($tenantId);
 
-        $marcas = DB::table('time_entries')
+        $marcas = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->whereBetween('date', [$desde, $hasta])
             ->whereNull('simulation_session_id')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use App\Helpers\TenantTimezone;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -72,7 +73,7 @@ class ReportesBasicosController extends Controller
         $fecha = $request->query('date', Carbon::now($tz)->toDateString());
         [$desde, $hasta] = $this->rangoValidado($request, $request->query('to', $fecha), $request->query('to', $fecha));
 
-        $entradas = DB::table('time_entries')
+        $entradas = FichajesVigentes::query()
             ->leftJoin('users', 'users.id', '=', 'time_entries.user_id')
             // (2026-08-22) El puesto de la fila es una FOTO tomada al fichar
             // (job_role_title_at_time). Las vías que no la estampan dejaban la columna vacía y el

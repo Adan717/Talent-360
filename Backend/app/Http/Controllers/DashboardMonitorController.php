@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use App\Helpers\TenantTimezone;
 use App\Models\User;
@@ -56,7 +57,7 @@ class DashboardMonitorController extends Controller
             // whereNull('simulation_session_id'): nunca mezclar fichajes del Simulador Matrix.
             // whereNotIn(AUXILIARY): si una reserva de comida fuera el registro de mayor id, el
             // estado "actual" caería a offline y el usuario desaparecería del monitor.
-            $timeEntries = DB::table('time_entries')
+            $timeEntries = FichajesVigentes::query()
                 ->where('tenant_id', $userTenantId)
                 ->where('date', $today)
                 ->whereNull('simulation_session_id')
@@ -239,7 +240,7 @@ class DashboardMonitorController extends Controller
             $availableTasks = Task::where('tenant_id', $userTenantId)->select('id', 'title', 'estimated_mins', 'priority')->get();
 
             // Fetch live database events
-            $timeEntriesFeed = DB::table('time_entries')
+            $timeEntriesFeed = FichajesVigentes::query()
                 ->join('users', 'users.id', '=', 'time_entries.user_id')
                 ->where('time_entries.tenant_id', $userTenantId)
                 ->whereNull('time_entries.simulation_session_id')
@@ -963,7 +964,7 @@ class DashboardMonitorController extends Controller
         $date = $request->input('date', Carbon::now(\App\Helpers\TenantTimezone::for($tenantId))->toDateString());
 
         // 1. Asistencia: presentes (con check_in hoy) vs. roster completo.
-        $checkedInUserIds = DB::table('time_entries')
+        $checkedInUserIds = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->where('date', $date)
             ->where('type', 'check_in')
@@ -1079,7 +1080,7 @@ class DashboardMonitorController extends Controller
         // Transacción + lock: dos requests concurrentes (doble clic / dos supervisores) no
         // deben insertar dos check_out. El segundo espera el lock y ve el check_out → 409.
         $closed = DB::transaction(function () use ($tenantId, $target, $today, $localNow, $stamp, $actor) {
-            $entries = DB::table('time_entries')
+            $entries = FichajesVigentes::query()
                 ->where('tenant_id', $tenantId)
                 ->where('user_id', $target->id)
                 ->where('date', $today)

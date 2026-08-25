@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use App\Helpers\TenantTimezone;
 use App\Models\LateJustification;
 use App\Services\NotificationService;
@@ -54,7 +55,7 @@ class LateJustificationController extends Controller
         // SIGUIENTE y la nómina nunca perdonaría el retardo real). Los minutos salen del mismo ponche
         // (server-side, no del cliente). Si no hay retardo en la ventana, cae a HOY (preventivo, null).
         $windowStart = Carbon::now($timezone)->subDays(2)->format('Y-m-d');
-        $lateEntry = DB::table('time_entries')
+        $lateEntry = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->where('user_id', $user->id)
             ->where('type', 'check_in')
@@ -132,7 +133,7 @@ class LateJustificationController extends Controller
         // El retardo REAL del día (recalculado del ponche), no el congelado al solicitar: si el
         // empleado solicitó ANTES de fichar (preventivo), `requested_late_minutes` sería null y el
         // admin aprobaría a ciegas. Se toma el MAX por si (teóricamente) hubiera más de un tarde.
-        $lateByDay = DB::table('time_entries')
+        $lateByDay = FichajesVigentes::query()
             ->select('user_id', 'date', DB::raw('MAX(late_minutes) as actual_late'))
             ->where('tenant_id', $tenantId)
             ->where('type', 'check_in')

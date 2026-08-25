@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FichajesVigentes;
 use App\Helpers\TenantTimezone;
 use App\Models\Employee;
 use App\Services\ClockService;
@@ -99,7 +100,7 @@ class ReportesOperativosController extends Controller
 
         $colaboradores = $this->colaboradores($tenantId)->keyBy('user_id');
 
-        $fichajes = DB::table('time_entries')
+        $fichajes = FichajesVigentes::query()
             ->where('tenant_id', $tenantId)
             ->whereBetween('date', [$desde, $hasta])
             ->whereNull('simulation_session_id')

@@ -115,9 +115,38 @@ Era la cadena literal `"Master"` comparada en el navegador. No protegía nada: e
 rol, y el módulo ya está excluido para supervisores y empleados. Quitarla no amplía el acceso, deja
 de aparentar que había una cerradura.
 
-### D6 — El Plan IA del Monitor debe poder APLICARSE (2026-08-11)
+### D6 — El Plan IA del Monitor debe poder APLICARSE (2026-08-11) — ~~PENDIENTE~~ **REVERTIDA Y CONGELADA (2026-08-24)**
 
-Hoy es sólo consejo. Requiere un endpoint de reasignación y un botón por sugerencia (~medio día).
+La propuesta era darle a la IA un endpoint de reasignacion y un boton por sugerencia. **El dueno
+decidio que NO**, tras el consejo del 2026-08-24: que una IA reasigne turnos y tareas escribiendo
+en la base es demasiado riesgo para esta fase.
+
+**El Plan IA se queda como "Proponer" (solo lectura).** Un humano lee la sugerencia y actua; el
+sistema no mueve a nadie por su cuenta.
+
+Congelado en codigo, no solo aqui: `DecisionesCongeladasV2Test` truena si aparece una ruta de
+escritura que APLIQUE el plan. Sugerirlo sigue disponible — lo congelado es aplicar, no proponer.
+
+### D8 — Matriz de permisos: sin pantalla en la V2 (2026-08-24)
+
+**No se construye UI.** El endpoint se queda como esta: `role:admin`, indelegable — otorgar
+permisos es la llave que se queda con el dueno. La matriz funciona por base de datos y con eso
+basta para esta fase. Fijado por prueba: un supervisor recibe 403 en lectura y en escritura.
+
+### D9 — Ley Silla: la bandera roja del Monitor se ABORTA (2026-08-24)
+
+El plan original incluia levantar una bandera en el Monitor cuando alguien pasara del limite sin
+descansar. **Abortada**, por dos razones independientes y basta cualquiera de las dos:
+
+1. **Nadie tiene asignado atenderla.** Una alerta que nadie mira no protege a la empresa: prueba
+   que sabia y no actuo. Es una metrica autolesiva.
+2. **Obligaba a un segundo reloj.** Los minutos de pie se calculan en el navegador; la bandera
+   exigia calcularlos tambien en el servidor — dos verdades para el mismo derecho, tres dias
+   despues de haber eliminado tres relojes duplicados de la Ley Silla.
+
+**Lo que ya existe se queda tal cual**: el limite se lee de `leySillaConfig` (120 por defecto), el
+dial avisa, el contador se reinicia con `break_end`/`meal_end`/`silla_end`, y el servidor NUNCA
+bloquea el reposo. Avisa, no vigila.
 
 ### D7 — Sí se mandan correos a los interesados en vacantes (2026-08-11)
 

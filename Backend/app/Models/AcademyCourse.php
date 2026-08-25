@@ -14,5 +14,8 @@ class AcademyCourse extends Model
 
     protected $casts = [
         'quiz_data' => 'array',
+        // Sello de "el examen lo configuro la empresa" (Fase 2). Nulo = sigue el relleno del
+        // catalogo y NO se expiden folios verificables sobre el.
+        'quiz_approved_at' => 'datetime',
     ];
 }

@@ -12,6 +12,14 @@ class AcademyCoursesSeeder extends Seeder
      */
     public function run(): void
     {
+        // Fase 2 (2026-08-24): este seeder escribe cursos CON su examen. Correrlo sobre una
+        // empresa viva le reescribe evaluaciones que su gente ya presento y de las que ya hay
+        // certificados con folio verificable en la calle.
+        \App\Support\CandadoDeSeeders::verificar('cursos de Academia', [
+            'user_course_progress' => null,
+            'course_certificates' => null,
+        ]);
+
         $courses = [
             [
                 'title' => 'Documento 06: Protocolo de Apertura de Operación',

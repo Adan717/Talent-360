@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\VacancyPublicResource;
 use Illuminate\Http\Request;
 use App\Models\Vacancy;
 use App\Models\JobRole;
@@ -87,24 +88,14 @@ class RecruitmentController extends Controller
             ->where(function ($q) {
                 $q->where('is_active', true)->orWhereNull('is_active');
             })
-            ->with('jobRole:id,name')
             ->get();
 
-        $vacancies->transform(function ($v) {
-            if (is_string($v->requirements)) {
-                $decoded = json_decode($v->requirements, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                    $v->requirements = $decoded;
-                } else {
-                    $v->requirements = array_values(array_filter(array_map('trim', explode("\n", $v->requirements))));
-                }
-            } else {
-                $v->requirements = is_array($v->requirements) ? $v->requirements : [];
-            }
-            $v->role_name = $v->jobRole ? $v->jobRole->name : 'N/A';
-            return $v;
-        });
-
+        // (Fase 3, 2026-08-24) Antes se devolvía `$vacancies` a secas, y eso serializa la FILA
+        // ENTERA: `tenant_id`, `deleted_at`, `is_hidden`, `job_role_id` y las marcas de auditoría
+        // viajaban al navegador de cualquier candidato. Nada de eso es un secreto grave, pero un
+        // payload público no carga contabilidad interna — y el día que alguien agregue una columna
+        // de notas de reclutamiento se publicaría sola. `VacancyPublicResource` es una lista
+        // BLANCA: lo que no está enumerado ahí, no sale. Una columna nueva nace privada.
         return response()->json([
             'tenant' => [
                 'name' => $tenant->name,
@@ -113,7 +104,7 @@ class RecruitmentController extends Controller
                 'public_portal_enabled' => (bool)($tenant->public_portal_enabled ?? true),
                 'custom_settings' => static::ajustesDelPortal($tenant->portal_custom_settings_json)
             ],
-            'vacancies' => $vacancies
+            'vacancies' => VacancyPublicResource::collection($vacancies)->resolve(),
         ]);
     }
 

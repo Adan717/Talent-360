@@ -53,6 +53,12 @@ class AcademiaCertificadosTest extends TestCase
             'description' => 'Curso del giro.',
             'course_type' => 'training',
             'quiz_data' => $quiz,
+            // (Fase 2, 2026-08-24) Desde el apagón de folios sólo se expide certificado
+            // verificable sobre un examen que la EMPRESA configuró. Este curso representa uno
+            // configurado, que es lo que se prueba aquí. El caso contrario —el examen de relleno
+            // del catálogo, que ya no expide folio— vive en
+            // AcademiaFoliosYCandadosTest::test_el_examen_de_relleno_no_expide_folio_verificable.
+            'quiz_approved_at' => now(),
             'is_active' => true,
             'tenant_id' => 1,
         ]);

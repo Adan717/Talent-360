@@ -43,6 +43,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Seeders permitidos en produccion
+    |--------------------------------------------------------------------------
+    |
+    | Los seeders reescriben datos de clientes vivos (App\Support\CandadoDeSeeders).
+    | En produccion estan bloqueados salvo que el administrador de la maquina lo
+    | habilite a proposito en el .env del servidor, lo corra, y lo vuelva a quitar.
+    |
+    */
+
+    'seeders_permitidos' => (bool) env('SEEDERS_PERMITIDOS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

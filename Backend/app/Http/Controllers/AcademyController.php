@@ -98,6 +98,10 @@ class AcademyController extends Controller
             }
         }
 
+        // Guardar el examen desde esta pantalla ES la aprobación de la empresa (Fase 2): quien lo
+        // escribe es su administrador y responde por él. Sin esta marca no se expiden folios.
+        $data = $this->marcarExamenPropio($data);
+
         $course = AcademyCourse::create($data);
 
         return response()->json(['status' => 'success', 'id' => $course->id]);
@@ -123,7 +127,7 @@ class AcademyController extends Controller
             }
         }
 
-        $course->update($data);
+        $course->update($this->marcarExamenPropio($data));
 
         return response()->json(['status' => 'success']);
     }
@@ -216,7 +220,15 @@ class AcademyController extends Controller
             ]
         );
 
-        if ($aprobado) {
+        // APAGÓN DE FOLIOS (Fase 2, 2026-08-24). El certificado lleva folio y se verifica EN
+        // PÚBLICO, sin sesión: es un documento que sale de la empresa y que un tercero —un
+        // inspector, un abogado— va a leer como constancia de capacitación. No se expide sobre un
+        // examen que la empresa no configuró: los del catálogo traen UNA pregunta de relleno con
+        // la respuesta siempre en la primera opción, y uno de esos cursos es "Derechos Laborales y
+        // LFT". El curso sí se da por aprobado (el avance se guarda, la inducción se cumple); lo
+        // que no se emite es el papel verificable.
+        $examenPropio = $this->examenAprobadoPorLaEmpresa($course);
+        if ($aprobado && $examenPropio) {
             $this->emitirCertificado($course, $score);
         }
 
@@ -231,6 +243,13 @@ class AcademyController extends Controller
             'correct_count' => $correctas,
             'total' => $total,
             'failed_attempts' => $intentosFallidos,
+            // Que la pantalla no prometa un certificado que no existe.
+            'certificado_emitido' => $aprobado && $examenPropio,
+            'certificado_bloqueado_motivo' => ($aprobado && !$examenPropio)
+                ? 'Este curso todavía usa el examen de ejemplo del catálogo. Se registró tu avance, '
+                    . 'pero no se expide constancia con folio verificable hasta que tu empresa '
+                    . 'configure su propia evaluación.'
+                : null,
         ]);
     }
 
@@ -299,6 +318,32 @@ class AcademyController extends Controller
      * Es idempotente: volver a aprobar el mismo curso NO emite otro ni cambia el folio que el
      * colaborador ya tiene impreso.
      */
+    /**
+     * Sella el examen como propio de la empresa cuando su administrador lo guarda con preguntas.
+     * Guardar un curso SIN examen no sella nada: no hay evaluación que aprobar.
+     */
+    private function marcarExamenPropio(array $data): array
+    {
+        if (!empty($data['quiz_data']) && is_array($data['quiz_data'])) {
+            $data['quiz_approved_at'] = now();
+            $data['quiz_approved_by'] = auth()->id();
+        }
+
+        return $data;
+    }
+
+    /**
+     * ¿El examen de este curso lo configuró la empresa, o sigue siendo el relleno del catálogo?
+     *
+     * La marca la pone el propio administrador al guardar el examen desde su pantalla; no se
+     * adivina mirando el contenido. Adivinar aquí sería el mismo error que esta ronda persigue:
+     * el sistema declararía "aprobado por la empresa" algo que la empresa nunca aprobó.
+     */
+    private function examenAprobadoPorLaEmpresa(?AcademyCourse $course): bool
+    {
+        return $course !== null && $course->quiz_approved_at !== null;
+    }
+
     private function emitirCertificado(AcademyCourse $course, int $score): CourseCertificate
     {
         $user = auth()->user();

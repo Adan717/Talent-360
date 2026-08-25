@@ -261,19 +261,21 @@ class FotografiaFinancieraNomina extends Command
         foreach ($query->get() as $employee) {
             // Mismo orden de precedencia que el motor, sin su default escondido: aquí interesa
             // saber quién NO tiene sueldo capturado, no taparlo con un número.
-            $base = $employee->base_salary ?? $employee->salary ?? null;
+            // Se pregunta al MISMO calculador que usa la nomina: si el informe tuviera su propia
+            // idea de como se resuelve un sueldo, mediria algo que no es lo que se paga.
+            $resuelto = \App\Support\SalarioDiarioCalculator::para($employee);
 
-            if ($employee->salario_diario !== null && (float) $employee->salario_diario > 0) {
-                $conDiarioDeclarado++;
-                continue;
-            }
-
-            if ($base === null || (float) $base <= 0) {
+            if ($resuelto['pendiente_sueldo']) {
                 $sinSueldo++;
                 continue;
             }
 
-            $base = (float) $base;
+            if (!$resuelto['pendiente_periodicidad']) {
+                $conDiarioDeclarado++;
+                continue;
+            }
+
+            $base = (float) $resuelto['base'];
             $diarioLegado = $base / 6.0;                       // lo que el motor usa hoy
             $diarioSemanal = SalarioDiario::desde($base, 'semanal'); // base / 7, la práctica LFT
             $brutoLegado = $diarioLegado * 7;
@@ -312,7 +314,7 @@ class FotografiaFinancieraNomina extends Command
     private function imprimirSeccionB(array $d): void
     {
         $this->line('────────────────────────────────────────────────────────────────────────────');
-        $this->line('B) LA FÓRMULA LEGADA  base_salary / 6');
+        $this->line('B) EXPEDIENTES SIN PERIODICIDAD DECLARADA (supuesto histórico /6)');
         $this->newLine();
         $this->line('   El motor reparte el sueldo capturado entre 6 días trabajados. La práctica');
         $this->line('   LFT lo reparte entre 7, porque el séptimo día es descanso PAGADO (art. 69).');
@@ -322,8 +324,8 @@ class FotografiaFinancieraNomina extends Command
         $filas = $d['por_la_formula_legada'];
 
         $this->line('   Plantilla activa:  ' . (count($filas) + $d['con_diario_declarado'] + $d['sin_sueldo_capturado']) . ' colaboradores');
-        $this->line('     · con salario diario declarado (no les aplica el /6): ' . $d['con_diario_declarado']);
-        $this->line('     · por la fórmula legada /6: ' . count($filas));
+        $this->line('     · con periodicidad declarada (el diario es el real): ' . $d['con_diario_declarado']);
+        $this->line('     · SIN declarar periodicidad — se les conserva el supuesto histórico /6: ' . count($filas));
         $this->line('     · sin sueldo capturado: ' . $d['sin_sueldo_capturado']
             . ($d['sin_sueldo_capturado'] > 0 ? '   ← los que hoy viajan con el $2,400 escondido' : ''));
         $this->newLine();

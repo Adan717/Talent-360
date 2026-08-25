@@ -19,8 +19,23 @@ class CourseCertificate extends Model
 
     protected $casts = [
         'issued_at' => 'datetime',
+        'revoked_at' => 'datetime',
         'score' => 'integer',
     ];
+
+    /**
+     * Un certificado revocado sigue existiendo —fue un hecho— pero deja de valer. Todo lo que
+     * presente certificados como validos tiene que pasar por aqui.
+     */
+    public function scopeVigente($query)
+    {
+        return $query->whereNull('revoked_at');
+    }
+
+    public function estaRevocado(): bool
+    {
+        return $this->revoked_at !== null;
+    }
 
     public function course()
     {

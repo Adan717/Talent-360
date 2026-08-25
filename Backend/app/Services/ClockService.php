@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\SalarioDiarioCalculator;
 use App\Models\ContingencyDeclaration;
 use App\Models\TimeEntry;
 use App\Models\User;
@@ -1669,30 +1670,23 @@ class ClockService
         // (capturado con periodicidad explícita y convertido por `App\Support\SalarioDiario`),
         // ésa es la verdad y se usa tal cual.
         //
-        // Si no, fórmula HISTÓRICA intacta: base_salary/6. Ese /6 asume que base_salary es
-        // semanal e INFLA el diario (convierte 6 días de trabajo en 7 pagados) — pero cambiarlo
-        // a los expedientes legados sin el informe de impacto revisado alteraría pagos ya
-        // acordados en silencio. La migración es por recaptura explícita, no por fórmula.
-        // $baseSalary se define SIEMPRE: antes sólo existía en la rama legada, y para un
-        // expediente con salario_diario `salary.base` salía indefinido (0 en pantalla).
-        //
         // (2026-08-24, Regla 4) SE ELIMINÓ el default escondido de $2,400. Quien no tenía sueldo
         // capturado viajaba con esa cifra dentro de `salary.base` aunque la pantalla lo marcara
-        // como "Pendiente": un número que nadie capturó, presentado como si fuera su sueldo y
-        // listo para que cualquier consumidor futuro lo tomara por bueno. Ahora sin sueldo el
-        // cálculo sale en CERO y lo DECLARA — `salary.pending` viaja en la respuesta, para que
-        // nadie tenga que deducirlo mirando el expediente por su cuenta (que era la segunda
-        // fuente de verdad que el consejo señaló).
-        $sueldoCapturado = $employee->base_salary ?? $employee->salary ?? null;
-        $tieneDiarioDeclarado = $employee->salario_diario !== null && (float) $employee->salario_diario > 0;
-        $salarioPendiente = !$tieneDiarioDeclarado && ($sueldoCapturado === null || (float) $sueldoCapturado <= 0);
+        // como "Pendiente": un número que nadie capturó, presentado como si fuera su sueldo. Ahora
+        // sin sueldo el cálculo sale en CERO y lo DECLARA (`salary.pending`).
+        //
+        // (2026-08-24, ticket de periodicidad) Y SE ELIMINÓ el `/ 6.0` que vivía aquí. El divisor
+        // ya no se decide en el motor: lo resuelve `SalarioDiarioCalculator` a partir de lo que el
+        // expediente DECLARA. Para los expedientes legados —los que no declaran periodicidad— ese
+        // calculador conserva exactamente el resultado histórico, así que este cambio no le mueve
+        // el pago a nadie; lo que hace es dejar de fingir que se sabía de qué periodo era el
+        // número, y marcarlo (`salary.periodicity_pending`) para que alguien lo recapture.
+        $sueldo = SalarioDiarioCalculator::para($employee);
 
-        $baseSalary = (float) ($sueldoCapturado ?? 0);
-        if ($tieneDiarioDeclarado) {
-            $dailySalary = (float) $employee->salario_diario;
-        } else {
-            $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
-        }
+        $baseSalary = $sueldo['base'];
+        $dailySalary = $sueldo['diario'];
+        $salarioPendiente = $sueldo['pendiente_sueldo'];
+        $periodicidadPendiente = $sueldo['pendiente_periodicidad'];
 
         // 2. Registros de asistencia (excluyendo auxiliares como reservas de comida). Reales por
         // defecto (ExcludeSimulationScope global); modo "Reportes de Prueba" con $simulationSessionId.
@@ -2140,6 +2134,11 @@ class ClockService
                 // motor quien lo declara: antes cada consumidor tenía que ir al expediente a
                 // deducirlo, y el que no lo hacía presentaba $2,400 inventados como un sueldo.
                 'pending' => $salarioPendiente,
+                // De qué periodo es el sueldo capturado, según el EXPEDIENTE. Nulo con
+                // `periodicity_pending` en true significa que nadie lo declaró y el diario salió
+                // del supuesto histórico: el pago es el de siempre, pero hay que recapturarlo.
+                'periodicity' => $sueldo['periodicidad'],
+                'periodicity_pending' => $periodicidadPendiente,
             ],
             // Desglose estructurado del Bono de Cumplimiento (R94/R95) para el widget "Mis Bonos".
             'bonus' => [

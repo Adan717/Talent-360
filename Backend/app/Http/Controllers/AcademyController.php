@@ -405,12 +405,18 @@ class AcademyController extends Controller
         foreach ($completados as $progreso) {
             $course = AcademyCourse::find($progreso->course_id);
 
-            if ($course) {
+            // (2026-08-24) Esta es una SEGUNDA puerta de emisión, y se estaba saltando el apagón
+            // de folios de la Fase 2: bastaba con abrir "Mis certificados" para que se expidiera
+            // la constancia de un curso con el examen de relleno del catálogo. El candado tiene
+            // que estar en las dos puertas o no es un candado.
+            if ($course && $this->examenAprobadoPorLaEmpresa($course)) {
                 $this->emitirCertificado($course, (int) ($progreso->score ?? 100));
             }
         }
 
+        // Los revocados no se listan: dejaron de valer. Siguen en la base porque fueron un hecho.
         $certificados = CourseCertificate::where('user_id', $user->id)
+            ->vigente()
             ->orderByDesc('issued_at')
             ->get();
 
@@ -511,6 +517,18 @@ class AcademyController extends Controller
             return response()->json([
                 'valid' => false,
                 'message' => 'No existe ningún certificado con ese folio.',
+            ], 404);
+        }
+
+        // REVOCADO (2026-08-24): se responde 404 y NO se filtra un solo dato del curso, del
+        // colaborador ni de la empresa. Quien consulta un folio revocado no tiene por que
+        // enterarse de que existio, a quien se le expidio ni de que curso hablaba: eso seguiria
+        // sirviendo de constancia informal. La razon de la revocacion vive en la base, para la
+        // empresa, no en una respuesta publica.
+        if ($certificado->estaRevocado()) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Certificado inválido o revocado para este folio.',
             ], 404);
         }
 

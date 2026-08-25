@@ -1,6 +1,27 @@
 # 🔴 TICKET CRÍTICO — La periodicidad del salario no se declara
 
-> **Estado:** ABIERTO · **Creado:** 2026-08-24 · **Origen:** Fotografía Financiera, Fase 0
+> **Estado:** ✅ **CERRADO el 2026-08-24** (`e85de4d`) · **Origen:** Fotografía Financiera, Fase 0
+
+## Cómo se cerró
+
+- **El `/ 6.0` salió del motor de nómina.** El salario diario lo resuelve
+  `App\Support\SalarioDiarioCalculator` a partir de lo que el expediente DECLARA.
+- **No se creó la columna `salary_periodicity`** que este ticket pedía: `periodicidad_captura` ya
+  existía desde 2026-08-03 y guarda ese mismo hecho. Dos columnas para lo mismo habrían sido la
+  duplicación que esta campaña lleva cerrando. El formulario de la ficha sigue aceptando el nombre
+  `salary_periodicity` y ahí se traduce.
+- **Retrocompatibilidad probada**: al expediente legado no se le movió un peso ($2,100 → $350
+  diarios, idéntico al `/6`), pero ahora viaja marcado `salary.periodicity_pending`.
+- **Verificado en pesos** con `nomina:fotografia` contra la línea base: la única nómina que cambió
+  en todo el sistema fue la de Rosa Elena, y por la Regla 4 (el `$2,400`), no por el divisor.
+
+Lo que sigue vivo del mandato original es la **recaptura**: mientras un expediente no declare su
+periodicidad, se le conserva el supuesto histórico. Eso ya no es una bomba escondida — es una
+bandera visible en la respuesta del motor.
+
+---
+
+> **Estado original:** ABIERTO · **Creado:** 2026-08-24
 > **BLOQUEADOR PARA EL LANZAMIENTO COMERCIAL PÚBLICO.** No se vende a un cliente nuevo hasta
 > que esto esté cerrado.
 

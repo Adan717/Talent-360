@@ -42,9 +42,13 @@ class FotografiaFinancieraNomina extends Command
     /** Umbral en pesos por debajo del cual una diferencia es ruido de redondeo. */
     private const CENTAVO = 0.005;
 
+    /** @var array<int,string> nombre de cada empresa, para que la tabla se lea sin adivinar */
+    private array $empresas = [];
+
     public function handle(ClockService $clock): int
     {
         $tenantFiltro = $this->option('tenant') ? (int) $this->option('tenant') : null;
+        $this->empresas = Tenant::pluck('name', 'id')->all();
 
         // Ver la nota de la clase: el motor crea la política LFT del tenant si falta. Una
         // fotografía no cambia lo fotografiado.
@@ -94,6 +98,7 @@ class FotografiaFinancieraNomina extends Command
             $fila = [
                 'payroll_id' => $registro->id,
                 'tenant_id' => (int) $registro->tenant_id,
+                'empresa' => $this->empresa((int) $registro->tenant_id),
                 'employee_id' => (int) $registro->employee_id,
                 'empleado' => $employee->name ?? '(expediente borrado)',
                 'periodo' => $this->soloFecha($registro->start_date) . ' → ' . $this->soloFecha($registro->end_date),
@@ -174,7 +179,7 @@ class FotografiaFinancieraNomina extends Command
             if ($f['recalculado'] === null) {
                 $sinRecalcular++;
                 $tabla[] = [
-                    $f['tenant_id'], $f['empleado'], $f['periodo'],
+                    $f['empresa'], $f['empleado'], $f['periodo'],
                     $this->etiquetaEstado($f), '—', '—', '—', 'no se pudo recalcular',
                 ];
                 continue;
@@ -191,7 +196,7 @@ class FotografiaFinancieraNomina extends Command
             }
 
             $tabla[] = [
-                $f['tenant_id'],
+                $f['empresa'],
                 $f['empleado'],
                 $f['periodo'],
                 $this->etiquetaEstado($f),
@@ -203,7 +208,7 @@ class FotografiaFinancieraNomina extends Command
         }
 
         $this->table(
-            ['Emp.', 'Colaborador', 'Periodo', 'Estado', 'Neto guardado', 'Neto hoy', 'Diferencia', 'Observación'],
+            ['Empresa', 'Colaborador', 'Periodo', 'Estado', 'Neto guardado', 'Neto hoy', 'Diferencia', 'Observación'],
             $tabla
         );
 
@@ -216,13 +221,15 @@ class FotografiaFinancieraNomina extends Command
         $this->newLine();
 
         if (!empty($firmadasConDiferencia)) {
-            $this->error('   ⚠  HAY NÓMINAS YA FIRMADAS CON DIFERENCIA. Esto es dinero de gente real:');
+            $this->error('   ⚠  HAY NÓMINAS YA FIRMADAS CON DIFERENCIA:');
             foreach ($firmadasConDiferencia as $f) {
                 $signo = $f['diferencia_neto'] > 0 ? 'de MENOS' : 'de MÁS';
-                $this->line('      · ' . $f['empleado'] . ' (' . $f['periodo'] . '): se le pagó '
+                $this->line('      · ' . $f['empleado'] . ' — ' . $f['empresa']
+                    . ' (' . $f['periodo'] . '): se le pagó '
                     . $signo . ' ' . $this->pesos(abs((float) $f['diferencia_neto']))
                     . $this->notaFaltasLarga($f));
             }
+            $this->line('        Antes de mover un peso: comprobar si esa empresa es real o de pruebas.');
             $this->newLine();
         } elseif ($conDiferencia === 0) {
             $this->info('   ✔ Ninguna nómina guardada cambia con el motor de hoy.');
@@ -276,10 +283,17 @@ class FotografiaFinancieraNomina extends Command
 
             $porLaLegada[] = [
                 'tenant_id' => (int) $employee->tenant_id,
+                'empresa' => $this->empresa((int) $employee->tenant_id),
                 'empleado' => $employee->name,
                 'sueldo_capturado' => round($base, 2),
                 'diario_hoy' => round($diarioLegado, 2),
                 'diario_si_fuera_semanal' => round($diarioSemanal, 2),
+                // El defecto de fondo NO es el 6 contra el 7: es que `base_salary` no declara
+                // periodicidad y el motor SUPONE que es semanal. Si ese número era mensual, el
+                // diario sale casi cinco veces más grande. Se muestran las tres lecturas para que
+                // un humano diga cuál era la de verdad — el sistema no puede saberlo.
+                'diario_si_fuera_quincenal' => SalarioDiario::desde($base, 'quincenal'),
+                'diario_si_fuera_mensual' => SalarioDiario::desde($base, 'mensual'),
                 'bruto_semana_hoy' => round($brutoLegado, 2),
                 'bruto_semana_si_fuera_semanal' => round($brutoSemanal, 2),
                 'diferencia_por_semana' => round($difSemana, 2),
@@ -324,22 +338,29 @@ class FotografiaFinancieraNomina extends Command
         $tabla = [];
         foreach ($filas as $f) {
             $tabla[] = [
-                $f['tenant_id'],
+                $f['empresa'],
                 $f['empleado'],
                 $this->pesos($f['sueldo_capturado']),
                 $this->pesos($f['diario_hoy']),
                 $this->pesos($f['diario_si_fuera_semanal']),
-                $this->pesos($f['bruto_semana_hoy']),
-                $this->pesos($f['bruto_semana_si_fuera_semanal']),
+                $this->pesos($f['diario_si_fuera_quincenal']),
+                $this->pesos($f['diario_si_fuera_mensual']),
                 $this->pesosConSigno($f['diferencia_por_semana']),
             ];
         }
 
         $this->table(
-            ['Emp.', 'Colaborador', 'Sueldo capturado', 'Diario HOY (/6)', 'Diario si /7', 'Bruto semana HOY', 'Bruto semana si /7', 'De más por semana'],
+            ['Empresa', 'Colaborador', 'Sueldo capturado', 'Diario HOY (/6)', 'si SEMANAL', 'si QUINCENAL', 'si MENSUAL', 'De más por semana'],
             $tabla
         );
 
+        $this->newLine();
+        $this->line('   Cómo se lee: el motor SUPONE hoy que el sueldo capturado es semanal. Las tres');
+        $this->line('   columnas siguientes son el salario diario que saldría si ese mismo número');
+        $this->line('   fuera semanal, quincenal o mensual. La última columna sólo compara /6 contra');
+        $this->line('   /7 — pero si alguno de esos sueldos era MENSUAL, la distorsión real no es del');
+        $this->line('   16.67%: es de casi cinco veces. Quién tiene qué periodicidad lo dice el');
+        $this->line('   contrato de cada persona, no el sistema.');
         $this->newLine();
         $this->line('   Sobrepago por la fórmula /6:  ' . $this->pesos($d['diferencia_total_por_semana']) . ' por semana');
         $this->line('                                 ' . $this->pesos($d['diferencia_total_por_anio']) . ' al año (× 52 semanas)');
@@ -352,6 +373,11 @@ class FotografiaFinancieraNomina extends Command
     }
 
     // ---------------------------------------------------------------- utilería
+
+    private function empresa(int $tenantId): string
+    {
+        return $this->empresas[$tenantId] ?? ('Empresa ' . $tenantId);
+    }
 
     private function estaFirmada(string $status): bool
     {

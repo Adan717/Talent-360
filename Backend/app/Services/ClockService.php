@@ -1675,8 +1675,20 @@ class ClockService
         // acordados en silencio. La migración es por recaptura explícita, no por fórmula.
         // $baseSalary se define SIEMPRE: antes sólo existía en la rama legada, y para un
         // expediente con salario_diario `salary.base` salía indefinido (0 en pantalla).
-        $baseSalary = $employee->base_salary ?? $employee->salary ?? 2400.00;
-        if ($employee->salario_diario !== null && (float) $employee->salario_diario > 0) {
+        //
+        // (2026-08-24, Regla 4) SE ELIMINÓ el default escondido de $2,400. Quien no tenía sueldo
+        // capturado viajaba con esa cifra dentro de `salary.base` aunque la pantalla lo marcara
+        // como "Pendiente": un número que nadie capturó, presentado como si fuera su sueldo y
+        // listo para que cualquier consumidor futuro lo tomara por bueno. Ahora sin sueldo el
+        // cálculo sale en CERO y lo DECLARA — `salary.pending` viaja en la respuesta, para que
+        // nadie tenga que deducirlo mirando el expediente por su cuenta (que era la segunda
+        // fuente de verdad que el consejo señaló).
+        $sueldoCapturado = $employee->base_salary ?? $employee->salary ?? null;
+        $tieneDiarioDeclarado = $employee->salario_diario !== null && (float) $employee->salario_diario > 0;
+        $salarioPendiente = !$tieneDiarioDeclarado && ($sueldoCapturado === null || (float) $sueldoCapturado <= 0);
+
+        $baseSalary = (float) ($sueldoCapturado ?? 0);
+        if ($tieneDiarioDeclarado) {
             $dailySalary = (float) $employee->salario_diario;
         } else {
             $dailySalary = $baseSalary / 6.0; // 6 días de trabajo devengan 1 de descanso
@@ -2123,7 +2135,11 @@ class ClockService
                 'gross' => (float)$grossPay,
                 'net' => (float)$netPay,
                 'holiday_bonus' => (float)$holidayBonusPay,
-                'compliance_bonus' => (float)$complianceBonus
+                'compliance_bonus' => (float)$complianceBonus,
+                // Sin sueldo capturado todo esto vale 0.00 y este campo lo dice. Es el propio
+                // motor quien lo declara: antes cada consumidor tenía que ir al expediente a
+                // deducirlo, y el que no lo hacía presentaba $2,400 inventados como un sueldo.
+                'pending' => $salarioPendiente,
             ],
             // Desglose estructurado del Bono de Cumplimiento (R94/R95) para el widget "Mis Bonos".
             'bonus' => [

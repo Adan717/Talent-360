@@ -124,16 +124,13 @@ class PayrollController extends Controller
                 'compliance_bonus' => round((float) $payroll['salary']['compliance_bonus'], 2),
                 'penalty' => round((float) $payroll['deductions_breakdown']['total'], 2),
                 'net' => round((float) $payroll['salary']['net'], 2),
-                // Se mira el EXPEDIENTE, no el resultado del cálculo: calculatePayrollForEmployee
-                // sustituye el salario faltante por un default de $2,400 (fórmula histórica que
-                // no se toca sin informe de impacto), así que preguntándole a `salary.base` este
-                // aviso NUNCA se encendía y la pantalla presentaba como sueldo real una cifra
-                // que nadie capturó. Aquí se pregunta si hay salario capturado de verdad.
-                'salary_pending' => (
-                    ($employee->salario_diario === null || (float) $employee->salario_diario <= 0)
-                    && ($employee->base_salary === null || (float) $employee->base_salary <= 0)
-                    && ($employee->salary === null || (float) $employee->salary <= 0)
-                ),
+                // Lo declara el MOTOR (2026-08-24, Regla 4). Antes esta pantalla volvía a deducirlo
+                // mirando el expediente por su cuenta, porque el motor sustituía el salario
+                // faltante por un default escondido de $2,400 y `salary.base` no delataba nada.
+                // Ese default ya no existe: sin sueldo capturado el cálculo sale en CERO y viene
+                // marcado. Una sola regla, en un solo lugar — la segunda fuente de verdad que
+                // señaló el consejo queda cerrada.
+                'salary_pending' => (bool) ($payroll['salary']['pending'] ?? false),
                 'rest_day_proportion' => $payroll['incidents']['rest_day_proportion'],
                 'approval_status' => $payroll['approval']['status'],
                 'cfdi_uuid' => $payroll['approval']['cfdi_uuid'],

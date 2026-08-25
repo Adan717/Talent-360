@@ -367,6 +367,25 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // §67.C — incidencias de fichaje (foto omitida por falla de cámara) para el supervisor.
         Route::get('/admin/clock/flagged-punches', [TimeEntryController::class, 'flaggedPunches']);
 
+        // Corrección de fichajes (bitácora inmutable, Capa 3 — 2026-08-25).
+        //
+        // Detrás de su PROPIA capacidad: mover la evidencia con la que la empresa se defiende en
+        // un juicio laboral no se hereda por ser supervisor. `manage_punch_corrections` no está en
+        // SUPERVISOR_DEFAULTS, así que sólo pasa el admin dueño y el puesto al que se le conceda
+        // explícitamente (`permisos:conceder`, ya que la pantalla de la matriz está congelada).
+        //
+        // El controlador sólo valida y delega: anular sin borrar, firmar el rastro y avisar al
+        // colaborador viven en CorreccionDeAsistencia, donde ninguna vía puede saltárselo.
+        Route::middleware('permission:manage_punch_corrections')->group(function () {
+            Route::post('/admin/punch-corrections', [\App\Http\Controllers\PunchCorrectionController::class, 'store']);
+            Route::post('/admin/punch-corrections/alta', [\App\Http\Controllers\PunchCorrectionController::class, 'alta']);
+        });
+
+        // La HISTORIA de un fichaje se puede consultar sin poder corregir: un supervisor que ve
+        // una asistencia rara tiene que poder saber si se corrigió y por qué, aunque no sea quien
+        // la toque. Leer la evidencia no es moverla.
+        Route::get('/admin/punch-corrections/{id}/historia', [\App\Http\Controllers\PunchCorrectionController::class, 'historia']);
+
         // §65: administración de la matriz de capacidades por puesto — INDELEGABLE,
         // solo admin (otorgar permisos es la llave que se queda con el dueño).
         Route::middleware('role:admin')->group(function () {

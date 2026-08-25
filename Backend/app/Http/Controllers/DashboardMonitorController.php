@@ -246,7 +246,12 @@ class DashboardMonitorController extends Controller
                 ->whereNull('time_entries.simulation_session_id')
                 ->orderBy('time_entries.created_at', 'desc')
                 ->limit(5)
-                ->select('time_entries.id', 'users.name', 'time_entries.type', 'time_entries.created_at')
+                ->select(
+                    'time_entries.id', 'users.name', 'time_entries.type', 'time_entries.created_at',
+                    // Capa 3 de la bitácora: el feed dice si ese fichaje nació de una corrección,
+                    // para que la etiqueta salga sin que la pantalla tenga que cruzar tablas.
+                    'time_entries.creado_por_correccion_id'
+                )
                 ->get()
                 ->map(function ($entry) {
                     $typeLabels = [
@@ -264,6 +269,8 @@ class DashboardMonitorController extends Controller
                     ];
                     return [
                         'id' => 'time_' . $entry->id,
+                        'time_entry_id' => $entry->id,
+                        'creado_por_correccion_id' => $entry->creado_por_correccion_id,
                         'user' => $entry->name,
                         'action' => $entry->type,
                         'details' => $typeLabels[$entry->type] ?? 'registró asistencia',
@@ -442,6 +449,15 @@ class DashboardMonitorController extends Controller
                     'ia_disponible' => \App\Services\GeminiAIService::disponible(),
                     // D3: el plazo de retención se DICE en la pantalla del chat.
                     'chat_retention_days' => \App\Support\RetencionChat::dias($userTenantId),
+                    // ¿Este usuario puede corregir fichajes? Lo contesta el SERVIDOR con la misma
+                    // función que usa el middleware (PermissionMiddleware::usuarioTiene), no la
+                    // pantalla por su cuenta: dos copias de una regla de permisos acaban
+                    // discrepando, y entonces el Monitor ofrece un botón que termina en 403 —o
+                    // esconde uno que sí se podía usar, que es peor porque nadie lo reporta.
+                    'puede_corregir_fichajes' => \App\Http\Middleware\PermissionMiddleware::usuarioTiene(
+                        $user,
+                        'manage_punch_corrections'
+                    ),
                 ]
             ]);
 

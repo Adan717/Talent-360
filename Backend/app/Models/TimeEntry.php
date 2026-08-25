@@ -49,6 +49,7 @@ class TimeEntry extends Model
         // Bitacora inmutable: corregir un fichaje lo ANULA, no lo borra.
         'anulado_at',
         'anulado_por_correccion_id',
+        'creado_por_correccion_id',
     ];
 
     protected $casts = [

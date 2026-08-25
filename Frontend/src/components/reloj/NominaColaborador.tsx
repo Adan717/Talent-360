@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { EtiquetaCorregido, esFichajeCorregido } from './CorreccionDeFichaje';
 import { 
   DollarSign, CheckCircle2, AlertCircle, Calendar, 
   Clock, Coffee, Fingerprint, RefreshCw, FileText,
@@ -313,6 +314,11 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           {payroll.days_details.map((day: any) => {
             const hasCheckIn = day.entries.some((e: any) => e.type === 'check_in');
             const hasCheckOut = day.entries.some((e: any) => e.type === 'check_out');
+            // TRANSPARENCIA (2026-08-25): si a este día le corrigieron un registro, la persona
+            // tiene que verlo aquí — es SU asistencia y es lo que la ley espera. El aviso privado
+            // que el servidor le manda al reloj es la otra mitad; ésta es la que queda a la vista
+            // cada vez que revisa sus horas antes de firmar.
+            const diaCorregido = day.entries.some((e: any) => esFichajeCorregido(e));
             
             return (
               <div key={day.date} className="py-3 flex flex-col gap-2">
@@ -321,6 +327,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
                     <div className="flex items-center gap-1.5">
                       <span className={`text-[12px] font-extrabold capitalize ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{day.day_name}</span>
                       <span className="text-[10px] text-slate-400 font-medium">{day.date}</span>
+                      {diaCorregido && <EtiquetaCorregido compacta />}
                     </div>
                     
                     {day.is_rest_day ? (

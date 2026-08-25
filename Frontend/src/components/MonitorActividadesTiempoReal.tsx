@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { EtiquetaCorregido, HistoriaDeFichaje, BotonCorregirFichaje, puedeCorregirFichajes } from './reloj/CorreccionDeFichaje';
 import { 
   Users, Clock, CheckSquare, Bot, Sparkles, Truck, MessageSquare, 
   Plus, Search, Filter, ShieldCheck, AlertTriangle, ChevronRight, X, EyeOff,
@@ -55,6 +56,9 @@ interface FeedEvent {
   timestamp: string;
   type?: 'attendance' | 'task' | 'vendor' | 'permission' | 'store';
   photo_url?: string;
+  // Bitácora inmutable (Capa 3): sólo los eventos de fichaje los traen.
+  time_entry_id?: number;
+  creado_por_correccion_id?: number | null;
 }
 
 interface VendorLog {
@@ -175,6 +179,18 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [mobileTab, setMobileTab] = useState<'employees' | 'feed' | 'vendors' | 'chat'>('employees');
+  // Bitácora inmutable (Capa 3): qué fichaje se está auditando en el modal de historia.
+  const [fichajeEnHistoria, setFichajeEnHistoria] = useState<number | null>(null);
+  // Misma regla que el servidor (PermissionMiddleware::usuarioTiene), escrita una sola vez en
+  // CorreccionDeFichaje: el admin dueño pasa siempre; los demás, por la capacidad de su puesto.
+  // Ocultar el botón no es la seguridad —ésa la pone el 403—: es no ofrecer lo que va a ser
+  // rechazado, que es de las cosas que más confunden a quien usa el sistema.
+  // Lo contesta el SERVIDOR (`puede_corregir_fichajes` del monitor), con la MISMA funcion que usa
+  // el middleware. No se deduce aqui: dos copias de una regla de permisos acaban discrepando, y
+  // entonces el Monitor ofrece un boton que termina en 403 —o esconde uno que si se podia usar,
+  // que es peor porque nadie lo reporta. Mientras llega la respuesta, se asume el caso obvio: el
+  // admin dueno, que pasa siempre.
+  const [puedeCorregir, setPuedeCorregir] = useState(puedeCorregirFichajes(currentUser, []));
   
   // Modals
   const [showAiModal, setShowAiModal] = useState(false);
@@ -242,6 +258,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         setVendors(res.data.data.vendors || []);
         setAvailableTasks(res.data.data.available_tasks || []);
         setFeed(res.data.data.feed || []);
+        setPuedeCorregir(!!res.data.data.puede_corregir_fichajes);
         setChatMessages(res.data.data.chat || []);
         setJobRoles(res.data.data.job_roles || []);
         // Bloque 2: sin llave de IA no se ofrece el Plan IA; y el chat DICE su retención.
@@ -963,6 +980,34 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
                             <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
                           </div>
                           <p className="text-slate-600 mt-0.5 font-medium">{item.details}</p>
+
+                          {/* Bitácora inmutable: un fichaje que nació de una corrección se
+                              anuncia, y desde aquí se puede ver su historia o corregirlo — el
+                              botón sólo si se tiene la capacidad, para no ofrecer lo que el
+                              servidor va a rechazar con 403. */}
+                          {item.time_entry_id && (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {item.creado_por_correccion_id && (
+                                <EtiquetaCorregido
+                                  compacta
+                                  onVerHistoria={() => setFichajeEnHistoria(item.time_entry_id ?? null)}
+                                />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setFichajeEnHistoria(item.time_entry_id ?? null)}
+                                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 underline border-none bg-transparent cursor-pointer px-0"
+                              >
+                                Ver historia
+                              </button>
+                              {puedeCorregir && (
+                                <BotonCorregirFichaje
+                                  fichaje={{ id: item.time_entry_id, time: item.time }}
+                                  onCorregido={fetchData}
+                                />
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1796,6 +1841,12 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </div>
           </div>
         </div>
+      )}
+
+      {/* Bitácora inmutable: la historia de un fichaje se puede LEER sin poder corregir —
+          ver la evidencia no es moverla. */}
+      {fichajeEnHistoria !== null && (
+        <HistoriaDeFichaje fichajeId={fichajeEnHistoria} onCerrar={() => setFichajeEnHistoria(null)} />
       )}
 
     </div>

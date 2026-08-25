@@ -96,7 +96,13 @@ class CorreccionDeAsistencia
                     $nuevo = collect($antes)
                         ->except(['id', 'created_at', 'updated_at', 'anulado_at', 'anulado_por_correccion_id'])
                         ->merge($datosNuevos)
-                        ->merge(['created_at' => now(), 'updated_at' => now()])
+                        ->merge([
+                            // Nace marcado: así la etiqueta "⚠️ Corregido" sale sola en toda
+                            // pantalla que ya lea el fichaje, sin cruzar tablas ni acordarse.
+                            'creado_por_correccion_id' => $correccionId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ])
                         ->all();
 
                     $nuevoId = DB::table('time_entries')->insertGetId($nuevo);
@@ -150,9 +156,11 @@ class CorreccionDeAsistencia
 
                 BitacoraDeAsistencia::declarar($autoriza->id, 'alta_manual_de_fichaje', $correccionId);
 
-                $nuevoId = DB::table('time_entries')->insertGetId(
-                    array_merge($datos, ['created_at' => now(), 'updated_at' => now()])
-                );
+                $nuevoId = DB::table('time_entries')->insertGetId(array_merge($datos, [
+                    'creado_por_correccion_id' => $correccionId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]));
 
                 DB::table('asistencia_correcciones')
                     ->where('id', $correccionId)

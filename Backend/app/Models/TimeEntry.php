@@ -11,6 +11,16 @@ class TimeEntry extends Model
 {
     use Tenantable, ExcludesSimulationData;
 
+    /**
+     * Un fichaje ANULADO no existe para lo que calcula (2026-08-25). Sigue en la base —se anula,
+     * no se borra— pero la nomina, los reportes y el Monitor ven la jornada corregida. Para
+     * reconstruir la historia completa: withoutGlobalScope(ExcludeAnuladasScope::class).
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new \App\Scopes\ExcludeAnuladasScope());
+    }
+
     protected $fillable = [
         'user_id',
         'tenant_id',
@@ -36,5 +46,12 @@ class TimeEntry extends Model
         'tardiness_minutes_at_time',
         'tolerance_mins_at_time',
         'tolerance_version',
+        // Bitacora inmutable: corregir un fichaje lo ANULA, no lo borra.
+        'anulado_at',
+        'anulado_por_correccion_id',
+    ];
+
+    protected $casts = [
+        'anulado_at' => 'datetime',
     ];
 }

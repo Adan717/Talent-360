@@ -29,7 +29,7 @@ class DelegablePermissionsTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        // Siembra el catálogo de 12 capacidades para el tenant 1 (en tests los tenants se
+        // Siembra el catálogo completo de capacidades para el tenant 1 (en tests los tenants se
         // insertan por DB, sin disparar el hook del modelo que lo haría en producción).
         app(TenantInitializationService::class)->seedPermissionCatalog(1);
     }
@@ -128,8 +128,13 @@ class DelegablePermissionsTest extends TestCase
         $response->assertJsonStructure([
             'success', 'capabilities', 'indelegable', 'supervisor_defaults', 'job_roles', 'matrix',
         ]);
-        // 12 capacidades delegables en el catálogo.
-        $this->assertCount(12, $response->json('capabilities'));
+        // El conteo sale del propio catálogo: fijarlo a mano obliga a tocar esta prueba cada vez
+        // que se agrega una capacidad, y ese ruido esconde el día en que aparece una que nadie
+        // pidió. Lo que importa aquí es que el endpoint devuelva TODAS las delegables.
+        $this->assertCount(
+            count(\App\Support\PermissionCatalog::DELEGABLE),
+            $response->json('capabilities')
+        );
     }
 
     public function test_admin_can_grant_capability_and_it_takes_effect(): void

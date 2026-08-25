@@ -30,6 +30,10 @@ class PermissionCatalog
         // Datos sensibles (separados a propósito de lo operativo)
         'view_salaries'         => 'Ver salarios y contratos del personal',
         'manage_payroll'        => 'Calcular y cerrar nómina (sin timbrar ante el SAT)',
+        // Aislada a proposito (decision del dueno, 2026-08-24): corregir un fichaje mueve la
+        // evidencia con la que la empresa se defiende en un juicio laboral. NO viene incluida en
+        // `admin` por ser admin: se otorga a quien responde por ella, y queda registrada.
+        'manage_punch_corrections' => 'Corregir fichajes de asistencia (anular y sustituir, con motivo y aviso al colaborador)',
     ];
 
     /**

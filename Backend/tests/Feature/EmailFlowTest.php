@@ -51,7 +51,7 @@ class EmailFlowTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        Mail::assertSent(EmployeeInvitation::class, function ($mail) {
+        Mail::assertQueued(EmployeeInvitation::class, function ($mail) {
             return $mail->hasTo('colab@empresa.com');
         });
     }
@@ -68,7 +68,7 @@ class EmailFlowTest extends TestCase
         $response = $this->actingAs($admin)->postJson("/api/v1/employees/{$employeeId}/resend-invitation");
 
         $response->assertStatus(200);
-        Mail::assertSent(EmployeeInvitation::class);
+        Mail::assertQueued(EmployeeInvitation::class);
         // El PIN de activación quedó regenerado en el empleado.
         $this->assertNotNull(DB::table('employees')->where('id', $employeeId)->value('pin_code'));
     }
@@ -94,7 +94,7 @@ class EmailFlowTest extends TestCase
         $response = $this->postJson('/api/v1/forgot-password', ['email' => 'existe@x.com']);
         $response->assertStatus(200);
         $response->assertJson(['success' => true]);
-        Mail::assertSent(PasswordResetMail::class);
+        Mail::assertQueued(PasswordResetMail::class);
         $this->assertDatabaseHas('password_reset_tokens', ['email' => 'existe@x.com']);
     }
 
@@ -104,7 +104,7 @@ class EmailFlowTest extends TestCase
         $response = $this->postJson('/api/v1/forgot-password', ['email' => 'noexiste@x.com']);
         $response->assertStatus(200);
         $response->assertJson(['success' => true]); // no revela que no existe
-        Mail::assertNothingSent();
+        Mail::assertNothingQueued();
     }
 
     public function test_reset_password_with_valid_token_updates_password(): void

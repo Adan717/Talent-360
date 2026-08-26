@@ -77,40 +77,14 @@ class EmployeeController extends Controller
         return $data;
     }
 
-    /**
-     * Primer correo libre a partir del que se generó del nombre (homónimos, 2026-08-08).
+    /*
+     * (2026-08-26) AQUÍ VIVÍA `correoDisponible()`, que ante un homónimo fabricaba
+     * `juanperez2@empresa.com` y, si no había hueco, `juanperez-a7f3k2@empresa.com`.
      *
-     *   juanperez@empresa.com  ->  juanperez2@empresa.com  ->  juanperez3@empresa.com
-     *
-     * Se comprueba contra `employees` de la empresa y contra `users`, que es único global.
+     * Se eliminó, no se dejó sin usar: una función que inventa buzones, viva en el archivo, es lo
+     * que el siguiente va a llamar "porque ya estaba". El correo o lo escribe un humano o no
+     * existe — y no existir está bien, porque la plantilla de piso entra por el kiosco con su PIN.
      */
-    private function correoDisponible(string $email, ?int $tenantId): string
-    {
-        [$local, $dominio] = array_pad(explode('@', $email, 2), 2, '');
-
-        if ($dominio === '') {
-            return $email;
-        }
-
-        // Tope defensivo: 99 homónimos es de sobra y evita un bucle infinito si algo falla.
-        for ($n = 2; $n <= 99; $n++) {
-            $candidato = "{$local}{$n}@{$dominio}";
-
-            $tomadoEnEmpresa = Employee::withoutGlobalScopes()
-                ->where('email', $candidato)
-                ->where('tenant_id', $tenantId)
-                ->exists();
-
-            $tomadoComoCuenta = User::withoutGlobalScopes()->where('email', $candidato)->exists();
-
-            if (!$tomadoEnEmpresa && !$tomadoComoCuenta) {
-                return $candidato;
-            }
-        }
-
-        // Sin hueco en los 99: se cae a algo único de todas formas, nunca a pisar a nadie.
-        return $local . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)) . '@' . $dominio;
-    }
 
     /**
      * Horario de la EMPRESA cuando el alta no trae uno (decisión del dueño, 2026-08-08).
@@ -212,12 +186,23 @@ class EmployeeController extends Controller
         // Ahora sólo se actualiza si quien llama lo pide EXPLÍCITAMENTE (`actualizar_existente`,
         // que RRHH manda cuando el admin confirma que es la misma persona). Si no, el homónimo
         // recibe su propio correo (juanperez2@…) y su propio expediente.
-        $existingEmployee = Employee::withoutGlobalScopes()->where('email', $email)->where('tenant_id', $tenantId)->first();
+        //
+        // (2026-08-26) Y ya NO se fabrica un correo alterno para el homónimo. Antes, si el correo
+        // chocaba, se generaba `juanperez-a7f3k2@empresa.com`: un buzón que no existe, al que el
+        // sistema mandaría después su PIN de acceso. Ahora se rechaza y se explica: quien da de
+        // alta decide si es la misma persona o si le pone otro correo (o ninguno).
+        $existingEmployee = $email === null
+            ? null
+            : Employee::withoutGlobalScopes()->where('email', $email)->where('tenant_id', $tenantId)->first();
 
         if ($existingEmployee && !$request->boolean('actualizar_existente')) {
-            $email = $this->correoDisponible($email, $tenantId);
-            $request->merge(['email' => $email]);
-            $existingEmployee = null;
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'email' => [
+                    'Ya hay un colaborador con ese correo en tu empresa. Si es la misma persona, '
+                    . 'confirma que quieres actualizar su expediente; si es otra, escribe su correo '
+                    . 'real o déjalo vacío (entrará con su PIN).',
+                ],
+            ]);
         }
 
         if ($existingEmployee) {
@@ -257,7 +242,7 @@ class EmployeeController extends Controller
                 if ($user) {
                     $user->update([
                         'name' => $data['name'],
-                        'email' => $data['email'],
+                        'email' => $data['email'] ?? null,
                         'role' => $data['role'],
                         'avatar' => $data['avatar'] ?? $user->avatar,
                     ]);
@@ -272,8 +257,12 @@ class EmployeeController extends Controller
             return response()->json($existingEmployee->load('user'), 200);
         }
 
-        // 4. Validar email único global en users si se va a crear el usuario de login
-        $existingUserGlobal = User::withoutGlobalScopes()->where('email', $email)->first();
+        // 4. Validar email único global en users si se va a crear el usuario de login.
+        // Sólo si HAY correo: `null` no choca con nada (NULL != NULL en un índice único), y así
+        // pueden convivir cien colaboradores sin correo en la misma empresa.
+        $existingUserGlobal = $email === null
+            ? null
+            : User::withoutGlobalScopes()->where('email', $email)->first();
         if ($existingUserGlobal) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'email' => ['The email has already been taken.']
@@ -293,7 +282,10 @@ class EmployeeController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string',
-            'email' => 'required|email',
+            // OPCIONAL desde 2026-08-26. Antes era obligatorio y el sistema lo INVENTABA a
+            // partir del nombre cuando el formulario no lo traía. Sin correo, la persona entra
+            // por el kiosco con su PIN — que es como entra la mayoría de una plantilla de piso.
+            'email' => 'nullable|email',
             // §49: solo roles de empresa (ver nota arriba).
             'role' => 'required|string|in:admin,supervisor,empleado',
             // El puesto se valida DENTRO de la empresa: con `exists:job_roles,id` a secas se
@@ -346,7 +338,7 @@ class EmployeeController extends Controller
                         // Crear el registro de acceso en la tabla users
             $user = User::create([
                 'name' => $data['name'],
-                'email' => $data['email'],
+                'email' => $data['email'] ?? null,
                 'password' => Hash::make($password),
                 'role' => $data['role'],
                 'job_role_id' => $data['job_role_id'] ?? null,
@@ -396,15 +388,24 @@ class EmployeeController extends Controller
 
         return response()->json([
             'success' => true,
+            // "Se está enviando", no "se envió": el correo va por la cola y sale después.
             'message' => $sent
-                ? 'Invitación reenviada.'
-                : 'Invitación registrada, pero el correo no pudo enviarse (¿falta configurar el dominio/servicio de correo?).',
+                ? 'Invitación en camino. Su PIN de activación quedó renovado; si el correo no llega, compártelo tú.'
+                : 'El PIN quedó renovado, pero el correo no pudo encolarse (¿falta configurar el servicio de correo?). Compártele el PIN.',
         ]);
     }
 
     /**
-     * Genera el PIN de activación y envía el correo de invitación. Best-effort:
-     * devuelve false (sin lanzar) si el correo no se pudo enviar.
+     * Genera el PIN de activación y ENCOLA el correo de invitación.
+     *
+     * (2026-08-26) Devuelve si se encoló, no si llegó — y eso ya no es un matiz: desde que el
+     * Mailable implementa `ShouldQueue`, `Mail::send()` deja el trabajo en la cola y regresa. Que
+     * el correo salga de verdad lo decide el worker después. Prometer "enviado" aquí sería la
+     * misma clase de mentira que esta campaña lleva corrigiendo, así que quien llama debe decir
+     * "se está enviando", no "se envió".
+     *
+     * El PIN se genera IGUAL aunque no haya correo: es lo que el administrador le comparte en
+     * persona o por WhatsApp, y es la vía normal para la plantilla de piso.
      */
     private function sendEmployeeInvitation(Employee $employee, int $tenantId): bool
     {

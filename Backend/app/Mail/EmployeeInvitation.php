@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
@@ -14,7 +15,15 @@ use Illuminate\Queue\SerializesModels;
  * remitente real de la plataforma con el nombre para mostrar del tenant ("{Empresa}
  * vía Talent360"), y el Reply-To (si existe) es el correo real del tenant.
  */
-class EmployeeInvitation extends Mailable
+/**
+ * ENCOLADO (2026-08-26). Antes se enviaba EN LÍNEA: si el servidor de correo tardaba ocho
+ * segundos, el alta del colaborador tardaba ocho segundos, y si el correo estaba caído la
+ * petición fallaba entera. Un correo no puede tumbar un alta.
+ *
+ * `SerializesModels` va puesto por si algún día se le pasa un modelo: hoy recibe cadenas y
+ * objetos `Address`, que serializan sin problema.
+ */
+class EmployeeInvitation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

@@ -587,7 +587,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         .replace(/[\u0300-\u036f]/g, "")
         .trim()
         .replace(/\s+/g, '.');
-      setEmpEmail(`${cleanName}@${subdomain}.com`);
+      // (2026-08-26) AQUI SE FABRICABA EL CORREO a partir del nombre:
+      // `juan.perez@decorarte.com`. Ese buzon no existe. El sistema le mandaria despues su
+      // PIN de acceso —su credencial— a una direccion inventada, y por SMTP nadie se
+      // enteraria: no hay rebote ni reporte. El correo lo escribe un humano o no existe, y
+      // no existir esta bien: la plantilla de piso entra por el kiosco con su PIN.
+      void cleanName; // se conserva el calculo del nombre por si otra parte lo ocupa
     }
   }, [empName, currentUser, companyName, isEmailEdited]);
 
@@ -739,7 +744,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     try {
       const res = await axiosInstance.post('/employees', {
         name: empName,
-        email: empEmail,
+        // Vacío = SIN correo (null), nunca una cadena vacía ni uno inventado.
+        email: empEmail.trim() || null,
         password: empPassword,
         role: 'empleado',
         job_role_id: selectedRoleId,
@@ -1871,9 +1877,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     htmlFor="empEmail"
                     className="absolute left-4 text-xs font-bold text-slate-500 transition-all pointer-events-none top-1.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-xs peer-focus:text-blue-600"
                   >
-                    Correo Electrónico (Login)
+                    Correo electrónico (opcional)
                   </label>
                 </div>
+                <p className="text-[11px] text-slate-500 -mt-1 leading-relaxed">
+                  Sólo si la persona tiene uno <strong>real</strong>. Sirve para enviarle su
+                  invitación y para que recupere su contraseña. Sin correo entra igual: con su
+                  PIN en el kiosco.
+                </p>
 
                 <div className="relative">
                   <input 
@@ -1963,7 +1974,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button 
                   onClick={handleCreateEmployee}
-                  disabled={loading || !empName.trim() || !empEmail.trim() || !empPassword.trim() || !isEmpPhoneValid()}
+                  disabled={loading || !empName.trim() || !empPassword.trim() || !isEmpPhoneValid()}
                   className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <>Registrar Empleado e Ir al Paso 4 <ChevronRight size={18} /></>}

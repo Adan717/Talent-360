@@ -60,7 +60,9 @@ class HomonimosYOrganigramaTest extends TestCase
     {
         return $this->actingAs($this->admin)->postJson('/api/v1/employees', array_merge([
             'name' => 'Juan Perez',
-            // Como lo genera el formulario a partir del nombre.
+            // (2026-08-26) Antes este correo lo FABRICABA el formulario a partir del nombre. Ya
+            // no: aquí se manda a propósito para reproducir el choque de dos personas a las que
+            // el administrador les teclea el mismo correo.
             'email' => 'juanperez@homoqa.test',
             'role' => 'empleado',
             'job_role_id' => $this->cajero->id,
@@ -71,13 +73,20 @@ class HomonimosYOrganigramaTest extends TestCase
 
     // --- Homónimos ---------------------------------------------------------------------
 
+    /**
+     * LA PROTECCIÓN ORIGINAL SE CONSERVA: el segundo Juan Pérez no pisa al primero. Lo que cambió
+     * (2026-08-26) es la VÍA: antes se le fabricaba `juanperez2@homoqa.test` —un buzón que no
+     * existe, al que luego se le mandaría su PIN de acceso—; ahora se da de alta sin correo, que
+     * es lo normal en una plantilla de piso: entra con su PIN en el kiosco.
+     */
     public function test_el_segundo_juan_perez_no_pisa_al_primero(): void
     {
         $this->darDeAlta()->assertStatus(201);
         $primero = Employee::first();
 
-        // El segundo Juan Pérez: otro puesto y otro sueldo.
+        // El segundo Juan Pérez: sin correo, otro puesto y otro sueldo.
         $this->darDeAlta([
+            'email' => null,
             'job_role_id' => $this->almacen->id,
             'salary' => 5000,
         ])->assertStatus(201);
@@ -89,25 +98,32 @@ class HomonimosYOrganigramaTest extends TestCase
         $this->assertEquals(3000, $primero->base_salary, 'ni el sueldo');
     }
 
-    public function test_el_homonimo_recibe_su_propio_correo(): void
+    /**
+     * (2026-08-26) Esta prueba fijaba que al homónimo se le FABRICARA `juanperez2@homoqa.test`.
+     * Esa regla se derogó: un buzón inventado no le llega a nadie, y ahí es donde después se le
+     * mandaba su PIN. Ahora el choque se explica y quien da de alta decide.
+     */
+    public function test_repetir_el_correo_se_explica_en_vez_de_inventar_otro(): void
     {
         $this->darDeAlta()->assertStatus(201);
-        $this->darDeAlta()->assertStatus(201);
 
-        $correos = Employee::orderBy('id')->pluck('email')->all();
+        $r = $this->darDeAlta();
 
-        $this->assertSame('juanperez@homoqa.test', $correos[0]);
-        $this->assertSame('juanperez2@homoqa.test', $correos[1], 'cada persona necesita su propia dirección');
+        $r->assertStatus(422)->assertJsonValidationErrors('email');
+        $this->assertStringContainsString('correo real o déjalo vacío', $r->json('errors.email.0'));
+
+        $this->assertSame(1, Employee::count(), 'no nació un segundo expediente con un buzón falso');
     }
 
-    public function test_un_tercer_homonimo_sigue_la_cuenta(): void
+    /** Tres homónimos conviven: uno con correo y los demás sin él (NULL no choca con NULL). */
+    public function test_tres_homonimos_conviven_sin_inventarles_buzon(): void
     {
         $this->darDeAlta()->assertStatus(201);
-        $this->darDeAlta()->assertStatus(201);
-        $this->darDeAlta()->assertStatus(201);
+        $this->darDeAlta(['email' => null])->assertStatus(201);
+        $this->darDeAlta(['email' => null])->assertStatus(201);
 
         $this->assertSame(
-            ['juanperez@homoqa.test', 'juanperez2@homoqa.test', 'juanperez3@homoqa.test'],
+            ['juanperez@homoqa.test', null, null],
             Employee::orderBy('id')->pluck('email')->all()
         );
     }

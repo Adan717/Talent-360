@@ -3,10 +3,19 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeMail extends Mailable
+/**
+ * ENCOLADO (2026-08-26). Antes se enviaba EN LÍNEA: si el servidor de correo tardaba ocho
+ * segundos, el alta del colaborador tardaba ocho segundos, y si el correo estaba caído la
+ * petición fallaba entera. Un correo no puede tumbar un alta.
+ *
+ * `SerializesModels` va puesto por si algún día se le pasa un modelo: hoy recibe cadenas y
+ * objetos `Address`, que serializan sin problema.
+ */
+class WelcomeMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

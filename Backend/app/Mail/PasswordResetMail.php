@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -12,7 +13,15 @@ use Illuminate\Queue\SerializesModels;
  * §52: correo del flujo estándar "olvidé mi contraseña". Usa el remitente
  * institucional de la plataforma (no el nombre del tenant — es un correo del sistema).
  */
-class PasswordResetMail extends Mailable
+/**
+ * ENCOLADO (2026-08-26). Antes se enviaba EN LÍNEA: si el servidor de correo tardaba ocho
+ * segundos, el alta del colaborador tardaba ocho segundos, y si el correo estaba caído la
+ * petición fallaba entera. Un correo no puede tumbar un alta.
+ *
+ * `SerializesModels` va puesto por si algún día se le pasa un modelo: hoy recibe cadenas y
+ * objetos `Address`, que serializan sin problema.
+ */
+class PasswordResetMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

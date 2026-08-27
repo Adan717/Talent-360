@@ -204,6 +204,40 @@ Trabajo aparte sobre `/login/social`. Lo que había era teatro y ya se quitó.
 
 ---
 
+### D10 — Timbrado CFDI y sellos digitales: APAGADOS (2026-08-26)
+
+**El timbrado CFDI nativo queda desactivado**, y con él la carga de sellos digitales (CSD).
+
+**Por qué.** El circuito está construido a medias a propósito: el sistema **no calcula ISR, ni
+IMSS, ni subsidio al empleo** —el propio reporte de nómina lo declara— y el payload viaja con RFC
+genérico, CURP de relleno, banco y clase de riesgo fijos. Con una llave real eso **no falla:
+timbra**, y lo que sale es un documento fiscal presentado ante el SAT a nombre del cliente con
+datos falsos. Un CFDI mal emitido no se corrige: se cancela y se explica.
+
+**Y el CSD.** Es el sello con el que se firma ante el SAT a nombre de una empresa — el equivalente
+digital de su firma. Con el timbrado apagado, recibirlo sería custodiar la firma fiscal de un
+cliente **para no usarla nunca**: puro riesgo sin beneficio.
+
+**Cómo quedó apagado**
+
+- El cortafuegos vive en `FacturapiBillingProvider::createPayrollReceipt` y en `uploadCsd`, que es
+  donde se dispara la llamada al PAC: cualquier vía futura choca con él.
+- **En el código, NO en el `.env`.** El riesgo concreto era que alguien pusiera una `FACTURAPI_KEY`
+  y se encendiera solo; una bandera de entorno la apagaría la misma persona que puso la llave.
+- Los endpoints responden **503 explicado**, no 500: un apagado deliberado no debe parecer una
+  avería, o alguien va a "arreglarlo".
+- La pantalla lo lee del servidor y sustituye el formulario del CSD por la explicación.
+- **El código se conserva íntegro** y las 7 pruebas del circuito **no se borraron**: se saltan
+  atadas al interruptor, así que vuelven solas el día que se rescate.
+
+**Estado del servidor al apagarlo (2026-08-26):** las 4 empresas sin sello, y cero archivos `.cer`,
+`.key`, `.pfx` o `.p12` en el servidor, dentro y fuera del contenedor. No hubo nada que purgar.
+
+**Para rescatarlo** hay que cerrar antes: el cálculo de retenciones (ISR/IMSS/subsidio), los datos
+inventados del payload, y la decisión legal de custodiar sellos ajenos con su cláusula de contrato.
+
+---
+
 ## ⏳ Esperando algo del dueño
 
 - **Timbrado de nómina**: la `FACTURAPI_KEY` y arreglar la salida TLS del servidor hacia Facturapi.

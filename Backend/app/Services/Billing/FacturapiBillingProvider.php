@@ -177,6 +177,15 @@ class FacturapiBillingProvider implements BillingProviderInterface
      */
     public function uploadCsd(string $orgId): bool
     {
+        // El sello fiscal de una empresa no sale de aquí mientras el timbrado esté apagado.
+        // Este método lo dispara `getOrCreateOrganization`, así que sin este candado bastaría
+        // con cualquier operación de facturación para mandarlo al PAC.
+        if (self::TIMBRADO_DESACTIVADO) {
+            Log::info('CSD no enviado al PAC: el timbrado CFDI está desactivado por decisión estratégica.');
+
+            return false;
+        }
+
         if (!$this->tenant || !$this->tenant->csd_certificate || !$this->tenant->csd_private_key) {
             Log::info("Skipping CSD upload: No certificates stored for Tenant ID: {$this->tenant->id}");
             return false;

@@ -456,7 +456,28 @@ export const FacturacionManager = () => {
               </form>
             </div>
 
-            {/* Carga de CSD (Sellos Digitales) */}
+            {/* Carga de CSD (Sellos Digitales).
+                (2026-08-26) Con el timbrado apagado, este formulario invitaba al cliente a
+                entregar su SELLO FISCAL —el equivalente digital de su firma ante el SAT— para no
+                usarlo nunca. Se sustituye por la explicación: pedir un archivo que no se va a
+                utilizar es pedirle a alguien que asuma un riesgo a cambio de nada. */}
+            {timbradoDesactivado ? (
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-3">
+                <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
+                  <Key size={18} className="text-slate-400" />
+                  <h3 className="text-base font-black text-slate-800">Certificados SAT (CSD)</h3>
+                </div>
+                <p className="text-[12px] text-slate-600 leading-relaxed">
+                  <strong>No subas aquí tus sellos digitales.</strong> El timbrado CFDI está
+                  desactivado, así que este sistema no tiene por qué custodiar el sello fiscal de
+                  tu empresa — es el equivalente digital de tu firma ante el SAT.
+                </p>
+                <p className="text-[12px] text-slate-500 leading-relaxed">
+                  Mientras tanto, exporta tu pre-nómina en Excel o PDF y entrégasela a tu contador
+                  para que él la timbre desde su propio sistema.
+                </p>
+              </div>
+            ) : (
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6 flex flex-col justify-between">
               <div className="space-y-5">
                 <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
@@ -539,6 +560,7 @@ export const FacturacionManager = () => {
                 </p>
               </div>
             </div>
+            )}
           </div>
         )}
 

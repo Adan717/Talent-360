@@ -58,6 +58,29 @@ class BillingController extends Controller
      */
     public function uploadCsd(Request $request)
     {
+        // INTERRUPTOR DEL SELLO FISCAL (2026-08-26, decisión del dueño).
+        //
+        // El CSD es el sello digital con el que se firma a nombre de una empresa ante el SAT: el
+        // equivalente digital de su firma. Recibirlo convierte a este sistema en su CUSTODIO, con
+        // todo lo que eso implica —consentimiento por escrito, resguardo, revocación—.
+        //
+        // Con el timbrado apagado, aceptarlo sería quedarse con el sello fiscal de un cliente PARA
+        // NO USARLO NUNCA: puro riesgo sin beneficio. Se cierra la puerta antes de que alguien
+        // suba uno de buena fe.
+        //
+        // Se comprueba ANTES de validar: un `.cer` y un `.key` en el cuerpo de la petición no
+        // deben ni llegar a tocarse.
+        if (\App\Services\Billing\FacturapiBillingProvider::TIMBRADO_DESACTIVADO) {
+            return response()->json([
+                'success' => false,
+                'desactivado' => true,
+                'error' => 'La carga de sellos digitales (CSD) está desactivada: el timbrado CFDI nativo '
+                    . 'no está en uso, y este sistema no debe custodiar el sello fiscal de una empresa '
+                    . 'para no utilizarlo. No envíes tus archivos .cer ni .key.',
+                'message' => 'La carga de sellos digitales (CSD) está desactivada junto con el timbrado CFDI.',
+            ], 503);
+        }
+
         $tenantId = auth()->user()->tenant_id ?? 1;
         $tenant = Tenant::find($tenantId);
 

@@ -263,6 +263,15 @@ class CicloQuincenalTest extends TestCase
 
     public function test_cfdi_quincenal_manda_04_y_los_dias_reales(): void
     {
+        // (2026-08-26) El timbrado está APAGADO por decisión del dueño (ver
+        // `FacturapiBillingProvider::TIMBRADO_DESACTIVADO`). Estas pruebas NO se borran ni se
+        // reescriben para esperar el 503: son el mapa de cómo debe comportarse el circuito y
+        // hacen falta el día que se rescate. Atadas al interruptor, vuelven solas en cuanto
+        // alguien lo apague — que es justo cuando más se necesitan.
+        if (\App\Services\Billing\FacturapiBillingProvider::TIMBRADO_DESACTIVADO) {
+            $this->markTestSkipped('Timbrado CFDI desactivado por decisión estratégica (2026-08-26).');
+        }
+
         Carbon::setTestNow(Carbon::parse('2026-08-07 12:00:00'));
         $this->periodicidad('quincenal');
         Http::fake(['api.facturapi.com/*' => Http::response(['id' => 'rec_q1', 'uuid' => 'QQQ-UUID-04'], 200)]);

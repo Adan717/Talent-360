@@ -15,6 +15,30 @@ class FacturapiBillingProvider implements BillingProviderInterface
     public const LLAVE_DE_RELLENO = 'sk_test_default_facturapi_key_talent360';
 
     /**
+     * INTERRUPTOR DE APAGADO DEL TIMBRADO DE NÓMINA (2026-08-26, decisión del dueño).
+     *
+     * El circuito de timbrado está construido a medias A PROPÓSITO y el sistema no calcula
+     * retenciones: no hay ISR, ni IMSS, ni subsidio al empleo —el propio reporte de nómina lo
+     * declara— y el payload viaja con RFC genérico, CURP de relleno, banco y clase de riesgo
+     * fijos. Con una llave real eso NO falla: **timbra**, y lo que sale es un documento fiscal
+     * presentado ante el SAT a nombre del cliente con datos falsos. Un CFDI mal emitido no se
+     * corrige: se cancela y se explica.
+     *
+     * POR QUÉ ESTÁ EN EL CÓDIGO Y NO EN EL `.env`: el riesgo concreto es que alguien ponga una
+     * `FACTURAPI_KEY` y el timbrado se encienda solo. Una bandera de entorno la apagaría la misma
+     * persona que puso la llave, sin saber lo que enciende. Esto exige tocar el código a
+     * propósito, que es exactamente la barrera que se quiere.
+     *
+     * PARA RESCATARLO EN EL FUTURO: se quita esta constante y las dos comprobaciones que la usan,
+     * y antes se cierra lo que falta — ver `docs/DECISIONES_PRODUCTO.md` y la conversación del
+     * 2026-08-26. El código de abajo se conserva íntegro justamente para poder retomarlo.
+     */
+    public const TIMBRADO_DESACTIVADO = true;
+
+    public const MOTIVO_DESACTIVADO = 'El timbrado CFDI nativo está desactivado por decisión estratégica. '
+        . 'Utilice la exportación de pre-nómina en su lugar.';
+
+    /**
      * La llave del PAC, leída CUANDO se usa.
      *
      * Antes se guardaba en el constructor, y este servicio es un `singleton`: la llave quedaba
@@ -239,6 +263,12 @@ class FacturapiBillingProvider implements BillingProviderInterface
      */
     public function createPayrollReceipt(array $data): array
     {
+        // CORTAFUEGOS. Va aquí, en el punto donde se dispara la llamada al PAC, y no sólo en el
+        // controlador: cualquier vía futura —un comando, un job, otra pantalla— choca contra esto.
+        if (self::TIMBRADO_DESACTIVADO) {
+            throw new \RuntimeException(self::MOTIVO_DESACTIVADO);
+        }
+
         Log::info("Facturapi: Creating payroll receipt. Context Tenant: " . ($this->tenant ? $this->tenant->name : 'Platform/Self'));
 
         // Force payroll type and attributes

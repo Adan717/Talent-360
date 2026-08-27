@@ -169,7 +169,17 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', true),
+    // (2026-08-26) El default deriva del esquema REAL de APP_URL en vez de ser `true` fijo.
+    //
+    // Una cookie marcada como `secure` NO viaja por HTTP: con `true` fijo sobre una instancia sin
+    // certificado —como la de pruebas— la sesión por cookie simplemente no funciona, y el sistema
+    // acaba dependiendo del token en el navegador sin que nadie lo haya decidido. Y `false` fijo
+    // sería peor el día que haya certificado: la cookie de sesión viajando en claro.
+    //
+    // Derivarlo de APP_URL hace que se corrija solo: en cuanto el sitio pase a https, la cookie
+    // se vuelve segura sin que nadie tenga que acordarse. `SESSION_SECURE_COOKIE` en el .env
+    // sigue mandando si alguien necesita forzarlo (p. ej. detrás de un proxy que termina TLS).
+    'secure' => env('SESSION_SECURE_COOKIE', str_starts_with((string) env('APP_URL', ''), 'https://')),
 
     /*
     |--------------------------------------------------------------------------

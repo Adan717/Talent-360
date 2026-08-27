@@ -29,6 +29,27 @@ export const FacturacionManager = () => {
   // llave real de weekly_payrolls — antes se iteraban usuarios y los ids no correspondían.
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
   const [timbrando, setTimbrando] = useState(false);
+  // INTERRUPTOR DE APAGADO (2026-08-26). Lo contesta el SERVIDOR (`/billing/estado-timbrado`),
+  // no se deduce aquí: si la pantalla y el backend discreparan, se ofrecería un botón que
+  // responde 503. Se asume apagado hasta que el servidor diga lo contrario — ante la duda, no
+  // ofrecer una acción fiscal.
+  const [timbradoDesactivado, setTimbradoDesactivado] = useState(true);
+  const [motivoDesactivado, setMotivoDesactivado] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      try {
+        const res = await axiosInstance.get('/billing/estado-timbrado');
+        if (!vivo) return;
+        setTimbradoDesactivado(!!res.data?.timbrado_desactivado);
+        setMotivoDesactivado(res.data?.motivo_desactivado ?? null);
+      } catch {
+        // Sin respuesta, se queda apagado: es la dirección segura.
+      }
+    })();
+    return () => { vivo = false; };
+  }, []);
   const [progress, setProgress] = useState(0);
   const [payrollStatus, setPayrollStatus] = useState<Record<number, { status: 'pending' | 'success' | 'failed', uuid?: string, error?: string, pdfUrl?: string }>>({});
 
@@ -537,8 +558,18 @@ export const FacturacionManager = () => {
                 </span>
               </div>
 
+              {/* Un botón apagado sin explicación manda a alguien a "arreglarlo". Se dice por qué. */}
+              {timbradoDesactivado && (
+                <div className="w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800 leading-relaxed">
+                  <strong>Timbrado desactivado.</strong>{' '}
+                  {motivoDesactivado ?? 'El timbrado CFDI nativo está desactivado por decisión estratégica.'}{' '}
+                  El cálculo, la firma y la exportación de la nómina funcionan con normalidad.
+                </div>
+              )}
+
               <button
-                disabled={selectedEmployees.length === 0 || timbrando}
+                disabled={timbradoDesactivado || selectedEmployees.length === 0 || timbrando}
+                title={timbradoDesactivado ? (motivoDesactivado ?? '') : undefined}
                 onClick={handleTimbrarMasivo}
                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md hover:scale-102 transition-all cursor-pointer border-none flex items-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"
               >

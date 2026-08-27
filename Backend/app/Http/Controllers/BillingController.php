@@ -115,8 +115,17 @@ class BillingController extends Controller
      */
     public function estadoDelTimbrado()
     {
+        // La pantalla lee ESTO para saber si ofrecer el botón. El interruptor manda sobre la
+        // llave: aunque el .env tuviera una FACTURAPI_KEY válida, mientras esté desactivado no se
+        // timbra — y la pantalla tiene que decirlo, no ofrecer un botón que responde 503.
+        $desactivado = \App\Services\Billing\FacturapiBillingProvider::TIMBRADO_DESACTIVADO;
+
         return response()->json($this->billingProvider->estadoDelTimbrado() + [
             'timbrado_automatico' => false,
+            'timbrado_desactivado' => $desactivado,
+            'motivo_desactivado' => $desactivado
+                ? \App\Services\Billing\FacturapiBillingProvider::MOTIVO_DESACTIVADO
+                : null,
             'donde_se_cambia' => 'FACTURAPI_KEY en el .env del servidor',
         ]);
     }
@@ -154,6 +163,20 @@ class BillingController extends Controller
      */
     public function timbrarNomina(Request $request)
     {
+        // INTERRUPTOR DE APAGADO (2026-08-26). Se comprueba ANTES de tocar nada —ni validar, ni
+        // leer la nómina, ni armar el payload— para que no quede trabajo a medias. El proveedor
+        // tiene su propio cortafuegos por si alguien llega por otra vía; éste existe para que la
+        // pantalla reciba una explicación y no un 500: un apagado deliberado no debe parecer una
+        // avería, o alguien va a "arreglarlo".
+        if (\App\Services\Billing\FacturapiBillingProvider::TIMBRADO_DESACTIVADO) {
+            return response()->json([
+                'success' => false,
+                'desactivado' => true,
+                'error' => \App\Services\Billing\FacturapiBillingProvider::MOTIVO_DESACTIVADO,
+                'message' => \App\Services\Billing\FacturapiBillingProvider::MOTIVO_DESACTIVADO,
+            ], 503);
+        }
+
         $tenantId = auth()->user()->tenant_id ?? 1;
         $tenant = Tenant::find($tenantId);
 

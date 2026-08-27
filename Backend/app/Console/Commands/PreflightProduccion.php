@@ -91,11 +91,23 @@ class PreflightProduccion extends Command
             $this->ok('ALLOW_QA_RESET desactivado');
         }
 
-        if (!env('SESSION_SECURE_COOKIE', false)) {
-            $this->avisos[] = 'SESSION_SECURE_COOKIE = false. Si el sitio va por HTTPS, ponlo en true '
-                . 'para que la cookie de sesión no viaje por HTTP.';
+        // (2026-08-26) Antes esto leía la variable de entorno con default `false`, mientras la
+        // aplicación usaba `config('session.secure')` con default `true`: el preflight reportaba
+        // un valor que NO era el que el sistema usaba. Ahora se pregunta lo mismo que la app.
+        $cookieSegura = (bool) config('session.secure');
+        $porHttps = str_starts_with((string) config('app.url'), 'https://');
+
+        if ($cookieSegura && !$porHttps) {
+            $this->avisos[] = 'La cookie de sesión está marcada como SEGURA pero APP_URL es http://. '
+                . 'Una cookie segura NO viaja por HTTP: la sesión por cookie no va a funcionar. '
+                . 'Pon un certificado (y APP_URL en https) o SESSION_SECURE_COOKIE=false mientras tanto.';
+        } elseif (!$cookieSegura && $porHttps) {
+            $this->avisos[] = 'El sitio va por HTTPS pero la cookie de sesión NO está marcada como '
+                . 'segura: viajaría en claro. Pon SESSION_SECURE_COOKIE=true.';
+        } elseif ($cookieSegura) {
+            $this->ok('Cookie de sesión segura y el sitio va por HTTPS');
         } else {
-            $this->ok('SESSION_SECURE_COOKIE activo');
+            $this->ok('Cookie de sesión sin marca segura, acorde con un sitio por HTTP (pendiente: certificado)');
         }
     }
 

@@ -37,10 +37,12 @@ class ComplianceBonusTest extends TestCase
     private function make(array $lftBonus = [], string $tz = 'UTC', bool $createLft = true): array
     {
         $tenant = Tenant::create(['name' => 'B', 'subdomain' => 'b' . uniqid(), 'plan' => 'enterprise', 'is_active' => true]);
-        DB::table('system_settings')->insert([
-            'tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode($tz),
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        // updateOrInsert: desde 2026-08-27 toda empresa NACE con su zona horaria escrita
+        // (punto 1 de la revisión externa), así que un insert plano choca con el índice único.
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode($tz), 'created_at' => now(), 'updated_at' => now()]
+            );
         $user = User::create([
             'tenant_id' => $tenant->id, 'name' => 'Colab', 'email' => 'b' . uniqid() . '@t.local',
             'password' => bcrypt('x'), 'role' => 'empleado',

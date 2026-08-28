@@ -31,11 +31,17 @@ class ZonaHorariaYCookieSeguraTest extends TestCase
             'plan' => 'enterprise', 'is_active' => true,
         ]);
 
-        if ($zona !== null) {
-            DB::table('system_settings')->insert([
-                'tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode($zona),
-                'created_at' => now(), 'updated_at' => now(),
-            ]);
+        // (2026-08-27, punto 1 de la revisión externa) Toda empresa NACE ya con su zona escrita,
+        // así que "sin zona" dejó de existir de forma natural. Para probar el barrido sobre
+        // empresas LEGADAS (las creadas antes del cambio), se borra la fila que la inicialización
+        // acaba de escribir — eso ES una empresa legada.
+        if ($zona === null) {
+            DB::table('system_settings')->where('tenant_id', $tenant->id)->where('key', 'timezone')->delete();
+        } else {
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode($zona), 'created_at' => now(), 'updated_at' => now()]
+            );
         }
 
         return $tenant;
@@ -45,7 +51,15 @@ class ZonaHorariaYCookieSeguraTest extends TestCase
     {
         $v = DB::table('system_settings')->where('tenant_id', $t->id)->where('key', 'timezone')->value('value');
 
-        return $v === null ? null : json_decode($v, true);
+        if ($v === null) {
+            return null;
+        }
+
+        // Mismo criterio tolerante que TenantTimezone: el valor puede venir json-encoded (así lo
+        // escribe este comando) o en crudo (así lo escribe la inicialización de la empresa).
+        $decodificado = json_decode($v, true);
+
+        return is_string($decodificado) && $decodificado !== '' ? $decodificado : trim($v, '"');
     }
 
     // ------------------------------------------------------------- zona horaria
@@ -108,6 +122,33 @@ class ZonaHorariaYCookieSeguraTest extends TestCase
         $tijuana = $this->empresa('De Tijuana', 'America/Tijuana');
 
         $this->assertSame('America/Tijuana', \App\Helpers\TenantTimezone::for($tijuana->id));
+    }
+
+    /** LA CORRECCIÓN DEL PUNTO 1: una empresa nueva nace con su zona ya declarada. */
+    public function test_una_empresa_nueva_nace_con_su_zona_declarada(): void
+    {
+        $nueva = Tenant::create([
+            'name' => 'Nace Con Zona', 'subdomain' => 'naceconzona',
+            'plan' => 'enterprise', 'is_active' => true,
+        ]);
+
+        $this->assertSame(
+            'America/Mexico_City',
+            $this->zonaDe($nueva),
+            'sin zona escrita, un cliente de Culiacán registraría cada fichaje con una hora de error y la bitácora lo preservaría'
+        );
+    }
+
+    /** Y con --tenant explícito, la zona de un cliente de otro huso SÍ se corrige. */
+    public function test_con_tenant_explicito_si_se_sobrescribe_la_zona(): void
+    {
+        $culiacan = $this->empresa('De Culiacan'); // nació con Mexico_City; es de Mazatlán
+
+        $this->artisan(
+            'tenants:fijar-zona-horaria --zona=America/Mazatlan --tenant=' . $culiacan->id . ' --aplicar'
+        )->assertExitCode(0);
+
+        $this->assertSame('America/Mazatlan', $this->zonaDe($culiacan));
     }
 
     // ------------------------------------------------------------- cookie segura

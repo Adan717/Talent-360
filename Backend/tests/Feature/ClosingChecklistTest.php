@@ -43,10 +43,12 @@ class ClosingChecklistTest extends TestCase
             'tenant_id' => $tenant->id, 'user_id' => $user->id, 'name' => 'Colaborador',
             'base_salary' => 3000.00, 'restDay' => 'Domingo', 'mealMinutes' => 60, 'is_active_employee' => true,
         ]);
-        DB::table('system_settings')->insert([
-            'tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode('UTC'),
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        // updateOrInsert: desde 2026-08-27 toda empresa NACE con su zona horaria escrita
+        // (punto 1 de la revisión externa), así que un insert plano choca con el índice único.
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode('UTC'), 'created_at' => now(), 'updated_at' => now()]
+            );
         LftSetting::create(['tenant_id' => $tenant->id, 'require_closing_checklist' => $require]);
         // ENMIENDA merge F3: la secuencia §15 reconciliada exige turno ABIERTO para el check_out;
         // se abre con un check_in directo en BD (no cambia lo que estos tests afirman: el gate del

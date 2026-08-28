@@ -475,6 +475,55 @@ class ClockService
             }
         }
 
+        // CANDADO DE LA HORA RECLAMADA (2026-08-27, punto 2 de la revisión externa).
+        //
+        // En un fichaje REAL con protocolo offline, la hora la declara EL CLIENTE (el flag
+        // `offline_sync` + `time`, o el `occurredAt` del batch), y eso es correcto: el ponche
+        // ocurrió en su momento real mientras no había red, y la LFT exige conservarlo (R84).
+        // Pero el flag lo pone el cliente, así que cualquiera puede mandar "offline_sync: true"
+        // con la hora que le convenga y quitarse un retardo. No se puede distinguir el fraude
+        // del corte de red legítimo mirando sólo la hora — por eso NO se rechaza (rechazar
+        // rompería la sincronización legítima y borraría días trabajados), pero tampoco pasa
+        // en silencio:
+        //
+        //  a) una hora reclamada EN EL FUTURO del servidor es imposible: se usa la del servidor
+        //     y queda anotado lo que el cliente pretendía;
+        //  b) toda hora reclamada guarda su DERIVA (cuándo dice que ocurrió vs cuándo la recibió
+        //     el servidor) dentro de `details` — `created_at` ya era la evidencia, esto la deja
+        //     legible;
+        //  c) con deriva mayor a 10 minutos, el fichaje se marca `flagged_for_review`: aparece
+        //     en la bandeja de fichajes por revisar del supervisor, que ya existe (§67.C). Un
+        //     corte de red real es raro y el supervisor lo despeja en bloque; el que se quita
+        //     retardos "offline" todos los días se vuelve un patrón visible.
+        //
+        // El Simulador Matrix queda fuera: sus fichajes viven aislados por simulation_session_id.
+        $horaReclamada = !$isSimulated && !$isSimulatorPunch
+            && ($occurredAt !== null || ($isOfflineSyncFlag && $simTime));
+        $revisionPorHoraReclamada = false;
+
+        if ($horaReclamada) {
+            $servidorAhora = Carbon::now($timezone);
+            $derivaMin = (int) round(($servidorAhora->getTimestamp() - $now->getTimestamp()) / 60);
+
+            if ($derivaMin < -5) {
+                // (a) Reclamó el futuro (más allá de un desfase razonable de reloj): imposible.
+                $details['hora_futura_rechazada'] = $time;
+                $now = $servidorAhora;
+                $time = $now->format('H:i:s');
+                $date = JornadaLaboral::fechaDeNegocio($now, $turnoInicio, $turnoFin);
+                $derivaMin = 0;
+            }
+
+            // (b) La deriva, legible en el propio fichaje.
+            $details['hora_reclamada'] = $time;
+            $details['recibido_a'] = $servidorAhora->format('H:i:s');
+            $details['deriva_min'] = $derivaMin;
+
+            // (c) Deriva grande = a revisión. No es una acusación: es que una hora que puso el
+            // cliente no decide sola un retardo sin que un humano pueda verla.
+            $revisionPorHoraReclamada = $derivaMin > 10;
+        }
+
         // Baja operativa (R89, T4.1): un colaborador con `is_active_employee = false` (archivado) NO
         // puede INICIAR turno EN VIVO por NINGÚN camino.
         //  - SÓLO check_in: no se estrangula a quien fue archivado a mitad de turno (puede cerrar/comer).
@@ -1151,7 +1200,10 @@ class ClockService
         // §67.C — la omisión por falla de cámara en un fichaje que SÍ requería foto queda
         // marcada para revisión del supervisor (visible, no solo registrada en bitácora).
         $cameraFailure = in_array($photoSkippedReason, ['camera_unavailable', 'permission_denied'], true);
-        $flaggedForReview = $type === 'check_in' && $requirePhoto && $cameraFailure;
+        $flaggedForReview = ($type === 'check_in' && $requirePhoto && $cameraFailure)
+            // Candado de la hora reclamada: una deriva grande entre lo que el cliente dice y lo
+            // que el servidor recibió manda el fichaje a la bandeja de revisión del supervisor.
+            || $revisionPorHoraReclamada;
 
         // §67.E.1 — Fotografía del momento: se congela el cálculo de puntualidad tal como fue.
         // Cambiar la tolerancia a futuro NO recalcula la puntualidad pasada. tolerance_version

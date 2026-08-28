@@ -35,6 +35,16 @@ class TenantInitializationService
             'timeBankConfigs' => [
                 'maxLateMinsAllowed' => 10,
             ],
+            // ZONA HORARIA DECLARADA desde el nacimiento (2026-08-27, punto 1 de la revisión
+            // externa). México tiene TRES husos (Tijuana −8 con horario de verano fronterizo,
+            // Sonora/Sinaloa −7 sin cambio, el centro −6), y de la zona dependen los retardos y
+            // el corte del día en nómina. Antes la empresa nueva nacía SIN zona y caía al default
+            // en silencio: un cliente de Culiacán habría registrado a su gente con una hora de
+            // error en cada fichaje — y la bitácora inmutable habría preservado ese dato torcido
+            // para siempre. El valor inicial sigue siendo el del centro (donde está el piloto),
+            // pero ahora es un dato ESCRITO que soporte cambia con `tenants:fijar-zona-horaria
+            // --zona=America/Mazatlan --tenant=N` al dar de alta un cliente de otro huso.
+            'timezone' => 'America/Mexico_City',
             'leySillaConfig' => [
                 'enabled' => true,
                 'consecutiveMinutes' => 120,

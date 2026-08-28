@@ -35,12 +35,15 @@ class MealWindowTest extends TestCase
             'name' => 'Empresa Comida', 'subdomain' => 'com' . uniqid(),
             'plan' => 'enterprise', 'is_active' => true,
         ]);
-        DB::table('system_settings')->insert([
-            ['tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode('UTC'),
-                'created_at' => now(), 'updated_at' => now()],
+        // updateOrInsert para la zona: desde 2026-08-27 la empresa NACE con esa fila escrita.
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode('UTC'), 'created_at' => now(), 'updated_at' => now()]
+            );
+            DB::table('system_settings')->insert([
             ['tenant_id' => $tenant->id, 'key' => 'mealSettings', 'value' => json_encode(['minWorkMinutes' => $minWork]),
                 'created_at' => now(), 'updated_at' => now()],
-        ]);
+            ]);
         $jr = JobRole::create(['tenant_id' => $tenant->id, 'name' => 'Cajero', 'area' => 'Piso']);
         $user = User::create([
             'tenant_id' => $tenant->id, 'name' => 'Colab', 'email' => 'c' . uniqid() . '@t.local',
@@ -176,12 +179,15 @@ class MealWindowTest extends TestCase
     {
         // El panel de ajustes plausiblemente guarda "90" (string) en el JSON → el (int) debe manejarlo.
         $tenant = Tenant::create(['name' => 'S', 'subdomain' => 's' . uniqid(), 'plan' => 'enterprise', 'is_active' => true]);
-        DB::table('system_settings')->insert([
-            ['tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode('UTC'),
-                'created_at' => now(), 'updated_at' => now()],
+        // updateOrInsert para la zona: desde 2026-08-27 la empresa NACE con esa fila escrita.
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode('UTC'), 'created_at' => now(), 'updated_at' => now()]
+            );
+            DB::table('system_settings')->insert([
             ['tenant_id' => $tenant->id, 'key' => 'mealSettings', 'value' => json_encode(['minWorkMinutes' => '90']),
                 'created_at' => now(), 'updated_at' => now()],
-        ]);
+            ]);
         $jr = JobRole::create(['tenant_id' => $tenant->id, 'name' => 'C', 'area' => 'P']);
         $user = User::create(['tenant_id' => $tenant->id, 'name' => 'C', 'email' => 's' . uniqid() . '@t.local',
             'password' => bcrypt('x'), 'role' => 'empleado', 'is_active' => true]);

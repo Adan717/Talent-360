@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
  * sembrando un ajuste que nadie pidió. Esto se corre a propósito, sobre las empresas que existen,
  * y es idempotente: a quien ya la tiene no se le toca.
  */
-#[Signature('tenants:fijar-zona-horaria {--zona=America/Mexico_City : Zona a escribir en las que no la declaran} {--aplicar : Escribir (sin esto es un simulacro)}')]
+#[Signature('tenants:fijar-zona-horaria {--zona=America/Mexico_City : Zona a escribir} {--aplicar : Escribir (sin esto es un simulacro)} {--tenant= : Solo esta empresa; con --aplicar SOBRESCRIBE su zona (via de correccion para clientes de otro huso)}')]
 #[Description('Escribe la zona horaria en las empresas que no la tienen declarada. Simulacro por defecto.')]
 class FijarZonaHorariaFaltante extends Command
 {
@@ -49,7 +49,14 @@ class FijarZonaHorariaFaltante extends Command
                 ->where('key', 'timezone')
                 ->value('value');
 
-            if ($tiene !== null && trim((string) $tiene) !== '') {
+            // (2026-08-27) Con `--tenant` explícito, la zona ya declarada SÍ se sobrescribe: es
+            // la vía de corrección para un cliente de otro huso, ahora que toda empresa nace con
+            // zona escrita y "no tenerla" dejó de existir. En modo masivo (sin --tenant) se
+            // conserva la regla original: sólo se rellena a quien no declara nada — un barrido
+            // nunca pisa una zona que alguien eligió.
+            $esCorreccionDirigida = $this->option('tenant') !== null;
+
+            if (!$esCorreccionDirigida && $tiene !== null && trim((string) $tiene) !== '') {
                 continue;
             }
 
@@ -90,7 +97,12 @@ class FijarZonaHorariaFaltante extends Command
 
         $this->info(count($sinZona) . ' empresa(s) con su zona horaria ya declarada: ' . $zona . '.');
         $this->line('No cambia el comportamiento: es la misma zona que ya se usaba por defecto.');
-        $this->line('Si alguna empresa es de otra zona (Tijuana, Cancún), corrígela en su Configuración.');
+        // (2026-08-27) Corregido: este mensaje decía "corrígela en su Configuración" y esa
+        // pantalla NO tiene campo de zona horaria — mandaba a la gente a buscar algo que no
+        // existe. Hasta que exista el campo, la vía real es este mismo comando.
+        $this->line('Si alguna empresa es de otra zona (Tijuana −8, Sonora/Sinaloa −7), corrígela con:');
+        $this->line('  php artisan tenants:fijar-zona-horaria --zona=America/Mazatlan --tenant=N --aplicar');
+        $this->line('(la pantalla de Configuración aún no tiene este campo; está anotado como pendiente)');
 
         return self::SUCCESS;
     }

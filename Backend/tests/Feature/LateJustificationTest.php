@@ -44,10 +44,12 @@ class LateJustificationTest extends TestCase
             'base_salary' => 3000.00, 'shiftStart' => '09:00:00', 'restDay' => 'Domingo',
             'mealMinutes' => 60, 'is_active_employee' => true,
         ]);
-        DB::table('system_settings')->insert([
-            'tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode('UTC'),
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        // updateOrInsert: desde 2026-08-27 toda empresa NACE con su zona horaria escrita
+        // (punto 1 de la revisión externa), así que un insert plano choca con el índice único.
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode('UTC'), 'created_at' => now(), 'updated_at' => now()]
+            );
         LftSetting::create([
             'tenant_id' => $tenant->id, 'late_tolerance_minutes' => 10,
             'late_penalty_per_minute' => 2, 'lates_per_absence' => 3,

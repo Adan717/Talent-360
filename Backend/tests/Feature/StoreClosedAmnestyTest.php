@@ -50,10 +50,12 @@ class StoreClosedAmnestyTest extends TestCase
             'name' => 'Empresa Amnistía', 'subdomain' => 'amn' . uniqid(),
             'plan' => 'enterprise', 'is_active' => true,
         ]);
-        DB::table('system_settings')->insert([
-            'tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode($tz),
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        // updateOrInsert: desde 2026-08-27 toda empresa NACE con su zona horaria escrita
+        // (punto 1 de la revisión externa), así que un insert plano choca con el índice único.
+            DB::table('system_settings')->updateOrInsert(
+                ['tenant_id' => $tenant->id, 'key' => 'timezone'],
+                ['value' => json_encode($tz), 'created_at' => now(), 'updated_at' => now()]
+            );
         $jr = JobRole::create(['tenant_id' => $tenant->id, 'name' => 'Cajero', 'area' => 'Piso']);
         $user = User::create([
             'tenant_id' => $tenant->id, 'name' => 'Colab', 'email' => 'a' . uniqid() . '@t.local',

@@ -38,10 +38,14 @@ class PunchTimeNormalizeTest extends TestCase
                 'base_salary' => 3000.00, 'restDay' => 'Domingo', 'mealMinutes' => 60,
                 'is_active_employee' => true,
             ]);
-            DB::table('system_settings')->insert([
-                ['tenant_id' => $tenant->id, 'key' => 'time_mode', 'value' => json_encode('simulated'), 'created_at' => now(), 'updated_at' => now()],
-                ['tenant_id' => $tenant->id, 'key' => 'timezone', 'value' => json_encode('UTC'), 'created_at' => now(), 'updated_at' => now()],
-            ]);
+            // updateOrInsert para ambas: la empresa nace con `timezone` escrita (2026-08-27) y
+            // el lote con insert plano chocaba con el índice único.
+            foreach (['time_mode' => 'simulated', 'timezone' => 'UTC'] as $clave => $valor) {
+                DB::table('system_settings')->updateOrInsert(
+                    ['tenant_id' => $tenant->id, 'key' => $clave],
+                    ['value' => json_encode($valor), 'created_at' => now(), 'updated_at' => now()]
+                );
+            }
 
             // Hora sin segundos ("09:00"): antes reventaba con 400 en modo simulado.
             $response = $this->actingAs($user)->postJson('/api/v1/clock/punch', [

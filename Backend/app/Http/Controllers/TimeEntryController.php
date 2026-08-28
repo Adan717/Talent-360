@@ -202,11 +202,61 @@ class TimeEntryController extends Controller
             ->orderByDesc('veces')
             ->get();
 
+        // (2026-08-28 r2b, revisión externa) «Todo lo que entre por esa cola debería marcarse
+        // como diferido y entrar al contador de reincidencia.» Un ponche del batch estampa
+        // SIEMPRE details.hora_reclamada (con cualquier deriva); sólo la deriva >10min enciende
+        // flagged_for_review. Así que el conteo de flagged NO ve al que ficha offline todos los
+        // días con deriva chica — justo el que apaga el WiFi a propósito. Este agregado los suma:
+        // cuenta la PRESENCIA del marcador con LIKE (la columna `details` es TEXT, no jsonb — la
+        // sintaxis `details->clave` revienta en Postgres; LIKE es portable en sqlite y Postgres).
+        // Usa el mismo modelo, así que hereda ExcludeSimulationScope y ExcludeAnuladasScope igual
+        // que el conteo de arriba (un ponche simulado o anulado no cuenta como diferido). Y el
+        // marcador ya no es falsificable: processPunch limpia esas llaves de lo que manda el
+        // cliente, sólo el servidor las estampa.
+        $diferidos = \App\Models\TimeEntry::where('tenant_id', $tenantId)
+            ->where('date', '>=', now()->subDays(90)->toDateString())
+            ->where('details', 'like', '%"hora_reclamada"%')
+            ->selectRaw('user_id, MAX(employee_name_at_time) as nombre, COUNT(*) as veces, COUNT(DISTINCT date) as dias, MIN(date) as desde, MAX(date) as hasta')
+            ->groupBy('user_id')
+            ->orderByDesc('veces')
+            ->get();
+
+        // (2026-08-28 r2b, revisión externa) «El vector más caro no es el empleado quitándose
+        // retardos, es un supervisor anulando registros. Suma también quién corrige.» Se agrega
+        // desde asistencia_correcciones (1 fila = 1 acto; una sustitución toca 2 fichajes pero es
+        // 1 corrección, así no se cuenta doble). Se DESGLOSA por tipo porque no pesan igual: una
+        // 'anulacion' de un duplicado es higiene; una 'sustitucion' mueve la hora; un 'alta'
+        // FABRICA un fichaje que nunca ocurrió — y `a_si_mismo` (corregir la PROPIA asistencia) es
+        // la señal más grave, que un total plano diluye. Los días distintos salen de
+        // time_entries.date (columna date real), no de created_at, para no usar funciones de fecha
+        // que divergen entre drivers. DB::table y no el modelo: el fichaje del join normalmente
+        // ESTÁ anulado (es el original de una sustitución) y ExcludeAnuladasScope lo escondería.
+        $correctores = \DB::table('asistencia_correcciones as c')
+            ->leftJoin('users as autor', 'autor.id', '=', 'c.autorizado_por')
+            ->leftJoin('time_entries as te', 'te.id', '=', \DB::raw('COALESCE(c.time_entry_id, c.nueva_time_entry_id)'))
+            ->where('c.tenant_id', $tenantId)
+            ->where('c.created_at', '>=', now()->subDays(90))
+            ->groupBy('c.autorizado_por')
+            ->selectRaw("c.autorizado_por,
+                MAX(autor.name) as nombre,
+                COUNT(*) as total,
+                SUM(CASE WHEN c.tipo = 'alta' THEN 1 ELSE 0 END) as altas,
+                SUM(CASE WHEN c.tipo = 'anulacion' THEN 1 ELSE 0 END) as anulaciones,
+                SUM(CASE WHEN c.tipo = 'sustitucion' THEN 1 ELSE 0 END) as sustituciones,
+                SUM(CASE WHEN c.autorizado_por = c.empleado_user_id THEN 1 ELSE 0 END) as a_si_mismo,
+                COUNT(DISTINCT c.empleado_user_id) as empleados_distintos,
+                COUNT(DISTINCT te.date) as dias_distintos,
+                MAX(c.created_at) as ultima")
+            ->orderByDesc('total')
+            ->get();
+
         return response()->json([
             'success' => true,
             'count' => $entries->count(),
             'data' => $entries,
             'reincidencia' => $reincidencia,
+            'diferidos' => $diferidos,
+            'correctores' => $correctores,
         ]);
     }
 

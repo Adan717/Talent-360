@@ -392,6 +392,16 @@ class ClockService
             throw new \InvalidArgumentException("Tipo de fichaje inválido: '{$type}'. Valores permitidos: " . implode(', ', self::PUNCH_TYPES));
         }
 
+        // (2026-08-28 r2b) Marcadores que SÓLO estampa el servidor: se limpian de lo que mande el
+        // cliente ANTES de tocar nada. El candado de la hora reclamada los sobrescribe en el batch,
+        // pero en un ponche online no entra al candado — sin este scrub, un cliente online podía
+        // inyectar details.hora_reclamada/deriva_min y falsear (o camuflar inflando) el patrón de
+        // reincidencia de diferidos. La única fuente legítima de estas llaves es el bloque de más
+        // abajo.
+        if (is_array($details)) {
+            unset($details['hora_reclamada'], $details['recibido_a'], $details['deriva_min'], $details['hora_futura_rechazada']);
+        }
+
         $tenantId = $user->tenant_id ?? 1;
         $settings = \DB::table('system_settings')
             ->where('tenant_id', $tenantId)
@@ -413,7 +423,20 @@ class ClockService
         // del tenant y usan su simulated_date en vez de la fecha real — así corridas
         // sucesivas del simulador nunca chocan entre sí, y sus filas quedan aisladas de los
         // reportes reales (ver ExcludeSimulationScope).
-        $isSimulatorPunch = isset($details['is_simulator']) && $details['is_simulator'] === true;
+        //
+        // (2026-08-28 r2b) El simulador es una herramienta de MANDO: sus sesiones se gestionan
+        // bajo `role:admin,supervisor,platform_admin` (/matrix/session/*). El ponche, en cambio,
+        // pasa por endpoints abiertos a `empleado`, y is_simulator NO se filtraba en ninguno —
+        // cualquier empleado autenticado en PRODUCCIÓN podía mandar is_simulator=true + hora y
+        // fijar la hora que quisiera (y, vía batch, saltarse el candado de deriva). El daño era
+        // acotado (fila aislada por simulation_session_id, fuera de nómina/reportes) pero es
+        // escritura de hora arbitraria y creación de sesiones de simulador. Se cierra en el
+        // ÚNICO chokepoint por el que pasan las tres vías: sólo se honra si el EMISOR (auth, no
+        // el target que en el simulador puede ser otro) tiene rol de mando. Para cualquier otro
+        // se ignora y el ponche se trata como real.
+        $emisorPuedeSimular = in_array(auth()->user()->role ?? null, ['admin', 'supervisor', 'platform_admin'], true);
+        $isSimulatorPunch = $emisorPuedeSimular
+            && isset($details['is_simulator']) && $details['is_simulator'] === true;
         $simulationSessionId = null;
         $simulatorSession = null;
         if ($isSimulatorPunch) {

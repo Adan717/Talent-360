@@ -48,6 +48,12 @@ class AuthController extends Controller
     private const KIOSK_MAX_POR_EMPLEADO = 5;
     private const KIOSK_MAX_ENUMERACION = 50;
 
+    // Hash de relleno para nivelar el TIEMPO de respuesta del kiosco (r2b): un bcrypt real, de
+    // una contraseña aleatoria que nadie conoce ni usa, contra el que se compara cuando el
+    // empleado no existe — así esa rama cuesta lo mismo que la de un PIN equivocado y la latencia
+    // deja de delatar qué ids existen. No es un secreto: su único trabajo es tardar.
+    private const HASH_SENUELO = '$2y$12$H9fY8mlGuQiWx9otK6KHNunozUWD9LyqHz.y3r4dRQqclhXC5/hCq';
+
     public function login(Request $request)
     {
         $request->validate([
@@ -234,6 +240,15 @@ class AuthController extends Controller
             // Empleado inexistente o sin PIN: huele a enumeración, alimenta ambos contadores.
             RateLimiter::hit($keyEmpleado, self::LOGIN_DECAY_SEGUNDOS);
             RateLimiter::hit($keyEnum, self::LOGIN_DECAY_SEGUNDOS);
+
+            // (2026-08-28 r2b) HASH SEÑUELO: el cuerpo y el status ya eran idénticos en las tres
+            // ramas de fallo, pero el TIEMPO no — un id inexistente respondía al instante y uno
+            // real con PIN malo pagaba el bcrypt (~100ms). Esa diferencia enumera empleados igual
+            // de bien que un mensaje distinto, y encima sondear ids REALES no alimenta el backstop
+            // por IP (por diseño: el typo de una persona real no debe cerrar la tablet). Se paga
+            // el mismo bcrypt contra un hash de relleno para que ambas ramas cuesten lo mismo.
+            Hash::check((string) $request->pin, self::HASH_SENUELO);
+
             return response()->json($genericError, 422);
         }
         if (!Hash::check($request->pin, $employee->security_pin)) {

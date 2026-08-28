@@ -34,6 +34,20 @@ interface Reincidencia {
   hasta: string;
 }
 
+/** Quien CORRIGE fichajes: el vector mas caro no es el empleado, es quien mueve los registros. */
+interface Corrector {
+  autorizado_por: number;
+  nombre: string | null;
+  total: number;
+  altas: number;
+  anulaciones: number;
+  sustituciones: number;
+  a_si_mismo: number;
+  empleados_distintos: number;
+  dias_distintos: number;
+  ultima: string;
+}
+
 const POLL_MS = 30000;
 
 /** El porqué de la marca, legible: sale de `details` (deriva) o de la omisión de foto. */
@@ -54,6 +68,8 @@ const porQue = (f: FichajeMarcado): string => {
 export const FichajesPorRevisarPanel = () => {
   const [fichajes, setFichajes] = useState<FichajeMarcado[]>([]);
   const [reincidencia, setReincidencia] = useState<Reincidencia[]>([]);
+  const [diferidos, setDiferidos] = useState<Reincidencia[]>([]);
+  const [correctores, setCorrectores] = useState<Corrector[]>([]);
   const [expandido, setExpandido] = useState(false);
   const mounted = useRef(true);
 
@@ -63,6 +79,8 @@ export const FichajesPorRevisarPanel = () => {
       if (mounted.current && res.data?.success) {
         setFichajes(Array.isArray(res.data.data) ? res.data.data : []);
         setReincidencia(Array.isArray(res.data.reincidencia) ? res.data.reincidencia : []);
+        setDiferidos(Array.isArray(res.data.diferidos) ? res.data.diferidos : []);
+        setCorrectores(Array.isArray(res.data.correctores) ? res.data.correctores : []);
       }
     } catch {
       // Error transitorio o sin permiso: se conserva lo previo; el próximo sondeo se recupera.
@@ -79,10 +97,16 @@ export const FichajesPorRevisarPanel = () => {
     };
   }, [fetchBandeja]);
 
-  if (fichajes.length === 0) return null;
-
-  // El patrón que importa: quien cae 2+ veces en la ventana de 90 días.
+  // El patrón que importa: quien cae 2+ veces en la ventana de 90 días (mismo corte para las
+  // tres señales: un accidente aislado no acusa a nadie, la repetición sí).
   const reincidentes = reincidencia.filter(r => Number(r.veces) >= 2);
+  const diferidosReincidentes = diferidos.filter(d => Number(d.veces) >= 2);
+  const correctoresActivos = correctores.filter(c => Number(c.total) >= 2 || Number(c.a_si_mismo) > 0 || Number(c.altas) > 0);
+
+  // (r2b) El panel ya no depende sólo de los fichajes marcados: con cero marcados puede haber
+  // correcciones o fichajes diferidos que el supervisor necesita ver.
+  if (fichajes.length === 0 && diferidosReincidentes.length === 0 && correctoresActivos.length === 0) return null;
+
   const visibles = expandido ? fichajes : fichajes.slice(0, 5);
 
   return (
@@ -97,9 +121,11 @@ export const FichajesPorRevisarPanel = () => {
             </p>
           </div>
         </div>
-        <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-extrabold">
-          {fichajes.length}
-        </span>
+        {fichajes.length > 0 && (
+          <span className="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-extrabold">
+            {fichajes.length}
+          </span>
+        )}
       </div>
 
       {reincidentes.length > 0 && (
@@ -116,6 +142,71 @@ export const FichajesPorRevisarPanel = () => {
               >
                 {r.nombre ?? `Usuario ${r.user_id}`} · {r.veces} veces en {r.dias} {Number(r.dias) === 1 ? 'día' : 'días'}
               </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {diferidosReincidentes.length > 0 && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-2.5">
+          <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">
+            Fichajes diferidos (sincronizados sin red, últimos 90 días)
+          </p>
+          <p className="text-[10px] text-amber-700 mb-1.5 leading-tight">
+            No son un señalamiento: un corte de red real es normal. Lo que importa es quien ficha
+            así muchos días distintos.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {diferidosReincidentes.map(d => (
+              <span
+                key={d.user_id}
+                className="px-2 py-1 rounded-lg bg-white border border-amber-200 text-[11px] font-semibold text-amber-900"
+                title={`Del ${d.desde} al ${d.hasta}`}
+              >
+                {d.nombre ?? `Usuario ${d.user_id}`} · {d.veces} en {d.dias} {Number(d.dias) === 1 ? 'día' : 'días'}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {correctoresActivos.length > 0 && (
+        <div className="rounded-xl bg-slate-50 border border-slate-300 p-2.5">
+          <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-1">
+            Quién corrige fichajes (últimos 90 días)
+          </p>
+          <p className="text-[10px] text-slate-600 mb-1.5 leading-tight">
+            Anular un duplicado es higiene; dar de alta un fichaje lo CREA. Corregir la propia
+            asistencia se marca aparte.
+          </p>
+          <div className="space-y-1">
+            {correctoresActivos.map(c => (
+              <div
+                key={c.autorizado_por}
+                className="flex items-start justify-between gap-2 text-[11px] bg-white border border-slate-200 rounded-lg px-2 py-1.5"
+              >
+                <div>
+                  <span className="font-bold text-slate-900">
+                    {c.nombre ?? `Usuario ${c.autorizado_por}`}
+                  </span>
+                  <span className="text-slate-500">
+                    {' '}· {c.total} correcci{Number(c.total) === 1 ? 'ón' : 'ones'} sobre{' '}
+                    {c.empleados_distintos} {Number(c.empleados_distintos) === 1 ? 'persona' : 'personas'}
+                  </span>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {c.anulaciones} anulaci{Number(c.anulaciones) === 1 ? 'ón' : 'ones'} ·{' '}
+                    {c.sustituciones} sustituci{Number(c.sustituciones) === 1 ? 'ón' : 'ones'} ·{' '}
+                    <span className={Number(c.altas) > 0 ? 'font-bold text-slate-800' : ''}>
+                      {c.altas} alta{Number(c.altas) === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+                {Number(c.a_si_mismo) > 0 && (
+                  <span className="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-extrabold whitespace-nowrap">
+                    {c.a_si_mismo} a sí mismo
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         </div>

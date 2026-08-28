@@ -215,6 +215,15 @@ class BackupController extends Controller
         try {
             DB::beginTransaction();
 
+            // (2026-08-28 r2b, revisión externa) El import escribe sobre `time_entries`, así que en
+            // Postgres cada fila dispara el trigger de la bitácora inmutable — pero sin declarar
+            // nada, el historial guardaba el cambio con actor/origen NULOS, es decir "lo hizo un
+            // proceso automático", cuando lo hizo un admin restaurando un archivo. Ese era el hueco
+            // entre lo exportado y lo que sigue. `declarar()` (no `firmando()`) porque ya estamos
+            // DENTRO de la transacción abierta arriba: set_config con `true` es SET LOCAL y vive lo
+            // que viva la transacción — declararlo ANTES del beginTransaction sería un no-op mudo.
+            \App\Support\BitacoraDeAsistencia::declarar($user->id, 'import-respaldo', null);
+
             // RESTAURAR YA NO BORRA NADA (2026-08-11).
             //
             // Aquí había un `DELETE` de todas las filas de la empresa en las 13 tablas de la

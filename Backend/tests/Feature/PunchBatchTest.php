@@ -208,12 +208,29 @@ class PunchBatchTest extends TestCase
         $this->assertSame(0, DB::table('time_entries')->where('user_id', $colega->id)->count());
     }
 
-    public function test_batch_stamp_requerido(): void
+    /**
+     * Sin credencial no hay ponche — pero el rechazo es POR ÍTEM, no del lote (2026-08-28 r2b).
+     *
+     * Esta prueba exigía 422 (el lote entero muerto), que era justo el defecto: un solo ponche
+     * legado sin firma congelaba la cola offline para siempre y los ponches buenos vencian a los
+     * 7 dias sin llegar nunca. La regla que ya predicaba la prueba de abajo para el `type`
+     * invalido ("un item corrupto no debe volverse pildora venenosa") ahora tambien rige aqui.
+     */
+    public function test_batch_stamp_requerido_rechaza_el_item_no_el_lote(): void
     {
         [, $user] = $this->makeSetup();
-        $p = $this->punch();
-        unset($p['client_stamp']);
-        $this->actingAs($user)->postJson('/api/v1/clock/punch-batch', ['punches' => [$p]])->assertStatus(422);
+        $sinStamp = $this->punch();
+        unset($sinStamp['client_stamp']);
+        $bueno = $this->punch(['client_stamp' => 'stamp-del-bueno-r2b']);
+
+        $res = $this->actingAs($user)->postJson('/api/v1/clock/punch-batch', [
+            'punches' => [$sinStamp, $bueno],
+        ]);
+
+        $res->assertStatus(200);
+        $this->assertSame('rejected', $res->json('results.0.status'));
+        $this->assertSame('missing_stamp', $res->json('results.0.reason'));
+        $this->assertSame('recorded', $res->json('results.1.status'), 'el ponche legitimo del mismo lote si entra');
     }
 
     /**

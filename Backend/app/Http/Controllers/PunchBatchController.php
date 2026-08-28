@@ -47,15 +47,21 @@ class PunchBatchController extends Controller
 
     public function batch(Request $request)
     {
-        // Sólo lo ESTRUCTURAL a nivel request (422 aborta todo el lote); `type` y las fechas se
-        // validan POR ÍTEM en el loop (un ítem corrupto no debe volverse píldora venenosa, R84).
-        // Cada ítem debe traer SU credencial de protocolo: client_stamp (Reloj) u offline_stamp
-        // (§16, con su client_timestamp).
+        // Sólo lo ESTRUCTURAL a nivel request (422 aborta todo el lote); `type`, las fechas y la
+        // PRESENCIA de la credencial se validan POR ÍTEM en el loop (un ítem corrupto no debe
+        // volverse píldora venenosa, R84). Cada ítem trae su credencial de protocolo: client_stamp
+        // (Reloj) u offline_stamp (§16, con su client_timestamp).
+        //
+        // (2026-08-28 r2b) La credencial se valida aquí SÓLO como estructura (nullable + string):
+        // `required_without` a nivel request tumbaba TODO el lote con 422 si un solo ítem llegaba
+        // sin firma — un ítem legado o sin secreto en IndexedDB se volvía píldora venenosa y
+        // congelaba la cola entera para siempre (los ponches buenos nunca llegaban y vencían a los
+        // 7 días). La ausencia de credencial ahora rechaza SÓLO ese ítem, en el loop.
         $request->validate([
             'punches' => ['required', 'array', 'min:1', 'max:' . self::MAX_BATCH],
-            'punches.*.client_stamp' => ['required_without:punches.*.offline_stamp', 'string', 'max:100'],
-            'punches.*.offline_stamp' => ['required_without:punches.*.client_stamp', 'string'],
-            'punches.*.client_timestamp' => ['required_with:punches.*.offline_stamp', 'date'],
+            'punches.*.client_stamp' => ['nullable', 'string', 'max:100'],
+            'punches.*.offline_stamp' => ['nullable', 'string'],
+            'punches.*.client_timestamp' => ['nullable', 'date'],
             'punches.*.details' => ['nullable', 'array'],
             'punches.*.gps' => ['nullable', 'array'],
             'punches.*.user_id' => ['nullable', 'integer'],
@@ -88,9 +94,19 @@ class PunchBatchController extends Controller
                 $index = $wrapper['index'];
                 $p = $wrapper['item'];
 
-                $isHmacProtocol = isset($p['offline_stamp']) && !isset($p['client_stamp']);
                 // El stamp de idempotencia: el propio client_stamp, o el HMAC (único por ponche).
-                $stamp = (string) ($p['client_stamp'] ?? $p['offline_stamp']);
+                $stamp = trim((string) ($p['client_stamp'] ?? $p['offline_stamp'] ?? ''));
+
+                // (r2b) Sin credencial no hay idempotencia (todos los stampless colapsarían al
+                // mismo '' y se pisarían) ni firma posible: se RECHAZA este ítem, no el lote. Es
+                // el cierre de la píldora venenosa por el otro extremo.
+                if ($stamp === '') {
+                    $results[] = ['index' => $index, 'client_stamp' => null, 'status' => 'rejected', 'success' => false, 'reason' => 'missing_stamp'];
+                    continue;
+                }
+
+                // HMAC (§16) sólo si trae offline_stamp NO vacío y NO client_stamp.
+                $isHmacProtocol = !empty($p['offline_stamp']) && empty($p['client_stamp']);
 
                 // Idempotencia POR USUARIO (review R84): re-enviar un lote no duplica.
                 $yaExiste = TimeEntry::withoutGlobalScopes()
@@ -159,6 +175,10 @@ class PunchBatchController extends Controller
                         // por ROL del emisor (no por lo que mande el cliente).
                         $details = is_array($p['details'] ?? null) ? $p['details'] : [];
                         unset($details['sandbox_bypass']);
+                        // (r2b) Un ponche offline REAL nunca es del simulador: se quita is_simulator
+                        // por higiene (el chokepoint de ClockService ya lo gatea por rol, esto cierra
+                        // además el salto del candado de deriva por la vía del batch).
+                        unset($details['is_simulator']);
                         if (isset($p['gps']) && is_array($p['gps'])) {
                             $details['gps'] = $p['gps'];
                         }

@@ -3,8 +3,12 @@ export interface OfflinePunch {
     userId: number;
     type: string;
     // Hora del fichaje en formato H:i:s (24h, con segundos) — NO usar strings de display tipo
-    // "8:32 am". El backend usa este valor tal cual como la hora real del fichaje al sincronizar
-    // vía /clock/punch-batch (details.offline_sync = true), ver ClockService::processPunch().
+    // "8:32 am".
+    // OJO (2026-08-28 r2b): este campo YA NO fija la hora registrada. El batch manda el momento
+    // real en `clientTimestamp` (→ occurred_at → details.instante_utc) y el protocolo viejo
+    // (details.offline_sync + time) está CERRADO en el servidor: la bandera del cliente con hora
+    // propia se rechaza (ClockService::processPunch). `time` sobrevive sólo como parte del mensaje
+    // firmado en offlineStamp — debe coincidir byte a byte con lo que se firmó, nada más.
     time: string;
     // Timestamp ISO 8601 real del dispositivo al momento de guardar el punch localmente. Se usa
     // para el orden cronológico de sincronización y forma parte del mensaje firmado en offlineStamp.

@@ -232,39 +232,62 @@ export function useGeoAndOfflineSync({
 
     try {
       const res = await axiosInstance.post('/clock/punch-batch', {
-        punches: validItems.map(item => ({
-          user_id: item.userId,
-          type: item.type,
-          time: item.time,
-          details: { note: item.details, gps: item.gps },
-          gps: item.gps,
-          client_timestamp: item.clientTimestamp || new Date(item.timestamp || Date.now()).toISOString(),
-          offline_stamp: item.offlineStamp || ''
-        }))
+        // (2026-08-28 r2b) `offline_stamp` se envía SÓLO si existe. Antes iba `|| ''`: un string
+        // vacío tumbaba TODO el lote con 422 (píldora venenosa) y congelaba la cola. Un ítem sin
+        // firma (encolado sin secreto en caché) ya no puede validarse — el servidor lo rechaza
+        // como 'missing_stamp' y abajo se descarta con aviso, en vez de reintentarse por siempre.
+        punches: validItems.map(item => {
+          const punch: Record<string, unknown> = {
+            user_id: item.userId,
+            type: item.type,
+            time: item.time,
+            details: { note: item.details, gps: item.gps },
+            gps: item.gps,
+            client_timestamp: item.clientTimestamp || new Date(item.timestamp || Date.now()).toISOString(),
+          };
+          if (item.offlineStamp) punch.offline_stamp = item.offlineStamp;
+          return punch;
+        })
       });
 
+      // El servidor responde POR ÍTEM. Un ítem con resultado DEFINITIVO sale de la cola:
+      //  · success   → grabado.
+      //  · duplicate → ya estaba en el servidor (una respuesta previa se perdió tras grabar).
+      //  · rejected  → rechazo PERMANENTE (type inválido, vencido >7d, firma/credencial mala);
+      //                reintentarlo es inútil y mantenía la cola llena para siempre con una
+      //                alerta falsa de "firma inválida" en cada evento 'online'.
+      // Sólo los ítems SIN resultado (fallo de red del lote) se quedan para el próximo intento.
       const results: any[] = res.data?.results || [];
-      const successIndices = new Set(results.filter(r => r.success).map(r => r.index));
-      const rejectedResults = results.filter(r => !r.success);
+      const byIndex = new Map<number, any>(results.map(r => [r.index, r]));
 
-      let deletedCount = 0;
+      let syncedCount = 0;
+      let rejectedCount = 0;
       for (let i = 0; i < validItems.length; i++) {
-        if (successIndices.has(i) && validItems[i].id !== undefined) {
-          await offlineDb.deletePunch(validItems[i].id);
-          deletedCount++;
+        const r = byIndex.get(i);
+        if (!r || validItems[i].id === undefined) continue;
+        if (r.success) {
+          await offlineDb.deletePunch(validItems[i].id!);
+          syncedCount++;
+        } else if (r.status === 'duplicate') {
+          await offlineDb.deletePunch(validItems[i].id!); // ya registrado en el servidor
+        } else if (r.status === 'rejected') {
+          await offlineDb.deletePunch(validItems[i].id!);
+          rejectedCount++;
+          console.warn('Ponche offline rechazado permanentemente y descartado de la cola:', r);
         }
       }
 
       const remaining = await offlineDb.getPunches();
       setSyncQueue(remaining);
 
-      if (deletedCount > 0) {
-        showCustomAlert(`🔄 Cola offline: ${deletedCount} registro(s) sincronizados con éxito.`);
+      if (syncedCount > 0) {
+        showCustomAlert(`🔄 Cola offline: ${syncedCount} registro(s) sincronizados con éxito.`);
         window.dispatchEvent(new Event('db_sync_updated'));
       }
-      if (rejectedResults.length > 0) {
-        console.warn('Ítems rechazados al sincronizar el batch offline (quedan en cola para revisión):', rejectedResults);
-        showCustomAlert(`⚠️ ${rejectedResults.length} fichaje(s) offline no pudieron validarse (firma inválida) y requieren revisión manual.`);
+      if (rejectedCount > 0) {
+        // Rechazo permanente: no se pudo registrar y NO se reintentará. La jornada se captura a
+        // mano o con justificante. Un solo aviso, sin mentir con "firma inválida".
+        showCustomAlert(`⚠️ ${rejectedCount} fichaje(s) offline no pudieron registrarse y se descartaron; captúrelos manualmente o pida un justificante.`);
       }
     } catch (e) {
       // Fallo de red/servidor a nivel de TODO el batch (no de un ítem individual) — se reintentará

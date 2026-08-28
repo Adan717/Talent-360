@@ -45,8 +45,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // cuenta sólo intentos FALLIDOS, con backstop de enumeración por IP) — el throttle de ruta
     // estrangulaba también los logins EXITOSOS (el chorro legítimo de la mañana).
     Route::post('/login', [AuthController::class, 'login']);
-    // §37: Modo Kiosco — throttle agresivo porque el PIN es corto (4-6 dígitos).
-    Route::middleware('throttle:5,1')->post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
+    // §37: Modo Kiosco. (2026-08-28, r2-b) SIN throttle de ruta: por IP contaba también los
+    // logins exitosos y la tablet de la sucursal es UNA IP — al sexto empleado de la mañana el
+    // kiosco se cerraba. El límite vive en AuthController::kioskLogin (5 FALLIDOS por empleado
+    // + backstop de enumeración por IP), igual que /login.
+    Route::post('/clock/kiosk-login', [AuthController::class, 'kioskLogin']);
     // §52: "olvidé mi contraseña" — públicos y con throttle (no revelan si el correo existe).
     Route::middleware('throttle:5,1')->post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::middleware('throttle:5,1')->post('/reset-password', [AuthController::class, 'resetPassword']);

@@ -181,15 +181,32 @@ class TimeEntryController extends Controller
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->limit(100)
+            // r2-c: `details` incluido para que la bandeja pueda MOSTRAR el porqué (deriva_min,
+            // hora_reclamada vs recibido_a) y no sólo que "algo" pasó.
             ->get([
                 'id', 'user_id', 'employee_name_at_time', 'date', 'type', 'time',
-                'verification_method', 'photo_skipped_reason',
+                'verification_method', 'photo_skipped_reason', 'details',
             ]);
+
+        // (2026-08-28, revisión externa r2-c) «flagged_for_review es bitácora, no control,
+        // hasta que alguien lo SUME». La marca por fichaje ya existía; esto la convierte en
+        // patrón: cuántas veces cayó cada persona en revisión en los últimos 90 días y en
+        // cuántos días distintos. Un corte de red real marca a MEDIA sucursal un día; el que
+        // se quita retardos "offline" se marca SOLO, muchos días — eso es lo que el supervisor
+        // necesita distinguir y ninguna fila individual le decía.
+        $reincidencia = \App\Models\TimeEntry::where('tenant_id', $tenantId)
+            ->where('flagged_for_review', true)
+            ->where('date', '>=', now()->subDays(90)->toDateString())
+            ->selectRaw('user_id, MAX(employee_name_at_time) as nombre, COUNT(*) as veces, COUNT(DISTINCT date) as dias, MIN(date) as desde, MAX(date) as hasta')
+            ->groupBy('user_id')
+            ->orderByDesc('veces')
+            ->get();
 
         return response()->json([
             'success' => true,
             'count' => $entries->count(),
             'data' => $entries,
+            'reincidencia' => $reincidencia,
         ]);
     }
 

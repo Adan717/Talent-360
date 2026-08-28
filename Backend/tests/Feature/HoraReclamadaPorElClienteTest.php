@@ -13,17 +13,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * El reloj no le cree al cliente sin dejar rastro (2026-08-27, punto 2 de la revisión externa).
+ * La hora del cliente tiene UNA sola puerta (2026-08-27 r1, endurecido 2026-08-28 r2).
  *
- * El protocolo offline es legítimo: un ponche encolado sin red ocurrió en su momento real y la
- * LFT exige conservarlo (R84). Pero la bandera `offline_sync` la pone EL CLIENTE, así que
- * cualquiera podía mandar `offline_sync: true` con la hora que le conviniera y quitarse un
- * retardo — sin dejar más rastro que un `created_at` que nadie leía.
+ * r1 dejó visible la deriva de toda hora reclamada. r2 cerró la puerta falsa: la bandera
+ * `offline_sync` + hora la ponía EL CLIENTE y ningún cliente legítimo la manda (la cola offline
+ * real —offlineDb.ts— sincroniza por /clock/punch-batch con `occurredAt`). El único que la
+ * mandaba era quien se quitaba retardos, así que ahora se RECHAZA de raíz, y la bandera suelta
+ * tampoco compra las exenciones offline (candado de baja R89, ventana de comida R91).
  *
- * La regla nueva no rechaza (rechazar rompería la sincronización legítima y borraría días
- * trabajados): hace visible. El futuro es imposible y se sustituye por la hora del servidor;
- * toda hora reclamada guarda su deriva; y con deriva mayor a 10 minutos el fichaje cae en la
- * bandeja de revisión del supervisor, que ya existía (§67.C).
+ * La puerta legítima (batch → `occurredAt`) conserva el candado r1: el futuro se sustituye por
+ * la hora del servidor, toda hora reclamada guarda su deriva, y con más de 10 minutos el fichaje
+ * cae en la bandeja de revisión del supervisor (§67.C).
  */
 class HoraReclamadaPorElClienteTest extends TestCase
 {
@@ -41,7 +41,7 @@ class HoraReclamadaPorElClienteTest extends TestCase
         $this->tenant = Tenant::create(['name' => 'Reclamada QA', 'subdomain' => 'reclamadaqa', 'plan' => 'enterprise', 'is_active' => true]);
         LftSetting::create(['tenant_id' => $this->tenant->id, 'late_tolerance_minutes' => 10]);
         // updateOrInsert y no insert: desde el punto 1 de esta misma revisión, toda empresa
-        // NACE con su zona ya escrita — este choque de índice único fue la confirmación en vivo.
+        // NACE con su zona ya escrita.
         \Illuminate\Support\Facades\DB::table('system_settings')->updateOrInsert(
             ['tenant_id' => $this->tenant->id, 'key' => 'timezone'],
             ['value' => json_encode('UTC'), 'created_at' => now(), 'updated_at' => now()]
@@ -69,17 +69,61 @@ class HoraReclamadaPorElClienteTest extends TestCase
         return TimeEntry::withoutGlobalScopes()->orderByDesc('id')->firstOrFail();
     }
 
+    // ------------------------------------------------- r2: la puerta falsa, cerrada
+
     /**
-     * EL FRAUDE EXACTO: son las 10:00, el turno era a las 09:00, y el cliente manda
-     * `offline_sync: true` con hora 09:00 para llegar "a tiempo". Ya no pasa en silencio.
+     * EL FRAUDE EXACTO de r1, ahora rechazado: son las 10:00, el turno era a las 09:00, y el
+     * cliente manda `offline_sync: true` con hora 09:00 para llegar "a tiempo". Nada se guarda.
      */
-    public function test_quitarse_el_retardo_con_offline_sync_cae_en_revision(): void
+    public function test_offline_sync_con_hora_se_rechaza_de_raiz(): void
+    {
+        try {
+            app(ClockService::class)->processPunch(
+                $this->colaborador,
+                'check_in',
+                '09:00:00',
+                ['offline_sync' => true]
+            );
+            $this->fail('la bandera del cliente con hora propia debió rechazarse');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('cola de sincronización', $e->getMessage());
+        }
+
+        $this->assertSame(0, TimeEntry::withoutGlobalScopes()->count(), 'el fichaje forjado no deja fila');
+    }
+
+    /**
+     * La bandera SUELTA (sin hora) tampoco compra nada: antes marcaba el ponche como "offline"
+     * y con eso saltaba el candado de baja R89 — un dado de baja podía iniciar turno en vivo.
+     */
+    public function test_offline_sync_suelto_ya_no_compra_las_exenciones_offline(): void
+    {
+        Employee::where('user_id', $this->colaborador->id)->update(['is_active_employee' => false]);
+
+        try {
+            app(ClockService::class)->processPunch(
+                $this->colaborador,
+                'check_in',
+                null,
+                ['offline_sync' => true]
+            );
+            $this->fail('un colaborador dado de baja no inicia turno EN VIVO por declararse offline');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('dado de baja', $e->getMessage());
+        }
+    }
+
+    // ------------------------------------- la puerta legítima (batch) conserva el candado r1
+
+    /** La misma jugada por el batch NO se rechaza (R84) — pero cae en revisión con su deriva. */
+    public function test_quitarse_el_retardo_por_el_batch_cae_en_revision(): void
     {
         app(ClockService::class)->processPunch(
             $this->colaborador,
             'check_in',
-            '09:00:00',
-            ['offline_sync' => true]
+            null,
+            [],
+            '2026-08-25T09:00:00Z' // occurredAt: reclama una hora antes de que el servidor lo reciba
         );
 
         $entrada = $this->ultimo();
@@ -97,8 +141,9 @@ class HoraReclamadaPorElClienteTest extends TestCase
         app(ClockService::class)->processPunch(
             $this->colaborador,
             'check_in',
-            '17:59:00', // "ya casi salgo", dice el cliente a las 10:00
-            ['offline_sync' => true]
+            null,
+            [],
+            '2026-08-25T17:59:00Z' // "ya casi salgo", dice el cliente a las 10:00
         );
 
         $entrada = $this->ultimo();
@@ -114,8 +159,9 @@ class HoraReclamadaPorElClienteTest extends TestCase
         app(ClockService::class)->processPunch(
             $this->colaborador,
             'check_in',
-            '09:55:00', // se quedó sin red 5 minutos
-            ['offline_sync' => true]
+            null,
+            [],
+            '2026-08-25T09:55:00Z' // se quedó sin red 5 minutos
         );
 
         $entrada = $this->ultimo();
@@ -138,32 +184,15 @@ class HoraReclamadaPorElClienteTest extends TestCase
         $this->assertSame('10:00:00', substr((string) $entrada->time, 0, 8), 'la hora la pone el servidor');
     }
 
-    /** El batch offline (`occurredAt`) entra por la misma aduana. */
-    public function test_el_batch_offline_tambien_guarda_su_deriva(): void
-    {
-        app(ClockService::class)->processPunch(
-            $this->colaborador,
-            'check_in',
-            null,
-            [],
-            '2026-08-25T09:00:00Z' // occurredAt: una hora antes de que el servidor lo reciba
-        );
-
-        $entrada = $this->ultimo();
-        $detalles = json_decode($entrada->details, true);
-
-        $this->assertSame(60, $detalles['deriva_min']);
-        $this->assertTrue((bool) $entrada->flagged_for_review);
-    }
-
     /** Y el retardo NO se pierde ni se inventa: la hora reclamada sigue mandando en el cálculo. */
     public function test_la_hora_reclamada_sigue_decidiendo_el_retardo_pero_a_la_vista(): void
     {
         app(ClockService::class)->processPunch(
             $this->colaborador,
             'check_in',
-            '09:00:00',
-            ['offline_sync' => true]
+            null,
+            [],
+            '2026-08-25T09:00:00Z'
         );
 
         $entrada = $this->ultimo();
@@ -172,5 +201,37 @@ class HoraReclamadaPorElClienteTest extends TestCase
         $this->assertFalse((bool) $entrada->is_late, 'a las 09:00 el turno empezaba: sin retardo');
         // …pero el supervisor lo tiene en su bandeja para decidir si se lo cree.
         $this->assertTrue((bool) $entrada->flagged_for_review);
+    }
+
+    // --------------------------------------------- r2, punto 1: el instante, no sólo la hora
+
+    /**
+     * Cada fichaje sella su INSTANTE UTC además de la hora local. La noche en que se retrasa el
+     * reloj (America/Tijuana), la 01:30 local existe dos veces; con el instante en `details` (y
+     * en la bitácora, que copia `details`) el momento nunca es ambiguo.
+     */
+    public function test_cada_fichaje_sella_su_instante_utc(): void
+    {
+        app(ClockService::class)->processPunch($this->colaborador, 'check_in');
+
+        $detalles = json_decode($this->ultimo()->details, true);
+
+        $this->assertSame('2026-08-25T10:00:00+00:00', $detalles['instante_utc']);
+    }
+
+    /** En el batch, el instante sellado es el del PONCHE reclamado, no el de la sincronización. */
+    public function test_el_instante_del_batch_es_el_del_ponche(): void
+    {
+        app(ClockService::class)->processPunch(
+            $this->colaborador,
+            'check_in',
+            null,
+            [],
+            '2026-08-25T09:30:00Z'
+        );
+
+        $detalles = json_decode($this->ultimo()->details, true);
+
+        $this->assertSame('2026-08-25T09:30:00+00:00', $detalles['instante_utc']);
     }
 }

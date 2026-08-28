@@ -15,6 +15,7 @@ import { PanicIncidentsPanel } from './reloj/PanicIncidentsPanel';
 import { LateJustificationsPanel } from './reloj/LateJustificationsPanel';
 import { ContingenciesPanel } from './reloj/ContingenciesPanel';
 import { IncompleteTasksPanel } from './reloj/IncompleteTasksPanel';
+import { FichajesPorRevisarPanel } from './reloj/FichajesPorRevisarPanel';
 
 interface UserMonitorItem {
   id: number;
@@ -615,6 +616,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
           <LateJustificationsPanel />
           <ContingenciesPanel />
           <IncompleteTasksPanel />
+          <FichajesPorRevisarPanel />
 
           {/* 3. BARRA DE HERRAMIENTAS Y ACCIONES DEL MONITOR 360 */}
           <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">

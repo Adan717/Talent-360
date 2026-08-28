@@ -38,6 +38,16 @@ class AuthController extends Controller
     private const LOGIN_MAX_STUFFING = 50;
     private const LOGIN_DECAY_SEGUNDOS = 900; // 15 min
 
+    // (2026-08-28, revisión externa r2-b) El kiosco tenía `throttle:5,1` de ruta — y el throttle
+    // de ruta en un endpoint sin sesión cuenta POR IP, contando también los logins EXITOSOS. La
+    // tablet de la sucursal es UNA sola IP: a las 8:00 llegan veinte personas y al sexto fichaje
+    // el kiosco se cerraba. Mismo remedio que en /login: contar sólo intentos FALLIDOS, por
+    // EMPLEADO (el chorro legítimo de la mañana jamás se cuenta entre sí), con un backstop por IP
+    // que sólo cuenta empleados INEXISTENTES o sin PIN (enumeración) — un PIN mal tecleado de una
+    // persona real nunca alimenta el backstop, así que una mañana torpe no lo dispara.
+    private const KIOSK_MAX_POR_EMPLEADO = 5;
+    private const KIOSK_MAX_ENUMERACION = 50;
+
     public function login(Request $request)
     {
         $request->validate([
@@ -204,8 +214,32 @@ class AuthController extends Controller
 
         $genericError = ['success' => false, 'message' => 'PIN incorrecto o colaborador no válido.'];
 
+        // r2-b: throttle por EMPLEADO (sólo fallidos) + backstop de enumeración por IP.
+        // Ver las constantes KIOSK_* arriba para el porqué del diseño.
+        $ip = $request->ip();
+        $keyEmpleado = 'kiosk-fail:' . (int) $request->employee_id . '|' . $ip;
+        $keyEnum = 'kiosk-enum-ip:' . $ip;
+
+        if (RateLimiter::tooManyAttempts($keyEmpleado, self::KIOSK_MAX_POR_EMPLEADO)
+            || RateLimiter::tooManyAttempts($keyEnum, self::KIOSK_MAX_ENUMERACION)) {
+            \Illuminate\Support\Facades\Log::warning('Kiosk login throttled', ['employee_id' => $request->employee_id, 'ip' => $ip]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.',
+            ], 429);
+        }
+
         $employee = \App\Models\Employee::withoutGlobalScopes()->find($request->employee_id);
-        if (!$employee || !$employee->security_pin || !Hash::check($request->pin, $employee->security_pin)) {
+        if (!$employee || !$employee->security_pin) {
+            // Empleado inexistente o sin PIN: huele a enumeración, alimenta ambos contadores.
+            RateLimiter::hit($keyEmpleado, self::LOGIN_DECAY_SEGUNDOS);
+            RateLimiter::hit($keyEnum, self::LOGIN_DECAY_SEGUNDOS);
+            return response()->json($genericError, 422);
+        }
+        if (!Hash::check($request->pin, $employee->security_pin)) {
+            // PIN equivocado de una persona REAL: cuenta sólo contra ese empleado, nunca
+            // contra la tablet entera (el backstop por IP es sólo para enumeración).
+            RateLimiter::hit($keyEmpleado, self::LOGIN_DECAY_SEGUNDOS);
             return response()->json($genericError, 422);
         }
 
@@ -213,6 +247,9 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json($genericError, 422);
         }
+
+        // Acertó: su contador se limpia para que el typo de ayer no le cobre el fichaje de hoy.
+        RateLimiter::clear($keyEmpleado);
 
         $expiresAt = now()->addMinutes(15);
         $token = $user->createToken('kiosk_session', ['*'], $expiresAt)->plainTextToken;

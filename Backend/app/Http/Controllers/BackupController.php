@@ -45,6 +45,15 @@ class BackupController extends Controller
     ];
 
     /**
+     * (2026-08-28, revisión externa r2-d) «Una exportación sin la bitácora no le sirve al
+     * cliente como evidencia.» Estas tablas SALEN en el export pero JAMÁS entran por el import:
+     * `time_entries_historial` la escribe únicamente el trigger de Postgres y
+     * `asistencia_correcciones` únicamente el servicio de correcciones — aceptar filas de un
+     * archivo sería dejar que un archivo FALSIFIQUE la bitácora inmutable.
+     */
+    private const TABLAS_SOLO_EXPORTACION = ['time_entries_historial', 'asistencia_correcciones'];
+
+    /**
      * Columnas que NUNCA salen del servidor en un respaldo.
      *
      * El export usaba `DB::table(...)->get()`, que no pasa por el modelo y por tanto ignora su
@@ -112,7 +121,8 @@ class BackupController extends Controller
     {
         $datos = [];
 
-        foreach ($this->tables as $table) {
+        // r2-d: al export van también las tablas de bitácora (solo-exportación, ver la const).
+        foreach (array_merge($this->tables, self::TABLAS_SOLO_EXPORTACION) as $table) {
             $ocultas = self::COLUMNAS_SENSIBLES[$table] ?? [];
 
             $datos[$table] = DB::table($table)->where('tenant_id', $tenantId)->get()
@@ -227,6 +237,14 @@ class BackupController extends Controller
 
             foreach ($this->tables as $table) {
                 if (!isset($data[$table]) || !is_array($data[$table])) {
+                    continue;
+                }
+
+                // r2-d: cinturón y tirantes — el loop ya itera sólo $tables, pero si alguien
+                // añade una tabla de bitácora a esa lista el import la sigue rechazando: la
+                // bitácora sólo la escriben el trigger y el servicio de correcciones, nunca
+                // un archivo.
+                if (in_array($table, self::TABLAS_SOLO_EXPORTACION, true)) {
                     continue;
                 }
 

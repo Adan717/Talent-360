@@ -423,10 +423,20 @@ class ClockService
 
         // R84 (offline-first): un ponche OFFLINE se registra en su MOMENTO original (inmutabilidad
         // histórica, LFT), no en la hora de sincronización. `$occurredAt` es un instante UTC (ISO)
-        // que el batch endpoint pasa; se lleva a la tz del tenant. El flag `offline_sync` (protocolo
-        // batch de la línea §16) es el mismo concepto con la hora en `simTime`.
+        // que SOLO pasa el endpoint del batch (/clock/punch-batch), que ya exige ponches propios,
+        // idempotencia por client_stamp y ventana de antigüedad.
+        //
+        // (2026-08-28, revisión externa r2) `offline_sync` era "el mismo concepto con la hora en
+        // simTime" — pero esa bandera la pone EL CLIENTE, y la cola offline real (offlineDb.ts)
+        // sincroniza por el batch. Es decir: ningún cliente legítimo manda `offline_sync` + hora
+        // por /sync ni /clock/punch; el único que la mandaba era quien la falsificaba para
+        // quitarse un retardo. Se cierra: la hora reclamada sólo entra por `$occurredAt`, y la
+        // bandera del cliente ya no compra NADA — ni hora propia ni las exenciones offline (un
+        // `offline_sync: true` suelto también saltaba el candado de baja R89 y la ventana de
+        // comida R91). Queda sólo como marcador informativo en los items del batch, y ni eso
+        // persiste (se descarta en detailsMerge).
         $isOfflineSyncFlag = isset($details['offline_sync']) && $details['offline_sync'] === true;
-        $isOffline = $occurredAt !== null || $isOfflineSyncFlag;
+        $isOffline = $occurredAt !== null;
 
         // H21: el turno del colaborador se lee AQUÍ porque decide a qué DÍA pertenece el fichaje.
         // Con un turno que cruza medianoche (22:00–02:00), la salida de las 02:00 es el cierre de
@@ -449,7 +459,14 @@ class ClockService
                 ? Carbon::parse($simulatorSession->simulated_date)->format('Y-m-d')
                 : JornadaLaboral::fechaDeNegocio($now, $turnoInicio, $turnoFin);
 
-            if (($isSimulated || $isSimulatorPunch || $isOfflineSyncFlag) && $simTime) {
+            // r2: `offline_sync` + hora se RECHAZA (ver el bloque R84 arriba: la única puerta
+            // legítima para una hora del cliente es el batch con `occurredAt`). El mensaje nombra
+            // la puerta correcta para que un cliente desactualizado no lo lea como falla.
+            if ($isOfflineSyncFlag && $simTime && !$isSimulated && !$isSimulatorPunch) {
+                throw new \Exception('Fichaje rechazado: la hora de un ponche offline sólo se acepta por la cola de sincronización (/clock/punch-batch).');
+            }
+
+            if (($isSimulated || $isSimulatorPunch) && $simTime) {
                 // El simulador/batch envía algo como "09:30:00". Se normaliza a H:i:s: algunos
                 // clientes mandan "H:i" (sin segundos), que rompería createFromFormat. Si el
                 // formato no se reconoce, se cae a la hora del servidor, sin reventar.
@@ -475,16 +492,15 @@ class ClockService
             }
         }
 
-        // CANDADO DE LA HORA RECLAMADA (2026-08-27, punto 2 de la revisión externa).
+        // CANDADO DE LA HORA RECLAMADA (2026-08-27, punto 2 de la revisión externa; endurecido
+        // 2026-08-28 r2: la bandera `offline_sync` + hora ya se rechaza arriba, así que la ÚNICA
+        // puerta para una hora del cliente es el `occurredAt` del batch).
         //
-        // En un fichaje REAL con protocolo offline, la hora la declara EL CLIENTE (el flag
-        // `offline_sync` + `time`, o el `occurredAt` del batch), y eso es correcto: el ponche
-        // ocurrió en su momento real mientras no había red, y la LFT exige conservarlo (R84).
-        // Pero el flag lo pone el cliente, así que cualquiera puede mandar "offline_sync: true"
-        // con la hora que le convenga y quitarse un retardo. No se puede distinguir el fraude
-        // del corte de red legítimo mirando sólo la hora — por eso NO se rechaza (rechazar
-        // rompería la sincronización legítima y borraría días trabajados), pero tampoco pasa
-        // en silencio:
+        // En un fichaje offline legítimo la hora la declara EL CLIENTE, y eso es correcto: el
+        // ponche ocurrió en su momento real mientras no había red, y la LFT exige conservarlo
+        // (R84). Pero incluso por la puerta buena la hora sigue siendo del cliente, y no se puede
+        // distinguir el fraude del corte de red legítimo mirando sólo la hora — por eso el batch
+        // NO se rechaza (rechazarlo borraría días trabajados), pero tampoco pasa en silencio:
         //
         //  a) una hora reclamada EN EL FUTURO del servidor es imposible: se usa la del servidor
         //     y queda anotado lo que el cliente pretendía;
@@ -497,8 +513,7 @@ class ClockService
         //     retardos "offline" todos los días se vuelve un patrón visible.
         //
         // El Simulador Matrix queda fuera: sus fichajes viven aislados por simulation_session_id.
-        $horaReclamada = !$isSimulated && !$isSimulatorPunch
-            && ($occurredAt !== null || ($isOfflineSyncFlag && $simTime));
+        $horaReclamada = !$isSimulated && !$isSimulatorPunch && $occurredAt !== null;
         $revisionPorHoraReclamada = false;
 
         if ($horaReclamada) {
@@ -1080,6 +1095,15 @@ class ClockService
         // no datos del ponche; el primero además era el vector de forja de amnistía.
         unset($detailsMerge['has_amnesty']);
         unset($detailsMerge['offline_sync']);
+
+        // (2026-08-28, r2 — pliegue de horario, punto 1 de la revisión externa) El INSTANTE del
+        // ponche, además de su hora local. La hora local es la que manda en nómina (retardos,
+        // corte del día), pero la noche en que se retrasa el reloj (America/Tijuana) la 01:30
+        // local existe DOS veces y sola no identifica el momento. `created_at` ya era el instante
+        // UTC del REGISTRO; esto deja legible el instante DEL PONCHE en el propio fichaje — para
+        // el ponche online son casi lo mismo, para el del batch difieren, y la bitácora
+        // (time_entries_historial) lo preserva junto con todo `details`.
+        $detailsMerge['instante_utc'] = $now->clone()->utc()->toIso8601String();
 
         if ($hasContingency && $type === 'check_in') {
             $detailsMerge['lft_incident'] = [

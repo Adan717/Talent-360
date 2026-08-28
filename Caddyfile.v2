@@ -1,0 +1,46 @@
+# HTTPS de la instancia V2 — copia de lo que corre en /etc/caddy/Caddyfile del servidor
+# (46.225.153.115, instalado el 2026-08-28). Se guarda aquí para que el certificado no dependa
+# de que alguien recuerde cómo se configuró.
+#
+# POR QUÉ: la instancia servía asistencia real por HTTP. Sin contexto seguro el navegador APAGA
+# la cámara (foto del fichaje §67), el service worker (la cola offline) y la geolocalización
+# (geocerca) — las tres funciones que el producto promete — y además la sesión viaja en claro.
+#
+# ADITIVO: los puertos 80 y 443 estaban libres. Nada de lo que ya corría se toca ni se apaga:
+# la instancia del dueño (:3000), la V2 directa (:3002) y Reverb (8081/8082) siguen igual.
+# Si esto falla, la V2 sigue accesible por http://46.225.153.115:3002 como siempre.
+#
+# INSTALACIÓN (Ubuntu 24.04, repo oficial de Caddy):
+#   apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+#   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+#   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
+#   apt-get update && apt-get install -y caddy
+#   # copiar este archivo a /etc/caddy/Caddyfile
+#   caddy validate --config /etc/caddy/Caddyfile && systemctl enable --now caddy
+#
+# EL DÍA QUE HAYA DOMINIO: cambiar la línea del sitio por el nombre (app.talent360.mx) y BORRAR
+# el bloque `tls` completo — con dominio, Caddy emite el certificado normal de 90 días sin
+# configuración. Y entonces conviene fijar APP_URL=https://… en el .env del servidor, para que
+# la cookie de sesión se marque `secure` sola (config/session.php ya lo deriva del APP_URL).
+
+46.225.153.115 {
+	tls {
+		issuer acme {
+			# Let's Encrypt sólo emite para una IP PELADA en el perfil de vida corta (~6 días).
+			# Caddy renueva solo; no hay tarea manual. Con dominio propio, este bloque sobra.
+			profile shortlived
+		}
+	}
+
+	# Tiempo real (Reverb, protocolo Pusher): la página https abre `wss` contra el 443 y aquí se
+	# enruta al 8082. Sin esto el navegador bloquea `ws://` como contenido mixto y el vivo muere
+	# EN SILENCIO — sin error en pantalla, simplemente deja de actualizarse. El cliente elige el
+	# puerto según el protocolo de la página (Frontend/src/lib/echo.ts), así que la entrada
+	# directa por HTTP sigue usando el 8082 como siempre.
+	@tiempo_real path /app /app/* /apps /apps/*
+	reverse_proxy @tiempo_real localhost:8082
+
+	# Web + API de una pieza: el bundle resuelve /api contra el mismo origen (Frontend/src/lib/
+	# axios.ts), así que un solo proxy sirve pantalla y API sin CORS ni segundo certificado.
+	reverse_proxy localhost:3002
+}

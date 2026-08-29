@@ -96,7 +96,7 @@ class ReportesRestantesTest extends TestCase
         }
 
         $this->assertSame(
-            ['asistencia', 'retardos', 'horas', 'rutinas', 'tareas', 'justificantes',
+            ['asistencia', 'registro_jornada', 'retardos', 'horas', 'rutinas', 'tareas', 'justificantes',
              'aperturas', 'comedor', 'academia', 'expedientes', 'reclutamiento', 'monedero',
              'rotacion', 'nomina_historica', 'costo_por_puesto'],
             CatalogoDeReportes::ids(),

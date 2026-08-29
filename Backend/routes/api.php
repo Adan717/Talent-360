@@ -410,7 +410,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
                 // candado de nómina. Las cifras de retardos/faltas salen del MISMO motor que
                 // la nómina (ver ReportesOperativosController).
                 Route::get('/admin/reports/retardos.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'retardosYFaltas']);
-                Route::get('/admin/reports/horas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'horasTrabajadas']);
+                Route::get('/admin/reports/registro_jornada.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'registroDeJornada']);
+            Route::get('/admin/reports/horas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'horasTrabajadas']);
                 Route::get('/admin/reports/rutinas.csv', [\App\Http\Controllers\ReportesOperativosController::class, 'cumplimientoRutinas']);
 
                 // Incidencias y operación. El id del archivo = el id del catálogo único

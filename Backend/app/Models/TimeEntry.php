@@ -6,20 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Tenantable;
 use App\Traits\ExcludesSimulationData;
+use App\Traits\ExcluyeAnuladas;
 
 class TimeEntry extends Model
 {
-    use Tenantable, ExcludesSimulationData;
-
-    /**
-     * Un fichaje ANULADO no existe para lo que calcula (2026-08-25). Sigue en la base —se anula,
-     * no se borra— pero la nomina, los reportes y el Monitor ven la jornada corregida. Para
-     * reconstruir la historia completa: withoutGlobalScope(ExcludeAnuladasScope::class).
-     */
-    protected static function booted(): void
-    {
-        static::addGlobalScope(new \App\Scopes\ExcludeAnuladasScope());
-    }
+    // El scope de anuladas vive en su propio trait (ExcluyeAnuladas) y NO en un `booted()` de
+    // esta clase: un `booted()` aquí pisa el de `Tenantable` y se lleva por delante el
+    // TenantScope de la tabla más sensible del producto. El porqué completo, en el trait.
+    use Tenantable, ExcludesSimulationData, ExcluyeAnuladas;
 
     protected $fillable = [
         'user_id',

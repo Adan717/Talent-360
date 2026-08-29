@@ -26,6 +26,12 @@ class CatalogoDeReportes
             'descripcion' => 'el detalle de entradas, salidas y retardos, movimiento por movimiento',
             'dias' => 1,
         ],
+        'registro_jornada' => [
+            'titulo' => 'Registro Electronico de Jornada (Art. 132 fr. XXXIV LFT)',
+            'descripcion' => 'la hora de entrada y de salida de cada persona por dia, en crudo y con las correcciones a la vista, que es lo que pide la ley y lo que revisa una inspeccion',
+            'dias' => 30,
+        ],
+
         'retardos' => [
             'titulo' => 'Retardos y Faltas por Colaborador',
             'descripcion' => 'el RESUMEN por persona de cuántos retardos y faltas acumula (quién reincide, quién falta seguido)',

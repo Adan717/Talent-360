@@ -29,6 +29,9 @@ interface Reincidencia {
   user_id: number;
   nombre: string | null;
   veces: number;
+  /** Del total, cuantos siguen vigentes y cuantos retiro una correccion. Anular no borra el patron. */
+  vigentes: number;
+  anulados: number;
   dias: number;
   desde: string;
   hasta: string;
@@ -65,6 +68,21 @@ const porQue = (f: FichajeMarcado): string => {
   return 'marcado para revisión';
 };
 
+/**
+ * La insignia de anuladas. Solo existe si hay algo que decir: nada de " · 0 anuladas" en el
+ * 99 % de las filas. Que la marca siga contando aunque una correccion la haya retirado es el
+ * punto entero — si anular la borrara, el tablero seria auditable solo para quien NO puede
+ * corregir, que es justo al reves.
+ */
+const InsigniaAnuladas = ({ cuantas }: { cuantas: number }) => {
+  if (!(Number(cuantas) > 0)) return null;
+  return (
+    <span className="ml-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 font-extrabold">
+      {cuantas} anulad{Number(cuantas) === 1 ? 'a' : 'as'}
+    </span>
+  );
+};
+
 export const FichajesPorRevisarPanel = () => {
   const [fichajes, setFichajes] = useState<FichajeMarcado[]>([]);
   const [reincidencia, setReincidencia] = useState<Reincidencia[]>([]);
@@ -99,13 +117,15 @@ export const FichajesPorRevisarPanel = () => {
 
   // El patrón que importa: quien cae 2+ veces en la ventana de 90 días (mismo corte para las
   // tres señales: un accidente aislado no acusa a nadie, la repetición sí).
-  const reincidentes = reincidencia.filter(r => Number(r.veces) >= 2);
-  const diferidosReincidentes = diferidos.filter(d => Number(d.veces) >= 2);
+  // Dos marcas hacen patron; UNA sola anulada tambien, porque es la senal de que alguien
+  // retiro el rastro (mismo criterio que altas/a_si_mismo en la linea de abajo).
+  const reincidentes = reincidencia.filter(r => Number(r.veces) >= 2 || Number(r.anulados) > 0);
+  const diferidosReincidentes = diferidos.filter(d => Number(d.veces) >= 2 || Number(d.anulados) > 0);
   const correctoresActivos = correctores.filter(c => Number(c.total) >= 2 || Number(c.a_si_mismo) > 0 || Number(c.altas) > 0);
 
   // (r2b) El panel ya no depende sólo de los fichajes marcados: con cero marcados puede haber
   // correcciones o fichajes diferidos que el supervisor necesita ver.
-  if (fichajes.length === 0 && diferidosReincidentes.length === 0 && correctoresActivos.length === 0) return null;
+  if (fichajes.length === 0 && reincidentes.length === 0 && diferidosReincidentes.length === 0 && correctoresActivos.length === 0) return null;
 
   const visibles = expandido ? fichajes : fichajes.slice(0, 5);
 
@@ -130,17 +150,24 @@ export const FichajesPorRevisarPanel = () => {
 
       {reincidentes.length > 0 && (
         <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5">
-          <p className="text-[10px] font-bold text-rose-800 uppercase tracking-wider mb-1.5">
+          <p className="text-[10px] font-bold text-rose-800 uppercase tracking-wider mb-1">
             Reincidencia (últimos 90 días)
           </p>
+          {reincidentes.some(r => Number(r.anulados) > 0) && (
+            <p className="text-[10px] text-rose-700 mb-1.5 leading-tight">
+              Anuladas = la marca sigue contando aunque una corrección la haya retirado. Quién la
+              retiró, abajo.
+            </p>
+          )}
           <div className="flex flex-wrap gap-1.5">
             {reincidentes.map(r => (
               <span
                 key={r.user_id}
                 className="px-2 py-1 rounded-lg bg-white border border-rose-200 text-[11px] font-semibold text-rose-800"
-                title={`Del ${r.desde} al ${r.hasta}`}
+                title={`Del ${r.desde} al ${r.hasta}` + (Number(r.anulados) > 0 ? ` · ${r.vigentes} vigentes, ${r.anulados} retiradas por una corrección` : '')}
               >
                 {r.nombre ?? `Usuario ${r.user_id}`} · {r.veces} veces en {r.dias} {Number(r.dias) === 1 ? 'día' : 'días'}
+                <InsigniaAnuladas cuantas={r.anulados} />
               </span>
             ))}
           </div>
@@ -161,9 +188,10 @@ export const FichajesPorRevisarPanel = () => {
               <span
                 key={d.user_id}
                 className="px-2 py-1 rounded-lg bg-white border border-amber-200 text-[11px] font-semibold text-amber-900"
-                title={`Del ${d.desde} al ${d.hasta}`}
+                title={`Del ${d.desde} al ${d.hasta}` + (Number(d.anulados) > 0 ? ` · ${d.vigentes} vigentes, ${d.anulados} retiradas por una corrección` : '')}
               >
                 {d.nombre ?? `Usuario ${d.user_id}`} · {d.veces} en {d.dias} {Number(d.dias) === 1 ? 'día' : 'días'}
+                <InsigniaAnuladas cuantas={d.anulados} />
               </span>
             ))}
           </div>

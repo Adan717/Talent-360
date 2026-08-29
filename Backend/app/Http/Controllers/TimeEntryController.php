@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Scopes\ExcludeAnuladasScope;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
@@ -194,10 +195,31 @@ class TimeEntryController extends Controller
         // cuántos días distintos. Un corte de red real marca a MEDIA sucursal un día; el que
         // se quita retardos "offline" se marca SOLO, muchos días — eso es lo que el supervisor
         // necesita distinguir y ninguna fila individual le decía.
-        $reincidencia = \App\Models\TimeEntry::where('tenant_id', $tenantId)
+        //
+        // (2026-08-28 r2c) ANULAR NO BORRA EL PATRON. Antes esta consulta heredaba
+        // ExcludeAnuladasScope, asi que una anulacion sacaba el fichaje del contador: quien tiene
+        // permiso de corregir podia limpiar su propio rastro y el tablero quedaba auditable solo
+        // para quien NO puede corregir, que es justo al reves. Ahora se cuenta tambien lo anulado,
+        // en su propia categoria visible.
+        //
+        // Las dos reglas del conteo:
+        //  · Se EXCLUYE lo `creado_por_correccion_id` (el sustituto de una sustitucion). Hereda
+        //    `flagged_for_review` y `details` del original, asi que sin esto UN hecho corregido
+        //    contaria DOS veces y el propio arreglo fabricaria reincidencia que no ocurrio.
+        //  · `time_entries.date` va calificado: `date` es palabra clave de tipo en Postgres y
+        //    dentro de un CASE se vuelve ambigua.
+        $reincidencia = \App\Models\TimeEntry::withoutGlobalScope(ExcludeAnuladasScope::class)
+            ->where('tenant_id', $tenantId)
             ->where('flagged_for_review', true)
-            ->where('date', '>=', now()->subDays(90)->toDateString())
-            ->selectRaw('user_id, MAX(employee_name_at_time) as nombre, COUNT(*) as veces, COUNT(DISTINCT date) as dias, MIN(date) as desde, MAX(date) as hasta')
+            ->where('time_entries.date', '>=', now()->subDays(90)->toDateString())
+            ->selectRaw('user_id,
+                MAX(employee_name_at_time) as nombre,
+                COUNT(CASE WHEN creado_por_correccion_id IS NULL THEN 1 END) as veces,
+                SUM(CASE WHEN anulado_at IS NULL     AND creado_por_correccion_id IS NULL THEN 1 ELSE 0 END) as vigentes,
+                SUM(CASE WHEN anulado_at IS NOT NULL AND creado_por_correccion_id IS NULL THEN 1 ELSE 0 END) as anulados,
+                COUNT(DISTINCT CASE WHEN creado_por_correccion_id IS NULL THEN time_entries.date END) as dias,
+                MIN(time_entries.date) as desde,
+                MAX(time_entries.date) as hasta')
             ->groupBy('user_id')
             ->orderByDesc('veces')
             ->get();
@@ -209,14 +231,22 @@ class TimeEntryController extends Controller
         // días con deriva chica — justo el que apaga el WiFi a propósito. Este agregado los suma:
         // cuenta la PRESENCIA del marcador con LIKE (la columna `details` es TEXT, no jsonb — la
         // sintaxis `details->clave` revienta en Postgres; LIKE es portable en sqlite y Postgres).
-        // Usa el mismo modelo, así que hereda ExcludeSimulationScope y ExcludeAnuladasScope igual
-        // que el conteo de arriba (un ponche simulado o anulado no cuenta como diferido). Y el
+        // Hereda ExcludeSimulationScope (un ponche del Simulador no cuenta) pero NO el de
+        // anuladas: mismo criterio que el conteo de arriba — anular no borra el patrón. Y el
         // marcador ya no es falsificable: processPunch limpia esas llaves de lo que manda el
         // cliente, sólo el servidor las estampa.
-        $diferidos = \App\Models\TimeEntry::where('tenant_id', $tenantId)
-            ->where('date', '>=', now()->subDays(90)->toDateString())
+        $diferidos = \App\Models\TimeEntry::withoutGlobalScope(ExcludeAnuladasScope::class)
+            ->where('tenant_id', $tenantId)
+            ->where('time_entries.date', '>=', now()->subDays(90)->toDateString())
             ->where('details', 'like', '%"hora_reclamada"%')
-            ->selectRaw('user_id, MAX(employee_name_at_time) as nombre, COUNT(*) as veces, COUNT(DISTINCT date) as dias, MIN(date) as desde, MAX(date) as hasta')
+            ->selectRaw('user_id,
+                MAX(employee_name_at_time) as nombre,
+                COUNT(CASE WHEN creado_por_correccion_id IS NULL THEN 1 END) as veces,
+                SUM(CASE WHEN anulado_at IS NULL     AND creado_por_correccion_id IS NULL THEN 1 ELSE 0 END) as vigentes,
+                SUM(CASE WHEN anulado_at IS NOT NULL AND creado_por_correccion_id IS NULL THEN 1 ELSE 0 END) as anulados,
+                COUNT(DISTINCT CASE WHEN creado_por_correccion_id IS NULL THEN time_entries.date END) as dias,
+                MIN(time_entries.date) as desde,
+                MAX(time_entries.date) as hasta')
             ->groupBy('user_id')
             ->orderByDesc('veces')
             ->get();

@@ -335,6 +335,161 @@ class ReportesOperativosController extends Controller
         ];
     }
 
+    /**
+     * REGISTRO ELECTRÓNICO DE JORNADA — Art. 132 fr. XXXIV LFT (2026-08-28).
+     *
+     * La obligación patronal es conservar el registro de las horas de ENTRADA y SALIDA de cada
+     * trabajador. Este reporte lo entrega en crudo, una fila por persona y día, y —esto es lo que
+     * lo vuelve defendible ante una inspección— **con las correcciones a la vista**: si una hora
+     * se movió, aquí se lee cuál era, cuál quedó, quién la cambió y por qué.
+     *
+     * POR QUÉ NO PASA POR `FichajesVigentes::query()` COMO LOS DEMÁS: los otros reportes miden lo
+     * que se paga, y para eso un fichaje anulado no existe. Éste no mide, TESTIFICA. Un registro
+     * del que se pueden borrar renglones sin dejar marca no prueba nada, así que va por
+     * `FichajesVigentes::todos()` (la salida documentada para auditoría) y presenta lo retirado
+     * como retirado, con su motivo. Se le añade a mano el filtro del Simulador, que `todos()` no
+     * trae consigo.
+     */
+    public function registroDeJornada(Request $request)
+    {
+        $tenantId = (int) $request->user()->tenant_id;
+        [$desde, $hasta] = $this->rango($request, 'registro_jornada');
 
+        $colaboradores = $this->colaboradores($tenantId)->keyBy('user_id');
 
+        // TODOS los movimientos del periodo, anulados incluidos.
+        $fichajes = FichajesVigentes::todos()
+            ->where('tenant_id', $tenantId)
+            ->whereBetween('date', [$desde, $hasta])
+            ->whereNull('simulation_session_id')
+            ->whereIn('type', ['check_in', 'check_out', 'meal_start', 'meal_end'])
+            ->orderBy('user_id')->orderBy('date')->orderBy('time')
+            ->get([
+                'id', 'user_id', 'date', 'type', 'time', 'details',
+                'employee_name_at_time', 'job_role_title_at_time',
+                'anulado_at', 'anulado_por_correccion_id', 'creado_por_correccion_id',
+            ]);
+
+        // El motivo y la firma de cada corrección que tocó este periodo.
+        $idsCorreccion = $fichajes
+            ->flatMap(fn ($f) => [$f->anulado_por_correccion_id, $f->creado_por_correccion_id])
+            ->filter()->unique()->values()->all();
+
+        $correcciones = collect();
+        if (!empty($idsCorreccion)) {
+            $correcciones = DB::table('asistencia_correcciones as c')
+                ->leftJoin('users as autor', 'autor.id', '=', 'c.autorizado_por')
+                ->where('c.tenant_id', $tenantId)
+                ->whereIn('c.id', $idsCorreccion)
+                ->get(['c.id', 'c.tipo', 'c.motivo', 'c.created_at', 'autor.name as autor'])
+                ->keyBy('id');
+        }
+
+        $porDia = [];
+        foreach ($fichajes as $f) {
+            $porDia[$f->user_id][$f->date][] = $f;
+        }
+
+        $filas = [];
+        foreach ($porDia as $userId => $dias) {
+            $emp = $colaboradores[$userId] ?? null;
+
+            foreach ($dias as $fecha => $marcas) {
+                $vigentes = collect($marcas)->filter(fn ($m) => $m->anulado_at === null);
+                $anuladas = collect($marcas)->filter(fn ($m) => $m->anulado_at !== null);
+
+                $entrada = $vigentes->firstWhere('type', 'check_in');
+                $salida = $vigentes->where('type', 'check_out')->last();
+                $comidaIni = $vigentes->firstWhere('type', 'meal_start');
+                $comidaFin = $vigentes->where('type', 'meal_end')->last();
+
+                // El nombre y el puesto son la FOTO del momento (lo que exige un registro
+                // histórico); si esa vía no los estampó, se cae al expediente de hoy.
+                $conFoto = collect($marcas)->first(fn ($m) => $m->employee_name_at_time !== null);
+
+                $notas = [];
+                foreach ($marcas as $m) {
+                    $idCorr = $m->anulado_at !== null ? $m->anulado_por_correccion_id : $m->creado_por_correccion_id;
+                    if (!$idCorr || !isset($correcciones[$idCorr])) {
+                        continue;
+                    }
+                    $c = $correcciones[$idCorr];
+                    $que = $m->anulado_at !== null
+                        ? 'se retiró ' . $this->nombreDelMovimiento($m->type) . ' de las ' . substr((string) $m->time, 0, 5)
+                        : 'quedó ' . $this->nombreDelMovimiento($m->type) . ' a las ' . substr((string) $m->time, 0, 5);
+                    $notas[] = $que . ' — ' . trim((string) $c->motivo)
+                        . ' (' . ($c->autor ?? 'usuario retirado') . ', ' . substr((string) $c->created_at, 0, 10) . ')';
+                }
+                $notas = array_values(array_unique($notas));
+
+                $auto = $vigentes->first(
+                    fn ($m) => $m->type === 'check_out' && str_contains((string) $m->details, '"auto_closed":true')
+                );
+
+                if (!empty($notas)) {
+                    $estado = 'Corregido';
+                } elseif ($auto) {
+                    $estado = 'Salida puesta por el sistema';
+                } elseif (!$entrada || !$salida) {
+                    $estado = 'Incompleto';
+                } else {
+                    $estado = 'Original';
+                }
+
+                $filas[] = [
+                    $fecha,
+                    $conFoto->employee_name_at_time ?? $emp->name ?? 'Sin expediente',
+                    $conFoto->job_role_title_at_time ?? $emp->jobRole->name ?? 'Sin puesto',
+                    $entrada ? substr((string) $entrada->time, 0, 8) : '',
+                    $salida ? substr((string) $salida->time, 0, 8) : '',
+                    $comidaIni ? substr((string) $comidaIni->time, 0, 5) : '',
+                    $comidaFin ? substr((string) $comidaFin->time, 0, 5) : '',
+                    $estado,
+                    $anuladas->count(),
+                    implode(' | ', $notas),
+                ];
+            }
+        }
+
+        usort($filas, fn ($a, $b) => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
+
+        $conCorreccion = count(array_filter($filas, fn ($f) => $f[7] === 'Corregido'));
+
+        return $this->csv("registro_de_jornada_{$desde}_a_{$hasta}.csv", [
+            'Fecha', 'Colaborador', 'Puesto', 'Entrada', 'Salida',
+            'Inicio de comida', 'Fin de comida', 'Estado del registro',
+            'Movimientos retirados', 'Qué se corrigió y por qué',
+        ], $filas, [
+            "Periodo del {$desde} al {$hasta}.",
+            'Registro electrónico de jornada — artículo 132 fracción XXXIV de la Ley Federal del Trabajo: '
+                . 'la hora de entrada y de salida de cada trabajador, por día.',
+            'La hora la sella el SERVIDOR al registrarse el fichaje; la persona no puede escribirla. '
+                . 'Un fichaje sincronizado sin red conserva su momento real y queda marcado para revision.',
+            'Ninguna hora se sobrescribe: una correccion RETIRA el movimiento anterior (sigue en el sistema, '
+                . 'contado en "Movimientos retirados") y registra el nuevo. Por eso este reporte puede mostrar '
+                . 'que decia antes y que dice ahora.',
+            '"Salida puesta por el sistema" = la persona no marco su salida y el cierre automatico la registro; '
+                . 'no es una hora observada.',
+            'El nombre y el puesto son los que tenia la persona EL DIA del fichaje, no los de hoy.',
+        ], [
+            'titulo' => 'Resumen del periodo',
+            'encabezados' => ['Concepto', 'Cantidad'],
+            'filas' => [
+                ['Dias con registro', count($filas)],
+                ['Dias con alguna correccion', $conCorreccion],
+                ['Colaboradores con registro', count($porDia)],
+            ],
+        ]);
+    }
+
+    /** Nombre humano de un movimiento, para las notas de correccion del registro de jornada. */
+    private function nombreDelMovimiento(string $tipo): string
+    {
+        return [
+            'check_in' => 'la entrada',
+            'check_out' => 'la salida',
+            'meal_start' => 'el inicio de comida',
+            'meal_end' => 'el fin de comida',
+        ][$tipo] ?? 'un movimiento';
+    }
 }

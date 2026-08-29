@@ -735,6 +735,44 @@
         "dias_atras",
         "rango_absoluto"
       ]
+    },
+    {
+      "frase": "dame el registro de jornada del mes pasado",
+      "reportes": [
+        "registro_jornada"
+      ],
+      "tipos": [
+        "mes_pasado",
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "necesito las entradas y salidas para la inspeccion",
+      "reportes": [
+        "registro_jornada"
+      ],
+      "tipos": [
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "el reporte del articulo 132",
+      "reportes": [
+        "registro_jornada"
+      ],
+      "tipos": [
+        "rango_absoluto"
+      ]
+    },
+    {
+      "frase": "registro electronico de jornada de esta semana",
+      "reportes": [
+        "registro_jornada"
+      ],
+      "tipos": [
+        "esta_semana",
+        "rango_absoluto"
+      ]
     }
   ]
 }

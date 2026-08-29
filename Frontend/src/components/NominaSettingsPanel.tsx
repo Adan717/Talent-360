@@ -85,7 +85,7 @@ export default function NominaSettingsPanel() {
       <div>
         <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2 mb-1">
           <DollarSign className="text-indigo-600" size={24} />
-          Nómina y Periodicidad de Pago
+          Pre-nómina y periodicidad de pago
         </h3>
         <p className="text-xs text-slate-500 font-medium">
           Define cada cuánto paga tu empresa. El generador nocturno, la firma del colaborador y el

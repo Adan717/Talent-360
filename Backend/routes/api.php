@@ -249,6 +249,16 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
 
         // Módulos HR & Empleados (Escritura y Lectura/Deportes)
         Route::post('/employees', [EmployeeController::class, 'store']);
+
+        // Importacion masiva de plantilla (2026-08-28). Mismo grupo que el alta de uno
+        // (admin/supervisor del tenant): quien puede dar de alta a una persona puede darlas de
+        // alta en bloque.  es simulacro y no escribe;  solo escribe si el
+        // archivo entero pasa. Throttle porque cada llamada lee y valida hasta 500 renglones.
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::get('/employees/import/plantilla.csv', [\App\Http\Controllers\ImportacionPlantillaController::class, 'plantilla']);
+            Route::post('/employees/import/revisar', [\App\Http\Controllers\ImportacionPlantillaController::class, 'revisar']);
+            Route::post('/employees/import', [\App\Http\Controllers\ImportacionPlantillaController::class, 'importar']);
+        });
         Route::put('/employees/{id}', [EmployeeController::class, 'update']);
         Route::get('/employees', [EmployeeController::class, 'index']);
         Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);

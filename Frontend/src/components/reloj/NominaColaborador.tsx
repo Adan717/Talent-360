@@ -435,7 +435,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 size={24} />
           </div>
-          <h4 className="text-sm font-black text-emerald-900">Nómina Aceptada</h4>
+          <h4 className="text-sm font-black text-emerald-900">Pre-nómina aceptada</h4>
           <p className="text-[10.5px] text-emerald-700/80 leading-relaxed">
             Firmaste de conformidad el periodo del {closedPeriodLabel}
             {closedPayroll.approval.approved_at
@@ -450,7 +450,7 @@ export default function NominaColaborador({ isDark = false }: NominaColaboradorP
           <div className="flex gap-2">
             <Fingerprint size={20} className="text-[#8a2be2] shrink-0" />
             <div>
-              <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Firma de Nómina del Periodo</h4>
+              <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Firma de pre-nómina del periodo</h4>
               <p className="text-[10.5px] text-slate-400 mt-0.5">
                 Periodo cerrado del {closedPeriodLabel}. Revisa el desglose y firma de conformidad la liquidación calculada.
               </p>

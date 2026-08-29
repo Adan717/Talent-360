@@ -199,7 +199,7 @@ export function MobileBottomNav({
             </div>
             <span className={`text-[8px] xs:text-[8.5px] uppercase tracking-wider font-extrabold mt-0.5 ${
               phoneTab === 'nomina' ? 'font-black text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
-            } ${isNominaBlocked || (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) ? 'opacity-40' : ''}`}>Nómina</span>
+            } ${isNominaBlocked || (!isModuleUnlocked('reportes') && !isModuleUnlocked('facturacion')) ? 'opacity-40' : ''}`}>Pre-nómina</span>
           </button>
         )}
       </nav>

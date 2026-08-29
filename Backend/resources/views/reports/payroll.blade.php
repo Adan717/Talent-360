@@ -108,7 +108,7 @@
 <body>
     <div class="header">
         <h1>Reporte de Prenómina</h1>
-        <p>Talent360 — Gestión Automatizada de Nómina</p>
+        <p>Talent360 — Cálculo automatizado de pre-nómina</p>
     </div>
 
     {{-- Un reporte de PRUEBA salía idéntico al real: en el escritorio de alguien no había
@@ -201,7 +201,7 @@
     <div class="summary-box">
         <table>
             <tr>
-                <td class="font-bold">Nómina Base Bruta:</td>
+                <td class="font-bold">Pre-nómina base bruta:</td>
                 <td class="text-right">${{ number_format($totalBase, 2) }}</td>
             </tr>
             <tr>

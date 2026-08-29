@@ -434,7 +434,7 @@ export default function ReportesManager() {
                   <BarChart3 size={40} className="text-amber-500" />
                 </div>
                 
-                <h3 className="text-2xl font-black text-slate-800 mb-2">Reportes Analíticos y Nómina</h3>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">Reportes analíticos y pre-nómina</h3>
                 {/* La promesa decía "genera la prenómina con IA y timbra (CFDI) a un clic".
                     El cálculo de nómina es determinista (reglamento + asistencia), no IA, y
                     el timbrado exige dar de alta al PAC antes. Se describe lo que hace. */}
@@ -488,7 +488,7 @@ export default function ReportesManager() {
                 {/* Resumen Superior */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <p className="text-sm font-bold text-slate-500 mb-1">Nómina Bruta del Periodo</p>
+                    <p className="text-sm font-bold text-slate-500 mb-1">Pre-nómina bruta del periodo</p>
                     <h4 className="text-3xl font-black text-slate-800">${totalBase.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</h4>
                     {totalBonos > 0 && (
                       <p className="text-[11px] text-slate-400 font-semibold mt-1">

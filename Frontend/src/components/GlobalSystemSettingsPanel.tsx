@@ -79,7 +79,7 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
     },
     {
       id: 'nomina',
-      label: 'Nómina & Periodicidad',
+      label: 'Pre-nómina & Periodicidad',
       icon: <FileText size={18} />,
       badge: 'Pagos',
       badgeColor: 'bg-emerald-100 text-emerald-700',

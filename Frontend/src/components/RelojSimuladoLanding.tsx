@@ -421,10 +421,10 @@ export const RelojSimuladoLanding: React.FC<RelojSimuladoLandingProps> = ({
         break;
       case 'nomina':
       case 'cuenta':
-        title = 'Nómina y Mi Perfil';
+        title = 'Pre-nómina y Mi Perfil';
         desc = 'Recibos y Asistencia';
         icon = <DollarSign className="text-rose-500 animate-pulse" />;
-        badgeText = 'Nómina';
+        badgeText = 'Pre-nómina';
         badgeColorClass = 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30';
         break;
       case 'herramientas':

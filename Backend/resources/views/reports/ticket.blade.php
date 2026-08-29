@@ -72,7 +72,7 @@
 <body>
     <div class="text-center header">
         <h1>TALENT360 SaaS</h1>
-        <p>Comprobante de Pago de Nómina</p>
+        <p>Comprobante de pre-nómina (no es un recibo fiscal)</p>
         <p>RFC: {{ auth()->user()->tenant->rfc ?? 'XAXX010101000' }}</p>
         <p>Razón Social: {{ auth()->user()->tenant->tax_name ?? 'Decorarte S.A. de C.V.' }}</p>
     </div>

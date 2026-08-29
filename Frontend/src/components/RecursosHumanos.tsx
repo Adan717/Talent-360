@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { ImportarPlantilla } from './ImportarPlantilla';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2, Upload } from 'lucide-react';
 import PendientesDeMiEquipo from './PendientesDeMiEquipo';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
@@ -934,6 +935,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
 
   // Formulario nuevo colaborador
   const [showForm, setShowForm] = useState(false);
+  const [mostrarImportar, setMostrarImportar] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserSalary, setNewUserSalary] = useState('');
   // Con qué periodicidad viene el monto capturado. Visible SIEMPRE junto al campo de sueldo:
@@ -1965,10 +1967,24 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                       </button>
                    </div>
                    
+                   {mostrarImportar && (
+                     <ImportarPlantilla
+                       onCerrar={() => setMostrarImportar(false)}
+                       onImportado={() => { fetchData(); }}
+                     />
+                   )}
+
                    {directorioSubTab === 'activos' && (
-                      <button onClick={() => setShowForm(true)} className="w-full md:w-auto justify-center bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">
-                        <Plus size={16}/> Alta de Colaborador
-                      </button>
+                      <div className="w-full md:w-auto flex flex-col md:flex-row gap-2">
+                        {/* Importar plantilla: sin esto, un cliente de 40 personas se captura
+                            una por una y el trabajo recae en quien vende. */}
+                        <button onClick={() => setMostrarImportar(true)} className="w-full md:w-auto justify-center bg-white text-slate-700 border border-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer">
+                          <Upload size={16}/> Importar desde archivo
+                        </button>
+                        <button onClick={() => setShowForm(true)} className="w-full md:w-auto justify-center bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">
+                          <Plus size={16}/> Alta de Colaborador
+                        </button>
+                      </div>
                    )}
                 </div>
 

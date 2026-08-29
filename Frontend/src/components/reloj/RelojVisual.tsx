@@ -2673,7 +2673,7 @@ export default function RelojVisual({
         badgeText = 'v2.8';
         break;
       case 'nomina':
-        title = 'Nómina';
+        title = 'Pre-nómina';
         desc = 'Recibos y timbrados CFDI';
         icon = <DollarSign className="text-emerald-500 animate-pulse-once" />;
         badgeText = 'v1.0';

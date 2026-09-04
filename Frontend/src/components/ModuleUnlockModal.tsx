@@ -31,13 +31,13 @@ export const ModuleUnlockModal: React.FC<ModuleUnlockModalProps> = ({
   if (!isOpen || !moduleData) return null;
 
   const handleShare = (platform: 'linkedin' | 'facebook' | 'whatsapp') => {
-    const text = encodeURIComponent(`¡Estamos optimizando el control de nuestro equipo con Talent360! Recomiendo esta plataforma para gestión de personal y RRHH: https://talent360.app`);
+    const text = encodeURIComponent(`¡Estamos optimizando el control de nuestro equipo con Talent360! Recomiendo esta plataforma para gestión de personal y RRHH: https://talent360.com.mx`);
     let url = '';
 
     if (platform === 'linkedin') {
-      url = `https://www.linkedin.com/sharing/share-offsite/?url=https://talent360.app`;
+      url = `https://www.linkedin.com/sharing/share-offsite/?url=https://talent360.com.mx`;
     } else if (platform === 'facebook') {
-      url = `https://www.facebook.com/sharer/sharer.php?u=https://talent360.app`;
+      url = `https://www.facebook.com/sharer/sharer.php?u=https://talent360.com.mx`;
     } else if (platform === 'whatsapp') {
       url = `https://api.whatsapp.com/send?text=${text}`;
     }

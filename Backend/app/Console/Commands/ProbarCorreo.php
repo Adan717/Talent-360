@@ -54,7 +54,7 @@ class ProbarCorreo extends Command
             try {
                 $remitente = $ajustes->platformSenderEmail();
             } catch (\Throwable) {
-                $remitente = (string) (config('mail.from.address') ?: 'no-reply@talent360.mx');
+                $remitente = (string) (config('mail.from.address') ?: 'no-reply@talent360.com.mx');
             }
         }
 

@@ -104,7 +104,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   <Building2 className="w-4 h-4 text-indigo-400" /> 1. Identidad y Rol del Responsable
                 </h4>
                 <p>
-                  <strong>TALENT360</strong> (en lo sucesivo "LA PLATAFORMA"), accesible desde el portal web <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.app</code>, opera bajo un modelo de Software como Servicio (SaaS) B2B:
+                  <strong>TALENT360</strong> (en lo sucesivo "LA PLATAFORMA"), accesible desde el portal web <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.com.mx</code>, opera bajo un modelo de Software como Servicio (SaaS) B2B:
                 </p>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
                   <li><strong>Respecto a los datos de la Empresa Suscriptora (Cliente):</strong> Talent360 actúa como <strong>RESPONSABLE</strong> del tratamiento de los datos de contacto, fiscales y de facturación del representante legal y administradores.</li>
@@ -202,7 +202,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   Para ejercer sus <strong>Derechos ARCO</strong>, deberá enviar una solicitud al correo electrónico oficial:
                 </p>
                 <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center font-mono text-indigo-400 font-bold text-xs">
-                  📧 privacidad@talent360.app
+                  📧 privacidad@talent360.com.mx
                 </div>
                 <p className="text-[11px] text-slate-400">
                   Requisitos: Adjuntar identificación oficial vigente (INE/Pasaporte), nombre de la empresa suscriptora y detalle preciso del derecho a ejercer. Plazo de respuesta legal: <strong>20 (veinte) días hábiles</strong>.
@@ -229,7 +229,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   <Scale className="w-4 h-4 text-indigo-400" /> 8. Cambios al Aviso de Privacidad
                 </h4>
                 <p>
-                  Talent360 se reserva el derecho de efectuar en cualquier momento modificaciones o actualizaciones al presente Aviso de Privacidad. Dichas modificaciones estarán disponibles en el portal web <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.app/privacidad</code> y/o mediante notificación dentro del panel de administración del sistema.
+                  Talent360 se reserva el derecho de efectuar en cualquier momento modificaciones o actualizaciones al presente Aviso de Privacidad. Dichas modificaciones estarán disponibles en el portal web <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[11px]">https://talent360.com.mx/privacidad</code> y/o mediante notificación dentro del panel de administración del sistema.
                 </p>
               </section>
             </div>
@@ -359,7 +359,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   Cualquier colaborador o representante puede solicitar el ejercicio de sus derechos enviando un correo electrónico con el asunto <strong>"Solicitud ARCO - Talent360"</strong> a:
                 </p>
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center font-mono text-indigo-400 font-bold text-sm">
-                  📧 privacidad@talent360.app
+                  📧 privacidad@talent360.com.mx
                 </div>
                 <div className="space-y-1 text-slate-300">
                   <p className="font-bold text-white text-xs">Documentación requerida en el correo:</p>

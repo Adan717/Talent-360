@@ -42,7 +42,7 @@ class MailSettingsService
     public function platformSenderEmail(): string
     {
         return $this->platformSetting('platform_sender_email')
-            ?: (config('mail.from.address') ?: 'no-reply@talent360.mx');
+            ?: (config('mail.from.address') ?: 'no-reply@talent360.com.mx');
     }
 
     public function platformWelcomeSubject(): string

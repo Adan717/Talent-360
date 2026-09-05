@@ -3,90 +3,31 @@ import { ShieldCheck, FileText, X, Lock, CheckCircle2, Building2, UserCheck, Ale
 
 export type LegalDocType = 'privacy' | 'terms' | 'arco';
 
-interface LegalModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  defaultTab?: LegalDocType;
-}
+/**
+ * Las tres pestañas legales, en un solo lugar.
+ *
+ * Existe para que el MODAL (que se abre desde el login, la landing y el portal de empleo) y la
+ * PÁGINA PÚBLICA /privacidad rendericen EXACTAMENTE el mismo texto. Este proyecto ya pagó tres
+ * veces el precio de tener dos copias de lo mismo —las dos funciones `csv()` que dejaron reportes
+ * sin notas al pie, y los tres tabuladores de precios que hoy se contradicen—, y un aviso de
+ * privacidad con dos versiones que se separan es de los peores lugares donde puede pasar.
+ */
+export const LEGAL_TABS: { id: LegalDocType; label: string; Icono: React.ElementType }[] = [
+  { id: 'privacy', label: 'Aviso de Privacidad (8 Puntos)', Icono: ShieldCheck },
+  { id: 'terms', label: 'Términos del Servicio (7 Puntos TOS & SLA)', Icono: FileText },
+  { id: 'arco', label: 'Derechos ARCO & Biométricos', Icono: UserCheck },
+];
 
-export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, defaultTab = 'privacy' }) => {
-  const [activeTab, setActiveTab] = useState<LegalDocType>(defaultTab);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700/80 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] text-slate-100 overflow-hidden">
-        
-        {/* Modal Header */}
-        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-white flex items-center gap-2">
-                Centro de Protección Legal & Privacidad <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">LFPDPPP & TOS</span>
-              </h2>
-              <p className="text-xs text-slate-400 font-medium">Marco Legal Completo, SLA B2B y Tratamiento de Datos — Talent360</p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
-            title="Cerrar ventana"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tab Selector */}
-        <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex gap-2 overflow-x-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('privacy')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'privacy' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            Aviso de Privacidad (8 Puntos)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('terms')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'terms' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            Términos del Servicio (7 Puntos TOS & SLA)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('arco')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'arco' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            Derechos ARCO & Biométricos
-          </button>
-        </div>
-
-        {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto space-y-6 text-slate-300 text-xs leading-relaxed font-sans scrollbar-thin scrollbar-thumb-slate-700">
+/**
+ * El CONTENIDO legal, sin cascarón. Trae consigo su envoltura tipográfica: los párrafos de
+ * adentro no declaran color ni tamaño, los heredan de aquí. Si esta envoltura se queda en el
+ * modal, la página pública se ve rota.
+ */
+export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
+  <div className="space-y-6 text-slate-300 text-xs leading-relaxed font-sans">
           
           {/* TAB 1: AVISO DE PRIVACIDAD INTEGRAL COMPLETO (8 PUNTOS) */}
-          {activeTab === 'privacy' && (
+          {tab === 'privacy' && (
             <div className="space-y-6">
               <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex items-start gap-3">
                 <Lock className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
@@ -128,7 +69,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   </div>
                   <div className="bg-slate-850 p-3.5 rounded-xl border border-slate-800 space-y-1">
                     <h5 className="font-bold text-amber-300 text-xs">C. Evidencia Fotográfica y Geolocalización (Datos Sensibles)</h5>
-                    <p className="text-[11px] text-slate-400">Fotografías tomadas desde la cámara web/dispositivo al fichar entrada/salida o registrar comidas, IP y coordenadas GPS. Utilizadas únicamente como evidencia fotográfica de presencia e integridad operativa.</p>
+                    <p className="text-[11px] text-slate-400">Fotografías tomadas desde la cámara del dispositivo al registrar el inicio y el fin de la comida, IP y coordenadas GPS. Utilizadas únicamente como evidencia fotográfica de presencia e integridad operativa.</p>
                   </div>
                   <div className="bg-slate-850 p-3.5 rounded-xl border border-slate-800 space-y-1">
                     <h5 className="font-bold text-indigo-300 text-xs">D. Datos de Capacitación y Evaluación</h5>
@@ -169,8 +110,8 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   En caso de que el fichaje requiera fotografía desde la PWA del reloj checador o el dialer de apertura:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
-                  <li>La fotografía se captura con el único propósito de validar la identidad física del colaborador en el instante del fichaje.</li>
-                  <li>Las imágenes son almacenadas de forma cifrada en la nube (<strong>Google Cloud Storage</strong>) bajo protocolos estrictos de aislamiento por inquilino (<code className="bg-slate-800 text-indigo-300 px-1 py-0.5 rounded font-mono text-[10px]">TenantScope</code>).</li>
+                  <li>La fotografía se captura con el único propósito de acreditar el uso efectivo del periodo de comida.</li>
+                  <li>Las imágenes se almacenan en el <strong>almacenamiento privado del servidor</strong> (no en una carpeta pública), accesibles únicamente mediante una petición autenticada y con aislamiento por inquilino (<code className="bg-slate-800 text-indigo-300 px-1 py-0.5 rounded font-mono text-[10px]">TenantScope</code>). <strong>No se cifran en reposo</strong>; la protección es de acceso, no criptográfica. Se depuran automáticamente a los 90 días.</li>
                   <li>No se venderán, comercializarán ni compartirán estas imágenes con ningún tercero bajo ninguna circunstancia.</li>
                 </ul>
               </section>
@@ -184,7 +125,10 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
                   Talent360 no transfiere datos personales a terceros sin su consentimiento, salvo las excepciones previstas en el Artículo 37 de la LFPDPPP, limitándose estrictamente a los siguientes proveedores de infraestructura (Encargados de infraestructura):
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
-                  <li><strong>Google Cloud Platform (GCP):</strong> Servicio de hospedaje, base de datos PostgreSQL encriptada y almacenamiento de archivos.</li>
+                  <li><strong>Hetzner Online GmbH (Alemania):</strong> Servidor donde se alojan la aplicación, la base de datos PostgreSQL y los archivos. <strong>Los datos residen fuera de México</strong>; la conexión viaja cifrada (HTTPS) y el acceso está restringido, sin cifrado en reposo del disco.</li>
+                  <li><strong>OpenAI, L.L.C. (EE.UU.) y Google (Gemini):</strong> Funciones de asistencia con inteligencia artificial. Según la función que la empresa active, pueden procesarse <strong>nombres y puestos de colaboradores, su estado de asistencia del día, el texto de tareas y el contenido de documentos internos</strong>. Ninguna de estas funciones es obligatoria para operar el control de asistencia.</li>
+                  <li><strong>Resend / Amazon SES (EE.UU.) y Zoho Corporation (EE.UU.):</strong> Envío y recepción del correo del sistema (invitaciones, recuperación de contraseña, avisos). Procesan nombre y dirección de correo del destinatario.</li>
+                  <li><strong>Google Firebase Cloud Messaging:</strong> Entrega de notificaciones al dispositivo.</li>
                   <li><strong>Stripe / Mercado Pago:</strong> Procesamiento de pagos con tarjeta bajo cumplimiento estándar PCI-DSS.</li>
                   <li><strong>Proveedores Autorizados de Certificación (PAC):</strong> Emisión automatizada de facturas electrónicas CFDI ante el SAT.</li>
                 </ul>
@@ -236,7 +180,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
           )}
 
           {/* TAB 2: TÉRMINOS Y CONDICIONES (7 PUNTOS TOS & SLA B2B COMPLETO) */}
-          {activeTab === 'terms' && (
+          {tab === 'terms' && (
             <div className="space-y-6">
               <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 flex items-start gap-3">
                 <FileText className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
@@ -341,7 +285,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
           )}
 
           {/* TAB 3: DERECHOS ARCO & PROTOCOLO BIOMÉTRICO */}
-          {activeTab === 'arco' && (
+          {tab === 'arco' && (
             <div className="space-y-6">
               <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
@@ -388,6 +332,67 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, default
             </div>
           )}
 
+  </div>
+);
+
+interface LegalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  defaultTab?: LegalDocType;
+}
+
+export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, defaultTab = 'privacy' }) => {
+  const [activeTab, setActiveTab] = useState<LegalDocType>(defaultTab);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-700/80 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] text-slate-100 overflow-hidden">
+        
+        {/* Modal Header */}
+        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-white flex items-center gap-2">
+                Centro de Protección Legal & Privacidad <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">LFPDPPP & TOS</span>
+              </h2>
+              <p className="text-xs text-slate-400 font-medium">Marco Legal Completo, SLA B2B y Tratamiento de Datos — Talent360</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            title="Cerrar ventana"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {/* Tab Selector — recorre LEGAL_TABS para que las etiquetas vivan en un solo sitio. */}
+        <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex gap-2 overflow-x-auto shrink-0">
+          {LEGAL_TABS.map(({ id, label, Icono }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === id
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <Icono className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+          <LegalBody tab={activeTab} />
         </div>
 
         {/* Modal Footer */}

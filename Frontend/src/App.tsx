@@ -35,6 +35,7 @@ const getIndicatorColor = (modId: string, systemSettings: any) => {
 
 // Mega-Módulos Cargados de Forma Dinámica (Lazy Loading)
 const VerificarCertificado = lazy(() => import('./components/VerificarCertificado'));
+const PaginaLegal = lazy(() => import('./components/PaginaLegal'));
 const RelojChecador = lazy(() => import('./components/RelojChecador'));
 const KioskScreen = lazy(() => import('./components/KioskScreen'));
 const RecursosHumanos = lazy(() => import('./components/RecursosHumanos'));
@@ -893,6 +894,16 @@ function App() {
           <WebPublicaOrganizacion />
         </Suspense>
       } />
+      {/* Aviso de privacidad y términos — PÚBLICO a proposito (2026-09-05). El propio aviso
+          promete por escrito que sus actualizaciones se publican en talent360.com.mx/privacidad,
+          y esa URL caia en el comodin. Sin sesion porque quien entra por el kiosco con su PIN
+          nunca pasa por el login y es justamente quien tiene derecho a leerlo. */}
+      <Route path="/privacidad" element={
+        <Suspense fallback={<LoadingScreen message="Cargando aviso de privacidad..." />}>
+          <PaginaLegal />
+        </Suspense>
+      } />
+
       <Route path="/superadmin" element={
         <ProtectedRoute allowedRoles={['platform_admin']}>
           <div className="min-h-[100dvh] bg-slate-50 p-3 sm:p-5 md:p-8 overflow-y-auto">

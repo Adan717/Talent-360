@@ -171,6 +171,18 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
   const [jobRoles, setJobRoles] = useState<any[]>([]);
   const [vendors, setVendors] = useState<VendorLog[]>([]);
   const [prospectsCount, setProspectsCount] = useState<number>(0);
+  /**
+   * Quién rebasó el tope de tiempo extraordinario de la empresa esta semana, con su cifra real.
+   *
+   * (2026-09-05) Hasta hoy no había contador de horas extra en ninguna pantalla del producto: el
+   * jefe —que es quien puede repartir la carga o mandar a alguien a casa— no tenía cómo enterarse.
+   * Las cifras las calcula el servidor con la misma fórmula que el reporte de horas trabajadas.
+   * Es un aviso: no bloquea a nadie.
+   */
+  const [alertasHorasExtra, setAlertasHorasExtra] = useState<{
+    user_id: number; nombre: string; minutos: number; tope: number; dias: number;
+    desde: string; hasta: string;
+  }[]>([]);
 
   // UI & Filter States
   const [loading, setLoading] = useState(true);
@@ -262,6 +274,7 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
         setPuedeCorregir(!!res.data.data.puede_corregir_fichajes);
         setChatMessages(res.data.data.chat || []);
         setJobRoles(res.data.data.job_roles || []);
+        setAlertasHorasExtra(res.data.data.alertas_horas_extra || []);
         // Bloque 2: sin llave de IA no se ofrece el Plan IA; y el chat DICE su retención.
         setIaDisponible(res.data.data.ia_disponible === true);
         if (res.data.data.chat_retention_days) setChatRetentionDays(res.data.data.chat_retention_days);
@@ -762,6 +775,42 @@ export function MonitorActividadesTiempoReal({ setActiveModule }: { setActiveMod
             </div>
 
           </div>
+
+          {/* TOPE DE TIEMPO EXTRAORDINARIO REBASADO (2026-09-05).
+              Sale sólo cuando alguien lo rebasó de verdad —una alerta que siempre está encendida
+              deja de leerse— y siempre con la CIFRA: cuánto lleva y cuál es el tope. Avisa, no
+              bloquea: nadie deja de poder fichar por esto. */}
+          {alertasHorasExtra.length > 0 && (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <h4 className="text-xs sm:text-sm font-black text-amber-900">
+                  Tope de horas extra rebasado ({alertasHorasExtra.length})
+                </h4>
+              </div>
+              <div className="space-y-1.5">
+                {alertasHorasExtra.map((a) => {
+                  const enHoras = (min: number) => {
+                    const h = Math.floor(min / 60);
+                    const m = min % 60;
+                    if (h === 0) return `${m} min`;
+                    return m === 0 ? `${h} h` : `${h} h ${m} min`;
+                  };
+                  return (
+                    <div key={a.user_id} className="text-[11px] sm:text-xs text-amber-900 leading-snug">
+                      <b>{a.nombre}</b> lleva <b>{enHoras(a.minutos)}</b> de tiempo extraordinario
+                      esta semana ({a.dias} {a.dias === 1 ? 'día' : 'días'}); el tope de la empresa
+                      es {enHoras(a.tope)}.
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-amber-700 mt-2 pt-2 border-t border-amber-200">
+                Semana del {alertasHorasExtra[0].desde} al {alertasHorasExtra[0].hasta}. El sistema
+                sólo avisa: nadie queda bloqueado y la nómina no cambia (se paga por día, no por horas).
+              </p>
+            </div>
+          )}
 
           {/* PESTAÑAS MÓVILES PARA SMARTPHONE */}
           <div className="flex sm:hidden bg-slate-200/60 p-1 rounded-2xl border border-slate-200">

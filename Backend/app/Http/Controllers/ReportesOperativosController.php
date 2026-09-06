@@ -104,7 +104,9 @@ class ReportesOperativosController extends Controller
             ->where('tenant_id', $tenantId)
             ->whereBetween('date', [$desde, $hasta])
             ->whereNull('simulation_session_id')
-            ->whereIn('type', ['check_in', 'check_out', 'meal_start', 'meal_end', 'break_start', 'break_end'])
+            // La lista de tipos la declara la fórmula, no el caller: si aquí faltara uno, este
+            // reporte mediría de menos y el acumulador de tiempo extraordinario de más.
+            ->whereIn('type', \App\Support\JornadaTrabajada::TIPOS)
             ->orderBy('user_id')->orderBy('date')->orderBy('time')
             ->get(['user_id', 'date', 'type', 'time', 'details']);
 
@@ -261,78 +263,23 @@ class ReportesOperativosController extends Controller
     }
 
     /**
-     * Minutos de una jornada a partir de sus marcas. Empareja check_in/check_out en orden y
-     * resta comida y descansos; con `JornadaLaboral` para que el turno nocturno (22:00-02:00)
-     * cuente como una sola jornada y no como dos ni como negativo.
+     * Minutos de una jornada a partir de sus marcas.
+     *
+     * (2026-09-05) La fórmula ya NO vive aquí: se mudó a `App\Support\JornadaTrabajada` porque el
+     * acumulador de tiempo extraordinario (`App\Support\JornadaExtraordinaria`) necesitaba las
+     * mismas horas, y copiarla habría creado la segunda cuenta del mismo dato — exactamente lo que
+     * la cabecera de este archivo declara combatir. Aquí queda el adaptador que le pasa el turno
+     * del expediente; la definición de "horas efectivas" es una sola y la comparten los dos.
      */
     private function minutosDeJornada(array $marcas, string $fecha, $emp, string $tz): array
     {
-        $inicio = $emp->shiftStart ?? null;
-        $fin = $emp->shiftEnd ?? null;
-
-        $instante = function ($m) use ($fecha, $inicio, $fin, $tz) {
-            return JornadaLaboral::instanteDe($fecha, substr((string) $m->time, 0, 8), $inicio, $fin, $tz);
-        };
-
-        // Se ordena por el INSTANTE, no por la hora del reloj: en un turno 22:00–02:00 la
-        // salida de las 02:00 es POSTERIOR a la entrada de las 22:00, aunque "02" < "22".
-        // Ordenar por la hora cruda emparejaba la salida con nada y daba 0 horas.
-        usort($marcas, fn ($a, $b) => $instante($a) <=> $instante($b));
-
-        $brutos = 0; $comida = 0; $descanso = 0;
-        $abierto = null; $comidaAbierta = null; $descansoAbierto = null;
-        $entrada = null; $salida = null; $autoCerrada = false;
-
-        foreach ($marcas as $m) {
-            $t = $instante($m);
-            switch ($m->type) {
-                case 'check_in':
-                    $abierto = $t;
-                    $entrada = $entrada ?? substr((string) $m->time, 0, 5);
-                    break;
-                case 'check_out':
-                    if ($abierto) {
-                        $brutos += max(0, $abierto->diffInMinutes($t));
-                        $abierto = null;
-                    }
-                    $salida = substr((string) $m->time, 0, 5);
-                    $detalles = json_decode((string) $m->details, true);
-                    if (!empty($detalles['auto_closed'])) {
-                        $autoCerrada = true;
-                    }
-                    break;
-                case 'meal_start':   $comidaAbierta = $t; break;
-                case 'meal_end':
-                    if ($comidaAbierta) { $comida += max(0, $comidaAbierta->diffInMinutes($t)); $comidaAbierta = null; }
-                    break;
-                case 'break_start':  $descansoAbierto = $t; break;
-                case 'break_end':
-                    if ($descansoAbierto) { $descanso += max(0, $descansoAbierto->diffInMinutes($t)); $descansoAbierto = null; }
-                    break;
-            }
-        }
-
-        $observacion = '';
-        if ($autoCerrada) {
-            $observacion = 'Cerrada por el sistema (olvidó checar salida)';
-        } elseif ($abierto && $brutos > 0) {
-            // (2026-08-22) Quien salió y VOLVIÓ a entrar el mismo día deja un turno abierto sobre
-            // horas que sí se contaron (las del turno que cerró). La fila decía a la vez "salida
-            // 09:09 · 6:22 horas" y "sin salida registrada: no se cuentan horas" — dos afirmaciones
-            // contrarias en el mismo renglón. Se cuentan las cerradas y se dice cuál queda abierta.
-            $observacion = 'Volvió a entrar y no cerró ese turno: sólo se cuentan las horas ya cerradas';
-        } elseif ($abierto) {
-            $observacion = 'Sin salida registrada: no se cuentan horas';
-        } elseif ($comidaAbierta) {
-            $observacion = 'Comida sin cerrar';
-        }
-
-        return [
-            'entrada' => $entrada, 'salida' => $salida,
-            'brutos' => $brutos, 'comida' => $comida, 'descanso' => $descanso,
-            'efectivos' => max(0, $brutos - $comida - $descanso),
-            'incompleta' => $observacion,
-        ];
+        return \App\Support\JornadaTrabajada::delDia(
+            $marcas,
+            $fecha,
+            $emp->shiftStart ?? null,
+            $emp->shiftEnd ?? null,
+            $tz
+        );
     }
 
     /**

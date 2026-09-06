@@ -496,10 +496,29 @@ export default function RelojVisual({
     date: string; minutes: number; justificante: string | null;
   } | null>(null);
 
+  /**
+   * El tiempo EXTRAORDINARIO que esta persona lleva en la semana de su empresa, y el tope que la
+   * empresa se puso (art. 66 LFT: máximo 9 h).
+   *
+   * (2026-09-05) Antes no existía ningún contador de horas extra en el producto — ni aquí, ni en el
+   * Monitor, ni en la nómina — así que se podía acumular lo que fuera sin que nadie lo sumara ni
+   * avisara. Lo calcula el SERVIDOR con la MISMA fórmula que el reporte de horas trabajadas: si el
+   * reloj hiciera su propia cuenta, el colaborador y su reporte acabarían diciendo números
+   * distintos, que es el defecto que este proyecto lleva rondas quitando.
+   *
+   * Avisa con la cifra real; no bloquea el fichaje.
+   */
+  const [miJornadaExtraordinaria, setMiJornadaExtraordinaria] = useState<{
+    minutos: number; tope: number; rebasado: boolean; dias: number; desde: string; hasta: string;
+  } | null>(null);
+
   const consultarRetardoJustificable = () => {
     if (isSimulated || !currentUser?.id) return;
     axiosInstance.get('/sync/state')
-      .then(res => setMiRetardoJustificable(res.data?.mi_retardo_justificable ?? null))
+      .then(res => {
+        setMiRetardoJustificable(res.data?.mi_retardo_justificable ?? null);
+        setMiJornadaExtraordinaria(res.data?.mi_jornada_extraordinaria ?? null);
+      })
       .catch(() => { /* sin red no se ofrece el trámite; no hay nada que romper */ });
   };
 
@@ -1420,6 +1439,34 @@ export default function RelojVisual({
         icon: <AlertTriangle className="text-amber-500 w-4 h-4" />,
         action: () => setShowJustificanteModal(true),
         actionText: rechazado ? 'Volver a enviar' : 'Justificar'
+      });
+    }
+
+    // TIEMPO EXTRAORDINARIO de la semana (2026-09-05). El aviso dice el NÚMERO —cuánto lleva y cuál
+    // es el tope—, no una frase genérica: "llevas horas de más" no le sirve a nadie para decidir si
+    // se queda hoy. Las dos cifras vienen del servidor; el reloj sólo las escribe.
+    //
+    // No bloquea: rebasado el tope se puede seguir fichando y trabajando. Criterio del dueño,
+    // "nada bloquea, todo avisa".
+    if (miJornadaExtraordinaria && miJornadaExtraordinaria.minutos > 0) {
+      const enHoras = (min: number) => {
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        if (h === 0) return `${m} min`;
+        return m === 0 ? `${h} h` : `${h} h ${m} min`;
+      };
+      const llevas = enHoras(miJornadaExtraordinaria.minutos);
+      const tope = enHoras(miJornadaExtraordinaria.tope);
+      const rebasado = miJornadaExtraordinaria.rebasado;
+
+      notificationsList.push({
+        id: 'tiempo_extraordinario',
+        type: rebasado ? 'warning' : 'info',
+        title: rebasado ? 'Tope de horas extra rebasado' : 'Horas extra de la semana',
+        desc: rebasado
+          ? `Llevas ${llevas} de tiempo extraordinario esta semana y el tope de tu empresa es ${tope}. Tu jefe ya lo ve; puedes seguir trabajando.`
+          : `Llevas ${llevas} de tiempo extraordinario esta semana. El tope de tu empresa es ${tope}.`,
+        icon: <Clock className={`${rebasado ? 'text-amber-500' : 'text-blue-500'} w-4 h-4`} />
       });
     }
 

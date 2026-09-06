@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\LftSetting;
 use App\Models\LftHoliday;
+use App\Support\JornadaExtraordinaria;
 use Carbon\Carbon;
 
 class LftSettingController extends Controller
@@ -34,6 +35,9 @@ class LftSettingController extends Controller
                 'late_penalty_per_minute' => 0.00,
                 'max_late_block_minutes' => 0,
                 'require_checkout_approval' => false,
+                // Tope de tiempo extraordinario por semana: se nace en el TECHO DE LEY (art. 66
+                // LFT = 9 h). Bajarlo es decisión de la empresa; subirlo lo rechaza saveSettings.
+                'overtime_weekly_cap_minutes' => JornadaExtraordinaria::TECHO_LFT_MINUTOS_SEMANA,
             ]
         );
 
@@ -75,6 +79,20 @@ class LftSettingController extends Controller
             'punctuality_bonus_amount' => 'sometimes|numeric|min:0', // Bono de puntualidad (R94)
             'punctuality_bonus_max_lates' => 'sometimes|integer|min:0|max:65535', // columna unsignedSmallInteger
             'opening_bonus_per_open' => 'sometimes|numeric|min:0',   // Bono de apertura (R94)
+            // TOPE DE TIEMPO EXTRAORDINARIO por semana (2026-09-05). El techo es DURO: el art. 66
+            // de la LFT permite prolongar la jornada hasta 3 horas diarias y no más de 3 veces por
+            // semana — 9 h = 540 min. La empresa puede ponerse un tope MENOR (es su política); un
+            // valor mayor no es configuración, es pedirle al sistema que respalde algo ilegal, y
+            // por eso se rechaza con 422 en vez de recortarse en silencio.
+            'overtime_weekly_cap_minutes' => [
+                'sometimes', 'integer', 'min:0',
+                'max:' . JornadaExtraordinaria::TECHO_LFT_MINUTOS_SEMANA,
+            ],
+        ], [
+            'overtime_weekly_cap_minutes.max' => 'El tope de tiempo extraordinario no puede pasar de '
+                . JornadaExtraordinaria::TECHO_LFT_MINUTOS_SEMANA . ' minutos (9 horas) por semana: '
+                . 'es el máximo del artículo 66 de la LFT (hasta 3 horas diarias y no más de 3 veces '
+                . 'por semana). Puedes poner un tope menor, nunca uno mayor.',
         ]);
 
         // N5/opción A: el descuento por minuto arranca en $0 (art. 107 LFT: las multas al

@@ -238,6 +238,63 @@ inventados del payload, y la decisión legal de custodiar sellos ajenos con su c
 
 ---
 
+### D11 — Retención a cinco años y reserva por juicio abierto (2026-09-05)
+
+El sistema tenía **piso legal y no tenía techo**. "Eliminar definitivamente" se niega a borrar a
+quien tiene fichajes, recibos o expediente, y archiva citando el art. 804 de la LFT (cinco años de
+guarda). Pero pasado ese plazo no caducaba nada nunca: la regla *"retención 5 años, y la purga
+nunca alcanza a quien tiene un juicio abierto"* existía **sólo como comentario** en la cabecera de
+la bitácora inmutable y en el RFC. No había columna, ni endpoint, ni pantalla, ni comando, y la
+figura de "juicio abierto" no existía en el producto.
+
+Conservar datos personales sin plazo tiene su propio problema (la LFPDPPP obliga a suprimirlos
+cuando dejan de ser necesarios) y un riesgo evidente: **lo que ya no existe no se puede filtrar**.
+
+**Lo que se construyó**
+
+- Columnas de reserva legal y de "ya purgado" en `employees`, deliberadamente fuera de `$fillable`.
+- Endpoints `role:admin` para marcar, levantar y listar reservas, con motivo obligatorio en las dos
+  direcciones y registro en la bitácora de seguridad. Alcanzan a expedientes archivados, que es
+  donde vive quien ya se fue y demandó.
+- `datos:purgar-vencidos`: **simulacro por defecto**, borra sólo con `--aplicar`, selecciona por
+  persona y lista sin tocar los casos en que el dato se contradice consigo mismo.
+- El borrado del historial de asistencia pasa por una función `SECURITY DEFINER` de la base que
+  comprueba por su cuenta el plazo y la reserva: la aplicación **no recupera** el permiso de DELETE
+  sobre `time_entries_historial` que el paso 3 del RFC le quita.
+
+**LO QUE SE ASUME, y que el dueño puede querer distinto**
+
+1. **La reserva la marca el ADMIN de la empresa.** Es la más discutible de las cuatro: quien pone
+   la reserva es la misma parte que se beneficiaría de que la evidencia desapareciera. El dueño
+   podría querer que la ponga **soporte** (Talent 360, indelegable al cliente) o que exija la firma
+   de su **abogado laboral**. Hoy es el admin, es indelegable dentro de la empresa, y poner y
+   levantar quedan registrados con motivo.
+2. **El plazo cuenta desde la FECHA DE BAJA**, no desde cada fichaje. Es lo que dice el 804 —corre
+   desde que termina la relación laboral— y evita el daño obvio de purgar por fecha del dato: a
+   quien lleva ocho años aquí le habría borrado sus primeros años estando en nómina.
+3. **La purga es MANUAL.** Lo agendado (mensual) es sólo el simulacro. El borrado lo dispara una
+   persona escribiendo `--aplicar` después de leer la lista. Un cron que borrara solo destruiría,
+   sin que nadie mirara, la evidencia con la que la empresa se defiende en un juicio laboral.
+4. **Quedan FUERA de esta versión, y siguen conservando datos personales:** los **certificados de
+   Academia** (su folio se verifica en una página **pública** que muestra el nombre de la persona:
+   purgarlos rompe folios ya entregados, conservarlos mantiene el dato publicado), la **evidencia
+   de tareas** (las filas de `task_assignments` sí se borran con la persona, pero los archivos
+   adjuntos a una tarea no tienen todavía un inventario propio que permita acotar su borrado) y la
+   **Wiki**, que tiene su propia tabla de cuentas (`obsidian_users`) sin ninguna llave hacia el
+   expediente: lo único en común es el correo, y emparejar personas por correo es adivinar. El
+   comando **avisa** cuando el correo coincide, para que se revise a mano.
+
+**Dos cosas que el dueño tiene que saber, aunque no sean decisiones suyas**
+
+- **Las bajas anteriores al 2026-08-16 no tienen fecha** (la columna no existía). Ninguna purga las
+  alcanzará jamás hasta que alguien se la ponga a mano. El comando las lista una por una, y la
+  ficha del colaborador ahora lo dice en pantalla.
+- **El respaldo conserva 14 días**, así que lo purgado sigue vivo dentro de los respaldos durante
+  dos semanas más. Si algún día hay que certificar una supresión ante una autoridad, esa ventana
+  hay que declararla.
+
+---
+
 ## ⏳ Esperando algo del dueño
 
 - **Timbrado de nómina**: la `FACTURAPI_KEY` y arreglar la salida TLS del servidor hacia Facturapi.

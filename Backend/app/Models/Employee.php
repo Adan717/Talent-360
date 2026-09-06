@@ -77,7 +77,14 @@ class Employee extends Model
         'clock_preferences' => 'array',
         // Resync 3 (línea del jefe): módulos/funciones permitidos por colaborador.
         'allowed_modules' => 'array',
-        'allowed_features' => 'array'
+        'allowed_features' => 'array',
+        // Reserva legal y purga de retención (2026-09-05). Deliberadamente FUERA de $fillable: se
+        // escriben con forceFill() desde los dos únicos sitios autorizados (ReservaLegalController,
+        // que es role:admin, y el comando datos:purgar-vencidos). La pantalla de RRHH manda el
+        // expediente ENTERO en cada guardado; si fueran asignables en masa, corregirle el teléfono
+        // a alguien podría levantarle la reserva sin que nadie lo hubiera decidido.
+        'legal_hold_at' => 'datetime',
+        'purged_at' => 'datetime',
     ];
 
     public function getRoleAttribute()

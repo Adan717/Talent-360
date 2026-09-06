@@ -285,6 +285,10 @@ class PlatformAdminController extends Controller
                 'date' => $tenant->created_at ? $tenant->created_at->diffForHumans() : 'Reciente',
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
                 'trial_ends_at' => $tenant->trial_ends_at,
+                // Cobranza (2026-09-05): sin estos dos la lista no puede distinguir "no debe"
+                // de "no se le cobra" y termina inventando el estado en el navegador.
+                'current_period_end' => $tenant->current_period_end,
+                'billing_exempt' => (bool) $tenant->billing_exempt,
                 'nicho' => $nicho,
                 'freemium_compliance_status' => $latestCompliance ? $latestCompliance->status : 'pending',
                 'freemium_compliance_proof_url' => $latestCompliance?->proof_url,
@@ -420,6 +424,12 @@ class PlatformAdminController extends Controller
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
                 'trial_ends_at' => $tenant->trial_ends_at,
                 'current_period_end' => $tenant->current_period_end,
+                // Cobranza (2026-09-05): la pantalla necesita poder decir la verdad sobre por qué
+                // una empresa no entra al barrido de mora — exenta, o simplemente sin fecha de
+                // corte, que es el caso de las 4 empresas vivas hoy.
+                'billing_exempt' => (bool) $tenant->billing_exempt,
+                'billing_exempt_reason' => $tenant->billing_exempt_reason,
+                'payment_warning_sent_at' => $tenant->payment_warning_sent_at,
                 'max_users' => $tenant->max_users,
                 'created_at' => $tenant->created_at->toIso8601String(),
                 'allowed_modules' => $allowedModules,
@@ -503,19 +513,31 @@ class PlatformAdminController extends Controller
             return response()->json(['error' => 'No se puede suspender el inquilino principal.'], 400);
         }
 
+        $estadoPrevio = $tenant->subscription_status;
         $tenant->is_active = $request->is_active;
 
         if (!$tenant->is_active) {
-            $tenant->suspension_reason = $request->suspension_reason ?? 'Falta de pago';
+            $tenant->suspension_reason = $request->suspension_reason ?? \App\Support\EstadoDeCobranza::MOTIVO_DE_SUSPENSION;
             $tenant->suspended_at = now();
-            $tenant->subscription_status = 'cancelled';
+            $tenant->subscription_status = \App\Support\EstadoDeCobranza::CANCELADA;
         } else {
             $tenant->suspension_reason = null;
             $tenant->suspended_at = null;
-            $tenant->subscription_status = 'active';
+            $tenant->subscription_status = \App\Support\EstadoDeCobranza::ACTIVA;
         }
 
         $tenant->save();
+
+        // (2026-09-05) El interruptor manual apagaba y encendía empresas enteras sin dejar
+        // NINGÚN rastro de quién ni por qué. Ahora cae en la misma bitácora que el barrido
+        // automático (/platform/security-logs), para que las dos vías se lean juntas.
+        \App\Helpers\SecurityLogger::log(
+            \App\Support\EstadoDeCobranza::EVENTO_INTERRUPTOR_MANUAL,
+            $tenant->is_active
+                ? "Reactivada a mano desde el panel de plataforma. Estado {$estadoPrevio} → " . \App\Support\EstadoDeCobranza::ACTIVA . '.'
+                : "Suspendida a mano desde el panel de plataforma. Motivo: {$tenant->suspension_reason}. Estado {$estadoPrevio} → " . \App\Support\EstadoDeCobranza::CANCELADA . '.',
+            $tenant->id
+        );
 
         return response()->json([
             'message' => $tenant->is_active ? 'Empresa activada con éxito' : 'Empresa suspendida con éxito',

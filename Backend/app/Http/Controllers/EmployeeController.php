@@ -523,6 +523,26 @@ class EmployeeController extends Controller
         // H1: misma sincronía de sueldo que en el alta (ver espejarSueldo()).
         $data = $this->espejarSueldo($data);
 
+        // REINCORPORAR BORRA LA FECHA DE BAJA (2026-09-05).
+        //
+        // `destroy()` estampa `termination_date` al dar de baja, pero volver a activar —el botón
+        // "Re-activar Colaborador" de la pestaña de inactivos, que manda un PUT con
+        // `is_active_employee: true`— no la quitaba. La persona volvía a la plantilla arrastrando
+        // una fecha de baja vieja. Sólo el reingreso por el ATS la limpiaba (CandidateController),
+        // que es el camino que casi nadie usa.
+        //
+        // Con el reporte de rotación eso ya mentía (contaba como ida a quien está trabajando).
+        // Con la purga de retención es una bomba: `datos:purgar-vencidos` selecciona POR FECHA DE
+        // BAJA, así que a los cinco años habría borrado el expediente completo de alguien que está
+        // EN NÓMINA. Por eso el comando además se niega a purgar a quien figura activo y lo saca
+        // en su lista de guardas — pero la raíz se arregla aquí: nadie activo debe llevar fecha de
+        // baja encima.
+        if ($request->has('is_active_employee') && $request->boolean('is_active_employee')
+            && ($employee->termination_date || $employee->termination_reason)) {
+            $data['termination_date'] = null;
+            $data['termination_reason'] = null;
+        }
+
         try {
             DB::beginTransaction();
 

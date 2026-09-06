@@ -52,6 +52,12 @@ class PermissionCatalog
         'manage_subscription' => 'Plan, datos de pago y cancelación de la suscripción',
         'delete_company'      => 'Eliminar la empresa',
         'manage_permissions'  => 'Otorgar y revocar permisos a los puestos',
+        // 2026-09-05. La reserva legal es lo que deja a una persona FUERA de la purga de
+        // retención mientras tenga un juicio abierto. Quien pudiera levantarla podría, con un
+        // comando después, dejar a la empresa sin la evidencia con la que se defiende — y en un
+        // juicio laboral la prueba que el patrón destruyó se presume en su contra (LFT 784/804).
+        // Indelegable por la misma razón que manage_permissions: no es una tarea, es una llave.
+        'manage_legal_hold'   => 'Marcar y levantar la reserva legal (juicio abierto) que excluye a una persona de la purga de retención',
     ];
 
     /**

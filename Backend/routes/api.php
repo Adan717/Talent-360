@@ -414,6 +414,15 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'getMatrix']);
             Route::put('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'updateMatrix']);
+
+            // RESERVA LEGAL (2026-09-05) — INDELEGABLE, misma razón y mismo bloque. Marca a una
+            // persona con juicio abierto para que `datos:purgar-vencidos` no la alcance nunca.
+            // Quien pudiera levantarla podría dejar a la empresa sin la evidencia con la que se
+            // defiende; en un juicio laboral la prueba destruida se presume contra el patrón.
+            // Alcanzan a expedientes ARCHIVADOS: ahí es donde vive quien ya se fue y demandó.
+            Route::get('/admin/reserva-legal', [\App\Http\Controllers\ReservaLegalController::class, 'index']);
+            Route::post('/admin/employees/{id}/reserva-legal', [\App\Http\Controllers\ReservaLegalController::class, 'marcar']);
+            Route::post('/admin/employees/{id}/reserva-legal/levantar', [\App\Http\Controllers\ReservaLegalController::class, 'levantar']);
         });
 
         // Reportes básicos (CSV): asistencia del día y tareas completadas. Los botones

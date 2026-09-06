@@ -91,6 +91,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('suscripciones:revisar-vencidas --aplicar --sin-suspender')
             ->dailyAt('06:00')
             ->withoutOverlapping();
+
+        // RETENCIÓN A CINCO AÑOS (2026-09-05): se agenda SÓLO EL SIMULACRO. Nótese que no lleva
+        // `--aplicar` y que eso no es un olvido — es la decisión.
+        //
+        // Un cron que borrara solo destruiría, sin que nadie mirara, la evidencia con la que la
+        // empresa se defiende en un juicio laboral: basta una fecha de baja mal capturada, o una
+        // reserva legal que el abogado todavía no había pedido, para que el daño ya esté hecho y
+        // sea irreversible. El borrado lo dispara una persona escribiendo `--aplicar`, después de
+        // leer la lista. Misma filosofía que el paso 3 del RFC de la bitácora inmutable: observar
+        // primero, confiar después. Mensual porque nadie cumple cinco años de un día para otro.
+        $schedule->command('datos:purgar-vencidos')->monthlyOn(1, '04:00');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -381,6 +381,17 @@ const UserCardItem: React.FC<UserCardItemProps> = ({
                      ○ Archivado
                   </span>
                 )}
+                {/* Reserva legal (2026-09-05): esta persona tiene un juicio abierto y queda FUERA
+                    de la purga de retención. Se ve desde el directorio para que nadie la dé de
+                    baja definitiva ni la purgue sin saberlo. */}
+                {u.legal_hold_at && (
+                  <span
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full border bg-rose-100 text-rose-800 border-rose-300"
+                    title={`Reserva legal desde ${String(u.legal_hold_at).slice(0, 10)}: ${u.legal_hold_reason || 'sin motivo escrito'}. No la alcanza la purga de retención.`}
+                  >
+                     ⚖ Reserva legal
+                  </span>
+                )}
              </div>
 
              {/* Acciones Secundarias (Editar / Eliminar / Restaurar) */}
@@ -968,6 +979,45 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
       setGuardandoKioskPin(false);
     }
   };
+  // RESERVA LEGAL (2026-09-05). Marca a quien tiene un juicio abierto para que la purga de
+  // retención a cinco años no lo alcance nunca. Sólo el admin: quien pudiera levantarla podría
+  // dejar a la empresa sin la evidencia con la que se defiende, y la prueba que el patrón
+  // destruyó se presume en su contra (LFT 784/804). El servidor lo exige con `role:admin`; esto
+  // sólo evita ofrecer un botón que iba a responder 403.
+  const [reservaMotivo, setReservaMotivo] = useState('');
+  const [reservaReferencia, setReservaReferencia] = useState('');
+  const [guardandoReserva, setGuardandoReserva] = useState(false);
+  const [reservaEstado, setReservaEstado] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
+  const cambiarReservaLegal = async (accion: 'marcar' | 'levantar') => {
+    if (!editingUser?.id || reservaMotivo.trim().length < 5) return;
+    setGuardandoReserva(true);
+    setReservaEstado(null);
+    try {
+      const url = accion === 'marcar'
+        ? `/admin/employees/${editingUser.id}/reserva-legal`
+        : `/admin/employees/${editingUser.id}/reserva-legal/levantar`;
+      const res = await axiosInstance.post(url, {
+        motivo: reservaMotivo.trim(),
+        ...(accion === 'marcar' && reservaReferencia.trim() ? { referencia: reservaReferencia.trim() } : {}),
+      });
+      setEditingUser({ ...editingUser, ...(res.data?.employee || {}) });
+      setReservaMotivo('');
+      setReservaReferencia('');
+      setReservaEstado({ tipo: 'ok', texto: res.data?.message || 'Listo.' });
+      fetchData();
+    } catch (e: any) {
+      setReservaEstado({
+        tipo: 'error',
+        texto: e.response?.data?.message
+          || e.response?.data?.errors?.motivo?.[0]
+          || 'No se pudo cambiar la reserva legal.',
+      });
+    } finally {
+      setGuardandoReserva(false);
+    }
+  };
+
   // Resumen REAL del expediente (Archivo Digital). null = aún consultando.
   const [expedienteDocs, setExpedienteDocs] = useState<{ subidos: number; faltantes: number; error?: boolean } | null>(null);
   const [editingJobRole, setEditingJobRole] = useState<any>(null);
@@ -985,8 +1035,10 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
   const [selectedRoleForVacanciesModal, setSelectedRoleForVacanciesModal] = useState<any | null>(null);
 
   // Voice Assistant Hook Setup
-  const { currentTier } = useAppStore();
+  const { currentTier, currentUser } = useAppStore();
   const isPremium = currentTier === 'pro' || currentTier === 'enterprise';
+  // La reserva legal es INDELEGABLE (App\Support\PermissionCatalog): sólo el admin dueño.
+  const esAdmin = currentUser?.role === 'admin' || (currentUser as any)?.system_role === 'admin';
 
   const voiceFields = [
     {
@@ -2282,6 +2334,118 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                                  {!editingUser.periodicidad_captura && (
                                     <p className="mt-1 text-[10px] text-amber-600 font-bold">Sueldo capturado sin periodicidad declarada: al guardar se registrará la seleccionada.</p>
                                  )}
+                              </div>
+
+                              {/* BAJA Y RESERVA LEGAL (2026-09-05).
+                                  La fecha de baja existe en la base desde el 2026-08-16 y NO SE VEÍA
+                                  EN NINGUNA PANTALLA de la aplicación: se estampaba al dar de baja,
+                                  la usaba el reporte de rotación y nadie podía comprobarla. Ahora la
+                                  ficha la enseña. Es de sólo lectura a propósito: la escribe el acto
+                                  de dar de baja o de reincorporar, y desde el 2026-09-05 también
+                                  decide a quién alcanza la purga de retención — no es un campo que
+                                  convenga poder teclear de paso. */}
+                              <div className="col-span-1 md:col-span-2 border-t border-slate-100 pt-4 mt-2">
+                                 <label className="block text-sm font-bold text-slate-700 mb-2">Baja y reserva legal</label>
+                                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                       <div>
+                                          <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">Fecha de baja</span>
+                                          <span className="font-bold text-slate-700">
+                                             {editingUser.termination_date || '— sigue en plantilla'}
+                                          </span>
+                                       </div>
+                                       <div>
+                                          <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">Motivo de la baja</span>
+                                          <span className="font-bold text-slate-700">{editingUser.termination_reason || '—'}</span>
+                                       </div>
+                                    </div>
+
+                                    {editingUser.is_active_employee === false && !editingUser.termination_date && (
+                                       <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 font-semibold">
+                                          Esta baja no tiene fecha (es anterior al 16 de agosto de 2026, cuando el sistema
+                                          empezó a registrarla). Sin fecha no hay plazo de conservación que contar: la purga
+                                          de retención nunca la alcanzará, y la rotación no la puede medir.
+                                       </p>
+                                    )}
+
+                                    {editingUser.purged_at && (
+                                       <p className="text-[11px] text-slate-600 bg-slate-100 border border-slate-200 rounded-lg p-2 font-semibold">
+                                          Datos personales purgados el {String(editingUser.purged_at).slice(0, 10)} al vencer
+                                          la retención de cinco años. Se conservan sólo el alta, la baja y el puesto.
+                                       </p>
+                                    )}
+
+                                    {editingUser.legal_hold_at ? (
+                                       <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 space-y-1">
+                                          <p className="text-xs font-black text-rose-800 flex items-center gap-1.5">
+                                             <Scale size={14} /> Reserva legal activa desde el {String(editingUser.legal_hold_at).slice(0, 10)}
+                                          </p>
+                                          <p className="text-[11px] text-rose-700"><strong>Motivo:</strong> {editingUser.legal_hold_reason}</p>
+                                          {editingUser.legal_hold_reference && (
+                                             <p className="text-[11px] text-rose-700"><strong>Referencia:</strong> {editingUser.legal_hold_reference}</p>
+                                          )}
+                                          {editingUser.legal_hold_by_name && (
+                                             <p className="text-[11px] text-rose-600">La puso {editingUser.legal_hold_by_name}.</p>
+                                          )}
+                                          <p className="text-[11px] text-rose-600">
+                                             Mientras siga puesta, la purga de retención no borra nada de esta persona.
+                                          </p>
+                                       </div>
+                                    ) : (
+                                       <p className="text-[11px] text-slate-500">
+                                          Sin reserva legal. Al cumplirse cinco años desde la baja, sus datos personales
+                                          pueden purgarse (art. 804 LFT).
+                                       </p>
+                                    )}
+
+                                    {esAdmin && (
+                                       <div className="space-y-2 pt-2 border-t border-slate-200">
+                                          <input
+                                             type="text"
+                                             value={reservaMotivo}
+                                             onChange={e => { setReservaMotivo(e.target.value); setReservaEstado(null); }}
+                                             placeholder={editingUser.legal_hold_at
+                                                ? 'Motivo para LEVANTARLA (convenio firmado, expediente cerrado…)'
+                                                : 'Motivo (demanda laboral 421/2026, requerimiento de la junta…)'}
+                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 outline-none"
+                                          />
+                                          {!editingUser.legal_hold_at && (
+                                             <input
+                                                type="text"
+                                                value={reservaReferencia}
+                                                onChange={e => setReservaReferencia(e.target.value)}
+                                                placeholder="Expediente o juzgado (opcional)"
+                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 outline-none"
+                                             />
+                                          )}
+                                          <button
+                                             type="button"
+                                             onClick={() => cambiarReservaLegal(editingUser.legal_hold_at ? 'levantar' : 'marcar')}
+                                             disabled={guardandoReserva || reservaMotivo.trim().length < 5}
+                                             className={`w-full px-4 py-2 font-bold rounded-xl text-xs transition-colors text-white disabled:bg-slate-300 ${
+                                                editingUser.legal_hold_at
+                                                   ? 'bg-slate-700 hover:bg-slate-800'
+                                                   : 'bg-rose-600 hover:bg-rose-700'
+                                             }`}
+                                          >
+                                             {guardandoReserva
+                                                ? 'Guardando…'
+                                                : (editingUser.legal_hold_at ? 'Levantar la reserva legal' : 'Marcar reserva legal')}
+                                          </button>
+                                          {/* Levantarla exige motivo IGUAL que ponerla: es el acto que vuelve a
+                                              exponer a esa persona al borrado, así que se justifica igual. */}
+                                          <p className="text-[10px] text-slate-400">
+                                             Escribe el motivo (mínimo 5 caracteres). Poner y levantar la reserva quedan
+                                             registrados en la bitácora de seguridad.
+                                          </p>
+                                          {reservaEstado && (
+                                             <p className={`text-[11px] font-bold ${reservaEstado.tipo === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                                {reservaEstado.texto}
+                                             </p>
+                                          )}
+                                       </div>
+                                    )}
+                                 </div>
                               </div>
                            </div>
                         )}

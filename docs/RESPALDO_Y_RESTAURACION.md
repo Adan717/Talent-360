@@ -19,6 +19,48 @@ no coincide con el servidor, manda el servidor y hay que corregir este archivo.
     (fotos de fichaje §67, evidencia vieja de comedor de prod).
   - El **código no va en el respaldo**: sale de git (`Adan717/Talent-360` y
     `pcmaster-prog/Talent-360-V2`).
+- **Instalación**: desde 2026-09-05 **el propio `deploy-v2` instala el script y su línea de cron
+  si faltan**, de forma idempotente. Antes los había puesto alguien a mano: un servidor
+  reinstalado —o una segunda instancia— nacía sin respaldo y nadie se enteraba.
+
+## La marca `ultimo.json` — cómo sabe la aplicación que hubo respaldo
+
+Los dumps viven en `/root/respaldos/auto` del **host** y el contenedor sólo monta `./Backend`:
+desde dentro de la aplicación no hay forma de verlos ni de contarlos. Por eso, al terminar bien
+—dump validado con `pg_restore --list` y tar hecho, no antes—, el script deja un recibo en el
+único terreno común:
+
+```
+Backend/storage/app/respaldo/ultimo.json
+{"instancia":"v2","terminado_utc":"2026-09-05T02:45:11Z","dump_bytes":48210944}
+```
+
+Se escribe con `.tmp` + `mv` (nunca un JSON a medio escribir), con permisos **644** y el
+directorio **755**: lo escribe `root` en el host y lo lee `www-data` dentro del contenedor. Va
+gitignorado (`Backend/storage/app/.gitignore`), así que no dispara la guarda de "cambios sin
+commitear" de `deploy_v2.sh`.
+
+Quien lo lee es `App\Support\EstadoDelRespaldo`, y de él dependen dos cosas:
+
+- **`GET /api/health`** responde **200 sólo si la base responde Y la marca tiene menos de 26
+  horas** (24 del ciclo diario + 2 de margen); en cualquier otro caso **503**. Es lo que mira el
+  vigilante externo: **[VIGILANTE_DEL_SERVIDOR.md](VIGILANTE_DEL_SERVIDOR.md)** — hoja para el
+  dueño con qué teclear en UptimeRobot o Better Stack, qué significa cada fallo y el ensayo de
+  alarma.
+- **`php artisan reloj:preflight`** lo repite con la misma clase: marca ausente o ilegible =
+  aviso; más de 26 h = fallo.
+
+Regla dura, y es a propósito: **una marca ausente o ilegible cuenta como fallo**. Un respaldo que
+la aplicación no puede confirmar no existe.
+
+Dos consecuencias que conviene tener presentes:
+
+- **Al estrenar esto, primero se sube y se corre el script a mano y DESPUÉS se despliega.** Al
+  revés, la dirección estrena en 503 por marca ausente y parece que el despliegue rompió algo.
+  Los pasos exactos, en la §5 de la hoja del vigilante.
+- **Después de una restauración**, la marca que sale del tar es la del día de aquel respaldo: el
+  health check dirá `viejo` hasta que corra el siguiente. Es honesto —esa instancia restaurada
+  no se ha respaldado a sí misma todavía— pero conviene saberlo para no perseguir un fantasma.
 
 ## Copia fuera del servidor (INTERINA)
 

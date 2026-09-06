@@ -8,6 +8,10 @@
 #      lo cifrado es irrecuperable) y public/uploads si existe (fotos de fichaje §67 y la
 #      evidencia vieja de comedor de producción).
 #
+# Y deja una MARCA en Backend/storage/app/respaldo/ultimo.json (ver el final de respaldar()):
+# es lo único que la aplicación puede ver del respaldo, y de ella depende que /api/health
+# conteste 200 o 503. Si este script deja de correr, el vigilante externo lo grita en 26 h.
+#
 # Retención: 14 días en /root/respaldos/auto. La copia FUERA del servidor la jala la máquina
 # de Adán (tarea programada de Windows) mientras el dueño decide el destino en la nube (§B1).
 # Cómo restaurar y cómo se probó: docs/RESPALDO_Y_RESTAURACION.md.
@@ -35,6 +39,27 @@ respaldar() { # nombre  contenedor_pg  base_de_datos  dir_backend_en_host
   tar -czf "$DEST/${nombre}_files_${STAMP}.tar.gz" -C "$dir" storage/app .env $extras
 
   chmod 600 "$DEST/${nombre}_db_${STAMP}.dump" "$DEST/${nombre}_files_${STAMP}.tar.gz"
+
+  # ── Marca para que la APLICACIÓN pueda decir si hubo respaldo ────────────────────────────
+  # Los dumps viven en el host y el contenedor sólo monta ./Backend: desde dentro no hay forma
+  # de verlos. storage/app es el único terreno común, así que aquí se deja el recibo que lee
+  # App\Support\EstadoDelRespaldo y que /api/health convierte en 200 o en 503.
+  #
+  # Se escribe AQUÍ, al final, y no antes: sólo después de que el dump pasó el pg_restore --list
+  # y de que el tar terminó. Una marca escrita al empezar diría "respaldo OK" de un respaldo que
+  # murió a mitad — la mentira exacta que este archivo existe para impedir.
+  #
+  # 644 el archivo y 755 el directorio porque lo escribe root en el host y lo lee www-data
+  # dentro del contenedor: con los permisos por defecto de root, el health check leería
+  # 'ilegible' y daría 503 con el respaldo perfectamente hecho.
+  bytes=$(wc -c < "$DEST/${nombre}_db_${STAMP}.dump" | tr -d ' ')
+  marca="$dir/storage/app/respaldo"
+  mkdir -p "$marca"
+  chmod 755 "$marca"
+  printf '{"instancia":"%s","terminado_utc":"%s","dump_bytes":%s}\n' \
+    "$nombre" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$bytes" > "$marca/ultimo.json.tmp"
+  mv "$marca/ultimo.json.tmp" "$marca/ultimo.json"   # .tmp + mv: nunca un JSON a medio escribir
+  chmod 644 "$marca/ultimo.json"
 }
 
 respaldar v2   talent360_v2_postgres talent360_v2_saas /var/www/talent360-v2/Backend

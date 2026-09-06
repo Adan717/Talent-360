@@ -779,19 +779,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     });
 });
 
-// Pública (Sin v1 prefix para monitoreo y health checks)
-Route::get('/health', function () {
-    try {
-        \DB::connection()->getPdo();
-        $dbStatus = 'ok';
-    } catch (\Exception $e) {
-        $dbStatus = 'fail: ' . $e->getMessage();
-    }
-
-    return response()->json([
-        'status' => 'ok',
-        'db' => $dbStatus,
-        'version' => '1.0.0',
-        'timestamp' => now()->toIso8601String()
-    ]);
-});
+// Pública (sin prefijo v1): la ÚNICA señal de salud del servidor. Es la que teclea el dueño en
+// el vigilante externo (docs/VIGILANTE_DEL_SERVIDOR.md), así que su contrato es el CÓDIGO HTTP:
+// 200 sólo si la base responde Y hubo respaldo reciente; 503 en cualquier otro caso.
+// El porqué de cada decisión —incluido por qué NO lleva throttle— está en SaludController.
+Route::get('/health', \App\Http\Controllers\SaludController::class);

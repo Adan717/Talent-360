@@ -11,6 +11,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { BackupPanel } from './BackupPanel';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
+import { SelectorZonaHoraria } from './common/SelectorZonaHoraria';
 import axiosInstance from '../lib/axios';
 
 export const ColorMap: Record<string, { sidebar: string; hex: string; text: string }> = {
@@ -490,21 +491,10 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     </div>
                     <p className="text-xs text-slate-400 mt-2">Esta es la URL que tus empleados usarán para entrar al sistema.</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Zona Horaria del Reloj Checador</label>
-                    <select
-                      value={timezone}
-                      onChange={e => setTimezone(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
-                    >
-                      <option value="America/Mexico_City">Tiempo del Centro - CDMX, GDL, MTY (América/Mexico_City)</option>
-                      <option value="America/Cancun">Tiempo del Sureste - Cancún, Q. Roo (América/Cancun)</option>
-                      <option value="America/Tijuana">Tiempo del Noroeste - Tijuana, B.C. (América/Tijuana)</option>
-                      <option value="America/Mazatlan">Tiempo del Pacífico - Mazatlán, Chihuahua, Sinaloa (América/Mazatlan)</option>
-                      <option value="America/Hermosillo">Tiempo de Sonora - Hermosillo (América/Hermosillo)</option>
-                    </select>
-                    <p className="text-xs text-slate-400 mt-2">Determina el huso horario oficial con el que se registrarán las entradas y salidas de los colaboradores.</p>
-                  </div>
+                  {/* Mismo control (y mismo ajuste) que "Configuración → Reloj & Asistencia
+                      Global": ahí es donde la gente lo busca, aquí donde vive el resto del
+                      perfil de la empresa. Ambos escriben system_settings.timezone. */}
+                  <SelectorZonaHoraria value={timezone} onChange={setTimezone} />
                 </div>
               </div>
 

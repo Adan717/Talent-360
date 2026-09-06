@@ -6,6 +6,7 @@ use App\Support\FichajesVigentes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Employee;
 use App\Models\JobRole;
@@ -565,6 +566,40 @@ class ClockController extends Controller
     // (ej. qué curso destraba el bloqueo por retardos — política de empresa). Línea §1–§42.
     private const ADMIN_ONLY_SETTING_KEYS = ['punctuality_course_id'];
 
+    /**
+     * Valida el VALOR de los ajustes que no pueden entrar en cualquier forma. Devuelve el mensaje
+     * de error (422) o null si el valor es aceptable.
+     *
+     * `timezone` (2026-09-05): de esta llave dependen los RETARDOS y el corte del día en nómina
+     * —`TenantTimezone::for()` la lee en cada cálculo de jornada—. Hasta hoy se guardaba tal cual
+     * llegara y `TenantTimezone` caía al default `America/Mexico_City` EN SILENCIO cuando no era
+     * una zona real: la empresa quedaba convencida de estar en Tijuana mientras el sistema le
+     * seguía fichando en horario del centro, con una hora de diferencia en cada retardo. Ahora se
+     * rechaza al escribir, que es donde alguien puede corregirlo.
+     */
+    private function errorDeAjuste($key, $value): ?string
+    {
+        if ($key !== 'timezone') {
+            return null;
+        }
+
+        // El valor viaja crudo desde el FE, pero hay filas legadas json-encoded ("America\/..");
+        // se valida lo mismo que `TenantTimezone` acabará leyendo.
+        $zona = is_string($value) ? trim(trim($value), '"') : null;
+
+        $validador = Validator::make(
+            ['timezone' => $zona],
+            ['timezone' => ['required', 'string', 'timezone']]
+        );
+
+        if ($validador->fails()) {
+            return 'La zona horaria no es válida. Use un identificador como America/Mexico_City, '
+                . 'America/Tijuana, America/Mazatlan, America/Hermosillo o America/Cancun.';
+        }
+
+        return null;
+    }
+
     public function syncSettings(Request $request)
     {
         // Solo admin/supervisor pueden escribir configuración de empresa. La ruta vive en el
@@ -602,6 +637,10 @@ class ClockController extends Controller
                 $value = (int) $value;
             }
 
+            if ($mensaje = $this->errorDeAjuste($key, $value)) {
+                return response()->json(['error' => $mensaje], 422);
+            }
+
             DB::table('system_settings')->updateOrInsert(
                 ['key' => $key, 'tenant_id' => $tenantId],
                 ['value' => is_string($value) ? $value : json_encode($value), 'updated_at' => now()]
@@ -612,6 +651,12 @@ class ClockController extends Controller
                 if (in_array($key, self::ADMIN_ONLY_SETTING_KEYS) && !$isAdmin) {
                     return response()->json(['error' => 'Solo un administrador puede modificar esta configuración.'], 403);
                 }
+                if ($mensaje = $this->errorDeAjuste($key, $value)) {
+                    return response()->json(['error' => $mensaje], 422);
+                }
+            }
+
+            foreach ($settings as $key => $value) {
                 DB::table('system_settings')->updateOrInsert(
                     ['key' => $key, 'tenant_id' => $tenantId],
                     ['value' => is_string($value) ? $value : json_encode($value), 'updated_at' => now()]

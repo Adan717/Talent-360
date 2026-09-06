@@ -3,6 +3,7 @@ import { Settings, Clock, Coffee, ListTodo, Users, Save, CheckCircle2, Building2
 import { useAppStore } from '../store/useAppStore';
 import axiosInstance from '../lib/axios';
 import { ClockControlCenterPanel } from './reloj/ui/ClockControlCenterPanel';
+import { SelectorZonaHoraria } from './common/SelectorZonaHoraria';
 
 
 export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = false }: { initialTab?: string; hideSidebar?: boolean }) => {
@@ -256,6 +257,10 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         company_address: systemSettings.company_address || '',
         company_phone: systemSettings.company_phone || '',
         storeSchedule: systemSettings.storeSchedule || { openTime: '08:00', closeTime: '18:00' },
+        // Zona horaria de la empresa. Mismo ajuste que el del "Perfil de la Empresa" del menú
+        // del avatar: una sola llave, `system_settings.timezone`. Estaba SOLO allá dentro, que no
+        // es donde nadie la busca — de ella dependen los retardos y el corte del día en nómina.
+        timezone: systemSettings.timezone || 'America/Mexico_City',
         leySillaConfig: systemSettings.leySillaConfig || { enabled: true, consecutiveMinutes: 120, breakMinutes: 15 },
         mealSettings: {
           maxChairs: 4,
@@ -313,6 +318,7 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
         await updateSetting('timeBankConfigs', formData.timeBankConfigs);
         await updateSetting('storeSchedule', formData.storeSchedule); // Guardar también el horario de la sucursal
         await updateSetting('punctuality_course_id', formData.punctuality_course_id);
+        await updateSetting('timezone', formData.timezone);
       } else if (activeTab === 'comidas' || section === 'mealSettings') {
         await updateSetting('mealSettings', formData.mealSettings);
       } else if (activeTab === 'onboarding' || section === 'onboarding') {
@@ -635,6 +641,16 @@ export const CompanySettingsPanel = ({ initialTab = 'general', hideSidebar = fal
                     No hay cursos creados todavía en la Academia. Crea uno primero en la pestaña "Academia".
                   </p>
                 )}
+              </div>
+
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <SelectorZonaHoraria
+                  value={formData.timezone || 'America/Mexico_City'}
+                  onChange={(zona) => setFormData((prev: any) => ({ ...prev, timezone: zona }))}
+                  selectClassName="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-slate-700 bg-white focus:outline-none focus:border-indigo-650"
+                  labelClassName="block font-bold text-slate-800 mb-4"
+                  helpClassName="text-xs text-slate-500 mt-2"
+                />
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">

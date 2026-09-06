@@ -541,6 +541,13 @@ class ClockController extends Controller
             // NADIE podía pedir un justificante nunca, aunque el endpoint, el panel de aprobación
             // y la exención en nómina llevaban meses construidos y funcionando.
             'mi_retardo_justificable' => $this->retardoJustificable($tenantId, auth()->id()),
+            // (2026-09-05) El tiempo EXTRAORDINARIO que esta persona lleva acumulado en la semana
+            // del tenant (la misma semana que usa la nómina) y el tope de su empresa. Antes no
+            // existía ningún contador: se podían acumular las horas que fueran sin que nadie las
+            // sumara ni avisara, y el art. 66 de la LFT tiene un máximo (3 h diarias, no más de 3
+            // veces por semana). Es un AVISO con el número real, no un bloqueo — se puede seguir
+            // trabajando ("nada bloquea, todo avisa"). `null` cuando no hay minutos que reportar.
+            'mi_jornada_extraordinaria' => \App\Support\JornadaExtraordinaria::deLaSemana($tenantId, auth()->id()),
             'contingencies' => $contingencies,
             'internal_messages' => $messages,
             'audit_logs' => $auditLogs,

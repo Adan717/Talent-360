@@ -7,6 +7,17 @@ import {
 import axiosInstance from '../lib/axios';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
+/**
+ * Techo de ley del tiempo extraordinario: art. 66 LFT — la jornada se puede prolongar hasta 3 horas
+ * diarias y no más de 3 veces por semana, o sea 9 h = 540 min.
+ *
+ * Aquí sólo sirve para NO ofrecer un valor imposible en la pantalla (el `max` del input y el aviso).
+ * Quien manda es el servidor: `LftSettingController` rechaza con 422 cualquier valor mayor y
+ * `App\Support\JornadaExtraordinaria` lo recorta al leerlo. La pantalla no es la que hace cumplir
+ * la ley — un `max` de HTML se salta con las herramientas de desarrollador.
+ */
+const TECHO_LFT_MINUTOS_SEMANA = 540;
+
 export default function LftManager() {
   const [latesPerAbsence, setLatesPerAbsence] = useState(3);
   const [deductAbsenceDay, setDeductAbsenceDay] = useState(true);
@@ -20,6 +31,12 @@ export default function LftManager() {
   const [paidRestDay, setPaidRestDay] = useState(true);
   // N5/opción A: $0 de fábrica (art. 107 LFT). Activarlo es decisión explícita de la empresa.
   const [latePenaltyPerMinute, setLatePenaltyPerMinute] = useState(0);
+  /**
+   * Tope de tiempo extraordinario por semana, en MINUTOS (así lo guarda el servidor, igual que las
+   * tolerancias de esta misma pantalla). Arranca en el techo de ley: quien no configure nada queda
+   * en el máximo del art. 66, que es lo que hoy le aplica de hecho.
+   */
+  const [overtimeWeeklyCapMinutes, setOvertimeWeeklyCapMinutes] = useState(TECHO_LFT_MINUTOS_SEMANA);
   const [warnMsg, setWarnMsg] = useState('');
 
   // Estados para Días Festivos y Pestañas
@@ -118,6 +135,11 @@ export default function LftManager() {
         setLateActionMode(d.late_action_mode as 'deduct' | 'extend_shift');
         setPaidRestDay(!!d.paid_rest_day);
         setLatePenaltyPerMinute(parseFloat(d.late_penalty_per_minute) || 0);
+        // `?? TECHO`: una empresa dada de alta antes de esta columna no trae el campo; caer al
+        // techo de ley es lo mismo que hace el servidor, no un 0 que diría "cero horas extra".
+        setOvertimeWeeklyCapMinutes(
+          d.overtime_weekly_cap_minutes ?? TECHO_LFT_MINUTOS_SEMANA
+        );
       }
     } catch (e) {
       console.error(e);
@@ -146,6 +168,7 @@ export default function LftManager() {
         late_action_mode: lateActionMode,
         paid_rest_day: paidRestDay,
         late_penalty_per_minute: latePenaltyPerMinute,
+        overtime_weekly_cap_minutes: overtimeWeeklyCapMinutes,
       });
 
       if (res.data && res.data.success) {
@@ -156,7 +179,12 @@ export default function LftManager() {
       }
     } catch (e: any) {
       console.error(e);
-      setErrorMsg(e.response?.data?.message || 'Error al guardar los ajustes.');
+      // El 422 de validación trae el motivo REAL por campo (p.ej. por qué 10 h de tope extra no
+      // son configurables: art. 66 de la LFT). Mostrar sólo el `message` genérico dejaría al admin
+      // adivinando qué escribió mal.
+      const errores = e.response?.data?.errors;
+      const primerError = errores ? (Object.values(errores)[0] as string[])?.[0] : null;
+      setErrorMsg(primerError || e.response?.data?.message || 'Error al guardar los ajustes.');
     } finally {
       setIsSaving(false);
     }
@@ -495,6 +523,57 @@ export default function LftManager() {
                       <div className="font-extrabold mb-1">Extensión de Turno (Ley Silla / Flex)</div>
                       <div className="text-[10px] opacity-80">El colaborador puede compensar saliendo tarde el mismo número de minutos.</div>
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 1-bis: TOPE DE TIEMPO EXTRAORDINARIO (2026-09-05).
+                  Antes no existía ningún tope en el producto: se podían acumular las horas que
+                  fueran sin que nadie las contara ni avisara. El techo es de ley (art. 66) y lo
+                  hace cumplir el SERVIDOR; esta pantalla sólo lo dice y no ofrece lo imposible. */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Activity size={16} className="text-amber-500" />
+                  Tiempo Extraordinario (Horas Extra)
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500">
+                      Tope por semana y por colaborador (minutos)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={TECHO_LFT_MINUTOS_SEMANA}
+                      value={overtimeWeeklyCapMinutes}
+                      onChange={(e) => setOvertimeWeeklyCapMinutes(parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold outline-none focus:border-amber-500"
+                    />
+                    <div className="text-[10px] text-slate-500">
+                      Equivale a {Math.floor(overtimeWeeklyCapMinutes / 60)} h
+                      {overtimeWeeklyCapMinutes % 60 > 0 ? ` ${overtimeWeeklyCapMinutes % 60} min` : ''} por semana.
+                      Máximo de ley: {TECHO_LFT_MINUTOS_SEMANA} min (9 h).
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2">
+                    <div className="text-[11px] font-extrabold text-amber-900 flex items-center gap-1.5">
+                      <Scale size={13} /> Artículo 66 de la LFT
+                    </div>
+                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                      La jornada se puede prolongar hasta <b>3 horas diarias y no más de 3 veces por
+                      semana</b> (9 h). Puedes ponerte un tope <b>menor</b>; uno mayor lo rechaza el
+                      sistema.
+                    </p>
+                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                      Rebasarlo <b>avisa, no bloquea</b>: el colaborador lo ve en su reloj y tú en el
+                      Monitor, con las horas que lleva esta semana. Nadie deja de poder fichar.
+                    </p>
+                    <p className="text-[10px] text-amber-700 leading-relaxed border-t border-amber-200 pt-2">
+                      Este tope <b>no toca la nómina</b>: el sistema paga por día, no por horas. Es
+                      un control operativo y de cumplimiento.
+                    </p>
                   </div>
                 </div>
               </div>

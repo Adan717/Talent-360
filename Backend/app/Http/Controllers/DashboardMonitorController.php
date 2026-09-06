@@ -458,6 +458,15 @@ class DashboardMonitorController extends Controller
                         $user,
                         'manage_punch_corrections'
                     ),
+                    // (2026-09-05) Quién REBASÓ el tope de tiempo extraordinario de la empresa esta
+                    // semana, con su cifra real. El jefe es quien puede hacer algo —mandar a alguien
+                    // a casa, repartir la carga— y hasta hoy no tenía cómo enterarse: no existía un
+                    // contador de horas extra en ninguna pantalla del producto. Sale sólo quien lo
+                    // rebasó (listar a todos sería ruido) y NO bloquea nada: es un aviso.
+                    'alertas_horas_extra' => array_values(array_filter(
+                        \App\Support\JornadaExtraordinaria::delTenant($userTenantId),
+                        fn ($fila) => $fila['rebasado']
+                    )),
                 ]
             ]);
 

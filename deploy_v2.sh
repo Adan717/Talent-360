@@ -92,8 +92,27 @@ fi
 # ── Backend ───────────────────────────────────────────────────────────────────────────────────
 # `migrate --force` es obligatorio: sin él Laravel pide confirmación interactiva y el script se
 # queda colgado esperando una respuesta que nadie va a teclear.
+# Las migraciones van por la conexión `pgsql_migraciones` (config/database.php): la MISMA base,
+# con la credencial que sí es dueña de las tablas. Mientras el servidor no defina
+# DB_MIGRACIONES_USERNAME, esa conexión cae a la de siempre y esto se comporta exactamente igual
+# que antes. Existe por el candado de la bitácora inmutable: en cuanto la aplicación deja de
+# conectarse como superusuario —que es lo que vuelve real la palabra "inmutable"— pierde también
+# el permiso de alterar el esquema, y `migrate` a secas empezaría a fallar en cada despliegue.
+# Ver docs/RUNBOOK_CANDADO_BITACORA.md.
 echo "▸ Migraciones…"
-docker exec talent360-v2-backend php artisan migrate --force
+docker exec talent360-v2-backend php artisan migrate --force --database=pgsql_migraciones
+
+# Una tabla recién creada nace SIN permisos para el rol de la aplicación: sin este paso, el
+# despliegue que estrena una tabla la deja invisible y la primera pantalla que la use responde un
+# error de permisos. Es idempotente, y sin DB_APP_ROLE definido en el entorno sólo diagnostica
+# —así que en un servidor donde el candado todavía no está puesto, imprime el estado y no toca
+# nada.
+echo "▸ Candado de la bitácora…"
+if [ -n "${DB_APP_ROLE:-}" ]; then
+    docker exec talent360-v2-backend php artisan bitacora:candado --rol="$DB_APP_ROLE" --aplicar
+else
+    docker exec talent360-v2-backend php artisan bitacora:candado
+fi
 
 echo "▸ Limpiando cachés…"
 docker exec talent360-v2-backend php artisan optimize:clear

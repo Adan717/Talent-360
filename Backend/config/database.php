@@ -99,6 +99,35 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        /*
+         * La MISMA base, con la credencial que sí es dueña de las tablas. Existe por el candado
+         * de la bitácora inmutable (docs/RUNBOOK_CANDADO_BITACORA.md).
+         *
+         * En cuanto la aplicación deja de conectarse como superusuario —que es lo que vuelve real
+         * la palabra "inmutable"— pierde también el permiso de crear y alterar tablas, así que
+         * `php artisan migrate` deja de funcionar. Separar las dos credenciales es lo correcto de
+         * todas formas: **el proceso que atiende peticiones de internet no tiene por qué poder
+         * reescribir el esquema**. Una vive en cada petición; la otra sólo durante el despliegue.
+         *
+         * Si no se definen las variables, cae a las de la conexión normal: mientras el candado no
+         * esté puesto, todo sigue funcionando exactamente igual y no se bifurca el comportamiento
+         * entre un servidor y otro.
+         */
+        'pgsql_migraciones' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_MIGRACIONES_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('DB_MIGRACIONES_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

@@ -11,7 +11,7 @@ colaborador**, **capacidad aislada `manage_punch_corrections`**.
 |---|---|
 | 1 · Tabla espejo + trigger | ✅ Desplegado. Verificado contra Postgres real ANTES de tocar la BD viva |
 | 2 · Observar una semana y comparar | ⏳ En curso desde el 2026-08-25 |
-| 3 · Revocar `UPDATE`/`DELETE` sobre el historial | ⬜ Después del paso 2, con respaldo probado |
+| 3 · Revocar `UPDATE`/`DELETE` sobre el historial | 🟡 **Escrito y probado en código (2026-09-05); falta ejecutarlo en el servidor.** Runbook: `docs/RUNBOOK_CANDADO_BITACORA.md` — necesita ventana de mantenimiento y visto bueno del dueño, porque cambia la credencial con la que la aplicación entra a la base en producción |
 | 4 · `asistencia_correcciones` + motivo obligatorio en pantalla | 🟡 Tabla creada; falta la pantalla |
 | 5 · "Corregir no sobrescribe" en motor y reportes | 🟡 `anulado_at` + `ExcludeAnuladasScope` puestos; falta el servicio de corrección y revisar los lectores que usan `DB::table` en vez de Eloquent |
 
@@ -21,6 +21,29 @@ colaborador**, **capacidad aislada `manage_punch_corrections`**.
 **`actor_id` sale nulo por ahora** y es correcto: `processPunch` todavía no declara intención con
 `BitacoraDeAsistencia`. Un fichaje normal no es una corrección — cuando exista el servicio de
 corrección, ése sí firmará.
+
+**Lo que salió al escribir el paso 3 (2026-09-05), y no estaba previsto en este RFC:**
+
+- El paso 3 **no se podía hacer como estaba escrito.** Decía "se le revoca ese permiso al rol de la
+  aplicación", pero la aplicación entra como `postgres`, que es **superusuario y dueño de las
+  tablas**: un `REVOKE` sobre él se ejecuta sin error y no cambia nada. El arreglo real es cambiar
+  la credencial con la que se conecta la aplicación, y eso arrastra la conexión aparte para las
+  migraciones y la reaplicación de permisos en cada despliegue.
+- **El trigger escribe con los permisos de quien fichó.** Una función plpgsql es `SECURITY INVOKER`
+  por defecto, así que al quitarle a la aplicación el `INSERT` sobre el historial se le niega
+  también el `INSERT` que hace el trigger — y como es `AFTER … FOR EACH ROW` dentro de la misma
+  transacción, **el fichaje falla**. El candado, puesto sin advertir esto, no protege evidencia:
+  **apaga el reloj checador de todas las empresas.** Por eso la función pasa a `SECURITY DEFINER`
+  (migración `2026_09_05_090000`) y la primera prueba del candado comprueba justamente eso.
+- **Un `TRUNCATE` se saltaba la bitácora entera.** El trigger es `FOR EACH ROW`; `TRUNCATE
+  time_entries` habría vaciado la asistencia de todas las empresas **sin dejar una sola fila en el
+  historial** — justo el escenario que esta bitácora existe para impedir. El candado retira también
+  ese permiso.
+- **`asistencia_correcciones` se cierra igual** (SELECT e INSERT, nunca UPDATE ni DELETE), por la
+  misma razón que da este RFC para los fichajes: una póliza no se borra, se cancela con otra.
+- **La purga a cinco años tendrá que resolverse aparte.** Con el candado puesto, la aplicación ya no
+  podrá borrar filas del historial. El camino es una función `SECURITY DEFINER` propia que sólo
+  alcance lo vencido — no devolverle el permiso a la aplicación.
 
 ---
 

@@ -63,15 +63,6 @@ class PlatformAdminController extends Controller
             $planCode = strtolower($tenant->plan ?? 'freemium');
             $billingPlan = $tenant->billingPlan ?: \App\Models\BillingPlan::where('code', $planCode)->first();
 
-            $price = 0.00;
-            if ($billingPlan && $billingPlan->price) {
-                $price = (float) $billingPlan->price;
-            } elseif ($planCode === 'pro') {
-                $price = 199.00;
-            } elseif ($planCode === 'enterprise') {
-                $price = 499.00;
-            }
-
             $allModules = ['rrhh', 'reloj', 'operativo', 'ats', 'reportes', 'portal', 'academia', 'documentos', 'matrix', 'facturacion', 'lft', 'organizacion'];
             if ($modules === null) {
                 $tenantModulesConfig = DB::table('system_settings')
@@ -91,6 +82,12 @@ class PlatformAdminController extends Controller
             }
 
             $usersCount = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('tenant_id', $tenant->id)->count();
+
+            // (2026-09-05) El precio del snapshot se calcula con la tarifa REAL por colaborador.
+            // Antes caía a $199 (pro) y $499 (enterprise) planos, números que no existen en
+            // ningún cobro: el backend cobra $29/colaborador/mes y $69/colaborador/mes. Un
+            // historial "inmutable" que guarda un precio inventado no documenta nada.
+            $price = \App\Support\Tarifario::cotizar($planCode, $usersCount)['total_mensual'] ?? 0.00;
 
             // Mark previous active records as superseded
             TenantSubscriptionHistory::where('tenant_id', $tenant->id)
@@ -157,23 +154,42 @@ class PlatformAdminController extends Controller
                 $q->where('is_active', true);
             })->count();
 
-        // Calculate simulated MRR (Monthly Recurring Revenue)
-        $mrr = 0;
+        // MRR con la tarifa REAL por colaborador (2026-09-05).
+        //
+        // Antes sumaba $199 por empresa PRO y $499 por empresa Enterprise: dos precios planos
+        // que no existen en ningún cobro del sistema. El backend cobra $29 y $69 POR
+        // COLABORADOR AL MES, así que el MRR del panel no tenía relación con lo que se factura
+        // —ni por plan ni por tamaño de la empresa—. Ahora se cuenta gente y se aplica la
+        // tarifa del tabulador. Las cifras del panel CAMBIAN por eso: antes mentían.
+        $usuariosPorTenant = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            ->selectRaw('tenant_id, COUNT(*) as total')
+            ->groupBy('tenant_id')
+            ->pluck('total', 'tenant_id');
+
+        $mrr = 0.0;
+        $sobreCupo = 0;
         foreach ($tenants as $tenant) {
             if (!$tenant->is_active) continue;
-            
+
             $plan = strtolower($tenant->plan ?? 'freemium');
-            if ($plan === 'pro') {
-                $mrr += 199;
-            } elseif ($plan === 'enterprise') {
-                $mrr += 499;
+            $colaboradores = (int) ($usuariosPorTenant[$tenant->id] ?? 0);
+            $cotizacion = \App\Support\Tarifario::cotizar($plan, $colaboradores);
+            $mrr += (float) ($cotizacion['total_mensual'] ?? 0.0);
+
+            // AVISO, no candado: el tope no impide nada (ningún código lo aplica), pero el
+            // panel tiene que poder ver quién lo rebasó.
+            $tope = $cotizacion['tope_colaboradores'] ?? null;
+            if ($tope !== null && $colaboradores > $tope) {
+                $sobreCupo++;
             }
         }
 
         return response()->json([
-            'mrr' => $mrr,
+            'mrr' => round($mrr, 2),
+            'mrr_provisional' => \App\Support\Tarifario::esProvisional(),
             'active_tenants' => $activeTenants,
             'total_users' => $totalUsers,
+            'tenants_sobre_cupo' => $sobreCupo,
             'churn_rate' => '2.1%'
         ]);
     }
@@ -240,11 +256,18 @@ class PlatformAdminController extends Controller
             // Compute transaction volume in DB
             $txMetrics = $this->getTenantTransactionVolume($tenant->id);
 
-            // Compute current price
+            // Precio de HOY, con la tarifa real por colaborador y la gente que hay hoy.
+            //
+            // (2026-09-05) Antes esta columna mostraba el `monthly_price_at_time` del snapshot
+            // —el precio CONGELADO del día del alta— y, si no había snapshot, caía a $199/$499
+            // planos que no existen en ningún cobro. Una empresa que pasó de 5 a 20
+            // colaboradores seguía apareciendo con el precio de cuando eran 5, mientras el MRR
+            // de arriba se calculaba de otra forma: dos números del mismo panel que no cuadraban.
+            // El histórico congelado sigue intacto en la línea de tiempo de la empresa.
             $planCode = strtolower($tenant->plan ?? 'freemium');
-            $monthlyPrice = $latestHistory?->monthly_price_at_time !== null 
-                ? (float) $latestHistory->monthly_price_at_time 
-                : ($planCode === 'pro' ? 199.0 : ($planCode === 'enterprise' ? 499.0 : 0.0));
+            $cotizacion = \App\Support\Tarifario::cotizar($planCode, (int) $tenant->users_count);
+            $monthlyPrice = (float) ($cotizacion['total_mensual'] ?? 0.0);
+            $topeColaboradores = $cotizacion['tope_colaboradores'] ?? null;
 
             // Compute modules count
             $tenantModulesConfig = \DB::table('system_settings')
@@ -275,12 +298,18 @@ class PlatformAdminController extends Controller
                 'subdomain' => $tenant->subdomain,
                 'plan' => ucfirst($tenant->plan ?? 'freemium'),
                 'monthly_price' => $monthlyPrice,
-                'currency' => $latestHistory?->currency ?? 'USD',
+                'monthly_price_provisional' => \App\Support\Tarifario::esProvisional(),
+                'currency' => $cotizacion['moneda'] ?? ($latestHistory?->currency ?? 'MXN'),
                 'modules_count' => count($allowedModules),
                 'total_modules_available' => count($allModulesList),
                 'allowed_modules' => $allowedModules,
                 'users' => $tenant->users_count,
                 'max_users' => $tenant->max_users ?: Tenant::maxUsersForPlan($planCode),
+                // AVISO, no candado (2026-09-05): el tope del plan no lo aplica ningún código
+                // —`max_users` se guarda y nadie lo revisa—, así que el panel al menos tiene
+                // que poder VER quién lo rebasó. `null` = el plan no tiene tope.
+                'tope_colaboradores' => $topeColaboradores,
+                'sobre_cupo' => $topeColaboradores !== null && (int) $tenant->users_count > $topeColaboradores,
                 'status' => $tenant->is_active ? 'Activo' : 'Inactivo',
                 'date' => $tenant->created_at ? $tenant->created_at->diffForHumans() : 'Reciente',
                 'subscription_status' => $tenant->subscription_status ?? 'trial',
@@ -399,13 +428,12 @@ class PlatformAdminController extends Controller
         // Compute transaction metrics
         $txMetrics = $this->getTenantTransactionVolume($tenant->id);
 
-        $currentPrice = 0.0;
-        $activeHist = $subscriptionHistory->firstWhere('status', 'active');
-        if ($activeHist) {
-            $currentPrice = $activeHist['monthly_price'];
-        } else {
-            $currentPrice = $plan === 'pro' ? 199.0 : ($plan === 'enterprise' ? 499.0 : 0.0);
-        }
+        // Precio de HOY con la tarifa real por colaborador (2026-09-05): mismo criterio que la
+        // lista de empresas y que el MRR, para que los tres números del panel cuadren entre sí.
+        // El precio congelado de cada cambio de plan sigue viviendo en `subscriptionHistory`.
+        $cotizacionActual = \App\Support\Tarifario::cotizar($plan, $usersCount);
+        $currentPrice = (float) ($cotizacionActual['total_mensual'] ?? 0.0);
+        $topeColaboradores = $cotizacionActual['tope_colaboradores'] ?? null;
 
         return response()->json([
             'tenant' => [
@@ -421,6 +449,8 @@ class PlatformAdminController extends Controller
                 'trial_ends_at' => $tenant->trial_ends_at,
                 'current_period_end' => $tenant->current_period_end,
                 'max_users' => $tenant->max_users,
+                'tope_colaboradores' => $topeColaboradores,
+                'sobre_cupo' => $topeColaboradores !== null && $usersCount > $topeColaboradores,
                 'created_at' => $tenant->created_at->toIso8601String(),
                 'allowed_modules' => $allowedModules,
                 'allowed_features' => $allowedFeatures,

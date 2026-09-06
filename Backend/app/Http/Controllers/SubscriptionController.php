@@ -156,23 +156,17 @@ class SubscriptionController extends Controller
             ]);
         }
 
-        $price = 0;
+        // (2026-09-05) Los precios ya no viven aquí. Este bloque estaba DUPLICADO letra por letra
+        // en `simulatedCheckout`, y ninguna pantalla sabía qué cobraba: la landing pintaba el
+        // anual con un "20%" escrito a mano (29×12×0.8 = $278.40 por colaborador) mientras la
+        // caja cobraba 24×12 = $288. Ahora la caja y la pantalla leen el MISMO tabulador
+        // (`billing_plans`, vía App\Support\Tarifario).
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
-        if (strtolower($payload['plan']) === 'pro') {
-            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
-            if ($billingCycle === 'yearly') {
-                $price = (float) round($employees * 24 * 12); // $24/emp/mo billed annually
-            } else {
-                $price = (float) ($employees * 29); // $29/emp/mo
-            }
-        } elseif (strtolower($payload['plan']) === 'enterprise') {
-            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
-            if ($billingCycle === 'yearly') {
-                $price = (float) round($employees * 55 * 12); // $55/emp/mo billed annually
-            } else {
-                $price = (float) ($employees * 69); // $69/emp/mo
-            }
-        }
+        $price = \App\Support\Tarifario::totalACobrar(
+            $payload['plan'] ?? null,
+            isset($payload['employees']) ? intval($payload['employees']) : null,
+            $billingCycle
+        );
 
         // If plan is freemium and it's not upgrade, register immediately (no payment needed)
         if (!$isUpgrade && (strtolower($payload['plan']) === 'freemium' || $price <= 0)) {
@@ -263,22 +257,13 @@ class SubscriptionController extends Controller
         $payload = json_decode($reg->payload, true);
         $plan = $payload['plan'] ?? 'pro';
         $billingCycle = $payload['billing_cycle'] ?? 'monthly';
-        $price = 0;
-        if (strtolower($plan) === 'pro') {
-            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
-            if ($billingCycle === 'yearly') {
-                $price = (float) round($employees * 24 * 12);
-            } else {
-                $price = (float) ($employees * 29);
-            }
-        } elseif (strtolower($plan) === 'enterprise') {
-            $employees = (isset($payload['employees']) && intval($payload['employees']) > 0) ? intval($payload['employees']) : 10;
-            if ($billingCycle === 'yearly') {
-                $price = (float) round($employees * 55 * 12);
-            } else {
-                $price = (float) ($employees * 69);
-            }
-        }
+        // Era una COPIA idéntica del cálculo de `createPreference`: dos bocas para el mismo
+        // cobro. Ahora las dos leen el tabulador único.
+        $price = \App\Support\Tarifario::totalACobrar(
+            $plan,
+            isset($payload['employees']) ? intval($payload['employees']) : null,
+            $billingCycle
+        );
         $priceUnit = $billingCycle === 'yearly' ? 'MXN/año (Pago Anual)' : 'MXN/mes';
 
         $confirmUrl = $this->getBaseUrl($request) . '/api/v1/subscriptions/simulated-confirm?pref_id=' . $prefId;

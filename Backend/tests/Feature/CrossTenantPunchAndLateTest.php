@@ -162,22 +162,40 @@ class CrossTenantPunchAndLateTest extends TestCase
 
     // ---------- §58: cupo de usuarios unificado ----------
 
+    /**
+     * (2026-09-05) Los números cambiaron y hay que decirlo:
+     *
+     *  - **freemium 5 → 10.** El método caía a 5 diciendo en su comentario que era "lo que
+     *    anuncia la landing", pero la landing anuncia 10 y la pantalla del cliente también
+     *    caía a 10. Como NADA aplica este tope —`max_users` se guarda y ningún código lo
+     *    revisa—, el número que se conserva es el que se le prometió al cliente.
+     *  - **pro sin dato 50 → 9999.** El 50 era el tope del deslizador de la landing usado como
+     *    cupo; PRO se cobra por colaborador y no tiene tope, así que ahora dice lo mismo que
+     *    enterprise. Con el número contratado, sigue siendo ese número.
+     */
     public function test_max_users_for_plan_defaults(): void
     {
-        $this->assertEquals(5, Tenant::maxUsersForPlan('freemium'));
-        $this->assertEquals(50, Tenant::maxUsersForPlan('pro'));
+        $this->assertEquals(10, Tenant::maxUsersForPlan('freemium'));
+        $this->assertEquals(Tenant::SIN_TOPE, Tenant::maxUsersForPlan('pro'));
         $this->assertEquals(25, Tenant::maxUsersForPlan('pro', 25));
-        $this->assertEquals(9999, Tenant::maxUsersForPlan('enterprise'));
+        $this->assertEquals(Tenant::SIN_TOPE, Tenant::maxUsersForPlan('enterprise'));
     }
 
-    public function test_max_users_for_freemium_reads_platform_setting(): void
+    /**
+     * El cupo se cambia donde se cambian los precios: en `billing_plans`, sin recompilar.
+     *
+     * Antes vivía en `system_settings.freemium_max_users`, una llave que NINGUNA pantalla
+     * escribía. La migración del tarifario se llevó su valor a `billing_plans` (conservándolo
+     * si alguna instalación lo tenía puesto a mano) y retiró la llave, para que no queden dos
+     * números capaces de divergir.
+     */
+    public function test_max_users_for_freemium_reads_billing_plan(): void
     {
-        DB::table('system_settings')->insert([
-            'tenant_id' => null,
-            'key' => 'freemium_max_users',
-            'value' => '8',
-        ]);
+        DB::table('billing_plans')->where('code', 'freemium')->update(['max_users' => 8]);
+        \App\Support\Tarifario::olvidar();
 
         $this->assertEquals(8, Tenant::maxUsersForPlan('freemium'));
+
+        \App\Support\Tarifario::olvidar();
     }
 }

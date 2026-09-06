@@ -62,6 +62,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     Route::post('/webhooks/mercadopago', [SubscriptionController::class, 'webhook']);
     Route::post('/webhooks/stripe', [\App\Http\Controllers\StripeWebhookController::class, 'handleWebhook']);
 
+    // El tabulador de precios, la única fuente para TODA pantalla que muestre un precio
+    // (2026-09-05). Sin sesión a propósito: la landing lo pide antes de que exista cuenta.
+    // Son precios de lista, no hay nada que proteger; el freno es sólo contra el ruido.
+    Route::middleware('throttle:60,1')->get('/public/tarifario', [\App\Http\Controllers\TarifarioController::class, 'publico']);
+
     // Pública (Web de Empleos y Onboarding)
     // Con freno: son rutas sin sesión y dos de ellas ESCRIBEN. Sin límite, cualquiera podía
     // sembrar candidatos y correos de alerta sin tope, o barrer slugs para enumerar empresas.

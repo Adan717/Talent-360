@@ -4,7 +4,7 @@ Las decisiones que NO se pueden tomar leyendo el código: las toma el dueño. Aq
 fecha, su razón y lo que implican para el trabajo. Si una decisión cambia, se edita aquí, no se
 comenta en otro lado.
 
-Última actualización: **2026-08-11**.
+Última actualización: **2026-09-05**.
 
 ---
 
@@ -157,6 +157,60 @@ credenciales en el servidor.
 
 ---
 
+## 💲 El tabulador de precios del SaaS (2026-09-05)
+
+### Lo que quedó construido
+
+Los precios del producto viven ahora en **un solo lugar**: la tabla `billing_plans`. Se leen por
+`App\Support\Tarifario` y se sirven a las pantallas por `GET /api/v1/public/tarifario` (público:
+la Landing lo pide antes de que exista cuenta). **Ninguna pantalla vuelve a calcular un precio**;
+pinta el que le da el servidor, y hay una prueba candado que falla si alguien escribe otro número
+a mano (`TarifarioSinPreciosDurosTest`).
+
+### ⚠️ EL TABULADOR SEMBRADO ES **PROVISIONAL**
+
+Las tres filas nacen marcadas `is_provisional = true` y son **la foto de lo que el backend cobraba
+al 2026-09-05**, no una decisión comercial:
+
+| Plan | Por colaborador / mes | Por colaborador / mes facturado al año | Tope |
+|---|---|---|---|
+| Gratuito | $0 | $0 | 10 colaboradores |
+| Profesional | $29 MXN | $24 MXN (ahorro **17.2%**) | sin tope |
+| Enterprise | $69 MXN | $55 MXN (ahorro **20.3%**) | sin tope |
+
+**No se inventó ningún precio**: son exactamente los que cobraba `SubscriptionController`. El
+descuento anual **se deriva** de las dos tarifas, nunca se escribe — la Landing anunciaba un "20%"
+plano que era falso para PRO.
+
+### 👉 Lo que decide el dueño
+
+**El tabulador oficial.** Hoy el código tenía CUATRO respuestas a "¿cuánto cuesta el PRO?" y
+ninguna sabía de las otras, así que ninguna puede tomarse por la buena sin que él lo diga:
+
+- lo que **se cobra**: $29/colaborador/mes ($24 al año) y $69 ($55 al año);
+- lo que la **Landing pintaba**: las mismas tarifas, pero con dos precios anuales distintos según
+  el interruptor ($278.40 contra $288 por colaborador al año);
+- lo que veía **el cliente que ya pagó**: $12 y $499 planos;
+- lo que usaba el **panel de plataforma** para el MRR: $199 y $499 planos.
+
+**Cuando el dueño declare el tabulador oficial, se cambia en base de datos y punto — sin
+recompilar, sin desplegar y sin tocar una sola pantalla.** Basta actualizar las tres filas de
+`billing_plans` (tarifa mensual, tarifa anual, tope) y poner `is_provisional = false`; el ahorro
+anual, los totales y los avisos se recalculan solos.
+
+> Nota: si el dueño propuso alguna vez precios planos de $725 y $1,725, **no están en el código**
+> ni se sembraron. Eso es una propuesta suya que aquí no se da por hecha.
+
+### El tope de colaboradores: **avisa, no bloquea**
+
+Se unificó en el mismo tarifario, pero **sigue sin bloquear nada** — criterio del dueño, y hay 4
+empresas vivas: convertirlo en candado dejaría gente sin poder checar su entrada. Lo que cambió es
+que ahora **se avisa**: banner al admin de la empresa en Configuración → Plan, y `sobre_cupo` por
+empresa más `tenants_sobre_cupo` en el panel de plataforma. El freemium pasó de 5 (número interno
+que nadie aplicaba) a **10**, que es lo que la Landing le promete al cliente.
+
+---
+
 ## 🔎 Abiertas
 
 ### A1 — Reportes IA: asistente por voz/texto ✅ CONSTRUIDO (2026-08-13)
@@ -243,6 +297,8 @@ inventados del payload, y la decisión legal de custodiar sellos ajenos con su c
 - **Timbrado de nómina**: la `FACTURAPI_KEY` y arreglar la salida TLS del servidor hacia Facturapi.
 - **Wizard / catálogo del giro**: la revisión del giro restaurante. Ese número decide si se sigue
   con oficina, retail y taller.
+- **El tabulador de precios OFICIAL** (ver la sección 💲): el sembrado es provisional y refleja lo
+  que el backend cobraba al 2026-09-05. Se cambia en `billing_plans` sin recompilar.
 - **`deploy_to_hetzner.py`**: asegurarse de que el jefe **no despliegue con su copia vieja** del
   script — la versión vieja ejecuta `tenant:purge-test-tenants --force`, que borraba toda empresa
   con id > 1.

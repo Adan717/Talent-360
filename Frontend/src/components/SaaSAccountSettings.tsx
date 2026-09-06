@@ -12,6 +12,8 @@ import { useAppStore } from '../store/useAppStore';
 import { BackupPanel } from './BackupPanel';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import axiosInstance from '../lib/axios';
+import { useTarifario } from '../hooks/useTarifario';
+import { cotizar, planDelTarifario, pesos } from '../lib/tarifario';
 
 export const ColorMap: Record<string, { sidebar: string; hex: string; text: string }> = {
   violet: { sidebar: 'bg-violet-50 text-violet-650 border-violet-100 dark:bg-violet-955/40 dark:text-violet-400 dark:border-violet-900/30', hex: '#8a2be2', text: 'text-violet-655' },
@@ -387,13 +389,30 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
     }
   };
 
+  // El tabulador lo da el servidor (2026-09-05). Esta pantalla traía precios PLANOS —$12 el
+  // PRO y $499 el Enterprise— que no existen en ningún cobro del sistema: el backend cobra
+  // $29 y $69 POR COLABORADOR AL MES. Y el anual lo calculaba como `499 × 12 × 0.8`, un
+  // descuento escrito a mano sobre un precio inventado. Ya no se calcula nada aquí.
+  const { tarifario } = useTarifario();
+  const planActual = planDelTarifario(tarifario, currentTier);
+  const cotizacionActual = cotizar(planActual, activeEmployeesCount, 'monthly');
+
   const planDetails = {
-    freemium: { name: 'Freemium', maxUsers: systemSettings?.freemium_max_users || 10, price: 0, color: 'text-slate-600', bg: 'bg-slate-100' },
-    pro: { name: 'PRO', maxUsers: 'Ilimitados', price: 12, color: 'text-blue-600', bg: 'bg-blue-100' },
-    enterprise: { name: 'Enterprise', maxUsers: 'Ilimitados', price: 499, color: 'text-purple-600', bg: 'bg-purple-100' },
+    freemium: { name: 'Freemium', color: 'text-slate-600', bg: 'bg-slate-100' },
+    pro: { name: 'PRO', color: 'text-blue-600', bg: 'bg-blue-100' },
+    enterprise: { name: 'Enterprise', color: 'text-purple-600', bg: 'bg-purple-100' },
   };
 
   const tierInfo = planDetails[currentTier as keyof typeof planDetails] || planDetails.freemium;
+  // null = el plan no tiene tope. El cupo lo declara el servidor; antes esta pantalla caía a
+  // 10 mientras el backend caía a 5, y ninguno de los dos mandaba sobre el otro.
+  const topeColaboradores = planActual?.tope_colaboradores ?? null;
+  const sobreCupo = topeColaboradores !== null && activeEmployeesCount > topeColaboradores;
+  const planPro = planDelTarifario(tarifario, 'pro');
+  const planEnterprise = planDelTarifario(tarifario, 'enterprise');
+  const cotizacionUpgradePro = cotizar(planPro, activeEmployeesCount, selectedCycle);
+  const cotizacionUpgradeEnterprise = cotizar(planEnterprise, activeEmployeesCount, selectedCycle);
+  const cotizacionUpgrade = selectedUpgradePlan === 'enterprise' ? cotizacionUpgradeEnterprise : cotizacionUpgradePro;
 
   // Check if trial is active
   const tenant = currentUser?.tenant;
@@ -617,17 +636,17 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                       <span className="text-slate-500 font-bold"> /mes</span>
                       <p className="text-xs text-slate-400 mt-1">Plan Gratuito Permanente</p>
                     </div>
-                  ) : currentTier === 'pro' ? (
-                    <div>
-                      <span className="text-3xl font-black text-slate-900">${tierInfo.price * activeEmployeesCount}</span>
-                      <span className="text-slate-500 font-bold"> MXN /mes</span>
-                      <p className="text-xs text-slate-400 mt-1">Estimado para {activeEmployeesCount} colaborador(es) ($12/emp/mes)</p>
-                    </div>
                   ) : (
                     <div>
-                      <span className="text-3xl font-black text-slate-900">${tierInfo.price}</span>
+                      <span className="text-3xl font-black text-slate-900">
+                        {cotizacionActual ? `$${pesos(cotizacionActual.totalMensual)}` : '—'}
+                      </span>
                       <span className="text-slate-500 font-bold"> MXN /mes</span>
-                      <p className="text-xs text-slate-400 mt-1">Suite Enterprise Completa para {activeEmployeesCount} colaboradores</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {planActual
+                          ? `${activeEmployeesCount} colaborador(es) × $${pesos(planActual.tarifa_mensual_por_colaborador)}/mes`
+                          : 'Precio no disponible en este momento'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -636,14 +655,30 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <div className="flex justify-between text-sm mb-2">
                       <span className="font-bold text-slate-700">Licencias Utilizadas</span>
-                      <span className="font-black text-slate-900">{activeEmployeesCount} / {tierInfo.maxUsers}</span>
+                      <span className="font-black text-slate-900">{activeEmployeesCount} / {topeColaboradores ?? 'Ilimitados'}</span>
                     </div>
-                    {currentTier === 'freemium' && (
+                    {topeColaboradores !== null && (
                       <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div className="bg-slate-800 h-full rounded-full" style={{ width: `${Math.min(100, (activeEmployeesCount / (systemSettings?.freemium_max_users || 10)) * 100)}%` }}></div>
+                        <div className={`${sobreCupo ? 'bg-amber-500' : 'bg-slate-800'} h-full rounded-full`} style={{ width: `${Math.min(100, (activeEmployeesCount / topeColaboradores) * 100)}%` }}></div>
                       </div>
                     )}
                   </div>
+
+                  {/* AVISO, no candado (2026-09-05). El tope del plan no lo aplica ningún
+                      código —`max_users` se guarda y nadie lo revisa—, y el criterio del dueño
+                      es "nada bloquea, todo avisa": nadie se queda fuera de su reloj checador
+                      por esto. Pero el admin tiene derecho a enterarse. */}
+                  {sobreCupo && (
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex gap-3">
+                      <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
+                      <div className="text-xs">
+                        <p className="font-black text-amber-900">Tu plan incluye {topeColaboradores} colaboradores y tienes {activeEmployeesCount}.</p>
+                        <p className="text-amber-800 font-semibold mt-1">
+                          Nada se bloquea y nadie deja de poder checar. Te lo avisamos para que decidas si conviene cambiar de plan.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {currentTier === 'freemium' && (
@@ -1604,9 +1639,11 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${selectedCycle === 'yearly' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 Anual
-                <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  20% OFF
-                </span>
+                {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
+                  <span className="bg-emerald-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Hasta {tarifario.descuento_anual_maximo_pct}% OFF
+                  </span>
+                )}
               </button>
             </div>
 
@@ -1624,7 +1661,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                   </div>
                   <div className="mb-3">
                     <span className="text-2xl font-black text-slate-900">
-                      ${selectedCycle === 'yearly' ? Math.round(12 * activeEmployeesCount * 12 * 0.8) : 12 * activeEmployeesCount}
+                      {cotizacionUpgradePro ? `$${pesos(cotizacionUpgradePro.totalACobrar)}` : '—'}
                     </span>
                     <span className="text-xs text-slate-500 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
                   </div>
@@ -1647,7 +1684,7 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                 </div>
                 <div className="mb-3">
                   <span className="text-2xl font-black text-slate-900">
-                    ${selectedCycle === 'yearly' ? Math.round(499 * 12 * 0.8) : 499}
+                    {cotizacionUpgradeEnterprise ? `$${pesos(cotizacionUpgradeEnterprise.totalACobrar)}` : '—'}
                   </span>
                   <span className="text-xs text-slate-500 font-bold"> {selectedCycle === 'yearly' ? 'MXN /año' : 'MXN /mes'}</span>
                 </div>
@@ -1664,11 +1701,9 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase">Total a Pagar</p>
+                {/* Exactamente lo que va a cobrar la caja: misma cuenta, mismo tabulador. */}
                 <p className="text-xl font-black text-slate-900">
-                  ${selectedUpgradePlan === 'enterprise' 
-                    ? (selectedCycle === 'yearly' ? Math.round(499 * 12 * 0.8) : 499)
-                    : (selectedCycle === 'yearly' ? Math.round(12 * activeEmployeesCount * 12 * 0.8) : 12 * activeEmployeesCount)
-                  } MXN
+                  {cotizacionUpgrade ? `$${pesos(cotizacionUpgrade.totalACobrar)} MXN` : 'Precio no disponible'}
                 </p>
               </div>
 

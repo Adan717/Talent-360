@@ -23,6 +23,8 @@ import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
 import axiosInstance from '../lib/axios';
 import { echoInstance } from '../lib/echo';
+import { useTarifario } from '../hooks/useTarifario';
+import { cotizar, planDelTarifario, pesos } from '../lib/tarifario';
 
 // Keep active utterances in memory to prevent Chrome garbage collection bug
 let activeUtterances: SpeechSynthesisUtterance[] = [];
@@ -31,6 +33,12 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
   const [activeTab, setActiveTab] = useState<'overview' | 'onboarding'>('overview');
   const { globalUsers, currentTier, currentUser, globalSimTime, systemSettings, fetchState, isFeatureUnlocked } = useAppStore();
   const { tasks, assignments, validateTaskAssignment } = useTaskStore();
+
+  // El precio del plan sale del tabulador del servidor, nunca del código de la pantalla.
+  const { tarifario } = useTarifario();
+  const colaboradoresActivos = Math.max(1, globalUsers.length);
+  const planDelPlan = planDelTarifario(tarifario, currentTier);
+  const cotizacionDelPlan = cotizar(planDelPlan, colaboradoresActivos, 'monthly');
   
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [isAdoptionSaving, setIsAdoptionSaving] = useState(false);
@@ -1914,12 +1922,20 @@ export const DashboardTalent360 = ({ setActiveModule }: { setActiveModule?: (mod
                 Tu empresa cuenta con el plan {currentTier === 'pro' ? 'Profesional' : 'Empresas'}. Tienes acceso completo e ilimitado a todos los módulos actuales y futuros (ATS, Academia, Nóminas y Reportes) sin costos adicionales por módulo.
               </p>
             </div>
+            {/* (2026-09-05) Aquí decía "$99 MXN" para PRO y "$499 MXN" para Enterprise: un
+                TERCER juego de precios que no coincidía ni con lo que cobra la caja ($29 y $69
+                POR COLABORADOR AL MES), ni con la landing, ni con el panel de plataforma. Ahora
+                sale del tabulador del servidor, y si no llegó no se inventa una cifra. */}
             <div className="text-right shrink-0">
               <span className="text-slate-400 text-[10px] font-bold block uppercase tracking-widest">Inversión mensual</span>
               <span className="text-3xl font-black text-blue-600 font-sans tracking-tight">
-                {currentTier === 'pro' ? '$99 MXN' : '$499 MXN'}
+                {cotizacionDelPlan ? `$${pesos(cotizacionDelPlan.totalMensual)} MXN` : '—'}
               </span>
-              <span className="text-[10px] text-slate-500 font-bold block">facturado mensualmente</span>
+              <span className="text-[10px] text-slate-500 font-bold block">
+                {planDelPlan
+                  ? `${colaboradoresActivos} colaborador(es) × $${pesos(planDelPlan.tarifa_mensual_por_colaborador)}/mes`
+                  : 'Precio no disponible en este momento'}
+              </span>
             </div>
           </div>
         )}

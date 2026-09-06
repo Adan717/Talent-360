@@ -399,43 +399,75 @@ class AuthController extends Controller
     {
         $request->validate([
             'provider' => 'required|string|in:google,apple,samsung',
-            'provider_id' => 'required_without:id_token|string',
-            'id_token' => 'nullable|string',
-            'email' => 'nullable|email'
+            'id_token' => 'required|string',
         ]);
 
         $provider = $request->provider;
-        $providerId = $request->provider_id;
-        $email = $request->email;
-        $name = $request->input('name');
 
-        if ($provider === 'google' && $request->has('id_token') && !empty($request->id_token)) {
-            try {
-                $verifyUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" . $request->id_token;
-                $response = \Illuminate\Support\Facades\Http::get($verifyUrl);
-                
-                if ($response->failed()) {
-                    return response()->json(['error' => 'Token de Google inválido o vencido.'], 401);
-                }
+        // LA IDENTIDAD SALE SIEMPRE DE UN TOKEN VERIFICADO POR EL PROVEEDOR, NUNCA DEL CUERPO
+        // DE LA PETICIÓN (2026-09-06).
+        //
+        // Antes esta ruta aceptaba un `provider_id` mandado por el cliente sin verificar nada: si
+        // no venía `id_token`, se buscaba al usuario por ese id o por el `email` del cuerpo, se le
+        // vinculaba y se le emitía una sesión. La ruta es pública. En la práctica bastaba enviar
+        //     POST /api/v1/login/social  {provider:"apple", provider_id:"x", email:"admin@empresa"}
+        // para entrar como ese administrador —a su nómina y a sus expedientes— SIN CONTRASEÑA. El
+        // propio frontend usaba ese camino para Apple/Samsung y para un "Google de prueba". Era un
+        // bypass de autenticación remoto sobre datos laborales reales.
+        //
+        // Ahora: sólo Google, y sólo con un id_token que Google confirma y cuya audiencia coincide
+        // con ESTA app. Apple y Samsung no tienen verificación de token del lado del servidor, así
+        // que quedan cerrados hasta que se implemente —cerrado es la única postura honesta, porque
+        // "abierto" significaba abierto para cualquiera—.
+        if ($provider !== 'google') {
+            return response()->json([
+                'error' => 'El inicio de sesión con ' . ucfirst($provider) . ' aún no está disponible.',
+            ], 501);
+        }
 
-                $googleData = $response->json();
-                
-                // Verificar que la audiencia coincida con el Client ID de Google si está configurado en services.php
-                $configuredClientId = config('services.google.client_id');
-                if ($configuredClientId && isset($googleData['aud']) && $googleData['aud'] !== $configuredClientId) {
-                    return response()->json(['error' => 'Validación de cliente de Google fallida.'], 401);
-                }
+        $clientId = config('services.google.client_id');
+        if (!$clientId) {
+            // Sin Client ID no se puede comprobar que el token se emitió para ESTA app: un id_token
+            // válido de cualquier otra aplicación de Google entraría. Se rechaza en vez de confiar.
+            return response()->json([
+                'error' => 'El inicio de sesión con Google no está configurado en este servidor.',
+            ], 501);
+        }
 
-                $email = $googleData['email'] ?? null;
-                $name = $googleData['name'] ?? null;
-                $providerId = $googleData['sub'] ?? null;
+        try {
+            $response = \Illuminate\Support\Facades\Http::get(
+                'https://oauth2.googleapis.com/tokeninfo',
+                ['id_token' => $request->id_token]
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'No se pudo validar con Google. Intenta de nuevo.'], 503);
+        }
 
-                if (!$email || !$providerId) {
-                    return response()->json(['error' => 'Datos de Google incompletos.'], 400);
-                }
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Error al validar con Google: ' . $e->getMessage()], 500);
-            }
+        if ($response->failed()) {
+            return response()->json(['error' => 'Token de Google inválido o vencido.'], 401);
+        }
+
+        $googleData = $response->json();
+
+        // La audiencia del token DEBE ser esta app. Es lo que impide reutilizar aquí un token
+        // emitido para otra aplicación de Google.
+        if (($googleData['aud'] ?? null) !== $clientId) {
+            return response()->json(['error' => 'Este token de Google no fue emitido para Talent 360.'], 401);
+        }
+
+        $providerId = $googleData['sub'] ?? null;
+        $email = $googleData['email'] ?? null;
+        $name = $googleData['name'] ?? null;
+
+        // El correo tiene que venir verificado por Google; si no, no sirve para encontrar ni
+        // vincular una cuenta por correo.
+        $emailVerificado = $googleData['email_verified'] ?? false;
+        if ($emailVerificado === false || $emailVerificado === 'false') {
+            $email = null;
+        }
+
+        if (!$providerId || !$email) {
+            return response()->json(['error' => 'Datos de Google incompletos o correo sin verificar.'], 401);
         }
 
         // Determine column name

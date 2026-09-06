@@ -64,6 +64,15 @@ class HuellaDelColaborador
         'obsidian_suggestions'           => ['user_id', 'sugerencias que escribió en la Wiki (ésta sí apunta a users)'],
         'overtime_authorizations'        => ['user_id', 'horas extra autorizadas'],
         'panic_incidents'                => ['user_id', 'botones de pánico'],
+        // La constancia de privacidad se diseñó para SOBREVIVIR a la depuración del expediente
+        // (guarda copia del nombre y del correo a propósito, para poder seguir diciendo quién
+        // aceptó). Esa intención vale para una ficha archivada o un candidato descartado — no para
+        // esto: a los cinco años, conservar «Fulano, su correo y su IP aceptaron el aviso» es
+        // guardar dato personal identificable de alguien cuyo expediente se acaba de borrar, con
+        // el único fin de poder probar que se podía tratar un dato que ya no existe. Se va con la
+        // persona. Las constancias que cuelgan de un CANDIDATO se borran aparte, en el comando:
+        // su columna es `candidate_id` y aquí sólo se declara la que apunta a la cuenta.
+        'privacy_consents'               => ['user_id', 'constancia de aceptación del aviso: guarda nombre, correo, IP y user agent'],
         'report_intent_logs'             => ['user_id', 'lo que le pidió al asistente de reportes'],
         'saas_audit_logs'                => ['user_id', 'bitácora de seguridad de SUS accesos: IP y user agent son datos personales'],
         'sessions'                       => ['user_id', 'sesiones web'],

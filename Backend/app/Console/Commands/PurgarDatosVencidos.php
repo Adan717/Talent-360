@@ -384,7 +384,20 @@ class PurgarDatosVencidos extends Command
             $this->purgarHistorial($tenantId, (int) $userId, $corte, $ids);
         }
 
-        // 3. Todo lo demás que cuelga de la persona, según el mapa declarado.
+        // 3. Sus constancias de privacidad ligadas a un CANDIDATO, antes de que el paso siguiente
+        //    se lleve las fichas del ATS. `privacy_consents` referencia a la persona por una de dos
+        //    columnas —`user_id` si aceptó desde su cuenta, `candidate_id` si aceptó al postularse—
+        //    y el mapa declarado sólo cubre la primera. Los ids hay que leerlos AQUÍ: en cuanto el
+        //    plan borre `candidates`, ya no habría por dónde alcanzarlas y quedarían huérfanas
+        //    guardando su nombre, su correo y su IP.
+        if ($userId !== null) {
+            $candidaturas = DB::table('candidates')->where('user_id', $userId)->pluck('id')->all();
+            if ($candidaturas !== []) {
+                DB::table('privacy_consents')->whereIn('candidate_id', $candidaturas)->delete();
+            }
+        }
+
+        // 4. Todo lo demás que cuelga de la persona, según el mapa declarado.
         foreach (HuellaDelColaborador::plan() as $paso) {
             $id = $paso['llave'] === 'usuario' ? $userId : $expediente->id;
             if ($id === null) {
@@ -393,7 +406,7 @@ class PurgarDatosVencidos extends Command
             $this->filasDe($paso['tabla'], $paso['columnas'], (int) $id)->delete();
         }
 
-        // 4. Expediente y cuenta: se ANONIMIZAN.
+        // 5. Expediente y cuenta: se ANONIMIZAN.
         $this->anonimizar($expediente);
 
         return $archivos;

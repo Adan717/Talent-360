@@ -166,6 +166,10 @@ class TarifarioTest extends TestCase
             'admin_password' => 'secreto123',
             'employees' => 17,
             'billing_cycle' => 'yearly',
+            // Desde 2026-09-05 el alta de empresa exige la aceptación del aviso EN EL SERVIDOR
+            // (antes la casilla era teatro: su valor nunca salía del navegador). Sin esto el
+            // endpoint responde 422 y esta prueba fallaría por una razón que no es la que mide.
+            'acepta_aviso' => true,
         ]);
 
         $preferencia->assertOk();
@@ -191,6 +195,8 @@ class TarifarioTest extends TestCase
             'admin_password' => 'secreto123',
             'employees' => 7,
             'billing_cycle' => 'monthly',
+            // Ver la nota de la prueba anterior: el alta exige la aceptación del aviso.
+            'acepta_aviso' => true,
         ]);
 
         $preferencia->assertOk();

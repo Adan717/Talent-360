@@ -159,6 +159,25 @@ credenciales en el servidor.
 
 ## 🔎 Abiertas
 
+### A6 — ¿El reloj checador sigue registrando asistencia mientras la empresa no paga? (2026-09-05)
+
+**La decide el dueño; no es técnica.** Hoy la suspensión es un **apagón**: `CheckTenantActive`
+responde 403 a toda la API y el login falla, así que una empresa suspendida **no puede fichar ni
+consultar su registro de asistencia**. Eso no cambió con la cobranza automática
+(`docs/modules/cobranza/COBRANZA_AUTOMATICA.md`), y **el modo lectura no se construyó** a la
+espera de esta decisión.
+
+Las dos caras: el registro de asistencia es la base de la nómina y de obligaciones laborales que
+no se suspenden porque un proveedor no cobró; pero dejar el producto funcionando quita toda
+presión de pago.
+
+Mientras siga abierta, **el barrido agendado no suspende a nadie**: marca la mora, avisa y deja
+un `🔴 LISTA PARA SUSPENDER` en la bitácora. El apagón lo dispara una persona.
+
+**Decisión chica que viene junto:** el interruptor manual escribe `cancelled` al suspender y el
+barrido automático escribe `past_due`. Una suspensión por falta de pago no es una baja; conviene
+unificar el manual a `past_due` cuando el motivo sea falta de pago.
+
 ### A1 — Reportes IA: asistente por voz/texto ✅ CONSTRUIDO (2026-08-13)
 
 El dueño entregó la llave de OpenAI el 2026-08-13 y el asistente se construyó al diseño del

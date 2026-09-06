@@ -13,6 +13,76 @@ import { SaaSPlatformBilling } from './SaaSPlatformBilling';
 import { CLOCK_FEATURE_TAGS_MATRIX } from './reloj/logic/clockFeatureTags';
 import { slugParaCorreo } from '../lib/emailSlug';
 
+/**
+ * Estado de cobranza tal como lo respalda el backend (App\Support\EstadoDeCobranza).
+ *
+ * ANTES (2026-09-05) esta pantalla inventaba el estado por su cuenta y mentía en dos formas:
+ *
+ *  1. Calculaba "⚠️ Prueba Expirada" en el navegador con la sola presencia de `trial_ends_at`,
+ *     y ponía ese cálculo ANTES de mirar `subscription_status`. Las 3 empresas vivas que están
+ *     en 'active' arrastrando un `trial_ends_at` viejo del alta se veían como pruebas
+ *     expiradas en vez de "✓ Suscrito", que era lo que decía el backend.
+ *  2. Tenía un color ámbar para 'past_due' — un estado que NINGÚN código del backend escribía
+ *     jamás. Era decoración de una situación que no podía ocurrir.
+ *
+ * Ahora manda el estado del backend; `trial_ends_at` sólo se lee cuando la empresa está de
+ * verdad en periodo de prueba, y 'past_due' ya lo escribe el barrido `suscripciones:revisar-
+ * vencidas`, así que el ámbar por fin significa algo. Cuando no hay fecha de corte la pantalla
+ * lo dice en vez de callarlo: es la razón por la que la cobranza automática no revisa a nadie.
+ */
+type InsigniaDeCobranza = { etiqueta: string; clases: string; detalle?: string };
+
+const diasDesde = (fecha?: string | null): number | null => {
+  if (!fecha) return null;
+  const t = new Date(fecha).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+};
+
+const estadoDeCobranza = (t: any): InsigniaDeCobranza => {
+  if (t?.billing_exempt) {
+    return {
+      etiqueta: 'Exenta de cobro',
+      clases: 'text-violet-700 bg-violet-50 border-violet-200',
+      detalle: t?.billing_exempt_reason || 'Sin motivo anotado',
+    };
+  }
+
+  const estado = (t?.subscription_status || 'trial') as string;
+  const corte = t?.current_period_end || null;
+
+  if (estado === 'past_due') {
+    const dias = diasDesde(corte);
+    return {
+      etiqueta: 'Pago vencido',
+      clases: 'text-amber-700 bg-amber-50 border-amber-200',
+      detalle: dias !== null ? `${dias} día(s) desde la fecha de corte` : 'Sin fecha de corte registrada',
+    };
+  }
+
+  if (estado === 'cancelled') {
+    return { etiqueta: 'Baja', clases: 'text-rose-700 bg-rose-50 border-rose-200' };
+  }
+
+  if (estado === 'active') {
+    return {
+      etiqueta: '✓ Suscrito',
+      clases: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+      detalle: corte ? undefined : 'Sin fecha de corte: la cobranza automática no la revisa',
+    };
+  }
+
+  const fin = t?.trial_ends_at ? new Date(t.trial_ends_at) : null;
+  if (fin && !Number.isNaN(fin.getTime())) {
+    const restan = Math.ceil((fin.getTime() - Date.now()) / 86400000);
+    return restan > 0
+      ? { etiqueta: `⏳ ${restan}d prueba`, clases: 'text-amber-600 bg-amber-50 border-amber-100' }
+      : { etiqueta: 'Prueba vencida', clases: 'text-slate-600 bg-slate-100 border-slate-200' };
+  }
+
+  return { etiqueta: 'En prueba', clases: 'text-blue-700 bg-blue-50 border-blue-200' };
+};
+
 const moduleAudits = [
   {
     id: 'rrhh',
@@ -1470,20 +1540,15 @@ export const SaaSPlatformAdmin = () => {
                             if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
                                return <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>;
                             }
-                            if (comp.trial_ends_at) {
-                               const endsAt = new Date(comp.trial_ends_at);
-                               const diff = endsAt.getTime() - Date.now();
-                               const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                               return diff > 0 ? (
-                                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">⏳ {days}d prueba</span>
-                               ) : (
-                                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">⚠️ Prueba Expirada</span>
-                               );
-                            }
-                            if (comp.subscription_status === 'active') {
-                               return <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">✓ Suscrito</span>;
-                            }
-                            return null;
+                            const cob = estadoDeCobranza(comp);
+                            return (
+                               <span
+                                 title={cob.detalle || ''}
+                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cob.clases}`}
+                               >
+                                  {cob.etiqueta}
+                               </span>
+                            );
                          })()}
                       </div>
                    </div>
@@ -1582,71 +1647,48 @@ export const SaaSPlatformAdmin = () => {
                                    <span className={`text-xs font-bold ${comp.status === 'Activo' ? 'text-slate-700' : 'text-rose-600'}`}>{comp.status}</span>
                                 </span>
                                 {(() => {
-                                   if (comp.plan?.toLowerCase() === 'freemium' && !comp.trial_ends_at) {
-                                      return (
-                                         <div className="mt-0.5">
-                                            <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>
-                                            {comp.freemium_compliance_status === 'approved' ? (
-                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mt-1">
-                                                  ✓ Evidencia Aprobada
-                                               </span>
-                                            ) : comp.freemium_compliance_status === 'submitted' ? (
-                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
-                                                  ⏳ Comprobante por Revisar
-                                               </span>
-                                            ) : comp.freemium_compliance_status === 'rejected' ? (
-                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full mt-1">
-                                                  ⚠️ Evidencia Rechazada
-                                               </span>
-                                            ) : (
-                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full mt-1">
-                                                  📢 Comprobante Pendiente
-                                               </span>
-                                            )}
-                                         </div>
-                                      );
+                                   const cob = estadoDeCobranza(comp);
+                                   const insignia = (
+                                      <span
+                                        title={cob.detalle || ''}
+                                        className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border mt-0.5 whitespace-nowrap ${cob.clases}`}
+                                      >
+                                         {cob.etiqueta}
+                                      </span>
+                                   );
+
+                                   // Las insignias de evidencia son cosa del plan freemium (difusión social
+                                   // a cambio de módulos). Antes también salían colgadas de "Prueba
+                                   // Expirada", así que una empresa enterprise al corriente terminaba
+                                   // marcada con "📢 Publicidad Pendiente" sin deberle nada a nadie.
+                                   if (comp.plan?.toLowerCase() !== 'freemium') {
+                                      return insignia;
                                    }
-                                   
-                                   if (comp.trial_ends_at) {
-                                      const endsAt = new Date(comp.trial_ends_at);
-                                      const diff = endsAt.getTime() - Date.now();
-                                      const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                                      
-                                      if (diff > 0) {
-                                         return (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
-                                               ⏳ Quedan {days} días de prueba
+
+                                   return (
+                                      <div className="mt-0.5">
+                                         {comp.trial_ends_at
+                                            ? insignia
+                                            : <span className="text-[10px] text-slate-400 font-semibold block">Gratuito permanente</span>}
+                                         {comp.freemium_compliance_status === 'approved' ? (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full mt-1">
+                                               ✓ Evidencia Aprobada
                                             </span>
-                                         );
-                                      } else {
-                                         return (
-                                            <div className="mt-0.5">
-                                               <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full whitespace-nowrap">
-                                                  ⚠️ Prueba Expirada
-                                               </span>
-                                               {comp.freemium_compliance_status === 'approved' ? (
-                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full block mt-1">
-                                                     ✓ Evidencia Aprobada
-                                                  </span>
-                                               ) : (
-                                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full block mt-1">
-                                                     📢 Publicidad Pendiente
-                                                  </span>
-                                               )}
-                                            </div>
-                                         );
-                                      }
-                                   }
-
-                                   if (comp.subscription_status === 'active') {
-                                      return (
-                                         <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap">
-                                            ✓ Suscrito
-                                         </span>
-                                      );
-                                   }
-
-                                   return null;
+                                         ) : comp.freemium_compliance_status === 'submitted' ? (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full mt-1">
+                                               ⏳ Comprobante por Revisar
+                                            </span>
+                                         ) : comp.freemium_compliance_status === 'rejected' ? (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full mt-1">
+                                               ⚠️ Evidencia Rechazada
+                                            </span>
+                                         ) : (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full mt-1">
+                                               📢 Comprobante Pendiente
+                                            </span>
+                                         )}
+                                      </div>
+                                   );
                                 })()}
                              </div>
                           </td>
@@ -3143,25 +3185,35 @@ export const SaaSPlatformAdmin = () => {
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-semibold text-slate-500">Estado de Facturación:</span>
-                          <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                            tenantDetail?.tenant?.subscription_status === 'active' ? 'bg-emerald-100 text-emerald-800' :
-                            tenantDetail?.tenant?.subscription_status === 'trial' ? 'bg-blue-100 text-blue-800' :
-                            tenantDetail?.tenant?.subscription_status === 'past_due' ? 'bg-amber-100 text-amber-800' :
-                            'bg-slate-100 text-slate-800'
-                          }`}>
-                            {tenantDetail?.tenant?.subscription_status}
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold border ${estadoDeCobranza(tenantDetail?.tenant).clases}`}>
+                            {estadoDeCobranza(tenantDetail?.tenant).etiqueta}
                           </span>
                         </div>
+                        {estadoDeCobranza(tenantDetail?.tenant).detalle && (
+                          <p className="text-[11px] text-slate-500 font-medium -mt-1.5">
+                            {estadoDeCobranza(tenantDetail?.tenant).detalle}
+                          </p>
+                        )}
                         {tenantDetail?.tenant?.trial_ends_at && (
                           <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
                             <span className="font-semibold text-slate-500">Periodo de Prueba Finaliza:</span>
                             <span className="font-bold text-slate-700">{new Date(tenantDetail.tenant.trial_ends_at).toLocaleDateString()}</span>
                           </div>
                         )}
-                        {tenantDetail?.tenant?.current_period_end && (
-                          <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
-                            <span className="font-semibold text-slate-500">Próximo Cobro / Fin Ciclo:</span>
+                        <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
+                          <span className="font-semibold text-slate-500">Próximo Cobro / Fin Ciclo:</span>
+                          {tenantDetail?.tenant?.current_period_end ? (
                             <span className="font-bold text-slate-700">{new Date(tenantDetail.tenant.current_period_end).toLocaleDateString()}</span>
+                          ) : (
+                            // Callarlo era peor que decirlo: sin fecha de corte, el barrido de mora
+                            // (suscripciones:revisar-vencidas) no revisa a esta empresa nunca.
+                            <span className="font-bold text-slate-400">Sin fecha de corte</span>
+                          )}
+                        </div>
+                        {tenantDetail?.tenant?.payment_warning_sent_at && (
+                          <div className="flex justify-between items-center text-sm border-t border-slate-200/50 pt-2">
+                            <span className="font-semibold text-slate-500">Aviso de mora registrado:</span>
+                            <span className="font-bold text-amber-700">{new Date(tenantDetail.tenant.payment_warning_sent_at).toLocaleDateString()}</span>
                           </div>
                         )}
                       </div>

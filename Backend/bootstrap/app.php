@@ -71,6 +71,20 @@ return Application::configure(basePath: dirname(__DIR__))
         // Bloque 6: si el asistente de reportes falla demasiado, que lo diga la bitácora
         // del Monitor — no esperar a que un cliente se queje en marzo.
         $schedule->command('reportes:alerta-fallos-asistente')->dailyAt('07:00');
+        // (2026-09-05) Cobranza: hasta hoy, dejar de pagar no tenía NINGUNA consecuencia
+        // automática — la suspensión era un interruptor manual del panel y el estado 'past_due'
+        // no lo escribía nadie (la pantalla tenía color ámbar para él y jamás ocurría).
+        //
+        // Corre en modo --sin-suspender A PROPÓSITO: aplica todo lo que NO apaga a nadie (marcar
+        // la mora, avisar dentro de la gracia y escalar en la bitácora a quien la agotó) y deja el
+        // apagón como acto humano deliberado. Suspender deja a una empresa entera sin reloj
+        // checador, y eso no se enciende solo sin que el dueño lo sepa; para ejecutarlo se corre el
+        // mismo comando con --aplicar (sin --sin-suspender), o el interruptor del panel.
+        // No se agenda el simulacro pelado porque un simulacro agendado no escribe nada: sería
+        // código muerto, exactamente lo que le pasó a shifts:close-orphans durante meses.
+        $schedule->command('suscripciones:revisar-vencidas --aplicar --sin-suspender')
+            ->dailyAt('06:00')
+            ->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

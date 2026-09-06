@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { precioMensual, precioAnual, precioMensualEquivalente, ahorroAnualPorcentaje } from '../lib/precios';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
 import { LegalModal, type LegalDocType } from './LegalModal';
@@ -383,12 +384,13 @@ export const SaaSLandingPage = () => {
   };
 
   // Professional and Enterprise pricing calculations
-  const pricePerUser = 29; // $29 MXN per user/month ($24 in yearly)
-  const monthlyProPrice = proEmployeesCount * pricePerUser;
-  const yearlyProPrice = Math.round(proEmployeesCount * 24 * 12); // $24/user/mo billed annually
-  const enterprisePricePerUser = 69; // $69 MXN per user/month ($55 in yearly)
-  const monthlyEnterprisePrice = proEmployeesCount * enterprisePricePerUser;
-  const yearlyEnterprisePrice = Math.round(proEmployeesCount * 55 * 12); // $55/user/mo billed annually
+  // Tarifas en `lib/precios.ts` (espejo de las del servidor). Antes cada número salía de un
+  // literal distinto aquí y de un `* 0.8` inventado allá abajo: la misma tarjeta llegaba a
+  // pintar dos precios anuales que no cuadraban entre sí (ver el comentario de precios.ts).
+  const monthlyProPrice = precioMensual('pro', proEmployeesCount);
+  const yearlyProPrice = precioAnual('pro', proEmployeesCount);
+  const monthlyEnterprisePrice = precioMensual('enterprise', proEmployeesCount);
+  const yearlyEnterprisePrice = precioAnual('enterprise', proEmployeesCount);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
@@ -1176,7 +1178,7 @@ export const SaaSLandingPage = () => {
             </button>
             <span className={`text-sm font-extrabold flex items-center gap-1.5 transition-colors duration-200 ${billingCycle === 'yearly' ? 'text-blue-600' : 'text-slate-500'}`}>
               Facturación Anual
-              <span className="text-[9px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">Ahorra 20%</span>
+              <span className="text-[9px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">Ahorra hasta {Math.max(ahorroAnualPorcentaje('pro'), ahorroAnualPorcentaje('enterprise'))}%</span>
             </span>
           </div>
 
@@ -1225,7 +1227,7 @@ export const SaaSLandingPage = () => {
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-black text-blue-600 transition-all">
-                      ${(billingCycle === 'yearly' ? Math.round(monthlyProPrice * 0.8) : monthlyProPrice).toLocaleString()}
+                      ${(billingCycle === 'yearly' ? precioMensualEquivalente('pro', proEmployeesCount) : monthlyProPrice).toLocaleString()}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
@@ -1233,10 +1235,10 @@ export const SaaSLandingPage = () => {
                 </div>
                 <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
                   <span className="text-emerald-600 font-bold">
-                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : 'Ahorra 20% en Plan Anual:'}
+                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${ahorroAnualPorcentaje('pro')}% en Plan Anual:`}
                   </span>
                   <span className="text-slate-700 font-bold whitespace-nowrap">
-                    ${(billingCycle === 'yearly' ? yearlyProPrice : Math.round(monthlyProPrice * 12 * 0.8)).toLocaleString()} MXN/año
+                    ${yearlyProPrice.toLocaleString()} MXN/año
                   </span>
                 </div>
               </div>
@@ -1291,7 +1293,7 @@ export const SaaSLandingPage = () => {
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-black text-slate-900 transition-all">
-                      ${(billingCycle === 'yearly' ? Math.round(monthlyEnterprisePrice * 0.8) : monthlyEnterprisePrice).toLocaleString()}
+                      ${(billingCycle === 'yearly' ? precioMensualEquivalente('enterprise', proEmployeesCount) : monthlyEnterprisePrice).toLocaleString()}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
@@ -1299,7 +1301,7 @@ export const SaaSLandingPage = () => {
                 </div>
                 <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
                   <span className="text-emerald-600 font-bold">
-                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : 'Ahorra 20% en Plan Anual:'}
+                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${ahorroAnualPorcentaje('enterprise')}% en Plan Anual:`}
                   </span>
                   <span className="text-slate-700 font-bold whitespace-nowrap">
                     ${yearlyEnterprisePrice.toLocaleString()} MXN/año

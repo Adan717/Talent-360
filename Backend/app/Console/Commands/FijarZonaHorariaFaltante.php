@@ -97,12 +97,14 @@ class FijarZonaHorariaFaltante extends Command
 
         $this->info(count($sinZona) . ' empresa(s) con su zona horaria ya declarada: ' . $zona . '.');
         $this->line('No cambia el comportamiento: es la misma zona que ya se usaba por defecto.');
-        // (2026-08-27) Corregido: este mensaje decía "corrígela en su Configuración" y esa
-        // pantalla NO tiene campo de zona horaria — mandaba a la gente a buscar algo que no
-        // existe. Hasta que exista el campo, la vía real es este mismo comando.
-        $this->line('Si alguna empresa es de otra zona (Tijuana −8, Sonora/Sinaloa −7), corrígela con:');
+        // (2026-09-05) El campo YA existe en la pantalla: Configuración → Reloj & Asistencia
+        // Global (y también en el Perfil de la Empresa del menú del avatar). Este mensaje decía
+        // que no existía y mandaba a todo el mundo al comando; se corrige para no seguir
+        // afirmando algo que dejó de ser cierto.
+        $this->line('Si alguna empresa es de otra zona (Tijuana −8, Sonora/Sinaloa −7), se corrige');
+        $this->line('desde la pantalla: Configuración → Reloj & Asistencia Global → Zona Horaria.');
+        $this->line('O desde aquí, sin entrar al sistema:');
         $this->line('  php artisan tenants:fijar-zona-horaria --zona=America/Mazatlan --tenant=N --aplicar');
-        $this->line('(la pantalla de Configuración aún no tiene este campo; está anotado como pendiente)');
 
         return self::SUCCESS;
     }

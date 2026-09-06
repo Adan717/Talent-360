@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\EstadoDelRespaldo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +25,7 @@ class PreflightProduccion extends Command
 
     private array $fallos = [];
     private array $avisos = [];
+    private bool $baseViva = false;
 
     public function handle(): int
     {
@@ -31,9 +33,20 @@ class PreflightProduccion extends Command
         $this->line('');
 
         $this->revisarEntorno();
+        // El respaldo va antes que la base A PROPÓSITO: no la necesita, y el momento en que
+        // más urge saber si hay respaldo es justamente cuando la base no contesta.
+        $this->revisarRespaldo();
         $this->revisarBaseDeDatos();
-        $this->revisarSecretosDeVault();
-        $this->revisarZonaHoraria();
+
+        // (2026-09-05) Estas dos preguntan por tablas. Antes se llamaban siempre y, con la base
+        // caída, `Schema::hasTable()` lanzaba una QueryException SIN CAPTURAR: el comando moría
+        // con una traza en pantalla —y con las credenciales de la conexión dentro— en vez de
+        // decir "no hay conexión a la base de datos", que es lo que ya había detectado la línea
+        // anterior. Un verificador que revienta al encontrar el problema no verifica nada.
+        if ($this->baseViva) {
+            $this->revisarSecretosDeVault();
+            $this->revisarZonaHoraria();
+        }
 
         $this->line('');
         foreach ($this->avisos as $a) {
@@ -115,6 +128,7 @@ class PreflightProduccion extends Command
     {
         try {
             DB::connection()->getPdo();
+            $this->baseViva = true;
             $this->ok('Conexión a la base de datos correcta (' . DB::connection()->getDatabaseName() . ')');
         } catch (\Throwable $e) {
             $this->fallos[] = 'No hay conexión a la base de datos: ' . $e->getMessage();
@@ -171,5 +185,52 @@ class PreflightProduccion extends Command
         } else {
             $this->ok('Zona horaria configurada por empresa');
         }
+    }
+
+    /**
+     * ¿Hay de dónde revivir esto si se muere? Se pregunta con la MISMA clase que contesta
+     * /api/health, para que el preflight y el vigilante externo no puedan discrepar.
+     *
+     * Por qué la marca ausente es AVISO aquí y en cambio es 503 en el endpoint: son dos
+     * preguntas distintas. El endpoint pregunta "¿está sano AHORA?" y no poder confirmar el
+     * respaldo es no estar sano. El preflight se corre justo después de desplegar, cuando lo
+     * normal es que el primer respaldo todavía no haya pasado; hacerlo fallar ahí obligaría a
+     * ignorar el preflight, y un preflight que se ignora no protege nada. Un respaldo VIEJO sí
+     * es fallo: ese ya no es "todavía no", es "dejó de correr".
+     */
+    private function revisarRespaldo(): void
+    {
+        $r = EstadoDelRespaldo::revisar();
+
+        if ($r['ok']) {
+            $this->ok(sprintf(
+                'Respaldo de hace %.1f h (%s), dentro de las %d h de margen',
+                $r['horas'],
+                $r['ultimo_utc'],
+                EstadoDelRespaldo::HORAS_MAXIMAS
+            ));
+            return;
+        }
+
+        if ($r['motivo'] === 'viejo') {
+            $this->fallos[] = sprintf(
+                'El último respaldo es de hace %.1f h (%s) y el máximo son %d h. El cron de '
+                . '/usr/local/bin/respaldo-talent360 dejó de correr o está fallando: revisa '
+                . '/var/log/talent360-respaldo.log. Sin respaldo, un disco perdido es la nómina perdida.',
+                $r['horas'],
+                $r['ultimo_utc'],
+                EstadoDelRespaldo::HORAS_MAXIMAS
+            );
+            return;
+        }
+
+        $porque = $r['motivo'] === 'ilegible'
+            ? 'existe pero no se puede leer (revisa permisos: la escribe root, la lee www-data) o no es JSON válido'
+            : 'no existe todavía';
+
+        $this->avisos[] = 'No se puede confirmar ningún respaldo: la marca ' . EstadoDelRespaldo::ruta()
+            . ' ' . $porque . '. Si el servidor es nuevo, corre a mano '
+            . '/usr/local/bin/respaldo-talent360 una vez; si no lo es, el respaldo lleva sin '
+            . 'correr al menos desde el último despliegue. Ver docs/VIGILANTE_DEL_SERVIDOR.md.';
     }
 }

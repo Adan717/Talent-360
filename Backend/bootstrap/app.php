@@ -11,7 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
-        health: '/up',
+        // Sin `health: '/up'` a propósito. Era una SEGUNDA señal de salud que además no servía:
+        // por el dominio público NI SIQUIERA LLEGABA a Laravel —Frontend/nginx.conf sólo proxea
+        // /api y /broadcasting, y `location /` devuelve el index.html de la SPA con 200—, así que
+        // un vigilante apuntado a /up habría estado verde con el backend muerto. Hay una sola
+        // señal, /api/health, y esa sí pasa por PHP.
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

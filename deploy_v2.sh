@@ -72,6 +72,66 @@ echo "▸ Situando el árbol en ${OBJETIVO}…"
 git reset --hard "$OBJETIVO"
 
 NUEVA="$(git rev-parse --short HEAD)"
+
+# ── Respaldo: que un servidor nuevo no nazca sin él ───────────────────────────────────────────
+# El script de respaldo y su línea de cron los puso alguien A MANO en agosto de 2026. Si esta
+# máquina se reinstala —o se levanta una segunda— el respaldo simplemente no existe y NADIE se
+# entera: es el fallo que sólo se descubre el día que hace falta restaurar, cuando ya no hay
+# nada que restaurar. Desde 2026-09-05 se instala solo aquí, y es idempotente: si ya está igual,
+# no toca nada y no dice nada.
+#
+# Va ANTES de la salida temprana de "ya estabas en este commit" a propósito: volver a ejecutar
+# deploy-v2 debe reparar un cron borrado aunque no haya código nuevo que desplegar.
+#
+# El script instalado vive FUERA del árbol por la misma razón que este archivo: `git reset
+# --hard` de arriba lo borraría a mitad de ejecución.
+#
+# NO se comprueba aquí la EDAD del respaldo, y es deliberado: un respaldo viejo no debe impedir
+# desplegar —puede que el despliegue sea justamente el arreglo que lo repara—. De vigilar la
+# edad se encarga /api/health, que es quien tiene un humano detrás (docs/VIGILANTE_DEL_SERVIDOR.md).
+RESPALDO_INSTALADO="/usr/local/bin/respaldo-talent360"
+RESPALDO_FUENTE="${RAIZ}/scripts/respaldo_talent360.sh"
+CRON_RESPALDO="45 2 * * * ${RESPALDO_INSTALADO} >> /var/log/talent360-respaldo.log 2>&1"
+
+if [ -f "$RESPALDO_FUENTE" ]; then
+    # El repo se edita desde Windows: un CRLF en la primera línea deja "/bin/sh^M: bad
+    # interpreter" y el respaldo no corre NUNCA sin que nadie lo note. Se limpia siempre.
+    TMP_RESPALDO="$(mktemp)"
+    sed 's/\r$//' "$RESPALDO_FUENTE" > "$TMP_RESPALDO"
+    if ! cmp -s "$TMP_RESPALDO" "$RESPALDO_INSTALADO" 2>/dev/null; then
+        # Avisa, no bloquea: que no se pueda instalar el respaldo (permisos, disco lleno) es
+        # grave y hay que verlo, pero tumbar por eso un despliegue que por lo demás iba bien
+        # sería cambiar un problema por otro peor.
+        if install -m 700 "$TMP_RESPALDO" "$RESPALDO_INSTALADO"; then
+            echo "▸ Respaldo: script instalado/actualizado en ${RESPALDO_INSTALADO}"
+        else
+            echo "⚠  Respaldo: NO se pudo instalar ${RESPALDO_INSTALADO}. El despliegue sigue,"
+            echo "   pero esta máquina puede quedarse SIN RESPALDO: revísalo hoy."
+        fi
+    fi
+    rm -f "$TMP_RESPALDO"
+else
+    echo "⚠  Respaldo: no existe ${RESPALDO_FUENTE}; se deja intacto lo que ya hubiera instalado."
+fi
+
+# El crontab se LEE antes de escribirlo, en dos pasos. La forma corta y habitual
+# —`crontab -l | ... | crontab -`— lee y escribe el mismo archivo dentro de una sola tubería,
+# con los dos lados corriendo a la vez; el día que el orden salga al revés se pierden las OTRAS
+# líneas de cron de root sin decir nada. Aquí no hay carrera posible.
+# El `|| true` es obligatorio: en un servidor recién nacido no hay crontab, `crontab -l` sale
+# con código 1 y `set -e` mataría el despliegue justo en el caso que este bloque viene a curar.
+CRON_ACTUAL="$(crontab -l 2>/dev/null || true)"
+if ! printf '%s' "$CRON_ACTUAL" | grep -qF "$RESPALDO_INSTALADO"; then
+    # El `[ -z ] ||` conserva las líneas que ya hubiera y evita dejar una línea en blanco al
+    # principio cuando todavía no hay crontab ninguno.
+    if { [ -z "$CRON_ACTUAL" ] || printf '%s\n' "$CRON_ACTUAL"; echo "$CRON_RESPALDO"; } | crontab -; then
+        echo "▸ Respaldo: cron dado de alta (02:45 UTC, diario)."
+    else
+        echo "⚠  Respaldo: NO se pudo escribir el cron. El despliegue sigue, pero el respaldo"
+        echo "   automático NO está programado en esta máquina: revísalo hoy."
+    fi
+fi
+
 if [ "$ANTERIOR" = "$NUEVA" ] && [ "$ULTIMO_OK" = "$NUEVA" ]; then
     echo "▸ Ya estaba en ${NUEVA} y su despliegue terminó bien: no hay nada que hacer."
     exit 0

@@ -21,10 +21,11 @@ class DeviceSecurityMiddleware
         $ip = $request->ip();
         $fingerprint = $request->header('X-Device-Fingerprint');
 
-        // Allow bypassing if it's superadmin or health checks
-        if ($request->is('api/health') || $request->is('api/v1/health')) {
-            return $next($request);
-        }
+        // (2026-09-05) Aquí había una exención para 'api/health' y 'api/v1/health' que NO
+        // eximía de nada: este middleware sólo se aplica al grupo `v1` (routes/api.php), donde
+        // /health nunca ha vivido —vive fuera del prefijo— y 'api/v1/health' no existe. Dos
+        // condiciones imposibles que además hacían creer que el health check estaba protegido
+        // de algo. Se borra: /api/health no pasa por este middleware, punto.
 
         $query = DB::table('device_registrations')
             ->where('is_banned', true)

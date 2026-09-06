@@ -16,6 +16,13 @@ export interface User {
   pre_shift_alarm_minutes?: number | null;
   /** R102: entradas tardías autorizadas desde el último curso de Puntualidad (bloqueo del dial). */
   punctuality_lockout_count?: number;
+  /**
+   * (2026-09-05) ¿Falta que esta cuenta acepte el Aviso de Privacidad vigente? Lo decide el
+   * servidor (`User::toAuthPayload`); App.tsx antepone con ello la pantalla obligatoria de un
+   * toque. `privacidad_version` es la versión que se está aceptando, para poder mostrarla.
+   */
+  privacidad_pendiente?: boolean;
+  privacidad_version?: string;
   avatar?: string;
   salary?: number;
   base_salary?: number;

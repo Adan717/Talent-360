@@ -351,6 +351,10 @@ export const SaaSLandingPage = () => {
         plan: selectedPlan.toLowerCase(),
         employees: (selectedPlan.toLowerCase() === 'pro' || selectedPlan.toLowerCase() === 'enterprise') ? proEmployeesCount : null,
         billing_cycle: billingCycle,
+        // (2026-09-05) La casilla de aceptación ERA TEATRO: habilitaba el botón y su valor moría
+        // en el navegador — cero tablas, cero endpoints. Ahora viaja, y el servidor la exige y deja
+        // constancia con la versión del aviso, la fecha, la IP y el navegador.
+        acepta_aviso: acceptedTerms,
         ...(googleUser ? {
           admin_name: googleUser.name,
           admin_email: googleUser.email

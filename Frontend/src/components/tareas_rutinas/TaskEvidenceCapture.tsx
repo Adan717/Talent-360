@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, X, RefreshCw, Check } from 'lucide-react';
+import { NotaDeDatos } from '../AvisoDePrivacidad';
 
 // §35 (prerequisito de "Comparación (IA)"): captura real de evidencia fotográfica para
 // assistantType: 'evidencia_foto' en el módulo de Tareas. Antes esto era un stub
@@ -100,9 +101,15 @@ export default function TaskEvidenceCapture({ title = 'Evidencia Fotográfica de
           </button>
         </div>
 
-        <p className="text-[11px] text-slate-500 mb-3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold">
+        <p className="text-[11px] text-slate-500 mb-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold">
           {title}
         </p>
+
+        {/* (2026-09-05) Misma nota que en la foto del comedor: la cámara se abre avisando. */}
+        <NotaDeDatos
+          className="mb-3 px-1"
+          texto="Esta foto se guarda como evidencia de la tarea y la ve tu supervisión."
+        />
 
         <div className="flex-grow relative bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center min-h-[240px]">
           {error ? (

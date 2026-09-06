@@ -348,6 +348,10 @@ class EmployeeController extends Controller
                 // Si la contraseña la tecleó el admin, la conoce alguien más: cambio forzado.
                 // (La aleatoria no se marca: nadie la conoce y se fija al activar con el PIN.)
                 'must_change_password' => $request->filled('password'),
+                // (2026-09-05) Nace una persona real en el sistema: se le pedirá el aviso de
+                // privacidad la primera vez que entre — por la app o por el kiosco, que es
+                // justamente quien nunca pasaba por ninguna pantalla que se lo mostrara.
+                'privacidad_pendiente' => true,
             ]);
 
             // Crear el registro del colaborador en la tabla employees
@@ -582,6 +586,8 @@ class EmployeeController extends Controller
                         'avatar' => $request->input('avatar', $employee->avatar),
                         // Igual que en el alta: contraseña tecleada por el admin → cambio forzado.
                         'must_change_password' => $request->filled('password'),
+                        // Igual que en el alta: se le pedirá el aviso de privacidad al entrar.
+                        'privacidad_pendiente' => true,
                     ]);
                     $employee->user_id = $user->id;
                     $employee->save();

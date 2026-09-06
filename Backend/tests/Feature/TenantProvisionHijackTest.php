@@ -42,6 +42,7 @@ class TenantProvisionHijackTest extends TestCase
             'admin_name' => 'Impostor',
             'admin_email' => 'dueno@empresa.com',
             'admin_password' => 'secret123',
+            'acepta_aviso' => true,
         ]);
 
         $response->assertStatus(409);
@@ -63,6 +64,7 @@ class TenantProvisionHijackTest extends TestCase
             'admin_name' => 'Nuevo Dueño',
             'admin_email' => 'nuevo@empresa-limpia.com',
             'admin_password' => 'secret123',
+            'acepta_aviso' => true,
         ]);
 
         $response->assertStatus(200);

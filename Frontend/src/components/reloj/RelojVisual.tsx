@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Clock, CheckSquare, GraduationCap, Settings, Star, DollarSign, Key, WifiOff, ClipboardList, UserX, AlertTriangle, Fingerprint, Lock, Check, Play, Menu, LogIn, Coffee, Utensils, LogOut, Hourglass, Store, Sun, AlertCircle, CheckCircle, Network, X, Upload, Armchair, MessageSquare, AlertOctagon, Sparkles, Bot, Send, Trophy, ListTodo, User, Users, Phone, Plus, ShieldAlert } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ColorMap } from '../SaaSAccountSettings';
+import { EnlaceAlAviso, NotaDeDatos } from '../AvisoDePrivacidad';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useClockContext } from '../store/ClockContext';
 import Academia from './Academia';
@@ -2021,6 +2022,12 @@ export default function RelojVisual({
             <Clock size={28} className="animate-spin" />
           </div>
           <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Buscando señal GPS de alta precisión...</p>
+          {/* (2026-09-05) Éste es el instante en que el navegador pide la ubicación. Hasta hoy no
+              había ni una línea que dijera para qué se usa. No bloquea el fichaje. */}
+          <NotaDeDatos
+            className="mt-3 max-w-[260px] justify-center"
+            texto="Tu ubicación se usa sólo para validar que fichas dentro de tu sucursal; no se te rastrea fuera del fichaje."
+          />
         </div>
       );
     }
@@ -2032,8 +2039,14 @@ export default function RelojVisual({
             <AlertTriangle size={24} className="animate-bounce" />
           </div>
           <h3 className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1.5">Permiso de GPS Requerido</h3>
+          {/* (2026-09-05) Este párrafo decía: "Para cumplir con las normas del SAT 2027 y validar
+              tu perímetro de trabajo en DecorArte, es obligatorio activar la ubicación". Tres
+              cosas falsas en una frase: no hay ninguna norma del SAT que exija geolocalizar un
+              fichaje, DecorArte es UN cliente (su nombre estaba en duro dentro del producto que
+              ven todos los demás), y sin coordenadas de la sucursal la geocerca ni siquiera
+              aplica (R105, el servidor falla abierto). Ahora dice lo que de verdad pasa. */}
           <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-            Para cumplir con las normas del SAT 2027 y validar tu perímetro de trabajo en DecorArte, es obligatorio activar la ubicación.
+            Tu empresa valida que el fichaje ocurra dentro de la sucursal. Activa la ubicación para poder registrar tu asistencia desde aquí.
           </p>
           
           <div className="text-left bg-white/60 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3.5 text-[10.5px] space-y-2.5 mb-4 shadow-sm">
@@ -2051,6 +2064,11 @@ export default function RelojVisual({
               <span>Presiona reintentar abajo.</span>
             </div>
           </div>
+
+          <NotaDeDatos
+            className="mb-3 text-left"
+            texto="La ubicación se usa sólo para validar que fichas dentro de tu sucursal."
+          />
           
           <div className="flex flex-col gap-2">
             <button 
@@ -2433,6 +2451,16 @@ export default function RelojVisual({
               >
                 <span>🔔</span> Ajustes de Alarmas y Alertas
               </button>
+            </div>
+
+            {/* (2026-09-05) El aviso de privacidad, alcanzable desde el DIAL. Es la única pantalla
+                que ve un colaborador de piso: sin esto, quien entra por el kiosco o por el reloj
+                no tenía por dónde leerlo nunca. Abre en otra pestaña para no tirar el turno. */}
+            <div className={`p-3 rounded-xl border text-[11px] ${isDark ? 'bg-slate-950/40 border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+              <p className="text-slate-500 leading-snug">
+                Tus datos (asistencia, ubicación al fichar y fotos de evidencia) se tratan conforme al{' '}
+                <EnlaceAlAviso className="text-violet-600">Aviso de Privacidad</EnlaceAlAviso>.
+              </p>
             </div>
 
             <button

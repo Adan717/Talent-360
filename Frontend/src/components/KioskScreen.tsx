@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, LogOut, Coffee, Utensils, Delete, X } from 'lucide-react';
+import { LogIn, LogOut, Coffee, Utensils, Delete, X, ShieldCheck } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { useAppStore } from '../store/useAppStore';
+import { EnlaceAlAviso } from './AvisoDePrivacidad';
 
 /**
  * Kiosko: tableta compartida en la entrada (Ronda 55, la UI; el backend es R54).
@@ -19,7 +20,7 @@ import { useAppStore } from '../store/useAppStore';
  * server-side (R54): esta UI sólo recoge PIN + acción y muestra el resultado.
  */
 
-type Mode = 'idle' | 'action' | 'pin' | 'result';
+type Mode = 'idle' | 'action' | 'pin' | 'result' | 'privacidad';
 
 interface KioskAction {
   type: string;
@@ -38,6 +39,10 @@ const ACTIONS: KioskAction[] = [
 const PIN_LENGTH = 6;
 const INACTIVITY_MS = 20000; // vuelve a reposo si nadie interactúa
 const RESULT_MS = 4500;      // cuánto se muestra la confirmación antes de volver a reposo
+// La pantalla del aviso pide leer, así que dura más que la confirmación; pero TIENE que caducar:
+// si la persona se va sin tocar nada, la tableta no puede quedarse con su nombre en pantalla ni
+// dejar sin fichar a quien viene detrás.
+const PRIVACIDAD_MS = 60000;
 
 export const KioskScreen = () => {
   const navigate = useNavigate();
@@ -49,6 +54,11 @@ export const KioskScreen = () => {
   const [pin, setPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; title: string; detail: string } | null>(null);
+  // (2026-09-05) Consentimiento del aviso de privacidad en la tableta. Quien ficha aquí NUNCA pasa
+  // por el login: ésta es la única superficie donde se le puede presentar. El pase lo emite el
+  // servidor con el ponche (dura 5 min y es de un solo uso); el PIN NO se conserva.
+  const [privacidad, setPrivacidad] = useState<{ pase: string; nombre: string } | null>(null);
+  const [aceptando, setAceptando] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,6 +81,8 @@ export const KioskScreen = () => {
     setPin('');
     setSubmitting(false);
     setResult(null);
+    setPrivacidad(null);
+    setAceptando(false);
   }, []);
 
   // Timeout de inactividad: sólo corre en las pantallas intermedias (elegir acción / teclear PIN).
@@ -114,6 +126,11 @@ export const KioskScreen = () => {
           title: `¡Listo, ${data.employee?.name || 'colaborador'}!`,
           detail: `${action.label} · ${data.message || 'Registro guardado.'}`,
         });
+        // El fichaje YA quedó registrado (el servidor no lo bloquea por esto). Si a esta persona
+        // le falta aceptar el aviso, se le pide en el acto, con el pase que vino en la respuesta.
+        if (data.privacidad?.pendiente && data.privacidad?.pase) {
+          setPrivacidad({ pase: data.privacidad.pase, nombre: data.employee?.name || '' });
+        }
       } else {
         // 200 con success:false (raro; ClockService normalmente lanza), se trata como rechazo.
         setResult({ ok: false, title: 'No se registró', detail: data.message || 'Intenta de nuevo.' });
@@ -135,6 +152,34 @@ export const KioskScreen = () => {
       resultTimer.current = setTimeout(goIdle, RESULT_MS);
     }
   }, [goIdle]);
+
+  // La pantalla del aviso NO se va sola a los 4.5 s como la de confirmación: es un acto que la
+  // persona tiene que hacer. Se cancela el temporizador del resultado y se cambia de modo.
+  useEffect(() => {
+    if (mode === 'result' && privacidad) {
+      if (resultTimer.current) clearTimeout(resultTimer.current);
+      setMode('privacidad');
+    }
+  }, [mode, privacidad]);
+
+  useEffect(() => {
+    if (mode !== 'privacidad') return;
+    const t = setTimeout(goIdle, PRIVACIDAD_MS);
+    return () => clearTimeout(t);
+  }, [mode, goIdle]);
+
+  const aceptarPrivacidad = useCallback(async () => {
+    if (!privacidad) return;
+    setAceptando(true);
+    try {
+      await axiosInstance.post('/kiosk/consentimiento', { pase: privacidad.pase });
+    } catch {
+      // Si falla (pase vencido, sin red), no se atrapa a la persona en la tableta: el pase se
+      // vuelve a emitir en su siguiente ponche. Lo que NO se hace es fingir que se registró.
+    } finally {
+      goIdle();
+    }
+  }, [privacidad, goIdle]);
 
   const pressDigit = (d: string) => {
     if (submitting || pin.length >= PIN_LENGTH) return;
@@ -239,6 +284,38 @@ export const KioskScreen = () => {
     );
   }
 
+  if (mode === 'privacidad') {
+    return (
+      <KioskFrame companyName={companyName} onExit={goIdle} exitLabel="Ahora no">
+        <div className="w-full max-w-lg text-center">
+          <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-5 text-white">
+            <ShieldCheck size={40} />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2">
+            {privacidad?.nombre ? `${privacidad.nombre}, tu asistencia quedó registrada` : 'Tu asistencia quedó registrada'}
+          </h2>
+          <p className="text-white/80 text-base leading-relaxed mb-6">
+            Falta una cosa: aceptar el Aviso de Privacidad. Ahí dice qué datos tuyos trata la empresa
+            (asistencia, ubicación al fichar, fotos de evidencia) y cuáles son tus derechos.
+          </p>
+
+          <button
+            type="button"
+            onClick={aceptarPrivacidad}
+            disabled={aceptando}
+            className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-white/20 text-white font-black text-lg transition-colors shadow-lg"
+          >
+            {aceptando ? 'Registrando…' : 'He leído y acepto'}
+          </button>
+
+          <p className="text-white/60 text-sm mt-4">
+            <EnlaceAlAviso className="text-white">Leer el Aviso de Privacidad completo</EnlaceAlAviso>
+          </p>
+        </div>
+      </KioskFrame>
+    );
+  }
+
   // mode === 'result'
   return (
     <KioskFrame companyName={companyName} onExit={goIdle} exitLabel="Continuar">
@@ -287,6 +364,11 @@ const KioskFrame = ({
       </button>
     </div>
     {children}
+    {/* (2026-09-05) Enlace permanente en la tableta: quien ficha aquí no tiene sesión propia ni
+        menú donde buscarlo, y `/privacidad` es pública justamente para este caso. */}
+    <div className="absolute bottom-0 left-0 right-0 p-4 text-center">
+      <EnlaceAlAviso className="text-white/50 hover:text-white/80 text-xs">Aviso de Privacidad</EnlaceAlAviso>
+    </div>
   </div>
 );
 

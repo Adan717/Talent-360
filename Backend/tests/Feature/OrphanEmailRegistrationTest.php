@@ -129,6 +129,7 @@ class OrphanEmailRegistrationTest extends TestCase
             'subdomain' => 'dashcomputer',
             'plan' => 'freemium',
             'company_name' => 'Dashcomputer Nueva',
+            'acepta_aviso' => true,
         ]);
 
         $registerResponse->assertStatus(200);

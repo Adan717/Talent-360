@@ -32,6 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // cambiar su contraseña o salir. En el grupo entero, no ruta por ruta.
         $middleware->appendToGroup('api', \App\Http\Middleware\ForcePasswordChange::class);
 
+        // (2026-09-05) Aviso de privacidad: una cuenta de empresa que todavía no aceptó la versión
+        // vigente sólo puede aceptarla o salir. Va DESPUÉS del candado de contraseña a propósito
+        // (ver el comentario de orden en RequiereAvisoDePrivacidad) y, como aquél, en el grupo
+        // entero para que un grupo de rutas nuevo no lo olvide.
+        $middleware->appendToGroup('api', \App\Http\Middleware\RequiereAvisoDePrivacidad::class);
+
         // §43: el token de auth puede llegar en la cookie httpOnly `talent_auth_token`
         // (protección XSS); este middleware la copia al header Authorization antes de que
         // Sanctum evalúe el token. Se antepone a todo el grupo `api`.

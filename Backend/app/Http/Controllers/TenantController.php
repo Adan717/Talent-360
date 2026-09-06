@@ -134,7 +134,11 @@ class TenantController extends Controller
                     'password' => Hash::make($request->admin_password),
                     'role' => UserRole::ADMIN->value,
                     'tenant_id' => $tenant->id,
-                    'is_active' => true
+                    'is_active' => true,
+                    // (2026-09-05) Esta ruta la usa el panel de PLATAFORMA para dar de alta una
+                    // empresa a mano: quien hace clic es personal de Talent360, no el cliente. Su
+                    // consentimiento no se puede dar por él, así que se le pide al entrar.
+                    'privacidad_pendiente' => true,
                 ]);
             }
 

@@ -204,6 +204,22 @@ class KioskController extends Controller
                 'name' => $employee->name,
             ];
 
+            // (2026-09-05) Aviso de privacidad. Quien ficha aquí NUNCA pasa por el login, así que
+            // ésta es la única superficie donde se le puede presentar el aviso: si todavía no aceptó
+            // la versión vigente, la tableta le muestra la pantalla de un toque DESPUÉS de registrar
+            // su asistencia, con un pase de un solo uso que acredita su identidad.
+            //
+            // El fichaje NO se bloquea por esto, a propósito: negarlo dejaría a la persona sin
+            // registro de una jornada que sí trabajó por una pantalla que jamás vio, y castigaría
+            // con dinero un trámite administrativo. Se registra, se avisa y se pide en el acto.
+            if (\App\Support\AvisoDePrivacidad::usuarioDebeAceptar($user)) {
+                $result['privacidad'] = [
+                    'pendiente' => true,
+                    'version' => \App\Support\AvisoDePrivacidad::VERSION,
+                    'pase' => \App\Support\AvisoDePrivacidad::emitirPaseDeKiosco((int) $tenantId, (int) $user->id),
+                ];
+            }
+
             return response()->json($result);
         } catch (\Exception $e) {
             return response()->json([

@@ -43,6 +43,24 @@ class CandidateController extends Controller
             ->findOrFail($data['applied_vacancy_id']);
 
         if (!auth()->check()) {
+            // (2026-09-05) POSTULACIÓN PÚBLICA — punto 3 de los tres del consentimiento.
+            //
+            // El portal de empleo venía recibiendo nombre, correo y teléfono de personas que no
+            // tienen ninguna relación con la empresa, SIN casilla ninguna y sin enseñarles el aviso.
+            // Ahora hay que aceptarlo para postularse (aquí sí bloquea: sin consentimiento no hay
+            // base legal para guardar los datos de un desconocido, y no hay ninguna jornada de
+            // trabajo real que se pierda por pedirlo).
+            //
+            // Sólo en la vía pública: la captura desde el panel del ATS la hace personal de la
+            // empresa, no el titular, y exigirle ahí la casilla registraría un consentimiento falso.
+            $request->validate(
+                ['acepta_aviso' => ['required', 'accepted']],
+                [
+                    'acepta_aviso.required' => 'Debes aceptar el Aviso de Privacidad para enviar tu postulación.',
+                    'acepta_aviso.accepted' => 'Debes aceptar el Aviso de Privacidad para enviar tu postulación.',
+                ]
+            );
+
             // Postulación pública: forzar tenant_id de la vacante, ignorar inputs administrativos
             $data['tenant_id'] = $vacancy->tenant_id;
             $data['status'] = 'prospect';
@@ -76,6 +94,19 @@ class CandidateController extends Controller
         }
  
         $candidate = Candidate::create($data);
+
+        // La constancia se guarda DESPUÉS del alta para poder anclarla al candidato. Si el alta
+        // falla, no queda un consentimiento huérfano de datos que nunca se guardaron.
+        if (!auth()->check()) {
+            \App\Support\AvisoDePrivacidad::registrar([
+                'tenant_id' => $vacancy->tenant_id,
+                'candidate_id' => $candidate->id,
+                'punto' => \App\Support\AvisoDePrivacidad::PUNTO_POSTULACION,
+                'nombre' => $candidate->name,
+                'email' => $candidate->email,
+            ], $request);
+        }
+
         return response()->json($candidate, 201);
     }
  
@@ -161,7 +192,11 @@ class CandidateController extends Controller
                         'password' => Hash::make(\Illuminate\Support\Str::random(32)),
                         'role' => 'empleado',
                         'tenant_id' => $candidate->tenant_id,
-                        'is_active' => true
+                        'is_active' => true,
+                        // (2026-09-05) El consentimiento que dio como CANDIDATO fue para que la
+                        // empresa tratara su postulación; ahora es colaborador y el tratamiento es
+                        // otro (asistencia, foto, ubicación, nómina). Se le vuelve a pedir al entrar.
+                        'privacidad_pendiente' => true,
                     ]);
                 } else {
                     if ($user->trashed()) {

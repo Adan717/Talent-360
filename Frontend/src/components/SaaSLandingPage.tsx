@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { precioMensual, precioAnual, precioMensualEquivalente, ahorroAnualPorcentaje } from '../lib/precios';
 import axiosInstance from '../lib/axios';
 import { RelojSimuladoLanding } from './RelojSimuladoLanding';
 import { LegalModal, type LegalDocType } from './LegalModal';
+import { useTarifario } from '../hooks/useTarifario';
+import { cotizar, planDelTarifario, pesos } from '../lib/tarifario';
 
 export const SaaSLandingPage = () => {
   const navigate = useNavigate();
@@ -383,14 +384,18 @@ export const SaaSLandingPage = () => {
     }
   };
 
-  // Professional and Enterprise pricing calculations
-  // Tarifas en `lib/precios.ts` (espejo de las del servidor). Antes cada número salía de un
-  // literal distinto aquí y de un `* 0.8` inventado allá abajo: la misma tarjeta llegaba a
-  // pintar dos precios anuales que no cuadraban entre sí (ver el comentario de precios.ts).
-  const monthlyProPrice = precioMensual('pro', proEmployeesCount);
-  const yearlyProPrice = precioAnual('pro', proEmployeesCount);
-  const monthlyEnterprisePrice = precioMensual('enterprise', proEmployeesCount);
-  const yearlyEnterprisePrice = precioAnual('enterprise', proEmployeesCount);
+  // Los precios los da el SERVIDOR (2026-09-05). Aquí no hay ni una tarifa escrita a mano.
+  //
+  // Lo que había antes: las tarifas duplicadas del backend ($29/$24 y $69/$55) y, al pintarlas,
+  // el anual calculado de dos maneras distintas según el interruptor — `mensual × 12 × 0.8`
+  // ($278.40 por colaborador) en ciclo mensual y `tarifa_anual × 12` ($288) en ciclo anual.
+  // El mismo plan con dos precios anuales, y ninguno de los dos avisaba del otro.
+  const { tarifario } = useTarifario();
+  const planFreemium = planDelTarifario(tarifario, 'freemium');
+  const planPro = planDelTarifario(tarifario, 'pro');
+  const planEnterprise = planDelTarifario(tarifario, 'enterprise');
+  const cotizacionPro = cotizar(planPro, proEmployeesCount, billingCycle);
+  const cotizacionEnterprise = cotizar(planEnterprise, proEmployeesCount, billingCycle);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-100 selection:text-blue-900">
@@ -1178,7 +1183,13 @@ export const SaaSLandingPage = () => {
             </button>
             <span className={`text-sm font-extrabold flex items-center gap-1.5 transition-colors duration-200 ${billingCycle === 'yearly' ? 'text-blue-600' : 'text-slate-500'}`}>
               Facturación Anual
-              <span className="text-[9px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">Ahorra hasta {Math.max(ahorroAnualPorcentaje('pro'), ahorroAnualPorcentaje('enterprise'))}%</span>
+              {/* El ahorro sale de las dos tarifas del servidor. Este "20%" estaba escrito a
+                  mano y era falso para PRO, cuyo ahorro real es 17.2% ($29 → $24). */}
+              {tarifario && tarifario.descuento_anual_maximo_pct > 0 && (
+                <span className="text-[9px] font-black text-white bg-emerald-500 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                  Ahorra hasta {tarifario.descuento_anual_maximo_pct}%
+                </span>
+              )}
             </span>
           </div>
 
@@ -1197,7 +1208,9 @@ export const SaaSLandingPage = () => {
                 <span className="text-[10px] text-slate-400 font-bold mt-1.5">Sin plazos forzosos, gratis para siempre</span>
               </div>
               <ul className="space-y-3.5 mb-8 flex-1">
-                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Hasta 10 Colaboradores Activos</li>
+                {/* El tope sale del tarifario del servidor: el backend caía a 5 y esta línea
+                    anunciaba 10, sin que ninguno de los dos mandara sobre el otro. */}
+                <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> {planFreemium?.tope_colaboradores ? `Hasta ${planFreemium.tope_colaboradores} Colaboradores Activos` : 'Colaboradores Activos'}</li>
                 <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Reloj Checador Básico (PIN, Web y Móvil)</li>
                 <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Directorio Digital de Empleados y Puestos</li>
                 <li className="flex items-start gap-3 text-slate-600 text-xs font-semibold"><CheckCircle2 className="text-emerald-500 shrink-0" size={18}/> Control de Entradas y Salidas en Tiempo Real</li>
@@ -1227,7 +1240,7 @@ export const SaaSLandingPage = () => {
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-black text-blue-600 transition-all">
-                      ${(billingCycle === 'yearly' ? precioMensualEquivalente('pro', proEmployeesCount) : monthlyProPrice).toLocaleString()}
+                      {cotizacionPro ? `$${pesos(billingCycle === 'yearly' ? cotizacionPro.equivalenteMensualAnual : cotizacionPro.totalMensual)}` : '—'}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
@@ -1235,10 +1248,12 @@ export const SaaSLandingPage = () => {
                 </div>
                 <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
                   <span className="text-emerald-600 font-bold">
-                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${ahorroAnualPorcentaje('pro')}% en Plan Anual:`}
+                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planPro?.descuento_anual_pct ?? 0}% en Plan Anual:`}
                   </span>
+                  {/* EL MISMO número en los dos ciclos. Antes el anual valía $288 con el
+                      interruptor en anual y $278.40 con el interruptor en mensual. */}
                   <span className="text-slate-700 font-bold whitespace-nowrap">
-                    ${yearlyProPrice.toLocaleString()} MXN/año
+                    {cotizacionPro ? `$${pesos(cotizacionPro.totalAnual)} MXN/año` : 'Consultar'}
                   </span>
                 </div>
               </div>
@@ -1293,7 +1308,7 @@ export const SaaSLandingPage = () => {
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-black text-slate-900 transition-all">
-                      ${(billingCycle === 'yearly' ? precioMensualEquivalente('enterprise', proEmployeesCount) : monthlyEnterprisePrice).toLocaleString()}
+                      {cotizacionEnterprise ? `$${pesos(billingCycle === 'yearly' ? cotizacionEnterprise.equivalenteMensualAnual : cotizacionEnterprise.totalMensual)}` : '—'}
                     </span>
                     <span className="text-slate-400 font-bold text-xs uppercase">MXN</span>
                     <span className="text-slate-400 text-xs font-bold">/mes</span>
@@ -1301,10 +1316,10 @@ export const SaaSLandingPage = () => {
                 </div>
                 <div className="flex justify-between items-baseline text-xs border-t border-slate-200/60 pt-2 mt-2">
                   <span className="text-emerald-600 font-bold">
-                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${ahorroAnualPorcentaje('enterprise')}% en Plan Anual:`}
+                    {billingCycle === 'yearly' ? 'Facturado anualmente:' : `Ahorra ${planEnterprise?.descuento_anual_pct ?? 0}% en Plan Anual:`}
                   </span>
                   <span className="text-slate-700 font-bold whitespace-nowrap">
-                    ${yearlyEnterprisePrice.toLocaleString()} MXN/año
+                    {cotizacionEnterprise ? `$${pesos(cotizacionEnterprise.totalAnual)} MXN/año` : 'Consultar'}
                   </span>
                 </div>
               </div>
@@ -1587,11 +1602,13 @@ export const SaaSLandingPage = () => {
                       </h5>
                     </div>
                     <div className="text-right">
+                      {/* Lo que la caja va a cobrar, calculado por el servidor con la misma
+                          fórmula que `SubscriptionController`. */}
                       <span className="text-lg font-black text-blue-600">
-                        ${selectedPlan === 'PRO' 
-                          ? (billingCycle === 'yearly' ? yearlyProPrice.toLocaleString() : monthlyProPrice.toLocaleString()) 
-                          : selectedPlan === 'Enterprise' 
-                            ? (billingCycle === 'yearly' ? yearlyEnterprisePrice.toLocaleString() : monthlyEnterprisePrice.toLocaleString()) 
+                        ${selectedPlan === 'PRO'
+                          ? (cotizacionPro ? pesos(cotizacionPro.totalACobrar) : '—')
+                          : selectedPlan === 'Enterprise'
+                            ? (cotizacionEnterprise ? pesos(cotizacionEnterprise.totalACobrar) : '—')
                             : '0'}
                       </span>
                       <span className="block text-[9px] text-blue-500 font-bold uppercase">

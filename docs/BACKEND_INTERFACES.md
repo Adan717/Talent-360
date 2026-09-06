@@ -2265,6 +2265,27 @@ El grueso es comprimir/redimensionar en el navegador antes de subir (zona de Cow
 - **Pendiente de Francisco (ops):** puntos 4 (que la Landing `SaaSLandingPage.tsx` lea el mismo número — es zona de Cowork) y 5 (revisar/corregir tenants freemium existentes con `max_users` 10 o 9999 en producción). El backend ya no los generará mal de aquí en adelante.
 - **Tests:** `CrossTenantPunchAndLateTest::test_max_users_for_plan_defaults` y `test_max_users_for_freemium_reads_platform_setting`.
 
+### ♻️ Reemplazado (2026-09-05) — el cupo se mudó al tarifario
+
+Lo de arriba **ya no describe el código**. El cupo se fue al mismo lugar donde viven los precios:
+`billing_plans.max_users`, leído por `App\Support\Tarifario::topeDeColaboradores()`. Cambios:
+
+- `system_settings.freemium_max_users` **se retiró**: la migración del tarifario copió su valor a
+  `billing_plans` (conservándolo si alguna instalación lo tenía puesto a mano) y borró la llave,
+  porque eran dos números capaces de divergir y **ninguna pantalla escribía** el viejo.
+- **El freemium pasó de 5 a 10.** El 5 decía en su comentario ser "lo que anuncia la Landing", pero
+  la Landing anuncia 10 y la pantalla del cliente caía también a 10 (el punto 4 de "Pedimos" quedó
+  al revés). Como **nada aplica este tope** —`max_users` se guarda y ningún código lo revisa—, el
+  número que se conserva es el que se le prometió al cliente. La Landing ya lo lee del servidor.
+- **`pro` sin `$employees` pasó de 50 a `Tenant::SIN_TOPE`** (9999): el 50 era el tope del
+  deslizador de la Landing usado como cupo. PRO se cobra por colaborador y no tiene tope.
+- **Sigue sin bloquear**, por criterio del dueño ("nada bloquea, todo avisa"): ahora **avisa** al
+  admin de la empresa (banner en Configuración → Plan) y al panel de plataforma (`sobre_cupo` por
+  empresa y `tenants_sobre_cupo` en `/platform/stats`).
+- **Tests:** `TarifarioTest` (`test_el_cupo_del_plan_sale_del_mismo_tabulador`,
+  `test_rebasar_el_cupo_del_freemium_no_bloquea_a_nadie`) y
+  `CrossTenantPunchAndLateTest::test_max_users_for_freemium_reads_billing_plan`.
+
 ---
 
 ## §59. 🔴 CRÍTICO — `POST /clock/punch` no valida que el `user_id` pertenezca al tenant que llama

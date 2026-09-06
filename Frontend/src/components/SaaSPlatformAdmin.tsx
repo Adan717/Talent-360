@@ -1522,7 +1522,14 @@ export const SaaSPlatformAdmin = () => {
                       </div>
                       <div>
                          <span className="text-[9px] font-black text-slate-400 block uppercase">Usuarios</span>
-                         <span className="font-extrabold text-slate-700">{comp.users} / {comp.max_users ?? 5}</span>
+                         {/* AVISO, no candado (2026-09-05): el tope del plan no lo aplica ningún
+                             código —`max_users` se guarda y nadie lo revisa—, así que el panel al
+                             menos tiene que poder VER quién lo rebasó. El servidor manda
+                             `sobre_cupo` ya calculado contra el tope del tarifario. */}
+                         <span className={`font-extrabold ${comp.sobre_cupo ? 'text-amber-600' : 'text-slate-700'}`}>
+                            {comp.users} / {comp.tope_colaboradores ?? '∞'}
+                            {comp.sobre_cupo && <span className="ml-1 text-[8px] uppercase" title="Rebasa el cupo de su plan. No se bloquea nada.">sobre cupo</span>}
+                         </span>
                       </div>
                       <div>
                          <span className="text-[9px] font-black text-slate-400 block uppercase">Volumen DB</span>

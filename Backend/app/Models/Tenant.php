@@ -56,33 +56,41 @@ class Tenant extends Model
         });
     }
 
+    /** Lo que se guarda en `max_users` cuando el plan no tiene tope. */
+    public const SIN_TOPE = 9999;
+
     /**
-     * Cupo de usuarios por defecto según el plan (§58). Fuente única de verdad para
-     * evitar que cada controlador invente su propio número (antes había 5, 10 y 9999
-     * dispersos). El límite del freemium se lee de la configuración global de la
-     * plataforma (system_settings.freemium_max_users, tenant_id NULL) igual que
-     * freemium_allowed_modules/features; si no está definida, cae a 5 (lo que anuncia
-     * la landing).
+     * Cupo de usuarios por defecto según el plan (§58).
+     *
+     * (2026-09-05) El cupo dejó de vivir aquí: ahora sale del mismo tabulador que los precios
+     * (`billing_plans.max_users`, vía App\Support\Tarifario). Antes había TRES números para el
+     * freemium sin que ninguno mandara sobre los otros: este método caía a **5** diciendo en su
+     * comentario que era "lo que anuncia la landing", la landing anunciaba **10** y la pantalla
+     * del cliente caía también a **10**. Y sobre todo: **nada aplica este tope** — `max_users` se
+     * guarda y ningún código lo revisa. Es un número para AVISAR, no un candado (criterio del
+     * dueño: "nada bloquea, todo avisa"), así que el que se conserva es el que se le prometió al
+     * cliente en la landing.
+     *
+     * La llave vieja `system_settings.freemium_max_users` se trasladó a `billing_plans` en la
+     * migración del tarifario (conservando el valor si alguna instalación lo tenía a mano) y se
+     * retiró, para que no queden dos números que puedan divergir.
      */
     public static function maxUsersForPlan(?string $plan, ?int $employees = null): int
     {
         $plan = strtolower((string) $plan);
 
-        if ($plan === 'freemium') {
-            $config = \DB::table('system_settings')
-                ->whereNull('tenant_id')
-                ->where('key', 'freemium_max_users')
-                ->first();
-            $value = $config ? (int) $config->value : 0;
-            return $value > 0 ? $value : 5;
+        $tope = \App\Support\Tarifario::topeDeColaboradores($plan);
+        if ($tope !== null && $tope > 0) {
+            return $tope;
         }
 
-        if ($plan === 'pro') {
-            return ($employees && $employees > 0) ? $employees : 50;
+        // Plan sin tope: el cupo que se registra es el que se contrató (PRO se cobra por
+        // colaborador, así que el número contratado ES la referencia).
+        if ($employees && $employees > 0) {
+            return $employees;
         }
 
-        // enterprise / cualquier otro: sin límite práctico.
-        return 9999;
+        return self::SIN_TOPE;
     }
 
     public function users()

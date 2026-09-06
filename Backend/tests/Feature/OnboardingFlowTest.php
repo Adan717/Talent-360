@@ -63,6 +63,7 @@ class OnboardingFlowTest extends TestCase
                 'plan' => 'freemium',
                 'employees' => null,
                 'billing_cycle' => 'monthly',
+                'acepta_aviso' => true,
             ]);
 
         $response->assertStatus(200);
@@ -98,6 +99,7 @@ class OnboardingFlowTest extends TestCase
                 'plan' => 'freemium',
                 'employees' => null,
                 'billing_cycle' => 'monthly',
+                'acepta_aviso' => true,
             ]);
 
         $response->assertStatus(422);
@@ -122,6 +124,7 @@ class OnboardingFlowTest extends TestCase
                 'plan' => 'pro',
                 'employees' => 18,
                 'billing_cycle' => 'monthly',
+                'acepta_aviso' => true,
             ]);
 
         $response->assertStatus(200);

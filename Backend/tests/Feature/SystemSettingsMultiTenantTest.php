@@ -42,6 +42,7 @@ class SystemSettingsMultiTenantTest extends TestCase
             'admin_name' => 'Dueño Nuevo',
             'admin_email' => 'dueno-nuevo@x.com',
             'admin_password' => 'secret123',
+            'acepta_aviso' => true,
         ]);
 
         $response->assertStatus(200);

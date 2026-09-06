@@ -480,7 +480,10 @@ class OnboardingController extends Controller
                             'password' => $emp['password'],
                             'role' => $emp['role'],
                             'tenant_id' => $tenantId,
-                            'is_active' => true
+                            'is_active' => true,
+                            // (2026-09-05) Igual que el alta de RRHH: el aviso se le pide a la
+                            // persona al entrar, no lo acepta por ella quien la dio de alta.
+                            'privacidad_pendiente' => true,
                         ]);
 
                         $newEmp = \App\Models\Employee::create([

@@ -95,6 +95,12 @@ class AtsInduccionAcademiaTest extends TestCase
         $this->assertSame(now()->toDateString(), \Illuminate\Support\Facades\DB::table('employees')
             ->where('user_id', $contratada->id)->value('hire_date'));
 
+        // (2026-09-05) Contratar crea una cuenta marcada para el aviso de privacidad: lo primero
+        // que hace la persona al entrar es aceptarlo. Hasta entonces el resto de la API le
+        // responde 403 — que es justamente el candado nuevo.
+        $this->actingAs($contratada)->postJson('/api/v1/me/consentimiento')->assertOk();
+        $contratada = $contratada->fresh();
+
         // Y VE su curso de inducción en la Academia (la inscripción implícita, demostrada).
         $cursos = $this->actingAs($contratada)->getJson('/api/v1/academy/courses')
             ->assertOk()->json('courses');

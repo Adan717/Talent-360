@@ -85,7 +85,12 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/public/onboarding/complete', [OnboardingController::class, 'completeActivation']);
     });
     Route::get('/public/landing-simulator-settings', [PlatformAdminController::class, 'getPublicSimulatorConfig']);
-    
+
+    // (2026-09-05) Versión vigente del aviso de privacidad. Pública porque la consultan pantallas
+    // SIN sesión (el portal de empleo y el kiosco), y así ninguna repite la fecha a mano: la versión
+    // que se muestra y la que se registra salen del mismo sitio (App\Support\AvisoDePrivacidad).
+    Route::middleware('throttle:60,1')->get('/privacidad/version', [\App\Http\Controllers\PrivacyController::class, 'version']);
+
     // Verificación pública de un certificado de la Academia por su folio. Devuelve sólo lo que
     // ya está impreso en el papel; el throttle y los 8 caracteres aleatorios del folio impiden
     // ir probando folios ajenos (lección de AC7).
@@ -592,6 +597,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/me/update-profile', [AuthController::class, 'updateProfile']);
         Route::post('/me/upload-avatar', [AuthController::class, 'uploadAvatar']);
         Route::post('/me/change-password', [AuthController::class, 'changePassword']);
+        // (2026-09-05) Aviso de privacidad: consultar y aceptar. Son las DOS únicas rutas que el
+        // gate RequiereAvisoDePrivacidad deja pasar además de /me y salir — la puerta del candado.
+        Route::get('/me/consentimiento', [\App\Http\Controllers\PrivacyController::class, 'estado']);
+        Route::post('/me/consentimiento', [\App\Http\Controllers\PrivacyController::class, 'aceptar']);
         Route::post('/me/request-rest-day', [AuthController::class, 'requestRestDay']);
         Route::get('/me/rest-day-requests', [AuthController::class, 'getRestDayRequests']);
         Route::post('/me/fcm-token', [AuthController::class, 'updateFcmToken']);
@@ -639,6 +648,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // tenant) sólo ancla el TENANT; el PIN identifica al empleado y el enforcement es server-side
         // (can_clock_in + rate-limit). R54.
         Route::post('/kiosk/punch', [\App\Http\Controllers\KioskController::class, 'punch']);
+        // (2026-09-05) Aceptar el aviso desde la tableta compartida: el titular se resuelve por el
+        // pase de un solo uso que devolvió el ponche, NO por un id que mande el cliente (si no,
+        // cualquiera podría firmar el consentimiento en nombre de otro).
+        Route::post('/kiosk/consentimiento', [\App\Http\Controllers\PrivacyController::class, 'aceptarDesdeKiosco']);
 
         // Tolerancia con autorización: el empleado solicita autorización cuando el Retardo Extremo
         // le bloquea la entrada (R14). Una aprobación levanta el bloqueo server-side. R56.

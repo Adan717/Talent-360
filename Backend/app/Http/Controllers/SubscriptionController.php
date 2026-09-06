@@ -127,6 +127,44 @@ class SubscriptionController extends Controller
         $adminEmail = strtolower($payload['admin_email'] ?? '');
         $subdomain = $payload['subdomain'];
 
+        // (2026-09-05) ALTA DE EMPRESA — punto 1 de los tres del consentimiento.
+        //
+        // Hasta hoy la casilla "Acepto los Términos y el Aviso de Privacidad" era TEATRO: vivía sólo
+        // en el navegador (habilitaba el botón) y su valor no se enviaba ni se guardaba en ninguna
+        // parte. Ahora el servidor la exige y deja constancia con la VERSIÓN del aviso, el momento,
+        // la IP y el navegador. Se registra ANTES de cobrar y de aprovisionar: el consentimiento es
+        // de la persona que lo dio, exista o no la empresa después.
+        //
+        // No aplica a una mejora de plan (`upgrade`): esa empresa ya existe y su admin ya aceptó.
+        if (!$isUpgrade) {
+            $request->validate(
+                ['acepta_aviso' => ['required', 'accepted']],
+                [
+                    'acepta_aviso.required' => 'Debes aceptar el Aviso de Privacidad y los Términos del Servicio para dar de alta tu empresa.',
+                    'acepta_aviso.accepted' => 'Debes aceptar el Aviso de Privacidad y los Términos del Servicio para dar de alta tu empresa.',
+                ]
+            );
+
+            if ($user instanceof \App\Models\User) {
+                // La cuenta ya existe (paso 1 del alta): queda registrada Y al día, para que no se
+                // le vuelva a pedir el aviso al entrar a la empresa que acaba de crear.
+                \App\Support\AvisoDePrivacidad::aceptarUsuario(
+                    $user,
+                    \App\Support\AvisoDePrivacidad::PUNTO_ALTA_EMPRESA,
+                    $request
+                );
+            } else {
+                // Alta sin sesión: la constancia queda a nombre del correo del administrador y
+                // provisionTenant le estampa la empresa cuando exista.
+                \App\Support\AvisoDePrivacidad::registrar([
+                    'tenant_id' => null,
+                    'punto' => \App\Support\AvisoDePrivacidad::PUNTO_ALTA_EMPRESA,
+                    'nombre' => $payload['admin_name'] ?? null,
+                    'email' => $adminEmail ?: null,
+                ], $request);
+            }
+        }
+
         // Re-use or Create Pending Registration
         $existingPending = null;
         if ($adminEmail || $subdomain) {
@@ -625,6 +663,25 @@ class SubscriptionController extends Controller
                         'tenant_id' => $tenant->id,
                     ]);
                 }
+            }
+
+            // (2026-09-05) El consentimiento del alta se guardó ANTES de que existiera la empresa
+            // (createPreference), con `tenant_id` en null. Ahora que existe, se le pone: sin esto la
+            // constancia diría quién aceptó pero no de qué empresa es. Se busca por la cuenta y, si
+            // el alta vino sin sesión, por el correo del admin.
+            if ($admin) {
+                \App\Models\PrivacyConsent::whereNull('tenant_id')
+                    ->where(function ($q) use ($admin) {
+                        $q->where('user_id', $admin->id);
+                        if ($admin->email) {
+                            $q->orWhere('email', strtolower($admin->email));
+                        }
+                    })
+                    // Sólo se estampa la empresa. El titular NO se reescribe: si el alta vino sin
+                    // sesión la fila ya lleva nombre y correo, y forzar aquí un `user_id` que esa
+                    // cuenta ya tenga en otra fila de la misma versión chocaría con el índice único
+                    // en mitad del aprovisionamiento.
+                    ->update(['tenant_id' => $tenant->id]);
             }
 
             if (method_exists(\Auth::guard(), 'login')) {

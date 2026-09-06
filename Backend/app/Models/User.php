@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 // `pre_shift_alarm_minutes` en users son legacy de la línea §1–§42 (la fuente canónica es el
 // EXPEDIENTE; ver expediente()/R73) — se conservan fillable mientras las columnas existan
 // (drop diferido de F2).
-#[Fillable(['name', 'email', 'phone', 'password', 'tenant_id', 'role', 'is_active', 'google_id', 'apple_id', 'samsung_id', 'avatar', 'has_completed_induction', 'job_role_id', 'pre_shift_alarm_minutes', 'must_change_password'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'tenant_id', 'role', 'is_active', 'google_id', 'apple_id', 'samsung_id', 'avatar', 'has_completed_induction', 'job_role_id', 'pre_shift_alarm_minutes', 'must_change_password', 'privacidad_pendiente', 'privacidad_aceptada_version'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -43,6 +43,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'privacidad_pendiente' => 'boolean',
         ];
     }
 
@@ -120,6 +121,12 @@ class User extends Authenticatable
             // ya resuelto para no repetir la query — NO se usa setRelation() porque `toArray()`
             // serializaría el expediente entero (con su email) dentro del payload de auth.
             'can_clock_in' => $this->canClockIn($employee),
+            // (2026-09-05) Aviso de privacidad: si esta cuenta todavía no aceptó la versión vigente,
+            // el frontend pinta la pantalla obligatoria de un toque ANTES de la aplicación. Viaja en
+            // el payload de auth —y no en una llamada aparte— para que el login ya sepa qué hacer,
+            // igual que con `must_change_password`.
+            'privacidad_pendiente' => \App\Support\AvisoDePrivacidad::usuarioDebeAceptar($this),
+            'privacidad_version' => \App\Support\AvisoDePrivacidad::VERSION,
         ]);
 
         if ($employee) {

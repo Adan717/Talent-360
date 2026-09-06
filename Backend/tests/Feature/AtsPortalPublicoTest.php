@@ -116,6 +116,7 @@ class AtsPortalPublicoTest extends TestCase
 
         $this->postJson('/api/v1/public/candidates', [
             'name' => 'Colado', 'email' => 'colado@x.test', 'applied_vacancy_id' => $apagada->id,
+            'acepta_aviso' => true,
         ])->assertStatus(422);
 
         $this->assertDatabaseCount('candidates', 0);
@@ -128,6 +129,7 @@ class AtsPortalPublicoTest extends TestCase
 
         $this->postJson('/api/v1/public/candidates', [
             'name' => 'Colado', 'email' => 'colado@x.test', 'applied_vacancy_id' => $borrada->id,
+            'acepta_aviso' => true,
         ])->assertStatus(422);
 
         $this->assertDatabaseCount('candidates', 0);
@@ -139,6 +141,7 @@ class AtsPortalPublicoTest extends TestCase
 
         $this->postJson('/api/v1/public/candidates', [
             'name' => 'Ana', 'email' => 'ana@x.test', 'applied_vacancy_id' => $v->id,
+            'acepta_aviso' => true,
         ])->assertStatus(201);
 
         $this->assertDatabaseHas('candidates', [
@@ -156,6 +159,7 @@ class AtsPortalPublicoTest extends TestCase
         $this->postJson('/api/v1/public/candidates', [
             'name' => 'Desconocido', 'email' => 'nuevo@x.test', 'applied_vacancy_id' => $v->id,
             'is_ex_employee_fast_track' => true,
+            'acepta_aviso' => true,
         ])->assertStatus(201);
 
         $this->assertFalse((bool) DB::table('candidates')->where('email', 'nuevo@x.test')->value('is_ex_employee_fast_track'));
@@ -175,6 +179,7 @@ class AtsPortalPublicoTest extends TestCase
 
         $this->postJson('/api/v1/public/candidates', [
             'name' => 'Ex Colaborador', 'email' => 'ex@bolsaqa.test', 'applied_vacancy_id' => $v->id,
+            'acepta_aviso' => true,
         ])->assertStatus(201);
 
         $this->assertTrue((bool) DB::table('candidates')->where('email', 'ex@bolsaqa.test')->value('is_ex_employee_fast_track'),

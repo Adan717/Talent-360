@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import type { AppModule } from './types';
-import { Routes, Route, Navigate, useSearchParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, GraduationCap, Clock, 
   CheckSquare, Globe, Terminal, ChevronLeft, Menu, Briefcase, ListTodo,
@@ -63,6 +63,17 @@ import { SaaSLandingPage } from './components/SaaSLandingPage';
 import { Login } from './components/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { MyAccountModal } from './components/MyAccountModal';
+import { PantallaConsentimiento } from './components/PantallaConsentimiento';
+import { EnlaceAlAviso } from './components/AvisoDePrivacidad';
+
+/**
+ * (2026-09-05) Rutas PÚBLICAS donde el candado del aviso de privacidad no debe aparecer.
+ *
+ * La primera es la más importante: la propia pantalla de consentimiento enlaza a `/privacidad`, y
+ * como el enlace abre otra pestaña de esta misma aplicación, sin esta lista la persona se toparía
+ * ahí con el candado otra vez y no podría leer nunca lo que se le pide aceptar.
+ */
+const RUTAS_SIN_CANDADO = ['/privacidad', '/certificado', '/vacantes', '/organizacion', '/login', '/inicio'];
 
 const IconMap: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={20} />,
@@ -729,6 +740,16 @@ function MainLayout() {
                         <Receipt size={14} className="text-slate-400" />
                         Facturación & Licencias
                       </button>
+                      {/* (2026-09-05) El aviso de privacidad, alcanzable DESDE DENTRO. Hasta hoy
+                          sólo existía en pantallas públicas (login, landing, portal de empleo):
+                          quien ya estaba dentro no tenía por dónde volver a leerlo. Abre en otra
+                          pestaña para no tirar lo que la persona esté haciendo. */}
+                      <EnlaceAlAviso className="no-underline block">
+                        <span className="w-full text-left px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                          <ShieldCheck size={14} className="text-slate-400" />
+                          Aviso de Privacidad
+                        </span>
+                      </EnlaceAlAviso>
                       <div className="border-t border-slate-100 my-1 sm:my-1.5"></div>
                       <button 
                         onClick={handleLogout}
@@ -798,6 +819,14 @@ function App() {
   const fetchState = useAppStore(state => state.fetchState);
   const navigate = useNavigate();
   const [banReason, setBanReason] = useState<string | null>(null);
+  // (2026-09-05) Candado del aviso de privacidad. Igual que `banReason`: una pantalla que se
+  // antepone a TODO. Se enciende por dos vías —lo que dice el usuario cargado, y el 403 que manda
+  // el servidor a una sesión vieja— porque una sola de las dos deja huecos: sin la segunda, una
+  // pestaña abierta desde antes seguiría chocando contra 403 mudos.
+  const [privacidadPendiente, setPrivacidadPendiente] = useState(false);
+  const currentUser = useAppStore(state => state.currentUser);
+  const setCurrentUser = useAppStore(state => state.setCurrentUser);
+  const location = useLocation();
 
   // R87 (merge FE): alarma de traslado (aviso local N min antes del turno). Montada aquí —una
   // sola vez, sobre el currentUser real— y NO en el motor del reloj, que el PanelSimulador
@@ -813,6 +842,12 @@ function App() {
     return () => {
       window.removeEventListener('device-banned', handleBan);
     };
+  }, []);
+
+  useEffect(() => {
+    const handlePrivacidad = () => setPrivacidadPendiente(true);
+    window.addEventListener('privacidad-pendiente', handlePrivacidad);
+    return () => window.removeEventListener('privacidad-pendiente', handlePrivacidad);
   }, []);
 
   useEffect(() => {
@@ -858,6 +893,33 @@ function App() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  // (2026-09-05) El aviso de privacidad va ANTES que la aplicación, para toda cuenta de empresa
+  // que todavía no aceptó la versión vigente. No se pinta en las rutas públicas (ver
+  // RUTAS_SIN_CANDADO): ahí no hay nada que proteger y una de ellas es el propio aviso.
+  const enRutaPublica = RUTAS_SIN_CANDADO.some(ruta => location.pathname.startsWith(ruta));
+  if ((privacidadPendiente || currentUser?.privacidad_pendiente) && !enRutaPublica) {
+    return (
+      <PantallaConsentimiento
+        // El store arranca con un usuario de relleno llamado "Loading..."; sin este filtro la
+        // pantalla saludaba "Loading..., para usar Talent 360…" mientras se hidrataba la sesión.
+        nombre={currentUser?.role === 'Loading' ? undefined : currentUser?.name}
+        version={currentUser?.privacidad_version}
+        onAceptado={() => {
+          setPrivacidadPendiente(false);
+          if (currentUser) {
+            setCurrentUser({ ...currentUser, privacidad_pendiente: false });
+          }
+          fetchState().catch(() => { /* la pantalla ya se levantó; el estado se rehidrata solo */ });
+        }}
+        onSalir={() => {
+          localStorage.removeItem('talent_auth_token');
+          clearClockLocalCache();
+          window.location.href = '/login';
+        }}
+      />
     );
   }
 

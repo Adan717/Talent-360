@@ -271,6 +271,9 @@ class ImportacionDePlantilla
                     'job_role_id' => $r['job_role_id'],
                     'tenant_id' => $tenantId,
                     'is_active' => true,
+                    // (2026-09-05) Importar 40 personas de un CSV no es que esas 40 hayan visto el
+                    // aviso: se les pide a cada una la primera vez que entre.
+                    'privacidad_pendiente' => true,
                 ]);
 
                 $datos['tenant_id'] = $tenantId;

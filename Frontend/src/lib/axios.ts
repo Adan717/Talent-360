@@ -68,6 +68,12 @@ axiosInstance.interceptors.response.use(
                 localStorage.removeItem('talent_auth_token');
                 const isMobile = window.location.pathname.startsWith('/empleado') || new URLSearchParams(window.location.search).get('mobile') === 'true';
                 window.location.href = isMobile ? '/login?mobile=true&motivo=cambio-contrasena' : '/login?motivo=cambio-contrasena';
+            } else if (error.response.status === 403 && error.response.data && error.response.data.code === 'privacidad_pendiente') {
+                // (2026-09-05) La cuenta no ha aceptado el Aviso de Privacidad. NO se manda al
+                // login (la pantalla vive DENTRO de la app, y rebotar al login sería un bucle) ni
+                // se tira la sesión: la persona sigue autenticada, sólo le falta aceptar. Se avisa
+                // a App.tsx, que antepone la pantalla de un toque.
+                window.dispatchEvent(new CustomEvent('privacidad-pendiente'));
             } else if (error.response.status === 403 && error.response.data && error.response.data.error === 'Device Banned') {
                 // Dispatch window event for device ban screen
                 window.dispatchEvent(new CustomEvent('device-banned', { detail: error.response.data.message }));

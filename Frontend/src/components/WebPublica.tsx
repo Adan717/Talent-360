@@ -72,6 +72,9 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
   const [vacancies, setVacancies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInduction, setShowInduction] = useState(false);
+  // (2026-09-05) El portal recibía nombre, correo y teléfono de gente ajena a la empresa SIN
+  // casilla ninguna y sin enseñarle el aviso. El servidor ahora la exige (`acepta_aviso`).
+  const [aceptaAviso, setAceptaAviso] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   
   const [tenant, setTenant] = useState<any>({
@@ -888,6 +891,27 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                 )}
               </div>
 
+              {/* Consentimiento del titular. Arranca DESMARCADA: una casilla premarcada no
+                  acredita nada ante la LFPDPPP (misma lección que el alta de empresa). */}
+              <label className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={aceptaAviso}
+                  onChange={e => setAceptaAviso(e.target.checked)}
+                  className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                />
+                <span className="text-xs text-slate-600 leading-snug font-medium">
+                  Acepto que {tenant.name} trate mis datos personales para este proceso de reclutamiento, conforme al{' '}
+                  <button
+                    type="button"
+                    onClick={e => { e.preventDefault(); setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
+                    className="text-emerald-700 font-bold hover:underline"
+                  >
+                    Aviso de Privacidad
+                  </button>.
+                </span>
+              </label>
+
               <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-4">
                 <button
                   onClick={() => { setShowInduction(false); setShowSocialAuthModal(true); }}
@@ -903,19 +927,22 @@ export function WebPublica({ previewTenant, previewVacancies }: WebPublicaProps 
                         name: candidateForm.name,
                         email: candidateForm.email,
                         phone: candidateForm.phone,
-                        applied_vacancy_id: selectedVacancy.id
+                        applied_vacancy_id: selectedVacancy.id,
+                        acepta_aviso: aceptaAviso
                       };
                       await axiosInstance.post('/public/candidates', payload);
                       alert(`¡Listo! Tu postulación llegó a Recursos Humanos de ${tenant.name}. Te contactarán al correo o teléfono que dejaste.`);
                       setShowInduction(false);
                       setSelectedVacancy(null);
+                      setAceptaAviso(false);
                       setCandidateForm({ name: '', email: '', phone: '', answers: { q1: 'Puntualidad' } });
                     } catch (err: any) {
                       console.error("Error submitting candidate:", err);
                       alert(err?.response?.data?.message || "Hubo un error al enviar tu postulación. Intenta nuevamente.");
                     }
                   }}
-                  className="btn-brand text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md text-center"
+                  disabled={!aceptaAviso}
+                  className={`text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md text-center ${aceptaAviso ? 'btn-brand' : 'bg-slate-300 cursor-not-allowed'}`}
                   type="button"
                 >
                   Enviar mi postulación

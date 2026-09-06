@@ -85,6 +85,7 @@ class SimulatedCheckoutProductionGuardTest extends TestCase
             'admin_email' => 'y' . uniqid() . '@y.local',
             'admin_password' => 'secret123',
             'employees' => 10,
+            'acepta_aviso' => true,
         ]);
 
         // No debe venir un checkout simulado; el plan de pago sin proveedor real no se puede cobrar.

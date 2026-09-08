@@ -387,6 +387,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::post('/admin/lft-holidays', [LftSettingController::class, 'saveHoliday']);
         Route::delete('/admin/lft-holidays/{id}', [LftSettingController::class, 'deleteHoliday']);
 
+        // Evaluación 360° — ranking del ciclo (Plan A5, 2026-09-07). El método existía desde
+        // junio SIN ruta: lo que la plantilla calificaba no lo leía nadie. Admin y supervisor,
+        // igual que las denuncias (`GET /reports/employee`, que ya filtra por rol adentro).
+        Route::get('/clock/evaluations/scores', [Evaluation360Controller::class, 'scores']);
+
         // §67.C — incidencias de fichaje (foto omitida por falla de cámara) para el supervisor.
         Route::get('/admin/clock/flagged-punches', [TimeEntryController::class, 'flaggedPunches']);
 
@@ -776,6 +781,8 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Evaluación 360°
         Route::get('/clock/peers', [Evaluation360Controller::class, 'getPeers']);
         Route::post('/clock/evaluations', [Evaluation360Controller::class, 'store']);
+        // Plan A5 (2026-09-07): el evaluado ve sus promedios, nunca quién lo calificó.
+        Route::get('/clock/evaluations/my-results', [Evaluation360Controller::class, 'myResults']);
 
         // Chat Interno de Equipo (Mensajes temporales de 7 días)
         Route::get('/chat/messages', [TeamChatController::class, 'index']);

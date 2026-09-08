@@ -16,6 +16,10 @@ class PerformanceEvaluation extends Model
         'teamwork_score',
         'performance_score',
         'attitude_score',
+        // Plan A5 (2026-09-07): las escribía store() desde junio y el modelo las tiraba por no
+        // estar aquí (y la tabla no las tenía). Ver la migración del mismo día.
+        'leadership_score',
+        'cycle_month',
         'comments',
         'tenant_id'
     ];

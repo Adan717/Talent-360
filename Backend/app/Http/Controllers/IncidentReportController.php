@@ -48,8 +48,14 @@ class IncidentReportController extends Controller
             return response()->json(['error' => 'No autorizado.'], 403);
         }
 
+        // Plan A5 (2026-09-07): por fin hay pantalla que lo lea (RRHH → Buzones). Tope de 300 para
+        // que un buzón viejo no se vuelva una descarga entera. El filtro por empresa va EXPLÍCITO
+        // además del TenantScope: el scope se apaga cuando la app corre en consola (PHPUnit
+        // incluido), así que sin esta línea la prueba de aislamiento no protegería nada.
         $reports = EmployeeReport::with(['reporter:id,name,role', 'accused:id,name,role'])
+            ->where('tenant_id', $user->tenant_id)
             ->orderBy('created_at', 'desc')
+            ->limit(300)
             ->get();
 
         return response()->json($reports);
@@ -77,15 +83,20 @@ class IncidentReportController extends Controller
         ], 201);
     }
 
-    // Buzón Anónimo - Listar Quejas/Feedback (Administradores)
+    // Buzón Anónimo - Listar Quejas/Feedback. SÓLO admin (Plan A5, 2026-09-07): aquí llegan
+    // reportes de acoso y de clima laboral que pueden ser SOBRE el supervisor de piso; si él los
+    // leyera, el buzón dejaría de ser seguro. El anonimato es real: la tabla no tiene autor.
     public function indexFeedback()
     {
         $user = Auth::user();
-        if (!in_array($user->role, ['admin', 'supervisor', 'platform_admin'])) {
-            return response()->json(['error' => 'No autorizado.'], 403);
+        if (!in_array($user->role, ['admin', 'platform_admin'])) {
+            return response()->json(['error' => 'Sólo el administrador de la empresa puede leer el buzón anónimo.'], 403);
         }
 
-        $feedbacks = AnonymousFeedback::orderBy('created_at', 'desc')->get();
+        $feedbacks = AnonymousFeedback::where('tenant_id', $user->tenant_id)
+            ->orderBy('created_at', 'desc')
+            ->limit(300)
+            ->get();
 
         return response()->json($feedbacks);
     }

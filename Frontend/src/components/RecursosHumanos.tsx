@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { ImportarPlantilla } from './ImportarPlantilla';
 import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2, Upload } from 'lucide-react';
+import { Briefcase, Users, FileText, Shield, Clock, Plus, Pencil, X, Lock, Save, Scale, ClipboardList, User, Trash2, Search, RotateCcw, Network, MessageSquare, Zap, Sparkles, Phone, Coffee, UserPlus, DollarSign, Mic, ZoomIn, ZoomOut, UserMinus, Calendar, AlertTriangle, CheckCircle2, Upload, Inbox } from 'lucide-react';
 import PendientesDeMiEquipo from './PendientesDeMiEquipo';
 import axiosInstance from '../lib/axios';
 import { isLocalhost, getQrOrigin } from '../lib/qrHelper';
 import { useVoiceFormAssistant } from './ui/useVoiceFormAssistant';
 import { VoiceAssistantOverlay } from './ui/VoiceAssistantOverlay';
 import OrganigramaPuestos from './OrganigramaPuestos';
+import Buzones from './Buzones';
 import { JobRoleIconBadge, JOB_ROLE_ICON_OPTIONS, JOB_ROLE_PROFESSIONS_MATRIX, renderJobRoleIcon, resolveJobRoleIconKey, getRoleSmartDescription } from '../lib/jobRoleIcons';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 import { slugParaCorreo } from '../lib/emailSlug';
@@ -1927,6 +1928,20 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
                 <AlertTriangle size={18} className={activeTab === 'pendientes' ? 'text-rose-600' : 'text-slate-400'} />
                 <span className="whitespace-nowrap text-center leading-tight">Mi Equipo</span>
               </button>
+              {/* Buzones (Plan A5, 2026-09-07): lo que la plantilla manda desde el Reloj —denuncias,
+                  buzón anónimo y evaluación 360— por fin tiene dónde leerse. Mismo criterio que
+                  Mi Equipo: aquí está la gestión de gente. */}
+              <button
+                onClick={() => setActiveTab('buzones')}
+                className={`flex-shrink-0 flex items-center justify-center gap-2 text-sm font-bold px-6 py-2.5 rounded-xl transition-all relative ${
+                  activeTab === 'buzones'
+                    ? 'bg-white text-rose-700 shadow-sm border border-slate-150'
+                    : 'bg-transparent border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Inbox size={18} className={activeTab === 'buzones' ? 'text-rose-600' : 'text-slate-400'} />
+                <span className="whitespace-nowrap text-center leading-tight">Buzones</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1975,7 +1990,8 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
             { id: 'organigrama', label: 'Organigrama', icon: <Network /> },
             // También en el dock móvil: el encargado de piso trae el celular, no una laptop —
             // si el tablero sólo existiera en la barra de escritorio, no lo vería nunca.
-            { id: 'pendientes', label: 'Mi Equipo', icon: <AlertTriangle /> }
+            { id: 'pendientes', label: 'Mi Equipo', icon: <AlertTriangle /> },
+            { id: 'buzones', label: 'Buzones', icon: <Inbox /> }
           ]}
         />
       )}
@@ -3048,6 +3064,7 @@ export default function RecursosHumanos({ readOnly = false, initialTab = 'direct
         )}
 
         {activeTab === 'pendientes' && <PendientesDeMiEquipo />}
+        {activeTab === 'buzones' && <Buzones />}
 
         {activeTab === 'organigrama' && (
           <div>

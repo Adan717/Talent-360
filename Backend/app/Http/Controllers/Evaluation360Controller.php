@@ -106,7 +106,7 @@ class Evaluation360Controller extends Controller
     public function myResults(Request $request)
     {
         $user     = auth()->user();
-        $month    = $request->query('month', now()->format('Y-m'));
+        $month    = self::cicloPedido($request);
 
         $evals = PerformanceEvaluation::where('evaluated_user_id', $user->id)
             ->where('cycle_month', $month)
@@ -146,7 +146,7 @@ class Evaluation360Controller extends Controller
     {
         $user     = auth()->user();
         $tenantId = $user->tenant_id ?? 1;
-        $month    = $request->query('month', now()->format('Y-m'));
+        $month    = self::cicloPedido($request);
 
         $scores = DB::table('performance_evaluations')
             ->join('users', 'users.id', '=', 'performance_evaluations.evaluated_user_id')
@@ -159,11 +159,13 @@ class Evaluation360Controller extends Controller
                 'users.name',
                 'job_roles.name as job_role',
                 DB::raw('COUNT(*) as evaluations_received'),
-                DB::raw('ROUND(AVG(teamwork_score)::numeric, 1) as avg_teamwork'),
-                DB::raw('ROUND(AVG(attitude_score)::numeric, 1) as avg_attitude'),
-                DB::raw('ROUND(AVG(performance_score)::numeric, 1) as avg_performance'),
-                DB::raw('ROUND(AVG(leadership_score)::numeric, 1) as avg_leadership'),
-                DB::raw('ROUND(((AVG(teamwork_score) + AVG(attitude_score) + AVG(performance_score) + AVG(leadership_score)) / 4)::numeric, 1) as overall_score')
+                // Sin `::numeric` (Plan A5): era sintaxis sólo de Postgres y la suite corre en sqlite.
+                // AVG de un entero ya es numeric en Postgres, así que ROUND(x, 1) sirve en los dos.
+                DB::raw('ROUND(AVG(teamwork_score), 1) as avg_teamwork'),
+                DB::raw('ROUND(AVG(attitude_score), 1) as avg_attitude'),
+                DB::raw('ROUND(AVG(performance_score), 1) as avg_performance'),
+                DB::raw('ROUND(AVG(leadership_score), 1) as avg_leadership'),
+                DB::raw('ROUND((AVG(teamwork_score) + AVG(attitude_score) + AVG(performance_score) + AVG(leadership_score)) / 4, 1) as overall_score')
             )
             ->groupBy('users.id', 'users.name', 'job_roles.name')
             ->orderByDesc('overall_score')
@@ -173,5 +175,16 @@ class Evaluation360Controller extends Controller
             'cycle_month' => $month,
             'scores'      => $scores,
         ]);
+    }
+
+    /**
+     * El ciclo que se pide, validado: `YYYY-MM` o el mes en curso. Un valor con otra forma no
+     * es un ciclo, es basura en la consulta; se ignora y se devuelve el mes actual.
+     */
+    private static function cicloPedido(Request $request): string
+    {
+        $pedido = (string) $request->query('month', '');
+
+        return preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $pedido) ? $pedido : now()->format('Y-m');
     }
 }

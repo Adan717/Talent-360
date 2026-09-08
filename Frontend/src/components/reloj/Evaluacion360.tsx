@@ -14,6 +14,27 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
   const [comments, setComments] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Mis resultados (Plan A5, 2026-09-07): el evaluado ve sus PROMEDIOS del ciclo, nunca quién lo
+  // calificó. `GET /clock/evaluations/my-results` existía sin ruta ni pantalla desde junio.
+  const [verResultados, setVerResultados] = useState(false);
+  const [resultados, setResultados] = useState<any | null>(null);
+  const [cargandoResultados, setCargandoResultados] = useState(false);
+  const [errorResultados, setErrorResultados] = useState<string | null>(null);
+
+  const cargarMisResultados = async () => {
+    setVerResultados(true);
+    setCargandoResultados(true);
+    setErrorResultados(null);
+    try {
+      const res = await axiosInstance.get('/clock/evaluations/my-results');
+      setResultados(res.data || null);
+    } catch (e: any) {
+      setErrorResultados(e?.response?.data?.message || 'No se pudieron cargar tus resultados.');
+    } finally {
+      setCargandoResultados(false);
+    }
+  };
+
   useEffect(() => {
     fetchPeers();
   }, []);
@@ -70,10 +91,56 @@ export default function Evaluacion360({ onBack }: { onBack: () => void }) {
             <h2 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Evaluación 360°</h2>
             <p className="text-slate-400 mt-1">Califica el desempeño de tus compañeros (100% Confidencial)</p>
           </div>
-          <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl font-bold transition-all backdrop-blur-sm border border-white/10">
-            Cerrar
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={cargarMisResultados} className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 px-4 py-2.5 rounded-xl font-bold transition-all border border-emerald-400/30">
+              Mis resultados
+            </button>
+            <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl font-bold transition-all backdrop-blur-sm border border-white/10">
+              Cerrar
+            </button>
+          </div>
         </div>
+
+        {verResultados && (
+          <div className="relative z-10 max-w-2xl mx-auto w-full mb-4 p-5 rounded-2xl bg-white/5 border border-emerald-400/20 text-sm" role="region" aria-label="Mis resultados 360">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-extrabold text-emerald-300">Mis resultados del ciclo {resultados?.cycle_month || ''}</h3>
+              <button onClick={() => setVerResultados(false)} className="text-slate-400 hover:text-white text-xs">Ocultar</button>
+            </div>
+            {cargandoResultados && <p className="text-slate-400">Cargando...</p>}
+            {errorResultados && <p className="text-rose-300">{errorResultados}</p>}
+            {!cargandoResultados && !errorResultados && resultados && resultados.evaluations_count === 0 && (
+              <p className="text-slate-300">{resultados.message || 'Aún no tienes evaluaciones en este ciclo.'}</p>
+            )}
+            {!cargandoResultados && !errorResultados && resultados && resultados.evaluations_count > 0 && (
+              <div className="space-y-3">
+                <p className="text-slate-300 text-xs">{resultados.evaluations_count} evaluación(es) recibidas · promedios de 1 a 5 · nadie ve quién te calificó.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                  {[
+                    ['Equipo', resultados.averages?.teamwork],
+                    ['Actitud', resultados.averages?.attitude],
+                    ['Desempeño', resultados.averages?.performance],
+                    ['Liderazgo', resultados.averages?.leadership],
+                    ['General', resultados.averages?.overall],
+                  ].map(([etiqueta, valor]) => (
+                    <div key={String(etiqueta)} className="bg-white/5 rounded-xl p-3 border border-white/10">
+                      <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{etiqueta}</div>
+                      <div className="text-2xl font-extrabold text-emerald-300">{valor ?? '—'}</div>
+                    </div>
+                  ))}
+                </div>
+                {Array.isArray(resultados.anonymous_comments) && resultados.anonymous_comments.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Comentarios (anónimos)</div>
+                    {resultados.anonymous_comments.map((c: string, i: number) => (
+                      <p key={i} className="text-slate-200 text-xs bg-white/5 rounded-lg p-2 border border-white/10">{c}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="relative z-10 space-y-4 max-w-2xl mx-auto w-full mt-8 flex-1 flex flex-col">
           {loading ? (

@@ -249,6 +249,52 @@ producción eso deja entrar avisos de pago falsos. Exigir firma siempre que el e
 - **Aceptación:** simular el ciclo completo en sandbox: pago falla → banner → 7 días → apagón →
   registrar pago → se reactiva. Prueba candado de que una empresa al corriente nunca se toca.
 
+### Estado del Plan C — ejecutado el 2026-09-08 (Opus 5)
+
+| Paso | Estado | Dónde quedó |
+|------|--------|-------------|
+| C0 gracia 5 vs 7 | **CERRADO SIN CAMBIO** | Adán decidió el 2026-09-08 **dejar 5 días**. Código y contrato ya coincidían: nada que tocar, y NO se subió `AvisoDePrivacidad::VERSION` (nadie vuelve a aceptar el aviso). Candado nuevo: `AvisoYApagonPorFaltaDePagoTest::test_la_gracia_es_la_que_promete_el_contrato`. |
+| C3 webhook | **HECHO** | `StripeWebhookController::handleWebhook`. Falla CERRADO: con secreto la firma es obligatoria siempre; en producción sin secreto → 400; sin SDK → 400. El secreto sale de `config('cashier.webhook.secret')` (sobrevive a `config:cache`) y un relleno tipo `YOUR_STRIPE_WEBHOOK_SECRET` **no cuenta**: tiene que empezar por `whsec_`. 7 pruebas en `WebhookDeStripeFirmadoTest`. |
+| C1 encender Stripe | **HECHO, ADAPTADO** | **No se puso `Billable`.** Cashier guarda su propio estado de suscripción y este producto ya lo tiene en `tenants` + `EstadoDeCobranza` (motor probado el 2026-09-05): adoptarlo dejaba DOS fuentes de verdad para "¿está pagada esta empresa?". Se usa la **configuración** de Cashier (`cashier.key/secret/webhook.secret`: un solo sitio para las llaves) y se habla con la API REST por `Http`, mismo patrón que `FacturapiBillingProvider` y —a diferencia del SDK— comprobable en pruebas. El SDK se sigue usando para verificar la firma. |
+| C2 checkout | **HECHO** (falta la compra de prueba en sandbox) | `App\Services\Billing\CobroConStripe` dentro del MISMO embudo: `SubscriptionController::createPreference` intenta Stripe → Mercado Pago → simulador. `modalidad=liga` cobra una vez el periodo; cualquier otra cosa crea la **suscripción recurrente** (reintentos y `past_due` los hace Stripe Billing). Si Stripe está configurado y falla, responde **502 y NO cae al simulador**: caer daría por pagada una compra que nadie cobró. 12 pruebas en `CheckoutDeStripeTest`. |
+| C4 suspensión | **HECHO** | Apagón **automático** (decisión de Adán 2026-09-08): la agenda de `bootstrap/app.php` ya no lleva `--sin-suspender`. Banner de pago pendiente: `App\Support\AvisoDeCobranza` → `/me` (sólo al admin) → `Frontend/src/components/BannerDeCobranza.tsx`; la pantalla no cuenta días, pinta lo que decidió el motor. Y la mitad que faltaba: **al entrar el pago, la empresa apagada por deuda se reactiva sola** (una suspensión manual por otro motivo, no). 13 pruebas en `AvisoYApagonPorFaltaDePagoTest`. |
+
+**EL HALLAZGO QUE HACÍA INÚTIL TODA LA COBRANZA:** `tenants.current_period_end` y `mp_subscription_id`
+**no están en `$fillable`** (a propósito), pero tanto el alta (`provisionTenant`) como el webhook las
+escribían dentro de un `update([...])`/`create([...])`. La asignación masiva no falla: **las tira en
+silencio**. O sea que **ninguna empresa ha tenido nunca fecha de corte** —por eso el comentario de
+`EstadoDeCobranza` dice "hoy las 4 empresas vivas están así"—, y sin fecha de corte `decidir()`
+devuelve `SIN_FECHA_DE_CORTE` y el barrido no las mira jamás: se podía dejar de pagar para siempre.
+Ahora la fecha se estampa por una sola vía, `Tenant::estampaCicloDeCobro()`. De paso: un plan
+**anual** concedía **un mes** (se cobraban 12 mensualidades y el cliente se habría suspendido once
+meses antes); el periodo lo da ahora `Tarifario::finDelPeriodo()`, que pregunta por el mismo ciclo
+que se cobró. **Consecuencia práctica: el apagón automático no puede tocar a las empresas de hoy**
+(ninguna tiene fecha de corte); sólo actúa sobre los cobros que se registren de aquí en adelante.
+
+**Refactor menor incluido:** `provisionTenant` se movió al trait `App\Http\Controllers\AprovisionaEmpresas`
+(mismo patrón que `ArmaReportesCsv`) para que Stripe y Mercado Pago den de alta la empresa con el
+MISMO código y no con dos copias.
+
+**LO QUE FALTA Y NO ES CÓDIGO (Adán):**
+1. Poner en el `.env` del servidor `STRIPE_KEY`, `STRIPE_SECRET` y `STRIPE_WEBHOOK_SECRET` (el
+   ejecutor no maneja credenciales). Ojo: el `.env.example` trae rellenos `YOUR_…` que el código
+   ignora a propósito, así que dejarlos equivale a no configurar nada.
+2. Dar de alta el endpoint en el panel de Stripe: `https://<host>/api/v1/webhooks/stripe`
+   (**con `/v1`**), suscrito a `checkout.session.completed`, `invoice.payment_succeeded`,
+   `invoice.payment_failed`, `customer.subscription.updated` y `customer.subscription.deleted`.
+3. Probar una compra en el **sandbox de Stripe** (tarjeta 4242…) y otra que falle. Eso no se pudo
+   hacer en esta sesión: sin llaves, lo verificado es el contrato con la API (el cuerpo exacto que
+   se le manda) y el circuito completo del webhook con firma real.
+4. **APAGAR `ALLOW_SIMULATED_CHECKOUT` en la V2, en cuanto Stripe cobre.** Comprobado en el
+   contenedor el 2026-09-08: el `.env` de la V2 **no tiene ninguna llave de Stripe** y sí tiene
+   `ALLOW_SIMULATED_CHECKOUT=true` con `APP_ENV=production`. Eso deja vivo el checkout SIMULADO,
+   que da de alta una empresa completa (con su admin y su token de sesión) **sin cobrar nada**, por
+   una URL pública; el propio código avisa: "NUNCA encenderla en un servidor con clientes reales".
+   Hoy es además el único camino de alta, porque no hay pasarela: **por eso hay que ponerlo en ese
+   orden — primero las llaves, después apagar el simulador**, o el alta se queda sin puerta. Desde
+   hoy, si no hay pasarela ni simulador, `createPreference` responde 503 con un mensaje claro en vez
+   de una liga rota disfrazada de éxito.
+
 ---
 
 ## Orden sugerido

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -41,6 +43,28 @@ class Tarifario
 
     public const CICLO_MENSUAL = 'monthly';
     public const CICLO_ANUAL = 'yearly';
+
+    /**
+     * ¿El ciclo que pidieron es el anual? Cualquier otra cosa es mensual, que es como se ha
+     * comportado siempre `cotizar()`. Existe para que el precio que se COBRA y el periodo que se
+     * CONCEDE no puedan separarse: los dos preguntan aquí.
+     */
+    public static function esAnual(?string $ciclo): bool
+    {
+        return strtolower(trim((string) $ciclo)) === self::CICLO_ANUAL;
+    }
+
+    /**
+     * Hasta cuándo queda cubierta una empresa que acaba de pagar ese ciclo: la fecha de corte que
+     * consume `EstadoDeCobranza`. Un plan anual cubre un año, no un mes — cobrar 12 mensualidades
+     * y conceder una sola era la otra mitad del defecto de la fecha de corte (2026-09-08).
+     */
+    public static function finDelPeriodo(?string $ciclo, ?CarbonInterface $desde = null): Carbon
+    {
+        $desde = $desde ? Carbon::parse($desde) : Carbon::now();
+
+        return self::esAnual($ciclo) ? $desde->copy()->addYear() : $desde->copy()->addMonth();
+    }
 
     /** @var array<string,array<string,mixed>>|null */
     private static ?array $memo = null;
@@ -169,7 +193,7 @@ class Tarifario
         // cobrara 10 colaboradores por cada empresa vacía.
         $n = $colaboradores === null ? self::COLABORADORES_POR_DEFECTO : max(0, $colaboradores);
 
-        $ciclo = strtolower((string) $ciclo) === self::CICLO_ANUAL ? self::CICLO_ANUAL : self::CICLO_MENSUAL;
+        $ciclo = self::esAnual($ciclo) ? self::CICLO_ANUAL : self::CICLO_MENSUAL;
 
         $totalMensual = round($plan['tarifa_mensual_por_colaborador'] * $n, 2);
         // 12 mensualidades a la tarifa anual. NO es el total mensual con un porcentaje encima:

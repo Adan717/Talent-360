@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axiosInstance from '../lib/axios';
 import { useTaskStore } from './useTaskStore';
-import type { User, Tenant } from '../types';
+import type { User, Tenant, AvisoDeCobranza } from '../types';
 import { fichajesDeHoy, hoyEnZona, fechaDeFichaje } from '../lib/jornadaDelDia';
 import { avatarDe } from '../lib/avatar';
 
@@ -43,6 +43,11 @@ interface AppState {
   saasTenants: Tenant[];
   saasPricing: Record<string, number>;
   saasAlerts: any[];
+  /** Aviso de pago pendiente para el admin. Lo compone el SERVIDOR; aquí sólo se guarda. */
+  avisoDeCobranza: AvisoDeCobranza | null;
+  /** Ya se preguntó por el aviso en esta sesión. `null` es una respuesta válida ("no hay nada
+   *  que avisar"), así que sin esta marca se preguntaría en cada vuelta del polling. */
+  avisoDeCobranzaConsultado: boolean;
   globalRoles: any[];
   dbPermissions: any[];
   dbRolePermissions: any[];
@@ -171,6 +176,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     { type: 'error', message: 'Fallo de conexión a la base de datos de réplica en GKE.', time: 'Hace 10 min' },
     { type: 'warning', message: 'Alta latencia en el envío masivo de WhatsApp (API Meta).', time: 'Hace 45 min' },
   ],
+  avisoDeCobranza: null,
+  avisoDeCobranzaConsultado: false,
 
   globalUsers: [], // Inicialmente vacío para force state de carga
   roleClockPolicies: [],
@@ -359,7 +366,13 @@ export const useAppStore = create<AppState>((set, get) => ({
           const meRes = await axiosInstance.get('/me');
           if (meRes.status === 200 && meRes.data.user) {
             const meUser = meRes.data.user;
-            set({ currentUser: { ...meUser, system_role: meUser.role } });
+            // `cobranza` sólo viene para el admin y sólo cuando hay algo que avisar (mora dentro
+            // de la gracia, gracia agotada o asistencia suspendida por falta de pago).
+            set({
+              currentUser: { ...meUser, system_role: meUser.role },
+              avisoDeCobranza: meRes.data.cobranza ?? null,
+              avisoDeCobranzaConsultado: true,
+            });
             const tenant = meUser.tenant || meRes.data.tenant;
             if (!get().simulatedTierOverride) {
               if (meUser.tenant_id === 1) {
@@ -384,6 +397,22 @@ export const useAppStore = create<AppState>((set, get) => ({
           }
         } catch (e) {
           console.error("Error fetching me:", e);
+        }
+      }
+
+      // Aviso de pago pendiente (Plan C4). Va aparte del bloque de arriba porque ése sólo corre
+      // cuando la sesión NO estaba cargada: quien acaba de entrar por el formulario de login ya
+      // tiene usuario en memoria y no volvería a pasar por /me, así que no vería el banner hasta
+      // recargar la página. Se pregunta UNA vez por sesión y sólo para el admin, que es a quien el
+      // servidor se lo manda.
+      if (!get().avisoDeCobranzaConsultado && get().currentUser?.role === 'admin') {
+        set({ avisoDeCobranzaConsultado: true });
+        try {
+          const avisoRes = await axiosInstance.get('/me');
+          set({ avisoDeCobranza: avisoRes.data?.cobranza ?? null });
+        } catch (e) {
+          // El banner es informativo: si falla, la app sigue igual.
+          console.error('Error consultando el aviso de cobranza:', e);
         }
       }
 

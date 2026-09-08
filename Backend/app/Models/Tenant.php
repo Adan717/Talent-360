@@ -109,6 +109,35 @@ class Tenant extends Model
     }
 
     /**
+     * Estampa hasta cuándo está pagada la empresa (y, si viene, la referencia del cobro en la
+     * pasarela). La ÚNICA vía para escribir la fecha de corte: quien cobra la llama.
+     *
+     * EXISTE POR UN DEFECTO REAL (verificado el 2026-09-08): tanto el alta
+     * (`SubscriptionController::provisionTenant`) como el webhook de Stripe escribían
+     * `current_period_end` dentro de un `update([...])`, y esa columna —igual que
+     * `mp_subscription_id`— NO está en $fillable a propósito, para que no se asigne en masa desde
+     * una petición. La asignación masiva no falla: las TIRA EN SILENCIO. Resultado: NINGUNA
+     * empresa recibió jamás fecha de corte, y sin fecha de corte `EstadoDeCobranza::decidir()`
+     * responde SIN_FECHA_DE_CORTE y el barrido de mora no la mira. Es decir: el cobro existía,
+     * pero la consecuencia de no pagar nunca podía dispararse.
+     *
+     * @param  array<string,mixed>  $referencias  columnas extra del cobro (stripe_customer_id,
+     *                                            stripe_subscription_id, mp_subscription_id…).
+     */
+    public function estampaCicloDeCobro($finDePeriodo, array $referencias = []): void
+    {
+        $this->current_period_end = $finDePeriodo;
+
+        foreach ($referencias as $columna => $valor) {
+            if ($valor !== null && $valor !== '') {
+                $this->{$columna} = $valor;
+            }
+        }
+
+        $this->save();
+    }
+
+    /**
      * Check if the tenant's free trial is currently active.
      */
     public function isTrialActive()

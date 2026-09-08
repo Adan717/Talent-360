@@ -14,6 +14,7 @@ import { clearClockLocalCache } from './lib/clockCache';
 
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ColorMap } from './components/SaaSAccountSettings';
+import { BannerDeCobranza } from './components/BannerDeCobranza';
 
 const getIndicatorColor = (modId: string, systemSettings: any) => {
   const cust = systemSettings?.moduleCustomizations?.[modId];
@@ -207,7 +208,7 @@ function MainLayout() {
     window.location.href = '/login';
   };
 
-  const { currentTier, currentUser, systemSettings, updateSetting, simulatedTierOverride, isLoadingDB } = useAppStore();
+  const { currentTier, currentUser, systemSettings, updateSetting, simulatedTierOverride, isLoadingDB, avisoDeCobranza } = useAppStore();
 
   const activeTier = simulatedTierOverride || currentTier;
 
@@ -765,6 +766,10 @@ function MainLayout() {
             </div>
           </div>
         </header>
+
+        {/* Pago pendiente (Plan C4): avisa, no bloquea. El texto, los días que quedan y la fecha
+            límite los decide el SERVIDOR con el mismo motor que apaga el reloj checador. */}
+        <BannerDeCobranza aviso={avisoDeCobranza} />
 
         {/* Dynamic Canvas */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar relative z-10">

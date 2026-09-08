@@ -76,6 +76,21 @@ export interface Tenant {
   facturapi_organization_id?: string;
 }
 
+/**
+ * El aviso de pago pendiente que manda `/me`. Lo COMPONE el servidor
+ * (`App\Support\AvisoDeCobranza`) con el mismo motor que apaga el reloj checador: aquí no se
+ * calculan días de gracia ni fechas límite, sólo se pintan. `null` = no hay nada que avisar.
+ */
+export interface AvisoDeCobranza {
+  tono: 'aviso' | 'apagon';
+  titulo: string;
+  mensaje: string;
+  dias_restantes: number | null;
+  fecha_limite: string | null;
+  fecha_de_corte: string | null;
+  bloquea: boolean;
+}
+
 export interface AppModule {
   id: string;
   title: string;

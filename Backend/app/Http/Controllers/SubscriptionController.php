@@ -15,6 +15,10 @@ use Illuminate\Support\Str;
 
 class SubscriptionController extends Controller
 {
+    // Nacer una empresa que ya pagó es el MISMO código para toda pasarela: vive en el trait y lo
+    // comparte StripeWebhookController.
+    use AprovisionaEmpresas;
+
     /**
      * Merge F3: el simulador de cobro SOLO existe en local/testing — en producción estos
      * endpoints deben ser 404 (antes provisionaban tenants con un pago fingido).
@@ -233,6 +237,55 @@ class SubscriptionController extends Controller
             }
         }
 
+        // PASARELA ELEGIDA (decisión del 2026-09-06): tarjeta con Stripe. Va ANTES que Mercado
+        // Pago porque es la que cobra hoy; MP se queda debajo como camino heredado mientras su
+        // token exista. Dos modalidades, como se pidió: `modalidad=liga` cobra una vez el periodo
+        // (la liga que se manda a mano) y cualquier otra cosa crea la SUSCRIPCIÓN, que Stripe
+        // cobra sola cada ciclo y cuyos reintentos y mora maneja Stripe Billing.
+        $stripe = app(\App\Services\Billing\CobroConStripe::class);
+        if ($stripe->configurado()) {
+            $frontendUrl = $this->getFrontendUrl($request);
+            $modalidad = strtolower((string) $request->input('modalidad', 'suscripcion')) === 'liga'
+                ? \App\Services\Billing\CobroConStripe::MODO_LIGA
+                : \App\Services\Billing\CobroConStripe::MODO_SUSCRIPCION;
+
+            try {
+                $sesion = $stripe->crearSesion([
+                    'modo' => $modalidad,
+                    'importe' => $price,
+                    'concepto' => ($isUpgrade ? 'Mejora de plan Talent360 - Plan ' : 'Suscripción Talent360 - Plan ')
+                        . ucfirst((string) $payload['plan']),
+                    'referencia' => $regId,
+                    'correo' => $adminEmail ?: null,
+                    'ciclo' => $billingCycle,
+                    'url_exito' => $request->input('success_url', $isUpgrade
+                        ? "$frontendUrl/app?payment=success&action=upgrade"
+                        : "$frontendUrl/login?payment=success"),
+                    'url_cancelacion' => $request->input('failure_url', $isUpgrade
+                        ? "$frontendUrl/app?payment=failed"
+                        : "$frontendUrl/register?payment=failed"),
+                    'metadatos' => array_filter(['tenant_id' => $payload['tenant_id'] ?? null]),
+                ]);
+
+                $pendingRecord->update(['checkout_url' => $sesion['url']]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'init_point' => $sesion['url'],
+                    'simulated' => false,
+                    'pasarela' => 'stripe',
+                ]);
+            } catch (\Throwable $e) {
+                // Con Stripe configurado NO se cae al simulador: eso daría por buena una compra
+                // que nadie cobró. Se falla de frente y el cliente reintenta.
+                \Log::error('Stripe checkout falló: ' . $e->getMessage());
+
+                return response()->json([
+                    'error' => 'No se pudo abrir el cobro con tarjeta. Vuelve a intentarlo en unos minutos.',
+                ], 502);
+            }
+        }
+
         // Try using MercadoPago SDK if configured
         $mpToken = config('mercadopago.access_token');
         if ($mpToken && !str_starts_with($mpToken, 'TEST-xxxx') && class_exists('MercadoPago\SDK')) {
@@ -270,6 +323,17 @@ class SubscriptionController extends Controller
             } catch (\Exception $e) {
                 // Fallback to simulator below
             }
+        }
+
+        // Sin ninguna pasarela configurada Y sin simulador permitido, lo que se devolvía era una
+        // liga a un endpoint que responde 404, envuelta en `status: success`. El alta parecía ir
+        // bien y moría en el clic siguiente. Se dice de frente.
+        if (!$this->simulatorAllowed()) {
+            \Log::error('Alta sin pasarela de cobro: no hay llave de Stripe ni token de Mercado Pago en este servidor.');
+
+            return response()->json([
+                'error' => 'El cobro con tarjeta no está disponible en este momento. Escríbenos y completamos tu alta.',
+            ], 503);
         }
 
         // Fallback to simulated checkout URL
@@ -530,16 +594,7 @@ class SubscriptionController extends Controller
                 try {
                     \MercadoPago\SDK::setAccessToken($mpToken);
                     $payment = \MercadoPago\Payment::find_by_id($dataId);
-                    $prefId = $payment->external_reference;
-
-                    if ($prefId) {
-                        $reg = PendingRegistration::find($prefId);
-                        if ($reg) {
-                            $payload = json_decode($reg->payload, true);
-                            $this->provisionTenant($payload, $prefId);
-                            $reg->delete();
-                        }
-                    }
+                    $this->aprovisionarRegistroPagado($payment->external_reference);
                 } catch (\Exception $e) {
                     \Log::error('MP Webhook Provision Error: ' . $e->getMessage());
                 }
@@ -547,173 +602,6 @@ class SubscriptionController extends Controller
         }
 
         return response()->json(['status' => 'received']);
-    }
-
-    /**
-     * Helper to provision a tenant
-     */
-    private function provisionTenant(array $payload, $prefId = null)
-    {
-        return DB::transaction(function() use ($payload, $prefId) {
-            if (isset($payload['action']) && $payload['action'] === 'upgrade') {
-                // Upgrade flow for existing tenant
-                $tenant = Tenant::findOrFail($payload['tenant_id']);
-                $tenant->update([
-                    'plan' => strtolower($payload['plan']),
-                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
-                    'mp_subscription_id' => $prefId,
-                    'subscription_status' => 'active',
-                    'current_period_end' => now()->addMonth(),
-                ]);
-
-                $admin = User::where('tenant_id', $tenant->id)
-                    ->where('role', UserRole::ADMIN->value)
-                    ->first();
-
-                return [
-                    'tenant' => $tenant,
-                    'admin' => $admin
-                ];
-            }
-
-            // Standard creation flow
-            // 1. Create or Reuse Tenant
-            $tenant = Tenant::where('subdomain', $payload['subdomain'])->first();
-            $baseSlug = Str::slug($payload['subdomain']);
-            $publicSlug = $baseSlug;
-            $slugIndex = 1;
-            while (Tenant::withTrashed()->where('public_slug', $publicSlug)->where('id', '!=', $tenant->id ?? 0)->exists()) {
-                $publicSlug = $baseSlug . '-' . $slugIndex++;
-            }
-
-            if ($tenant && $tenant->users()->count() === 0) {
-                $tenant->update([
-                    'name' => $payload['company_name'],
-                    'plan' => strtolower($payload['plan']),
-                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
-                    'public_slug' => $publicSlug,
-                    'mp_subscription_id' => $prefId,
-                    'subscription_status' => 'active',
-                    'trial_ends_at' => now()->addDays(14),
-                    'current_period_end' => now()->addMonth(),
-                ]);
-            } else {
-                $tenant = Tenant::create([
-                    'name' => $payload['company_name'],
-                    'subdomain' => $payload['subdomain'],
-                    'plan' => strtolower($payload['plan']),
-                    'max_users' => Tenant::maxUsersForPlan($payload['plan'], isset($payload['employees']) ? intval($payload['employees']) : null),
-                    'public_slug' => $publicSlug,
-                    'mp_subscription_id' => $prefId,
-                    'subscription_status' => 'active',
-                    'trial_ends_at' => now()->addDays(14),
-                    'current_period_end' => now()->addMonth(),
-                ]);
-            }
-
-            // Set context for traits
-            session(['tenant_id' => $tenant->id]);
-
-            // Explicitly set onboarding_completed to false for new tenant so OnboardingWizard is triggered
-            DB::table('system_settings')->updateOrInsert(
-                ['key' => 'onboarding_completed', 'tenant_id' => $tenant->id],
-                ['value' => json_encode(false), 'created_at' => now(), 'updated_at' => now()]
-            );
-
-            // 2. Associate or Create Admin User
-            $currentUser = auth('sanctum')->user();
-            if ($currentUser && $currentUser->tenant_id === null) {
-                // Link the active Google authenticated user
-                $currentUser->update([
-                    'tenant_id' => $tenant->id,
-                    'role' => UserRole::ADMIN->value,
-                ]);
-                $admin = $currentUser;
-            } else {
-                // Fallback: check if user already exists globally
-                $admin = User::withoutGlobalScope(\App\Scopes\TenantScope::class)
-                    ->withTrashed()
-                    ->where('email', $payload['admin_email'])
-                    ->first();
-                if ($admin) {
-                    // §50: regla "1 cuenta = 1 empresa". Si esta cuenta YA pertenece a
-                    // otra empresa ACTIVA, reasignarle el tenant_id la robaría.
-                    // Pero si la empresa previa fue eliminada (o el usuario fue borrado lógicamente),
-                    // el correo se considera huérfano y se reasigna a la nueva empresa.
-                    if ($admin->tenant_id !== null) {
-                        $existingTenant = Tenant::find($admin->tenant_id);
-                        if ($existingTenant && !$existingTenant->trashed()) {
-                            abort(409, 'Ya existe una cuenta registrada con este correo. Inicia sesión para gestionar tu empresa o usa un correo distinto.');
-                        }
-                    }
-                    if ($admin->trashed()) {
-                        $admin->restore();
-                    }
-                    $admin->update([
-                        'tenant_id' => $tenant->id,
-                        'role' => UserRole::ADMIN->value,
-                        'is_active' => true
-                    ]);
-                } else {
-                    $admin = User::create([
-                        'name' => $payload['admin_name'],
-                        'email' => $payload['admin_email'],
-                        'password' => Hash::make(bin2hex(random_bytes(16))),
-                        'role' => UserRole::ADMIN->value,
-                        'tenant_id' => $tenant->id,
-                    ]);
-                }
-            }
-
-            // (2026-09-05) El consentimiento del alta se guardó ANTES de que existiera la empresa
-            // (createPreference), con `tenant_id` en null. Ahora que existe, se le pone: sin esto la
-            // constancia diría quién aceptó pero no de qué empresa es. Se busca por la cuenta y, si
-            // el alta vino sin sesión, por el correo del admin.
-            if ($admin) {
-                \App\Models\PrivacyConsent::whereNull('tenant_id')
-                    ->where(function ($q) use ($admin) {
-                        $q->where('user_id', $admin->id);
-                        if ($admin->email) {
-                            $q->orWhere('email', strtolower($admin->email));
-                        }
-                    })
-                    // Sólo se estampa la empresa. El titular NO se reescribe: si el alta vino sin
-                    // sesión la fila ya lleva nombre y correo, y forzar aquí un `user_id` que esa
-                    // cuenta ya tenga en otra fila de la misma versión chocaría con el índice único
-                    // en mitad del aprovisionamiento.
-                    ->update(['tenant_id' => $tenant->id]);
-            }
-
-            if (method_exists(\Auth::guard(), 'login')) {
-                \Auth::login($admin);
-            }
-
-            // 3. Inject Clean Base Structure (Roles & Policies) for the new Tenant
-            $seeder = new TenantSeeder();
-            $seeder->run();
-
-            if (method_exists(\Auth::guard(), 'logout')) {
-                \Auth::logout();
-            }
-
-            // Mark Pending Registration as Completed
-            if ($prefId) {
-                PendingRegistration::where('id', $prefId)->update(['status' => 'completed']);
-            } else {
-                $adminEmail = strtolower($payload['admin_email'] ?? '');
-                $subdomain = strtolower($payload['subdomain'] ?? '');
-                if ($adminEmail || $subdomain) {
-                    PendingRegistration::where('status', 'pending')
-                        ->forEmailOrSubdomain($adminEmail, $subdomain)
-                        ->update(['status' => 'completed']);
-                }
-            }
-
-            return [
-                'tenant' => $tenant,
-                'admin' => $admin
-            ];
-        });
     }
 
     private function getBaseUrl(Request $request): string

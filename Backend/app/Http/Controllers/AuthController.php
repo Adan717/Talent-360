@@ -300,7 +300,14 @@ class AuthController extends Controller
         return response()->json([
             // toAuthPayload: el puesto sale del expediente, no del duplicado stale users.job_role_id.
             'user' => $user instanceof \App\Models\User ? $user->toAuthPayload() : $user,
-            'tenant' => $user instanceof \App\Models\User ? $user->tenant : null
+            'tenant' => $user instanceof \App\Models\User ? $user->tenant : null,
+            // Banner de pago pendiente. Lo decide el SERVIDOR con el mismo motor que apaga el reloj
+            // (`EstadoDeCobranza`), no el navegador: un banner que contara sus propios días de
+            // gracia acabaría prometiendo un plazo que el backend no respeta. Sólo para el admin —
+            // el estado de cobranza de la empresa no es asunto de la plantilla y sólo él puede pagar.
+            'cobranza' => ($user instanceof \App\Models\User && $user->role === \App\Enums\UserRole::ADMIN->value)
+                ? \App\Support\AvisoDeCobranza::para($user->tenant)
+                : null,
         ]);
     }
 

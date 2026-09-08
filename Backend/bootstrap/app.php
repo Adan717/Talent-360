@@ -77,18 +77,26 @@ return Application::configure(basePath: dirname(__DIR__))
         // Bloque 6: si el asistente de reportes falla demasiado, que lo diga la bitácora
         // del Monitor — no esperar a que un cliente se queje en marzo.
         $schedule->command('reportes:alerta-fallos-asistente')->dailyAt('07:00');
-        // (2026-09-05) Cobranza: hasta hoy, dejar de pagar no tenía NINGUNA consecuencia
+        // (2026-09-05) Cobranza: hasta ese día, dejar de pagar no tenía NINGUNA consecuencia
         // automática — la suspensión era un interruptor manual del panel y el estado 'past_due'
         // no lo escribía nadie (la pantalla tenía color ámbar para él y jamás ocurría).
         //
-        // Corre en modo --sin-suspender A PROPÓSITO: aplica todo lo que NO apaga a nadie (marcar
-        // la mora, avisar dentro de la gracia y escalar en la bitácora a quien la agotó) y deja el
-        // apagón como acto humano deliberado. Suspender deja a una empresa entera sin reloj
-        // checador, y eso no se enciende solo sin que el dueño lo sepa; para ejecutarlo se corre el
-        // mismo comando con --aplicar (sin --sin-suspender), o el interruptor del panel.
+        // (2026-09-08) YA NO LLEVA --sin-suspender: decisión del dueño. Pasados los días de gracia
+        // que promete el contrato, la empresa morosa deja de registrar asistencia sola y queda
+        // anotado en la bitácora. Antes el apagón era un acto humano, y eso convertía toda la
+        // cobranza en una lista que nadie apretaba.
+        //
+        // Lo que protege a quien no debe está dentro de `EstadoDeCobranza::decidir()` y se evalúa
+        // en ESE orden: el inquilino principal de la plataforma nunca se toca, las empresas exentas
+        // tampoco, una ya suspendida no se re-suspende ni se reactiva sola, y —el candado que más
+        // pesa— sin `current_period_end` no hay mora que calcular y no se toca. Antes del arreglo
+        // del 2026-09-08 NINGUNA empresa tenía fecha de corte (la asignación masiva la tiraba en
+        // silencio), así que este barrido sólo apaga a partir de los cobros que se registren desde
+        // hoy: nadie se apaga por un dato que nunca existió.
+        //
         // No se agenda el simulacro pelado porque un simulacro agendado no escribe nada: sería
         // código muerto, exactamente lo que le pasó a shifts:close-orphans durante meses.
-        $schedule->command('suscripciones:revisar-vencidas --aplicar --sin-suspender')
+        $schedule->command('suscripciones:revisar-vencidas --aplicar')
             ->dailyAt('06:00')
             ->withoutOverlapping();
 

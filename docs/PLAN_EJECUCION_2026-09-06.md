@@ -308,6 +308,22 @@ que se cobró. **Consecuencia práctica: el apagón automático no puede tocar a
 (mismo patrón que `ArmaReportesCsv`) para que Stripe y Mercado Pago den de alta la empresa con el
 MISMO código y no con dos copias.
 
+**ACTUALIZACIÓN 2026-09-08 — de los cuatro pendientes de abajo quedó UNO.** Tres eran mecánicos y
+se automatizaron, porque un paso manual que se hace mal en silencio no se le pide a nadie por
+escrito:
+
+- **`php artisan stripe:preparar`** (nuevo) hace los pasos 2 y 3 de un tirón: verifica la llave
+  contra la cuenta real y dice si es de pruebas o de verdad, da de alta el webhook con
+  **exactamente** los eventos que `StripeWebhookController::EVENTOS_QUE_ATIENDE` atiende (y si el
+  endpoint ya existía, le completa los que le falten), imprime el `STRIPE_WEBHOOK_SECRET` que sólo
+  viaja una vez, y crea el cobro de prueba con la tarjeta 4242 a la vista. Rechaza una URL en
+  `http` y avisa si le falta el `/v1`, que es el error clásico.
+- **El paso 4 dejó de ser un paso.** `SubscriptionController::simulatorAllowed()` ignora
+  `ALLOW_SIMULATED_CHECKOUT` en cuanto hay una pasarela configurada: el simulador se apaga solo el
+  día que Stripe cobre, sin depender de que alguien se acuerde.
+
+Queda **sólo el paso 1**: las llaves. Ésas no las pone un comando.
+
 **LO QUE FALTA Y NO ES CÓDIGO (Adán):**
 1. Poner en el `.env` del servidor `STRIPE_KEY`, `STRIPE_SECRET` y `STRIPE_WEBHOOK_SECRET` (el
    ejecutor no maneja credenciales). Ojo: el `.env.example` trae rellenos `YOUR_…` que el código

@@ -116,13 +116,23 @@ jobs:
           retention-days: 1
 
   # ================================================================
-  # JOB 3: DEPLOY A HETZNER (solo en main/production)
+  # JOB 3: DEPLOY A HETZNER — SÓLO A MANO (2026-09-08)
   # ================================================================
+  #
+  # Este job hacía rsync a `/opt/talent360` en CADA push a `main`, y ese no es el camino por el
+  # que vive la instancia V2 (`/var/www/talent360-v2`, que se despliega con `/usr/local/bin/
+  # deploy-v2`, con respaldo previo y verificación). O sea: cada push disparaba un despliegue a
+  # un destino que nadie vigila, hacia un árbol distinto del que corre el producto.
+  #
+  # Un despliegue automático que nadie mira es peor que ninguno: o no hace nada y da falsa
+  # sensación de CI, o hace algo en un servidor con datos y nadie se entera. Los tests de arriba
+  # SÍ siguen corriendo en cada push —eso es lo que aporta valor—; el despliegue queda detrás de
+  # "Run workflow" a propósito.
   deploy:
     name: 🚀 Deploy a Hetzner
     runs-on: ubuntu-latest
     needs: [test-backend, build-frontend]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    if: github.event_name == 'workflow_dispatch'
     environment: production
 
     steps:

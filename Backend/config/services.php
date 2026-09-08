@@ -52,4 +52,16 @@ return [
         'key' => env('FACTURAPI_KEY', ''),
     ],
 
+    /*
+     * Checkout SIMULADO: da de alta una empresa completa —con su admin y su token— sin cobrar.
+     * Sólo tiene sentido en un servidor de pruebas con `APP_ENV=production`, que es lo que fue
+     * la instancia V2 mientras no hubo pasarela.
+     *
+     * Encenderlo ya no basta para que funcione: `SubscriptionController::simulatorAllowed()` lo
+     * ignora en cuanto hay una pasarela de verdad configurada, así que el día que Stripe cobre
+     * se apaga solo. Antes había que acordarse de quitar la variable a mano, y ese pendiente
+     * dejaba un alta gratuita viva en una URL pública.
+     */
+    'checkout_simulado' => env('ALLOW_SIMULATED_CHECKOUT', false),
+
 ];

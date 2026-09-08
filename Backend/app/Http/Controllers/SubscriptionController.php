@@ -22,14 +22,47 @@ class SubscriptionController extends Controller
     /**
      * Merge F3: el simulador de cobro SOLO existe en local/testing — en producción estos
      * endpoints deben ser 404 (antes provisionaban tenants con un pago fingido).
+     *
+     * Y desde el 2026-09-08 se apaga SOLO en cuanto hay una pasarela de verdad. Antes, el día
+     * que Stripe empezara a cobrar había que acordarse de quitar la variable a mano; esa clase
+     * de pendiente no se cumple, y lo que queda vivo mientras tanto es un alta gratuita de
+     * empresas —con su admin y su token de sesión— en una URL pública. Ahora el interruptor lo
+     * mueve el hecho de que exista quien cobre, no la memoria de nadie.
      */
-        private function simulatorAllowed(): bool
+    private function simulatorAllowed(): bool
     {
-        // ALLOW_SIMULATED_CHECKOUT: opt-in explícito para staging con APP_ENV=production
-        // (instancia V2). Sin la variable, producción sigue siendo 404. NUNCA encenderla
-        // en un servidor con clientes reales.
-        return app()->environment('local', 'testing')
-            || (bool) env('ALLOW_SIMULATED_CHECKOUT', false);
+        // En local y en las pruebas el simulador es la única forma de recorrer el alta.
+        if (app()->environment('local', 'testing')) {
+            return true;
+        }
+
+        if ($this->hayPasarelaDeVerdad()) {
+            return false;
+        }
+
+        // Opt-in explícito para staging con APP_ENV=production (instancia V2), y sólo mientras
+        // no haya pasarela. Sale de `config/` y no de `env()` suelto: fuera de config, `env()`
+        // devuelve null en cuanto alguien cachea la configuración.
+        return (bool) config('services.checkout_simulado');
+    }
+
+    /** ¿Hay alguien que pueda cobrar de verdad en este servidor? */
+    private function hayPasarelaDeVerdad(): bool
+    {
+        return app(\App\Services\Billing\CobroConStripe::class)->configurado()
+            || $this->mercadoPagoConfigurado();
+    }
+
+    /**
+     * Mercado Pago (camino heredado). La comprobación vive aquí y no repetida en el embudo:
+     * si el simulador y el cobro no coincidieran en qué cuenta como "configurado", habría un
+     * hueco por el que el simulador seguiría vivo con una pasarela funcionando.
+     */
+    private function mercadoPagoConfigurado(): bool
+    {
+        $token = config('mercadopago.access_token');
+
+        return $token && !str_starts_with($token, 'TEST-xxxx') && class_exists('MercadoPago\SDK');
     }
 
     /**
@@ -288,7 +321,7 @@ class SubscriptionController extends Controller
 
         // Try using MercadoPago SDK if configured
         $mpToken = config('mercadopago.access_token');
-        if ($mpToken && !str_starts_with($mpToken, 'TEST-xxxx') && class_exists('MercadoPago\SDK')) {
+        if ($this->mercadoPagoConfigurado()) {
             try {
                 \MercadoPago\SDK::setAccessToken($mpToken);
 

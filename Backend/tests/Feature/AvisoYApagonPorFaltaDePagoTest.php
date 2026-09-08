@@ -74,12 +74,18 @@ class AvisoYApagonPorFaltaDePagoTest extends TestCase
             app(Schedule::class)->events()
         );
 
-        $barrido = array_values(array_filter(
+        // DISTINTOS, no repetidos. El callback de `withSchedule` se aplica cada vez que se
+        // resuelve el Schedule, y en un feature test eso pasa más de una vez: la MISMA línea
+        // aparece duplicada. Contar las apariciones hacía que la prueba pasara dentro de la
+        // suite y fallara al correrla sola —un rojo que no es del código—, así que lo que se
+        // exige es que haya UNA SOLA FORMA de barrido agendada, que es lo que de verdad
+        // importa: si alguien agenda un segundo barrido con otras banderas, aquí truena.
+        $barrido = array_values(array_unique(array_filter(
             $comandos,
             fn (string $c) => str_contains($c, 'suscripciones:revisar-vencidas')
-        ));
+        )));
 
-        $this->assertCount(1, $barrido, 'El barrido de mora tiene que estar agendado exactamente una vez.');
+        $this->assertCount(1, $barrido, 'El barrido de mora tiene que estar agendado de una sola forma.');
         $this->assertStringContainsString('--aplicar', $barrido[0]);
         $this->assertStringNotContainsString('--sin-suspender', $barrido[0],
             'Decisión del dueño (2026-09-08): pasada la gracia, el apagón es automático.');

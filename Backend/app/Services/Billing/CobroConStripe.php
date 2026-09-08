@@ -144,6 +144,106 @@ class CobroConStripe
     }
 
     /**
+     * A qué cuenta de Stripe está apuntando esta llave, y si es de PRUEBA o de VERDAD.
+     *
+     * Es la primera pregunta al configurar: una llave puede ser válida y estar cobrando en la
+     * cuenta equivocada, o ser `sk_live_` cuando se creía estar en el sandbox.
+     *
+     * @return array{id:string, nombre:string, viva:bool}
+     *
+     * @throws RuntimeException si no hay llave o si Stripe la rechaza.
+     */
+    public function cuenta(): array
+    {
+        $datos = $this->pedir('get', '/account');
+
+        return [
+            'id' => (string) ($datos['id'] ?? ''),
+            'nombre' => (string) ($datos['settings']['dashboard']['display_name'] ?? $datos['business_profile']['name'] ?? 'sin nombre'),
+            // `sk_live_` cobra dinero de verdad; `sk_test_` es el sandbox.
+            'viva' => str_starts_with($this->secreto(), 'sk_live_') || str_starts_with($this->secreto(), 'rk_live_'),
+        ];
+    }
+
+    /**
+     * Los endpoints de webhook dados de alta en la cuenta.
+     *
+     * @return array<int, array{id:string, url:string, eventos:array<int,string>, estado:string}>
+     */
+    public function webhooksRegistrados(): array
+    {
+        $datos = $this->pedir('get', '/webhook_endpoints', ['limit' => 100]);
+
+        return array_map(fn ($w) => [
+            'id' => (string) ($w['id'] ?? ''),
+            'url' => (string) ($w['url'] ?? ''),
+            'eventos' => array_values((array) ($w['enabled_events'] ?? [])),
+            'estado' => (string) ($w['status'] ?? ''),
+        ], (array) ($datos['data'] ?? []));
+    }
+
+    /**
+     * Da de alta el endpoint del webhook. El `secret` que devuelve Stripe **sólo viaja en esta
+     * respuesta**: es el `STRIPE_WEBHOOK_SECRET` que hay que guardar, y si se pierde hay que
+     * rotarlo desde el panel.
+     *
+     * @param  array<int,string>  $eventos
+     * @return array{id:string, secret:string}
+     */
+    public function registrarWebhook(string $url, array $eventos): array
+    {
+        $datos = $this->pedir('post', '/webhook_endpoints', [
+            'url' => $url,
+            'enabled_events' => array_values($eventos),
+            'description' => 'Talent 360 — cobros y suscripciones',
+        ]);
+
+        return [
+            'id' => (string) ($datos['id'] ?? ''),
+            'secret' => (string) ($datos['secret'] ?? ''),
+        ];
+    }
+
+    /**
+     * Pone al día la lista de eventos de un endpoint que ya existe. No devuelve el `secret`:
+     * el de un endpoint ya creado no se puede volver a leer, sólo rotar desde el panel.
+     *
+     * @param  array<int,string>  $eventos
+     */
+    public function actualizarEventosDelWebhook(string $id, array $eventos): void
+    {
+        $this->pedir('post', '/webhook_endpoints/' . $id, ['enabled_events' => array_values($eventos)]);
+    }
+
+    /**
+     * Una sola puerta hacia la API: mismo encabezado, mismo trato del error. Sin esto, cada
+     * método nuevo repetiría el `if (!successful())` y tarde o temprano uno se lo saltaría.
+     *
+     * @param  array<string,mixed>  $cuerpo
+     * @return array<string,mixed>
+     */
+    private function pedir(string $verbo, string $ruta, array $cuerpo = []): array
+    {
+        if (!$this->configurado()) {
+            throw new RuntimeException('Stripe no está configurado en este servidor (falta STRIPE_SECRET).');
+        }
+
+        $peticion = Http::withToken($this->secreto())->asForm();
+        $respuesta = $verbo === 'get'
+            ? $peticion->get(self::API . $ruta, $cuerpo)
+            : $peticion->post(self::API . $ruta, $cuerpo);
+
+        if (!$respuesta->successful()) {
+            $motivo = $respuesta->json('error.message') ?? ('HTTP ' . $respuesta->status());
+            Log::error("Stripe rechazó {$verbo} {$ruta}: {$motivo}");
+
+            throw new RuntimeException('Stripe respondió: ' . $motivo);
+        }
+
+        return (array) $respuesta->json();
+    }
+
+    /**
      * La llave secreta sale de `config('cashier.*')` —un archivo de configuración— y no de
      * `env()` suelto: fuera de config/, `env()` devuelve null en cuanto alguien cachea la config
      * y el cobro se apagaría sin avisar. Es el mismo trago que ya documenta `config/services.php`

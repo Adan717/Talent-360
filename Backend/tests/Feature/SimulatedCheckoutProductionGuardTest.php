@@ -92,6 +92,32 @@ class SimulatedCheckoutProductionGuardTest extends TestCase
         $this->assertNotTrue($res->json('simulated'), 'producción no debe ofrecer el checkout simulado');
     }
 
+    /**
+     * EL PENDIENTE QUE YA NO EXISTE (2026-09-08).
+     *
+     * `ALLOW_SIMULATED_CHECKOUT` existe para un staging con `APP_ENV=production` y sin pasarela.
+     * El problema era el día después: cuando Stripe empezara a cobrar, había que acordarse de
+     * quitar la variable a mano, y mientras tanto seguía viva un alta gratuita de empresas —con
+     * su admin y su token de sesión— en una URL pública. Ahora el interruptor lo mueve el hecho
+     * de que exista quien cobre, no la memoria de nadie.
+     */
+    public function test_con_pasarela_el_simulador_se_apaga_solo_aunque_la_bandera_siga_encendida(): void
+    {
+        App::detectEnvironment(fn () => 'production');
+        config(['services.checkout_simulado' => true]);
+        $reg = $this->pending('pro');
+
+        // Sin pasarela, la bandera lo mantiene vivo: es exactamente para lo que existe.
+        config(['cashier.secret' => '']);
+        $this->get('/api/v1/subscriptions/simulated-checkout?pref_id=' . $reg->id)
+            ->assertStatus(200);
+
+        // Con Stripe de verdad, ya no. Dar altas gratis con la caja abierta es el agujero.
+        config(['cashier.secret' => 'sk_test_llave_de_prueba']);
+        $this->get('/api/v1/subscriptions/simulated-checkout?pref_id=' . $reg->id)
+            ->assertStatus(404);
+    }
+
     /** En testing/local el simulador SÍ responde (no 404): el flujo de dev/QA se conserva. */
     public function test_el_simulador_sigue_disponible_en_testing(): void
     {

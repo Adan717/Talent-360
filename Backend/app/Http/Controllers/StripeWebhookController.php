@@ -19,6 +19,25 @@ class StripeWebhookController extends Controller
     // SubscriptionController, que atiende Mercado Pago y el simulador local).
     use AprovisionaEmpresas;
 
+    /**
+     * Los eventos que este controlador ATIENDE de verdad (el `switch` de `handleWebhook`), en
+     * una lista que se puede leer desde fuera: `stripe:preparar` da de alta exactamente éstos
+     * en el panel de Stripe.
+     *
+     * Si se agrega un `case` allá abajo, se agrega aquí. Si no, el panel nunca mandará el
+     * evento nuevo y el circuito fallará EN SILENCIO, que es lo peor que le puede pasar a un
+     * cobro: nadie se entera hasta que un cliente reclama. Hay una prueba que compara esta
+     * lista con los `case` del archivo.
+     */
+    public const EVENTOS_QUE_ATIENDE = [
+        'checkout.session.completed',
+        'invoice.payment_succeeded',
+        'charge.succeeded',
+        'invoice.payment_failed',
+        'customer.subscription.updated',
+        'customer.subscription.deleted',
+    ];
+
     protected BillingProviderInterface $billingProvider;
 
     public function __construct(BillingProviderInterface $billingProvider)

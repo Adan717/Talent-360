@@ -386,7 +386,7 @@ class ReportesNominaController extends Controller
             ->orderBy('employees.name')
             ->get([
                 'weekly_payrolls.start_date', 'weekly_payrolls.end_date', 'employees.name',
-                'employees.hire_date', 'job_roles.name as puesto',
+                'employees.hire_date', 'employees.periodicidad_captura', 'job_roles.name as puesto',
                 'weekly_payrolls.gross_pay', 'weekly_payrolls.holiday_bonus_pay',
                 'weekly_payrolls.punctuality_bonus', 'weekly_payrolls.opening_bonus',
                 'weekly_payrolls.deductions', 'weekly_payrolls.daily_salary',
@@ -443,6 +443,14 @@ class ReportesNominaController extends Controller
             }
             if ($anios === null) {
                 $observaciones[] = 'Sin fecha de ingreso en el expediente: se uso el factor del primer ano.';
+            }
+            // El defecto que este reporte AMPLIFICA: sin periodicidad declarada, el sueldo diario
+            // sale del supuesto historico (base/6). Si el monto capturado era MENSUAL, el diario
+            // —y con el, el SBC y las cuotas de este renglon— salen hasta cinco veces mas altos.
+            // El motor de pago ya lo marca como pendiente de recaptura; aqui hay que decirlo
+            // porque es la cifra que el contador se llevaria como buena.
+            if (!$r->periodicidad_captura) {
+                $observaciones[] = 'OJO: el sueldo de esta persona NO declara periodicidad en su expediente, asi que el diario salio del supuesto historico. Si el monto capturado era mensual, el SBC y las cuotas de este renglon estan hasta 5 veces por encima: recaptura el sueldo antes de usar esta cifra.';
             }
             if ($bonos > 0 && $cotizacion['sbc'] > 0 && ($bonos / max(1, $dias)) > ($cotizacion['sbc'] * 0.10)) {
                 $observaciones[] = 'Los bonos rebasan el 10% del SBC: su excedente INTEGRA al SBC (LSS art. 27 fr. VII) y este reporte no lo integro.';

@@ -420,6 +420,12 @@ demanda).
    recibo puede quedar en cero mientras el IMSS del SBC no lo está): el renglón lo dice en
    Observaciones con el importe completo, en vez de imprimir un neto negativo. Esto salió al
    correr el reporte contra los datos reales de la V2, no en las pruebas.
+6. **El reporte DENUNCIA el sueldo sin periodicidad declarada.** Es el defecto del
+   `TICKET_CRITICO_PERIODICIDAD_SALARIO`: sin `periodicidad_captura`, el diario sale del supuesto
+   histórico (`base/6`), y si el monto era mensual el SBC y las cuotas salen hasta **5 veces** por
+   encima. En la V2 **las 4 personas de la empresa 2 están así** (base 18,000 → diario 3,000).
+   Dentro del producto eso era una pantalla que pide recaptura; en un reporte que sale hacia el
+   contador es una cifra que se va a tomar por buena, así que el renglón lo grita.
 
 **Al cambiar de año** se re-teclean las constantes de `ReferenciaFiscal` y se **recalculan** los
 casos de `ReferenciaFiscalTest` —están calculados a mano contra la tabla publicada, no derivados

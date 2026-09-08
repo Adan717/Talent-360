@@ -302,6 +302,25 @@ class PreNominaParaElContadorTest extends TestCase
         $this->assertStringContainsString('art. 31 LSS', $campos[22]);
     }
 
+    /**
+     * El defecto que este reporte AMPLIFICA y por eso tiene que denunciar: un expediente sin
+     * periodicidad declarada saca el sueldo diario del supuesto histórico (base/6). Si el monto
+     * era mensual, el SBC y las cuotas salen hasta 5 veces por encima — y aquí ya no es una
+     * pantalla interna, es la cifra que el contador se lleva como buena.
+     */
+    public function test_denuncia_el_sueldo_sin_periodicidad_declarada(): void
+    {
+        $this->recibo();
+
+        $conAviso = $this->renglon($this->csv());
+        $this->assertStringContainsString('NO declara periodicidad', $conAviso[22]);
+        $this->assertStringContainsString('5 veces', $conAviso[22]);
+
+        // Con la periodicidad capturada, el aviso desaparece: no se le grita a quien está bien.
+        $this->expediente->update(['periodicidad_captura' => 'mensual']);
+        $this->assertStringNotContainsString('NO declara periodicidad', $this->renglon($this->csv())[22]);
+    }
+
     /** Trae sueldos: mismo candado que la pre-nómina histórica y el costo por puesto. */
     public function test_exige_la_capacidad_de_nomina(): void
     {

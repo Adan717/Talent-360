@@ -28,10 +28,10 @@ use Illuminate\Support\Str;
 final class AvisoDePrivacidad
 {
     /** Versión VIGENTE del aviso. Coincide con la "Última actualización" impresa en LegalModal.tsx. */
-    public const VERSION = '2026-07-24';
+    public const VERSION = '2026-09-07';
 
     /** La misma fecha como la lee una persona (es la que aparece dentro del texto legal). */
-    public const FECHA_LEGIBLE = '24 de Julio de 2026';
+    public const FECHA_LEGIBLE = '7 de Septiembre de 2026';
 
     /** Dónde se lee el aviso completo, sin sesión. */
     public const RUTA_PUBLICA = '/privacidad';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Building2, FileText, CheckCircle2, AlertCircle, 
-  Upload, Key, Clock, ShieldCheck, Download, Trash2, 
+  Upload, Key, Clock, ShieldCheck,
   RefreshCw, CheckCircle, BarChart3, Receipt, Settings2, FileCode, CheckSquare, Printer
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -805,7 +805,6 @@ export const FacturacionManager = () => {
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Fecha Emisión</th>
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Monto Total</th>
                       <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider">Estado</th>
-                      <th className="py-3 px-6 text-xs font-black text-slate-450 uppercase tracking-wider text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150">
@@ -845,35 +844,11 @@ export const FacturacionManager = () => {
                             </span>
                           )}
                         </td>
-                        <td className="py-4 px-6 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              title="Descargar PDF"
-                              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
-                            >
-                              <Download size={13} />
-                            </button>
-                            <button
-                              title="Ver XML"
-                              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-650 hover:text-slate-800 rounded-lg transition-all border-none cursor-pointer"
-                            >
-                              <FileCode size={13} />
-                            </button>
-                            {inv.status === 'valid' && (
-                              <button
-                                title="Cancelar Factura"
-                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 rounded-lg transition-all border-none cursor-pointer"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
                       </tr>
                     ))}
                     {invoices.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-slate-400 font-semibold text-xs">
+                        <td colSpan={6} className="py-8 text-center text-slate-400 font-semibold text-xs">
                           Ningún CFDI emitido recientemente.
                         </td>
                       </tr>

@@ -34,7 +34,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 <div className="text-slate-200 text-xs">
                   <h4 className="font-extrabold text-white text-sm mb-1">Aviso de Privacidad Integral Completo conforme a la LFPDPPP (México)</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
-                    Última actualización: 24 de Julio de 2026. TALENT360 cumple cabalmente con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+                    Última actualización: 7 de Septiembre de 2026. TALENT360 cumple cabalmente con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
                   </p>
                 </div>
               </div>
@@ -88,10 +88,10 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   <ul className="list-disc pl-5 space-y-1 text-slate-300">
                     <li>Crear y administrar la cuenta SaaS multi-inquilino de la Empresa Suscriptora.</li>
                     <li>Registrar y verificar la asistencia, puntualidad y aperturas de sucursales en tiempo real y en modo Offline-First.</li>
-                    <li>Calcular pre-nóminas, incidencias, deducciones y horas extra conforme a la Ley Federal del Trabajo (LFT).</li>
+                    <li>Calcular pre-nóminas e incidencias (retardos, faltas, horas extra) como insumo para la nómina de la Empresa. Talent360 <strong>no calcula ISR ni cuotas del IMSS ni sustituye la nómina formal</strong>, que sigue a cargo del contador de la Empresa.</li>
                     <li>Gestionar procesos de reclutamiento (ATS), recepción de postulaciones y seguimiento de vacantes.</li>
                     <li>Impartir cursos de capacitación y evaluar el desempeño operativo del personal.</li>
-                    <li>Procesar el cobro periódico de la suscripción y emitir las facturas electrónicas (CFDI 4.0) correspondientes.</li>
+                    <li>Procesar el cobro periódico de la suscripción. La facturación fiscal se gestiona por separado.</li>
                   </ul>
                   <h5 className="font-bold text-white text-xs pt-1">Finalidades Secundarias:</h5>
                   <ul className="list-disc pl-5 space-y-1 text-slate-300">
@@ -130,7 +130,6 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   <li><strong>Resend / Amazon SES (EE.UU.) y Zoho Corporation (EE.UU.):</strong> Envío y recepción del correo del sistema (invitaciones, recuperación de contraseña, avisos). Procesan nombre y dirección de correo del destinatario.</li>
                   <li><strong>Google Firebase Cloud Messaging:</strong> Entrega de notificaciones al dispositivo.</li>
                   <li><strong>Stripe / Mercado Pago:</strong> Procesamiento de pagos con tarjeta bajo cumplimiento estándar PCI-DSS.</li>
-                  <li><strong>Proveedores Autorizados de Certificación (PAC):</strong> Emisión automatizada de facturas electrónicas CFDI ante el SAT.</li>
                 </ul>
               </section>
 
@@ -187,7 +186,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 <div className="text-slate-200 text-xs">
                   <h4 className="font-extrabold text-white text-sm mb-1">Términos y Condiciones del Servicio (TOS) & SLA B2B (7 Puntos Completos)</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
-                    Última actualización: 24 de Julio de 2026. Al registrar una empresa o utilizar Talent360, el Cliente acepta estos 7 puntos de vinculación contractual.
+                    Última actualización: 7 de Septiembre de 2026. Al registrar una empresa o utilizar Talent360, el Cliente acepta estos 7 puntos de vinculación contractual.
                   </p>
                 </div>
               </div>
@@ -198,7 +197,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   <KeyRound className="w-4 h-4 text-indigo-400" /> 1. Objeto de la Licencia
                 </h4>
                 <p>
-                  Talent360 otorga al Cliente una licencia de uso <strong>no exclusiva, revocable, limitada, no transferible y de suscripción periódica</strong> para acceder y utilizar la plataforma SaaS de administración de recursos humanos, control de asistencia, nómina LFT, reclutamiento y operaciones corporativas durante el periodo contratado.
+                  Talent360 otorga al Cliente una licencia de uso <strong>no exclusiva, revocable, limitada, no transferible y de suscripción periódica</strong> para acceder y utilizar la plataforma SaaS de administración de recursos humanos, control de asistencia, pre-nómina e incidencias, reclutamiento y operaciones corporativas durante el periodo contratado.
                 </p>
               </section>
 
@@ -217,14 +216,14 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               {/* Punto 3 */}
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-indigo-400" /> 3. Planes, Pagos y Facturación (CFDI 4.0)
+                  <CreditCard className="w-4 h-4 text-indigo-400" /> 3. Planes, Pagos y Facturación
                 </h4>
                 <div className="space-y-2">
                   <ul className="list-disc pl-5 space-y-1 text-slate-300">
-                    <li><strong>Suscripción Recurrente:</strong> El acceso a Talent360 se factura por adelantado de manera mensual o anual según el plan seleccionado.</li>
+                    <li><strong>Suscripción Recurrente:</strong> El acceso a Talent360 se cobra por adelantado de manera mensual o anual según el plan seleccionado.</li>
                     <li><strong>Cobro Automatizado:</strong> Los pagos se procesan a través de pasarelas de pago autorizadas (Stripe / Mercado Pago). El Cliente autoriza el cobro automático a su tarjeta.</li>
-                    <li><strong>Facturación Fiscal (CFDI 4.0):</strong> Al realizarse el cobro, el sistema emitirá de forma automática la factura fiscal digital en formato XML y PDF con los datos fiscales proporcionados por el Cliente.</li>
-                    <li><strong>Falta de Pago y Suspensión:</strong> En caso de no poder procesar el cobro en la fecha de renovación, Talent360 otorgará un periodo de gracia de 5 días naturales. Transcurrido dicho plazo, el acceso al inquilino podrá ser suspendido temporalmente.</li>
+                    <li><strong>Facturación Fiscal:</strong> La facturación fiscal se gestiona por separado; el sistema no emite comprobantes fiscales de forma automática.</li>
+                    <li><strong>Falta de Pago y Suspensión:</strong> En caso de no poder procesar el cobro en la fecha de renovación, Talent360 otorgará un periodo de gracia de 5 días naturales. Transcurrido dicho plazo, el acceso al inquilino podrá ser suspendido temporalmente. Durante la suspensión, el registro de asistencia queda interrumpido hasta regularizar el pago.</li>
                   </ul>
                 </div>
               </section>
@@ -236,13 +235,13 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                 </h4>
                 <div className="bg-slate-850 p-4 rounded-2xl border border-slate-800 space-y-2">
                   <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
-                    <CheckCircle2 className="w-4 h-4" /> Disponibilidad Mensual Garantizada: 99.5% Uptime Servidores
+                    <CheckCircle2 className="w-4 h-4" /> Disponibilidad: Talent360 opera bajo mejores esfuerzos, sin comprometer un porcentaje específico de disponibilidad.
                   </div>
                   <p className="text-slate-400 text-[11px] leading-relaxed">
                     <strong>Resiliencia Offline-First:</strong> El módulo de Reloj Checador PWA está diseñado para continuar operando en las sucursales de la Empresa aun cuando la sucursal pierda conexión a Internet. Los fichajes se almacenan localmente y se sincronizan al restablecerse la red.
                   </p>
                   <p className="text-slate-400 text-[11px]">
-                    <strong>Mantenimiento Programado:</strong> Talent360 notificará con al menos 24 horas de anticipación cualquier ventana de mantenimiento mayor que pueda interrumpir temporalmente el acceso a la plataforma web.
+                    <strong>Mantenimiento Programado:</strong> Talent360 procurará informar por adelantado, cuando sea posible, cualquier ventana de mantenimiento mayor que pueda interrumpir temporalmente el acceso a la plataforma web.
                   </p>
                 </div>
               </section>
@@ -264,9 +263,9 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
                   <RefreshCcw className="w-4 h-4 text-indigo-400" /> 6. Cancelación y Terminación de la Cuenta
                 </h4>
                 <ul className="list-disc pl-5 space-y-1 text-slate-300">
-                  <li>El Cliente podrá cancelar su suscripción en cualquier momento desde el panel de administración de SaaS (<code className="bg-slate-800 text-indigo-300 px-1 py-0.5 rounded font-mono text-[10px]">Configuración de Cuenta</code>).</li>
+                  <li>El Cliente podrá solicitar la cancelación de su suscripción en cualquier momento escribiendo a <strong>soporte@talent360.com.mx</strong>.</li>
                   <li>Al cancelar, el Cliente mantendrá el acceso completo hasta el final del periodo mensual/anual ya pagado.</li>
-                  <li>El Cliente podrá solicitar la exportación masiva de sus datos de nómina y empleados en formato Excel/CSV antes del cierre definitivo de la cuenta.</li>
+                  <li>El Cliente podrá solicitar una copia de sus datos en formato JSON antes del cierre definitivo de la cuenta.</li>
                 </ul>
               </section>
 
@@ -326,7 +325,7 @@ export const LegalBody: React.FC<{ tab: LegalDocType }> = ({ tab }) => (
               <section className="space-y-2 border-t border-slate-800 pt-4">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider">3. Protocolo de Retención y Depuración Segura</h4>
                 <p className="text-slate-300">
-                  Las fotografías de fichaje e incidencias se conservan de forma encriptada durante el tiempo necesario para soportar la revisión de la pre-nómina y auditorías internas. Al ser dado de baja un empleado en el sistema, la empresa responsable puede solicitar la depuración definitiva de los archivos fotográficos asociados.
+                  Las fotografías de fichaje e incidencias se conservan en el almacenamiento privado del servidor, protegidas por control de acceso y <strong>no cifradas en reposo</strong>, durante el tiempo necesario para soportar la revisión de la pre-nómina y auditorías internas. Al ser dado de baja un empleado en el sistema, la empresa responsable puede solicitar la depuración definitiva de los archivos fotográficos asociados.
                 </p>
               </section>
             </div>

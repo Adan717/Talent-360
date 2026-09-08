@@ -438,8 +438,16 @@ del propio código—, no se ajustan hasta que pasen.
 - ~~**Timbrado de nómina**: la `FACTURAPI_KEY` y la salida TLS hacia Facturapi.~~ **Ya no se espera: el timbrado quedó DESCARTADO por seguridad (D12, 2026-09-06).**
 - **Wizard / catálogo del giro**: la revisión del giro restaurante. Ese número decide si se sigue
   con oficina, retail y taller.
-- **El tabulador de precios OFICIAL** (ver la sección 💲): el sembrado es provisional y refleja lo
-  que el backend cobraba al 2026-09-05. Se cambia en `billing_plans` sin recompilar.
+- ~~**El tabulador de precios OFICIAL** (ver la sección 💲).~~ **Ya no se espera: el 2026-09-06 Adán
+  decidió que los precios sembrados (pro 29/24, enterprise 69/55 por colaborador) son los buenos por
+  ahora.** Si algún día cambian, se editan en `billing_plans` sin recompilar.
+- **Recapturar los sueldos sin periodicidad declarada** (nuevo, 2026-09-08): las 4 personas de la
+  empresa 2 tienen `periodicidad_captura` en NULL, así que su sueldo diario sale del supuesto
+  histórico (`base/6`) y su SBC y sus cuotas pueden estar 5 veces arriba. El reporte del contador ya
+  lo denuncia renglón por renglón (D12).
+- **Alta del webhook de Stripe, compra de prueba y apagar `ALLOW_SIMULATED_CHECKOUT`** — los tres
+  pasos que siguen a poner las llaves; el detalle está en `docs/PLAN_EJECUCION_2026-09-06.md`,
+  sección "LO QUE FALTA Y NO ES CÓDIGO".
 - **`deploy_to_hetzner.py`**: asegurarse de que el jefe **no despliegue con su copia vieja** del
   script — la versión vieja ejecuta `tenant:purge-test-tenants --force`, que borraba toda empresa
   con id > 1.

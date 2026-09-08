@@ -36,6 +36,7 @@ Reportes disponibles, y NADA MÁS:
 {$catalogo}
 
 Si dudas entre "asistencia" y "retardos": el detalle movimiento por movimiento es "asistencia"; el conteo por persona es "retardos".
+Si la frase habla del CONTADOR, de impuestos, del ISR, del IMSS, del salario base de cotizacion o de lo gravado y lo exento, es "prenomina_contador".
 Si dudas entre "nomina_historica" y "costo_por_puesto": si la frase pide agrupar POR PUESTO o POR ÁREA (o preguntar qué área o qué puesto gasta más), es "costo_por_puesto" aunque diga la palabra nómina; si pide los recibos, los pagos o el histórico persona por persona, es "nomina_historica".
 
 Reglas duras:

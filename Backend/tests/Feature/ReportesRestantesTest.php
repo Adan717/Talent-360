@@ -98,15 +98,15 @@ class ReportesRestantesTest extends TestCase
         $this->assertSame(
             ['asistencia', 'registro_jornada', 'retardos', 'horas', 'rutinas', 'tareas', 'justificantes',
              'aperturas', 'comedor', 'academia', 'expedientes', 'reclutamiento', 'monedero',
-             'rotacion', 'nomina_historica', 'costo_por_puesto'],
+             'rotacion', 'nomina_historica', 'costo_por_puesto', 'prenomina_contador'],
             CatalogoDeReportes::ids(),
             'si cambias el catálogo, revisa el prompt del asistente y la pantalla'
         );
     }
 
     /**
-     * Los mismos 15, en documento. Un reporte nuevo hereda su PDF sin diseñarle nada, así que
-     * lo que puede romperse es justo lo contrario: que uno de los 15 reviente al renderizarse
+     * Los mismos, en documento. Un reporte nuevo hereda su PDF sin diseñarle nada, así que
+     * lo que puede romperse es justo lo contrario: que uno de ellos reviente al renderizarse
      * (una fila con un valor que la plantilla no espera) y nadie se entere hasta que el dueño
      * lo intenta. Por eso se recorre el catálogo entero, igual que con el CSV.
      */
@@ -133,7 +133,7 @@ class ReportesRestantesTest extends TestCase
     }
 
     /**
-     * Los mismos 15, en Excel de verdad. Igual que con el PDF, lo que puede romperse es que uno
+     * Los mismos, en Excel de verdad. Igual que con el PDF, lo que puede romperse es que uno
      * reviente al escribirse y nadie se entere hasta que el dueño lo intenta.
      */
     public function test_todo_reporte_del_catalogo_tambien_sale_en_xlsx(): void

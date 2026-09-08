@@ -208,6 +208,33 @@ Alto cuidado: datos fiscales. NO calcula el pago final; entrega **referencia** p
 
 ---
 
+### Estado del Plan B — ejecutado el 2026-09-08 (Opus 5)
+
+| Paso | Estado | Dónde quedó |
+|------|--------|-------------|
+| B0 verificación | **HECHO** | `ClockService::calculatePayrollForEmployee` (`app/Services/ClockService.php:1744`) sigue pagando por día y **no se tocó**; el desglose vive en `weekly_payrolls` (migración `2026_08_16_120000`) y `employees.hire_date` existe. Dato que manda el diseño: el bruto que guarda el motor **YA trae dentro la prima de festivo** (`gross = diario × días + prima`, `:2136`), así que el reporte la vuelve a separar para poder tratarla distinto. |
+| B1 gravado/exento + SBC | **HECHO** | `App\Support\ReferenciaFiscal`: **una sola casa** para las tablas que caducan (UMA, tarifa del art. 96, subsidio, cuotas obreras, salario mínimo), cada una con su fuente y su fecha del DOF, más `VIGENCIA`/`VIGENTE_DESDE`. Clasifica percepciones (50 % exento de la prima de festivo con tope de 5 UMA/semana; 100 % al salario mínimo) y calcula el SBC con el factor de integración por antigüedad, topado a 25 UMA. **16 pruebas** en `tests/Unit/ReferenciaFiscalTest.php`, con los casos calculados **a mano** contra la tabla publicada. |
+| B2 ISR/IMSS + reporte | **HECHO** | `ReportesNominaController::paraElContador` → `prenomina_contador` en el catálogo, detrás de `permission:manage_payroll`, en los tres formatos por el embudo de siempre. ISR con la tarifa mensual llevada a los días del periodo (art. 175 RLISR) + subsidio al empleo; IMSS **sólo cuota obrera**. Cada archivo declara al pie que son cifras de referencia, de qué ejercicio son las tablas y que el sistema **no timbra**. **7 pruebas** en `tests/Feature/PreNominaParaElContadorTest.php` + los 4 recorridos del catálogo que ya existían (CSV, PDF, xlsx, aislamiento entre empresas). |
+
+**Dos reglas que cambian el número para la MAYORÍA de la plantilla de una tienda, y que por eso sí
+se implementaron:** a quien percibe el salario mínimo no se le retiene cuota obrera —la cubre el
+patrón, LSS art. 36— y su prima por trabajar el día de descanso va **100 % exenta** (LISR art. 93
+fr. I). El renglón lo dice en Observaciones. El reporte usa el **salario mínimo general**: no sabe
+si la empresa está en la Zona Libre de la Frontera Norte, y lo declara.
+
+**Lo que se decidió NO hacer (v1 conservadora, declarada):** integrar al SBC el excedente de los
+bonos que rebasan el 10 % (LSS art. 27 fr. VII). El reporte **avisa** en el renglón cuando pasa y
+deja que lo integre el contador: integrarlo mal mueve dinero real. Tampoco se modela el subsidio de
+**enero de 2026** (15.59 % sobre la UMA anterior): si el periodo empieza antes del 2026-02-01, el
+reporte lo dice y pide recalcular.
+
+**Nada de esto toca el neto que ya se paga**: el reporte lee los recibos guardados (D1, manda el
+neto FIRMADO), calcula al vuelo y no escribe nada — hay una prueba que lo comprueba. Decisión
+registrada como **D12** en `docs/DECISIONES_PRODUCTO.md`, con la corrección de las dos frases de
+D10 y de la lista de espera que seguían prometiendo timbrado.
+
+---
+
 ## PLAN C — Pagos con Stripe y suspensión (modelo sugerido: Opus 5)
 
 Hay dinero de por medio. Verificar cada paso en el sandbox de Stripe antes de tocar producción.

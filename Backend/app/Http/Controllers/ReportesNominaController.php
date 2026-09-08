@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ReferenciaFiscal;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -128,7 +129,7 @@ class ReportesNominaController extends Controller
         $notas = [
             "Periodo del {$desde} al {$hasta} (por la fecha de inicio de cada recibo).",
             'Estas cifras son las GUARDADAS en cada recibo: es lo que se firmó, se autorizó y se timbró. Este reporte NO vuelve a calcular nada con la asistencia de hoy — si un dato de asistencia se corrigió después, el recibo firmado no cambia (así debe ser).',
-            'IMPORTANTE PARA CONTABILIDAD: el "neto del recibo" es el sueldo del periodo menos las deducciones internas (faltas y retardos) más los bonos. NO incluye ISR, IMSS ni subsidio: este sistema no calcula retenciones fiscales.',
+            'IMPORTANTE PARA CONTABILIDAD: el "neto del recibo" es el sueldo del periodo menos las deducciones internas (faltas y retardos) más los bonos. NO incluye ISR, IMSS ni subsidio. Para las cifras de referencia del contador (gravado/exento, SBC, ISR e IMSS estimados) usa el reporte "Pre-nomina para tu Contador".',
             'El "sueldo del periodo" es el sueldo capturado en el expediente, no un bruto con horas extra ni bonos desglosados: el sistema no guarda ese desglose.',
             'Un recibo en BORRADOR se vuelve a calcular solo cada noche mientras es el periodo más reciente: por eso se totaliza aparte y no se suma con lo firmado.',
             'Sólo aparecen los periodos que el sistema alcanzó a calcular: si el cálculo nocturno no corrió una semana, esa semana no existe aquí (no es que nadie haya trabajado).',
@@ -331,7 +332,7 @@ class ReportesNominaController extends Controller
             "Periodo del {$desde} al {$hasta} (por la fecha de inicio de cada recibo).",
             'Sólo cuenta lo COMPROMETIDO: los recibos en borrador se recalculan cada noche y no son un costo todavía.',
             'Cada recibo cuenta en el puesto y el área que tenía CUANDO se generó: si alguien cambió de puesto después, su gasto pasado no se mueve de lugar.',
-            'El neto no incluye ISR ni IMSS: este sistema no calcula retenciones fiscales. El costo patronal real (cuotas, prestaciones) es mayor que esta cifra.',
+            'El neto no incluye ISR ni IMSS: aqui no se retiene nada. El costo patronal real (cuotas, prestaciones) es mayor que esta cifra. Las cifras de referencia para el contador estan en el reporte "Pre-nomina para tu Contador".',
             'La cuenta cuadra así: Sueldo del periodo − Total deducciones + Bonos de cumplimiento = Neto pagado. Las tres deducciones por concepto suman el total.',
             'La "prima de festivos" se muestra sólo como informativa: YA está incluida dentro del sueldo del periodo, así que NO hay que volver a sumarla.',
         ];
@@ -346,6 +347,183 @@ class ReportesNominaController extends Controller
             'Total deducciones', 'Bonos de cumplimiento', 'Prima de festivos (ya en el sueldo)',
             'Neto pagado', '% deducido',
         ], $filas, $notas);
+    }
+
+    /**
+     * PRE-NÓMINA PARA TU CONTADOR: lo mismo que ya se pagó, traducido al idioma en que lo
+     * necesita el contador de la empresa — percepciones separadas en gravado y exento, salario
+     * base de cotización, e ISR e IMSS ESTIMADOS.
+     *
+     * La decisión del dueño (2026-09-06) es que la nómina ORIENTA, no timbra. Este reporte es
+     * exactamente esa frontera: da la referencia para arrancar, y dice con todas sus letras
+     * que no sustituye el cálculo del contador ni es un recibo fiscal. El recibo del
+     * trabajador NO cambia: aquí no se recalcula ni se guarda nada.
+     *
+     * Igual que la Pre-nómina Histórica, LEE los recibos guardados (D1: "manda el neto
+     * FIRMADO") y sólo los COMPROMETIDOS: un borrador se reescribe cada noche y no es dinero.
+     * Los recibos anteriores al desglose (2026-08-16) no traen las partes por concepto, así
+     * que no se les puede separar gravado de exento: se declaran aparte en vez de inventarles
+     * un desglose.
+     */
+    public function paraElContador(Request $request)
+    {
+        $tenantId = (int) $request->user()->tenant_id;
+        [$desde, $hasta] = $this->rango($request, 'prenomina_contador');
+
+        $recibos = DB::table('weekly_payrolls')
+            ->join('employees', 'employees.id', '=', 'weekly_payrolls.employee_id')
+            ->leftJoin('job_roles', 'job_roles.id', '=', 'employees.job_role_id')
+            ->where('weekly_payrolls.tenant_id', $tenantId)
+            ->whereNull('weekly_payrolls.deleted_at')
+            ->where('weekly_payrolls.status', '!=', 'draft')
+            ->whereBetween('weekly_payrolls.start_date', [$desde, $hasta])
+            ->orderBy('weekly_payrolls.start_date')
+            ->orderBy('employees.name')
+            ->get([
+                'weekly_payrolls.start_date', 'weekly_payrolls.end_date', 'employees.name',
+                'employees.hire_date', 'job_roles.name as puesto',
+                'weekly_payrolls.gross_pay', 'weekly_payrolls.holiday_bonus_pay',
+                'weekly_payrolls.punctuality_bonus', 'weekly_payrolls.opening_bonus',
+                'weekly_payrolls.deductions', 'weekly_payrolls.daily_salary',
+                'weekly_payrolls.net_pay', 'weekly_payrolls.job_role_title_at_time',
+            ]);
+
+        $conDesglose = $recibos->filter(fn ($r) => $r->gross_pay !== null && $r->daily_salary !== null);
+        $sinDesglose = $recibos->filter(fn ($r) => $r->gross_pay === null || $r->daily_salary === null);
+        $antesDeLaVigencia = $conDesglose->filter(fn ($r) => $r->start_date < ReferenciaFiscal::VIGENTE_DESDE);
+
+        $filas = [];
+        $porPeriodo = [];
+        foreach ($conDesglose as $r) {
+            $dias = (int) (Carbon::parse($r->start_date)->diffInDays(Carbon::parse($r->end_date)) + 1);
+            $diario = (float) $r->daily_salary;
+            $minimo = ReferenciaFiscal::esSalarioMinimo($diario);
+            $bonos = (float) $r->punctuality_bonus + (float) $r->opening_bonus;
+
+            $percepciones = ReferenciaFiscal::clasificaPercepciones(
+                (float) $r->gross_pay,
+                (float) $r->holiday_bonus_pay,
+                $bonos,
+                (float) $r->deductions,
+                $dias,
+                $minimo
+            );
+
+            $anios = ReferenciaFiscal::antiguedadEnAnios($r->hire_date, $r->start_date);
+            $cotizacion = ReferenciaFiscal::salarioBaseDeCotizacion($diario, $anios);
+            $isr = ReferenciaFiscal::isrDelPeriodo($percepciones['gravado'], $dias);
+            $imss = ReferenciaFiscal::cuotaObreraImss($cotizacion['sbc'], $dias, $minimo);
+
+            $netoEstimado = round((float) $r->net_pay - $isr['retencion'] - $imss['total'], 2);
+
+            $observaciones = [];
+            if ($minimo) {
+                $observaciones[] = 'Salario minimo: la cuota obrera la cubre el patron (LSS art. 36) y la prima de festivo va 100% exenta (LISR art. 93 fr. I).';
+            }
+            if ($cotizacion['topado']) {
+                $observaciones[] = 'SBC topado a 25 UMA (LSS art. 28).';
+            }
+            if ($anios === null) {
+                $observaciones[] = 'Sin fecha de ingreso en el expediente: se uso el factor del primer ano.';
+            }
+            if ($bonos > 0 && $cotizacion['sbc'] > 0 && ($bonos / max(1, $dias)) > ($cotizacion['sbc'] * 0.10)) {
+                $observaciones[] = 'Los bonos rebasan el 10% del SBC: su excedente INTEGRA al SBC (LSS art. 27 fr. VII) y este reporte no lo integro.';
+            }
+
+            $filas[] = [
+                $r->start_date, $r->end_date, $dias,
+                $r->name, $r->job_role_title_at_time ?: ($r->puesto ?: 'Sin puesto'),
+                number_format($percepciones['sueldo'], 2, '.', ''),
+                number_format($percepciones['prima_festivo'], 2, '.', ''),
+                number_format($percepciones['bonos'], 2, '.', ''),
+                number_format($percepciones['total'], 2, '.', ''),
+                number_format($percepciones['gravado'], 2, '.', ''),
+                number_format($percepciones['exento'], 2, '.', ''),
+                number_format($diario, 2, '.', ''),
+                $anios === null ? '' : $anios,
+                number_format($cotizacion['factor'], 4, '.', ''),
+                number_format($cotizacion['sbc'], 2, '.', ''),
+                number_format($isr['causado'], 2, '.', ''),
+                number_format($isr['subsidio'], 2, '.', ''),
+                number_format($isr['retencion'], 2, '.', ''),
+                number_format($imss['total'], 2, '.', ''),
+                number_format((float) $r->net_pay, 2, '.', ''),
+                number_format($netoEstimado, 2, '.', ''),
+                implode(' ', $observaciones),
+            ];
+
+            $clave = $r->start_date . ' → ' . $r->end_date;
+            $porPeriodo[$clave] ??= ['recibos' => 0, 'total' => 0.0, 'gravado' => 0.0, 'exento' => 0.0,
+                                     'isr' => 0.0, 'imss' => 0.0, 'neto' => 0.0, 'estimado' => 0.0];
+            $porPeriodo[$clave]['recibos']++;
+            $porPeriodo[$clave]['total'] += $percepciones['total'];
+            $porPeriodo[$clave]['gravado'] += $percepciones['gravado'];
+            $porPeriodo[$clave]['exento'] += $percepciones['exento'];
+            $porPeriodo[$clave]['isr'] += $isr['retencion'];
+            $porPeriodo[$clave]['imss'] += $imss['total'];
+            $porPeriodo[$clave]['neto'] += (float) $r->net_pay;
+            $porPeriodo[$clave]['estimado'] += $netoEstimado;
+        }
+
+        $totales = [];
+        foreach ($porPeriodo as $periodo => $t) {
+            $totales[] = [
+                $periodo, $t['recibos'],
+                number_format($t['total'], 2, '.', ''),
+                number_format($t['gravado'], 2, '.', ''),
+                number_format($t['exento'], 2, '.', ''),
+                number_format($t['isr'], 2, '.', ''),
+                number_format($t['imss'], 2, '.', ''),
+                number_format($t['neto'], 2, '.', ''),
+                number_format($t['estimado'], 2, '.', ''),
+            ];
+        }
+
+        $notas = [
+            "Periodo del {$desde} al {$hasta} (por la fecha de inicio de cada recibo).",
+            'CIFRAS DE REFERENCIA: no sustituyen el calculo del contador, y este sistema NO TIMBRA. Aqui no hay CFDI, ni sello, ni recibo fiscal; el recibo que firma el colaborador no cambia por este reporte.',
+            'Tablas del ejercicio ' . ReferenciaFiscal::VIGENCIA . ', vigentes desde el ' . ReferenciaFiscal::VIGENTE_DESDE
+                . ': UMA diaria $' . number_format(ReferenciaFiscal::UMA_DIARIA, 2)
+                . ' (INEGI, DOF 09-ene-2026); tarifa mensual del art. 96 LISR del Anexo 8 de la RMF 2026 (DOF 28-dic-2025); subsidio al empleo '
+                . number_format(ReferenciaFiscal::SUBSIDIO_FACTOR_UMA * 100, 2) . '% de la UMA mensual con tope de ingreso de $'
+                . number_format(ReferenciaFiscal::SUBSIDIO_TOPE_INGRESO_MENSUAL, 2) . ' al mes (DOF 31-dic-2025); salario minimo general $'
+                . number_format(ReferenciaFiscal::SALARIO_MINIMO_GENERAL, 2) . ' (CONASAMI).',
+            'Como cuadra cada renglon: Sueldo pagado + Prima de festivos + Bonos = Total percepciones = Gravado + Exento, y Total percepciones = Neto del recibo. Los descuentos por faltas, retardos y septimo YA vienen restados del sueldo pagado: no son deducciones fiscales, son menos dias pagados.',
+            'ISR: la tarifa mensual llevada a los dias del periodo (art. 175 RLISR). El subsidio al empleo se acredita contra el ISR; si lo excede, el excedente NO se le entrega al trabajador.',
+            'IMSS: solo la CUOTA OBRERA (lo que se le retiene al trabajador) sobre el SBC. La cuota patronal y el costo total del patron NO estan aqui.',
+            'SBC: es la parte FIJA (sueldo diario por el factor de integracion segun antiguedad, topado a 25 UMA). Los premios de puntualidad y asistencia no integran mientras cada uno no rebase el 10% del SBC (LSS art. 27 fr. VII); cuando lo rebasan, el renglon lo dice en Observaciones y el excedente lo integra el contador.',
+            'Lo que este reporte NO sabe: si la empresa esta en la Zona Libre de la Frontera Norte (ahi el salario minimo es $'
+                . number_format(ReferenciaFiscal::SALARIO_MINIMO_FRONTERA, 2)
+                . '), ni si hay percepciones fuera del sistema (aguinaldo, vacaciones, prima vacacional, horas extra pagadas aparte, finiquitos). Todo eso lo agrega el contador.',
+            'Solo cuenta lo COMPROMETIDO: los recibos en borrador se recalculan cada noche y no entran.',
+            'Contiene datos salariales: solo lo descarga quien tiene la capacidad de nomina.',
+        ];
+        if ($sinDesglose->isNotEmpty()) {
+            $notas[] = 'NOTA: ' . $sinDesglose->count() . ' recibo(s) de este periodo son anteriores al desglose por concepto (2026-08-16) y NO se pueden separar en gravado y exento, asi que quedan fuera de este reporte. Su neto total fue $'
+                . number_format($sinDesglose->sum('net_pay'), 2) . ' — para verlos usa la Pre-nomina Historica.';
+        }
+        if ($antesDeLaVigencia->isNotEmpty()) {
+            $notas[] = 'ATENCION: ' . $antesDeLaVigencia->count() . ' recibo(s) empiezan antes del ' . ReferenciaFiscal::VIGENTE_DESDE
+                . ', cuando regian la UMA anterior y otro porcentaje de subsidio. Sus cifras salieron con las tablas de '
+                . ReferenciaFiscal::VIGENCIA . ' y el contador debe recalcularlas.';
+        }
+
+        return $this->csv("prenomina_contador_{$desde}_a_{$hasta}.csv", [
+            'Periodo inicia', 'Periodo termina', 'Días', 'Colaborador', 'Puesto',
+            'Sueldo pagado', 'Prima de festivos', 'Bonos', 'Total percepciones',
+            'Gravado', 'Exento', 'Salario diario', 'Antigüedad (años)', 'Factor de integración',
+            'SBC', 'ISR causado', 'Subsidio al empleo', 'ISR a retener (estimado)',
+            'IMSS cuota obrera (estimada)', 'Neto del recibo', 'Neto estimado con retenciones',
+            'Observaciones',
+        ], $filas, $notas, [
+            'titulo' => 'Totales por periodo',
+            'encabezados' => [
+                'Periodo', 'Recibos', 'Total percepciones', 'Gravado', 'Exento',
+                'ISR a retener (estimado)', 'IMSS obrero (estimado)', 'Neto del recibo',
+                'Neto estimado con retenciones',
+            ],
+            'filas' => $totales,
+        ]);
     }
 
     private function estadoDelRecibo(?string $status, $timbradaAt): string

@@ -167,7 +167,7 @@ trait ArmaReportesCsv
 
     /**
      * El mismo reporte, en documento: para entregar, imprimir o archivar (una inspección, un
-     * expediente que se firma). Una sola plantilla para los 15 — el ancho y la orientación
+     * expediente que se firma). Una sola plantilla para todos — el ancho y la orientación
      * salen del número de columnas, así que un reporte nuevo no necesita diseño propio.
      */
     private function pdf(string $nombre, array $encabezados, array $filas, array $notas, ?array $resumen)
@@ -213,7 +213,7 @@ trait ArmaReportesCsv
      * ese juego se imprime como "?" — la nota "Directorio Digital → Laboral" salía
      * "Directorio Digital ? Laboral". El CSV no lo necesita: ahí el UTF-8 se ve bien.
      *
-     * Si aparece otro símbolo, se agrega aquí: la prueba que recorre los 15 en PDF falla
+     * Si aparece otro símbolo, se agrega aquí: la prueba que recorre el catálogo en PDF falla
      * cuando un carácter se convierte en un "?" suelto, así que no se cuela en silencio.
      */
     private function sinSimbolosRaros($valor)

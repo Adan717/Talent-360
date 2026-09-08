@@ -282,7 +282,9 @@ Trabajo aparte sobre `/login/social`. Lo que había era teatro y ya se quitó.
 **El timbrado CFDI nativo queda desactivado**, y con él la carga de sellos digitales (CSD).
 
 **Por qué.** El circuito está construido a medias a propósito: el sistema **no calcula ISR, ni
-IMSS, ni subsidio al empleo** —el propio reporte de nómina lo declara— y el payload viaja con RFC
+IMSS, ni subsidio al empleo** con valor fiscal —desde el 2026-09-08 los **estima como
+referencia para el contador** en un reporte aparte (D12), que no es lo mismo que una
+retención— y el payload viaja con RFC
 genérico, CURP de relleno, banco y clase de riesgo fijos. Con una llave real eso **no falla:
 timbra**, y lo que sale es un documento fiscal presentado ante el SAT a nombre del cliente con
 datos falsos. Un CFDI mal emitido no se corrige: se cancela y se explica.
@@ -368,9 +370,54 @@ cuando dejan de ser necesarios) y un riesgo evidente: **lo que ya no existe no s
 
 ---
 
+### D12 — La nómina ORIENTA: ISR e IMSS de referencia, en un reporte aparte (2026-09-06, construida 2026-09-08)
+
+El dueño cerró el rumbo del módulo: **la nómina orienta al contador de la empresa cliente, no lo
+sustituye y no timbra**. El sistema calcula ISR e IMSS **como referencia** para que ese contador
+arranque de algo, y el **timbrado CFDI queda descartado por seguridad** (confirma y amplía la D10:
+custodiar los sellos fiscales de terceros es un riesgo que no se asume, y facturar mal expone a
+demanda).
+
+**Lo que se construyó (Plan B, 2026-09-08)**
+
+- `App\Support\ReferenciaFiscal`: **una sola casa** para las tablas que caducan —UMA, tarifa
+  mensual del art. 96 LISR, subsidio al empleo, cuotas obreras del IMSS, salario mínimo— cada una
+  con su fuente y su fecha de publicación, y una `VIGENTE_DESDE` que permite al reporte avisar
+  cuando le piden un periodo anterior a lo que esas tablas saben. Un número fiscal repartido en
+  tres archivos es un número que el año que entra se actualiza en dos.
+- Reporte nuevo del catálogo, **"Pre-nómina para tu Contador"**, detrás de `permission:manage_payroll`
+  como los otros dos de dinero: una fila por recibo con las percepciones separadas en **gravado y
+  exento**, el **salario base de cotización** (sueldo diario × factor de integración por
+  antigüedad, topado a 25 UMA) y el **ISR y el IMSS estimados**. Sale en los tres formatos por el
+  mismo embudo que los demás.
+- **No toca el motor de pago ni el recibo del trabajador**: lee los recibos ya guardados (D1: manda
+  el neto FIRMADO), calcula al vuelo y no escribe nada. Hay prueba de eso.
+
+**Los supuestos que el reporte DECLARA en vez de esconder** (v1 conservadora, como pedía el plan)
+
+1. Del pago por trabajar un día de descanso se exenta el **50 %, con tope de 5 UMA por semana**
+   (LISR art. 93 fr. I); a quien percibe el **salario mínimo** se le exenta el 100 % y **no se le
+   retiene cuota obrera** (LSS art. 36) — en la plantilla de una tienda eso es la mayoría, así que
+   ignorarlo no habría sido un detalle.
+2. El SBC es la **parte fija**. Los premios de puntualidad y asistencia no integran mientras cada
+   uno no rebase el 10 % del SBC (LSS art. 27 fr. VII); cuando lo rebasan, **el renglón lo dice**
+   en Observaciones y el excedente lo integra el contador. El reporte no lo integra solo: hacerlo
+   mal mueve dinero real.
+3. El sistema **no sabe** si la empresa está en la Zona Libre de la Frontera Norte (ahí el mínimo
+   es otro), ni conoce las percepciones que viven fuera de él (aguinaldo, vacaciones, prima
+   vacacional, horas extra pagadas aparte, finiquitos).
+4. Los recibos **anteriores al desglose** (2026-08-16) no traen sus partes por concepto: quedan
+   fuera y se declaran con su importe, en vez de inventarles una separación.
+
+**Al cambiar de año** se re-teclean las constantes de `ReferenciaFiscal` y se **recalculan** los
+casos de `ReferenciaFiscalTest` —están calculados a mano contra la tabla publicada, no derivados
+del propio código—, no se ajustan hasta que pasen.
+
+---
+
 ## ⏳ Esperando algo del dueño
 
-- **Timbrado de nómina**: la `FACTURAPI_KEY` y arreglar la salida TLS del servidor hacia Facturapi.
+- ~~**Timbrado de nómina**: la `FACTURAPI_KEY` y la salida TLS hacia Facturapi.~~ **Ya no se espera: el timbrado quedó DESCARTADO por seguridad (D12, 2026-09-06).**
 - **Wizard / catálogo del giro**: la revisión del giro restaurante. Ese número decide si se sigue
   con oficina, retail y taller.
 - **El tabulador de precios OFICIAL** (ver la sección 💲): el sembrado es provisional y refleja lo

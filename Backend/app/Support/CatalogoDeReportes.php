@@ -105,6 +105,12 @@ class CatalogoDeReportes
             'dias' => 90,
             'nomina' => true,
         ],
+        'prenomina_contador' => [
+            'titulo' => 'Pre-nómina para tu Contador (ISR e IMSS de referencia)',
+            'descripcion' => 'lo que el contador necesita para armar la nómina: las percepciones separadas en gravado y exento, el salario base de cotización, y el ISR y el IMSS estimados persona por persona (cifras de referencia; el sistema no timbra)',
+            'dias' => 30,
+            'nomina' => true,
+        ],
     ];
 
     /** ¿Este reporte trae datos salariales? (define detrás de qué candado vive su ruta) */

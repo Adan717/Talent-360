@@ -488,6 +488,9 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
             Route::middleware('throttle:30,1')->group(function () {
                 Route::get('/admin/reports/nomina_historica.csv', [\App\Http\Controllers\ReportesNominaController::class, 'historica']);
                 Route::get('/admin/reports/costo_por_puesto.csv', [\App\Http\Controllers\ReportesNominaController::class, 'costoPorPuesto']);
+                // Pre-nómina para el contador (Plan B, 2026-09-08): ISR e IMSS de REFERENCIA.
+                // Vive aquí por lo mismo que las otras dos: trae sueldos.
+                Route::get('/admin/reports/prenomina_contador.csv', [\App\Http\Controllers\ReportesNominaController::class, 'paraElContador']);
             });
 
             Route::get('/admin/payroll', [PayrollController::class, 'getPayrollData']);

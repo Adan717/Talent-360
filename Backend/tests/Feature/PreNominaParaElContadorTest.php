@@ -127,8 +127,8 @@ class PreNominaParaElContadorTest extends TestCase
         $campos = $this->renglon($this->csv());
 
         [$sueldo, $prima, $bonos, $total, $gravado, $exento] = [
-            (float) $campos[5], (float) $campos[6], (float) $campos[7],
-            (float) $campos[8], (float) $campos[9], (float) $campos[10],
+            (float) $campos[6], (float) $campos[7], (float) $campos[8],
+            (float) $campos[9], (float) $campos[10], (float) $campos[11],
         ];
 
         $this->assertSame(7, (int) $campos[2], 'el periodo son 7 días');
@@ -139,7 +139,7 @@ class PreNominaParaElContadorTest extends TestCase
         $this->assertEqualsWithDelta($total, $sueldo + $prima + $bonos, 0.01, 'las tres partes suman el total');
         $this->assertEqualsWithDelta($total, $gravado + $exento, 0.01, 'gravado + exento = percepciones');
         $this->assertEqualsWithDelta(4200.0, $total, 0.01, 'y el total es el NETO que el recibo ya pagó');
-        $this->assertEqualsWithDelta(4200.0, (float) $campos[19], 0.01, 'la columna del neto del recibo');
+        $this->assertEqualsWithDelta(4200.0, (float) $campos[20], 0.01, 'la columna del neto del recibo');
 
         // La mitad de la prima de festivo va exenta (LISR art. 93 fr. I), muy por debajo del
         // tope de 5 UMA por semana.
@@ -156,22 +156,22 @@ class PreNominaParaElContadorTest extends TestCase
         $this->recibo();
         $campos = $this->renglon($this->csv());
 
-        $this->assertSame(2, (int) $campos[12], 'dos años cumplidos al inicio del periodo');
-        $this->assertSame(1.0507, (float) $campos[13], 'factor de integración con 14 días de vacaciones');
-        $this->assertEqualsWithDelta(525.35, (float) $campos[14], 0.01, '500 diarios × 1.0507');
+        $this->assertSame(2, (int) $campos[13], 'dos años cumplidos al inicio del periodo');
+        $this->assertSame(1.0507, (float) $campos[14], 'factor de integración con 14 días de vacaciones');
+        $this->assertEqualsWithDelta(525.35, (float) $campos[15], 0.01, '500 diarios × 1.0507');
 
         $esperadoIsr = ReferenciaFiscal::isrDelPeriodo(3700.0, 7);
         $esperadoImss = ReferenciaFiscal::cuotaObreraImss(525.35, 7, false);
 
-        $this->assertEqualsWithDelta($esperadoIsr['causado'], (float) $campos[15], 0.02, 'ISR causado');
-        $this->assertEqualsWithDelta($esperadoIsr['subsidio'], (float) $campos[16], 0.02, 'subsidio al empleo');
-        $this->assertEqualsWithDelta($esperadoIsr['retencion'], (float) $campos[17], 0.02, 'ISR a retener');
-        $this->assertEqualsWithDelta($esperadoImss['total'], (float) $campos[18], 0.02, 'cuota obrera del IMSS');
+        $this->assertEqualsWithDelta($esperadoIsr['causado'], (float) $campos[16], 0.02, 'ISR causado');
+        $this->assertEqualsWithDelta($esperadoIsr['subsidio'], (float) $campos[17], 0.02, 'subsidio al empleo');
+        $this->assertEqualsWithDelta($esperadoIsr['retencion'], (float) $campos[18], 0.02, 'ISR a retener');
+        $this->assertEqualsWithDelta($esperadoImss['total'], (float) $campos[19], 0.02, 'cuota obrera del IMSS');
 
         // Neto estimado = lo que se pagó menos las retenciones de referencia.
         $this->assertEqualsWithDelta(
             4200.0 - $esperadoIsr['retencion'] - $esperadoImss['total'],
-            (float) $campos[20],
+            (float) $campos[21],
             0.02
         );
     }
@@ -191,10 +191,10 @@ class PreNominaParaElContadorTest extends TestCase
 
         $campos = $this->renglon($this->csv());
 
-        $this->assertSame(0.0, (float) $campos[18], 'el trabajador de salario mínimo no aporta al IMSS');
-        $this->assertSame(400.0, (float) $campos[10], 'y su prima de festivo va toda exenta');
-        $this->assertStringContainsString('Salario minimo', $campos[21]);
-        $this->assertStringContainsString('LSS art. 36', $campos[21]);
+        $this->assertSame(0.0, (float) $campos[19], 'el trabajador de salario mínimo no aporta al IMSS');
+        $this->assertSame(400.0, (float) $campos[11], 'y su prima de festivo va toda exenta');
+        $this->assertStringContainsString('Salario minimo', $campos[22]);
+        $this->assertStringContainsString('LSS art. 36', $campos[22]);
     }
 
     /**
@@ -216,18 +216,50 @@ class PreNominaParaElContadorTest extends TestCase
     }
 
     /**
-     * Lo que no se puede clasificar NO se inventa: un recibo anterior al desglose (2026-08-16)
-     * no trae sus partes, así que queda fuera y se declara con su importe. Un borrador tampoco
-     * entra: se reescribe cada noche y no es dinero comprometido.
+     * Los borradores SÍ entran (decisión de Adán, 2026-09-08): sin ellos el contador no puede
+     * preparar el periodo en curso, que es justo para lo que sirve el reporte. Pero un
+     * borrador lo reescribe el cálculo nocturno, así que entra DICIENDO que es provisional y
+     * con sus totales aparte — presentarlo revuelto con lo firmado daría una cifra que mañana
+     * es otra.
      */
-    public function test_no_entran_los_borradores_ni_los_recibos_sin_desglose(): void
+    public function test_los_borradores_entran_marcados_y_se_totalizan_aparte(): void
     {
+        $inicioBorrador = now()->subDays(13)->toDateString();
+
         $this->recibo();
         $this->recibo([
-            'start_date' => now()->subDays(13)->toDateString(),
+            'start_date' => $inicioBorrador,
             'end_date' => now()->subDays(7)->toDateString(),
-            'status' => 'draft', 'employee_approved_at' => null, 'net_pay' => 999.99,
+            'status' => 'draft', 'employee_approved_at' => null,
         ]);
+
+        $csv = $this->csv();
+
+        $firmado = $this->renglon($csv);
+        $this->assertSame('Firmado por el colaborador', $firmado[5]);
+        $this->assertStringNotContainsString('PROVISIONAL', $firmado[5]);
+
+        $borrador = str_getcsv(trim(
+            collect(explode("\n", $csv))->first(fn ($l) => str_starts_with($l, $inicioBorrador))
+        ));
+        $this->assertStringContainsString('PROVISIONAL', $borrador[5]);
+        $this->assertStringContainsString('se recalcula cada noche', $borrador[5]);
+        // Y trae sus cifras completas: es un borrador, no un renglón vacío.
+        $this->assertSame(4200.0, (float) $borrador[9], 'el provisional se calcula igual que el firmado');
+
+        // Los totales van partidos en dos bloques, y el propio archivo dice que no se suman.
+        $this->assertStringContainsString('COMPROMETIDO (firmado o autorizado)', $csv);
+        $this->assertStringContainsString('PROVISIONAL (NO sumar con lo firmado)', $csv);
+        $this->assertStringContainsString('NO sumes lo provisional con lo comprometido', $csv);
+    }
+
+    /**
+     * Lo que no se puede clasificar NO se inventa: un recibo anterior al desglose (2026-08-16)
+     * no trae sus partes, así que queda fuera y se declara con su importe.
+     */
+    public function test_los_recibos_sin_desglose_quedan_fuera_y_se_declaran(): void
+    {
+        $this->recibo();
         $this->recibo([
             'start_date' => now()->subDays(6)->toDateString(),
             'end_date' => now()->toDateString(),
@@ -238,7 +270,6 @@ class PreNominaParaElContadorTest extends TestCase
 
         $csv = $this->csv();
 
-        $this->assertStringNotContainsString('999.99', $csv, 'un borrador no es dinero comprometido');
         $this->assertStringContainsString('1 recibo(s) de este periodo son anteriores al desglose', $csv);
         $this->assertStringContainsString('1,234.56', $csv, 'dice cuánto quedó fuera en vez de repartirlo a ojo');
 

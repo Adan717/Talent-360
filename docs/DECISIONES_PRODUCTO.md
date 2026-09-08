@@ -392,6 +392,12 @@ demanda).
   mismo embudo que los demás.
 - **No toca el motor de pago ni el recibo del trabajador**: lee los recibos ya guardados (D1: manda
   el neto FIRMADO), calcula al vuelo y no escribe nada. Hay prueba de eso.
+- **Los borradores SÍ entran, marcados como PROVISIONALES** (decisión de Adán el 2026-09-08, al ver
+  el reporte vacío en la V2). Sin ellos el contador sólo ve el pasado y no puede preparar el periodo
+  en curso, que es para lo único que sirve un reporte así. Pero un borrador lo reescribe el cálculo
+  nocturno: entra con una columna **Situación** que lo dice, sus totales van en un bloque aparte
+  ("PROVISIONAL (NO sumar con lo firmado)") y el pie lo advierte. Es el mismo trato que ya les daba
+  la Pre-nómina Histórica, para que las dos pantallas no se contradigan.
 
 **Los supuestos que el reporte DECLARA en vez de esconder** (v1 conservadora, como pedía el plan)
 

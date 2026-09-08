@@ -360,7 +360,13 @@ class ReportesNominaController extends Controller
      * trabajador NO cambia: aquí no se recalcula ni se guarda nada.
      *
      * Igual que la Pre-nómina Histórica, LEE los recibos guardados (D1: "manda el neto
-     * FIRMADO") y sólo los COMPROMETIDOS: un borrador se reescribe cada noche y no es dinero.
+     * FIRMADO") y no recalcula nada. **Los borradores SÍ entran** (decisión de Adán,
+     * 2026-09-08): el contador necesita ver el periodo en curso ANTES de la firma, o el
+     * reporte llega tarde para lo único que sirve, que es preparar la nómina. Pero entran
+     * MARCADOS como provisionales y **totalizados aparte**: un borrador lo reescribe el
+     * cálculo nocturno, así que sumarlo junto a lo firmado daría una cifra que cambia sola.
+     * Es el mismo trato que les da la Pre-nómina Histórica, para que las dos digan lo mismo.
+     *
      * Los recibos anteriores al desglose (2026-08-16) no traen las partes por concepto, así
      * que no se les puede separar gravado de exento: se declaran aparte en vez de inventarles
      * un desglose.
@@ -375,7 +381,6 @@ class ReportesNominaController extends Controller
             ->leftJoin('job_roles', 'job_roles.id', '=', 'employees.job_role_id')
             ->where('weekly_payrolls.tenant_id', $tenantId)
             ->whereNull('weekly_payrolls.deleted_at')
-            ->where('weekly_payrolls.status', '!=', 'draft')
             ->whereBetween('weekly_payrolls.start_date', [$desde, $hasta])
             ->orderBy('weekly_payrolls.start_date')
             ->orderBy('employees.name')
@@ -386,6 +391,7 @@ class ReportesNominaController extends Controller
                 'weekly_payrolls.punctuality_bonus', 'weekly_payrolls.opening_bonus',
                 'weekly_payrolls.deductions', 'weekly_payrolls.daily_salary',
                 'weekly_payrolls.net_pay', 'weekly_payrolls.job_role_title_at_time',
+                'weekly_payrolls.status', 'weekly_payrolls.timbrada_at',
             ]);
 
         $conDesglose = $recibos->filter(fn ($r) => $r->gross_pay !== null && $r->daily_salary !== null);
@@ -430,9 +436,17 @@ class ReportesNominaController extends Controller
                 $observaciones[] = 'Los bonos rebasan el 10% del SBC: su excedente INTEGRA al SBC (LSS art. 27 fr. VII) y este reporte no lo integro.';
             }
 
+            // Un borrador NO es dinero comprometido: se reescribe cada noche mientras siga
+            // siendo el último periodo cerrado. Entra, pero diciendo lo que es en su renglón.
+            $provisional = $r->status === 'draft';
+            $situacion = $provisional
+                ? 'PROVISIONAL (borrador: se recalcula cada noche)'
+                : $this->estadoDelRecibo($r->status, $r->timbrada_at);
+
             $filas[] = [
                 $r->start_date, $r->end_date, $dias,
                 $r->name, $r->job_role_title_at_time ?: ($r->puesto ?: 'Sin puesto'),
+                $situacion,
                 number_format($percepciones['sueldo'], 2, '.', ''),
                 number_format($percepciones['prima_festivo'], 2, '.', ''),
                 number_format($percepciones['bonos'], 2, '.', ''),
@@ -452,8 +466,12 @@ class ReportesNominaController extends Controller
                 implode(' ', $observaciones),
             ];
 
-            $clave = $r->start_date . ' → ' . $r->end_date;
-            $porPeriodo[$clave] ??= ['recibos' => 0, 'total' => 0.0, 'gravado' => 0.0, 'exento' => 0.0,
+            // Los totales se parten en dos: lo comprometido no puede sumarse con lo que aún
+            // se recalcula solo, o el contador se lleva una cifra que mañana es otra.
+            $clave = ($provisional ? 'P' : 'C') . '|' . $r->start_date . ' → ' . $r->end_date;
+            $porPeriodo[$clave] ??= ['periodo' => $r->start_date . ' → ' . $r->end_date,
+                                     'situacion' => $provisional ? 'PROVISIONAL (NO sumar con lo firmado)' : 'COMPROMETIDO (firmado o autorizado)',
+                                     'recibos' => 0, 'total' => 0.0, 'gravado' => 0.0, 'exento' => 0.0,
                                      'isr' => 0.0, 'imss' => 0.0, 'neto' => 0.0, 'estimado' => 0.0];
             $porPeriodo[$clave]['recibos']++;
             $porPeriodo[$clave]['total'] += $percepciones['total'];
@@ -465,10 +483,12 @@ class ReportesNominaController extends Controller
             $porPeriodo[$clave]['estimado'] += $netoEstimado;
         }
 
+        // Lo comprometido primero: es lo que cuenta como cifra, y lo provisional va detrás.
+        ksort($porPeriodo);
         $totales = [];
-        foreach ($porPeriodo as $periodo => $t) {
+        foreach ($porPeriodo as $t) {
             $totales[] = [
-                $periodo, $t['recibos'],
+                $t['periodo'], $t['situacion'], $t['recibos'],
                 number_format($t['total'], 2, '.', ''),
                 number_format($t['gravado'], 2, '.', ''),
                 number_format($t['exento'], 2, '.', ''),
@@ -495,7 +515,7 @@ class ReportesNominaController extends Controller
             'Lo que este reporte NO sabe: si la empresa esta en la Zona Libre de la Frontera Norte (ahi el salario minimo es $'
                 . number_format(ReferenciaFiscal::SALARIO_MINIMO_FRONTERA, 2)
                 . '), ni si hay percepciones fuera del sistema (aguinaldo, vacaciones, prima vacacional, horas extra pagadas aparte, finiquitos). Todo eso lo agrega el contador.',
-            'Solo cuenta lo COMPROMETIDO: los recibos en borrador se recalculan cada noche y no entran.',
+            'LA COLUMNA "Situacion" ES LA IMPORTANTE. Un recibo PROVISIONAL es un borrador: el calculo nocturno lo vuelve a escribir mientras siga siendo el periodo mas reciente, asi que su cifra puede cambiar. Esta aqui para que puedas preparar la nomina del periodo en curso, no para cerrarla. Por eso los totales van separados: NO sumes lo provisional con lo comprometido.',
             'Contiene datos salariales: solo lo descarga quien tiene la capacidad de nomina.',
         ];
         if ($sinDesglose->isNotEmpty()) {
@@ -509,7 +529,7 @@ class ReportesNominaController extends Controller
         }
 
         return $this->csv("prenomina_contador_{$desde}_a_{$hasta}.csv", [
-            'Periodo inicia', 'Periodo termina', 'Días', 'Colaborador', 'Puesto',
+            'Periodo inicia', 'Periodo termina', 'Días', 'Colaborador', 'Puesto', 'Situación',
             'Sueldo pagado', 'Prima de festivos', 'Bonos', 'Total percepciones',
             'Gravado', 'Exento', 'Salario diario', 'Antigüedad (años)', 'Factor de integración',
             'SBC', 'ISR causado', 'Subsidio al empleo', 'ISR a retener (estimado)',
@@ -518,7 +538,7 @@ class ReportesNominaController extends Controller
         ], $filas, $notas, [
             'titulo' => 'Totales por periodo',
             'encabezados' => [
-                'Periodo', 'Recibos', 'Total percepciones', 'Gravado', 'Exento',
+                'Periodo', 'Situación', 'Recibos', 'Total percepciones', 'Gravado', 'Exento',
                 'ISR a retener (estimado)', 'IMSS obrero (estimado)', 'Neto del recibo',
                 'Neto estimado con retenciones',
             ],

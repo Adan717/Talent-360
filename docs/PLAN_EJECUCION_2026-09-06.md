@@ -228,6 +228,12 @@ deja que lo integre el contador: integrarlo mal mueve dinero real. Tampoco se mo
 **enero de 2026** (15.59 % sobre la UMA anterior): si el periodo empieza antes del 2026-02-01, el
 reporte lo dice y pide recalcular.
 
+**Ajuste del mismo día, ya desplegado:** al abrir el reporte en la V2 salió VACÍO — de 52 recibos
+vivos, 50 son borradores y los 2 autorizados son de julio, anteriores al desglose. Adán decidió
+**incluir los borradores marcados como PROVISIONALES**: columna `Situación` en cada renglón,
+totales en bloque aparte y una nota al pie que prohíbe sumarlos con lo firmado. Es el mismo trato
+que ya les daba la Pre-nómina Histórica.
+
 **Nada de esto toca el neto que ya se paga**: el reporte lee los recibos guardados (D1, manda el
 neto FIRMADO), calcula al vuelo y no escribe nada — hay una prueba que lo comprueba. Decisión
 registrada como **D12** en `docs/DECISIONES_PRODUCTO.md`, con la corrección de las dos frases de

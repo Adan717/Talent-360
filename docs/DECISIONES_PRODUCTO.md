@@ -414,6 +414,12 @@ demanda).
    vacacional, horas extra pagadas aparte, finiquitos).
 4. Los recibos **anteriores al desglose** (2026-08-16) no traen sus partes por concepto: quedan
    fuera y se declaran con su importe, en vez de inventarles una separación.
+5. **No se aplica el ausentismo del art. 31 LSS.** La cuota obrera se calcula sobre el SBC por
+   todos los días del periodo; si hubo faltas, las cuotas reales pueden ser menores. Y como no se
+   puede retener más de lo que se paga, el **"neto estimado" se topa en cero** (con faltas, un
+   recibo puede quedar en cero mientras el IMSS del SBC no lo está): el renglón lo dice en
+   Observaciones con el importe completo, en vez de imprimir un neto negativo. Esto salió al
+   correr el reporte contra los datos reales de la V2, no en las pruebas.
 
 **Al cambiar de año** se re-teclean las constantes de `ReferenciaFiscal` y se **recalculan** los
 casos de `ReferenciaFiscalTest` —están calculados a mano contra la tabla publicada, no derivados

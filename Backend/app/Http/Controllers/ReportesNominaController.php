@@ -420,9 +420,21 @@ class ReportesNominaController extends Controller
             $isr = ReferenciaFiscal::isrDelPeriodo($percepciones['gravado'], $dias);
             $imss = ReferenciaFiscal::cuotaObreraImss($cotizacion['sbc'], $dias, $minimo);
 
-            $netoEstimado = round((float) $r->net_pay - $isr['retencion'] - $imss['total'], 2);
+            // No se puede retener MÁS de lo que se paga. Un periodo con faltas puede dejar el
+            // recibo en cero mientras el IMSS sigue calculándose sobre el SBC: sin este tope el
+            // reporte imprimía un neto NEGATIVO, que es una cifra que nadie puede usar. Las
+            // columnas de ISR e IMSS conservan el importe calculado; lo que se topa es el neto,
+            // y el renglón dice que se topó.
+            $pagado = (float) $r->net_pay;
+            $retenciones = round($isr['retencion'] + $imss['total'], 2);
+            $netoEstimado = round(max(0.0, $pagado - $retenciones), 2);
 
             $observaciones = [];
+            if ($retenciones > $pagado) {
+                $observaciones[] = 'Las retenciones de referencia ($' . number_format($retenciones, 2)
+                    . ') superan lo pagado en el periodo ($' . number_format($pagado, 2)
+                    . '): no se puede retener mas de lo que se paga, asi que el neto estimado se dejo en cero. Suele pasar cuando el periodo trae faltas; revisa tambien el ausentismo del art. 31 LSS, que este reporte NO aplica.';
+            }
             if ($minimo) {
                 $observaciones[] = 'Salario minimo: la cuota obrera la cubre el patron (LSS art. 36) y la prima de festivo va 100% exenta (LISR art. 93 fr. I).';
             }
@@ -510,7 +522,8 @@ class ReportesNominaController extends Controller
                 . number_format(ReferenciaFiscal::SALARIO_MINIMO_GENERAL, 2) . ' (CONASAMI).',
             'Como cuadra cada renglon: Sueldo pagado + Prima de festivos + Bonos = Total percepciones = Gravado + Exento, y Total percepciones = Neto del recibo. Los descuentos por faltas, retardos y septimo YA vienen restados del sueldo pagado: no son deducciones fiscales, son menos dias pagados.',
             'ISR: la tarifa mensual llevada a los dias del periodo (art. 175 RLISR). El subsidio al empleo se acredita contra el ISR; si lo excede, el excedente NO se le entrega al trabajador.',
-            'IMSS: solo la CUOTA OBRERA (lo que se le retiene al trabajador) sobre el SBC. La cuota patronal y el costo total del patron NO estan aqui.',
+            'IMSS: solo la CUOTA OBRERA (lo que se le retiene al trabajador) sobre el SBC, por todos los dias del periodo. La cuota patronal y el costo total del patron NO estan aqui. Este reporte NO aplica el ausentismo del art. 31 LSS: si el periodo trae faltas, las cuotas reales pueden ser menores y las ajusta el contador.',
+            '"Neto estimado con retenciones" nunca baja de cero: no se puede retener mas de lo que se paga. Cuando las retenciones calculadas superan el pago del periodo, el renglon lo dice en Observaciones con el importe completo.',
             'SBC: es la parte FIJA (sueldo diario por el factor de integracion segun antiguedad, topado a 25 UMA). Los premios de puntualidad y asistencia no integran mientras cada uno no rebase el 10% del SBC (LSS art. 27 fr. VII); cuando lo rebasan, el renglon lo dice en Observaciones y el excedente lo integra el contador.',
             'Lo que este reporte NO sabe: si la empresa esta en la Zona Libre de la Frontera Norte (ahi el salario minimo es $'
                 . number_format(ReferenciaFiscal::SALARIO_MINIMO_FRONTERA, 2)

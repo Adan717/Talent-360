@@ -278,6 +278,30 @@ class PreNominaParaElContadorTest extends TestCase
         $this->assertCount(1, $filas);
     }
 
+    /**
+     * Un periodo con faltas puede dejar el recibo en CERO mientras el IMSS se sigue calculando
+     * sobre el SBC. Sin tope, el reporte imprimía un neto NEGATIVO — una cifra que nadie puede
+     * usar, y en un reporte de dinero es peor que no dar el dato. Se topa en cero y el renglón
+     * dice cuánto sumaban las retenciones de verdad.
+     */
+    public function test_el_neto_estimado_nunca_sale_negativo_y_lo_declara(): void
+    {
+        // Todo el bruto se fue en descuentos: el recibo pagó 0, pero el IMSS del SBC no es 0.
+        $this->recibo([
+            'gross_pay' => 4500, 'holiday_bonus_pay' => 0, 'punctuality_bonus' => 0,
+            'opening_bonus' => 0, 'deductions' => 4500, 'deduction_absences' => 4500,
+            'net_pay' => 0,
+        ]);
+
+        $campos = $this->renglon($this->csv());
+
+        $this->assertSame(0.0, (float) $campos[9], 'no se pagó nada en el periodo');
+        $this->assertGreaterThan(0.0, (float) $campos[19], 'pero la cuota obrera del SBC sí existe');
+        $this->assertSame(0.0, (float) $campos[21], 'el neto estimado se topa en cero, no se va a negativo');
+        $this->assertStringContainsString('superan lo pagado en el periodo', $campos[22]);
+        $this->assertStringContainsString('art. 31 LSS', $campos[22]);
+    }
+
     /** Trae sueldos: mismo candado que la pre-nómina histórica y el costo por puesto. */
     public function test_exige_la_capacidad_de_nomina(): void
     {

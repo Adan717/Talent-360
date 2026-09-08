@@ -8,6 +8,7 @@ import {
 import { CompanyOnboardingSettings } from './CompanyOnboardingSettings';
 import { CompanySettingsPanel } from './CompanySettingsPanel';
 import NominaSettingsPanel from './NominaSettingsPanel';
+import MatrizDePermisos from './MatrizDePermisos';
 import { useAppStore } from '../store/useAppStore';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
 
@@ -20,6 +21,10 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const isFeatureUnlocked = useAppStore(state => state.isFeatureUnlocked);
+  const currentUser = useAppStore(state => state.currentUser);
+  // La matriz de permisos es INDELEGABLE (role:admin en el servidor): a un supervisor no se le
+  // ofrece una pestaña que sólo le devolvería 403.
+  const esAdmin = currentUser?.role === 'admin' || (currentUser as any)?.system_role === 'admin';
 
   useEffect(() => {
     if (initialTab) {
@@ -94,6 +99,15 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
       description: 'Configuración de alertas Push PWA, notificaciones de WhatsApp Bot y correo SMTP.'
     },
     {
+      id: 'permisos',
+      label: 'Permisos por puesto',
+      icon: <Shield size={18} />,
+      badge: 'Sólo admin',
+      badgeColor: 'bg-slate-200 text-slate-700',
+      description: 'Qué puede hacer cada puesto: tareas, aperturas, reportes, nómina. Delegación de capacidades.',
+      soloAdmin: true
+    },
+    {
       id: 'ats',
       label: 'Portal ATS & Vacantes',
       icon: <Briefcase size={18} />,
@@ -120,6 +134,9 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
         <nav className="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1">
           {navItems.map((item) => {
             if (item.featureFlag && !isFeatureUnlocked(item.featureFlag as any)) {
+              return null;
+            }
+            if (item.soloAdmin && !esAdmin) {
               return null;
             }
             const isActive = activeTab === item.id;
@@ -179,6 +196,7 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
         fabTitle="Ajustes y Parámetros Globales"
         items={navItems
           .filter(item => !item.featureFlag || isFeatureUnlocked(item.featureFlag as any))
+          .filter(item => !item.soloAdmin || esAdmin)
           .map(item => ({
             id: item.id,
             label: item.label.split(' ')[0],
@@ -299,6 +317,12 @@ export const GlobalSystemSettingsPanel: React.FC<GlobalSystemSettingsPanelProps>
         {activeTab === 'ats' && (
           <div className="animate-in fade-in duration-200">
             <CompanySettingsPanel initialTab="ats" hideSidebar={true} />
+          </div>
+        )}
+
+        {activeTab === 'permisos' && esAdmin && (
+          <div className="animate-in fade-in duration-200">
+            <MatrizDePermisos />
           </div>
         )}
       </div>

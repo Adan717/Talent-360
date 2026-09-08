@@ -395,7 +395,7 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         // Detrás de su PROPIA capacidad: mover la evidencia con la que la empresa se defiende en
         // un juicio laboral no se hereda por ser supervisor. `manage_punch_corrections` no está en
         // SUPERVISOR_DEFAULTS, así que sólo pasa el admin dueño y el puesto al que se le conceda
-        // explícitamente (`permisos:conceder`, ya que la pantalla de la matriz está congelada).
+        // explícitamente (desde Configuración → Permisos por puesto, o con `permisos:conceder`).
         //
         // El controlador sólo valida y delega: anular sin borrar, firmar el rastro y avisar al
         // colaborador viven en CorreccionDeAsistencia, donde ninguna vía puede saltárselo.

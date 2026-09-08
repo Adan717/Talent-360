@@ -34,6 +34,7 @@ use App\Http\Controllers\TeamChatController;
 use App\Http\Controllers\IncidentReportController;
 use App\Http\Controllers\KeyTransferController;
 use App\Http\Controllers\LftSettingController;
+use App\Http\Controllers\LftReglamentoController;
 use App\Http\Controllers\EmployeePayrollController;
 use App\Http\Controllers\ObsidianController;
 use App\Http\Controllers\MealReservationController;
@@ -419,6 +420,11 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'getMatrix']);
             Route::put('/admin/permissions/matrix', [\App\Http\Controllers\PermissionMatrixController::class, 'updateMatrix']);
+
+            // Asistente del reglamento interior (Plan A3, 2026-09-07): lee el PDF/TXT con la IA y
+            // PROPONE tolerancias; no escribe en lft_settings. Sólo admin (es quien configura la
+            // LFT) y con tope: cada lectura cuesta una llamada al proveedor de IA.
+            Route::middleware('throttle:10,1')->post('/admin/lft/leer-reglamento', [LftReglamentoController::class, 'leer']);
 
             // RESERVA LEGAL (2026-09-05) — INDELEGABLE, misma razón y mismo bloque. Marca a una
             // persona con juicio abierto para que `datos:purgar-vencidos` no la alcance nunca.

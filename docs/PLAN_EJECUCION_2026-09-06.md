@@ -91,6 +91,20 @@ existen SIN ruta ni pantalla. Construir:
 
 ---
 
+### Estado del Plan A — ejecutado el 2026-09-07 (Fable 5.1)
+
+| Pieza | Qué se hizo | Candado |
+|---|---|---|
+| A1 | Los 7 cambios (+ el 8.º de la línea 329) en `LegalModal.tsx`; `AvisoDePrivacidad::VERSION` = 2026-09-07 | `LegalModal.test.ts` (frases viejas ausentes, nuevas presentes, fecha = FECHA_LEGIBLE) |
+| A2 | Fuera los 3 botones sin acción y la columna "Acciones" de la tabla de CFDI | `tsc -b` limpio |
+| A3 | `POST /admin/lft/leer-reglamento` (role:admin, throttle 10/min): lee PDF (smalot/pdfparser) o TXT, la IA propone (`GeminiAIService::leerReglamentoLft`), `PropuestaDeReglamentoLft` depura contra la lista blanca de saveSettings; NUNCA escribe. Pantalla: la animación falsa se sustituyó por el panel `PropuestaDeReglamento` (propone la IA, confirma el admin, guarda con el botón de siempre) | `AsistenteReglamentoLftTest` (7, con PDF real vía dompdf y `Http::fake`), `PropuestaDeReglamento.test.tsx` |
+| A4 | Pantalla `MatrizDePermisos` como pestaña "Permisos por puesto" en Configuración (sólo admin) | `MatrizDePermisos.test.tsx` (7) |
+| A5 | Rutas que faltaban (`GET /clock/evaluations/my-results`, `GET /clock/evaluations/scores`), migración con `leadership_score` y `cycle_month` (la tabla nunca las tuvo: los lectores del 360 reventaban), buzón anónimo sólo admin, filtro por empresa explícito, pestaña "Buzones" en RRHH y "Mis resultados" en la Evaluación 360 del Reloj | `BuzonesDeLecturaTest` (7, incluye aislamiento entre empresas) |
+
+**Pendiente fuera del código (decisión de Adán):** correr `privacidad:pedir-consentimiento --aplicar` en la V2 tras desplegar, para que la plantilla vuelva a aceptar la versión 2026-09-07 (sin eso, sólo las cuentas nuevas quedan con la versión nueva). Hallazgo colateral: `.github/workflows/deploy.yml` (Sprint 2) dice desplegar a Hetzner en cada push a `main` por rsync a `/opt/talent360`; no es el camino de la V2 (`deploy-v2`) y no se verificó si corre o falla.
+
+---
+
 ## PLAN B — Nómina para el contador (modelo sugerido: Opus 5)
 
 Alto cuidado: datos fiscales. NO calcula el pago final; entrega **referencia** para el contador.

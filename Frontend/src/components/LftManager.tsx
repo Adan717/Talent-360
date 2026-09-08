@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../lib/axios';
 import { MobileModuleBottomDock } from './common/MobileModuleBottomDock';
+import PropuestaDeReglamento, { type Propuesta } from './PropuestaDeReglamento';
 
 /**
  * Techo de ley del tiempo extraordinario: art. 66 LFT — la jornada se puede prolongar hasta 3 horas
@@ -55,60 +56,81 @@ export default function LftManager() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Estado para el cargador de IA
+  /**
+   * Asistente del reglamento (Plan A3, 2026-09-07). Antes esto era una animación de 7 segundos que
+   * ponía números fijos (15/60/15, 3/3/4) sin leer el archivo. Ahora el servidor lee el PDF/TXT con
+   * la IA (POST /admin/lft/leer-reglamento) y devuelve una PROPUESTA con citas; el admin decide
+   * qué cargar en el formulario y después guarda con el botón de siempre. Nada se guarda solo.
+   */
   const [isParsingLft, setIsParsingLft] = useState(false);
-  const [parsingStep, setParsingStep] = useState('');
-  const [parsedFileInfo, setParsedFileInfo] = useState<string | null>(null);
-  const [parsedLftArticles, setParsedLftArticles] = useState<any[]>([]);
+  const [propuesta, setPropuesta] = useState<Propuesta | null>(null);
 
-  const handleLftFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLftFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Se limpia el input para que volver a elegir el mismo archivo dispare onChange otra vez.
+    e.target.value = '';
     if (!file) return;
 
     setIsParsingLft(true);
-    setParsedFileInfo(file.name);
+    setPropuesta(null);
     setSuccessMsg('');
     setErrorMsg('');
+    setWarnMsg('');
 
-    const steps = [
-      'Cargando documento LFT: ' + file.name + '...',
-      'Iniciando OCR y análisis semántico de la Ley Federal del Trabajo...',
-      'Buscando Artículos 58, 60 y 61 (límites de jornada laboral)...',
-      'Analizando Artículo 69 (séptimo día de descanso pagado)...',
-      'Extrayendo tolerancias reglamentarias, retardos y horas extras...',
-      'Análisis legal completado con éxito.'
-    ];
-
-    let currentStepIdx = 0;
-    setParsingStep(steps[0]);
-
-    const interval = setInterval(() => {
-      currentStepIdx++;
-      if (currentStepIdx < steps.length) {
-        setParsingStep(steps[currentStepIdx]);
+    try {
+      const datos = new FormData();
+      datos.append('archivo', file);
+      const res = await axiosInstance.post('/admin/lft/leer-reglamento', datos, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 90000,
+      });
+      if (res.data?.success) {
+        setPropuesta(res.data as Propuesta);
       } else {
-        clearInterval(interval);
-        setIsParsingLft(false);
-        
-        setLateToleranceMinutes(15); 
-        setMealToleranceMinutes(60); 
-        setRestToleranceMinutes(15);
-        setLatesPerAbsence(3); 
-        setAbsencesForWarning(3);
-        setAbsencesForSuspension(4);
-        setProportionalRestDay(true); 
-        setPaidRestDay(true);
-        setLateActionMode('deduct');
-
-        setParsedLftArticles([
-          { art: 'Artículo 58', desc: 'Define la jornada de trabajo como el tiempo durante el cual el trabajador está a disposición del patrón.' },
-          { art: 'Artículo 60', desc: 'Fija jornada diurna (8h), nocturna (7h) y mixta (7.5h).' },
-          { art: 'Artículo 69', desc: 'Establece que por cada seis días de trabajo disfrutará el operario de un día de descanso, por lo menos, con goce de salario íntegro.' }
-        ]);
-
-        setSuccessMsg('¡Análisis de LFT completado! Se han ajustado automáticamente las tolerancias y reglas de nómina según las normas oficiales detectadas en ' + file.name + '.');
+        setErrorMsg(res.data?.message || 'La IA no devolvió una propuesta.');
       }
-    }, 1200);
+    } catch (err: any) {
+      // 503 = sin llave de IA en el servidor; 422 = archivo ilegible; 502 = la IA falló. El
+      // servidor manda el motivo en "message"; se muestra tal cual, sin fingir que se leyó.
+      setErrorMsg(err?.response?.data?.message || 'No se pudo leer el reglamento.');
+    } finally {
+      setIsParsingLft(false);
+    }
+  };
+
+  /** Carga en el FORMULARIO lo que el admin marcó. No guarda: eso es el botón Guardar. */
+  const aplicarPropuesta = (seleccion: Record<string, number | boolean | string>) => {
+    const entero = (v: unknown) => Math.max(0, Math.round(Number(v)));
+    if ('late_tolerance_minutes' in seleccion) setLateToleranceMinutes(entero(seleccion.late_tolerance_minutes));
+    if ('meal_tolerance_minutes' in seleccion) setMealToleranceMinutes(entero(seleccion.meal_tolerance_minutes));
+    if ('rest_tolerance_minutes' in seleccion) setRestToleranceMinutes(entero(seleccion.rest_tolerance_minutes));
+    if ('lates_per_absence' in seleccion) setLatesPerAbsence(Math.max(1, entero(seleccion.lates_per_absence)));
+    if ('absences_for_warning' in seleccion) setAbsencesForWarning(Math.max(1, entero(seleccion.absences_for_warning)));
+    if ('absences_for_suspension' in seleccion) setAbsencesForSuspension(Math.max(1, entero(seleccion.absences_for_suspension)));
+    if ('deduct_absence_day' in seleccion) setDeductAbsenceDay(!!seleccion.deduct_absence_day);
+    if ('proportional_rest_day' in seleccion) setProportionalRestDay(!!seleccion.proportional_rest_day);
+    if ('paid_rest_day' in seleccion) setPaidRestDay(!!seleccion.paid_rest_day);
+    if (seleccion.late_action_mode === 'deduct' || seleccion.late_action_mode === 'extend_shift') setLateActionMode(seleccion.late_action_mode);
+    if ('overtime_weekly_cap_minutes' in seleccion) {
+      setOvertimeWeeklyCapMinutes(Math.min(TECHO_LFT_MINUTOS_SEMANA, entero(seleccion.overtime_weekly_cap_minutes)));
+    }
+    const cuantas = Object.keys(seleccion).length;
+    setPropuesta(null);
+    setSuccessMsg('Se cargaron ' + cuantas + ' valores del reglamento en el formulario. Revísalos y pulsa Guardar para aplicarlos.');
+  };
+
+  const valoresActuales: Record<string, unknown> = {
+    late_tolerance_minutes: lateToleranceMinutes,
+    meal_tolerance_minutes: mealToleranceMinutes,
+    rest_tolerance_minutes: restToleranceMinutes,
+    lates_per_absence: latesPerAbsence,
+    absences_for_warning: absencesForWarning,
+    absences_for_suspension: absencesForSuspension,
+    deduct_absence_day: deductAbsenceDay,
+    proportional_rest_day: proportionalRestDay,
+    paid_rest_day: paidRestDay,
+    late_action_mode: lateActionMode,
+    overtime_weekly_cap_minutes: overtimeWeeklyCapMinutes,
   };
 
   // Simulación interactiva de impacto
@@ -364,14 +386,14 @@ export default function LftManager() {
                   <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Cargar Reglamento LFT</h3>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
-                  Sube el archivo PDF o TXT de la **Ley Federal del Trabajo**. Nuestra IA procesará el documento legal para extraer de forma automática las tolerancias, penalizaciones de retardos y regulaciones del séptimo día recomendadas.
+                  Sube el <strong>reglamento interior de trabajo</strong> de tu empresa (PDF o TXT). La IA lo lee y te propone las tolerancias, retardos y faltas que encuentre, con la cita de dónde salió cada número. Tú decides qué cargar y después guardas: nada se aplica solo.
                 </p>
 
                 {isParsingLft && (
-                  <div className="mt-4 p-3.5 bg-white border border-amber-100 rounded-2xl space-y-2 text-left">
+                  <div className="mt-4 p-3.5 bg-white border border-amber-100 rounded-2xl space-y-2 text-left" role="status">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-extrabold text-amber-700 animate-pulse">{parsingStep}</span>
-                      <span className="text-slate-400 font-bold">Procesando...</span>
+                      <span className="font-extrabold text-amber-700 animate-pulse">Leyendo el reglamento con la IA...</span>
+                      <span className="text-slate-400 font-bold">Puede tardar hasta un minuto</span>
                     </div>
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                       <div className="bg-amber-500 h-full rounded-full animate-pulse w-[60%]"></div>
@@ -379,17 +401,13 @@ export default function LftManager() {
                   </div>
                 )}
 
-                {parsedFileInfo && !isParsingLft && parsedLftArticles.length > 0 && (
-                  <div className="mt-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl space-y-2 text-[11px] text-left">
-                    <div className="font-black text-emerald-800">📂 Archivo procesado: {parsedFileInfo}</div>
-                    <div className="space-y-1 text-slate-500 font-medium leading-relaxed">
-                      {parsedLftArticles.map((art, idx) => (
-                        <div key={idx}>
-                          <strong>{art.art}:</strong> {art.desc}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {propuesta && !isParsingLft && (
+                  <PropuestaDeReglamento
+                    propuesta={propuesta}
+                    valoresActuales={valoresActuales}
+                    onAplicar={aplicarPropuesta}
+                    onDescartar={() => setPropuesta(null)}
+                  />
                 )}
               </div>
 
@@ -399,9 +417,10 @@ export default function LftManager() {
                   <span className="text-xs font-extrabold text-slate-700">Subir Archivo LFT</span>
                   <span className="text-[10px] text-slate-400">PDF, TXT (Max 5MB)</span>
                   <input 
-                    type="file" 
-                    accept=".pdf,.txt" 
-                    onChange={handleLftFileUpload} 
+                    type="file"
+                    accept=".pdf,.txt"
+                    onChange={handleLftFileUpload}
+                    disabled={isParsingLft}
                     className="hidden" 
                   />
                 </label>

@@ -627,6 +627,96 @@ PROMPT;
         return $decoded;
     }
 
+    // =========================================================
+    // 6. LECTURA DEL REGLAMENTO INTERIOR (Plan A3, 2026-09-07)
+    // =========================================================
+
+    /**
+     * Lee el texto de un reglamento interior de trabajo y PROPONE los valores que la pantalla
+     * de LFT puede configurar. Sólo propone: quien decide y guarda es el admin, después.
+     *
+     * Hasta hoy `LftManager.handleLftFileUpload` era una animación de 7 segundos que rellenaba
+     * números fijos (15/60/15, 3/3/4) sin leer el archivo. Esto lo sustituye por una lectura
+     * real. El contrato de salida lo depura `AppSupportPropuestaDeReglamentoLft` antes de
+     * llegar al navegador: nada de lo que diga el modelo se acepta sin pasar por la lista
+     * blanca de `LftSettingController::saveSettings`.
+     *
+     * @return array {reglas: {clave: {valor, cita, confianza}}, articulos: [...], advertencias: [...]}
+     * @throws Exception sin llave de IA, proveedor caído o respuesta ilegible.
+     */
+    public function leerReglamentoLft(string $texto): array
+    {
+        // Un reglamento interior puede pasar de 100 páginas; la parte de asistencia, retardos y
+        // faltas suele ir al principio o en un capítulo propio. Se manda un tope amplio y se
+        // declara el recorte para que el modelo no invente lo que no vio.
+        $tope = 24000;
+        $recortado = mb_strlen($texto) > $tope
+            ? mb_substr($texto, 0, $tope) . "
+
+[TEXTO RECORTADO: el reglamento sigue pero no se incluyó]"
+            : $texto;
+
+        $prompt = <<<PROMPT
+Eres un especialista en derecho laboral mexicano (Ley Federal del Trabajo). Vas a leer el REGLAMENTO INTERIOR DE TRABAJO de una empresa y extraer ÚNICAMENTE lo que el texto diga de forma explícita sobre asistencia, retardos, faltas, comidas, descansos y tiempo extraordinario.
+
+REGLAMENTO:
+"""
+$recortado
+"""
+
+Responde ÚNICAMENTE con un JSON con esta estructura (omite del objeto "reglas" cualquier clave que el reglamento NO mencione de forma explícita; NUNCA inventes valores):
+{
+  "reglas": {
+    "late_tolerance_minutes": {"valor": 10, "cita": "fragmento textual del reglamento", "confianza": "alta"},
+    "meal_tolerance_minutes": {"valor": 15, "cita": "...", "confianza": "media"},
+    "rest_tolerance_minutes": {"valor": 10, "cita": "...", "confianza": "baja"},
+    "lates_per_absence": {"valor": 3, "cita": "...", "confianza": "alta"},
+    "absences_for_warning": {"valor": 3, "cita": "...", "confianza": "alta"},
+    "absences_for_suspension": {"valor": 4, "cita": "...", "confianza": "alta"},
+    "deduct_absence_day": {"valor": true, "cita": "...", "confianza": "alta"},
+    "proportional_rest_day": {"valor": true, "cita": "...", "confianza": "media"},
+    "paid_rest_day": {"valor": true, "cita": "...", "confianza": "alta"},
+    "late_action_mode": {"valor": "deduct", "cita": "...", "confianza": "media"},
+    "overtime_weekly_cap_minutes": {"valor": 540, "cita": "...", "confianza": "alta"}
+  },
+  "articulos": [{"referencia": "Artículo 12", "resumen": "qué dice, en una línea"}],
+  "advertencias": ["cosas del reglamento que contradicen la LFT o que no se pudieron determinar"]
+}
+
+Significado de cada clave:
+- late_tolerance_minutes: minutos de tolerancia para llegar tarde antes de contar como retardo.
+- meal_tolerance_minutes: minutos de tolerancia al volver de comer.
+- rest_tolerance_minutes: minutos de tolerancia en descansos.
+- lates_per_absence: cuántos retardos equivalen a una falta.
+- absences_for_warning: faltas acumuladas que generan llamada de atención por escrito.
+- absences_for_suspension: faltas acumuladas que generan suspensión.
+- deduct_absence_day: si una falta descuenta el día de salario.
+- proportional_rest_day: si el séptimo día se paga proporcional a los días trabajados.
+- paid_rest_day: si el día de descanso semanal se paga.
+- late_action_mode: "deduct" si el retardo se descuenta, "extend_shift" si se repone al final del turno.
+- overtime_weekly_cap_minutes: tope de tiempo extraordinario por semana, en MINUTOS (la LFT permite máximo 540).
+
+Reglas:
+- "confianza" es "alta" sólo si el reglamento lo dice con esas palabras y ese número; "media" si se infiere; "baja" si es dudoso.
+- "cita" es texto COPIADO del reglamento, no un resumen.
+- Si el reglamento fija algo que la LFT no permite (por ejemplo multas al salario, art. 107, o más de 9 horas extra por semana, art. 66), inclúyelo en "advertencias".
+PROMPT;
+
+        $raw = $this->callGemini($prompt, 0.1, 2048);
+        $data = json_decode($this->extractJson($raw), true);
+
+        if (!is_array($data) || !array_key_exists('reglas', $data)) {
+            Log::warning('GeminiAIService::leerReglamentoLft respuesta ilegible', ['raw' => mb_substr($raw, 0, 300)]);
+            throw new Exception('La IA no devolvió una lectura legible del reglamento. Intenta de nuevo o pega sólo el capítulo de asistencia.');
+        }
+
+        return [
+            'reglas' => is_array($data['reglas']) ? $data['reglas'] : [],
+            'articulos' => is_array($data['articulos'] ?? null) ? $data['articulos'] : [],
+            'advertencias' => is_array($data['advertencias'] ?? null) ? $data['advertencias'] : [],
+        ];
+    }
+
     private function countLabel(int $count): string
     {
         return $count === 1 ? '1 imagen' : "{$count} imágenes";

@@ -91,7 +91,14 @@ existen SIN ruta ni pantalla. Construir:
 
 ---
 
-### Estado del Plan A — ejecutado el 2026-09-07 (Fable 5.1)
+### Estado del Plan A — ejecutado el 2026-09-07 (Fable 5.1) — DESPLEGADO en la V2 el 2026-09-08
+
+Commits `27940fc` (A1/A2), `e5e1fa7` (A4), `b1844f1` (A5), `ccbe653` (A3), empujados a `origin/main` y
+desplegados con respaldo previo (`20260908_044618` → `deploy-v2`). Verificado en vivo: migración aplicada,
+4 rutas nuevas (401 sin sesión), bundle público con el texto legal nuevo y sin frases viejas, chunks con las
+4 pantallas, `OPENAI_API_KEY` presente en el `.env` del contenedor. `privacidad:pedir-consentimiento --aplicar`
+corrido el 2026-09-08: marcó 1 cuenta (la única que había aceptado la versión de julio); las otras 14 ya
+estaban pendientes de aceptar por primera vez.
 
 | Pieza | Qué se hizo | Candado |
 |---|---|---|
@@ -101,7 +108,70 @@ existen SIN ruta ni pantalla. Construir:
 | A4 | Pantalla `MatrizDePermisos` como pestaña "Permisos por puesto" en Configuración (sólo admin) | `MatrizDePermisos.test.tsx` (7) |
 | A5 | Rutas que faltaban (`GET /clock/evaluations/my-results`, `GET /clock/evaluations/scores`), migración con `leadership_score` y `cycle_month` (la tabla nunca las tuvo: los lectores del 360 reventaban), buzón anónimo sólo admin, filtro por empresa explícito, pestaña "Buzones" en RRHH y "Mis resultados" en la Evaluación 360 del Reloj | `BuzonesDeLecturaTest` (7, incluye aislamiento entre empresas) |
 
-**Pendiente fuera del código (decisión de Adán):** correr `privacidad:pedir-consentimiento --aplicar` en la V2 tras desplegar, para que la plantilla vuelva a aceptar la versión 2026-09-07 (sin eso, sólo las cuentas nuevas quedan con la versión nueva). Hallazgo colateral: `.github/workflows/deploy.yml` (Sprint 2) dice desplegar a Hetzner en cada push a `main` por rsync a `/opt/talent360`; no es el camino de la V2 (`deploy-v2`) y no se verificó si corre o falla.
+**Hallazgo colateral:** `.github/workflows/deploy.yml` (Sprint 2) dice desplegar a Hetzner en cada push a `main` por rsync a `/opt/talent360`; no es el camino de la V2 (`deploy-v2`) y no se verificó si corre o falla.
+
+---
+
+## ARRANQUE DE LA SIGUIENTE SESIÓN — Plan C (empezar por C3), verificado el 2026-09-08
+
+Lo de abajo se comprobó contra el código en `ccbe653` y contra el contenedor de la V2 ese día. Es el punto de
+partida; la sesión que lo ejecute debe volver a confirmar cada línea antes de tocarla (regla 1).
+
+**Estado real de pagos hoy (V2):**
+- El `.env` del contenedor NO tiene `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` ni token de Mercado
+  Pago; sólo `APP_ENV=production`. **Adán las pone** (C1); sin ellas C2 sólo se puede probar con `Http::fake`
+  y en el sandbox de Stripe con llaves de prueba en el `.env` LOCAL del ejecutor, nunca en el repo.
+- `laravel/cashier` ^15 está en `composer.json:12` y SÍ instalado en el vendor del contenedor.
+- Barrido de mora agendado y activo: `bootstrap/app.php:91` →
+  `suscripciones:revisar-vencidas --aplicar --sin-suspender` a las 06:00 (comando en
+  `app/Console/Commands/RevisarSuscripcionesVencidas.php`, pruebas en `CobranzaAutomaticaTest`).
+
+**Punteros confirmados para cada paso:**
+- **C0 (gracia 5 vs 7):** `App\Support\EstadoDeCobranza::DIAS_DE_GRACIA_POR_DEFECTO = 5`
+  (`app/Support/EstadoDeCobranza.php:58`, con ajuste global en `:88` vía `diasDeGracia()`) y el contrato en
+  `Frontend/src/components/LegalModal.tsx:226` ("periodo de gracia de 5 días naturales"). Si se pasa a 7, cambiar
+  los dos y subir `AvisoDePrivacidad::VERSION` otra vez (la prueba de `LegalModal.test.ts` no cubre esa frase;
+  añadirla).
+- **C3 (webhook, HACER PRIMERO):** `app/Http/Controllers/StripeWebhookController.php:23-50`. Lee el secreto con
+  `env('STRIPE_WEBHOOK_SECRET')` (`:27`) FUERA de `config/` — con la config cacheada devuelve null y el
+  controlador cae al modo "sin firma" (`:49-50`) en silencio. Corregir las dos cosas: pasar el secreto a
+  `config/services.php` y exigir firma siempre que `app()->environment('production')`. La ruta pública es
+  `routes/api.php:64` (`POST /webhooks/stripe`, sin auth ni throttle).
+- **C1 (Billable):** el trait está comentado en `app/Models/Company.php:7,12`, pero `Company` casi no se usa
+  (4 referencias en `app/`); el inquilino real es `App\Models\Tenant` (`app/Models/Tenant.php:9`, sin
+  Billable) y las columnas `stripe_customer_id` / `stripe_subscription_id` viven en `tenants`
+  (`database/migrations/2026_06_30_090002_add_stripe_fields_to_tenants_table.php:15-16`). Poner `Billable`
+  en `Tenant`, no en `Company`.
+- **C2 (checkout):** hoy sólo hay Mercado Pago y un simulador en `app/Http/Controllers/SubscriptionController.php`
+  (`createPreference :34`, `simulatedCheckout :289`, `simulatedConfirm :490`, `webhook :521`) con rutas
+  públicas en `routes/api.php:60-63`. Precio por colaborador: `App\Support\Tarifario::cotizar()`
+  (`app/Support/Tarifario.php:159`). El grupo `billing` (`role:admin`) empieza en `routes/api.php:559`.
+- **C4 (suspensión):** `app/Http/Middleware/CheckTenantActive.php:25-28` bloquea por `tenants.is_active`
+  con el mensaje "Empresa suspendida"; `EstadoDeCobranza::decidir()` (`:112`), `diaDeAviso()` (`:91`) y
+  `yaAvisadaEnEsteCiclo()` (`:204`) ya modelan aviso y gracia. Falta conectar el `past_due` de Stripe, el
+  banner en la app y decidir si se quita `--sin-suspender` de la agenda.
+
+**Punteros confirmados para el Plan B (después de C):**
+- Motor: `ClockService::calculatePayrollForEmployee` en `app/Services/ClockService.php:1744` (no tocar).
+- Desglose del recibo: `database/migrations/2026_08_16_120000_add_desglose_a_weekly_payrolls.php`.
+- `employees.hire_date` existe (`2026_06_26_010654_create_employees_table.php:31`).
+- Catálogo de reportes: `app/Support/CatalogoDeReportes.php`. El embudo común NO es una clase de Support:
+  es el trait `App\Http\Controllers\ArmaReportesCsv` (`app/Http/Controllers/ArmaReportesCsv.php:19`), que usan
+  los cuatro controladores de reportes.
+
+**Gotchas del entorno aprendidos el 2026-09-07/08 (aplican a cualquier plan):**
+- El `Backend/` del host se monta como `/var/www` en el contenedor: el `vendor` del host PISA el de la
+  imagen. Al agregar una dependencia, tras `deploy-v2` hay que correr
+  `docker exec talent360-v2-backend composer install --no-dev --optimize-autoloader`.
+- En local PHP es 8.5 y `phpspreadsheet` exige <8.5: `composer require` sólo con
+  `--ignore-platform-req=php` (composer vive en `%LOCALAPPDATA%\Programs\PHP\current\composer.bat`).
+- `TenantScope` se apaga cuando la app corre en consola (PHPUnit incluido): una prueba de aislamiento entre
+  empresas sólo protege si el controlador filtra `tenant_id` explícito.
+- `env()` fuera de `config/` devuelve null con la config cacheada (hoy la V2 NO cachea config, pero no
+  depender de eso).
+- La suite completa local tarda ~5 min (1808 pruebas); `ReincorporarLimpiaLaBajaTest` falla entre 18:00 y
+  24:00 hora de México por un defecto ajeno (baja estampada en UTC) que quedó como tarea aparte.
+- `.github/workflows/deploy.yml` se dispara en cada push a `main` y apunta a `/opt/talent360` (no es la V2).
 
 ---
 

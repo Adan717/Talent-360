@@ -579,7 +579,7 @@ class ReportesRestantesTest extends TestCase
             ->assertSuccessful();
 
         $this->expediente->refresh();
-        $this->assertSame(now()->toDateString(), $this->expediente->termination_date);
+        $this->assertSame($this->hoyDelTenant(), $this->expediente->termination_date);
         $this->assertSame('Fin de contrato', $this->expediente->termination_reason);
         $this->assertFalse((bool) $this->expediente->is_active_employee);
     }

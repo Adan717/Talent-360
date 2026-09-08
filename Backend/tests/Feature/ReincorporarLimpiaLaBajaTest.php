@@ -123,4 +123,29 @@ class ReincorporarLimpiaLaBajaTest extends TestCase
         $this->assertSame(Carbon::now($tz)->toDateString(), Carbon::parse($emp->termination_date)->toDateString());
         $this->assertSame('Fin de contrato', $emp->termination_reason);
     }
+
+    public function test_la_baja_de_noche_se_fecha_en_el_dia_local_no_en_utc(): void
+    {
+        // La app corre en UTC (`app.timezone`) y las tres vías de baja usaban `now()->toDateString()`:
+        // a las 23:00 de México ya son las 05:00 del día siguiente en UTC, y la baja quedaba
+        // fechada MAÑANA. De esa fecha dependen la rotación y la purga de retención.
+        $tz = TenantTimezone::for($this->tenant->id);
+        Carbon::setTestNow(Carbon::create(2026, 9, 7, 23, 0, 0, $tz));
+        $this->assertSame('2026-09-08', now()->toDateString(), 'el reloj congelado debe cruzar la medianoche UTC para que la prueba discrimine');
+
+        $user = User::create([
+            'tenant_id' => $this->tenant->id, 'name' => 'Nocturno', 'email' => 'nocturno@reingresoqa.test',
+            'password' => bcrypt('x'), 'role' => 'empleado', 'is_active' => true,
+        ]);
+        $emp = Employee::create([
+            'tenant_id' => $this->tenant->id, 'user_id' => $user->id, 'name' => 'Nocturno',
+            'is_active_employee' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->deleteJson("/api/v1/employees/{$emp->id}", ['motivo' => 'Renuncia'])
+            ->assertOk();
+
+        $this->assertSame('2026-09-07', Carbon::parse($emp->refresh()->termination_date)->toDateString());
+    }
 }

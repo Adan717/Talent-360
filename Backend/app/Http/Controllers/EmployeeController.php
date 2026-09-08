@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\TenantTimezone;
 use App\Support\FichajesVigentes;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Employee;
 use App\Models\User;
@@ -622,6 +624,19 @@ class EmployeeController extends Controller
         }
     }
 
+    /**
+     * Fecha de HOY en la zona horaria del tenant, para estampar la baja (2026-09-07).
+     *
+     * Las tres vías de baja usaban `now()->toDateString()`, que corre en UTC (`app.timezone`):
+     * una baja hecha después de las 18:00 hora de México quedaba fechada al día SIGUIENTE, y de
+     * esa fecha dependen el reporte de rotación y la purga de retención. Mismo criterio que el
+     * reloj checador (`ClockController`: `Carbon::now(TenantTimezone::for($tenantId))`).
+     */
+    private function hoyDelTenant(Employee $employee): string
+    {
+        return Carbon::now(TenantTimezone::for($employee->tenant_id))->toDateString();
+    }
+
     public function destroy(Request $request, $id)
     {
         $employee = Employee::withTrashed()->findOrFail($id);
@@ -634,7 +649,7 @@ class EmployeeController extends Controller
             // desde cuándo, y no había forma de medir rotación ni permanencia.
             $employee->update([
                 'is_active_employee' => false,
-                'termination_date' => $employee->termination_date ?? now()->toDateString(),
+                'termination_date' => $employee->termination_date ?? $this->hoyDelTenant($employee),
                 'termination_reason' => $request->input('motivo') ?: $employee->termination_reason,
             ]);
 
@@ -696,7 +711,7 @@ class EmployeeController extends Controller
 
             $employee->update([
                 'is_active_employee' => false,
-                'termination_date' => $employee->termination_date ?? now()->toDateString(),
+                'termination_date' => $employee->termination_date ?? $this->hoyDelTenant($employee),
             ]);
             $employee->delete();
             if ($employee->user_id) {
@@ -752,7 +767,7 @@ class EmployeeController extends Controller
                 DB::beginTransaction();
                 $employee->update([
                     'is_active_employee' => false,
-                    'termination_date' => $employee->termination_date ?? now()->toDateString(),
+                    'termination_date' => $employee->termination_date ?? $this->hoyDelTenant($employee),
                 ]);
                 $employee->delete();
                 if ($employee->user_id) {

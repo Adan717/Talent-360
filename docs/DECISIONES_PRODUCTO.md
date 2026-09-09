@@ -4,7 +4,7 @@ Las decisiones que NO se pueden tomar leyendo el código: las toma el dueño. Aq
 fecha, su razón y lo que implican para el trabajo. Si una decisión cambia, se edita aquí, no se
 comenta en otro lado.
 
-Última actualización: **2026-09-05**.
+Última actualización: **2026-09-09**.
 
 ---
 
@@ -148,12 +148,13 @@ descansar. **Abortada**, por dos razones independientes y basta cualquiera de la
 dial avisa, el contador se reinicia con `break_end`/`meal_end`/`silla_end`, y el servidor NUNCA
 bloquea el reposo. Avisa, no vigila.
 
-### D7 — Sí se mandan correos a los interesados en vacantes (2026-08-11)
+### D7 — Sí se mandan correos a los interesados en vacantes (2026-08-11) ✅ OPERATIVO
 
-⚠️ **Antes hace falta una decisión de infraestructura**: el correo está configurado como
-`MAIL_MAILER=log`, o sea que **hoy nada sale, todo se escribe en un archivo**. Afecta también al
-correo de invitación de RRHH. Falta elegir proveedor (SMTP propio, Resend, SES…) y poner las
-credenciales en el servidor.
+**Corrección verificada el 2026-09-09 contra el servidor actual:** ya no está en
+`MAIL_MAILER=log`; la V2 usa `MAIL_MAILER=smtp` y Adán confirmó la entrega real mediante Resend.
+`RESEND_API_KEY` no está definida porque no se usa el transporte API nativo: Resend funciona como
+SMTP. El código vigente sí conserva el transporte `resend` en `config/mail.php` y su llave en
+`config/services.php`, pero ése no es el camino activo. **El correo no es pendiente.**
 
 ---
 
@@ -445,9 +446,11 @@ del propio código—, no se ajustan hasta que pasen.
   empresa 2 tienen `periodicidad_captura` en NULL, así que su sueldo diario sale del supuesto
   histórico (`base/6`) y su SBC y sus cuotas pueden estar 5 veces arriba. El reporte del contador ya
   lo denuncia renglón por renglón (D12).
-- **Alta del webhook de Stripe, compra de prueba y apagar `ALLOW_SIMULATED_CHECKOUT`** — los tres
-  pasos que siguen a poner las llaves; el detalle está en `docs/PLAN_EJECUCION_2026-09-06.md`,
-  sección "LO QUE FALTA Y NO ES CÓDIGO".
+- ~~**Alta del webhook de Stripe, compra de prueba y apagar `ALLOW_SIMULATED_CHECKOUT`.**~~
+  **CERRADO EN SANDBOX el 2026-09-09:** webhook firmado, compra aprobada y rechazada probadas,
+  eventos firmados con HTTP 200 y simulador inerte porque ya hay pasarela. Falta la prueba de alta
+  recurrente de punta a punta y, cuando Adán active la cuenta, repetir la configuración en modo
+  real; eso está en la única lista de ejecución viva de `docs/PLAN_EJECUCION_2026-09-06.md`.
 - **`deploy_to_hetzner.py`**: asegurarse de que el jefe **no despliegue con su copia vieja** del
   script — la versión vieja ejecuta `tenant:purge-test-tenants --force`, que borraba toda empresa
   con id > 1.

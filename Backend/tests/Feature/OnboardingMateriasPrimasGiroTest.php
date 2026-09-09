@@ -10,6 +10,7 @@ use App\Models\JobRole;
 use App\Models\Task;
 use App\Models\Vacancy;
 use App\Models\AcademyCourse;
+use Illuminate\Support\Facades\DB;
 
 class OnboardingMateriasPrimasGiroTest extends TestCase
 {
@@ -60,5 +61,13 @@ class OnboardingMateriasPrimasGiroTest extends TestCase
 
         $coursesCount = AcademyCourse::where('tenant_id', $tenant->id)->count();
         $this->assertGreaterThanOrEqual(1, $coursesCount);
+
+        // Crear la estructura es sólo el paso 1 del asistente. El cierre se hace hasta que
+        // el administrador termina ajustes, primer colaborador y la prueba del reloj.
+        $onboardingCompleted = DB::table('system_settings')
+            ->where('tenant_id', $tenant->id)
+            ->where('key', 'onboarding_completed')
+            ->value('value');
+        $this->assertFalse((bool) json_decode($onboardingCompleted, true));
     }
 }

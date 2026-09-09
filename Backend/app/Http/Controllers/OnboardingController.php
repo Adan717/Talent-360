@@ -853,11 +853,6 @@ class OnboardingController extends Controller
                 ['value' => json_encode(['nicho' => $nicho, 'subNicho' => $subNicho]), 'updated_at' => now()]
             );
 
-            \DB::table('system_settings')->updateOrInsert(
-                ['key' => 'onboarding_completed', 'tenant_id' => $tenantId],
-                ['value' => json_encode(true), 'updated_at' => now()]
-            );
-
             // Marca de que una PERSONA revisó el organigrama, no sólo la convención automática.
             // Sirve para dos cosas: saber qué empresas pasaron por la revisión, y que
             // `reloj:reparar-organigrama` pueda distinguir "nunca se armó" de "lo armó alguien

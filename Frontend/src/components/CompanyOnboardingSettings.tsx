@@ -23,6 +23,19 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
   const [selectedTemplates, setSelectedTemplates] = useState<number[]>([]);
   const [industryFilter, setIndustryFilter] = useState('retail'); // retail by default
   const [isImporting, setIsImporting] = useState(false);
+  const [finished, setFinished] = useState(false);
+
+  /**
+   * El panel de Ajustes Globales monta este asistente sin `onComplete`. Antes los botones del
+   * segundo paso sólo llamaban a un callback opcional y, en ese caso, el clic era un no-op:
+   * el dueño no podía saltar una industria sin plantillas ni terminar el asistente. Guardamos un
+   * estado local de fin para que el flujo siempre tenga una consecuencia visible; si el padre
+   * proporciona el callback, además puede cerrar el asistente.
+   */
+  const finishAssistant = () => {
+    setFinished(true);
+    onComplete?.();
+  };
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -96,7 +109,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
       const appState = useAppStore.getState();
       if (appState.isSandboxMode) {
           alert(`Importación simulada: ${selectedTemplates.length} puestos agregados.`);
-          if (onComplete) onComplete();
+          finishAssistant();
           return;
       }
       await Promise.all(
@@ -105,7 +118,7 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
         )
       );
       alert("Puestos importados exitosamente.");
-      if (onComplete) onComplete();
+      finishAssistant();
     } catch (e) {
       console.error("Failed to import templates", e);
       alert("Ocurrió un error al importar los puestos seleccionados.");
@@ -115,8 +128,18 @@ export const CompanyOnboardingSettings = ({ onComplete }: { onComplete?: () => v
   };
 
   const handleSkipOrFinish = () => {
-    if (onComplete) onComplete();
+    finishAssistant();
   };
+
+  if (finished) {
+    return (
+      <div className="p-8 flex flex-col items-center justify-center text-center gap-3 animate-in fade-in">
+        <CheckCircle2 className="text-emerald-600" size={40} />
+        <h3 className="text-lg font-black text-slate-800">Configuración finalizada</h3>
+        <p className="text-sm text-slate-500">Puedes importar puestos después desde esta sección.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -230,6 +230,13 @@ class CheckoutDeStripeTest extends TestCase
         );
         $this->assertSame('cus_prueba', $empresa->stripe_customer_id);
         $this->assertSame('sub_prueba', $empresa->stripe_subscription_id);
+        $this->assertDatabaseHas('companies', [
+            'id' => $empresa->id,
+            'name' => 'Ferretería El Sol',
+            'domain' => 'ferreteriaelsol',
+            'is_active' => true,
+            'subscription_tier' => 'pro',
+        ]);
 
         $decision = EstadoDeCobranza::decidir($empresa, Carbon::now());
         $this->assertSame(EstadoDeCobranza::AL_CORRIENTE, $decision['accion']);

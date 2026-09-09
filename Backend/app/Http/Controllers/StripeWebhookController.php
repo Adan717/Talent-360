@@ -408,6 +408,13 @@ class StripeWebhookController extends Controller
         }
 
         if (!$tenant) {
+            // Stripe puede entregar `charge.succeeded` antes que `checkout.session.completed`.
+            // Ese cargo todavía no tiene empresa a la cual aplicar; el checkout posterior (o la
+            // factura) es la fuente que aprovisiona y deja la relación. No es un error operativo.
+            if ($eventType === 'charge.succeeded') {
+                Log::info('Stripe: charge.succeeded llegó antes de que existiera la empresa; se espera checkout/invoice.');
+                return;
+            }
             Log::error("No Tenant found matching Stripe Customer ID: {$customerId} or Subscription ID: {$subscriptionId}");
             return;
         }
@@ -424,6 +431,20 @@ class StripeWebhookController extends Controller
             $tenant->subscription_status = EstadoDeCobranza::ACTIVA;
             $tenant->estampaCicloDeCobro($corte, ['stripe_subscription_id' => $subscriptionId]);
         });
+
+        // Un evento de prueba sólo valida el circuito de cobro. Nunca debe intentar emitir un
+        // CFDI contra el PAC: además de generar ruido en el log, sería un efecto fiscal real de
+        // una tarjeta sandbox. Stripe marca estos objetos con `livemode=false`; los payloads
+        // antiguos/locales que no traen la marca conservan el comportamiento de las pruebas de
+        // aplicación y pasan por el proveedor falso de la suite.
+        // Con firma válida el SDK entrega un StripeObject; el simulador y algunas pruebas entregan
+        // un array. Se leen ambos sin `array_key_exists()`, que lanzaría TypeError con StripeObject.
+        $livemode = is_array($data) ? ($data['livemode'] ?? null) : ($data->livemode ?? null);
+        if ($livemode === false) {
+            Log::info("Stripe: pago sandbox aplicado a la empresa {$tenant->id}; se omite timbrado CFDI.");
+
+            return;
+        }
 
         // Trigger CFDI 4.0 timbrado for this SaaS subscription
         $adminEmail = DB::table('users')

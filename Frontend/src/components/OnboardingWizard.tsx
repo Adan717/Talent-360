@@ -632,8 +632,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         updateSetting('welcome_text', welcomeMessage),
         updateSetting('company_address', companyAddress),
         updateSetting('company_phone', companyPhone),
-        updateSetting('storeSchedule', { openTime: storeOpenTime, closeTime: storeCloseTime }),
-        updateSetting('onboarding_completed', true)
+        updateSetting('storeSchedule', { openTime: storeOpenTime, closeTime: storeCloseTime })
       ]);
 
       // 3. Guardar el teléfono del administrador en su perfil si fue provisto
@@ -706,13 +705,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         organigrama_confirmado: selectedNicho !== 'custom'
       });
       
-      // Persistir la bandera de onboarding completado para que el wizard no se vuelva a mostrar en login
-      try {
-        await updateSetting('onboarding_completed', true);
-      } catch (err) {
-        console.error("Error setting onboarding completed in step 1:", err);
-      }
-
       // Refrescar el estado para traer los puestos recién inyectados en Postgres
       await fetchState();
       

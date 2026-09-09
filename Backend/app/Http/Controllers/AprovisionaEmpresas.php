@@ -89,6 +89,28 @@ trait AprovisionaEmpresas
                 ]);
             }
 
+            // La ruta de alta directa (`TenantController`) crea también la fila legacy `companies`
+            // porque el onboarding y el kiosco todavía leen de ahí. El alta pagada nace por el
+            // webhook y antes dejaba esa tabla vacía hasta que alguien abría Configuración; una
+            // empresa cobrada debe quedar completa desde el primer webhook, no depender de una
+            // visita posterior a una pantalla.
+            $datosEmpresaLegacy = [
+                'name' => $tenant->name,
+                'domain' => $tenant->subdomain,
+                'is_active' => true,
+                'subscription_tier' => strtolower((string) $tenant->plan) === 'freemium'
+                    ? 'free'
+                    : strtolower((string) $tenant->plan),
+                'trial_ends_at' => $tenant->trial_ends_at,
+                'updated_at' => now(),
+            ];
+
+            if (DB::table('companies')->where('id', $tenant->id)->exists()) {
+                DB::table('companies')->where('id', $tenant->id)->update($datosEmpresaLegacy);
+            } else {
+                DB::table('companies')->insert(['id' => $tenant->id, 'created_at' => now()] + $datosEmpresaLegacy);
+            }
+
             $tenant->estampaCicloDeCobro($finDePeriodo, ['mp_subscription_id' => $prefId]);
 
             // Set context for traits

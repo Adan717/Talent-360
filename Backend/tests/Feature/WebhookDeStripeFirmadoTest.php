@@ -185,6 +185,22 @@ class WebhookDeStripeFirmadoTest extends TestCase
         );
     }
 
+    /** Un cobro de Stripe en modo prueba mueve la cobranza, pero jamás toca el PAC fiscal real. */
+    public function test_un_pago_sandbox_no_intenta_timbrar_en_el_pac(): void
+    {
+        config(['cashier.webhook.secret' => self::SECRETO]);
+        $this->enProduccion();
+        $empresa = $this->empresa();
+        $evento = $this->eventoDePagoDe($empresa, now()->addMonth()->timestamp);
+        $evento['data']['object']['livemode'] = false;
+
+        $this->enviar($evento, self::SECRETO)->assertStatus(200);
+
+        $this->assertSame(EstadoDeCobranza::ACTIVA, $empresa->refresh()->subscription_status);
+        $this->assertNotNull($empresa->current_period_end);
+        Http::assertNothingSent();
+    }
+
     /** Un evento sin `period_end` (p. ej. un cargo suelto) cae al mes calendario, no a nada. */
     public function test_sin_period_end_la_fecha_de_corte_cae_al_mes(): void
     {

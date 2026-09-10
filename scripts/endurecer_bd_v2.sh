@@ -75,9 +75,14 @@ for clave, valor in actualizaciones.items():
 
 temporal = archivo.with_suffix(".env.nuevo")
 temporal.write_text("\n".join(salida) + "\n", encoding="utf-8")
-temporal.chmod(0o600)
+temporal.chmod(0o640)
 temporal.replace(archivo)
 PY
+
+# PHP-FPM corre como www-data (GID 33). El archivo sigue sin ser legible por
+# otros usuarios, pero el proceso web debe poder cargar APP_KEY y la conexión.
+chown root:33 "$CONFIG"
+chmod 640 "$CONFIG"
 }
 
 esperar_postgres() {
@@ -109,6 +114,8 @@ revertir_si_falla() {
     set +e
     echo "Falló la transición; restaurando acceso operativo con el superusuario y la clave rotada…" >&2
     cp -p "${RESPALDO_DIR}/Backend.env.antes" "$CONFIG"
+    chown root:33 "$CONFIG"
+    chmod 640 "$CONFIG"
     local clave_admin="$CLAVE_POSTGRES_ACTUAL"
     if [ "$POSTGRES_ROTADO" -eq 1 ]; then
         clave_admin="$CLAVE_MIGRACIONES"
@@ -206,7 +213,7 @@ PHP
 
 CODIGO_WEB="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:3002/)"
 CODIGO_API="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -X POST -H 'Accept: application/json' http://localhost:3002/api/v1/login)"
-if [ "$CODIGO_WEB" != "200" ] || { [ "$CODIGO_API" = "000" ] || [ "$CODIGO_API" = "502" ]; }; then
+if [ "$CODIGO_WEB" != "200" ] || [ "$CODIGO_API" != "422" ]; then
     echo "La aplicación no respondió correctamente: web=${CODIGO_WEB}, api=${CODIGO_API}." >&2
     false
 fi

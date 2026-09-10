@@ -20,7 +20,7 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
   Corregido: ahora resuelve el montaje real y sólo publica lotes completos validados por SHA256.
 - Pruebas del 2026-09-10: backend completo 1,895 (1,871 ejecutadas, 24 omitidas declaradas),
   7,982 aserciones y cero avisos deprecados; frontend 205/205; compilación productiva correcta;
-  Composer sin advisories. Hay además un contrato permanente que verifica las 394 rutas contra
+  Composer sin advisories. Hay además un contrato permanente que verifica las 371 rutas registradas contra
   la existencia real de cada controlador y método.
 - Respaldo corregido probado de extremo a extremo: lote de 4 archivos validado por SHA256,
   descargado a Windows y restaurado en PostgreSQL efímero (V2: 108 tablas; antigua: 99).

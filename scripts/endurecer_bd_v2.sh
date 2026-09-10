@@ -7,6 +7,7 @@ CONFIG="${RAIZ}/Backend/.env"
 ROL_APP="talent360_app"
 RESPALDO_DIR="/root/talent360-config-backups/$(date -u +%Y%m%d_%H%M%S)-rol-app"
 TRANSICION_INICIADA=0
+POSTGRES_ROTADO=0
 
 if [ ! -f "$CONFIG" ]; then
     echo "No existe ${CONFIG}." >&2
@@ -22,12 +23,19 @@ chmod 600 "${RESPALDO_DIR}/Backend.env.antes"
 # escriben en stdout y sólo quedan en el .env protegido del servidor.
 CLAVE_APP="$(openssl rand -hex 48)"
 CLAVE_MIGRACIONES="$(openssl rand -hex 48)"
+CLAVE_POSTGRES_ACTUAL="$(docker exec talent360-v2-backend sh -lc 'printf %s "$DB_PASSWORD"')"
+
+if [ -z "$CLAVE_POSTGRES_ACTUAL" ]; then
+    echo "El contenedor actual no expone DB_PASSWORD; no se puede preparar una reversión segura." >&2
+    exit 1
+fi
 
 actualizar_env() {
     local usuario_app="$1"
     local clave_app="$2"
+    local clave_migraciones="$3"
 
-    USUARIO_APP="$usuario_app" CLAVE_APP_ENV="$clave_app" CLAVE_MIGRACIONES_ENV="$CLAVE_MIGRACIONES" \
+    USUARIO_APP="$usuario_app" CLAVE_APP_ENV="$clave_app" CLAVE_MIGRACIONES_ENV="$clave_migraciones" \
         python3 - "$CONFIG" <<'PY'
 from pathlib import Path
 import os
@@ -101,7 +109,11 @@ revertir_si_falla() {
     set +e
     echo "Falló la transición; restaurando acceso operativo con el superusuario y la clave rotada…" >&2
     cp -p "${RESPALDO_DIR}/Backend.env.antes" "$CONFIG"
-    actualizar_env postgres "$CLAVE_MIGRACIONES"
+    local clave_admin="$CLAVE_POSTGRES_ACTUAL"
+    if [ "$POSTGRES_ROTADO" -eq 1 ]; then
+        clave_admin="$CLAVE_MIGRACIONES"
+    fi
+    actualizar_env postgres "$clave_admin" "$clave_admin"
     recrear_servicios
     docker exec talent360-v2-backend php artisan optimize:clear >/dev/null
     echo "Reversión operativa terminada. Respaldo: ${RESPALDO_DIR}" >&2
@@ -109,7 +121,7 @@ revertir_si_falla() {
 }
 trap revertir_si_falla ERR
 
-echo "▸ Creando el rol limitado y rotando las dos credenciales…"
+echo "▸ Creando el rol limitado…"
 if docker exec talent360_v2_postgres psql -U postgres -d talent360_v2_saas -Atc \
     "SELECT 1 FROM pg_roles WHERE rolname = '${ROL_APP}'" | grep -qx 1; then
     docker exec talent360_v2_postgres psql -U postgres -d talent360_v2_saas -v ON_ERROR_STOP=1 -c \
@@ -118,16 +130,25 @@ else
     docker exec talent360_v2_postgres psql -U postgres -d talent360_v2_saas -v ON_ERROR_STOP=1 -c \
         "CREATE ROLE ${ROL_APP} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD '${CLAVE_APP}'" >/dev/null
 fi
-docker exec talent360_v2_postgres psql -U postgres -d talent360_v2_saas -v ON_ERROR_STOP=1 -c \
-    "ALTER ROLE postgres PASSWORD '${CLAVE_MIGRACIONES}'" >/dev/null
-
 # Se conceden los permisos antes de cambiar el usuario. En este punto el backend todavía entra
 # como postgres, por lo que incluso una versión anterior del comando puede ejecutar el cambio.
 docker exec talent360-v2-backend php artisan bitacora:candado --rol="$ROL_APP" --aplicar >/dev/null
 
 TRANSICION_INICIADA=1
-actualizar_env "$ROL_APP" "$CLAVE_APP"
+actualizar_env "$ROL_APP" "$CLAVE_APP" "$CLAVE_POSTGRES_ACTUAL"
 recrear_servicios
+docker exec talent360-v2-backend php artisan optimize:clear >/dev/null
+
+echo "▸ Comprobando el rol web antes de rotar la credencial de migraciones…"
+docker exec talent360-v2-backend php artisan bitacora:candado --rol="$ROL_APP" --aplicar >/dev/null
+
+echo "▸ Rotando la credencial de migraciones…"
+docker exec talent360_v2_postgres psql -U postgres -d talent360_v2_saas -v ON_ERROR_STOP=1 -c \
+    "ALTER ROLE postgres PASSWORD '${CLAVE_MIGRACIONES}'" >/dev/null
+POSTGRES_ROTADO=1
+actualizar_env "$ROL_APP" "$CLAVE_APP" "$CLAVE_MIGRACIONES"
+"${COMPOSE[@]}" up -d --force-recreate db >/dev/null
+esperar_postgres
 docker exec talent360-v2-backend php artisan optimize:clear >/dev/null
 
 echo "▸ Comprobando credencial web, credencial de migraciones y permisos…"

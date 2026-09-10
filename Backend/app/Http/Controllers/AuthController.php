@@ -132,8 +132,11 @@ class AuthController extends Controller
         // inexistentes) ni lo resetea.
         RateLimiter::clear($keyCuenta);
 
+        if (!$isPlatformUser && $user->two_factor_enabled) {
+            return response()->json(['error' => 'La verificación de dos pasos requiere revisión de soporte.'], 503);
+        }
         $token = $user->createToken('auth_token')->plainTextToken;
-        $requires2fa = !$isPlatformUser && $user->two_factor_enabled;
+        $requires2fa = false;
 
         SecurityLogger::log('auth_success', "Inicio de sesión exitoso de: {$user->email}", $isPlatformUser ? null : $user->tenant_id, $user->id);
 
@@ -337,11 +340,13 @@ class AuthController extends Controller
      */
     public function forgotPassword(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->email))]);
         $request->validate(['email' => 'required|email']);
 
-        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first();
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first()
+            ?? \App\Models\PlatformUser::where('email', $request->email)->first();
 
-        if ($user) {
+        if ($user && $user->is_active) {
             $token = \Illuminate\Support\Str::random(64);
             \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
                 ['email' => $request->email],
@@ -366,13 +371,15 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->email))]);
         $request->validate([
             'email' => 'required|email',
             'token' => 'required|string',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:8',
         ]);
 
-        $row = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+        $row = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->lockForUpdate()->first();
 
         if (!$row || !Hash::check($request->token, $row->token)) {
             return response()->json(['success' => false, 'message' => 'El enlace de restablecimiento es inválido.'], 422);
@@ -382,8 +389,9 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'message' => 'El enlace de restablecimiento venció. Solicita uno nuevo.'], 422);
         }
 
-        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first();
-        if (!$user) {
+        $user = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->where('email', $request->email)->first()
+            ?? \App\Models\PlatformUser::where('email', $request->email)->first();
+        if (!$user || !$user->is_active) {
             return response()->json(['success' => false, 'message' => 'Cuenta no encontrada.'], 404);
         }
 
@@ -399,83 +407,22 @@ class AuthController extends Controller
         $user->tokens()->delete();
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
-        return response()->json(['success' => true, 'message' => 'Contraseña restablecida. Ya puedes iniciar sesión.']);
+        return response()->json(['success' => true, 'message' => 'Contraseña restablecida. Ya puedes iniciar sesión.'])->withCookie($this->forgetAuthCookie());
+        });
     }
 
     public function loginSocial(Request $request)
     {
         $request->validate([
-            'provider' => 'required|string|in:google,apple,samsung',
-            'id_token' => 'required|string',
+            'provider' => 'required|string|in:google,apple',
+            'id_token' => 'required|string|max:16000',
         ]);
 
         $provider = $request->provider;
-
-        // LA IDENTIDAD SALE SIEMPRE DE UN TOKEN VERIFICADO POR EL PROVEEDOR, NUNCA DEL CUERPO
-        // DE LA PETICIÓN (2026-09-06).
-        //
-        // Antes esta ruta aceptaba un `provider_id` mandado por el cliente sin verificar nada: si
-        // no venía `id_token`, se buscaba al usuario por ese id o por el `email` del cuerpo, se le
-        // vinculaba y se le emitía una sesión. La ruta es pública. En la práctica bastaba enviar
-        //     POST /api/v1/login/social  {provider:"apple", provider_id:"x", email:"admin@empresa"}
-        // para entrar como ese administrador —a su nómina y a sus expedientes— SIN CONTRASEÑA. El
-        // propio frontend usaba ese camino para Apple/Samsung y para un "Google de prueba". Era un
-        // bypass de autenticación remoto sobre datos laborales reales.
-        //
-        // Ahora: sólo Google, y sólo con un id_token que Google confirma y cuya audiencia coincide
-        // con ESTA app. Apple y Samsung no tienen verificación de token del lado del servidor, así
-        // que quedan cerrados hasta que se implemente —cerrado es la única postura honesta, porque
-        // "abierto" significaba abierto para cualquiera—.
-        if ($provider !== 'google') {
-            return response()->json([
-                'error' => 'El inicio de sesión con ' . ucfirst($provider) . ' aún no está disponible.',
-            ], 501);
-        }
-
-        $clientId = config('services.google.client_id');
-        if (!$clientId) {
-            // Sin Client ID no se puede comprobar que el token se emitió para ESTA app: un id_token
-            // válido de cualquier otra aplicación de Google entraría. Se rechaza en vez de confiar.
-            return response()->json([
-                'error' => 'El inicio de sesión con Google no está configurado en este servidor.',
-            ], 501);
-        }
-
-        try {
-            $response = \Illuminate\Support\Facades\Http::get(
-                'https://oauth2.googleapis.com/tokeninfo',
-                ['id_token' => $request->id_token]
-            );
-        } catch (\Throwable $e) {
-            return response()->json(['error' => 'No se pudo validar con Google. Intenta de nuevo.'], 503);
-        }
-
-        if ($response->failed()) {
-            return response()->json(['error' => 'Token de Google inválido o vencido.'], 401);
-        }
-
-        $googleData = $response->json();
-
-        // La audiencia del token DEBE ser esta app. Es lo que impide reutilizar aquí un token
-        // emitido para otra aplicación de Google.
-        if (($googleData['aud'] ?? null) !== $clientId) {
-            return response()->json(['error' => 'Este token de Google no fue emitido para Talent 360.'], 401);
-        }
-
-        $providerId = $googleData['sub'] ?? null;
-        $email = $googleData['email'] ?? null;
-        $name = $googleData['name'] ?? null;
-
-        // El correo tiene que venir verificado por Google; si no, no sirve para encontrar ni
-        // vincular una cuenta por correo.
-        $emailVerificado = $googleData['email_verified'] ?? false;
-        if ($emailVerificado === false || $emailVerificado === 'false') {
-            $email = null;
-        }
-
-        if (!$providerId || !$email) {
-            return response()->json(['error' => 'Datos de Google incompletos o correo sin verificar.'], 401);
-        }
+        $identity = app(\App\Services\SocialIdentity::class)->verify($request);
+        $providerId = $identity['sub'];
+        $email = $identity['email'];
+        $name = $identity['name'] ?? explode('@', $email)[0];
 
         // Determine column name
         $column = $provider . '_id';
@@ -495,19 +442,21 @@ class AuthController extends Controller
                 ->with('tenant')
                 ->first();
 
-            if ($user) {
-                // Link the social ID
-                $user->update([$column => $providerId]);
+            if ($user && (!$identity['email_authoritative'] || ($user->$column && $user->$column !== $providerId))) {
+                return response()->json(['error' => 'Esta cuenta requiere acceso por contraseña. Contacta a soporte para vincularla.'], 409);
             }
         }
 
-        // Si el usuario estaba en borrado lógico, restaurarlo
         if ($user && $user->trashed()) {
-            $user->restore();
+            return response()->json(['error' => 'Usuario archivado. Contacta a tu administrador.'], 403);
         }
 
         // 3. If still not found, check platform users
         $isPlatformUser = false;
+        if (!$user && !$identity['email_authoritative']) {
+            return response()->json(['error' => 'Confirma este correo registrándote con contraseña antes de vincular Google.'], 409);
+        }
+
         if (!$user) {
             if ($email) {
                 $user = \App\Models\PlatformUser::where('email', $email)->first();
@@ -517,11 +466,16 @@ class AuthController extends Controller
             }
         }
 
+        // Las cuentas de plataforma aún no tienen identidades sociales vinculadas.
+        if ($isPlatformUser) {
+            return response()->json(['error' => 'Usa tu contraseña para acceder a la plataforma.'], 403);
+        }
+
         // 4. If still not found, register new global user (pre-registration state)
         if (!$user) {
             if ($email) {
                 $user = User::create([
-                    'name' => $request->input('name') ?? explode('@', $email)[0],
+                    'name' => $name,
                     'email' => $email,
                     'role' => 'admin', // Will become admin once company is created
                     $column => $providerId,
@@ -534,13 +488,8 @@ class AuthController extends Controller
             }
         }
 
-        // Si el usuario pertenece a una empresa que ya fue eliminada, liberar el tenant_id (correo huérfano)
-        if (!$isPlatformUser && $user->tenant_id !== null) {
-            $tenant = \App\Models\Tenant::find($user->tenant_id);
-            if (!$tenant || $tenant->trashed()) {
-                $user->update(['tenant_id' => null]);
-                $user->refresh();
-            }
+        if ($user->tenant_id !== null && !\App\Models\Tenant::find($user->tenant_id)) {
+            return response()->json(['error' => 'La empresa ya no está disponible.'], 403);
         }
 
         if (!$user->is_active) {
@@ -558,6 +507,10 @@ class AuthController extends Controller
             }
         }
 
+        if ($user->two_factor_enabled) {
+            return response()->json(['error' => 'La verificación de dos pasos requiere revisión de soporte.'], 503);
+        }
+        if (!$user->$column) $user->update([$column => $providerId]);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -566,7 +519,7 @@ class AuthController extends Controller
             'user' => $user instanceof \App\Models\User ? $user->toAuthPayload() : $user,
             'tenant' => $isPlatformUser ? null : $user->tenant,
             'token' => $token
-        ]);
+        ])->cookie($this->makeAuthCookie($token));
     }
 
     public function register(Request $request)
@@ -583,31 +536,13 @@ class AuthController extends Controller
             ->where('email', $email)
             ->first();
 
-        if ($existingUser) {
-            $tenant = $existingUser->tenant_id ? \App\Models\Tenant::find($existingUser->tenant_id) : null;
-
-            if ($tenant && !$tenant->trashed()) {
-                $companyName = $tenant->name;
-                return response()->json([
-                    'error' => "El correo {$email} ya está registrado en la plataforma y pertenece a la empresa '{$companyName}'. Inicia sesión o utiliza un correo distinto para tu nueva empresa.",
-                    'is_duplicated' => true,
-                    'company_name' => $companyName
-                ], 409);
-            }
-
-            // Si la empresa fue eliminada (o tenant_id es NULL) o el usuario está borrado lógicamente:
-            // Es un correo huérfano o cuenta libre. Restaurar y resetear para pre-registro.
-            if ($existingUser->trashed()) {
-                $existingUser->restore();
-            }
-            $existingUser->update([
-                'name' => $request->name,
-                'password' => Hash::make($request->password),
-                'role' => 'admin',
-                'tenant_id' => null,
-                'is_active' => true
-            ]);
-            $user = $existingUser;
+        // Registrar NO prueba propiedad del correo: nunca restablecer contraseñas ni revivir
+        // cuentas existentes (también aplica a pre-registros y empresas eliminadas).
+        if ($existingUser || \App\Models\PlatformUser::where('email', $email)->exists()) {
+            return response()->json([
+                'error' => 'Este correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.',
+                'is_duplicated' => true,
+            ], 409);
         } else {
             $user = User::create([
                 'name' => $request->name,
@@ -954,56 +889,31 @@ class AuthController extends Controller
         ]);
 
         if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'La contraseña actual es incorrecta.'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'La contraseña actual es incorrecta.'], 422);
         }
 
         $employee = $user->employee;
         if (!$employee) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tu cuenta no tiene un perfil de empleado asociado.'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Tu cuenta no tiene un perfil de empleado asociado.'], 422);
         }
 
         $employee->security_pin = Hash::make($request->pin);
         $employee->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'PIN de seguridad actualizado.'
-        ]);
+        return response()->json(['success' => true, 'message' => 'PIN de seguridad actualizado.']);
     }
 
-    /**
-     * Variante §1–§42 de la alarma de traslado (PUT /me/pre-shift-alarm): persiste en
-     * users.pre_shift_alarm_minutes (columna legacy conservada — drop diferido de F2). La
-     * variante canónica de la línea del Reloj (POST, preShiftAlarm) escribe en el EXPEDIENTE,
-     * que es lo que lee toAuthPayload; conciliar el FE hacia una sola en F3-FE.
-     */
+    /** Variante legacy del ajuste de alarma; la variante POST persiste en el expediente. */
     public function updatePreShiftAlarm(Request $request)
     {
-        $user = $request->user();
-
         $validated = $request->validate([
             'minutes' => ['nullable', 'integer', \Illuminate\Validation\Rule::in([15, 30, 45, 60])],
         ]);
-
         $minutes = $validated['minutes'] ?? null;
-
-        \Illuminate\Support\Facades\DB::table('users')
-            ->where('id', $user->id)
-            ->update([
-                'pre_shift_alarm_minutes' => $minutes,
-                'updated_at' => now(),
-            ]);
-
-        return response()->json([
-            'success' => true,
-            'pre_shift_alarm_minutes' => $minutes,
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $request->user()->id)->update([
+            'pre_shift_alarm_minutes' => $minutes, 'updated_at' => now(),
         ]);
+        return response()->json(['success' => true, 'pre_shift_alarm_minutes' => $minutes]);
     }
 
     public function requestRestDay(Request $request)
@@ -1011,72 +921,35 @@ class AuthController extends Controller
         $user = $request->user();
         $request->validate([
             'requested_day' => 'required|string|in:Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
-            'justification' => 'required|string|max:1000'
+            'justification' => 'required|string|max:1000',
         ]);
-
-        $contingencyId = \Illuminate\Support\Facades\DB::table('contingencies')->insertGetId([
-            'user_id' => $user->id,
-            'type' => 'rest_day_change',
-            'status' => 'pending',
+        $id = \Illuminate\Support\Facades\DB::table('contingencies')->insertGetId([
+            'user_id' => $user->id, 'type' => 'rest_day_change', 'status' => 'pending',
             'justification_text' => "Cambio de día de descanso a: {$request->requested_day}. Razón: {$request->justification}",
-            'tenant_id' => $user->tenant_id,
-            'created_at' => now(),
-            'updated_at' => now()
+            'tenant_id' => $user->tenant_id, 'created_at' => now(), 'updated_at' => now(),
         ]);
-
-        $contingency = \Illuminate\Support\Facades\DB::table('contingencies')->find($contingencyId);
-
         return response()->json([
             'message' => 'Solicitud de día de descanso registrada exitosamente',
-            'request' => $contingency
+            'request' => \Illuminate\Support\Facades\DB::table('contingencies')->find($id),
         ]);
     }
 
     public function getRestDayRequests(Request $request)
     {
-        $user = $request->user();
-        $requests = \Illuminate\Support\Facades\DB::table('contingencies')
-            ->where('user_id', $user->id)
-            ->where('type', 'rest_day_change')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return response()->json([
-            'requests' => $requests
-        ]);
+        return response()->json(['requests' => \Illuminate\Support\Facades\DB::table('contingencies')
+            ->where('user_id', $request->user()->id)->where('type', 'rest_day_change')
+            ->orderBy('created_at', 'desc')->get()]);
     }
 
+    /**
+     * Biometría/2FA permanecen cerrados hasta existir una implementación criptográfica real.
+     * No persiste flags ni secretos ficticios.
+     */
     public function updateSecurity(Request $request)
     {
-        $user = $request->user();
-        $request->validate([
-            'two_factor_enabled' => 'nullable|boolean',
-            'biometric_key' => 'nullable|string'
-        ]);
-
-        $updates = [];
-        if ($request->has('two_factor_enabled')) {
-            $updates['two_factor_enabled'] = $request->two_factor_enabled;
-            if ($request->two_factor_enabled && !$user->two_factor_secret) {
-                // Generate a mock secret
-                $updates['two_factor_secret'] = 'secret_' . bin2hex(random_bytes(10));
-            }
-        }
-        if ($request->has('biometric_key')) {
-            $updates['biometric_key'] = $request->biometric_key;
-        }
-
-        $table = $user instanceof \App\Models\PlatformUser ? 'platform_users' : 'users';
-        \Illuminate\Support\Facades\DB::table($table)
-            ->where('id', $user->id)
-            ->update($updates);
-
-        $updatedUser = User::withoutGlobalScope(\App\Scopes\TenantScope::class)->find($user->id);
-
         return response()->json([
-            'message' => 'Seguridad actualizada exitosamente',
-            'user' => $updatedUser
-        ]);
+            'error' => 'La activación de biometría y doble factor todavía no está disponible.',
+        ], 501);
     }
 
 }

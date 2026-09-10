@@ -34,6 +34,13 @@ OBJETIVO="${1:-origin/main}"
 
 cd "$RAIZ"
 
+# El bind de la llave Apple debe existir incluso antes de configurarla. Vacío + 600 mantiene
+# Apple deshabilitado y evita que Docker cree accidentalmente un directorio en esa ruta.
+install -d -m 750 -o root -g www-data /etc/talent360-v2
+if [ ! -f /etc/talent360-v2/apple-signin.p8 ]; then
+    install -m 640 -o root -g www-data /dev/null /etc/talent360-v2/apple-signin.p8
+fi
+
 # ── Guarda: nunca sobrescribir en silencio algo que alguien tocó a mano en el servidor ────────
 # Es la lección de esta ronda de auditoría aplicada a la infraestructura: los cambios que no
 # fallan pero pisan trabajo ajeno son los que más caro salen.
@@ -219,7 +226,7 @@ CODIGO="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 http://localhost:
 CODIGO_API="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST \
     -H 'Accept: application/json' http://localhost:3002/api/v1/login || echo 000)"
 
-if [ "$CODIGO" = "200" ] && [ "$CODIGO_API" != "502" ] && [ "$CODIGO_API" != "000" ]; then
+if [ "$CODIGO" = "200" ] && [ "$CODIGO_API" = "422" ]; then
     # ÚNICO sitio donde se escribe la marca: llegar hasta aquí es lo que significa "desplegado".
     echo "$NUEVA" > "$MARCA"
     echo ""

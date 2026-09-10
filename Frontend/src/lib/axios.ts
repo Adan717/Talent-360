@@ -49,6 +49,10 @@ axiosInstance.interceptors.response.use(
                 if (error.config && (
                     error.config.url.includes('/public/org-vault') || 
                     error.config.url === '/login' || 
+                    error.config.url === '/login/social' ||
+                    error.config.url.startsWith('/auth/social/') ||
+                    error.config.url === '/forgot-password' ||
+                    error.config.url === '/reset-password' ||
                     error.config.url === 'login' || 
                     error.config.url.endsWith('/login')
                 )) {

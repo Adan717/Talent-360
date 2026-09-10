@@ -24,6 +24,7 @@ use Tests\TestCase;
 class LoginSocialSinBypassTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\SignsSocialCredentials;
 
     private function admin(string $email): User
     {
@@ -67,31 +68,21 @@ class LoginSocialSinBypassTest extends TestCase
         ])->assertStatus(422); // falta id_token, requerido
     }
 
-    /** Apple y Samsung están cerrados: no hay verificación de su token del lado del servidor. */
+    /** Apple sin configurar y Samsung no disponible: nunca emiten sesión. */
     public function test_apple_y_samsung_estan_cerrados(): void
     {
-        foreach (['apple', 'samsung'] as $provider) {
-            $this->postJson('/api/v1/login/social', [
-                'provider' => $provider,
-                'id_token' => 'cualquier-cosa',
-            ])->assertStatus(501);
-        }
+        config(['services.apple.client_id' => null]);
+        $this->postJson('/api/v1/login/social', ['provider' => 'apple', 'id_token' => 'cualquier-cosa'])->assertStatus(501);
+        $this->postJson('/api/v1/login/social', ['provider' => 'samsung', 'id_token' => 'cualquier-cosa'])->assertStatus(422);
     }
 
     /** Con Google configurado, un token cuya audiencia es OTRA app no entra. */
     public function test_un_token_de_google_de_otra_app_no_entra(): void
     {
-        config(['services.google.client_id' => 'la-app-de-talent360.apps.googleusercontent.com']);
-        $this->admin('victima@empresaqa.test');
-
-        Http::fake(['oauth2.googleapis.com/*' => Http::response([
-            'aud' => 'OTRA-app.apps.googleusercontent.com',   // token legítimo, pero de otra app
-            'sub' => '10987', 'email' => 'victima@empresaqa.test', 'email_verified' => 'true',
-        ], 200)]);
-
-        $this->postJson('/api/v1/login/social', [
-            'provider' => 'google', 'id_token' => 'token-valido-de-otra-app',
-        ])->assertStatus(401);
+        $this->admin('victima@gmail.com');
+        $this->withCredentials()->withUnencryptedCookie(\App\Services\SocialIdentity::COOKIE, 'browser-test')
+            ->postJson('/api/v1/login/social', $this->credential(['email' => 'victima@gmail.com', 'aud' => 'OTRA-app']))
+            ->assertStatus(401)->assertJsonMissingPath('token');
     }
 
     /** Sin Client ID configurado, Google queda cerrado en vez de confiar a ciegas. */
@@ -107,40 +98,19 @@ class LoginSocialSinBypassTest extends TestCase
     /** El camino legítimo SIGUE funcionando: token verificado, audiencia correcta, correo verificado. */
     public function test_el_google_legitimo_si_entra(): void
     {
-        config(['services.google.client_id' => 'talent360.apps.googleusercontent.com']);
-        $admin = $this->admin('real@empresaqa.test');
-
-        Http::fake(['oauth2.googleapis.com/*' => Http::response([
-            'aud' => 'talent360.apps.googleusercontent.com',
-            'sub' => 'google-sub-real-123',
-            'email' => 'real@empresaqa.test',
-            'email_verified' => 'true',
-            'name' => 'Admin Real',
-        ], 200)]);
-
-        $r = $this->postJson('/api/v1/login/social', [
-            'provider' => 'google', 'id_token' => 'token-bueno',
-        ]);
-
-        $r->assertStatus(200)->assertJsonPath('message', 'Login exitoso');
-        $this->assertNotEmpty($r->json('token'));
-        // Y la cuenta quedó vinculada al `sub` que vino DEL TOKEN, no de un id del cuerpo.
-        $this->assertSame('google-sub-real-123', $admin->fresh()->google_id);
+        $admin = $this->admin('real@gmail.com');
+        $this->withCredentials()->withUnencryptedCookie(\App\Services\SocialIdentity::COOKIE, 'browser-test')
+            ->postJson('/api/v1/login/social', $this->credential(['email' => 'real@gmail.com']))
+            ->assertOk()->assertJsonPath('message', 'Login exitoso');
+        $this->assertSame('real-subject', $admin->fresh()->google_id);
     }
 
     /** Un correo de Google sin verificar no sirve para encontrar ni vincular una cuenta. */
     public function test_google_con_correo_sin_verificar_no_entra(): void
     {
-        config(['services.google.client_id' => 'talent360.apps.googleusercontent.com']);
-        $this->admin('sinverificar@empresaqa.test');
-
-        Http::fake(['oauth2.googleapis.com/*' => Http::response([
-            'aud' => 'talent360.apps.googleusercontent.com',
-            'sub' => 'sub-x', 'email' => 'sinverificar@empresaqa.test', 'email_verified' => 'false',
-        ], 200)]);
-
-        $this->postJson('/api/v1/login/social', [
-            'provider' => 'google', 'id_token' => 'token-correo-no-verificado',
-        ])->assertStatus(401);
+        $this->admin('sinverificar@gmail.com');
+        $this->withCredentials()->withUnencryptedCookie(\App\Services\SocialIdentity::COOKIE, 'browser-test')
+            ->postJson('/api/v1/login/social', $this->credential(['email' => 'sinverificar@gmail.com', 'email_verified' => false]))
+            ->assertStatus(401)->assertJsonMissingPath('token');
     }
 }

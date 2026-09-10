@@ -54,8 +54,10 @@ Route::prefix('v1')->middleware('device.security')->group(function () {
     // §52: "olvidé mi contraseña" — públicos y con throttle (no revelan si el correo existe).
     Route::middleware('throttle:5,1')->post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::middleware('throttle:5,1')->post('/reset-password', [AuthController::class, 'resetPassword']);
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login/social', [AuthController::class, 'loginSocial']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('/login/social', [AuthController::class, 'loginSocial'])->middleware('throttle:30,1');
+    Route::get('/auth/social/config', fn () => response()->json(app(\App\Services\SocialIdentity::class)->configuration())->header('Cache-Control', 'no-store'));
+    Route::post('/auth/social/challenge', fn () => app(\App\Services\SocialIdentity::class)->challenge())->middleware('throttle:60,1');
     Route::post('/tenants', [TenantController::class, 'store']); // Checkout / Compra directa
     Route::post('/subscriptions/create-preference', [SubscriptionController::class, 'createPreference']);
     Route::get('/subscriptions/simulated-checkout', [SubscriptionController::class, 'simulatedCheckout']);

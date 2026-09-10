@@ -1,3 +1,4 @@
+import { SocialSignIn } from './SocialSignIn';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck, Zap, Users, GraduationCap, CheckCircle2, ChevronRight, Lock, Sparkles, Building2, Clock, MapPin, UserPlus, Play, LogIn, Coffee, Utensils, LogOut, Fingerprint, Calendar, Eye, FileText, Check, Menu, X, AlertCircle, Armchair, RotateCcw, Tag, ArrowRight } from 'lucide-react';
@@ -27,7 +28,6 @@ export const SaaSLandingPage = () => {
   const [error, setError] = useState('');
   const [registrationStep, setRegistrationStep] = useState<1 | 2>(1);
   const [googleUser, setGoogleUser] = useState<{name: string, email: string, google_id: string} | null>(null);
-  const [showGoogleForm, setShowGoogleForm] = useState(false);
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleName, setGoogleName] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
@@ -129,90 +129,21 @@ export const SaaSLandingPage = () => {
     setSelectedPlan(plan);
     setRegistrationStep(1);
     setGoogleUser(null);
-    setShowGoogleForm(false);
+
     setError('');
     setShowCheckout(true);
   };
-  const handleGoogleCredentialResponse = async (response: any) => {
-    setIsProcessing(true);
-    setError('');
-    try {
-      const res = await axiosInstance.post('/login/social', {
-        provider: 'google',
-        id_token: response.credential
-      });
-
-      const { user, token, tenant } = res.data;
-      
-      localStorage.setItem('talent_auth_token', token);
-      
-      if (user.tenant_id) {
-        // Si ya tiene una empresa, inicia sesión directo
-        setCurrentUser(user);
-        setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
-        navigate('/app');
-      } else {
-        // Si no tiene empresa (pre-registrado), avanza a configurar la empresa
-        setGoogleUser({
-          name: user.name,
-          email: user.email,
-          google_id: user.google_id || user.email
-        });
-        setRegistrationStep(2);
-        setShowGoogleForm(false);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al autenticar con tu cuenta de Google.');
-    } finally {
-      setIsProcessing(false);
+  const handleSocialSuccess = ({ user, tenant }: any) => {
+    if (user.tenant_id || user.role === 'platform_admin' || user.role === 'support_agent') {
+      setCurrentUser({ ...user, system_role: user.role });
+      setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
+      navigate(user.role === 'platform_admin' ? '/superadmin' : user.role === 'support_agent' ? '/soporte' : user.role === 'empleado' ? '/empleado' : '/app');
+    } else {
+      setGoogleUser({ name: user.name, email: user.email, google_id: user.google_id || user.apple_id || '' });
+      setRegistrationStep(2);
     }
   };
 
-  useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
-
-    let script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]') as HTMLScriptElement;
-    if (!script) {
-      script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-
-    const initGoogleButton = () => {
-      const google = (window as any).google;
-      if (google && showCheckout && !showGoogleForm && registrationStep === 1) {
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleGoogleCredentialResponse,
-        });
-        
-        const container = document.getElementById('google-signup-btn-container');
-        if (container) {
-          google.accounts.id.renderButton(
-            container,
-            { 
-              theme: 'outline', 
-              size: 'large', 
-              shape: 'rectangular',
-              text: 'continue_with',
-              width: 320
-            }
-          );
-        }
-      }
-    };
-
-    script.onload = () => {
-      initGoogleButton();
-    };
-
-    if ((window as any).google) {
-      setTimeout(initGoogleButton, 100);
-    }
-  }, [showCheckout, showGoogleForm, registrationStep]);
   const handleDialClick = () => {
     if (simulatedClockState === 'inactive') {
       setSimulatedClockState('active');
@@ -283,7 +214,7 @@ export const SaaSLandingPage = () => {
         google_id: ''
       });
       setRegistrationStep(2);
-      setShowGoogleForm(false);
+
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.response?.data?.error || '';
       const isDup = errorMsg.toLowerCase().includes('registrado') || 
@@ -304,42 +235,6 @@ export const SaaSLandingPage = () => {
     }
   };
 
-  const handleGoogleMockLogin = async (mockEmail: string, mockName: string) => {
-    setIsProcessing(true);
-    setError('');
-    try {
-      const response = await axiosInstance.post('/login/social', {
-        provider: 'google',
-        provider_id: mockEmail,
-        email: mockEmail,
-        name: mockName
-      });
-
-      const { user, token, tenant } = response.data;
-      
-      localStorage.setItem('talent_auth_token', token);
-      
-      if (user.tenant_id) {
-        // Already owns a company - direct login
-        setCurrentUser(user);
-        setCurrentTier(tenant?.plan?.toLowerCase() || 'freemium');
-        navigate('/app');
-      } else {
-        // Pre-registered state - proceed to step 2 (Company Details)
-        setGoogleUser({
-          name: user.name,
-          email: user.email,
-          google_id: mockEmail
-        });
-        setRegistrationStep(2);
-        setShowGoogleForm(false);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al autenticar con Google');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const processPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -562,7 +457,7 @@ export const SaaSLandingPage = () => {
             {/* Bloque 1: Propuesta de Valor */}
             <div className="col-span-1 lg:col-span-5 text-left space-y-6 order-1">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-[11px] font-bold text-blue-600 shadow-sm">
-                <Sparkles size={12} className="text-blue-500" /> Registro rápido con tu cuenta de Google
+                <Sparkles size={12} className="text-blue-500" /> Registro con correo, Google o Apple
               </div>
               
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
@@ -1136,7 +1031,7 @@ export const SaaSLandingPage = () => {
                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Asistencia</span>
                 <h4 className="font-bold text-slate-800 text-base mt-1 mb-2">Reloj Checador Biométrico</h4>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Control de horarios mediante huella digital y biometría, prevención de fraude y registro en tiempo real.
+                  Control de horarios con acceso personal o kiosco con PIN, validación de ubicación y registro en tiempo real.
                 </p>
               </div>
             </div>
@@ -1402,41 +1297,15 @@ export const SaaSLandingPage = () => {
                     <Lock size={28} />
                   </div>
                   
-                  {!showGoogleForm ? (
-                    <>
+
                       <div className="space-y-1">
                         <h4 className="font-extrabold text-slate-800 text-lg">Crea tu cuenta de Administrador</h4>
                         <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-                          Valida tu identidad de forma instantánea usando Google o completa los datos para registrar tu cuenta.
+                          Usa Google, Apple o completa tus datos para registrar tu cuenta.
                         </p>
                       </div>
 
-                      {/* Opción 1: Google Sign-in */}
-                      <div className="w-full max-w-xs mx-auto py-1">
-                        {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
-                          <div className="w-full flex flex-col items-center">
-                            <div id="google-signup-btn-container" className="w-full min-h-[46px] flex items-center justify-center"></div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setGoogleEmail('');
-                              setGoogleName('');
-                              setShowGoogleForm(true);
-                            }}
-                            className="w-full py-3.5 px-4 border border-slate-200 hover:border-blue-300 hover:bg-slate-50 rounded-2xl font-black text-xs text-slate-700 transition-all flex items-center justify-center gap-2.5 shadow-sm active:scale-98"
-                          >
-                            <svg className="w-4.5 h-4.5" viewBox="0 0 24 24">
-                              <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.89 3.02c.92-2.78 3.51-4.54 6.72-4.54z"/>
-                              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.02 3.67-8.64z"/>
-                              <path fill="#FBBC05" d="M5.28 14.78c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28L1.39 7.2C.51 8.97 0 10.93 0 13s.51 4.03 1.39 5.8l3.89-3.02z"/>
-                              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.5 1.18-4.2 1.18-3.21 0-5.8-1.76-6.72-4.54L1.39 16.84C3.37 20.33 7.35 23 12 23z"/>
-                            </svg>
-                            Continuar con Google (Simulador)
-                          </button>
-                        )}
-                      </div>
+                      <SocialSignIn onSuccess={handleSocialSuccess} onError={setError} />
 
                       {/* Divisor */}
                       <div className="relative flex py-2 items-center w-full max-w-xs mx-auto">
@@ -1510,64 +1379,7 @@ export const SaaSLandingPage = () => {
                           {isProcessing ? 'Procesando...' : 'Crear Cuenta y Continuar'}
                         </button>
                       </form>
-                    </>
-                  ) : (
-                    <form 
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (googleEmail && googleName) {
-                          handleGoogleMockLogin(googleEmail, googleName);
-                        }
-                      }}
-                      className="space-y-4 text-left"
-                    >
-                      <div className="text-center mb-2">
-                        <h4 className="font-extrabold text-slate-805 text-base">Inicia sesión con Google</h4>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Ingresa los datos de tu cuenta de Google</p>
-                      </div>
 
-                      <div>
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Nombre Completo</label>
-                        <input 
-                          type="text" 
-                          required 
-                          value={googleName}
-                          onChange={e => setGoogleName(e.target.value)}
-                          placeholder="Ej. Francisco Vega" 
-                          className="w-full bg-white px-4 py-2.5 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-800" 
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Tu Correo de Google</label>
-                        <input 
-                          type="email" 
-                          required 
-                          value={googleEmail}
-                          onChange={e => setGoogleEmail(e.target.value.toLowerCase().trim())}
-                          placeholder="usuario@gmail.com" 
-                          className="w-full bg-white px-4 py-2.5 border border-slate-200 rounded-xl font-medium outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-800" 
-                        />
-                      </div>
-
-                      <div className="flex gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowGoogleForm(false)}
-                          className="w-1/3 py-2.5 border border-slate-200 text-slate-500 font-bold rounded-xl text-xs hover:bg-slate-50 active:scale-98 transition-all text-center"
-                        >
-                          Volver
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isProcessing}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs shadow-md active:scale-98 transition-all flex justify-center items-center gap-1.5"
-                        >
-                          {isProcessing ? 'Verificando...' : 'Verificar y Continuar'}
-                        </button>
-                      </div>
-                    </form>
-                  )}
                 </div>
               )}
 
@@ -1584,7 +1396,7 @@ export const SaaSLandingPage = () => {
                       <p className="text-xs font-black text-slate-800">{googleUser.name}</p>
                       <p className="text-[10px] text-slate-400 font-semibold">{googleUser.email}</p>
                     </div>
-                    {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Google OK",
+                    {/* 2026-07-26 (auditoría en vivo): esta insignia decía siempre "Cuenta social",
                         incluso cuando el alta se hizo con correo y contraseña — afirmaba una
                         validación con Google que no había ocurrido. Ahora refleja el método real:
                         el registro por correo deja `google_id` vacío, el de Google lo llena. */}

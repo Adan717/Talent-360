@@ -62,6 +62,7 @@ import { EmployeeMobileOnboarding } from './components/EmployeeMobileOnboarding'
 import { SaaSPlatformAdmin } from './components/SaaSPlatformAdmin';
 import { SaaSLandingPage } from './components/SaaSLandingPage';
 import { Login } from './components/Login';
+import { PasswordRecovery } from './components/PasswordRecovery';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { MyAccountModal } from './components/MyAccountModal';
 import { PantallaConsentimiento } from './components/PantallaConsentimiento';
@@ -931,6 +932,8 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<PasswordRecovery />} />
+      <Route path="/reset-password" element={<PasswordRecovery reset />} />
       <Route path="/register" element={<Navigate to="/inicio" replace />} />
       <Route path="/inicio" element={<SaaSLandingPage />} />
       {/* Verificación pública de un certificado de la Academia. Sin sesión a propósito: quien

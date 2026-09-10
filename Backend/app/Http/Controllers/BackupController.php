@@ -212,6 +212,11 @@ class BackupController extends Controller
         $tenantId = $user->tenant_id;
         $data = $payload['data'];
 
+        // La firma es global a la instancia: por sí sola no acredita que el archivo sea de ESTA empresa.
+        if ((int) ($payload['metadata']['tenant_id'] ?? 0) !== (int) $tenantId) {
+            return response()->json(['message' => 'Este respaldo pertenece a otra empresa.'], 403);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -282,9 +287,12 @@ class BackupController extends Controller
                     $valores = array_diff_key($fila, $busqueda);
 
                     if (DB::table($table)->where($busqueda)->exists()) {
+                        if (!DB::table($table)->where($busqueda)->where('tenant_id', $tenantId)->exists()) {
+                            throw new \RuntimeException('Un registro no pertenece a esta empresa.');
+                        }
                         // Sólo se pisan las columnas que el archivo trae: las sensibles no viajan
                         // en el respaldo, así que reponer nunca borra la contraseña de nadie.
-                        DB::table($table)->where($busqueda)->update($valores);
+                        DB::table($table)->where($busqueda)->where('tenant_id', $tenantId)->update($valores);
                     } else {
                         DB::table($table)->insert($fila + $this->rellenoObligatorio($table));
                     }
@@ -303,7 +311,7 @@ class BackupController extends Controller
             DB::rollBack();
             return response()->json([
                 'error' => 'Import Error',
-                'message' => 'Ocurrió un error al importar los datos: ' . $e->getMessage()
+                'message' => 'No se pudo reponer el respaldo. No se guardó ningún cambio. Contacta a soporte.'
             ], 500);
         }
     }

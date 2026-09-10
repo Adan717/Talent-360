@@ -1,5 +1,35 @@
 # Plan de trabajo — orden acordado el 2026-08-11
 
+## Lista viva — verificación del 2026-09-10
+
+Esta sección prevalece sobre las marcas históricas de abajo. Fuente: código y servidor de hoy,
+no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Live.**
+
+- Decisión de Adán: conservar correo/contraseña; sociales sólo Google y Apple. Huella queda
+  comentada, desactivada y reservada para WebAuthn/passkeys, sin conservar usuarios/tokens ficticios.
+- Implementado en código: identidad social firmada con audiencia, emisor,
+  vencimiento, nonce y desafío ligado al navegador; Apple exige además canjear el código.
+  Proveedores sin credenciales se ocultan. Retiradas las simulaciones de huella, Google y 2FA.
+- Recuperación: nuevas pantallas forgot/reset; enlace de un uso, 60 minutos y revocación de
+  sesiones. Se impide sobrescribir cuentas existentes desde el registro, incluso pre-registros.
+- Importación de respaldo: rechaza archivos firmados de OTRA empresa y actualizaciones por
+  identificador ajeno. El export del panel sigue siendo PARCIAL y firmado, no una BD completa cifrada.
+- Corrección al bloque 0: el backend antiguo corre desde `/srv/talent360/Backend`, pero el
+  respaldo instalado apuntaba a `/var/www/talent360/Backend`; la copia de archivos no acreditaba
+  el contenido real. El pull de Windows tampoco comprobaba integridad y dejó descargas parciales.
+  En corrección: resolver el montaje real, lotes completos y SHA256 antes de publicar copias locales.
+- Pruebas del 2026-09-10: backend completo 1,893 (1,869 ejecutadas, 24 omitidas declaradas),
+  7,978 aserciones; frontend 205/205; compilación productiva correcta; Composer sin advisories.
+- Respaldo corregido probado de extremo a extremo: lote de 4 archivos validado por SHA256,
+  descargado a Windows y restaurado en PostgreSQL efímero (V2: 108 tablas; antigua: 99).
+  El PostgreSQL antiguo dejó de estar publicado a Internet y ahora escucha sólo en 127.0.0.1:5433.
+- Pendiente de Adán: configuración de Google y Apple en sus consolas, credenciales; cuenta/bucket externo
+  permanente para respaldos; Stripe Live y prueba real cuando lo indique. No pegar secretos al chat.
+- Pendiente técnico no sustituible por credenciales: terminar verificación de restauración,
+  revisar exposición de red/instancia antigua y auditoría funcional módulo por módulo.
+
+---
+
 Orden que sale del consejo de asesores (5 lentes + revisión por pares) sobre las 10 decisiones de
 producto, corregido con lo que se verificó contra el código y contra las dos instancias reales.
 

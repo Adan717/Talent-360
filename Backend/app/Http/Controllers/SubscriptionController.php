@@ -594,8 +594,7 @@ class SubscriptionController extends Controller
 
         try {
             $isUpgrade = (isset($payload['action']) && $payload['action'] === 'upgrade');
-            $tenantData = $this->provisionTenant($payload, $prefId);
-            $token = $tenantData['admin']->createToken('auth_token')->plainTextToken;
+            $this->provisionTenant($payload, $prefId);
             
             // Mark registration as processed
             $reg->delete();
@@ -605,8 +604,9 @@ class SubscriptionController extends Controller
                 return redirect("$frontendUrl/app?payment=success&action=upgrade");
             }
 
-            // Redirect back to frontend login with success message and autologin token
-            return redirect("$frontendUrl/login?payment=success&email=" . urlencode($payload['admin_email']) . "&token=" . urlencode($token));
+            // Nunca poner credenciales en la URL: se filtran al historial, logs y Referer.
+            // La contraseña ya elegida durante el registro es la que confirma la identidad.
+            return redirect("$frontendUrl/login?payment=success&email=" . urlencode($payload['admin_email']));
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error de aprovisionamiento: ' . $e->getMessage()], 500);
         }

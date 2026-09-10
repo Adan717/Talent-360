@@ -1,7 +1,8 @@
 # QA funcional viva — Talent360
 
-Fecha de inicio: 2026-09-10  
-Fuente de alcance: componentes, rutas y servidor actuales; no documentos históricos.  
+Fecha de inicio: 2026-09-10
+
+Fuente de alcance: componentes, rutas y servidor actuales; no documentos históricos.
 Responsables: Adán ejecuta la experiencia real; Codex registra, contrasta con código, corrige y verifica.
 
 ## Regla de trabajo

@@ -25,7 +25,7 @@ class GeofencePunchTest extends TestCase
     private const STORE_LAT = 19.4326;
     private const STORE_LNG = -99.1332;
 
-    private function makeSetup(array $clockOpConfig = null): array
+    private function makeSetup(?array $clockOpConfig = null): array
     {
         $tenant = Tenant::create([
             'name' => 'Empresa Geo', 'subdomain' => 'geo-' . uniqid(),

@@ -30,7 +30,7 @@ class ToleranciaAutorizacionTest extends TestCase
     use RefreshDatabase;
 
     /** Esperado 09:00, tolerancia 10 (default), umbral de bloqueo `maxLateBlock`. */
-    private function makeSetup(int $maxLateBlock = 60, string $role = 'empleado', int $tenantId = null): array
+    private function makeSetup(int $maxLateBlock = 60, string $role = 'empleado', ?int $tenantId = null): array
     {
         $tenant = Tenant::create([
             'name' => 'Empresa Tol',

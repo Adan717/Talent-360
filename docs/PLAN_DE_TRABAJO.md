@@ -17,16 +17,19 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Corrección al bloque 0: el backend antiguo corre desde `/srv/talent360/Backend`, pero el
   respaldo instalado apuntaba a `/var/www/talent360/Backend`; la copia de archivos no acreditaba
   el contenido real. El pull de Windows tampoco comprobaba integridad y dejó descargas parciales.
-  En corrección: resolver el montaje real, lotes completos y SHA256 antes de publicar copias locales.
-- Pruebas del 2026-09-10: backend completo 1,893 (1,869 ejecutadas, 24 omitidas declaradas),
-  7,978 aserciones; frontend 205/205; compilación productiva correcta; Composer sin advisories.
+  Corregido: ahora resuelve el montaje real y sólo publica lotes completos validados por SHA256.
+- Pruebas del 2026-09-10: backend completo 1,895 (1,871 ejecutadas, 24 omitidas declaradas),
+  7,982 aserciones y cero avisos deprecados; frontend 205/205; compilación productiva correcta;
+  Composer sin advisories. Hay además un contrato permanente que verifica las 394 rutas contra
+  la existencia real de cada controlador y método.
 - Respaldo corregido probado de extremo a extremo: lote de 4 archivos validado por SHA256,
   descargado a Windows y restaurado en PostgreSQL efímero (V2: 108 tablas; antigua: 99).
   El PostgreSQL antiguo dejó de estar publicado a Internet y ahora escucha sólo en 127.0.0.1:5433.
 - Pendiente de Adán: configuración de Google y Apple en sus consolas, credenciales; cuenta/bucket externo
   permanente para respaldos; Stripe Live y prueba real cuando lo indique. No pegar secretos al chat.
-- Pendiente técnico no sustituible por credenciales: terminar verificación de restauración,
-  revisar exposición de red/instancia antigua y auditoría funcional módulo por módulo.
+- Pendiente técnico no sustituible por credenciales: auditoría funcional/manual módulo por módulo.
+  La restauración real, la exposición directa de red y la instancia antigua ya fueron verificadas
+  y corregidas; eso no equivale a afirmar que cada botón de cada módulo ya tuvo recorrido manual.
 
 ---
 

@@ -34,7 +34,7 @@ class DialerSwitchesTest extends TestCase
         parent::tearDown();
     }
 
-    private function makeTenantAndEmployee(array $dialerFeatures = null): array
+    private function makeTenantAndEmployee(?array $dialerFeatures = null): array
     {
         Carbon::setTestNow(Carbon::parse('2026-07-15 08:55:00'));
         $tenant = Tenant::create([

@@ -28,7 +28,7 @@ class RepararCierresSinteticosTest extends TestCase
         ]);
     }
 
-    private function punch(string $type, string $time, array $details = null): int
+    private function punch(string $type, string $time, ?array $details = null): int
     {
         return DB::table('time_entries')->insertGetId([
             'tenant_id' => $this->tenant->id, 'user_id' => $this->user->id,

@@ -31,7 +31,7 @@ class TareaAlVueloTest extends TestCase
         ]);
     }
 
-    private function usuario(string $rol, int $tenant = null): User
+    private function usuario(string $rol, ?int $tenant = null): User
     {
         $user = User::factory()->create(['role' => $rol]);
         DB::table('users')->where('id', $user->id)->update(['tenant_id' => $tenant ?? $this->tenantId]);

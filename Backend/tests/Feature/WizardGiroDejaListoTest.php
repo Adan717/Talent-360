@@ -236,6 +236,34 @@ class WizardGiroDejaListoTest extends TestCase
             'Reaplicar el giro debe dejar el mismo juego de rutinas, no duplicarlas.');
     }
 
+    public function test_reaplicar_el_giro_no_duplica_el_puesto_con_colaborador_asignado(): void
+    {
+        $this->aplicarGiro()->assertStatus(200);
+        $puestoOcupado = $this->puestos()->first();
+
+        $usuario = User::factory()->create(['role' => 'empleado']);
+        DB::table('users')->where('id', $usuario->id)->update([
+            'tenant_id' => $this->tenantId,
+            'job_role_id' => $puestoOcupado->id,
+        ]);
+        DB::table('employees')->insert([
+            'tenant_id' => $this->tenantId,
+            'user_id' => $usuario->id,
+            'name' => $usuario->name,
+            'email' => $usuario->email,
+            'job_role_id' => $puestoOcupado->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->aplicarGiro()->assertStatus(200);
+
+        $this->assertSame(1, DB::table('job_roles')
+            ->where('tenant_id', $this->tenantId)
+            ->where('name', $puestoOcupado->name)
+            ->count(), 'Un puesto ocupado debe actualizarse, no duplicarse al reaplicar el giro.');
+    }
+
     public function test_las_rutinas_reaplicadas_apuntan_a_las_tareas_NUEVAS(): void
     {
         // El wizard borra y recrea las tareas al reaplicar; las rutinas no pueden quedar

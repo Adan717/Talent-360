@@ -661,9 +661,15 @@ class OnboardingController extends Controller
             // 1. Inyectar Puestos en base de datos (`job_roles`)
             $roleIdsMap = [];
             $firstGerenteRole = null;
+            // Los puestos que sí tienen colaboradores no se borran arriba para no dejar sus
+            // asignaciones huérfanas. Si el admin reaplica el mismo giro, se reutilizan por
+            // nombre: antes se conservaba el puesto ocupado Y se insertaba otro idéntico.
+            $rolesExistentesPorNombre = \App\Models\JobRole::where('tenant_id', $tenantId)
+                ->get()
+                ->keyBy('name');
 
             foreach ($puestos as $p) {
-                $roleId = \DB::table('job_roles')->insertGetId([
+                $datosPuesto = [
                     'tenant_id' => $tenantId,
                     'name' => $p['name'],
                     'area' => $p['area'] ?? 'General',
@@ -676,9 +682,18 @@ class OnboardingController extends Controller
                     'aplicaLeySilla' => in_array($nicho, ['retail', 'restaurante', 'taller']),
                     'evaluacion360Activa' => false,
                     'is_active' => true,
-                    'created_at' => now(),
                     'updated_at' => now()
-                ]);
+                ];
+
+                $rolExistente = $rolesExistentesPorNombre->get($p['name']);
+                if ($rolExistente) {
+                    \DB::table('job_roles')->where('id', $rolExistente->id)->update($datosPuesto);
+                    $roleId = $rolExistente->id;
+                } else {
+                    $roleId = \DB::table('job_roles')->insertGetId($datosPuesto + [
+                        'created_at' => now(),
+                    ]);
+                }
                 $roleIdsMap[$p['name']] = $roleId;
 
                 if (!$firstGerenteRole || ($p['esAperturador'] ?? false)) {

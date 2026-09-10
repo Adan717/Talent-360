@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -120,7 +121,7 @@ class CandadoDeLaBitacora extends Command
         $base    = (string) DB::selectOne('SELECT current_database() AS d')->d;
         $superYo = $this->esSuperusuario($usuario);
 
-        $definer = DB::selectOne(
+        $definer = $this->conexionPrivilegiada()->selectOne(
             "SELECT prosecdef FROM pg_proc WHERE proname = 'registrar_historial_time_entries'"
         );
 
@@ -144,8 +145,9 @@ class CandadoDeLaBitacora extends Command
     /** Calcula y (si se pide) escribe los permisos. Devuelve el código de salida. */
     private function aplicar(string $rol, bool $aplicar): int
     {
-        $base   = (string) DB::selectOne('SELECT current_database() AS d')->d;
-        $dueno  = $this->duenoDe('time_entries_historial') ?? (string) DB::selectOne('SELECT current_user AS u')->u;
+        $conexion = $this->conexionPrivilegiada();
+        $base   = (string) $conexion->selectOne('SELECT current_database() AS d')->d;
+        $dueno  = $this->duenoDe('time_entries_historial') ?? (string) $conexion->selectOne('SELECT current_user AS u')->u;
         $ordenes = [];
         $filas   = [];
 
@@ -209,9 +211,9 @@ class CandadoDeLaBitacora extends Command
             return self::SUCCESS;
         }
 
-        DB::transaction(function () use ($ordenes) {
+        $conexion->transaction(function () use ($ordenes, $conexion) {
             foreach ($ordenes as $sql) {
-                DB::statement($sql);
+                $conexion->statement($sql);
             }
         });
 
@@ -246,29 +248,49 @@ class CandadoDeLaBitacora extends Command
 
     private function rolExiste(string $rol): bool
     {
-        return DB::selectOne('SELECT 1 AS x FROM pg_roles WHERE rolname = ?', [$rol]) !== null;
+        return $this->conexionPrivilegiada()
+            ->selectOne('SELECT 1 AS x FROM pg_roles WHERE rolname = ?', [$rol]) !== null;
     }
 
     private function esSuperusuario(string $rol): bool
     {
-        $fila = DB::selectOne('SELECT rolsuper FROM pg_roles WHERE rolname = ?', [$rol]);
+        $fila = $this->conexionPrivilegiada()
+            ->selectOne('SELECT rolsuper FROM pg_roles WHERE rolname = ?', [$rol]);
 
         return $fila !== null && (bool) $fila->rolsuper;
     }
 
     private function duenoDe(string $tabla): ?string
     {
-        $fila = DB::selectOne('SELECT tableowner FROM pg_tables WHERE schemaname = ? AND tablename = ?', ['public', $tabla]);
+        $fila = $this->conexionPrivilegiada()->selectOne(
+            'SELECT tableowner FROM pg_tables WHERE schemaname = ? AND tablename = ?',
+            ['public', $tabla]
+        );
 
         return $fila === null ? null : (string) $fila->tableowner;
     }
 
     private function tienePermiso(string $rol, string $tabla, string $permiso): bool
     {
-        return (bool) DB::selectOne(
+        return (bool) $this->conexionPrivilegiada()->selectOne(
             'SELECT has_table_privilege(?, ?, ?) AS p',
             [$rol, $tabla, $permiso]
         )->p;
+    }
+
+    /**
+     * Los permisos los escribe la credencial de migraciones, no la que atiende peticiones web.
+     * En pruebas y entornos antiguos ambas configuraciones coinciden; en ese caso se conserva la
+     * conexión actual para no abrir una segunda transacción ni cambiar el comportamiento.
+     */
+    private function conexionPrivilegiada(): Connection
+    {
+        $usuarioApp = (string) config('database.connections.pgsql.username');
+        $usuarioMigraciones = (string) config('database.connections.pgsql_migraciones.username');
+
+        return $usuarioMigraciones !== '' && $usuarioMigraciones !== $usuarioApp
+            ? DB::connection('pgsql_migraciones')
+            : DB::connection();
     }
 
     /**

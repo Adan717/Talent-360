@@ -168,8 +168,9 @@ docker exec talent360-v2-backend php artisan migrate --force --database=pgsql_mi
 # —así que en un servidor donde el candado todavía no está puesto, imprime el estado y no toca
 # nada.
 echo "▸ Candado de la bitácora…"
-if [ -n "${DB_APP_ROLE:-}" ]; then
-    docker exec talent360-v2-backend php artisan bitacora:candado --rol="$DB_APP_ROLE" --aplicar
+ROL_APP_CONFIG="$(sed -n 's/^DB_APP_ROLE=//p' "${RAIZ}/Backend/.env" | tail -n 1 | tr -d '\r')"
+if [ -n "$ROL_APP_CONFIG" ]; then
+    docker exec talent360-v2-backend php artisan bitacora:candado --rol="$ROL_APP_CONFIG" --aplicar
 else
     docker exec talent360-v2-backend php artisan bitacora:candado
 fi

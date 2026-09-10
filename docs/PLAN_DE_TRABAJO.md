@@ -30,6 +30,8 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Pendiente técnico no sustituible por credenciales: auditoría funcional/manual módulo por módulo.
   La restauración real, la exposición directa de red y la instancia antigua ya fueron verificadas
   y corregidas; eso no equivale a afirmar que cada botón de cada módulo ya tuvo recorrido manual.
+  La única bitácora de esa ronda es `docs/QA_FUNCIONAL_VIVA.md`: Adán ejecuta una acción por vez
+  y cada resultado/corrección se registra ahí al momento.
 
 ---
 

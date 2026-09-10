@@ -34,7 +34,7 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 
 | ID | Acción manual | Resultado esperado | Estado | Evidencia / notas |
 |---|---|---|---|---|
-| ACC-01 | Abrir `/login` sin sesión. | Sólo aparecen correo/contraseña; Google y Apple se ocultan sin credenciales; no hay Samsung ni huella. | PENDIENTE | |
+| ACC-01 | Abrir `/login` sin sesión. | Sólo aparecen correo/contraseña; Google y Apple se ocultan sin credenciales; no hay Samsung ni huella. | PASÓ | Verificado en la web desplegada el 2026-09-10: sólo correo, contraseña, recuperación y avisos legales. |
 | ACC-02 | Intentar entrar dejando ambos campos vacíos. | El formulario exige los datos y no navega. | PENDIENTE | |
 | ACC-03 | Escribir correo válido y contraseña incorrecta. | Mensaje genérico; no revela datos internos ni inicia sesión. | PENDIENTE | |
 | ACC-04 | Usar el icono de mostrar/ocultar contraseña. | Cambia visibilidad sin borrar el valor. | PENDIENTE | |

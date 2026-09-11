@@ -1246,7 +1246,7 @@ export const SaaSPlatformAdmin = () => {
                 <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="border-b border-slate-100 pb-3 mb-3">
                     <p className="text-sm font-black text-slate-800">{currentUser?.name || 'Administrador'}</p>
-                    <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'master@talent360.com'}</p>
+                    <p className="text-xs text-slate-500 font-medium truncate">{currentUser?.email || 'admin@talent360.com.mx'}</p>
                   </div>
                   <div className="space-y-2.5 text-xs text-slate-600 font-semibold mb-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <div className="flex justify-between">
@@ -1608,7 +1608,7 @@ export const SaaSPlatformAdmin = () => {
                                 <span>{comp.name}</span>
                                 {getNichoBadge(comp.nicho)}
                              </div>
-                             <span className="text-[10px] text-slate-400 font-semibold block">{comp.subdomain}.talent360.com</span>
+                             <span className="text-[10px] text-slate-400 font-semibold block">ID: {comp.subdomain}</span>
                           </td>
                           <td className="py-4">
                              <div className="flex items-center gap-2">
@@ -2585,7 +2585,7 @@ export const SaaSPlatformAdmin = () => {
                 rows={3}
                 value={bankConfigData.instructions} 
                 onChange={(e) => setBankConfigData({...bankConfigData, instructions: e.target.value})} 
-                placeholder="Ej. Una vez hecha tu transferencia SPEI, reporta tu comprobante al correo facturacion@talent360.com para la activación inmediata." 
+                placeholder="Ej. Una vez hecha tu transferencia SPEI, reporta tu comprobante al correo facturacion@talent360.com.mx para la activación inmediata."
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 font-medium text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all resize-none" 
               />
             </div>
@@ -3001,7 +3001,7 @@ export const SaaSPlatformAdmin = () => {
                     {isDetailLoading ? 'Cargando...' : tenantDetail?.tenant?.name}
                   </h2>
                   <p className="text-xs text-slate-400 font-medium">
-                    {isDetailLoading ? '' : `${tenantDetail?.tenant?.subdomain}.talent360.com`}
+                    {isDetailLoading ? '' : `ID: ${tenantDetail?.tenant?.subdomain}`}
                   </p>
                 </div>
               </div>
@@ -3719,7 +3719,7 @@ export const SaaSPlatformAdmin = () => {
                          <div>
                             <span className="block text-[10px] font-black text-slate-400 uppercase">Empresa Cliente</span>
                             <span className="text-xs text-slate-800 font-extrabold block mt-0.5">{ticketDetailData?.tenant?.name || 'N/A'}</span>
-                            {ticketDetailData?.tenant?.subdomain && <span className="text-[10px] text-slate-500 font-medium block truncate">{ticketDetailData?.tenant?.subdomain}.talent360.com</span>}
+                            {ticketDetailData?.tenant?.subdomain && <span className="text-[10px] text-slate-500 font-medium block truncate">ID: {ticketDetailData?.tenant?.subdomain}</span>}
                          </div>
                       </div>
                    </div>

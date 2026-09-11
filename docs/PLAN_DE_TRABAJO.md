@@ -29,6 +29,10 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Alta positiva con otro Gmail aprobada el 2026-09-11: Google autenticó y abrió el paso Empresa.
   PostgreSQL confirmó un solo usuario, identidad Google vinculada y `tenant_id` pendiente, sin
   duplicados. Falta completar la empresa de prueba para cerrar el recorrido posterior al login.
+- La misma pantalla prometía `empresa.talent360.com`, pero el DNS/Caddy vivos sólo publican
+  `talent360.com.mx` y el tenant se resuelve por el usuario autenticado, no por host. Corregidos
+  alta, Perfil, superadmin, vista ATS y bienvenida: el slug se llama identificador y todos reciben
+  el enlace real `https://talent360.com.mx/login`.
 - Recuperación: nuevas pantallas forgot/reset; enlace de un uso, 60 minutos y revocación de
   sesiones. Se impide sobrescribir cuentas existentes desde el registro, incluso pre-registros.
 - Importación de respaldo: rechaza archivos firmados de OTRA empresa y actualizaciones por

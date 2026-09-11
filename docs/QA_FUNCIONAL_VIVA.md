@@ -162,4 +162,4 @@ Se agrega aquí cada `FALLÓ` con archivo/ruta real, causa comprobada, commit, d
 
 | Hallazgo | Estado | Causa verificada | Corrección / commit | Reprueba |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| Alta y bienvenida prometían `empresa.talent360.com` | CORREGIDO, PENDIENTE DE REPRUEBA | DNS y Caddy vivos no tienen wildcard; el backend tampoco resuelve tenant por host. | El identificador deja de presentarse como URL; alta, Perfil, superadmin, ATS y correo usan `https://talent360.com.mx`. | Recargar el paso Empresa y después revisar el correo de bienvenida. |

@@ -520,7 +520,7 @@ export default function AtsPortalSettings() {
             </div>
             <div className="bg-white rounded-lg border border-slate-200/80 px-3 py-1 flex items-center gap-1.5 text-[10px] text-slate-450 font-mono w-full max-w-sm mx-auto justify-center select-all">
               <Globe size={10} className="text-slate-400" />
-              <span>talent360.com/vacantes/{settings.public_slug}</span>
+              <span>talent360.com.mx/vacantes/{settings.public_slug}</span>
             </div>
           </div>
 

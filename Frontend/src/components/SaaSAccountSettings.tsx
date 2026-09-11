@@ -502,13 +502,12 @@ export const SaaSAccountSettings = ({ initialTab = 'billing' }: { initialTab?: '
                     <input type="text" value={orgName} onChange={e => setOrgName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Subdominio PWA</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Identificador interno de la empresa</label>
                     <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                      <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-r border-slate-200 flex items-center gap-2"><Globe size={16}/> https://</div>
+                      <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-r border-slate-200 flex items-center gap-2"><Globe size={16}/> ID</div>
                       <input type="text" value={subdomain} onChange={e => setSubdomain(e.target.value)} className="w-full bg-slate-50 px-4 py-3 font-medium outline-none text-blue-600" />
-                      <div className="bg-slate-100 px-4 py-3 text-sm text-slate-500 font-bold border-l border-slate-200">.talent360.com</div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">Esta es la URL que tus empleados usarán para entrar al sistema.</p>
+                    <p className="text-xs text-slate-400 mt-2">No es una dirección web. El acceso para todos los usuarios es https://talent360.com.mx/login.</p>
                   </div>
                   {/* Mismo control (y mismo ajuste) que "Configuración → Reloj & Asistencia
                       Global": ahí es donde la gente lo busca, aquí donde vive el resto del

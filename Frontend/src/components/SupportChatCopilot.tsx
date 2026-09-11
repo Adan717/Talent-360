@@ -74,7 +74,7 @@ export const SupportChatCopilot = () => {
                 priority: 'medium',
                 status: 'open',
                 contact_name: currentUser?.name || 'Cliente',
-                contact_email: currentUser?.email || 'soporte@talent360.com'
+                contact_email: currentUser?.email || 'soporte@talent360.com.mx'
             });
             
             setMessages(prev => [

@@ -47,7 +47,7 @@ class WelcomeMail extends Mailable implements ShouldQueue
      */
     private function getEmailHtml()
     {
-        $loginUrl = "http://" . $this->subdomain . ".talent360.com";
+        $loginUrl = rtrim((string) config('app.url'), '/') . '/login';
         return '
         <!DOCTYPE html>
         <html>
@@ -159,14 +159,14 @@ class WelcomeMail extends Mailable implements ShouldQueue
                             <div class="card-title">Empresa Registrada</div>
                             <div class="card-value">' . htmlspecialchars($this->companyName) . '</div>
                             
-                            <div class="card-title" style="margin-top:15px;">Tu Subdominio Exclusivo</div>
-                            <div class="card-value">' . htmlspecialchars($this->subdomain) . '.talent360.com</div>
+                            <div class="card-title" style="margin-top:15px;">Identificador de Empresa</div>
+                            <div class="card-value">' . htmlspecialchars($this->subdomain) . '</div>
                         </div>
 
                         <p>Para ingresar al panel de control y que tus empleados puedan comenzar a registrar su asistencia, utiliza el siguiente enlace:</p>
                         
                         <div style="text-align: center;">
-                            <a href="' . $loginUrl . '" class="btn">Ingresar a mi Plataforma</a>
+                            <a href="' . htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') . '" class="btn">Ingresar a mi Plataforma</a>
                         </div>
                         
                         <p style="margin-top: 25px; font-size: 13px; color: #64748b;">Si tienes alguna duda o necesitas ayuda para iniciar tu configuración, responde a este correo o comunícate con nuestro equipo de soporte.</p>

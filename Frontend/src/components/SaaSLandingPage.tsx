@@ -629,7 +629,7 @@ export const SaaSLandingPage = () => {
                     </div>
                     <div className="flex-1 max-w-sm mx-auto bg-slate-100 rounded-lg py-1 px-3 text-[10px] font-bold text-slate-400 flex items-center gap-1.5 shadow-inner">
                       <Lock size={10} className="text-slate-400" />
-                      <span>https://app.talent360.com/{activeTab === 'rrhh' ? 'organigrama' : 'reclutamiento'}</span>
+                      <span>https://talent360.com.mx/app?module={activeTab === 'rrhh' ? 'rrhh' : 'ats'}</span>
                     </div>
                   </div>
 
@@ -1455,7 +1455,7 @@ export const SaaSLandingPage = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Subdominio para tus empleados</label>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-1 block">Identificador único de tu empresa</label>
                       <div className="flex border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white">
                         <input 
                           type="text" 
@@ -1468,11 +1468,10 @@ export const SaaSLandingPage = () => {
                           placeholder="dashcomputer" 
                           className="w-full bg-white px-4 py-3 font-medium outline-none text-sm text-slate-800" 
                         />
-                        <div className="bg-slate-50 px-2.5 sm:px-4 py-3 text-[10px] sm:text-xs text-slate-500 font-black border-l border-slate-200 flex items-center shrink-0">.talent360.com</div>
                       </div>
                       <p className="text-[9.5px] text-blue-600 bg-blue-50/70 border border-blue-100 rounded-xl p-2.5 mt-2 font-bold flex items-start gap-1.5 leading-normal">
                         <span className="text-xs">🌐</span>
-                        <span>Tus empleados ingresarán a registrar asistencia desde: <strong className="font-black text-blue-800">{formData.subdomain || 'mi-empresa'}.talent360.com</strong></span>
+                        <span>Este identificador separa los datos de tu empresa. El acceso real para administradores y empleados es <strong className="font-black text-blue-800">https://talent360.com.mx/login</strong>.</span>
                       </p>
                     </div>
 

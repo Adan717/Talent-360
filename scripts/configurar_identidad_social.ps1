@@ -16,7 +16,7 @@ if ($apple) {
     $p8 = [IO.File]::ReadAllText($resolved)
 }
 $payload = @((B64 $google), (B64 $apple), (B64 $team), (B64 $key), (B64 $p8)) -join "`n"
-$payload | & ssh.exe -i "$env:USERPROFILE\.ssh\talent360_v2" -o IdentitiesOnly=yes -o BatchMode=yes root@46.225.153.115 "sed 's/\r$//' /var/www/talent360-v2/scripts/configurar_identidad_social.sh | sh"
+$payload | & ssh.exe -i "$env:USERPROFILE\.ssh\talent360_v2" -o IdentitiesOnly=yes -o BatchMode=yes root@46.225.153.115 "sh /var/www/talent360-v2/scripts/configurar_identidad_social.sh"
 if ($LASTEXITCODE -ne 0) { throw 'El servidor rechazo la configuracion. Revisa el mensaje inmediatamente anterior.' }
 $config = Invoke-RestMethod -Uri 'https://talent360.com.mx/api/v1/auth/social/config' -TimeoutSec 20
 if (-not $config.google_client_id) { throw 'El servidor respondio, pero Google todavia no aparece habilitado.' }

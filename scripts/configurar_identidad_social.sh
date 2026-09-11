@@ -14,6 +14,13 @@ IFS= read -r apple_b64
 IFS= read -r team_b64
 IFS= read -r key_b64
 IFS= read -r p8_b64
+# Windows PowerShell termina la entrada canalizada con CRLF. El CR no forma
+# parte de las credenciales y haria parecer que el campo Apple vacio contiene datos.
+google_b64=$(printf '%s' "$google_b64" | tr -d '\r')
+apple_b64=$(printf '%s' "$apple_b64" | tr -d '\r')
+team_b64=$(printf '%s' "$team_b64" | tr -d '\r')
+key_b64=$(printf '%s' "$key_b64" | tr -d '\r')
+p8_b64=$(printf '%s' "$p8_b64" | tr -d '\r')
 google=$(trim "$(decode "$google_b64")")
 apple=$(trim "$(decode "$apple_b64")")
 team=$(trim "$(decode "$team_b64")")
@@ -23,10 +30,16 @@ case "$google" in *[!A-Za-z0-9._-]*) echo 'Google Client ID invalido.' >&2; exit
 if [ -n "$apple$team$key$p8_b64" ]; then
   [ -n "$apple" ] && [ -n "$team" ] && [ -n "$key" ] && [ -n "$p8_b64" ] || { echo 'La configuración Apple está incompleta.' >&2; exit 1; }
   case "$apple$team$key" in *[!A-Za-z0-9._-]*) echo 'Identificadores Apple inválidos.' >&2; exit 1;; esac
+  decode "$p8_b64" | grep -q '^-----BEGIN PRIVATE KEY-----$' || { echo 'El archivo Apple .p8 no es válido.' >&2; exit 1; }
+fi
+if [ "${TALENT360_SOCIAL_DRY_RUN:-0}" = 1 ]; then
+  echo 'Entradas de identidad validas.'
+  exit 0
+fi
+if [ -n "$apple" ]; then
   install -d -m 750 -o root -g www-data "$SECRETS"
   p8_tmp=$(mktemp "$SECRETS/apple-signin.XXXXXX")
   decode "$p8_b64" > "$p8_tmp"
-  grep -q '^-----BEGIN PRIVATE KEY-----$' "$p8_tmp" || { rm -f "$p8_tmp"; echo 'El archivo Apple .p8 no es válido.' >&2; exit 1; }
   chown root:www-data "$p8_tmp"; chmod 640 "$p8_tmp"
   mv "$p8_tmp" "$SECRETS/apple-signin.p8"
 fi

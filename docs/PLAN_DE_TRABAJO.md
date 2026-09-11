@@ -12,6 +12,9 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Implementado en código: identidad social firmada con audiencia, emisor,
   vencimiento, nonce y desafío ligado al navegador; Apple exige además canjear el código.
   Proveedores sin credenciales se ocultan. Retiradas las simulaciones de huella, Google y 2FA.
+- Corregido el instalador seguro de identidad social: el script remoto ya conserva STDIN para
+  las credenciales, normaliza CRLF de PowerShell y permite validar el transporte con datos
+  ficticios sin escribir configuración. El Client ID de Google real sigue sin registrarse aquí.
 - Recuperación: nuevas pantallas forgot/reset; enlace de un uso, 60 minutos y revocación de
   sesiones. Se impide sobrescribir cuentas existentes desde el registro, incluso pre-registros.
 - Importación de respaldo: rechaza archivos firmados de OTRA empresa y actualizaciones por

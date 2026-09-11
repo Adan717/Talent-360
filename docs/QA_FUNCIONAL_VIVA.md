@@ -44,7 +44,7 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 | ACC-06 | Entrar con la cuenta administradora de prueba. | Abre la empresa correcta sin token ni contraseña en la URL. | PENDIENTE | |
 | ACC-07 | Recargar la página ya autenticada. | Conserva la sesión y vuelve al módulo actual. | PENDIENTE | |
 | ACC-08 | Cerrar sesión y usar Atrás del navegador. | No vuelve a mostrar datos privados; exige iniciar sesión. | PENDIENTE | |
-| ACC-09 | Entrar con Google usando una cuenta de empresa, no el superadmin. | Vincula/crea la cuenta correcta, abre su flujo correspondiente y no expone tokens en la URL. | PENDIENTE | Configuración, desafío y botón verificados; falta que Adán elija la cuenta en Google. |
+| ACC-09 | Entrar con Google usando una cuenta de empresa, no el superadmin. | Vincula/crea la cuenta correcta, abre su flujo correspondiente y no expone tokens en la URL. | PENDIENTE | 2026-09-11: primera prueba FALLÓ por `SESSION_DOMAIN` apuntando a la IP; causa reproducida y corrección preparada. Repetir después del despliegue. |
 
 ## 2. Dashboard y navegación principal
 

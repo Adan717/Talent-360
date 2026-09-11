@@ -109,6 +109,18 @@ class PreflightProduccion extends Command
         // un valor que NO era el que el sistema usaba. Ahora se pregunta lo mismo que la app.
         $cookieSegura = (bool) config('session.secure');
         $porHttps = str_starts_with((string) config('app.url'), 'https://');
+        $hostPublico = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+        $dominioCookie = strtolower(ltrim((string) config('session.domain'), '.'));
+
+        if ($dominioCookie !== '' && $hostPublico !== $dominioCookie
+            && !str_ends_with($hostPublico, '.'.$dominioCookie)) {
+            $this->fallos[] = "SESSION_DOMAIN={$dominioCookie} no corresponde al host público {$hostPublico}. "
+                . 'El navegador descartará las cookies de sesión y de autenticación; usa null para cookies host-only.';
+        } elseif ($dominioCookie === '') {
+            $this->ok('Cookie de sesión host-only (sin SESSION_DOMAIN ajeno)');
+        } else {
+            $this->ok("Dominio de cookie compatible con {$hostPublico}");
+        }
 
         if ($cookieSegura && !$porHttps) {
             $this->avisos[] = 'La cookie de sesión está marcada como SEGURA pero APP_URL es http://. '

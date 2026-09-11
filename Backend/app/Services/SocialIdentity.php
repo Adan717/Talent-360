@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /** Identidades firmadas por el proveedor, ligadas a este navegador y a un solo intento. */
@@ -41,7 +42,20 @@ class SocialIdentity
 
         return response()->json(['state' => $state, 'nonce' => $nonce])
             ->header('Cache-Control', 'no-store')
-            ->cookie(cookie(self::COOKIE, $secret, 10, '/', null, app()->isProduction(), true, false, 'Strict'));
+            // Esta cookie liga el intento al navegador actual. Debe ser host-only: si heredara
+            // SESSION_DOMAIN de un despliegue anterior (por ejemplo, la IP del servidor), el
+            // navegador en talent360.com.mx la descartaría y todo acceso parecería vencido.
+            ->withCookie(new Cookie(
+                self::COOKIE,
+                $secret,
+                now()->addMinutes(10),
+                '/',
+                null,
+                app()->isProduction(),
+                true,
+                false,
+                Cookie::SAMESITE_STRICT
+            ));
     }
 
     public function verify(Request $request): array

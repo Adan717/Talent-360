@@ -18,6 +18,9 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Google OAuth quedó configurado el 2026-09-11 y se verificó contra la V2 desplegada: variable
   válida en el `.env`, cargada en el contenedor, configuración pública y desafío en 200, y botón
   oficial de Google renderizado en `/login` sin errores. La credencial no se guarda en esta lista.
+- En la primera alta E2E con Google se encontró que `SESSION_DOMAIN` aún apuntaba a la IP del
+  servidor: el navegador rechazaba la cookie host-only del desafío y mostraba “intento vencido”.
+  Corregido en código para que el desafío nunca herede ese dominio y añadido al preflight.
 - Recuperación: nuevas pantallas forgot/reset; enlace de un uso, 60 minutos y revocación de
   sesiones. Se impide sobrescribir cuentas existentes desde el registro, incluso pre-registros.
 - Importación de respaldo: rechaza archivos firmados de OTRA empresa y actualizaciones por

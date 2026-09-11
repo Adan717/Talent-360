@@ -27,6 +27,22 @@ class AccesoRealYRecuperacionTest extends TestCase
 
     use \Tests\Concerns\SignsSocialCredentials;
 
+    public function test_desafio_social_usa_cookie_del_host_aunque_la_sesion_tenga_un_dominio_antiguo(): void
+    {
+        app('cookie')->setDefaultPathAndDomain('/', '46.225.153.115');
+
+        $response = $this->postJson('/api/v1/auth/social/challenge')->assertOk();
+        $cookie = $response->getCookie(SocialIdentity::COOKIE, false);
+
+        $this->assertNotNull($cookie);
+        $this->assertNull(
+            $cookie->getDomain(),
+            'La cookie del desafío debe ser host-only; un dominio de despliegue antiguo hace que el navegador la descarte.'
+        );
+        $this->assertTrue($cookie->isHttpOnly());
+        $this->assertSame('strict', strtolower((string) $cookie->getSameSite()));
+    }
+
     public function test_google_firmado_emite_cookie_y_no_se_puede_repetir(): void
     {
         $user = $this->user();

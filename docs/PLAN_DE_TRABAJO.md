@@ -23,6 +23,9 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
   Corregido y desplegado en `03676a9`: el desafío nunca hereda ese dominio y el preflight lo
   vigila. En el servidor se dejó `SESSION_DOMAIN=null`; cookie recibida sin atributo Domain y el
   canje de prueba avanzó hasta validar la credencial, sin volver a reportar intento vencido.
+- Segunda alta E2E: Google llegó correctamente al backend y la cuenta elegida fue bloqueada por
+  ser de plataforma, como exige la decisión “superadmin sólo con contraseña”. El rechazo ocurre
+  antes de crear un usuario de empresa; la alta positiva sigue pendiente con otro Gmail.
 - Recuperación: nuevas pantallas forgot/reset; enlace de un uso, 60 minutos y revocación de
   sesiones. Se impide sobrescribir cuentas existentes desde el registro, incluso pre-registros.
 - Importación de respaldo: rechaza archivos firmados de OTRA empresa y actualizaciones por

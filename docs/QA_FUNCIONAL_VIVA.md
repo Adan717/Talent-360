@@ -21,7 +21,8 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 
 - Stripe en modo Live y un cargo real.
 - Apple hasta cargar sus credenciales oficiales. Google ya está configurado; falta el acceso E2E
-  con una cuenta de empresa (el correo del superadmin sólo puede entrar con contraseña).
+  posterior a la creación de empresa cuando comience la ronda integral; autenticación y
+  prerregistro ya pasaron (el correo del superadmin sólo puede entrar con contraseña).
 - Acceso social del superadmin: por decisión del dueño se prueba únicamente con contraseña.
 - Respaldo externo Backblaze B2 hasta crear bucket y llaves.
 - Emisión fiscal real, movimientos bancarios o cualquier acción sobre datos de una empresa operativa.

@@ -1,6 +1,6 @@
 # Plan de trabajo — orden acordado el 2026-08-11
 
-## Lista viva — verificación del 2026-09-10
+## Lista viva — verificación del 2026-09-11
 
 Esta sección prevalece sobre las marcas históricas de abajo. Fuente: código y servidor de hoy,
 no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Live.**
@@ -15,6 +15,9 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Corregido el instalador seguro de identidad social: el script remoto ya conserva STDIN para
   las credenciales, normaliza CRLF de PowerShell y permite validar el transporte con datos
   ficticios sin escribir configuración. El Client ID de Google real sigue sin registrarse aquí.
+- Google OAuth quedó configurado el 2026-09-11 y se verificó contra la V2 desplegada: variable
+  válida en el `.env`, cargada en el contenedor, configuración pública y desafío en 200, y botón
+  oficial de Google renderizado en `/login` sin errores. La credencial no se guarda en esta lista.
 - Recuperación: nuevas pantallas forgot/reset; enlace de un uso, 60 minutos y revocación de
   sesiones. Se impide sobrescribir cuentas existentes desde el registro, incluso pre-registros.
 - Importación de respaldo: rechaza archivos firmados de OTRA empresa y actualizaciones por
@@ -30,8 +33,8 @@ no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Liv
 - Respaldo corregido probado de extremo a extremo: lote de 4 archivos validado por SHA256,
   descargado a Windows y restaurado en PostgreSQL efímero (V2: 108 tablas; antigua: 99).
   El PostgreSQL antiguo dejó de estar publicado a Internet y ahora escucha sólo en 127.0.0.1:5433.
-- Pendiente de Adán: configuración de Google y Apple en sus consolas, credenciales; cuenta/bucket externo
-  permanente para respaldos; Stripe Live y prueba real cuando lo indique. No pegar secretos al chat.
+- Pendiente de Adán: Apple en su consola y credenciales; cuenta/bucket externo permanente para
+  respaldos; Stripe Live y prueba real cuando lo indique. No pegar secretos al chat.
 - Pendiente técnico no sustituible por credenciales: auditoría funcional/manual módulo por módulo.
   La restauración real, la exposición directa de red y la instancia antigua ya fueron verificadas
   y corregidas; eso no equivale a afirmar que cada botón de cada módulo ya tuvo recorrido manual.

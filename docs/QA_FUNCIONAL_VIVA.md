@@ -20,7 +20,8 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 ## Fuera de esta ronda
 
 - Stripe en modo Live y un cargo real.
-- Google y Apple hasta cargar sus credenciales oficiales.
+- Apple hasta cargar sus credenciales oficiales. Google ya está configurado; falta el acceso E2E
+  con una cuenta de empresa (el correo del superadmin sólo puede entrar con contraseña).
 - Acceso social del superadmin: por decisión del dueño se prueba únicamente con contraseña.
 - Respaldo externo Backblaze B2 hasta crear bucket y llaves.
 - Emisión fiscal real, movimientos bancarios o cualquier acción sobre datos de una empresa operativa.
@@ -35,7 +36,7 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 
 | ID | Acción manual | Resultado esperado | Estado | Evidencia / notas |
 |---|---|---|---|---|
-| ACC-01 | Abrir `/login` sin sesión. | Sólo aparecen correo/contraseña; Google y Apple se ocultan sin credenciales; no hay Samsung ni huella. | PASÓ | Verificado en la web desplegada el 2026-09-10: sólo correo, contraseña, recuperación y avisos legales. |
+| ACC-01 | Abrir `/login` sin sesión. | Aparecen correo/contraseña y los proveedores realmente configurados; no hay Samsung ni huella simulada. | PASÓ | Revalidado el 2026-09-11: se renderiza el botón oficial de Google, Apple permanece oculto y la consola no registra errores. |
 | ACC-02 | Intentar entrar dejando ambos campos vacíos. | El formulario exige los datos y no navega. | PENDIENTE | |
 | ACC-03 | Escribir correo válido y contraseña incorrecta. | Mensaje genérico; no revela datos internos ni inicia sesión. | PENDIENTE | |
 | ACC-04 | Usar el icono de mostrar/ocultar contraseña. | Cambia visibilidad sin borrar el valor. | PENDIENTE | |
@@ -43,6 +44,7 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 | ACC-06 | Entrar con la cuenta administradora de prueba. | Abre la empresa correcta sin token ni contraseña en la URL. | PENDIENTE | |
 | ACC-07 | Recargar la página ya autenticada. | Conserva la sesión y vuelve al módulo actual. | PENDIENTE | |
 | ACC-08 | Cerrar sesión y usar Atrás del navegador. | No vuelve a mostrar datos privados; exige iniciar sesión. | PENDIENTE | |
+| ACC-09 | Entrar con Google usando una cuenta de empresa, no el superadmin. | Vincula/crea la cuenta correcta, abre su flujo correspondiente y no expone tokens en la URL. | PENDIENTE | Configuración, desafío y botón verificados; falta que Adán elija la cuenta en Google. |
 
 ## 2. Dashboard y navegación principal
 

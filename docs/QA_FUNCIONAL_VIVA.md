@@ -21,6 +21,7 @@ Estados: `PENDIENTE`, `PASÓ`, `FALLÓ`, `BLOQUEADO`, `NO APLICA`.
 
 - Stripe en modo Live y un cargo real.
 - Google y Apple hasta cargar sus credenciales oficiales.
+- Acceso social del superadmin: por decisión del dueño se prueba únicamente con contraseña.
 - Respaldo externo Backblaze B2 hasta crear bucket y llaves.
 - Emisión fiscal real, movimientos bancarios o cualquier acción sobre datos de una empresa operativa.
 

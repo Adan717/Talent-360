@@ -5,8 +5,10 @@
 Esta sección prevalece sobre las marcas históricas de abajo. Fuente: código y servidor de hoy,
 no las conclusiones anteriores. **No está acreditado que sólo falte Stripe Live.**
 
-- Decisión de Adán: conservar correo/contraseña; sociales sólo Google y Apple. Huella queda
-  comentada, desactivada y reservada para WebAuthn/passkeys, sin conservar usuarios/tokens ficticios.
+- Decisión de Adán: conservar correo/contraseña; sociales sólo Google y Apple para cuentas de
+  empresa. El superadmin queda sólo con contraseña por ahora, tal como ya exige el servidor.
+  Huella queda comentada, desactivada y reservada para WebAuthn/passkeys, sin conservar
+  usuarios/tokens ficticios.
 - Implementado en código: identidad social firmada con audiencia, emisor,
   vencimiento, nonce y desafío ligado al navegador; Apple exige además canjear el código.
   Proveedores sin credenciales se ocultan. Retiradas las simulaciones de huella, Google y 2FA.

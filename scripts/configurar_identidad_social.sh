@@ -8,16 +8,18 @@ RAIZ=/var/www/talent360-v2
 ENV_FILE="$RAIZ/Backend/.env"
 SECRETS=/etc/talent360-v2
 decode() { printf '%s' "$1" | base64 -d; }
+trim() { printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
 IFS= read -r google_b64
 IFS= read -r apple_b64
 IFS= read -r team_b64
 IFS= read -r key_b64
 IFS= read -r p8_b64
-google=$(decode "$google_b64")
-apple=$(decode "$apple_b64")
-team=$(decode "$team_b64")
-key=$(decode "$key_b64")
-case "$google" in *[!A-Za-z0-9._-]*|'') echo 'Google Client ID inválido.' >&2; exit 1;; esac
+google=$(trim "$(decode "$google_b64")")
+apple=$(trim "$(decode "$apple_b64")")
+team=$(trim "$(decode "$team_b64")")
+key=$(trim "$(decode "$key_b64")")
+case "$google" in *.apps.googleusercontent.com) ;; *) echo 'El Google OAuth Web Client ID debe terminar en .apps.googleusercontent.com.' >&2; exit 1;; esac
+case "$google" in *[!A-Za-z0-9._-]*) echo 'Google Client ID invalido.' >&2; exit 1;; esac
 if [ -n "$apple$team$key$p8_b64" ]; then
   [ -n "$apple" ] && [ -n "$team" ] && [ -n "$key" ] && [ -n "$p8_b64" ] || { echo 'La configuración Apple está incompleta.' >&2; exit 1; }
   case "$apple$team$key" in *[!A-Za-z0-9._-]*) echo 'Identificadores Apple inválidos.' >&2; exit 1;; esac
